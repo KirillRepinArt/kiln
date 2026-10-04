@@ -25,8 +25,8 @@ honest time estimates, overnight batches, and nothing that needs babysitting.
 - ▶ / `Ctrl+Enter` adds to the queue; it starts immediately if idle. Keep writing while it runs.
 - Drag to reorder, × to remove, **Stop** to cancel the running job.
 - **Count ×N** queues a batch — random seeds, or counting up from a fixed seed.
-- Click any job to **peek** at its prompt without touching your draft, then **Reuse prompt** or **Reuse all**
-  (settings, seed and LoRAs too). `Esc` goes back to your draft.
+- Click any job — including the one rendering now, or the status line under the image — to **peek** at its prompt
+  without touching your draft, then **Reuse prompt** or **Reuse all** (settings, seed and LoRAs too). `Esc` goes back to your draft.
 
 **Prompt editor** (CodeMirror 6)
 | Write | Shows as | Sent to the model |
@@ -42,6 +42,8 @@ The queue shows which variant each job got, so a good result can be traced back.
 **Image**
 - The frame takes the shape of your next aspect ratio; results stay until you change a setting.
 - A status line under the image: **Ready · ~estimate** when idle, step / time left / **Stop** while running.
+- **Browse** finished images with `←` / `→` or the arrows on the image — while a job renders too; a new result never
+  pulls you away, and stepping past the newest returns to the live render.
 - Click a finished image for a **full-size viewer** (fit ↔ 100%, wheel zoom, drag to pan); double-click to open
   it in your default app.
 - Optional **name** for a series → files are numbered `rainy-library-001.png`, `-002`, …
@@ -56,7 +58,8 @@ The queue shows which variant each job got, so a good result can be traced back.
 **Also**
 - PNG Info: drop any Forge PNG to read its settings and send them to the prompt.
 - Ratio picker with shape previews · ~1 / 1.5 / 2 MP presets (all sides multiples of 16).
-- Window title and favicon show progress; desktop notification when the queue empties.
+- Window title and favicon show progress; desktop notification when the queue empties (on, silent or off).
+- Narrow windows stack the image above the prompt; drag the line between them to share the height.
 - Settings remember model, VAE, text encoder and the rest. **Reset layout** / **Reset everything**.
 - Themes for the play button and progress bar; font choice (Geist, Inter, Satoshi, Manrope, IBM Plex Sans).
 
@@ -66,7 +69,9 @@ The queue shows which variant each job got, so a good result can be traced back.
 nothing to install), and [Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo) started with
 `--api` (add it to `COMMANDLINE_ARGS` in `webui-user.bat`).
 
-1. Start Forge as usual.
+1. Start Forge as usual — or let Kiln do it: set `"forge_start"` in `config.local.json` to the full path of Forge's
+   `webui-user.bat`. Kiln then starts Forge (minimized) when it isn't running, and stops it again when you close Kiln
+   — only if Kiln started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it running).
 2. Double-click **`kiln.bat`** — it starts the Kiln server and opens Kiln in its own Edge window
    (`http://127.0.0.1:7870`). Or run `python server.py` and open that address in any Chromium browser.
 3. Optional: copy `config.example.json` to `config.local.json` to change the Forge address, port or output folder.

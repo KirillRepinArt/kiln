@@ -18,6 +18,8 @@ DEFAULTS = {
     "style_folders": ["style", "styles"],
     "exit_when_closed": True,  # stop when the last Kiln window closes (after the queue is done)
     "spellcheck": ["en-US", "ru", "es"],  # spell-check dictionaries seeded into Kiln's Edge profile by kiln.bat
+    "forge_start": "",  # path to Forge's webui-user.bat: Kiln starts Forge (minimized) when it isn't running
+    "stop_forge_on_exit": True,  # ...and stops it again when Kiln closes — only if Kiln was the one that started it
 }
 
 
@@ -28,7 +30,8 @@ def load_config():
         cfg.update(json.loads(p.read_text(encoding="utf-8")))
     # env overrides (handy for testing against tools/fake_forge.py)
     for k, env, typ in (("forge_url", "KILN_FORGE_URL", str), ("port", "KILN_PORT", int),
-                        ("output_dir", "KILN_OUTPUT_DIR", str), ("data_dir", "KILN_DATA_DIR", str)):
+                        ("output_dir", "KILN_OUTPUT_DIR", str), ("data_dir", "KILN_DATA_DIR", str),
+                        ("forge_start", "KILN_FORGE_START", str)):
         if os.environ.get(env):
             cfg[k] = typ(os.environ[env])
     return cfg
@@ -59,7 +62,8 @@ lock = threading.RLock()
 wake = threading.Event()
 jobs: list[dict] = []
 previews: dict[int, bytes] = {}
-forge_status = {"ok": False, "error": "not checked yet", "busy": False}
+forge_status = {"ok": False, "error": "not checked yet", "busy": False, "starting": False}
+forge_proc = None  # the Forge we started ourselves (None if Forge was already running or isn't ours)
 QUEUE_FILE, STATS_FILE = DATA / "queue.json", DATA / "stats.json"
 stats = {"sec_per_step": {}}  # MP bucket -> seconds per step (end to end, incl. load/decode)
 
@@ -281,6 +285,7 @@ def watchdog():
             busy = sum(1 for j in jobs if j["status"] in ("pending", "running"))
         if not busy:
             print("Kiln window closed and queue empty — stopping the server.", flush=True)
+            stop_forge()
             os._exit(0)
         if said != busy:  # explain why the server is still up
             print(f"Kiln window closed — finishing {busy} queued job{'s' * (busy != 1)}, then stopping.", flush=True)
@@ -310,13 +315,58 @@ def seed_edge_spellcheck(profile):
     pref.write_text(json.dumps(p), encoding="utf-8")
 
 
+def start_forge():
+    """Start Forge from config "forge_start" (its webui-user.bat) if it isn't answering. Runs once at startup."""
+    global forge_proc
+    bat = (CFG.get("forge_start") or "").strip()
+    if not bat:
+        return
+    try:
+        forge("GET", "/sdapi/v1/progress?skip_current_image=true", timeout=3)
+        return  # already running — not ours, so we won't stop it either
+    except Exception:
+        pass
+    path = Path(bat)
+    if not path.is_file():
+        print(f"forge_start: {bat} not found — start Forge yourself.", flush=True)
+        return
+    kw = {"cwd": str(path.parent)}
+    if os.name == "nt":  # own console window, minimized and without stealing focus
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        si.wShowWindow = 7  # SW_SHOWMINNOACTIVE
+        kw.update(creationflags=subprocess.CREATE_NEW_CONSOLE, startupinfo=si)
+        cmd = ["cmd", "/c", str(path)]
+    else:
+        cmd = ["sh", str(path)]
+    forge_proc = subprocess.Popen(cmd, **kw)
+    forge_status["starting"] = True
+    print(f"Starting Forge: {path}", flush=True)
+
+
+def stop_forge():
+    """Stop the Forge we started (whole process tree). Leaves a Forge the user started alone."""
+    if forge_proc is None or forge_proc.poll() is not None or not CFG.get("stop_forge_on_exit", True):
+        return
+    if forge_status.get("busy"):  # something else (Forge's own UI, the Photoshop plugin) is using it — leave it
+        print("Forge is busy with another client — leaving it running.", flush=True)
+        return
+    print("Stopping the Forge that Kiln started.", flush=True)
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(forge_proc.pid)], capture_output=True)
+    else:
+        forge_proc.terminate()
+
+
 def health():
     while True:
         try:
             r = forge("GET", "/sdapi/v1/progress?skip_current_image=true", timeout=5)
-            forge_status.update(ok=True, error=None, busy=bool((r.get("state") or {}).get("job_count")))
+            forge_status.update(ok=True, error=None, starting=False, busy=bool((r.get("state") or {}).get("job_count")))
         except Exception:
-            forge_status.update(ok=False, busy=False, error=f"Forge not reachable at {CFG['forge_url']}")
+            starting = forge_proc is not None and forge_proc.poll() is None and forge_status["starting"]
+            forge_status.update(ok=False, busy=False, starting=starting,
+                                error="Forge is starting" if starting else f"Forge not reachable at {CFG['forge_url']}")
         time.sleep(4)
 
 
@@ -528,6 +578,7 @@ def main():
         try: stream.reconfigure(encoding="utf-8", errors="replace")
         except Exception: pass
     load_state()
+    start_forge()
     threading.Thread(target=worker, daemon=True).start()
     threading.Thread(target=health, daemon=True).start()
     threading.Thread(target=watchdog, daemon=True).start()

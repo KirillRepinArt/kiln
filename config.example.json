@@ -18,5 +18,7 @@
     "en-US",
     "ru",
     "es"
-  ]
+  ],
+  "forge_start": "",
+  "stop_forge_on_exit": true
 }

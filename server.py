@@ -286,15 +286,21 @@ def get_models(refresh=False):
     if refresh:
         try: forge("POST", "/sdapi/v1/refresh-loras", {})
         except Exception: pass
-    flags = forge("GET", "/sdapi/v1/cmd-flags")
-    lora_dir = Path(flags.get("lora_dir") or "")
+    raw = forge("GET", "/sdapi/v1/loras")
+    # Find the LoRA root from the paths themselves (Forge Neo's /cmd-flags can 500): the last "Lora"
+    # folder in a path, else the common parent of all files.
+    def lora_root(p):
+        parts = [x.lower() for x in p.parts]
+        return Path(*p.parts[:len(parts) - parts[::-1].index("lora")]) if "lora" in parts else None
+    paths = [Path(l["path"]) for l in raw]
+    roots = {lora_root(p) for p in paths} - {None}
+    common = roots.pop() if len(roots) == 1 else (Path(os.path.commonpath([str(p.parent) for p in paths])) if paths else None)
     loras = []
-    for l in forge("GET", "/sdapi/v1/loras"):
-        p = Path(l["path"])
+    for l, p in zip(raw, paths):
         try:
-            rel = p.relative_to(lora_dir)
+            rel = p.relative_to(lora_root(p) or common)
             folder = rel.parts[0] if len(rel.parts) > 1 else ""
-        except ValueError:
+        except (ValueError, TypeError):
             folder = p.parent.name
         meta = l.get("metadata") or {}
         thumb = THUMBS / f"{l['name']}.jpg"

@@ -10,8 +10,9 @@ Desktop.ini
 *.psb
 sketches/
 
-# runtime (for the Forge-wired version)
+# runtime
 outputs/
+data/
 node_modules/
 __pycache__/
 *.pyc

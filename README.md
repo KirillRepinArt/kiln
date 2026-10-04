@@ -8,8 +8,8 @@ one image takes minutes, not seconds.
 
 ![Kiln](docs/screenshot.png)
 
-> **Status: design prototype.** The interface is complete and clickable, but generation is simulated.
-> Wiring it to Forge Neo's API is the next milestone — see [Roadmap](#roadmap).
+> **Status: early, working.** Kiln drives a local Forge Neo through its API: real queue, live previews,
+> your own LoRAs and models. Opened as a plain file it runs as a self-contained demo with simulated generation.
 
 ---
 
@@ -60,11 +60,31 @@ The queue shows which variant each job got, so a good result can be traced back.
 - Settings remember model, VAE, text encoder and the rest. **Reset layout** / **Reset everything**.
 - Themes for the play button and progress bar; font choice (Geist, Inter, Satoshi, Manrope, IBM Plex Sans).
 
-## Try it
+## Run it
 
-Open `index.html` in a Chromium browser (Edge, Chrome, Brave). Generation is simulated at ×20 speed —
-change it under ⚙ → *Demo speed*. Fonts and the editor load from CDNs; offline, it falls back to system fonts
-and a plain text box.
+**Requirements:** Windows (Linux/macOS work but the launcher is a .bat), Python 3.10+ (standard library only —
+nothing to install), and [Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo) started with
+`--api` (add it to `COMMANDLINE_ARGS` in `webui-user.bat`).
+
+1. Start Forge as usual.
+2. Double-click **`kiln.bat`** — it starts the Kiln server and opens Kiln in its own Edge window
+   (`http://127.0.0.1:7870`). Or run `python server.py` and open that address in any Chromium browser.
+3. Optional: copy `config.example.json` to `config.local.json` to change the Forge address, port or output folder.
+
+**How it works.** `server.py` owns the queue (saved in `data/queue.json`, so it survives restarts) and feeds Forge
+one job at a time — Forge's own UI keeps working alongside. Images are saved to `outputs/` with the generation
+settings embedded, named after your series (`rainy-library-001.png`) or by date and seed. Model and module choices
+in ⚙ Settings default to whatever Forge has loaded; pick others and Kiln switches before the job runs.
+Time estimates learn from your own runs.
+
+**LoRA folders.** Kiln reads your LoRAs from Forge. Put face LoRAs in a `people` (or `faces`, `characters`)
+subfolder and styles in `style` to get the face grid and filters; the names are configurable.
+
+**Demo / development.** Open `index.html` directly for the simulated demo, or run
+`python tools/fake_forge.py` and point Kiln at it (`KILN_FORGE_URL=http://127.0.0.1:7861 python server.py`)
+to exercise the whole pipeline without a GPU.
+
+Fonts and the editor load from CDNs; offline, Kiln falls back to system fonts and a plain text box.
 
 ## Design notes
 
@@ -83,11 +103,10 @@ A few rules the interface follows, in case you want to extend it in the same spi
 
 ## Roadmap
 
-1. **Forge Neo wiring** — a small local server that owns a persistent queue and drives Forge's API
-   (`/sdapi/v1/txt2img`, `/progress`, `/interrupt`, `/loras`, `/options`), real LoRA list from your folders.
-2. **App window** — launch in Edge/Chrome `--app` mode with its own icon; drag finished images straight into
+1. ~~Forge Neo wiring~~ — done: persistent queue, live previews, real LoRAs/models, upscale, open / show in folder.
+2. ~~App window~~ — `kiln.bat` opens Kiln in an Edge `--app` window. Next: drag finished images straight into
    Photoshop or Explorer.
-3. **img2img / upscale** from the image's hover actions.
+3. **img2img** from the image's hover actions.
 4. Maybe: a ComfyUI backend behind the same interface.
 
 ## Credits

@@ -1,0 +1,8 @@
+{
+  "forge_url": "http://127.0.0.1:7860",
+  "port": 7870,
+  "output_dir": "outputs",
+  "data_dir": "data",
+  "people_folders": ["people", "faces", "characters", "persons"],
+  "style_folders": ["style", "styles"]
+}

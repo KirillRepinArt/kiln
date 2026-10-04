@@ -344,7 +344,7 @@ button,.tab,.pill,.chip,.qi,.card,.li,.fchips button{user-select:none;-webkit-us
 .left.nodur{transition:none!important}
 
 /* ---- composer layout ---- */
-.ltitle{position:absolute;right:0;width:min(100%,680px);top:calc(var(--ltop,0px) - 60px);height:54px;transition:top .4s var(--ease);
+.ltitle{position:absolute;right:0;width:min(100%,680px);top:calc(var(--ltop,0px) - var(--ts,64px) + 4px);height:calc(var(--ts,64px) - 10px);transition:top .4s var(--ease),height .4s var(--ease);
  padding:0 8px 0 26px;display:flex;flex-direction:column;justify-content:flex-end}
 .ltitle{align-items:center;padding:0 26px!important}
 .ltitle .phead{padding:0;justify-content:center}
@@ -355,7 +355,10 @@ button,.tab,.pill,.chip,.qi,.card,.li,.fchips button{user-select:none;-webkit-us
 .ltitle .plbl.hasname .pname{padding:2px 6px;margin-left:0}
 .ltitle .pnx{opacity:0;transition:opacity .15s}.ltitle:hover .plbl.hasname .pnx{opacity:1}
 .ltitle .plbl.dimname .pname{color:#9a9aa2}
-.pnext{text-align:center;font-size:12px;color:var(--faint);padding-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ltitle .peekbar{position:static;margin-top:8px;box-shadow:none;max-width:100%}
+.ltitle .peekbar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip[hidden]{display:none}
+.chipmore{padding:4px 10px;font-weight:600;color:#d6d6da}
 .left{border-color:#34343a!important}
 .chips{justify-content:flex-start!important;padding:14px 22px 0 22px!important}
 .chips:empty{padding:6px 0 0!important}
@@ -371,6 +374,7 @@ button,.tab,.pill,.chip,.qi,.card,.li,.fchips button{user-select:none;-webkit-us
 .app.stacked .lcol{order:2;height:var(--lch,320px);margin-top:6px}
 .app.stacked .left,.app.stacked .ltitle{right:auto;left:50%;width:min(100%,760px);transform:translateX(-50%)}
 .app.stacked .stage .frame{left:50%!important;transform:translateX(-50%)}
+.app.stacked .right .tabs{align-self:center;width:auto!important}
 </style>
 </head>
 <body>
@@ -378,12 +382,11 @@ button,.tab,.pill,.chip,.qi,.card,.li,.fchips button{user-select:none;-webkit-us
 <div class="app">
 
   <div class="lcol" id="lcol">
-  <div class="ltitle" id="ltitle"><div class="phead"><span class="plbl"><span class="nchip"><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60" title="Optional — names the image files: name-001.png, name-002.png…"><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div><div class="pnext" id="pnext"></div></div>
+  <div class="ltitle" id="ltitle"><div class="phead"><span class="plbl"><span class="nchip"><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60"><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div><div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt">Reuse prompt</button><button id="pkAll">Reuse all</button><button id="pkX" title="Back to my draft (Esc)">✕</button></div></div>
   <section class="left" id="left">
     <div class="vedge" id="vedge" title="Drag to resize · double-click for auto"></div>
     <div class="chips" id="chips"></div>
-    <div class="pwrapT"><span class="pcount" id="pcount"></span><textarea id="prompt" spellcheck="false" placeholder="Describe what you want to see…"></textarea>
-    <div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt">Reuse prompt</button><button id="pkAll">Reuse all</button><button id="pkX" title="Back to my draft (Esc)">✕</button></div></div>
+    <div class="pwrapT"><span class="pcount" id="pcount"></span><textarea id="prompt" spellcheck="true" placeholder="Describe what you want to see…"></textarea></div>
     <div class="controls">
       <button class="play" id="play" title="Add to queue (Ctrl+Enter)">
         <svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="var(--ink)"/></svg>
@@ -528,7 +531,7 @@ const S={pname:"",ncount:{},pph:0,lw:0,mp:"1.5",ar:"3:4",steps:4,seedMode:"rando
 let draft="";let jobs=[];let nextId=1;
 try{const sv=JSON.parse(localStorage.getItem("kiln_state")||"{}");Object.assign(S,sv.S||{});draft=sv.draft||"";
  (sv.loras||[]).forEach(x=>{const l=LORAS.find(l=>l.name===x.name);if(l)Object.assign(l,x)})}catch(e){}
-function save(){try{localStorage.setItem("kiln_state",JSON.stringify({S,draft,loras:LORAS.map(({name,on,onAt,fav,used,display,thumb})=>({name,on,onAt,fav,used,display,thumb}))}))}catch(e){}}
+function save(){try{localStorage.setItem("kiln_state",JSON.stringify({S,draft,loras:LORAS.map(({name,on,onAt,w,fav,used,display,thumb})=>({name,on,onAt,w,fav,used,display,thumb}))}))}catch(e){}}
 const $=id=>document.getElementById(id);
 const P=$("prompt");
 P.value=draft||"";
@@ -612,9 +615,19 @@ function grow(){const r=document.documentElement.style;if(S.lw)r.setProperty("--
  g.addEventListener("dblclick",()=>{S.lw=0;save();grow();sizeFrame();moveThumb(true)});})();
 
 P.addEventListener("input",()=>{grow();requestAnimationFrame(layoutLeft);if(!peekJob){draft=P.value;save()}updPrompt()});
+let chipsOpen=false;
 function renderChips(){requestAnimationFrame(()=>window.layoutLeft&&layoutLeft());
- $("chips").innerHTML=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0)).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`).join("")}
-$("chips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;const l=LORAS.find(l=>l.name===c.dataset.n);
+ $("chips").innerHTML=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0)).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`).join("");capChips()}
+/* more than two rows of chips: hide the rest behind a "+N" chip that expands (and collapses again) */
+function capChips(){const box=$("chips");box.querySelector(".chipmore")?.remove();const cs=[...box.querySelectorAll(".chip")];cs.forEach(c=>c.hidden=false);
+ const rows=[...new Set(cs.map(c=>c.offsetTop))].sort((a,b)=>a-b);if(rows.length<=2)return;
+ const more=document.createElement("button");more.className="chip chipmore";box.append(more);
+ if(chipsOpen){more.textContent="Show less";more.dataset.tip="Back to two rows";return}
+ const lim=rows[1],hid=cs.filter(c=>c.offsetTop>lim);hid.forEach(c=>c.hidden=true);more.textContent="+"+hid.length;
+ const vis=cs.filter(c=>!c.hidden);while(more.offsetTop>lim&&vis.length){const c=vis.pop();c.hidden=true;hid.unshift(c);more.textContent="+"+hid.length}
+ more.dataset.tip="Show all · "+hid.map(c=>c.querySelector(".cn").textContent+" "+c.querySelector(".cw").textContent).join(", ")}
+(function(){let w=0;new ResizeObserver(()=>{const n=$("chips").clientWidth;if(n!==w){w=n;capChips()}}).observe($("chips"))})();
+$("chips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;if(c.classList.contains("chipmore")){chipsOpen=!chipsOpen;renderChips();return}const l=LORAS.find(l=>l.name===c.dataset.n);
  if(e.target.closest(".cx")){l.on=false;save();renderChips();renderLoras();return}
  S.lfilter=l.folder==="people"?"people":"all";showView("loras");const el=document.querySelector(`[data-ln="${l.name}"]`);
  if(el){el.scrollIntoView({block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")}};
@@ -644,7 +657,7 @@ let lyFrozen=false,lyHover=false,lyT=null,lyTop=null,lyCy=null;
 function cardNaturalH(){const L=$("left"),w=L.querySelector(".pwrapT");const sc=L.querySelector(".cm-scroller");
  const edH=(sc?sc.scrollHeight:P.scrollHeight)+16;return Math.max(170,L.offsetHeight-w.offsetHeight+Math.max(84,edH))}
 function applyMode(){const a=document.querySelector(".app");const st=innerWidth<980||innerWidth/innerHeight<1.15;if(a.classList.contains("stacked")!==st){a.classList.toggle("stacked",st);requestAnimationFrame(()=>{sizeFrame();moveThumb(true)})}}
-function layoutLeft(){const L=$("left"),col=$("lcol");const TS=64;
+function layoutLeft(){const L=$("left"),col=$("lcol");const TS=$("peekbar").classList.contains("show")?108:64;col.style.setProperty("--ts",TS+"px");
  if(document.querySelector(".app.stacked")){const H=Math.min(cardNaturalH(),Math.round(innerHeight*.42));lyTop=0;
   col.style.setProperty("--lch",(H+TS+2)+"px");col.style.setProperty("--ltop",TS+"px");col.style.setProperty("--lh",H+"px");return}
  const colH=col.clientHeight-TS;if(colH<=0)return;
@@ -700,7 +713,7 @@ function addJobs(){if(peekJob){toast("Viewing a queued prompt — choose Reuse, 
  const on=LORAS.filter(l=>l.on);on.forEach(l=>l.used=Date.now());
  const L=on.map(l=>({name:l.name,w:l.w}));
  for(let i=0;i<S.n;i++){const seed=S.seedMode==="random"?Math.floor(Math.random()*4294967295):(S.seed+i)>>>0;
-  const nm=S.pname.trim();let file=null;if(nm){const slug=nm.toLowerCase().replace(/[^a-z0-9а-яё]+/gi,"-").replace(/^-|-$/g,"");S.ncount[slug]=(S.ncount[slug]||0)+1;file=`${slug}-${String(S.ncount[slug]).padStart(3,"0")}.png`}
+  const nm=S.pname.trim();let file=null;if(nm){const slug=slugify(nm);S.ncount[slug]=(S.ncount[slug]||0)+1;file=`${slug}-${String(S.ncount[slug]).padStart(3,"0")}.png`}
   const ex=expandVariants(stripComments(text));
   jobs.push({id:nextId++,name:nm,file,prompt:ex.text,raw:text,picks:ex.picks,mp:S.mp,ar:S.ar,steps:S.steps,seed,loras:L,status:"pending",step:0})}
  save();toast(S.n>1?`Added ${S.n} jobs to the queue`:"Added to queue");tick();renderAll()}
@@ -803,8 +816,8 @@ $("qwrap").addEventListener("click",e=>{
 let undo=null;var justDone=null;
 let peekJob=null;
 function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classList.add("peek");P.scrollTop=0;
- $("peekLbl").textContent=`#${j.id} · ${j.ar} · ${j.steps} steps`;$("peekbar").classList.add("show");updPrompt()}
-function endPeek(){if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;$("peekbar").classList.remove("show");updPrompt()}
+ $("peekLbl").textContent=`#${j.id} · ${j.ar} · ${j.steps} steps`;$("peekbar").classList.add("show");updPrompt();layoutLeft()}
+function endPeek(){if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;$("peekbar").classList.remove("show");updPrompt();layoutLeft()}
 function reuse(all){const j=peekJob;if(!j)return;const prev={draft,S:{mp:S.mp,ar:S.ar,steps:S.steps,seedMode:S.seedMode,seed:S.seed},loras:LORAS.map(l=>({on:l.on,w:l.w}))};
  draft=j.raw||j.prompt;if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps,seedMode:"fixed",seed:j.seed});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}
  endPeek();save();renderAll();P.focus();
@@ -872,7 +885,7 @@ setInterval(()=>$("frame").classList.toggle("clickable",!current()&&!!shownDone(
   if(nw!==W||nh!==H){W=vc.width=ec.width=nw;H=vc.height=ec.height=nh}
   const j=current();const mode=(S.set||{}).veil||"full";
   let target=0;if(j&&S.view==="gen"&&mode!=="off"&&!reduce){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
-   const x=Math.max(0,Math.min(1,(pr-.5)/.48));target=(1-x*x*(3-2*x))*(mode==="light"?.55:1);if(hover)target*=.12}
+   const x=Math.max(0,Math.min(1,(pr-.3)/.68));target=(1-x*x*(3-2*x))*(mode==="light"?.55:1);if(hover)target*=.12}
   str+=(target-str)*Math.min(1,dt/260);if(str<.002)str=0;
   document.getElementById("frame").style.setProperty("--vf",str?`blur(${(24*str).toFixed(1)}px) brightness(${(1-.45*str).toFixed(3)}) saturate(${(1-.4*str).toFixed(3)})`:"none");
   v.clearRect(0,0,W,H);
@@ -880,7 +893,7 @@ setInterval(()=>$("frame").classList.toggle("clickable",!current()&&!!shownDone(
    v.globalCompositeOperation="source-over";v.fillStyle=`rgba(8,8,12,${.30*str})`;v.fillRect(0,0,W,H);
    v.globalCompositeOperation="lighter";
    for(let k=0;k<3;k++){const span=W+H,off=((T*(38+k*17)*d+k*span/3)%(span*1.4))-span*.2;
-    const g=v.createLinearGradient(off,0,off+H*.9,H*.9);const a=(.13-.03*k)*str;const col=k===1?cols[2]:cols[k===0?0:1];
+    const g=v.createLinearGradient(off,0,off+H*.9,H*.9);const a=(.10-.025*k)*str;const col=k===1?cols[2]:cols[k===0?0:1];
     g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.45,"rgba(0,0,0,0)");g.addColorStop(.5,col);g.addColorStop(.55,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,0)");
     v.globalAlpha=a*2.2;v.fillStyle=g;v.fillRect(0,0,W,H)}
    const want=Math.round(230*str*(W*H)/(700*900*d*d));while(sparks.length<want)sparks.push({x:Math.random()*W*1.2-W*.2,y:Math.random()*H*1.2-H*.2,s:(.5+Math.random()*1.3)*d,v:(.012+Math.random()*.03)*d,ph:Math.random()*6.28,tw:.6+Math.random()*1.8,c:Math.random()<.5?"w":(Math.random()<.5?"a3":"a1")});
@@ -1040,10 +1053,12 @@ function renderAll(){const n=jobs.filter(j=>j.status==="pending"||j.status==="ru
 $("pname").value=S.pname||"";$("pname").addEventListener("input",e=>{S.pname=e.target.value;save();nameUI()});
 $("pnx").onclick=()=>{$("pname").value="";S.pname="";save();nameUI();$("pname").focus()};
 let nnT=null;
+function slugify(n){return n.toLowerCase().replace(/[^\p{L}\p{N}_]+/gu,"-").replace(/^-|-$/g,"").slice(0,60)||"kiln"} // same rule as server.py
+function nameTip(file){$("pname").dataset.tip=file?`Names the image files · next: ${file}`:"Optional — names the image files (name-001.png, name-002.png…). Without a name: date and seed"}
 function nextHint(){const n=(S.pname||"").trim();
- if(!n){$("pnext").textContent="Files named by date and seed";return}
- if(window.LIVE){clearTimeout(nnT);nnT=setTimeout(()=>fetch("/api/nextname?name="+encodeURIComponent(n)).then(r=>r.json()).then(d=>{$("pnext").textContent=d.file?`Next file · ${d.file}`:""}).catch(()=>{}),250)}
- else{const slug=n.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-|-$/g,"");$("pnext").textContent=`Next file · ${slug}-${String((S.ncount[slug]||0)+1).padStart(3,"0")}.png`}}
+ if(!n){nameTip(null);return}
+ if(window.LIVE){clearTimeout(nnT);nnT=setTimeout(()=>fetch("/api/nextname?name="+encodeURIComponent(n)).then(r=>r.json()).then(d=>nameTip(d.file)).catch(()=>{}),250)}
+ else{const slug=slugify(n);nameTip(`${slug}-${String((S.ncount[slug]||0)+1).padStart(3,"0")}.png`)}}
 function nameUI(){nextHint();const l=document.querySelector(".plbl");l.classList.toggle("hasname",!!S.pname.trim());l.classList.toggle("dimname",!!S.pname.trim()&&!P.value.trim())}$("pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();P.focus()}});
 applyMode();$("left").classList.add("nodur");setTimeout(()=>$("left").classList.remove("nodur"),400);
 applyFont();applyPH();updPrompt();applyTheme();showView(["queue","loras","png"].includes(S.view)?S.view:"gen");renderAll();grow();syncH();demoNote();
@@ -1133,7 +1148,7 @@ applyFont();applyPH();updPrompt();applyTheme();showView(["queue","loras","png"].
   const keep=Object.fromEntries(LORAS.map(l=>[l.name,l]));
   LORAS.length=0;
   for(const m of models.loras){const p=parseName(m.name,m.category),sv=saved[m.name]||{},k=keep[m.name]||{};
-   LORAS.push({name:m.name,folder:m.category,display:sv.display||p.display,tags:p.tags,w:k.w??(m.category==="people"?.7:.5),
+   LORAS.push({name:m.name,folder:m.category,display:sv.display||p.display,tags:p.tags,w:k.w??sv.w??(m.category==="people"?.7:.5),
     on:k.on??!!sv.on,onAt:k.onAt??sv.onAt??0,recipe:false,note:m.folder?m.folder+(m.internal&&m.internal!==m.name?" · "+m.internal:""):(m.internal&&m.internal!==m.name?m.internal:""),
     fav:!!sv.fav,used:sv.used||0,thumb:m.thumb||null})}
   const sel=(key,opts,label)=>{const el=document.querySelector(`[data-set="${key}"]`);if(!el)return;const cur=(S.set||{})[key]||"";
@@ -1186,6 +1201,7 @@ applyFont();applyPH();updPrompt();applyTheme();showView(["queue","loras","png"].
   const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;const started=j.step||j.preview_rev;
   return{p,left:started?(j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000)):null}};
  /* ---------- go ---------- */
+ addEventListener("pagehide",()=>navigator.sendBeacon("/api/bye"));
  jobs=[];await loadModels(false);refreshUp();
  if(!models)toast("Forge isn't running — start it, then Settings → Refresh models & LoRAs");
  poll();
@@ -1235,7 +1251,7 @@ if(cm){
    const ind=l.text.match(/^\s*/)[0].length;return{from:l.from+ind,insert:"// "}})});return true}
 
  const view=new EditorView({parent:wrap,state:EditorState.create({doc:proto.get.call(ta),extensions:[
-  history(),EditorView.lineWrapping,placeholder("Describe what you want to see…"),deco,ro.of(EditorState.readOnly.of(false)),
+  history(),EditorView.lineWrapping,EditorView.contentAttributes.of({spellcheck:"true",autocorrect:"off",autocapitalize:"off"}),placeholder("Describe what you want to see…"),deco,ro.of(EditorState.readOnly.of(false)),
   keymap.of([{key:"Mod-/",run:toggleLineComment},{key:"Mod-Enter",run:()=>{window.addJobs&&addJobs();return true}},...historyKeymap,...defaultKeymap.filter(k=>k.key!=="Mod-Enter")]),
   EditorView.updateListener.of(u=>{if(u.docChanged&&!syncing){proto.set.call(ta,u.state.doc.toString());ta.dispatchEvent(new Event("input"))}}),
   EditorView.domEventHandlers({keydown:(e)=>{if(!ta.readOnly)return false;

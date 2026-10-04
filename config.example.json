@@ -13,5 +13,10 @@
     "style",
     "styles"
   ],
-  "exit_when_closed": true
+  "exit_when_closed": true,
+  "spellcheck": [
+    "en-US",
+    "ru",
+    "es"
+  ]
 }

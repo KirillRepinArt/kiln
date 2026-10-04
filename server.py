@@ -16,7 +16,8 @@ DEFAULTS = {
     "data_dir": "data",
     "people_folders": ["people", "faces", "characters", "persons"],
     "style_folders": ["style", "styles"],
-    "exit_when_closed": True,  # stop ~15 s after the last Kiln window closes (after the queue is done)
+    "exit_when_closed": True,  # stop when the last Kiln window closes (after the queue is done)
+    "spellcheck": ["en-US", "ru", "es"],  # spell-check dictionaries seeded into Kiln's Edge profile by kiln.bat
 }
 
 
@@ -258,20 +259,55 @@ def worker():
         print(f"job {job['id']} {result}" + (f": {job.get('error')}" if job.get("error") else ""))
 
 
-client = {"last": None}
+client = {"last": None, "bye": None}
 
 
 def watchdog():
-    """Exit once no Kiln window has polled for 15 s and nothing is queued or running."""
+    """Exit when no Kiln window is open and nothing is queued or running.
+
+    A closing window says goodbye (/api/bye): stop ~2 s later unless another window (or a reload) polls first.
+    Without a goodbye (crash, killed browser) a window counts as gone after 15 s without a poll."""
+    said = None
     while True:
-        time.sleep(3)
+        time.sleep(1)
         if not CFG.get("exit_when_closed", True) or client["last"] is None:
             continue
+        now, last, bye = time.time(), client["last"], client["bye"]
+        closed = (bye is not None and bye >= last - 0.5 and now - bye > 2) or now - last > 15
+        if not closed:
+            said = None
+            continue
         with lock:
-            busy = any(j["status"] in ("pending", "running") for j in jobs)
-        if not busy and time.time() - client["last"] > 15:
+            busy = sum(1 for j in jobs if j["status"] in ("pending", "running"))
+        if not busy:
             print("Kiln window closed and queue empty — stopping the server.", flush=True)
             os._exit(0)
+        if said != busy:  # explain why the server is still up
+            print(f"Kiln window closed — finishing {busy} queued job{'s' * (busy != 1)}, then stopping.", flush=True)
+            said = busy
+
+
+def seed_edge_spellcheck(profile):
+    """Add Kiln's spell-check languages to its Edge profile (kiln.bat runs this before opening Edge)."""
+    langs = CFG.get("spellcheck") or []
+    pref = Path(profile) / "Default" / "Preferences"
+    try:
+        p = json.loads(pref.read_text(encoding="utf-8")) if pref.exists() else {}
+    except Exception:
+        return
+    sc = p.setdefault("spellcheck", {})
+    have = sc.get("dictionaries") or []
+    want = have + [l for l in langs if l not in have]
+    intl = p.setdefault("intl", {})
+    acc = [a for a in (intl.get("accept_languages") or "en-US,en").split(",") if a]
+    acc_want = acc + [l for l in langs if l not in acc]
+    if want == have and acc_want == acc and p.get("browser", {}).get("enable_spellchecking", True):
+        return
+    sc["dictionaries"] = want
+    intl["accept_languages"] = ",".join(acc_want)
+    p.setdefault("browser", {})["enable_spellchecking"] = True
+    pref.parent.mkdir(parents=True, exist_ok=True)
+    pref.write_text(json.dumps(p), encoding="utf-8")
 
 
 def health():
@@ -410,6 +446,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         path = self.path.split("?")[0]
         b = self.json_body()
+        if path == "/api/bye":  # a Kiln window is closing (sendBeacon from pagehide)
+            client["bye"] = time.time()
+            return self.reply(200, {})
         if path == "/api/jobs":
             ids = []
             with lock:
@@ -501,4 +540,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) == 3 and sys.argv[1] == "--seed-edge":
+        seed_edge_spellcheck(sys.argv[2])
+    else:
+        main()

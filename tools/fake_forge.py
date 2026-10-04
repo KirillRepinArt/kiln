@@ -25,6 +25,16 @@ LORAS = [  # neutral demo names; folder comes from the path, as with real Forge
     ("krea2_janedoe_v2_large_onetrainer", "Lora/people/krea2_janedoe_v2_large_onetrainer.safetensors"),
     ("krea2_annasmith_v1_onetrainer", "Lora/people/krea2_annasmith_v1_onetrainer.safetensors"),
     ("krea2_lunavale_v1_large_onetrainer", "Lora/people/krea2_lunavale_v1_large_onetrainer.safetensors"),
+    ("skin_texture_krea2", "Lora/skin_texture_krea2.safetensors"),
+    ("film_grain_krea2", "Lora/film_grain_krea2.safetensors"),
+    ("soft_light_krea2", "Lora/soft_light_krea2.safetensors"),
+    ("sharp_focus_krea2", "Lora/sharp_focus_krea2.safetensors"),
+    ("color_grade_krea2", "Lora/color_grade_krea2.safetensors"),
+    ("krea2_softwatercolor", "Lora/style/krea2_softwatercolor.safetensors"),
+    ("krea2_vintagetarot", "Lora/style/krea2_vintagetarot.safetensors"),
+    ("ink_sketch_krea2", "Lora/style/ink_sketch_krea2.safetensors"),
+    ("pastel_anime_krea2", "Lora/style/pastel_anime_krea2.safetensors"),
+    ("oil_paint_krea2", "Lora/style/oil_paint_krea2.safetensors"),
 ]
 
 

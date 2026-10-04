@@ -16,6 +16,7 @@ DEFAULTS = {
     "data_dir": "data",
     "people_folders": ["people", "faces", "characters", "persons"],
     "style_folders": ["style", "styles"],
+    "exit_when_closed": True,  # stop ~15 s after the last Kiln window closes (after the queue is done)
 }
 
 
@@ -257,6 +258,22 @@ def worker():
         print(f"job {job['id']} {result}" + (f": {job.get('error')}" if job.get("error") else ""))
 
 
+client = {"last": None}
+
+
+def watchdog():
+    """Exit once no Kiln window has polled for 15 s and nothing is queued or running."""
+    while True:
+        time.sleep(3)
+        if not CFG.get("exit_when_closed", True) or client["last"] is None:
+            continue
+        with lock:
+            busy = any(j["status"] in ("pending", "running") for j in jobs)
+        if not busy and time.time() - client["last"] > 15:
+            print("Kiln window closed and queue empty — stopping the server.", flush=True)
+            os._exit(0)
+
+
 def health():
     while True:
         try:
@@ -365,6 +382,7 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/thumbs/"):
             return self.file(THUMBS, path[8:])
         if path == "/api/state":
+            client["last"] = time.time()
             with lock:
                 return self.reply(200, {"forge": forge_status, "jobs": [public(j) for j in jobs], "stats": stats,
                                         "out_dir": str(OUT)})
@@ -473,6 +491,7 @@ def main():
     load_state()
     threading.Thread(target=worker, daemon=True).start()
     threading.Thread(target=health, daemon=True).start()
+    threading.Thread(target=watchdog, daemon=True).start()
     srv = ThreadingHTTPServer((CFG["host"], CFG["port"]), Handler)
     print(f"Kiln on http://{CFG['host']}:{CFG['port']}  ·  Forge: {CFG['forge_url']}  ·  images → {OUT}")
     try:

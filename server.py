@@ -368,6 +368,17 @@ class Handler(BaseHTTPRequestHandler):
             with lock:
                 return self.reply(200, {"forge": forge_status, "jobs": [public(j) for j in jobs], "stats": stats,
                                         "out_dir": str(OUT)})
+        if path == "/api/nextname":
+            name = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
+            if not name.strip():
+                return self.reply(200, {"file": None})
+            with lock:  # count jobs already queued under this name so the hint is accurate
+                pend = sum(1 for j in jobs if j["status"] in ("pending", "running") and j["spec"].get("name", "").strip() == name.strip())
+            nxt = next_filename(name, 0)
+            m = re.search(r"-(\d+)\.png$", nxt)
+            if m and pend:
+                nxt = nxt[:m.start(1)] + f"{int(m.group(1)) + pend:03d}.png"
+            return self.reply(200, {"file": nxt})
         if path.startswith("/api/preview/"):
             b = previews.get(int(path.rsplit("/", 1)[1]))
             return self.reply(200, b, sniff(b)) if b else self.reply(404, {"error": "no preview"})

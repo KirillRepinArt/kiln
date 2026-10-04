@@ -68,10 +68,10 @@ body.vresizing,body.vresizing *{cursor:ns-resize!important;user-select:none}
 .pcount{position:absolute;right:26px;bottom:6px;z-index:3;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--faint);opacity:0;transition:opacity .2s;pointer-events:none}
 .pwrapT:focus-within .pcount{opacity:1}
 .pname{text-align:center}
-.pwrapT{position:relative;display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
+.pwrapT{position:relative;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden}
 textarea#prompt.peek{color:#8d8d94}
 .pwrapT.cm-on textarea#prompt{display:none}
-.pwrapT .cm-editor{flex:0 1 auto;min-height:200px;max-height:100%;margin:8px 12px 8px 0;outline:0!important;background:transparent;font:inherit}
+.pwrapT .cm-editor{flex:0 1 auto;min-height:84px;max-height:100%;margin:8px 12px 8px 0;outline:0!important;background:transparent;font:inherit}
 .pwrapT .cm-scroller{overflow:auto;font-family:inherit;line-height:1.62}
 .pwrapT .cm-content{padding:4px 0 10px 0;caret-color:#fff;font-size:15px}
 .pwrapT .cm-line{padding:0 max(14px,calc(100% - 34px - 76ch)) 0 34px}
@@ -98,7 +98,10 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:0 22px 10px}
 .chip{display:inline-flex;align-items:center;gap:4px;padding:4px 6px 4px 10px;border-radius:var(--r-pill);background:var(--raised);font-size:12.5px;color:#d6d6da}
 .chip b{color:#fff;font-weight:600}
-.chip .cn{cursor:pointer} .chip:hover{background:var(--raised2)}
+.chip .cn{cursor:pointer}
+.chip .cw{font-weight:600;color:#fff;cursor:ew-resize;padding:0 3px;border-radius:5px;font-variant-numeric:tabular-nums}
+.chip .cw:hover{background:#3a3a40}
+.chip .cwi{width:46px;background:#1c1c1e;border:1px solid #4a4a52;border-radius:5px;color:#fff;font:inherit;font-weight:600;padding:0 3px;outline:0} .chip:hover{background:var(--raised2)}
 .chip .cx{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
 .chip .cx:hover{background:#4a4a50;color:#fff} .chip .cx svg{width:10px;height:10px}
 .chip.face{background:#34343a}
@@ -112,8 +115,8 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .badge.show{display:grid}
 .pills{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-left:4px;flex:0 1 auto;min-width:0}
 .pills .pill{flex:0 0 auto}
-.pill{position:relative;height:50px;padding:0 13px;border-radius:var(--r-pill);background:var(--raised);display:flex;flex-direction:column;justify-content:center;align-items:center;color:#CDCDCD;font-weight:500;transition:color var(--dur),background var(--dur)}
-.pill:hover,.pill.open{color:var(--text);background:var(--raised2)}
+.pill{position:relative;height:44px;padding:0 12px;border-radius:var(--r-pill);background:transparent;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#CDCDCD;font-weight:500;transition:color var(--dur),background var(--dur)}
+.pill:hover,.pill.open{color:var(--text);background:var(--raised)}
 .pill .lbl{font-size:10.5px;line-height:1;margin-bottom:3px;color:var(--muted);font-weight:400}
 .pill .val{font-size:15px;line-height:1.1;white-space:nowrap}
 .pill .il{color:var(--muted);font-weight:400;margin-right:6px}
@@ -164,15 +167,16 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .stage .frame{position:absolute}
 @keyframes develop{0%{filter:brightness(1.35) saturate(1.2)}100%{filter:none}}
 .frame.reveal{animation:develop 1.1s var(--ease)}
-.frame{position:relative;border-radius:14px;overflow:hidden;background:#07070a;outline:1px solid #1d1d22;outline-offset:-1px}
+.frame{position:relative;border-radius:14px;overflow:hidden;background:transparent;outline:1px solid #1d1d22;outline-offset:-1px}
 .frame canvas{width:100%;height:100%;display:block}
 #cv{position:relative;z-index:1;filter:var(--vf,none)}
-.frame.has{outline:1px solid rgba(255,255,255,.07);outline-offset:-1px}
-#stars{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1s var(--ease);pointer-events:none}
+.frame.has{background:#07070a;outline:1px solid rgba(255,255,255,.07);outline-offset:-1px}
+#stars{position:fixed;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1.2s var(--ease);pointer-events:none;z-index:0}
 #stars.on{opacity:1}
 .idle{position:absolute;inset:0;z-index:1;display:grid;place-items:center;color:#7a7a82;font-size:14px;text-align:center;pointer-events:none}
 .side{position:absolute;right:10px;top:10px;z-index:5;display:flex;flex-direction:column;gap:6px;opacity:0;transition:opacity .15s}
 .frame.has:hover .side,.ov-img:hover .side{opacity:1}
+.frame.running .side{display:none}
 .side button{width:40px;height:40px;border-radius:12px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;position:relative}
 .side button:hover{background:rgba(40,40,44,.9)} .side svg{width:20px;height:20px}
 .side button::after{content:attr(data-tip);position:absolute;right:48px;white-space:nowrap;background:#111;padding:4px 8px;border-radius:8px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .12s}
@@ -273,7 +277,11 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .pi-grid{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;font-size:13px}
 .pi-grid dt{color:#8a8a92}
 .pi-grid dd{margin:0;color:#e6e6ea;word-break:break-word;font-variant-numeric:tabular-nums}
-.pi-raw{margin-left:auto;font-size:12px;color:var(--muted);background:var(--raised);padding:4px 10px;border-radius:999px}
+.pimg{display:none;justify-content:center;flex:none;max-height:38%;min-height:0}
+.pimg.show{display:flex}
+.pimg img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain;outline:1px solid rgba(255,255,255,.07);outline-offset:-1px}
+#pClear{margin-left:0;margin-right:auto}
+.pi-raw{font-size:12px;color:var(--muted);background:var(--raised);padding:4px 10px;border-radius:999px}
 .pact{display:flex;gap:8px;justify-content:flex-end}
 .btn{padding:9px 16px;border-radius:999px;background:var(--raised);font-size:14px}
 .btn:hover{background:var(--raised2)} .btn.pri{background:var(--grad);color:var(--ink);font-weight:600}
@@ -286,7 +294,16 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .mcard h2{margin:0 0 14px;font-size:18px;font-weight:600}
 .fg{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;align-items:center;font-size:14px}
 .fg label{color:var(--muted)}
-.fg select,.fg input{background:var(--raised);border:1px solid #3a3a3f;border-radius:10px;padding:7px 10px;width:100%}
+.fg select,.fg input{background:transparent;border:1px solid transparent;border-radius:8px;padding:6px 8px;width:100%;color:#f2f2f2;transition:background .15s,border-color .15s}
+.fg select{appearance:none;-webkit-appearance:none;padding-right:26px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8a92' fill='none' stroke-width='1.4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
+.fg select:hover,.fg input:hover{background-color:#26262a}
+.fg select:focus,.fg input:focus{outline:0;border-color:#3a3a40;background-color:#1f1f22}
+.fg select option{background:#232326;color:#f2f2f2}
+.fg input[readonly]{color:var(--muted)}
+.fgh{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8a8a92;border-top:1px solid #2c2c31;padding-top:14px;margin-top:8px}
+.fgh.first{border-top:0;padding-top:0;margin-top:0}
+.fg{gap:4px 14px!important}
+.mcard{max-height:88vh;overflow:auto}
 .mcard .pact{margin-top:18px}
 .demo{position:fixed;left:18px;bottom:12px;font-size:11.5px;color:var(--faint)}
 .viewer{position:fixed;inset:0;background:#000;z-index:150;visibility:hidden;opacity:0;transition:opacity .2s var(--ease),visibility 0s linear .2s;overflow:hidden;cursor:zoom-in}
@@ -325,18 +342,39 @@ button,.tab,.pill,.chip,.qi,.card,.li,.fchips button{user-select:none;-webkit-us
 /* prompt card: positioned by layoutLeft() — centred on the image, frozen while you work in it */
 .lcol{position:relative;min-height:0;min-width:0}
 .left.nodur{transition:none!important}
+
+/* ---- composer layout ---- */
+.ltitle{position:absolute;right:0;width:min(100%,680px);top:calc(var(--ltop,0px) - 60px);height:54px;transition:top .4s var(--ease);
+ padding:0 8px 0 26px;display:flex;flex-direction:column;justify-content:flex-end}
+.ltitle .phead{padding:0;justify-content:flex-start}
+.ltitle .plbl{justify-content:flex-start}
+.ltitle .pname{text-align:left;min-width:9ch;font-size:20px;font-weight:600;letter-spacing:-.01em;color:#f2f2f2;padding:2px 6px;margin-left:-6px}
+.ltitle .pname::placeholder{color:#55555c;font-weight:500}
+.ltitle .plbl.hasname .nchip{background:transparent;padding-right:0}
+.ltitle .plbl.hasname .pname{padding:2px 6px;margin-left:-6px}
+.ltitle .pnx{opacity:0;transition:opacity .15s}.ltitle:hover .plbl.hasname .pnx{opacity:1}
+.ltitle .plbl.dimname .pname{color:#9a9aa2}
+.pnext{font-size:12px;color:var(--faint);padding-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.left{border-color:#34343a!important}
+.chips{justify-content:flex-start!important;padding:14px 22px 0 22px!important}
+.chips:empty{padding:6px 0 0!important}
+.controls{justify-content:space-between!important;padding:8px 14px 14px 14px!important}
+.controls .play{order:2;width:52px;height:52px}
+.controls .play svg{width:22px;height:22px}
+.pills{justify-content:flex-start!important;margin-left:0!important}
 </style>
 </head>
 <body>
+<canvas id="stars"></canvas>
 <div class="app">
 
   <div class="lcol" id="lcol">
+  <div class="ltitle" id="ltitle"><div class="phead"><span class="plbl"><span class="nchip"><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60" title="Optional — names the image files: name-001.png, name-002.png…"><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div><div class="pnext" id="pnext"></div></div>
   <section class="left" id="left">
     <div class="vedge" id="vedge" title="Drag to resize · double-click for auto"></div>
-    <div class="phead"><span class="plbl"><span class="nchip"><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60" title="Optional — names the image files: name-001.png, name-002.png…"><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div>
+    <div class="chips" id="chips"></div>
     <div class="pwrapT"><span class="pcount" id="pcount"></span><textarea id="prompt" spellcheck="false" placeholder="Describe what you want to see…"></textarea>
     <div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt">Reuse prompt</button><button id="pkAll">Reuse all</button><button id="pkX" title="Back to my draft (Esc)">✕</button></div></div>
-    <div class="chips" id="chips"></div>
     <div class="controls">
       <button class="play" id="play" title="Add to queue (Ctrl+Enter)">
         <svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="var(--ink)"/></svg>
@@ -371,7 +409,6 @@ button,.tab,.pill,.chip,.qi,.card,.li,.fchips button{user-select:none;-webkit-us
       <div class="view on" id="v-gen">
         <div class="stage" id="stage">
           <div class="frame" id="frame">
-            <canvas id="stars"></canvas>
             <canvas id="veil"></canvas>
             <canvas id="embers"></canvas>
             <canvas id="cv"></canvas>
@@ -410,8 +447,9 @@ button,.tab,.pill,.chip,.qi,.card,.li,.fchips button{user-select:none;-webkit-us
       <div class="view" id="v-png">
         <div class="pwrap">
           <div class="drop" id="drop">Drop a PNG here, or click to choose<br><small>Reads the generation settings Forge stores inside the file</small><input type="file" id="file" accept="image/png" hidden></div>
+          <div class="pimg" id="pimg"><img id="pimgEl" alt=""></div>
           <div class="pout" id="pout">—</div>
-          <div class="pact"><button class="pi-raw" id="pRaw" style="display:none">Show raw text</button><button class="btn pri" id="pSend" disabled>Send to prompt</button></div>
+          <div class="pact"><button class="pi-raw" id="pClear" style="display:none">Clear</button><button class="pi-raw" id="pRaw" style="display:none;margin-left:6px">Show raw text</button><button class="btn pri" id="pSend" disabled>Send to prompt</button></div>
         </div>
       </div>
     </div>
@@ -422,18 +460,23 @@ button,.tab,.pill,.chip,.qi,.card,.li,.fchips button{user-select:none;-webkit-us
   <div class="mcard">
     <h2>Settings</h2>
     <div class="fg">
+      <div class="fgh first">Model</div>
       <label>Checkpoint</label><select data-set="ckpt"><option>krea2_turbo_fp8_scaled</option><option>krea2_turbo-Q6_K.gguf</option><option>krea2_turbo-Q4_K_M.gguf</option></select>
       <label>VAE</label><select data-set="vae"><option>qwen_image_vae</option></select>
       <label>Text encoder</label><select data-set="te"><option>qwen3vl_4b_fp8_scaled</option></select>
       <label>Sampler / schedule</label><select data-set="sampler"><option>Euler · Simple</option></select>
       <label>Shift</label><input data-set="shift" type="number" step="0.05" value="1.15">
       <label>CFG</label><input data-set="cfg" type="number" step="0.1" value="1">
+      <div class="fgh">Output</div>
       <label>Output folder</label><input data-set="outdir" value="outputs/kiln">
       <label>Forge URL</label><input data-set="forge" value="http://127.0.0.1:7860">
+      <div class="fgh" id="fghFx">Effects</div>
       <label>Ambient glow</label><select data-set="glow"><option value="gen">While generating</option><option value="always">Always</option><option value="off">Off</option></select>
       <label>Veil while generating</label><select data-set="veil"><option value="full">Full</option><option value="light">Light</option><option value="off">Off</option></select>
       <label>Embers when done</label><select data-set="embers"><option value="on">On</option><option value="off">Off</option></select>
       <label>Notify when done</label><select data-set="notify"><option value="on">On</option><option value="off">Off</option></select>
+      <label>Starfield background</label><select data-set="stars"><option value="on">On</option><option value="off">Off</option></select>
+      <div class="fgh">Appearance</div>
       <label>Font</label><select data-set="font" id="sFont"><option value="Geist">Geist</option><option value="Inter">Inter</option><option value="Satoshi">Satoshi</option><option value="Manrope">Manrope</option><option value="IBM Plex Sans">IBM Plex Sans</option></select>
       <label>Theme</label><select id="sTheme"><option value="ice">Ember → Ice</option><option value="sunset">Sunset</option><option value="aurora">Aurora</option><option value="ember">Ember</option></select>
       <label>Demo speed</label><select id="sDemo"><option value="20">×20 (prototype)</option><option value="60">×60</option><option value="1">real time</option></select>
@@ -476,7 +519,7 @@ const S={pname:"",ncount:{},pph:0,lw:0,mp:"1.5",ar:"3:4",steps:4,seedMode:"rando
 let draft="";let jobs=[];let nextId=1;
 try{const sv=JSON.parse(localStorage.getItem("kiln_state")||"{}");Object.assign(S,sv.S||{});draft=sv.draft||"";
  (sv.loras||[]).forEach(x=>{const l=LORAS.find(l=>l.name===x.name);if(l)Object.assign(l,x)})}catch(e){}
-function save(){try{localStorage.setItem("kiln_state",JSON.stringify({S,draft,loras:LORAS.map(({name,on,fav,used,display,thumb})=>({name,on,fav,used,display,thumb}))}))}catch(e){}}
+function save(){try{localStorage.setItem("kiln_state",JSON.stringify({S,draft,loras:LORAS.map(({name,on,onAt,fav,used,display,thumb})=>({name,on,onAt,fav,used,display,thumb}))}))}catch(e){}}
 const $=id=>document.getElementById(id);
 const P=$("prompt");
 P.value=draft||"";
@@ -537,7 +580,7 @@ PILLS.forEach(([b,p,set])=>{$(b).addEventListener("click",e=>{const pop=$(p);
  const q=e.target.closest(".qb");if(q){set(q.dataset.q);save();pop.classList.remove("show");renderPills();pop.classList.add("show");return}
  const was=pop.classList.contains("show");closePops();if(!was){pop.classList.add("show");$(b).classList.add("open")}})});
 document.addEventListener("click",e=>{if(e.target.closest("#dice")){S.seed=Math.floor(Math.random()*4294967295);S.seedMode="fixed";save();renderPills();$("popSD").classList.add("show");return}
- if(!e.target.closest(".pill"))closePops()});
+ if(!e.target.isConnected||e.target.closest(".pill"))return;closePops()});
 document.addEventListener("input",e=>{const id=e.target.id;
  if(id==="stR"||id==="stN"){S.steps=clamp(+e.target.value,1,60);$(id==="stR"?"stN":"stR").value=S.steps;$("vST").innerHTML=S.steps+'<span class="w"> Steps</span>';$("stH").textContent=stepsHint();save()}
  if(id==="cnR"||id==="cnN"){S.n=clamp(+e.target.value,1,100);$(id==="cnR"?"cnN":"cnR").value=S.n;$("vN").textContent="×"+S.n;$("cnH").textContent=countHint();save()}
@@ -561,11 +604,26 @@ function grow(){const r=document.documentElement.style;if(S.lw)r.setProperty("--
 
 P.addEventListener("input",()=>{grow();requestAnimationFrame(layoutLeft);if(!peekJob){draft=P.value;save()}updPrompt()});
 function renderChips(){requestAnimationFrame(()=>window.layoutLeft&&layoutLeft());
- $("chips").innerHTML=LORAS.filter(l=>l.on).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}"><span class="cn">${esc(l.display)} <b>${fmtW(l.w)}</b></span><button class="cx" title="Remove">${IC.x}</button></span>`).join("")}
+ $("chips").innerHTML=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0)).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`).join("")}
 $("chips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;const l=LORAS.find(l=>l.name===c.dataset.n);
  if(e.target.closest(".cx")){l.on=false;save();renderChips();renderLoras();return}
  S.lfilter=l.folder==="people"?"people":"all";showView("loras");const el=document.querySelector(`[data-ln="${l.name}"]`);
  if(el){el.scrollIntoView({block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")}};
+
+/* chip weights: drag to scrub, wheel to nudge, click to type */
+(function(){const box=$("chips");let drag=null;
+ const lor=el=>LORAS.find(l=>l.name===el.closest(".chip").dataset.n);
+ const lim=l=>l.folder==="people"?[0,2]:[-3,3];
+ function setW(l,w,el){const [a,b]=lim(l);l.w=Math.round(Math.max(a,Math.min(b,w))*100)/100;if(el)el.textContent=fmtW(l.w);save();if(S.view==="loras")renderLoras()}
+ box.addEventListener("pointerdown",e=>{const el=e.target.closest(".cw");if(!el)return;e.preventDefault();el.setPointerCapture(e.pointerId);drag={el,l:lor(el),x:e.clientX,w0:lor(el).w,moved:false}});
+ box.addEventListener("pointermove",e=>{if(!drag)return;const dx=e.clientX-drag.x;if(Math.abs(dx)>3)drag.moved=true;if(drag.moved)setW(drag.l,drag.w0+Math.round(dx/4)*.01*(e.shiftKey?1:5),drag.el)});
+ box.addEventListener("pointerup",e=>{if(!drag)return;const d=drag;drag=null;if(d.moved)return;
+  const inp=document.createElement("input");inp.className="cwi";inp.value=fmtW(d.l.w);d.el.replaceWith(inp);inp.focus();inp.select();
+  const done=ok=>{if(ok){const v=parseFloat(inp.value.replace(",","."));if(!isNaN(v))setW(d.l,v)}renderChips()};
+  inp.addEventListener("keydown",k=>{if(k.key==="Enter")done(true);if(k.key==="Escape")done(false);k.stopPropagation()});inp.addEventListener("blur",()=>done(true))});
+ box.addEventListener("wheel",e=>{const el=e.target.closest(".cw");if(!el)return;e.preventDefault();const l=lor(el);setW(l,l.w+(e.deltaY<0?1:-1)*(e.shiftKey?.01:.05),el)},{passive:false});
+ box.addEventListener("click",e=>{if(e.target.closest(".cw,.cwi"))e.stopImmediatePropagation()},true)})();
+
 function fmtW(w){return (+w).toFixed(2).replace(/\.?0+$/,"")}
 
 
@@ -575,14 +633,14 @@ function fmtW(w){return (+w).toFixed(2).replace(/\.?0+$/,"")}
    pointer leaves (and the editor isn't focused) it glides back to centre and re-expands to use the space. */
 let lyFrozen=false,lyHover=false,lyT=null,lyTop=null,lyCy=null;
 function cardNaturalH(){const L=$("left"),w=L.querySelector(".pwrapT");const sc=L.querySelector(".cm-scroller");
- const edH=(sc?sc.scrollHeight:P.scrollHeight)+16;return Math.max(240,L.offsetHeight-w.offsetHeight+Math.max(200,edH))}
-function layoutLeft(){const L=$("left"),col=$("lcol");const colH=col.clientHeight;if(!colH)return;
+ const edH=(sc?sc.scrollHeight:P.scrollHeight)+16;return Math.max(170,L.offsetHeight-w.offsetHeight+Math.max(84,edH))}
+function layoutLeft(){const L=$("left"),col=$("lcol");const TS=64;const colH=col.clientHeight-TS;if(colH<=0)return;
  const f=$("frame").getBoundingClientRect(),c=col.getBoundingClientRect();
- if(S.view==="gen"&&f.height>0)lyCy=f.top+f.height/2-c.top;if(lyCy==null)lyCy=colH/2;
+ if(S.view==="gen"&&f.height>0)lyCy=f.top+f.height/2-c.top-TS;if(lyCy==null)lyCy=colH/2;
  let H=S.pph?Math.min(Math.max(240,S.pph),colH):Math.min(cardNaturalH(),colH);let top;
  if(lyFrozen&&lyTop!=null){top=lyTop;H=Math.min(H,colH-top)}
  else top=Math.max(0,Math.min(colH-H,lyCy-H/2));
- lyTop=top;L.style.setProperty("--ltop",top+"px");L.style.setProperty("--lh",H+"px")}
+ lyTop=top;col.style.setProperty("--ltop",(top+TS)+"px");col.style.setProperty("--lh",H+"px")}
 function freeze(){clearTimeout(lyT);lyFrozen=true}
 function thaw(){clearTimeout(lyT);lyT=setTimeout(()=>{const ed=document.activeElement&&$("left").contains(document.activeElement);if(lyHover||ed)return;lyFrozen=false;layoutLeft()},500)}
 $("left").addEventListener("pointerenter",()=>{lyHover=true;freeze()});
@@ -662,14 +720,14 @@ requestAnimationFrame(frame);
  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  function init(){const b=cv.getBoundingClientRect();if(!b.width)return;const d=devicePixelRatio||1;
   W=cv.width=Math.round(b.width*d);H=cv.height=Math.round(b.height*d);
-  const n=Math.round(b.width*b.height/2600);stars=[];for(let i=0;i<n;i++){const l=R()<.6?0:R()<.75?1:2;
+  const n=Math.round(b.width*b.height/3400);stars=[];for(let i=0;i<n;i++){const l=R()<.6?0:R()<.75?1:2;
    stars.push({x:R()*W,y:R()*H,l,r:(.5+l*.45+R()*.4)*d,p:R()*6.28,s:.6+R()*1.6})}}
- function draw(t){const idle=S.view==="gen"&&!current()&&!shownDone();cv.classList.toggle("on",idle);
+ function draw(t){const idle=((S.set||{}).stars||"on")!=="off";cv.classList.toggle("on",idle);
   if(idle){if(!W||Math.abs(cv.getBoundingClientRect().width*(devicePixelRatio||1)-W)>2)init();
    const dt=Math.min(50,t-last);c.clearRect(0,0,W,H);
-   for(const st of stars){const v=[.004,.009,.018][st.l]*(reduce?0:1);st.x-=v*dt;st.y+=v*dt*.35;
+   for(const st of stars){const v=[.002,.0045,.009][st.l]*(reduce?0:1);st.x-=v*dt;st.y+=v*dt*.35;
     if(st.x<-4)st.x+=W+8;if(st.y>H+4)st.y-=H+8;
-    const tw=reduce?.8:.55+.45*Math.sin(t/1000*st.s+st.p);c.globalAlpha=(.25+st.l*.25)*tw;
+    const tw=reduce?.8:.55+.45*Math.sin(t/1000*st.s+st.p);c.globalAlpha=(.25+st.l*.25)*tw*.62;
     c.fillStyle=st.l===2?"#fff":"#cfd6ff";c.beginPath();c.arc(st.x,st.y,st.r,0,6.283);c.fill()}
    if(!reduce){if(!shoot&&R()<dt/9000)shoot={x:W*(.3+R()*.7),y:H*R()*.4,vx:-(.5+R()*.4),vy:.22+R()*.15,life:0};
     if(shoot){shoot.life+=dt;const k=shoot.life/900,len=120*(devicePixelRatio||1);const x=shoot.x+shoot.vx*shoot.life,y=shoot.y+shoot.vy*shoot.life;
@@ -683,7 +741,7 @@ requestAnimationFrame(frame);
 /* ambient glow + window title + favicon progress ring (throttled) */
 const amb=$("amb"),ambC=amb.getContext("2d"),favC=document.createElement("canvas");favC.width=favC.height=64;
 function jobProgress(j){const part=Math.min((Date.now()-j.stepStart)/j.est,.95)||0;return{p:(j.step+part)/j.steps,left:Math.max(0,(j.steps-j.step-part)*j.est*S.demo/1000)}}
-function status(){const j=current();const pend=jobs.filter(x=>x.status==="pending").length;
+function status(){const j=current();$("frame").classList.toggle("running",!!j);const pend=jobs.filter(x=>x.status==="pending").length;
  const ovOn=$("ov").classList.contains("show");
  const gm=(S.set||{}).glow||"gen";
  const src=(S.view==="gen"&&gm!=="off"&&(j||(gm==="always"&&shownDone())))?$("cv"):null;
@@ -735,7 +793,7 @@ function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classLis
  $("peekLbl").textContent=`#${j.id} · ${j.ar} · ${j.steps} steps`;$("peekbar").classList.add("show");updPrompt()}
 function endPeek(){if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;$("peekbar").classList.remove("show");updPrompt()}
 function reuse(all){const j=peekJob;if(!j)return;const prev={draft,S:{mp:S.mp,ar:S.ar,steps:S.steps,seedMode:S.seedMode,seed:S.seed},loras:LORAS.map(l=>({on:l.on,w:l.w}))};
- draft=j.raw||j.prompt;if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps,seedMode:"fixed",seed:j.seed});LORAS.forEach(l=>{const m=j.loras.find(x=>x.name===l.name);l.on=!!m;if(m)l.w=m.w})}
+ draft=j.raw||j.prompt;if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps,seedMode:"fixed",seed:j.seed});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}
  endPeek();save();renderAll();P.focus();
  toast(all?`Reused #${j.id} — prompt, settings and LoRAs`:`Reused #${j.id}'s prompt`,"Undo",()=>{draft=prev.draft;P.value=draft;Object.assign(S,prev.S);LORAS.forEach((l,i)=>Object.assign(l,prev.loras[i]));save();renderAll();updPrompt()})}
 $("pkPrompt").onclick=()=>reuse(false);$("pkAll").onclick=()=>reuse(true);$("pkX").onclick=endPeek;
@@ -812,7 +870,7 @@ setInterval(()=>$("frame").classList.toggle("clickable",!current()&&!!shownDone(
     const g=v.createLinearGradient(off,0,off+H*.9,H*.9);const a=(.10-.025*k)*str;const col=k===1?cols[2]:cols[k===0?0:1];
     g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.45,"rgba(0,0,0,0)");g.addColorStop(.5,col);g.addColorStop(.55,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,0)");
     v.globalAlpha=a*2.2;v.fillStyle=g;v.fillRect(0,0,W,H)}
-   const want=Math.round(90*str*(W*H)/(700*900*d*d));while(sparks.length<want)sparks.push({x:Math.random()*W*1.2-W*.2,y:Math.random()*H*1.2-H*.2,s:(.5+Math.random()*1.3)*d,v:(.012+Math.random()*.03)*d,ph:Math.random()*6.28,tw:.6+Math.random()*1.8,c:Math.random()<.5?"w":(Math.random()<.5?"a3":"a1")});
+   const want=Math.round(230*str*(W*H)/(700*900*d*d));while(sparks.length<want)sparks.push({x:Math.random()*W*1.2-W*.2,y:Math.random()*H*1.2-H*.2,s:(.5+Math.random()*1.3)*d,v:(.012+Math.random()*.03)*d,ph:Math.random()*6.28,tw:.6+Math.random()*1.8,c:Math.random()<.5?"w":(Math.random()<.5?"a3":"a1")});
    if(sparks.length>want)sparks.length=want;
    for(const p of sparks){p.x+=p.v*dt;p.y+=p.v*dt*.62;if(p.x>W+20*d||p.y>H+20*d){p.x=Math.random()*W*.6-W*.3;p.y=-10*d-Math.random()*H*.3}
     const tw=Math.max(0,Math.sin(T*p.tw*3+p.ph));const a=tw*tw*str*.9;if(a<.01)continue;
@@ -881,7 +939,7 @@ $("csize").value=S.card||104;document.documentElement.style.setProperty("--card"
 $("csize").addEventListener("input",e=>{S.card=+e.target.value;document.documentElement.style.setProperty("--card",S.card+"px");save()});
 $("fchips").onclick=e=>{const b=e.target.closest("[data-f]");if(!b)return;S.lfilter=b.dataset.f;save();renderLoras()};
 $("oneFace").onclick=e=>{e.preventDefault();S.oneFace=!S.oneFace;save();renderLoras()};
-function toggleL(l){if(!l.on&&l.folder==="people"&&S.oneFace)LORAS.forEach(o=>{if(o.folder==="people")o.on=false});l.on=!l.on;if(l.on)l.used=Date.now();save();renderLoras();renderChips()}
+function toggleL(l){if(!l.on&&l.folder==="people"&&S.oneFace)LORAS.forEach(o=>{if(o.folder==="people")o.on=false});l.on=!l.on;if(l.on){l.used=Date.now();l.onAt=Date.now()}save();renderLoras();renderChips()}
 let clickT=null;
 $("lscroll").addEventListener("click",e=>{const el=e.target.closest("[data-ln]");if(!el)return;const l=LORAS.find(l=>l.name===el.dataset.ln);
  if(e.target.closest("[data-star]")){l.fav=!l.fav;save();renderLoras();return}
@@ -903,7 +961,7 @@ drop.onclick=()=>$("file").click();$("file").onchange=e=>e.target.files[0]&&read
 ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over")}));
 ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over")}));
 drop.addEventListener("drop",e=>{const f=e.dataTransfer.files[0];if(f)readPng(f)});
-async function readPng(f){const b=new Uint8Array(await f.arrayBuffer());const dv=new DataView(b.buffer);let o=8,txt=null;const dec=new TextDecoder("latin1"),u8=new TextDecoder("utf-8");
+async function readPng(f){try{const u=URL.createObjectURL(f);const el=$("pimgEl");if(el.dataset.u)URL.revokeObjectURL(el.dataset.u);el.dataset.u=u;el.src=u;$("pimg").classList.add("show");$("pClear").style.display=""}catch(e){}const b=new Uint8Array(await f.arrayBuffer());const dv=new DataView(b.buffer);let o=8,txt=null;const dec=new TextDecoder("latin1"),u8=new TextDecoder("utf-8");
  if(b[1]!==0x50){$("pout").textContent="Not a PNG file.";return}
  while(o<b.length){const len=dv.getUint32(o),type=dec.decode(b.slice(o+4,o+8)),d=b.slice(o+8,o+8+len);
   if(type==="tEXt"){const z=d.indexOf(0);if(dec.decode(d.slice(0,z))==="parameters")txt=u8.decode(d.slice(z+1))}
@@ -927,6 +985,8 @@ function renderPngInfo(t){const o=$("pout");o.classList.remove("raw");
  if(negM&&negM[1].trim())h+=`<div class="pi-h">Negative prompt</div><div class="pi-p pi-neg">${esc(negM[1].trim())}</div>`;
  const kv=piParams(pline);if(kv.length)h+=`<div class="pi-h">Settings</div><dl class="pi-grid">${kv.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
  o.innerHTML=h;$("pRaw").textContent="Show raw text"}
+$("pClear").onclick=()=>{const el=$("pimgEl");if(el.dataset.u)URL.revokeObjectURL(el.dataset.u);el.removeAttribute("src");el.dataset.u="";$("pimg").classList.remove("show");
+ const o=$("pout");o.classList.remove("raw");o.textContent="—";o.dataset.raw="";parsed=null;$("pSend").disabled=true;$("pRaw").style.display="none";$("pClear").style.display="none";$("file").value=""};
 $("pRaw").onclick=()=>{const o=$("pout");if(o.classList.contains("raw")){renderPngInfo(o.dataset.raw)}else{o.classList.add("raw");o.textContent=o.dataset.raw;$("pRaw").textContent="Show formatted"}};
 
 function parseParams(t){const i=t.search(/\n(Negative prompt:|Steps:)/);const prompt=(i>=0?t.slice(0,i):t).trim();
@@ -966,7 +1026,12 @@ function renderAll(){const n=jobs.filter(j=>j.status==="pending"||j.status==="ru
  renderPills();renderChips();if(S.view==="queue")renderQueue();if(S.view==="loras")renderLoras()}
 $("pname").value=S.pname||"";$("pname").addEventListener("input",e=>{S.pname=e.target.value;save();nameUI()});
 $("pnx").onclick=()=>{$("pname").value="";S.pname="";save();nameUI();$("pname").focus()};
-function nameUI(){const l=document.querySelector(".plbl");l.classList.toggle("hasname",!!S.pname.trim());l.classList.toggle("dimname",!!S.pname.trim()&&!P.value.trim())}$("pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();P.focus()}});
+let nnT=null;
+function nextHint(){const n=(S.pname||"").trim();
+ if(!n){$("pnext").textContent="Files named by date and seed";return}
+ if(window.LIVE){clearTimeout(nnT);nnT=setTimeout(()=>fetch("/api/nextname?name="+encodeURIComponent(n)).then(r=>r.json()).then(d=>{$("pnext").textContent=d.file?`Next file · ${d.file}`:""}).catch(()=>{}),250)}
+ else{const slug=n.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-|-$/g,"");$("pnext").textContent=`Next file · ${slug}-${String((S.ncount[slug]||0)+1).padStart(3,"0")}.png`}}
+function nameUI(){nextHint();const l=document.querySelector(".plbl");l.classList.toggle("hasname",!!S.pname.trim());l.classList.toggle("dimname",!!S.pname.trim()&&!P.value.trim())}$("pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();P.focus()}});
 $("left").classList.add("nodur");setTimeout(()=>$("left").classList.remove("nodur"),400);
 applyFont();applyPH();updPrompt();applyTheme();showView(["queue","loras","png"].includes(S.view)?S.view:"gen");renderAll();grow();syncH();demoNote();
 </script>
@@ -1056,7 +1121,7 @@ applyFont();applyPH();updPrompt();applyTheme();showView(["queue","loras","png"].
   LORAS.length=0;
   for(const m of models.loras){const p=parseName(m.name,m.category),sv=saved[m.name]||{},k=keep[m.name]||{};
    LORAS.push({name:m.name,folder:m.category,display:sv.display||p.display,tags:p.tags,w:k.w??(m.category==="people"?.7:.5),
-    on:k.on??!!sv.on,recipe:false,note:m.folder?m.folder+(m.internal&&m.internal!==m.name?" · "+m.internal:""):(m.internal&&m.internal!==m.name?m.internal:""),
+    on:k.on??!!sv.on,onAt:k.onAt??sv.onAt??0,recipe:false,note:m.folder?m.folder+(m.internal&&m.internal!==m.name?" · "+m.internal:""):(m.internal&&m.internal!==m.name?m.internal:""),
     fav:!!sv.fav,used:sv.used||0,thumb:m.thumb||null})}
   const sel=(key,opts,label)=>{const el=document.querySelector(`[data-set="${key}"]`);if(!el)return;const cur=(S.set||{})[key]||"";
    el.innerHTML=`<option value="">${label}</option>`+opts.map(o=>`<option value="${esc(o.v)}">${esc(o.t)}</option>`).join("");el.value=opts.some(o=>o.v===cur)?cur:"";S.set[key]=el.value};
@@ -1072,7 +1137,7 @@ applyFont();applyPH();updPrompt();applyTheme();showView(["queue","loras","png"].
  const up=document.createElement("select");up.dataset.set="upscaler";const upl=document.createElement("label");upl.textContent="Upscaler";
  const us=document.createElement("select");us.dataset.set="upscale";us.innerHTML='<option value="2">×2</option><option value="1.5">×1.5</option><option value="4">×4</option>';
  const usl=document.createElement("label");usl.textContent="Upscale by";
- fg.append(upl,up,usl,us);
+ const fx=$("fghFx");for(const el of [upl,up,usl,us])fg.insertBefore(el,fx);
  for(const el of [up,us]){el.addEventListener("change",()=>{S.set[el.dataset.set]=el.value;save()})}
  const refreshUp=()=>{if(!models)return;up.innerHTML=models.upscalers.map(u=>`<option>${esc(u)}</option>`).join("");if(S.set.upscaler)up.value=S.set.upscaler;us.value=S.set.upscale||"2"};
  const rb=document.createElement("button");rb.className="btn";rb.textContent="Refresh models & LoRAs";rb.onclick=async()=>{rb.textContent="Refreshing…";await loadModels(true);refreshUp();rb.textContent="Refresh models & LoRAs";toast("Models and LoRAs refreshed")};

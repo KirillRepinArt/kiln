@@ -31,7 +31,7 @@ if not exist "%EDGE%" set "EDGE=%ProgramFiles%\Microsoft\Edge\Application\msedge
 if exist "%EDGE%" (
   rem Own Edge instance: separate profile (so the flags apply even if Edge is already open) and no proxy,
   rem so VPN clients that hijack the system proxy can't block 127.0.0.1.
-  start "" "%EDGE%" --user-data-dir="%LOCALAPPDATA%\Kiln\Edge" --no-proxy-server --no-first-run --no-default-browser-check --app=http://127.0.0.1:%PORT% --window-size=1400,900
+  start "" "%EDGE%" --user-data-dir="%LOCALAPPDATA%\Kiln\Edge" --no-proxy-server --force-dark-mode --no-first-run --no-default-browser-check --app=http://127.0.0.1:%PORT% --window-size=1400,900
 ) else (
   start "" http://127.0.0.1:%PORT%
 )

@@ -46,8 +46,7 @@ body.resizing,body.resizing *{cursor:ew-resize!important;user-select:none}
 @media (max-width:900px){.app{grid-template-columns:1fr}}
 
 /* ---------- left ---------- */
-.left{background:var(--panel);border:1px solid #26262a;border-radius:var(--r-panel);display:flex;flex-direction:column;min-height:min(var(--pmin,0px),100%);max-height:100%;height:var(--ph,auto);align-self:start;position:relative}
-.left.sized{min-height:240px}
+.left{background:var(--panel);border:1px solid #26262a;border-radius:var(--r-panel);display:flex;flex-direction:column;position:absolute;left:0;right:0;top:var(--ltop,0px);height:var(--lh,auto);transition:top .4s var(--ease),height .4s var(--ease)}
 .vedge{position:absolute;left:30px;right:30px;bottom:-7px;height:14px;cursor:ns-resize;touch-action:none;z-index:6}
 .vedge::after{content:"";position:absolute;left:50%;top:5px;width:46px;height:4px;margin-left:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
 .vedge:hover::after,.vedge.drag::after{opacity:1}
@@ -137,7 +136,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 
 /* ---------- right ---------- */
 .right{display:flex;flex-direction:column;min-height:0;min-width:0}
-.tabs{display:flex;align-items:center;gap:8px;margin-bottom:12px;height:52px}
+.tabs{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;height:52px}
 .seg{position:relative;display:flex;gap:2px;padding:4px;border-radius:var(--r-pill);background:var(--panel);border:1px solid #26262a}
 .seg .thumb{position:absolute;top:4px;bottom:4px;left:0;width:0;border-radius:var(--r-pill);background:#3A3A3F;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 3px rgba(0,0,0,.4);transition:left .28s var(--ease),width .28s var(--ease)}
 .tab{white-space:nowrap;flex:none;position:relative;z-index:1;transition:color var(--dur) var(--ease);height:40px;padding:0 18px;border-radius:var(--r-pill);font-size:15px;font-weight:500;color:#CDCDCD}
@@ -145,7 +144,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .tab{display:inline-flex;align-items:center;gap:5px}
 .tab .n{font-size:11px;font-weight:600;color:var(--muted);position:relative;top:-5px;line-height:1}
 .tab .n:empty{display:none}
-.flink{white-space:nowrap;flex:none;margin-left:auto;color:var(--muted);text-decoration:none;font-size:13px;padding:7px 12px;border-radius:999px;background:var(--raised)}
+.flink{white-space:nowrap;flex:none;margin-left:4px;color:var(--muted);text-decoration:none;font-size:13px;padding:7px 12px;border-radius:999px;background:var(--raised)}
 .flink:hover{color:var(--text)}
 .gear{margin-left:4px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
 .gear:hover{background:var(--raised);color:var(--text)} .gear svg{width:22px;height:22px}
@@ -226,7 +225,8 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .lscroll{overflow:auto;flex:1;padding-right:2px}
 .warn{font-size:12.5px;color:#ffcf8a;background:#2e2618;border-radius:12px;padding:7px 12px;margin-bottom:10px;display:none}
 .warn.show{display:block}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--card,104px),1fr));gap:10px;margin-bottom:14px}
+.card .img{font-size:calc(var(--card,104px)*.24)!important}
 .card{transition:background var(--dur),border-color var(--dur),transform var(--dur) var(--ease);background:var(--raised);border-radius:16px;overflow:hidden;cursor:pointer;position:relative;border:1px solid transparent}
 .card:hover{background:var(--raised2);transform:translateY(-2px)} .card.on{border-color:rgba(255,255,255,.85)}
 .card .img{aspect-ratio:1/1;display:grid;place-items:center;font-size:28px;font-weight:600;color:rgba(255,255,255,.75)}
@@ -285,14 +285,37 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .toast.show{opacity:1;pointer-events:auto}
 .toast button{padding:4px 12px;border-radius:999px;background:var(--raised2);font-size:13px}
 .toast button:empty{display:none}
+
+/* ---- batch: buttons not selectable, square image area, tooltips, name chip, card size, compact pills, embers ---- */
+button,.tab,.pill,.chip,.qi,.card,.li,.fchips button{user-select:none;-webkit-user-select:none}
+.rpanel:not(.paneled){border-radius:0}
+.side button::after{display:none}
+#tip{position:fixed;left:0;top:0;z-index:400;background:#2c2c31;border:1px solid #3a3a40;color:#e6e6ea;font-size:12px;line-height:1.35;padding:5px 9px;border-radius:8px;max-width:280px;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#tip.show{opacity:1}
+.nchip{display:inline-flex;align-items:center;border-radius:999px;transition:background .15s;min-width:0}
+.plbl.hasname .nchip{background:var(--raised);padding-right:3px}
+.plbl.hasname .pname{padding:2px 4px 2px 10px;margin-left:0}
+.plbl.hasname .pname:hover,.plbl.hasname .pname:focus{background:transparent;box-shadow:none}
+.plbl.hasname .pnx{margin-left:0}
+.csize{width:90px;flex:none}
+.csz{display:flex;align-items:center;gap:6px;color:var(--muted);flex:none}
+.csz svg{width:14px;height:14px}
+.left{container-type:inline-size}
+@container (max-width:560px){.pill .w{display:none}.pill{padding:0 11px}}
+@container (max-width:470px){.pill .il{display:none}}
+#embers{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+/* prompt card: positioned by layoutLeft() — centred on the image, frozen while you work in it */
+.lcol{position:relative;min-height:0;min-width:0}
+.left.nodur{transition:none!important}
 </style>
 </head>
 <body>
 <div class="app">
 
+  <div class="lcol" id="lcol">
   <section class="left" id="left">
     <div class="vedge" id="vedge" title="Drag to resize · double-click for auto"></div>
-    <div class="phead"><span class="plbl">Prompt<span class="dot">·</span><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60" title="Optional — names the image files: name-001.png, name-002.png…"><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span><span class="pcount" id="pcount"></span></div>
+    <div class="phead"><span class="plbl">Prompt<span class="dot">·</span><span class="nchip"><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60" title="Optional — names the image files: name-001.png, name-002.png…"><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span><span class="pcount" id="pcount"></span></div>
     <div class="pwrapT"><textarea id="prompt" spellcheck="false" placeholder="Describe the image…"></textarea>
     <div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt">Reuse prompt</button><button id="pkAll">Reuse all</button><button id="pkX" title="Back to my draft (Esc)">✕</button></div></div>
     <div class="chips" id="chips"></div>
@@ -311,6 +334,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
     </div>
   </section>
 
+  </div>
   <div class="split" id="split" title="Drag to resize · double-click to reset"></div>
 
   <section class="right" id="right">
@@ -330,6 +354,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
         <div class="stage" id="stage">
           <div class="frame" id="frame">
             <canvas id="stars"></canvas>
+            <canvas id="embers"></canvas>
             <canvas id="cv"></canvas>
             <div class="idle" id="idle"><div><span id="idleT">Queue is empty</span><br><small id="idleS">Write a prompt and press ▶ (Ctrl+Enter)</small></div></div>
             <div class="side" id="sideGen"></div>
@@ -354,6 +379,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
         <div class="lwrap">
           <div class="ltop">
             <input class="search" id="lsearch" placeholder="Search by name…">
+            <label class="csz" title="Card size"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><input type="range" class="csize" id="csize" min="72" max="150" step="2"></label>
             <label class="oneface" id="oneFace" title="Picking a face swaps out the previous one — two face LoRAs blend into one face"><span class="sw" id="ofSw"></span>One face at a time</label>
           </div>
           <div class="fchips" id="fchips"></div>
@@ -386,6 +412,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
       <label>Output folder</label><input data-set="outdir" value="outputs/kiln">
       <label>Forge URL</label><input data-set="forge" value="http://127.0.0.1:7860">
       <label>Ambient glow</label><select data-set="glow"><option value="gen">While generating</option><option value="always">Always</option><option value="off">Off</option></select>
+      <label>Embers while generating</label><select data-set="embers"><option value="on">On</option><option value="off">Off</option></select>
       <label>Notify when done</label><select data-set="notify"><option value="on">On</option><option value="off">Off</option></select>
       <label>Font</label><select data-set="font" id="sFont"><option value="Geist">Geist</option><option value="Inter">Inter</option><option value="Satoshi">Satoshi</option><option value="Manrope">Manrope</option><option value="IBM Plex Sans">IBM Plex Sans</option></select>
       <label>Theme</label><select id="sTheme"><option value="ice">Ember → Ice</option><option value="sunset">Sunset</option><option value="aurora">Aurora</option><option value="ember">Ember</option></select>
@@ -470,7 +497,7 @@ function idleText(){const [w,h]=SIZES[S.mp][S.ar];const had=jobs.some(j=>j.statu
  $("idleT").textContent=had?`Next: ${S.ar} · ${w}×${h}`:"Queue is empty";
  $("idleS").textContent=had?"Your last image is in Queue → Finished":"Write a prompt and press ▶ (Ctrl+Enter)"}
 function renderPills(){idleText();
- $("vMP").textContent=S.mp+" MP";$("vAR").textContent=S.ar+" Ratio";$("vST").textContent=S.steps+" Steps";
+ $("vMP").textContent=S.mp+" MP";$("vAR").innerHTML=S.ar+'<span class="w"> Ratio</span>';$("vST").innerHTML=S.steps+'<span class="w"> Steps</span>';
  $("vSD").textContent=S.seedMode==="random"?"Random":"Fixed";$("vN").textContent="×"+S.n;
  $("popMP").innerHTML=["1.0","1.5","2.0"].map(m=>`<div class="opt ${m===S.mp?"on":""}" data-v="${m}">${m} MP <small>~${SEC_PER_STEP[m]}s/step</small></div>`).join("");
  $("popAR").innerHTML=`<div class="rgrid">${RATIOS.map(r=>{const [a,b]=r.split(":").map(Number);const k=34/Math.max(a,b);const [w,h]=SIZES[S.mp][r];
@@ -492,18 +519,18 @@ PILLS.forEach(([b,p,set])=>{$(b).addEventListener("click",e=>{const pop=$(p);
 document.addEventListener("click",e=>{if(e.target.closest("#dice")){S.seed=Math.floor(Math.random()*4294967295);S.seedMode="fixed";save();renderPills();$("popSD").classList.add("show");return}
  if(!e.target.closest(".pill"))closePops()});
 document.addEventListener("input",e=>{const id=e.target.id;
- if(id==="stR"||id==="stN"){S.steps=clamp(+e.target.value,1,60);$(id==="stR"?"stN":"stR").value=S.steps;$("vST").textContent=S.steps+" Steps";$("stH").textContent=stepsHint();save()}
+ if(id==="stR"||id==="stN"){S.steps=clamp(+e.target.value,1,60);$(id==="stR"?"stN":"stR").value=S.steps;$("vST").innerHTML=S.steps+'<span class="w"> Steps</span>';$("stH").textContent=stepsHint();save()}
  if(id==="cnR"||id==="cnN"){S.n=clamp(+e.target.value,1,100);$(id==="cnR"?"cnN":"cnR").value=S.n;$("vN").textContent="×"+S.n;$("cnH").textContent=countHint();save()}
  if(id==="seedIn"){S.seed=+e.target.value||0;S.seedMode="fixed";$("vSD").textContent="Fixed";save()}});
 [["pST",d=>S.steps=clamp(S.steps+d,1,60)],["pN",d=>S.n=clamp(S.n+d,1,100)]].forEach(([id,f])=>$(id).addEventListener("wheel",e=>{e.preventDefault();f(e.deltaY<0?1:-1);save();renderPills()},{passive:false}));
 function clamp(v,a,b){return Math.max(a,Math.min(b,Math.round(v)||a))}
 
 /* ======================= prompt + chips ======================= */
-function applyPH(){delete S.ph;const r=document.documentElement.style;const max=$("left").parentElement.getBoundingClientRect().height-36;if(S.pph>max)S.pph=Math.max(240,max);if(S.pph){r.setProperty("--ph",S.pph+"px");$("left").classList.add("sized")}else{r.removeProperty("--ph");$("left").classList.remove("sized")}}
+function applyPH(){if(window.layoutLeft){delete S.ph;layoutLeft();return}delete S.ph;const r=document.documentElement.style;const max=$("left").parentElement.getBoundingClientRect().height-36;if(S.pph>max)S.pph=Math.max(240,max);if(S.pph){r.setProperty("--ph",S.pph+"px");$("left").classList.add("sized")}else{r.removeProperty("--ph");$("left").classList.remove("sized")}}
 (function(){const g=$("vedge");let y0=0,h0=0;
- g.addEventListener("pointerdown",e=>{e.preventDefault();g.setPointerCapture(e.pointerId);g.classList.add("drag");document.body.classList.add("vresizing");y0=e.clientY;h0=$("left").getBoundingClientRect().height});
+ g.addEventListener("pointerdown",e=>{e.preventDefault();g.setPointerCapture(e.pointerId);g.classList.add("drag");document.body.classList.add("vresizing");$("left").classList.add("nodur");y0=e.clientY;h0=$("left").getBoundingClientRect().height});
  g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;const max=$("left").parentElement.getBoundingClientRect().height-36;S.pph=Math.max(240,Math.min(max,Math.round(h0+e.clientY-y0)));applyPH()});
- g.addEventListener("pointerup",()=>{g.classList.remove("drag");document.body.classList.remove("vresizing");save()});
+ g.addEventListener("pointerup",()=>{g.classList.remove("drag");document.body.classList.remove("vresizing");$("left").classList.remove("nodur");save()});
  g.addEventListener("dblclick",()=>{S.pph=0;applyPH();save();toast("Prompt height back to auto")});})();
 function grow(){const r=document.documentElement.style;if(S.lw)r.setProperty("--lw",S.lw+"px");else r.removeProperty("--lw")}
 (function(){const g=$("split");let x0=0,w0=0;
@@ -512,14 +539,37 @@ function grow(){const r=document.documentElement.style;if(S.lw)r.setProperty("--
  g.addEventListener("pointerup",()=>{g.classList.remove("drag");document.body.classList.remove("resizing");save()});
  g.addEventListener("dblclick",()=>{S.lw=0;save();grow();sizeFrame();moveThumb(true)});})();
 
-P.addEventListener("input",()=>{grow();if(!peekJob){draft=P.value;save()}updPrompt()});
-function renderChips(){
+P.addEventListener("input",()=>{grow();requestAnimationFrame(layoutLeft);if(!peekJob){draft=P.value;save()}updPrompt()});
+function renderChips(){requestAnimationFrame(()=>window.layoutLeft&&layoutLeft());
  $("chips").innerHTML=LORAS.filter(l=>l.on).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}"><span class="cn">${esc(l.display)} <b>${fmtW(l.w)}</b></span><button class="cx" title="Remove">${IC.x}</button></span>`).join("")}
 $("chips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;const l=LORAS.find(l=>l.name===c.dataset.n);
  if(e.target.closest(".cx")){l.on=false;save();renderChips();renderLoras();return}
  S.lfilter=l.folder==="people"?"people":"all";showView("loras");const el=document.querySelector(`[data-ln="${l.name}"]`);
  if(el){el.scrollIntoView({block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")}};
 function fmtW(w){return (+w).toFixed(2).replace(/\.?0+$/,"")}
+
+
+/* ======================= prompt card layout =======================
+   Centred on the image's vertical centre while there's room. While the editor is focused or the pointer is over
+   the card it is FROZEN: it only grows downward (then scrolls), so nothing moves under the cursor. ~0.5 s after the
+   pointer leaves (and the editor isn't focused) it glides back to centre and re-expands to use the space. */
+let lyFrozen=false,lyHover=false,lyT=null,lyTop=null,lyCy=null;
+function cardNaturalH(){const L=$("left"),w=L.querySelector(".pwrapT");const sc=L.querySelector(".cm-scroller");
+ const edH=(sc?sc.scrollHeight:P.scrollHeight)+16;return Math.max(240,L.offsetHeight-w.offsetHeight+Math.max(200,edH))}
+function layoutLeft(){const L=$("left"),col=$("lcol");const colH=col.clientHeight;if(!colH)return;
+ const f=$("frame").getBoundingClientRect(),c=col.getBoundingClientRect();
+ if(S.view==="gen"&&f.height>0)lyCy=f.top+f.height/2-c.top;if(lyCy==null)lyCy=colH/2;
+ let H=S.pph?Math.min(Math.max(240,S.pph),colH):Math.min(cardNaturalH(),colH);let top;
+ if(lyFrozen&&lyTop!=null){top=lyTop;H=Math.min(H,colH-top)}
+ else top=Math.max(0,Math.min(colH-H,lyCy-H/2));
+ lyTop=top;L.style.setProperty("--ltop",top+"px");L.style.setProperty("--lh",H+"px")}
+function freeze(){clearTimeout(lyT);lyFrozen=true}
+function thaw(){clearTimeout(lyT);lyT=setTimeout(()=>{const ed=document.activeElement&&$("left").contains(document.activeElement);if(lyHover||ed)return;lyFrozen=false;layoutLeft()},500)}
+$("left").addEventListener("pointerenter",()=>{lyHover=true;freeze()});
+$("left").addEventListener("pointerleave",()=>{lyHover=false;thaw()});
+$("left").addEventListener("focusin",freeze);
+$("left").addEventListener("focusout",()=>{if(!lyHover)thaw()});
+new ResizeObserver(()=>layoutLeft()).observe($("lcol"));
 
 /* ======================= tabs ======================= */
 function moveThumb(instant){const t=document.querySelector(".tab.on"),th=$("thumb");if(!t)return;if(instant)th.style.transition="none";th.style.left=t.offsetLeft+"px";th.style.width=t.offsetWidth+"px";if(instant){void th.offsetWidth;th.style.transition=""}}
@@ -545,7 +595,7 @@ function sizeFrame(){const st=$("stage").getBoundingClientRect();const j=current
  fitBox(f,j?j.ar:S.ar,st.width,st.height-BAR);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
  const top=0,left=(st.width-w)/2;f.style.left=left+"px";f.style.top=top+"px";
  const pr=$("prog");pr.style.left=left+"px";pr.style.width=w+"px";pr.style.top=(top+h+12)+"px";pr.style.setProperty("--tw",w+"px");
- if(S.view==="gen"&&st.height>0){const lt=$("left").getBoundingClientRect().top;document.documentElement.style.setProperty("--pmin",Math.round(st.top+top+h+BAR-12-lt)+"px")}}
+ if(window.layoutLeft)requestAnimationFrame(layoutLeft)}
 window.addEventListener("resize",()=>{applyPH();sizeFrame();syncH();moveThumb(true)});
 document.fonts&&document.fonts.ready.then(()=>moveThumb(true));
 
@@ -612,14 +662,15 @@ requestAnimationFrame(frame);
 
 /* ambient glow + window title + favicon progress ring (throttled) */
 const amb=$("amb"),ambC=amb.getContext("2d"),favC=document.createElement("canvas");favC.width=favC.height=64;
+function jobProgress(j){const part=Math.min((Date.now()-j.stepStart)/j.est,.95)||0;return{p:(j.step+part)/j.steps,left:Math.max(0,(j.steps-j.step-part)*j.est*S.demo/1000)}}
 function status(){const j=current();const pend=jobs.filter(x=>x.status==="pending").length;
  const ovOn=$("ov").classList.contains("show");
  const gm=(S.set||{}).glow||"gen";
  const src=(S.view==="gen"&&gm!=="off"&&(j||(gm==="always"&&shownDone())))?$("cv"):null;
  if(src&&src.width){ambC.imageSmoothingQuality="high";ambC.drawImage(src,0,0,12,12);amb.classList.add("on")}else amb.classList.remove("on");
  let p=null;
- if(j){const part=Math.min((Date.now()-j.stepStart)/j.est,.95);p=(j.step+part)/j.steps;
-  document.title=`${Math.min(j.step+1,j.steps)}/${j.steps} · ~${fmt(Math.max(0,(j.steps-j.step-part)*j.est*S.demo/1000))}${pend?` · +${pend}`:""} — Kiln`}
+ if(j){const q=jobProgress(j);p=q.p;
+  document.title=`${Math.min(j.step+1,j.steps)}/${j.steps}${q.left!=null?` · ~${fmt(q.left)}`:""}${pend?` · +${pend}`:""} — Kiln`}
  else document.title=pend?`${pend} queued — Kiln`:"Kiln";
  const c=favC.getContext("2d");c.clearRect(0,0,64,64);const cs=getComputedStyle(document.documentElement);
  const g=c.createLinearGradient(0,0,64,64);g.addColorStop(0,cs.getPropertyValue("--a1").trim()||"#FF8A00");g.addColorStop(1,cs.getPropertyValue("--a3").trim()||"#3FE0F0");
@@ -679,7 +730,7 @@ $("qwrap").addEventListener("dragover",e=>{e.preventDefault();const q=e.target.c
  if(!t||t.status!=="pending"||t.id===dragId)return;const a=jobs.findIndex(j=>j.id===dragId),b=jobs.indexOf(t);const [m]=jobs.splice(a,1);jobs.splice(b,0,m);renderQueue();
  const n=document.querySelector(`.qi[data-id="${dragId}"]`);if(n)n.classList.add("drag")});
 function openOv(j){ovJob=j;$("ov").classList.add("show");const box=$("rpanel").getBoundingClientRect();fitBox($("ovFrame"),j.ar,box.width-44,box.height-44);paint($("ovCv"),j,1)}
-function closeOv(){$("ov").classList.remove("show")}
+function closeOv(){$("ov").classList.remove("show");if(peekJob&&ovJob&&peekJob.id===ovJob.id)endPeek()}
 $("ovClose").onclick=closeOv;
 
 
@@ -696,10 +747,10 @@ function vZoomAt(ns,cx,cy){ns=Math.max(V.fit,Math.min(4,ns));vSet(ns,cx-(cx-V.tx
 function closeViewer(){$("viewer").classList.remove("show");V.job=null}
 (function(){const el=$("viewer");let down=null,moved=false,clickT=null;
  el.addEventListener("wheel",e=>{e.preventDefault();vZoomAt(V.s*(e.deltaY<0?1.15:1/1.15),e.clientX,e.clientY)},{passive:false});
- el.addEventListener("pointerdown",e=>{if(e.target.closest(".vclose"))return;down={x:e.clientX,y:e.clientY,tx:V.tx,ty:V.ty};moved=false;el.setPointerCapture(e.pointerId)});
+ el.addEventListener("pointerdown",e=>{if(e.target.closest(".vclose"))return;down={x:e.clientX,y:e.clientY,tx:V.tx,ty:V.ty,img:e.target.id==="vcv"};moved=false;el.setPointerCapture(e.pointerId)});
  el.addEventListener("pointermove",e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.abs(dx)+Math.abs(dy)>4)moved=true;
   if(moved&&V.s>V.fit+.001){el.classList.add("panning");vSet(V.s,down.tx+dx,down.ty+dy)}});
- el.addEventListener("pointerup",e=>{el.classList.remove("panning");const wasDown=down;down=null;if(!wasDown||moved)return;
+ el.addEventListener("pointerup",e=>{el.classList.remove("panning");const wasDown=down;down=null;if(!wasDown||moved)return;if(!wasDown.img){closeViewer();return}
   clearTimeout(clickT);const x=e.clientX,y=e.clientY;clickT=setTimeout(()=>{if(V.s>V.fit+.001)vFit();else vZoomAt(1,x,y)},230)});
  el.addEventListener("dblclick",e=>{clearTimeout(clickT);if(V.job)openInApp(V.job)});
  $("vclose").onclick=closeViewer;})();
@@ -710,6 +761,46 @@ function openInApp(j){toast(`Prototype: would open ${j.file||("#"+j.id+".png")} 
   el.addEventListener("dblclick",e=>{if(e.target.closest(".side"))return;const j=getJob();if(!j||j.status!=="done")return;clearTimeout(t);openInApp(j)})}
  bind($("frame"),()=>current()?null:shownDone());bind($("ovFrame"),()=>ovJob)})();
 setInterval(()=>$("frame").classList.toggle("clickable",!current()&&!!shownDone()),300);
+
+
+/* ======================= embers: faint sparks rising while the kiln is firing ======================= */
+(function(){const cv=$("embers"),c=cv.getContext("2d");const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;let ps=[],last=0,W=0,H=0,acc=0;
+ function col(){const cs=getComputedStyle(document.documentElement);return[cs.getPropertyValue("--a1").trim()||"#FF8A00",cs.getPropertyValue("--a2").trim()||"#FF5E8A"]}
+ let cols=col(),colT=0;
+ function draw(t){const dt=Math.min(50,t-last||16);last=t;const j=current();const on=!reduce&&((S.set||{}).embers||"on")!=="off"&&S.view==="gen";
+  const b=cv.getBoundingClientRect(),d=devicePixelRatio||1;if(Math.round(b.width*d)!==W||Math.round(b.height*d)!==H){W=cv.width=Math.round(b.width*d);H=cv.height=Math.round(b.height*d)}
+  if(t-colT>2000){cols=col();colT=t}
+  if(on&&j&&W){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));acc+=dt*(0.012+pr*0.03)*(W/600);
+   while(acc>1){acc--;ps.push({x:Math.random()*W,y:H+4*d,vx:(Math.random()-.5)*.02*d,vy:-(0.045+Math.random()*0.075)*d,life:0,max:2600+Math.random()*3200,r:(1+Math.random()*1.8)*d,c:cols[Math.random()<.65?0:1],ph:Math.random()*6.28})}}
+  c.clearRect(0,0,W,H);if(ps.length){c.globalCompositeOperation="lighter";
+   ps=ps.filter(p=>{p.life+=dt;if(p.life>p.max)return false;p.x+=(p.vx+Math.sin(p.life/420+p.ph)*.012*d)*dt;p.y+=p.vy*dt;const k=p.life/p.max;
+    const a=Math.min(1,k*6)*(1-k)*(.75+.25*Math.sin(p.life/90+p.ph));c.globalAlpha=a*.85;c.fillStyle=p.c;c.beginPath();c.arc(p.x,p.y,p.r*(1-k*.4),0,6.283);c.fill();
+    c.globalAlpha=a*.22;c.beginPath();c.arc(p.x,p.y,p.r*4,0,6.283);c.fill();return true});
+   c.globalCompositeOperation="source-over";c.globalAlpha=1}
+  requestAnimationFrame(draw)}
+ requestAnimationFrame(draw)})();
+
+/* ======================= tooltips: one consistent style, short delay ======================= */
+(function(){const tip=document.createElement("div");tip.id="tip";document.body.appendChild(tip);let t=null,cur=null;
+ function hide(){clearTimeout(t);tip.classList.remove("show");cur=null}
+ document.addEventListener("mouseover",e=>{const el=e.target.closest("[title],[data-tip]");if(el===cur)return;hide();if(!el)return;
+  if(el.hasAttribute("title")){el.dataset.tip=el.getAttribute("title");el.removeAttribute("title")}
+  const text=el.dataset.tip;if(!text)return;cur=el;
+  t=setTimeout(()=>{if(cur!==el||document.querySelector(".pop.show"))return;tip.textContent=text;tip.classList.add("show");
+   const r=el.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight;let x=r.left+r.width/2-w/2,y=r.bottom+8;
+   if(y+h>innerHeight-6)y=r.top-h-8;x=Math.max(6,Math.min(innerWidth-w-6,x));tip.style.transform=`translate(${x}px,${y}px)`},450)});
+ document.addEventListener("mousedown",hide);document.addEventListener("wheel",hide,{passive:true});
+ const TIPS={pMP:"Image size (megapixels)",pAR:"Aspect ratio",pST:"Sampling steps — scroll to nudge",pSD:"Seed — random each job, or fixed",
+  pN:"How many images to queue — scroll to nudge",play:"Add to queue (Ctrl+Enter)",prog:"Working on the next step — the preview shows the last finished one",
+  stopBtn:"Stop this job",csize:"Card size",lsearch:"Search LoRAs by name",gear:"Settings",ovClose:"Close (Esc)",vclose:"Close (Esc)"};
+ for(const id in TIPS){const el=$(id);if(el&&!el.title)el.dataset.tip=TIPS[id]}
+ const TABT={gen:"The image being made, and the last result",queue:"Running, waiting and finished jobs",loras:"Your LoRA library",png:"Read settings from any Forge PNG"};
+ document.querySelectorAll(".tab").forEach(t=>t.dataset.tip=TABT[t.dataset.v]);
+ const CHIPT=e=>{const c=e.target.closest(".chip .cn");if(c&&!c.dataset.tip)c.dataset.tip="Open in the LoRA library";const x=e.target.closest(".chip .cx");if(x&&!x.dataset.tip)x.dataset.tip="Remove";
+  const s=e.target.closest(".star");if(s&&!s.dataset.tip)s.dataset.tip="Favourite";const tg=e.target.closest("[data-tg]");if(tg&&!tg.dataset.tip)tg.dataset.tip="On / off";
+  const cd=e.target.closest(".card .img");if(cd&&!cd.dataset.tip)cd.dataset.tip="Click to switch on/off";const fc=e.target.closest(".fchips button");if(fc&&!fc.dataset.tip)fc.dataset.tip="Filter";
+  const h=e.target.closest(".qi .handle");if(h&&!h.dataset.tip)h.dataset.tip="Drag to reorder";const qi=e.target.closest(".qi .body");if(qi&&!qi.dataset.tip)qi.dataset.tip="Peek at this prompt — Reuse to load it"};
+ document.addEventListener("mouseover",CHIPT,true)})();
 
 /* ======================= LoRA library ======================= */
 const FILTERS=[["all","All"],["people","Faces"],["style","Style"],["utility","Utility"],["fav","★ Favorites"],["recent","Recent"]];
@@ -736,6 +827,8 @@ function renderLoras(){const q=$("lsearch").value.toLowerCase().trim();
  $("lscroll").innerHTML=(faces.length?`<div class="lsec">Faces · ${faces.length}</div><div class="grid">${faces.map(card).join("")}</div>`:"")+
   (rest.length?`<div class="lsec">Other</div>${rest.map(row).join("")}`:"")+(!L.length?'<div class="empty">Nothing here</div>':"")}
 $("lsearch").oninput=renderLoras;
+$("csize").value=S.card||104;document.documentElement.style.setProperty("--card",(S.card||104)+"px");
+$("csize").addEventListener("input",e=>{S.card=+e.target.value;document.documentElement.style.setProperty("--card",S.card+"px");save()});
 $("fchips").onclick=e=>{const b=e.target.closest("[data-f]");if(!b)return;S.lfilter=b.dataset.f;save();renderLoras()};
 $("oneFace").onclick=e=>{e.preventDefault();S.oneFace=!S.oneFace;save();renderLoras()};
 function toggleL(l){if(!l.on&&l.folder==="people"&&S.oneFace)LORAS.forEach(o=>{if(o.folder==="people")o.on=false});l.on=!l.on;if(l.on)l.used=Date.now();save();renderLoras();renderChips()}
@@ -806,6 +899,7 @@ function renderAll(){const n=jobs.filter(j=>j.status==="pending"||j.status==="ru
 $("pname").value=S.pname||"";$("pname").addEventListener("input",e=>{S.pname=e.target.value;save();nameUI()});
 $("pnx").onclick=()=>{$("pname").value="";S.pname="";save();nameUI();$("pname").focus()};
 function nameUI(){const l=document.querySelector(".plbl");l.classList.toggle("hasname",!!S.pname.trim());l.classList.toggle("dimname",!!S.pname.trim()&&!P.value.trim())}$("pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();P.focus()}});
+$("left").classList.add("nodur");setTimeout(()=>$("left").classList.remove("nodur"),400);
 applyFont();applyPH();updPrompt();applyTheme();showView(["queue","loras","png"].includes(S.view)?S.view:"gen");renderAll();grow();syncH();demoNote();
 </script>
 <script>
@@ -925,8 +1019,8 @@ applyFont();applyPH();updPrompt();applyTheme();showView(["queue","loras","png"].
    const part=j.steps?Math.min((Date.now()-(j._ss||Date.now()))/per,.95):0;
    const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;$("fill").style.width=(p*100).toFixed(2)+"%";
    const left=j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000);
-   $("ptxt").textContent=j.kind==="upscale"?"Upscaling…":j.step?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`:"Loading model…";
-   $("peta").textContent=j.kind==="upscale"?"":j.step?`~${fmt(left)} left`:"";
+   const started=j.step||j.preview_rev;$("ptxt").textContent=j.kind==="upscale"?"Upscaling…":started?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`:"Loading model…";
+   $("peta").textContent=j.kind==="upscale"?"":started?`~${fmt(left)} left`:"";
    if(S.view==="gen"){const f=$("frame");f.classList.add("has");$("idle").style.display="none";
     if(+$("cv").dataset.j!==j.id){$("cv").dataset.j=j.id;$("cv").dataset.d="";lastPrev=0;const c=$("cv");c.width=1;c.height=1;sizeFrame()}
     if(j.preview_rev&&j.preview_rev!==lastPrev&&!prevLoading){prevLoading=true;const r=j.preview_rev;const i=new Image();
@@ -942,6 +1036,9 @@ applyFont();applyPH();updPrompt();applyTheme();showView(["queue","loras","png"].
    else if(!d){$("frame").classList.remove("has");$("idle").style.display="";const c=$("cv");if(c.width>1){c.width=1;c.height=1;c.dataset.d="";c.dataset.j=""}}}
   requestAnimationFrame(frame)};
 
+ window.jobProgress=function(j){const per=Math.max(1,SEC_PER_STEP[j.mp]||60)*1000;const part=j.steps&&j._ss?Math.min((Date.now()-j._ss)/per,.95):0;
+  const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;const started=j.step||j.preview_rev;
+  return{p,left:started?(j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000)):null}};
  /* ---------- go ---------- */
  jobs=[];await loadModels(false);refreshUp();
  if(!models)toast("Forge isn't running — start it, then Settings → Refresh models & LoRAs");

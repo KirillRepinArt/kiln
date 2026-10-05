@@ -175,7 +175,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 #stars.on{opacity:1}
 .idle{position:absolute;inset:0;z-index:1;display:grid;place-items:center;color:#7a7a82;font-size:14px;text-align:center;pointer-events:none}
 .side{position:absolute;right:10px;top:10px;z-index:5;display:flex;flex-direction:column;gap:6px;opacity:0;transition:opacity .15s}
-.frame.has:hover .side,.ov-img:hover .side{opacity:1}
+.frame.has:hover .side{opacity:1}
 .frame.running .side{display:none}
 .side button{width:40px;height:40px;border-radius:12px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;position:relative}
 .side button:hover{background:rgba(40,40,44,.9)} .side svg{width:20px;height:20px}
@@ -216,11 +216,6 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .qi .x{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:var(--muted)}
 .qi .x:hover{background:#45454a;color:var(--text)} .qi .x svg{width:14px;height:14px}
 .empty{color:var(--faint);text-align:center;padding:40px 10px;font-size:14px}
-.ov{position:absolute;inset:0;background:#000;z-index:20;visibility:hidden;opacity:0;transition:opacity .22s var(--ease),visibility 0s linear .22s}
-.ov.show{visibility:visible;opacity:1;transition:opacity .22s var(--ease),visibility 0s}
-.ov-img{position:absolute;inset:22px;display:grid;place-items:center}
-.ov-close{position:absolute;top:14px;left:14px;width:40px;height:40px;border-radius:12px;background:var(--raised);display:grid;place-items:center;z-index:2}
-.ov-close svg{width:16px;height:16px}
 
 .lwrap{position:absolute;inset:0;display:flex;flex-direction:column;padding:4px 2px 16px}
 .ltop{display:flex;gap:10px;align-items:center;margin-bottom:10px}
@@ -318,7 +313,10 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .frame.clickable{cursor:zoom-in}
 .nav{position:absolute;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;z-index:6;opacity:0;transition:opacity .15s,background .15s}
 .nav.prev{left:10px}.nav.next{right:10px}
-.frame .nav{top:max(50%,276px)} /* below the 5 hover buttons when the frame is short */
+.frame .nav{top:max(50%,276px)}
+.bclose{position:absolute;top:10px;left:10px;width:40px;height:40px;border-radius:12px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:6;transition:background .15s}
+.bclose:hover{background:rgba(40,40,44,.9)}.bclose svg{width:16px;height:16px}
+.frame.browsing .bclose{display:grid} /* below the 5 hover buttons when the frame is short */
 .nav svg{width:18px;height:18px}.nav:hover{background:rgba(40,40,44,.9)}
 .frame:hover .nav:not(.off),.viewer:hover .nav:not(.off){opacity:1}
 .nav.off{pointer-events:none}
@@ -387,7 +385,10 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .left.hm .vedge{display:none}
 .app:not(.stacked) .left.hm,.app:not(.stacked) .ltitle.hm{cursor:default}
 /* LoRA library: one row format with the thumbnail in front, Active strip on top */
-.li{grid-template-columns:var(--th,48px) 1fr 140px 56px auto auto!important}
+:root{--liw:calc(var(--th,48px) + 480px)} /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,min(100%,var(--liw)));justify-content:center;column-gap:16px}
+.lgrid .lsec,.lgrid .empty{grid-column:1/-1}
+.li{grid-template-columns:var(--th,48px) minmax(0,1fr) 120px 56px auto auto!important;min-width:0}
 .lth{width:var(--th,48px);height:var(--th,48px);border-radius:10px;overflow:hidden;display:grid;place-items:center;font-weight:600;color:rgba(255,255,255,.75);font-size:calc(var(--th,48px)*.3);cursor:pointer;flex:none}
 .lth img{width:100%;height:100%;object-fit:cover;display:block}
 .lact{display:flex;flex-wrap:wrap;gap:6px;margin:0 2px 12px}
@@ -461,7 +462,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
             <canvas id="embers"></canvas>
             <canvas id="cv"></canvas>
             <div class="idle" id="idle"><div><span id="idleT">Queue is empty</span><br><small id="idleS">Write a prompt and press ▶ (Ctrl+Enter)</small></div></div>
-            <div class="side" id="sideGen"></div><button class="nav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button>
+            <div class="side" id="sideGen"></div><button class="bclose" id="bclose" title="Back to the live view (Esc)"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button><button class="nav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button>
           </div>
         </div>
         <div class="prog" id="prog">
@@ -473,10 +474,6 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 
       <div class="view" id="v-queue">
         <div class="qwrap" id="qwrap"></div>
-        <div class="ov" id="ov">
-          <button class="ov-close" id="ovClose" title="Close (Esc)"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-          <div class="ov-img"><div class="frame has clickable" id="ovFrame"><canvas id="ovCv"></canvas><div class="side" id="sideOv"></div><button class="nav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button></div></div>
-        </div>
       </div>
 
       <div class="view" id="v-loras">
@@ -488,7 +485,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
           </div>
           <div class="fchips" id="fchips"></div>
           <div class="warn" id="warn">Two face LoRAs are on — they will blend into one face rather than give you two people.</div>
-          <div class="lacth">Active</div><div class="lact" id="lact"></div>
+          <div class="lacth" id="lacth">Active</div><div class="lact" id="lact"></div>
           <div class="lscroll" id="lscroll"></div>
         </div>
       </div>
@@ -583,7 +580,6 @@ const IC={
  x:'<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>',
  dice:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="#fff"/><circle cx="15" cy="15" r="1.2" fill="#fff"/><circle cx="15" cy="9" r="1.2" fill="#fff"/><circle cx="9" cy="15" r="1.2" fill="#fff"/></svg>',
 };
-let ovJob=null;
 function sideButtons(el,getJob){el.innerHTML=
  `<button data-tip="Send to img2img" data-a="i2i">${IC.i2i}</button>
   <button data-tip="Upscale" data-a="up">${IC.up}</button>
@@ -593,7 +589,7 @@ function sideButtons(el,getJob){el.innerHTML=
  el.onclick=e=>{const b=e.target.closest("button");if(!b)return;e.stopPropagation();
   if(b.dataset.a==="thumb"){setThumbs(getJob());return}
   toast({i2i:"Prototype: would send this image to img2img",up:"Prototype: would upscale with your default upscaler",open:"Prototype: would open the PNG in your default app",folder:"Prototype: would open Explorer with the file selected"}[b.dataset.a])}}
-sideButtons($("sideGen"),()=>shownDone());sideButtons($("sideOv"),()=>ovJob);
+sideButtons($("sideGen"),()=>shownDone());
 function setThumbs(j){if(!j)return;const faces=j.loras.map(x=>LORAS.find(l=>l.name===x.name)).filter(l=>l&&l.folder==="people");
  if(!faces.length){toast("This image used no face LoRA");return}
  const c=document.createElement("canvas");paint(c,j,1);const t=document.createElement("canvas");t.width=t.height=160;
@@ -768,7 +764,7 @@ updHm();
 function moveThumb(instant){const t=document.querySelector(".tab.on"),th=$("thumb");if(!t)return;if(instant)th.style.transition="none";th.style.left=t.offsetLeft+"px";th.style.width=t.offsetWidth+"px";if(instant){void th.offsetWidth;th.style.transition=""}}
 function showView(v){const was=S.view;
  if(was!==v){ // temporary state belongs to the visit: an open preview, a browse, a search, a scroll position
-  if(was==="queue"){$("ov").classList.remove("show");$("qwrap").scrollTop=0} // the prompt box (and its peek) is left as it is
+  if(was==="queue")$("qwrap").scrollTop=0; // the prompt box (and its peek) is left as it is
   if(was==="loras"){$("lsearch").value="";$("lscroll").scrollTop=0}}
  S.view=v;$("rpanel").classList.toggle("paneled",v!=="gen");document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));moveThumb();
  document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id==="v-"+v));if(v!=="gen"){const tb=document.querySelector(".tabs");if(tb)tb.style.transform=""}if(v==="queue")renderQueue();if(v==="loras")renderLoras();if(v==="gen")sizeFrame()}
@@ -805,6 +801,7 @@ document.fonts&&document.fonts.ready.then(()=>moveThumb(true));
 
 /* ======================= queue ======================= */
 function current(){return jobs.find(j=>j.status==="running")}
+function jEst(j){return j.est||j.steps*(SEC_PER_STEP[j.mp]||60)} // the server's history-based estimate when there is one
 function lastDone(){return [...jobs].reverse().find(j=>j.status==="done")}
 let resultStale=false;function shownDone(){return browsed()||(resultStale?null:lastDone())}
 /* ======================= browsing finished images =======================
@@ -818,15 +815,13 @@ function genNav(dir,dry){const run=!!current(),b=browsed(),cur=b||(run?null:show
  let i=cur?L.findIndex(x=>x.id===cur.id):L.length;if(i<0)i=L.length;const n=i+dir;let id;
  if(n<0)return false;if(n>=L.length){if(!b)return false;id=null}else id=L[n].id; // past the newest: back to your working view
  if(!dry){browseId=id;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else loadJob(L[n])}return true}
-function ovNav(dir,dry){const L=doneList(),i=L.findIndex(x=>x.id===(ovJob&&ovJob.id)),t=L[i+dir];if(i<0||!t)return false;
- if(!dry){const pk=peekJob&&ovJob&&peekJob.id===ovJob.id;openOv(t);if(pk)loadJob(t)}return true}
 function vNav(dir,dry){const L=doneList(),i=L.findIndex(x=>x.id===(V.job&&V.job.id)),t=L[i+dir];if(i<0||!t)return false;if(!dry)openViewer(t);return true}
-function navFn(el){return el.closest("#viewer")?vNav:el.closest("#ovFrame")?ovNav:genNav}
+function navFn(el){return el.closest("#viewer")?vNav:genNav}
 function updNav(){document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("off",!navFn(b)(+b.dataset.nav,true)))}
 document.addEventListener("click",e=>{const b=e.target.closest(".nav");if(!b)return;e.stopPropagation();navFn(b)(+b.dataset.nav);updNav()},true);
 document.addEventListener("keydown",e=>{if((e.key!=="ArrowLeft"&&e.key!=="ArrowRight")||e.ctrlKey||e.altKey||e.metaKey||e.shiftKey)return;
  const a=document.activeElement;if(a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))return;if($("modal").classList.contains("show"))return;
- const f=$("viewer").classList.contains("show")?vNav:(S.view==="queue"&&$("ov").classList.contains("show"))?ovNav:S.view==="gen"?genNav:null;
+ const f=$("viewer").classList.contains("show")?vNav:S.view==="gen"?genNav:null;
  if(f&&f(e.key==="ArrowLeft"?-1:1)){e.preventDefault();updNav()}});
 function stripComments(t){return t.split("\n").filter(l=>!/^\s*\/\//.test(l)).join("\n").replace(/\n{3,}/g,"\n\n").trim()}
 function expandVariants(t){const picks=[];const out=t.replace(/\{([^{}]*\|[^{}]*)\}/g,(m,body)=>{const o=body.split("|").map(x=>x.trim());const c=o[Math.floor(Math.random()*o.length)];picks.push(c);return c});return{text:out,picks}}
@@ -840,7 +835,10 @@ function addJobs(){if(peekJob){toast("Viewing a queued prompt — choose Reuse, 
  save();toast(S.n>1?`Added ${S.n} jobs to the queue`:"Added to queue");tick();renderAll()}
 $("play").onclick=()=>{askNotify();addJobs()};
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();addJobs()}
- if(e.key==="Escape"){if($("viewer").classList.contains("show")){closeViewer();return}if($("ov").classList.contains("show"))closeOv();else $("modal").classList.remove("show");closePops()}});
+ if(e.key==="Escape"){if($("viewer").classList.contains("show")){closeViewer();return}
+  if($("modal").classList.contains("show")){$("modal").classList.remove("show");return}
+  if(browseId!=null){endPeek();return} // Esc anywhere leaves a browse (the editor handles its own Esc first)
+  closePops()}});
 function tick(){if(current())return;const j=jobs.find(j=>j.status==="pending");if(!j){renderAll();return}
  j.status="running";j.started=Date.now();j.step=0;j.stepStart=Date.now();const est=SEC_PER_STEP[j.mp]*1000/S.demo;j.est=est;const r=rng(j.seed^0x9e37);
  const next=()=>{if(j.status!=="running")return;j.timer=setTimeout(()=>{if(j.status!=="running")return;j.step++;j.stepStart=Date.now();
@@ -891,7 +889,6 @@ requestAnimationFrame(frame);
 const amb=$("amb"),ambC=amb.getContext("2d"),favC=document.createElement("canvas");favC.width=favC.height=64;
 function jobProgress(j){const part=Math.min((Date.now()-j.stepStart)/j.est,.95)||0;return{p:(j.step+part)/j.steps,left:Math.max(0,(j.steps-j.step-part)*j.est*S.demo/1000)}}
 function status(){const j=current();$("frame").classList.toggle("running",!!j&&!browsed());const pend=jobs.filter(x=>x.status==="pending").length;
- const ovOn=$("ov").classList.contains("show");
  const gm=(S.set||{}).glow||"gen";
  const src=(S.view==="gen"&&gm!=="off"&&(j||(gm==="always"&&shownDone())))?$("cv"):null;
  if(src&&src.width){ambC.imageSmoothingQuality="high";ambC.drawImage(src,0,0,12,12);amb.classList.add("on")}else amb.classList.remove("on");
@@ -917,12 +914,12 @@ function renderQueue(){const before={};document.querySelectorAll(".qi").forEach(
   const d=b-q.getBoundingClientRect().top;if(Math.abs(d)<1)return;q.style.transition="none";q.style.transform=`translateY(${d}px)`;
   requestAnimationFrame(()=>{q.style.transition="transform .3s var(--ease)";q.style.transform=""})})}
 function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=jobs.filter(j=>j.status==="pending"),done=jobs.filter(j=>j.status==="done"||j.status==="cancelled").reverse();
- const left=pend.reduce((a,j)=>a+j.steps*SEC_PER_STEP[j.mp],0);
+ const left=pend.reduce((a,j)=>a+jEst(j),0);
  const item=(j,k)=>`<div class="qi" data-id="${j.id}" draggable="${k==="pend"}">
    ${k==="pend"?'<span class="handle" title="Drag to reorder">⋮⋮</span>':""}
    <div class="th">${j.status==="done"?`<canvas data-th="${j.id}"></canvas>`:j.status==="cancelled"?"stopped":k==="run"?"…":"#"+j.id}</div>
    <div class="body"><div class="p">${j.file?`<b style="font-weight:600">${esc(j.file)}</b> · `:""}${esc(j.prompt)}</div>
-   <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · seed ${j.seed}${k==="pend"?` · ~${fmt(j.steps*SEC_PER_STEP[j.mp])}`:""}${j.finished?` · took ${fmt((j.finished-j.started)*S.demo/1000)}`:""}</div>
+   <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · seed ${j.seed}${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.finished?` · took ${fmt((j.finished-j.started)*S.demo/1000)}`:""}</div>
    ${k==="run"?'<div class="mini"><i></i></div>':""}</div>
    ${k!=="done"?`<button class="x" data-x="${j.id}" title="${k==="run"?"Stop":"Remove"}">${IC.x}</button>`:""}</div>`;
  $("qwrap").innerHTML=(run.length?`<div class="qsec">Running</div>${run.map(j=>item(j,"run")).join("")}`:"")+
@@ -935,7 +932,9 @@ $("qwrap").addEventListener("click",e=>{
  const x=e.target.closest("[data-x]");if(x){stopJob(jobs.find(j=>j.id==+x.dataset.x));return}
  const q=e.target.closest(".qi");if(!q)return;const j=jobs.find(j=>j.id==+q.dataset.id);
  if(j.status==="running"){showView("gen");loadJob(j);return}
- loadJob(j);if(j.status==="done")openOv(j)});
+ if(j.status==="done"){showView("gen");browseTo(j);return} // finished: browse to it in Generating
+ loadJob(j)});
+function browseTo(j){browseId=j.id;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();loadJob(j);updNav()}
 let undo=null;var justDone=null;
 let peekJob=null;
 /* the peek bar only offers what would change something: no "Reuse prompt" when the prompt is already your draft;
@@ -968,9 +967,6 @@ $("qwrap").addEventListener("dragend",()=>{dragId=null;renderQueue()});
 $("qwrap").addEventListener("dragover",e=>{e.preventDefault();const q=e.target.closest(".qi");if(!q||dragId==null)return;const t=jobs.find(j=>j.id==+q.dataset.id);
  if(!t||t.status!=="pending"||t.id===dragId)return;const a=jobs.findIndex(j=>j.id===dragId),b=jobs.indexOf(t);const [m]=jobs.splice(a,1);jobs.splice(b,0,m);renderQueue();
  const n=document.querySelector(`.qi[data-id="${dragId}"]`);if(n)n.classList.add("drag")});
-function openOv(j){ovJob=j;$("ov").classList.add("show");const box=$("rpanel").getBoundingClientRect();fitBox($("ovFrame"),j.ar,box.width-44,box.height-44);paint($("ovCv"),j,1)}
-function closeOv(){$("ov").classList.remove("show");if(peekJob&&ovJob&&peekJob.id===ovJob.id)endPeek()}
-$("ovClose").onclick=closeOv;
 
 
 /* ======================= full-size viewer ======================= */
@@ -996,10 +992,11 @@ function closeViewer(){$("viewer").classList.remove("show");V.job=null}
 function openInApp(j){toast(`Prototype: would open ${j.file||("#"+j.id+".png")} in your default app`)}
 /* click the finished image (Generating view and queue overlay) */
 (function(){let t=null;
- function bind(el,getJob){el.addEventListener("click",e=>{if(e.target.closest(".side,.nav"))return;const j=getJob();if(!j||j.status!=="done")return;clearTimeout(t);t=setTimeout(()=>openViewer(j),230)});
-  el.addEventListener("dblclick",e=>{if(e.target.closest(".side,.nav"))return;const j=getJob();if(!j||j.status!=="done")return;clearTimeout(t);openInApp(j)})}
- bind($("frame"),()=>current()&&!browsed()?null:shownDone());bind($("ovFrame"),()=>ovJob)})();
-setInterval(()=>{$("frame").classList.toggle("clickable",(!current()||!!browsed())&&!!shownDone());updNav()},300);
+ function bind(el,getJob){el.addEventListener("click",e=>{if(e.target.closest(".side,.nav,.bclose"))return;const j=getJob();if(!j||j.status!=="done")return;clearTimeout(t);t=setTimeout(()=>openViewer(j),230)});
+  el.addEventListener("dblclick",e=>{if(e.target.closest(".side,.nav,.bclose"))return;const j=getJob();if(!j||j.status!=="done")return;clearTimeout(t);openInApp(j)})}
+ bind($("frame"),()=>current()&&!browsed()?null:shownDone())})();
+setInterval(()=>{$("frame").classList.toggle("clickable",(!current()||!!browsed())&&!!shownDone());$("frame").classList.toggle("browsing",!!browsed());updNav()},300);
+$("bclose").onclick=e=>{e.stopPropagation();endPeek()};
 
 
 /* ======================= effects =======================
@@ -1063,7 +1060,7 @@ setInterval(()=>{$("frame").classList.toggle("clickable",(!current()||!!browsed(
  document.addEventListener("mousedown",hide);document.addEventListener("wheel",hide,{passive:true});
  const TIPS={pMP:"Image size (megapixels)",pAR:"Aspect ratio",pST:"Sampling steps — scroll to nudge",pSD:"Seed — random each job, or fixed",
   pN:"How many images to queue — scroll to nudge",play:"Add to queue (Ctrl+Enter)",prog:"Click to see this image's prompt · the preview shows the last finished step",
-  stopBtn:"Stop this job",csize:"Thumbnail size",lsearch:"Search LoRAs by name",gear:"Settings",ovClose:"Close (Esc)",vclose:"Close (Esc)"};
+  stopBtn:"Stop this job",csize:"Thumbnail size",lsearch:"Search LoRAs by name",gear:"Settings",vclose:"Close (Esc)"};
  for(const id in TIPS){const el=$(id);if(el&&!el.title)el.dataset.tip=TIPS[id]}
  const TABT={gen:"The image being made, and the last result",queue:"Running, waiting and finished jobs",loras:"Your LoRA library",png:"Read settings from any Forge PNG"};
  document.querySelectorAll(".tab").forEach(t=>t.dataset.tip=TABT[t.dataset.v]);
@@ -1096,13 +1093,17 @@ function renderLoras(){const q=$("lsearch").value.toLowerCase().trim();
  if(S.lfilter==="recent")h=L.map(row).join("");
  else{for(const [k,t] of G){const g=L.filter(l=>l.folder===k);if(g.length)h+=`<div class="lsec">${t} · ${g.length}</div>${srt(g).map(row).join("")}`}
   const o=L.filter(l=>!known.includes(l.folder));if(o.length)h+=`<div class="lsec">Other · ${o.length}</div>${srt(o).map(row).join("")}`}
- $("lscroll").innerHTML=h+(!L.length?'<div class="empty">Nothing here</div>':"")}
+ $("lscroll").innerHTML=`<div class="lgrid">${h}${!L.length?'<div class="empty">Nothing here</div>':""}</div>`;alignAct()}
+/* the Active strip lines up with the left edge of the centred LoRA block, not the panel */
+function alignAct(){const g=$("lscroll").querySelector(".lgrid .li"),pad=g?Math.max(0,Math.round(g.getBoundingClientRect().left-$("lscroll").getBoundingClientRect().left)):0;
+ $("lact").style.paddingLeft=$("lacth").style.paddingLeft=pad+"px"}
+new ResizeObserver(()=>{if(S.view==="loras")alignAct()}).observe($("lscroll"));
 $("lact").addEventListener("click",e=>{const c=e.target.closest("[data-an]");if(!c)return;const l=LORAS.find(l=>l.name===c.dataset.an);if(!l)return;
  if(e.target.closest(".cx")){toggleL(l);return}
  const el=document.querySelector(`#lscroll [data-ln="${l.name}"]`);if(el){el.scrollIntoView({block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")}});
 $("lsearch").oninput=renderLoras;
 $("csize").value=S.th||48;document.documentElement.style.setProperty("--th",(S.th||48)+"px");
-$("csize").addEventListener("input",e=>{S.th=+e.target.value;document.documentElement.style.setProperty("--th",S.th+"px");save()});
+$("csize").addEventListener("input",e=>{S.th=+e.target.value;document.documentElement.style.setProperty("--th",S.th+"px");save();alignAct()});
 $("fchips").onclick=e=>{const b=e.target.closest("[data-f]");if(!b)return;S.lfilter=b.dataset.f;save();renderLoras()};
 $("oneFace").onclick=e=>{e.preventDefault();S.oneFace=!S.oneFace;save();renderLoras()};
 function toggleL(l){if(!l.on&&l.folder==="people"&&S.oneFace)LORAS.forEach(o=>{if(o.folder==="people")o.on=false});l.on=!l.on;if(l.on){l.used=Date.now();l.onAt=Date.now()}save();renderLoras();renderChips()}
@@ -1230,7 +1231,7 @@ applyFont();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");rend
 
  /* ---------- server job -> UI job ---------- */
  function toUI(s){const sp=s.spec||{};return Object.assign({},sp,{id:s.id,kind:s.kind,status:s.status,file:s.file||null,
-  seed:s.seed_used??sp.seed,step:s.step||0,steps:s.steps||sp.steps||0,progress:s.progress||0,eta:s.eta,preview_rev:s.preview_rev||0,
+  seed:s.seed_used??sp.seed,est:s.est,est_first:s.est_first,t_first:s.t_first&&s.t_first*1000,step:s.step||0,steps:s.steps||sp.steps||0,progress:s.progress||0,eta:s.eta,preview_rev:s.preview_rev||0,
   error:s.error,started:s.started&&s.started*1000,finished:s.finished&&s.finished*1000,loras:sp.loras||[],mp:sp.mp||"1.0",ar:sp.ar||"1:1"})}
  let sig="",forgeOk=true,forgeStarting=false,firstPoll=true,loadingM=false;const seen=new Set();
  async function poll(){let s;try{s=await (await fetch("/api/state")).json()}catch(e){forgeMsg("Kiln server not reachable");return}
@@ -1239,10 +1240,10 @@ applyFont();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");rend
   for(const b in s.stats.sec_per_step||{})SEC_PER_STEP[b]=Math.max(1,s.stats.sec_per_step[b]);
   const prev=new Map(jobs.map(j=>[j.id,j]));
   jobs=s.jobs.map(x=>{const u=toUI(x),o=prev.get(u.id);if(o&&o.status==="running"&&u.status==="running"){u._ss=o._ss;u._lastStep=o._lastStep}return u});
-  for(const j of jobs){if(j.status==="done"&&!seen.has(j.id)){seen.add(j.id);if(!firstPoll){justDone=j.id;resultStale=false;onJobDone(j)}}
+  for(const j of jobs){if(j.status==="done"&&!seen.has(j.id)){seen.add(j.id);neKey="";if(!firstPoll){justDone=j.id;resultStale=false;onJobDone(j)}}
    if(j.status==="error"&&!seen.has("e"+j.id)){seen.add("e"+j.id);if(!firstPoll)toast(`Job #${j.id} failed: ${j.error||"error"}`)}}
   firstPoll=false;
-  if(peekJob)peekJob=jobs.find(j=>j.id===peekJob.id)||peekJob;if(ovJob)ovJob=jobs.find(j=>j.id===ovJob.id)||ovJob;
+  if(peekJob)peekJob=jobs.find(j=>j.id===peekJob.id)||peekJob;
   const ns=jobs.map(j=>`${j.id}:${j.status}:${j.file}`).join("|");
   if(ns!==sig){sig=ns;renderAll()}else{const n=jobs.filter(j=>j.status==="pending"||j.status==="running").length;$("badge").textContent=n;$("badge").classList.toggle("show",n>0);$("tabN").textContent=n||""}
   setTimeout(poll,current()?700:1800)}
@@ -1271,7 +1272,7 @@ applyFont();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");rend
   if(a==="up"){const u=(S.set||{}).upscaler||(models&&models.upscalers[0]);if(!u)return toast("No upscalers found in Forge");
    return api("/api/upscale",{id:j.id,upscaler:u,scale:+((S.set||{}).upscale||2)}).then(()=>{toast(`Upscale ×${(S.set||{}).upscale||2} queued (${u})`);poll()})}
   if(a==="i2i")return toast("img2img is next on the roadmap")}
- for(const [el,get] of [[$("sideGen"),()=>shownDone()],[$("sideOv"),()=>ovJob]]){
+ for(const [el,get] of [[$("sideGen"),()=>shownDone()]]){
   el.addEventListener("click",e=>{const b=e.target.closest("button");if(!b||b.dataset.a==="thumb")return;e.stopImmediatePropagation();act(b.dataset.a,get())},true)}
 
  /* ---------- LoRA thumbnails stored by the server ---------- */
@@ -1316,15 +1317,22 @@ applyFont();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");rend
 
  /* ---------- progress: real steps, smooth glide in between, live preview ---------- */
  let lastPrev=0,prevLoading=false;
+ /* countdown from the history-based total; if the first step came late compared with history, stretch it */
+ function remaining(j){if(!j.est||!j.started)return null;const el=(Date.now()-j.started)/1000;let f=1;
+  if(j.t_first&&j.est_first){const at=(j.t_first-j.started)/1000;f=Math.max(.75,Math.min(2.5,at/j.est_first))}
+  const r=j.est*f-el;return r>2?r:null} // overdue: fall back to step timing
+ let nextEst=null,neKey="";
+ function refreshEst(){const [w,h]=SIZES[S.mp][S.ar],k=`${w}x${h}x${S.steps}`;if(k===neKey)return;neKey=k;
+  api("/api/estimate",{spec:{w,h,steps:S.steps}}).then(r=>{if(neKey===k)nextEst=r.est}).catch(()=>{})}
  window.frame=function(){const j=current();const prog=$("prog");
   if(j){prog.classList.add("show","run");
    const per=Math.max(1,SEC_PER_STEP[j.mp]||60)*1000;
    if(j._lastStep!==j.step){j._lastStep=j.step;j._ss=Date.now()}
    const part=j.steps?Math.min((Date.now()-(j._ss||Date.now()))/per,.95):0;
    const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;$("fill").style.width=(p*100).toFixed(2)+"%";
-   const left=j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000);
+   const rm=remaining(j),left=rm!=null?rm:(j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000));
    const started=j.step||j.preview_rev;$("ptxt").textContent=j.kind==="upscale"?"Upscaling…":started?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`:"Loading model…";
-   $("peta").textContent=j.kind==="upscale"?"":started?`~${fmt(left)} left`:"";
+   $("peta").textContent=j.kind==="upscale"?"":(started||rm!=null)?`~${fmt(left)} left`:"";
    if(S.view==="gen"&&!browsed()){const f=$("frame");f.classList.add("has");$("idle").style.display="none";
     if(+$("cv").dataset.j!==j.id){$("cv").dataset.j=j.id;$("cv").dataset.d="";lastPrev=0;const c=$("cv");c.width=1;c.height=1;sizeFrame()}
     if(j.preview_rev&&j.preview_rev!==lastPrev&&!prevLoading){prevLoading=true;const r=j.preview_rev;const i=new Image();
@@ -1332,7 +1340,7 @@ applyFont();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");rend
    const mini=document.querySelector(`.qi[data-id="${j.id}"] .mini i`);if(mini)mini.style.width=(p*100)+"%";
   }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run");$("fill").style.width="0%";
     if(!forgeOk){$("ptxt").textContent=forgeStarting?"Starting Forge…":"Forge not running";$("peta").textContent=forgeStarting?"jobs start when it's ready":"queue waits for it"}
-    else{$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(S.steps*(SEC_PER_STEP[S.mp]||60))} per image`}}
+    else{refreshEst();$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`}}
   if(!j||browsed()){const d=shownDone();
    if(d&&S.view==="gen"){if($("cv").dataset.d!=d.id){$("cv").dataset.d=d.id;$("cv").dataset.j="";sizeFrame();
      if(justDone===d.id){const f=$("frame");f.classList.remove("reveal");void f.offsetWidth;f.classList.add("reveal");setTimeout(()=>f.classList.remove("reveal"),1200);justDone=null}
@@ -1341,8 +1349,8 @@ applyFont();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");rend
   requestAnimationFrame(frame)};
 
  window.jobProgress=function(j){const per=Math.max(1,SEC_PER_STEP[j.mp]||60)*1000;const part=j.steps&&j._ss?Math.min((Date.now()-j._ss)/per,.95):0;
-  const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;const started=j.step||j.preview_rev;
-  return{p,left:started?(j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000)):null}};
+  const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;const started=j.step||j.preview_rev,rm=remaining(j);
+  return{p,left:rm!=null?rm:started?(j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000)):null}};
  /* ---------- go ---------- */
  addEventListener("pagehide",()=>navigator.sendBeacon("/api/bye"));
  jobs=[];await loadModels(false);refreshUp();

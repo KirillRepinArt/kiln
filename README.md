@@ -25,7 +25,8 @@ honest time estimates, overnight batches, and nothing that needs babysitting.
 - ▶ / `Ctrl+Enter` adds to the queue; it starts immediately if idle. Keep writing while it runs.
 - Drag to reorder, × to remove, **Stop** to cancel the running job.
 - **Count ×N** queues a batch — random seeds, or counting up from a fixed seed.
-- Click any job — including the one rendering now, or the status line under the image — to **peek** at its prompt
+- Click a finished job to open it in the Generating view (browsing from there). Click any other job — including the
+  one rendering now, or the status line under the image — to **peek** at its prompt
   without touching your draft, then **Reuse prompt** or **Reuse all** (settings, seed and LoRAs too). `Esc` goes back to your draft.
 
 **Prompt editor** (CodeMirror 6)
@@ -44,15 +45,15 @@ The queue shows which variant each job got, so a good result can be traced back.
 - A status line under the image: **Ready · ~estimate** when idle, step / time left / **Stop** while running.
 - **Browse** finished images with `←` / `→` or the arrows on the image — while a job renders too. Each image you land on
   is peeked like a queued job (its name and prompt, greyed, with Reuse); ✕, `Esc` or stepping past the newest returns to
-  your draft and the live render. Reuse buttons only appear when they'd change something ("Use this seed" when only
+  your draft and the live render — so does the ✕ on the image. Reuse buttons only appear when they'd change something ("Use this seed" when only
   the seed differs).
 - Click a finished image for a **full-size viewer** (fit ↔ 100%, wheel zoom, drag to pan); double-click to open
   it in your default app.
 - Optional **name** for a series → files are numbered `rainy-library-001.png`, `-002`, …
 
 **LoRA library**
-- One list — Faces, Style, Utility — each row with a thumbnail (set one from any finished image; adjustable size),
-  weight and switch. An **Active** strip on top shows what's on.
+- Faces, Style, Utility as compact items — thumbnail (set one from any finished image), weight, switch — in as many
+  centred columns as fit; the thumbnail-size slider sizes the items too. An **Active** strip on top shows what's on.
 - Readable names parsed from common file naming (`krea2_<name>_v2_large_onetrainer` → *Name · v2 · large*),
   double-click to rename, favourites, recent, search.
 - **One face at a time** — LoRAs are global weight changes, so two face LoRAs blend into one face; Kiln
@@ -86,7 +87,8 @@ nothing to install), and [Forge Neo](https://github.com/Haoming02/sd-webui-forge
 one job at a time — Forge's own UI keeps working alongside. Images are saved to `outputs/` with the generation
 settings embedded, named after your series (`rainy-library-001.png`) or by date and seed. Model and module choices
 in ⚙ Settings default to whatever Forge has loaded; pick others and Kiln switches before the job runs.
-Time estimates learn from your own runs.
+Time estimates come from your own runs: the median of the last five at the same image size and steps (on real
+history that halved the error of a per-megapixel average), counted down while the job runs.
 
 **LoRA folders.** Kiln reads your LoRAs from Forge. Put face LoRAs in a `people` (or `faces`, `characters`)
 subfolder and styles in `style` to get the face grid and filters; the names are configurable.

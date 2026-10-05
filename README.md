@@ -60,6 +60,8 @@ The queue shows which variant each job got, so a good result can be traced back.
 - Ratio picker with shape previews · ~1 / 1.5 / 2 MP presets (all sides multiples of 16).
 - Window title and favicon show progress; desktop notification when the queue empties (on, silent or off).
 - Narrow windows stack the image above the prompt; drag the line between them to share the height.
+- Wide windows: drag the prompt box by any empty spot (or its name row) — it snaps to the top, middle or bottom of
+  the image. The divider sets its width (up to 900 px); the image column never gets narrower than the tab bar.
 - Settings remember model, VAE, text encoder and the rest. **Reset layout** / **Reset everything**.
 - Themes for the play button and progress bar; font choice (Geist, Inter, Satoshi, Manrope, IBM Plex Sans).
 

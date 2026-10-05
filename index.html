@@ -351,7 +351,13 @@ button,.tab,.pill,.chip,.qi,.card,.li,.fchips button{user-select:none;-webkit-us
 #embers{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
 /* prompt card: positioned by layoutLeft() — centred on the image, frozen while you work in it */
 .lcol{position:relative;min-height:0;min-width:0}
-.left.nodur{transition:none!important}
+.left.nodur,.ltitle.nodur{transition:none!important}
+/* wide window: grab the empty parts of the prompt card (or the name row) to move it — snaps top / middle / bottom */
+.app:not(.stacked) .left,.app:not(.stacked) .ltitle{cursor:grab}
+.pwrapT{cursor:text}.chip{cursor:default}
+body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
+.ghost{position:absolute;right:0;width:min(100%,var(--cw,680px));border-radius:var(--r-panel);border:1px dashed rgba(255,255,255,.14);pointer-events:none;opacity:0;transition:opacity .15s,border-color .15s}
+.ghost.show{opacity:1}.ghost.near{border-color:rgba(255,255,255,.5)}
 
 /* ---- composer layout ---- */
 .ltitle{position:absolute;right:0;width:min(100%,var(--cw,680px));top:calc(var(--ltop,0px) - var(--ts,64px) + 4px);height:calc(var(--ts,64px) - 10px);transition:top .4s var(--ease),height .4s var(--ease);
@@ -626,7 +632,7 @@ function grow(){} // column widths now come from sizeFrame()
  g.addEventListener("dblclick",()=>{S.sch=0;save();layoutLeft();toast("Image / prompt split back to auto")});})();
 (function(){const g=$("split");let x0=0,w0=0;
  g.addEventListener("pointerdown",e=>{e.preventDefault();g.setPointerCapture(e.pointerId);g.classList.add("drag");document.body.classList.add("resizing");x0=e.clientX;w0=$("left").getBoundingClientRect().width});
- g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;const max=innerWidth-36-18-420;S.lw=Math.max(360,Math.min(max,Math.round(w0+e.clientX-x0)));grow();sizeFrame();moveThumb(true)});
+ g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;const max=Math.min(CARDMAX,innerWidth-36-18-minRight());S.lw=Math.max(360,Math.min(max,Math.round(w0+e.clientX-x0)));grow();sizeFrame();moveThumb(true)});
  g.addEventListener("pointerup",()=>{g.classList.remove("drag");document.body.classList.remove("resizing");save()});
  g.addEventListener("dblclick",()=>{S.lw=0;save();grow();sizeFrame();moveThumb(true)});})();
 
@@ -669,11 +675,22 @@ function fmtW(w){return (+w).toFixed(2).replace(/\.?0+$/,"")}
    Centred on the image's vertical centre while there's room. While the editor is focused or the pointer is over
    the card it is FROZEN: it only grows downward (then scrolls), so nothing moves under the cursor. ~0.5 s after the
    pointer leaves (and the editor isn't focused) it glides back to centre and re-expands to use the space. */
-let lyFrozen=false,lyHover=false,lyT=null,lyTop=null,lyCy=null;
+let lyFrozen=false,lyHover=false,lyT=null,lyTop=null,lyCy=null,lyIT=null,lyIB=null,lyBot=null,lyDrag=false;
+/* S.pos (wide window): "top" = card top level with the image top (name row beside the tabs), "mid" = centred on the
+   image, "bot" = card bottom level with the status line. A bottom card grows upward while you type. */
+function anchorTop(pos,H,colH){const t=pos==="top"?(lyIT??0):pos==="bot"?((lyIB??colH)-H):(lyCy??colH/2)-H/2;return Math.max(0,Math.min(colH-H,t))}
 function cardNaturalH(){const L=$("left"),w=L.querySelector(".pwrapT");const sc=L.querySelector(".cm-scroller");
  const edH=(sc?sc.scrollHeight:P.scrollHeight)+16;return Math.max(170,L.offsetHeight-w.offsetHeight+Math.max(84,edH))}
-function applyMode(){const a=document.querySelector(".app");const st=innerWidth<980||innerWidth/innerHeight<1.15;if(a.classList.contains("stacked")!==st){a.classList.toggle("stacked",st);requestAnimationFrame(()=>{sizeFrame();moveThumb(true)})}}
-function layoutLeft(){const L=$("left"),col=$("lcol");const TS=$("peekbar").classList.contains("show")?108:64;col.style.setProperty("--ts",TS+"px");
+const CARDMAX=900; // wide window: the prompt card never gets wider than this (text stops at ~76ch anyway)
+function tabsW(){const k=document.querySelector(".tabs").children;return k.length?Math.ceil(k[k.length-1].getBoundingClientRect().right-k[0].getBoundingClientRect().left):0}
+function minRight(){return Math.max(420,tabsW()+2)} // the image column never gets narrower than the tab bar
+function applyMode(){const a=document.querySelector(".app");const st=innerWidth<980||innerWidth/innerHeight<1.15||innerWidth-54<360+minRight();
+ $("ltitle").dataset.tip=st?"":"Drag to move the prompt box: top · middle · bottom";
+ if(a.classList.contains("stacked")!==st){a.classList.toggle("stacked",st);
+  // switching layouts: place the image first, then the card, without the glide (it would start from stale positions)
+  const L=$("left"),T=$("ltitle");L.classList.add("nodur");T.classList.add("nodur");lyFrozen=false;lyTop=null;lyCy=null;
+  sizeFrame();layoutLeft();moveThumb(true);requestAnimationFrame(()=>{sizeFrame();layoutLeft();requestAnimationFrame(()=>{L.classList.remove("nodur");T.classList.remove("nodur")})})}}
+function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol");const TS=$("peekbar").classList.contains("show")?108:64;col.style.setProperty("--ts",TS+"px");
  if(document.querySelector(".app.stacked")){let H;lyTop=0;
   if(S.sch)H=Math.max(200,Math.min(S.sch,Math.round(innerHeight*.7))); // set with the divider above the name
   else{H=Math.min(cardNaturalH(),Math.round(innerHeight*.42));
@@ -683,10 +700,11 @@ function layoutLeft(){const L=$("left"),col=$("lcol");const TS=$("peekbar").clas
   col.style.setProperty("--lch",lch);col.style.setProperty("--ltop",TS+"px");col.style.setProperty("--lh",H+"px");if(chg)requestAnimationFrame(sizeFrame);return}
  const colH=col.clientHeight-TS;if(colH<=0)return;
  const f=$("frame").getBoundingClientRect(),c=col.getBoundingClientRect();
- if(S.view==="gen"&&f.height>0)lyCy=f.top+f.height/2-c.top-TS;if(lyCy==null)lyCy=colH/2;
- let H=S.pph?Math.min(Math.max(240,S.pph),colH):Math.min(cardNaturalH(),colH);let top;
- if(lyFrozen&&lyTop!=null){top=lyTop;H=Math.min(H,colH-top)}
- else top=Math.max(0,Math.min(colH-H,lyCy-H/2));
+ if(S.view==="gen"&&f.height>0){lyCy=f.top+f.height/2-c.top-TS;lyIT=f.top-c.top-TS;const pb=$("prog").getBoundingClientRect();lyIB=(pb.height?pb.bottom:f.bottom)-c.top-TS}
+ if(lyCy==null)lyCy=colH/2;
+ let H=S.pph?Math.min(Math.max(240,S.pph),colH):Math.min(cardNaturalH(),colH);let top;const pos=S.pos||"mid";
+ if(lyFrozen&&lyTop!=null){if(pos==="bot"&&lyBot!=null){top=Math.max(0,lyBot-H);H=Math.min(H,colH-top)}else{top=lyTop;H=Math.min(H,colH-top)}}
+ else{top=anchorTop(pos,H,colH);lyBot=top+H}
  lyTop=top;col.style.setProperty("--ltop",(top+TS)+"px");col.style.setProperty("--lh",H+"px")}
 function freeze(){clearTimeout(lyT);lyFrozen=true}
 function thaw(){clearTimeout(lyT);lyT=setTimeout(()=>{const ed=document.activeElement&&$("left").contains(document.activeElement);if(lyHover||ed)return;lyFrozen=false;S.pph=0;layoutLeft()},500)}
@@ -695,6 +713,25 @@ $("left").addEventListener("pointerleave",()=>{lyHover=false;thaw()});
 $("left").addEventListener("focusin",freeze);
 $("left").addEventListener("focusout",()=>{if(!lyHover)thaw()});
 new ResizeObserver(()=>layoutLeft()).observe($("lcol"));
+(function(){const L=$("left"),T=$("ltitle"),col=$("lcol");let d=null;
+ const NO="input,textarea,button,a,select,.chip,.pwrapT,.vedge,.pop,.cwi";
+ const ghosts=["top","mid","bot"].map(p=>{const g=document.createElement("div");g.className="ghost";g.dataset.p=p;col.appendChild(g);return g});
+ const geo=()=>{const TS=parseFloat(col.style.getPropertyValue("--ts"))||64;return{TS,colH:col.clientHeight-TS,H:L.offsetHeight}};
+ const nearest=(t,H,colH)=>["top","mid","bot"].map(p=>[p,Math.abs(anchorTop(p,H,colH)-t)]).sort((a,b)=>a[1]-b[1])[0][0];
+ function down(e){if(document.querySelector(".app.stacked")||e.button!==0||e.target.closest(NO))return;e.preventDefault();
+  d={y0:e.clientY,t0:lyTop||0,moved:false};try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}}
+ function move(e){if(!d)return;const dy=e.clientY-d.y0;if(!d.moved&&Math.abs(dy)<5)return;const {TS,colH,H}=geo();
+  if(!d.moved){d.moved=true;lyDrag=true;L.classList.add("nodur");T.classList.add("nodur");document.body.classList.add("cardmove");
+   ghosts.forEach(g=>{g.style.top=(anchorTop(g.dataset.p,H,colH)+TS)+"px";g.style.height=H+"px";g.classList.add("show")})}
+  const t=Math.max(0,Math.min(colH-H,d.t0+dy));col.style.setProperty("--ltop",(t+TS)+"px");d.t=t;
+  const n=nearest(t,H,colH);ghosts.forEach(g=>g.classList.toggle("near",g.dataset.p===n))}
+ function up(){if(!d)return;const was=d;d=null;if(!was.moved)return;const {colH,H}=geo();S.pos=nearest(was.t,H,colH);save();
+  lyDrag=false;L.classList.remove("nodur");T.classList.remove("nodur");document.body.classList.remove("cardmove");ghosts.forEach(g=>g.classList.remove("show","near"));
+  const fz=lyFrozen;lyFrozen=false;layoutLeft();lyFrozen=fz}
+ for(const el of [L,T]){el.addEventListener("pointerdown",down);el.addEventListener("pointermove",move);el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up)}
+ // the empty space under the text belongs to the editor: a click there puts the cursor at the end
+ document.querySelector(".pwrapT").addEventListener("mousedown",e=>{if(!e.target.classList.contains("pwrapT"))return;e.preventDefault();P.focus();
+  if(window.__cm){const v=window.__cm;v.dispatch({selection:{anchor:v.state.doc.length}})}})})();
 
 /* ======================= tabs ======================= */
 function moveThumb(instant){const t=document.querySelector(".tab.on"),th=$("thumb");if(!t)return;if(instant)th.style.transition="none";th.style.left=t.offsetLeft+"px";th.style.width=t.offsetWidth+"px";if(instant){void th.offsetWidth;th.style.transition=""}}
@@ -718,13 +755,14 @@ const BAR=56; // bar block height incl. gap
 /* Wide window: the prompt card and the image are centred as one group (equal space outside both), so a wide image
    doesn't run to the right edge while the card hugs the middle. The divider sets the card width (S.lw). */
 function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
- if(!stk){const avail=innerWidth-36-18,cw=Math.max(360,Math.min(S.lw||680,avail-420));const sh=$("stage").getBoundingClientRect().height-BAR;
-  const [a,b]=ar.split(":").map(Number);const iw=Math.min(avail-cw,sh*a/b);const side=Math.max(0,Math.floor((avail-cw-iw)/2));
+ const TW=tabsW();
+ if(!stk){const avail=innerWidth-36-18,cw=Math.max(360,Math.min(S.lw||680,CARDMAX,avail-minRight()));const sh=$("stage").getBoundingClientRect().height-BAR;
+  const [a,b]=ar.split(":").map(Number);const iw=Math.min(avail-cw,sh*a/b),rw=Math.max(iw,TW);const side=Math.max(0,Math.floor((avail-cw-rw)/2));
   app.style.setProperty("--lc",(side+cw)+"px");app.style.setProperty("--cw",cw+"px")}
  const st=$("stage").getBoundingClientRect();const f=$("frame");
  fitBox(f,ar,st.width,st.height-BAR);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
- const top=Math.max(0,(st.height-h-BAR)/2),left=0;f.style.left=left+"px";f.style.top=top+"px";
- const tb=document.querySelector(".tabs");if(tb){tb.style.width=w+"px";tb.style.transform=S.view==="gen"&&top>0?`translateY(${Math.round(top)}px)`:""}
+ const tbw=stk?w:Math.max(w,TW);const top=Math.max(0,(st.height-h-BAR)/2),left=stk?0:Math.max(0,Math.floor((Math.min(tbw,st.width)-w)/2));f.style.left=left+"px";f.style.top=top+"px";
+ const tb=document.querySelector(".tabs");if(tb){tb.style.width=tbw+"px";tb.style.transform=S.view==="gen"&&top>0?`translateY(${Math.round(top)}px)`:""}
  const sx=document.querySelector(".app.stacked")?(st.width-w)/2:0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+12)+"px";pr.style.setProperty("--tw",w+"px");
  if(window.layoutLeft)requestAnimationFrame(layoutLeft)}
 window.addEventListener("resize",()=>{applyMode();applyPH();sizeFrame();syncH();moveThumb(true)});
@@ -1084,7 +1122,7 @@ $("sTheme").value=S.theme;$("sTheme").onchange=e=>{S.theme=e.target.value;applyT
  if(!current()){const p=$("prog");window._dp=1;p.classList.add("show");sizeFrame();$("fill").style.width="62%";$("ptxt").textContent="Theme preview";$("peta").textContent="";
   clearTimeout(window._dpt);window._dpt=setTimeout(()=>{window._dp=0},2500)}};
 function applyFont(){const f=(S.set||{}).font||"Geist";document.documentElement.style.setProperty("--font",`"${f}"`);requestAnimationFrame(()=>moveThumb(true))}
-$("rLayout").onclick=()=>{S.lw=0;S.pph=0;S.sch=0;grow();applyPH();showView("gen");save();sizeFrame();moveThumb(true);$("modal").classList.remove("show");toast("Layout reset")};
+$("rLayout").onclick=()=>{S.lw=0;S.pph=0;S.sch=0;S.pos="mid";grow();applyPH();showView("gen");save();sizeFrame();moveThumb(true);$("modal").classList.remove("show");toast("Layout reset")};
 $("rAll").onclick=()=>{if(!confirm("Reset everything? Prompt, name, settings, favourites, thumbnails and layout go back to defaults."))return;try{localStorage.clear()}catch(e){}location.reload()};
 S.set=S.set||{};document.querySelectorAll('[data-set]').forEach(el=>{const k=el.dataset.set;if(S.set[k]!=null)el.value=S.set[k];else S.set[k]=el.value;
  el.addEventListener('change',()=>{S.set[k]=el.value;save();if(k==="font")applyFont()})});
@@ -1311,7 +1349,7 @@ if(cm){
    if(e.key==="Escape"||e.key.length===1||e.key==="Backspace"||e.key==="Enter"){if(e.ctrlKey&&e.key==="Enter")return false;
     ta.dispatchEvent(new KeyboardEvent("keydown",{key:e.key,ctrlKey:e.ctrlKey}));return true}return false}})
  ]})});
- wrap.insertBefore(view.dom,ta);wrap.classList.add("cm-on");
+ wrap.insertBefore(view.dom,ta);wrap.classList.add("cm-on");requestAnimationFrame(()=>window.layoutLeft&&layoutLeft()); // the card was sized for the plain textarea
 
  /* keep the old textarea API working: P.value / P.readOnly / P.focus / P.classList("peek") drive the editor */
  Object.defineProperty(ta,"value",{get(){return proto.get.call(ta)},set(v){proto.set.call(ta,v);const cur=view.state.doc.toString();

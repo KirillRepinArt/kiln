@@ -318,6 +318,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .frame.clickable{cursor:zoom-in}
 .nav{position:absolute;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;z-index:6;opacity:0;transition:opacity .15s,background .15s}
 .nav.prev{left:10px}.nav.next{right:10px}
+.frame .nav{top:max(50%,276px)} /* below the 5 hover buttons when the frame is short */
 .nav svg{width:18px;height:18px}.nav:hover{background:rgba(40,40,44,.9)}
 .frame:hover .nav:not(.off),.viewer:hover .nav:not(.off){opacity:1}
 .nav.off{pointer-events:none}
@@ -767,8 +768,7 @@ updHm();
 function moveThumb(instant){const t=document.querySelector(".tab.on"),th=$("thumb");if(!t)return;if(instant)th.style.transition="none";th.style.left=t.offsetLeft+"px";th.style.width=t.offsetWidth+"px";if(instant){void th.offsetWidth;th.style.transition=""}}
 function showView(v){const was=S.view;
  if(was!==v){ // temporary state belongs to the visit: an open preview, a browse, a search, a scroll position
-  if(was==="queue"){if($("ov").classList.contains("show"))closeOv();$("qwrap").scrollTop=0}
-  if(was==="gen"&&browseId!=null)endPeek();
+  if(was==="queue"){$("ov").classList.remove("show");$("qwrap").scrollTop=0} // the prompt box (and its peek) is left as it is
   if(was==="loras"){$("lsearch").value="";$("lscroll").scrollTop=0}}
  S.view=v;$("rpanel").classList.toggle("paneled",v!=="gen");document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));moveThumb();
  document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id==="v-"+v));if(v!=="gen"){const tb=document.querySelector(".tabs");if(tb)tb.style.transform=""}if(v==="queue")renderQueue();if(v==="loras")renderLoras();if(v==="gen")sizeFrame()}

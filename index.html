@@ -193,7 +193,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .prog .meta .eta{margin-left:auto;color:var(--muted)}
 .prog .stop{display:none;align-items:center;gap:6px;height:26px;padding:0 11px 0 9px;border-radius:999px;background:var(--raised);font-size:12.5px;font-weight:500;color:#e6e6ea;transition:background .15s}
 .prog.run .stop{display:inline-flex}
-.prog.run .meta{cursor:pointer}
+.prog.run .meta,.prog.showp .meta{cursor:pointer}
 .prog .stop:hover{background:#45454a}
 .prog .stop svg{width:9px;height:9px}
 
@@ -830,7 +830,7 @@ function browsed(){if(browseId==null)return null;const b=jobs.find(j=>j.id===bro
 function genNav(dir,dry){const run=!!current(),b=browsed(),cur=b||(run?null:shownDone()),L=doneList();
  let i=cur?L.findIndex(x=>x.id===cur.id):L.length;if(i<0)i=L.length;const n=i+dir;let id;
  if(n<0)return false;if(n>=L.length){if(!b)return false;id=null}else id=L[n].id; // past the newest: back to your working view
- if(!dry){browseId=id;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else loadJob(L[n])}return true}
+ if(!dry){browseId=id;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else if(!peekOff)loadJob(L[n])}return true}
 function vNav(dir,dry){const L=doneList(),i=L.findIndex(x=>x.id===(V.job&&V.job.id)),t=L[i+dir];if(i<0||!t)return false;if(!dry)openViewer(t);return true}
 function navFn(el){return el.closest("#viewer")?vNav:genNav}
 function updNav(){document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("off",!navFn(b)(+b.dataset.nav,true)))}
@@ -853,7 +853,7 @@ $("play").onclick=()=>{askNotify();addJobs()};
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();addJobs()}
  if(e.key==="Escape"){if($("viewer").classList.contains("show")){closeViewer();return}
   if($("modal").classList.contains("show")){$("modal").classList.remove("show");return}
-  if(browseId!=null){endPeek();return} // Esc anywhere leaves a browse (the editor handles its own Esc first)
+  if(browseId!=null&&!(e.target.closest&&e.target.closest(".pwrapT"))){endPeek();return} // Esc outside the editor leaves the browse
   closePops()}});
 function tick(){if(current())return;const j=jobs.find(j=>j.status==="pending");if(!j){renderAll();return}
  j.status="running";j.started=Date.now();j.step=0;j.stepStart=Date.now();const est=SEC_PER_STEP[j.mp]*1000/S.demo;j.est=est;const r=rng(j.seed^0x9e37);
@@ -861,7 +861,8 @@ function tick(){if(current())return;const j=jobs.find(j=>j.status==="pending");i
    if(j.step>=j.steps){j.status="done";j.finished=Date.now();justDone=j.id;resultStale=false;onJobDone(j);renderAll();tick()}else next()},est*(.8+r()*.4))};next();renderAll()}
 function stopJob(j){if(!j)return;clearTimeout(j.timer);if(j.status==="running"){j.status="cancelled";toast("Stopped")}else if(j.status==="pending")jobs=jobs.filter(x=>x!==j);renderAll();tick()}
 $("stopBtn").onclick=()=>stopJob(current());
-$("prog").addEventListener("click",e=>{if(e.target.closest(".stop"))return;const j=current();if(j)loadJob(j)}); // peek at the running job's prompt
+$("prog").addEventListener("click",e=>{if(e.target.closest(".stop"))return;const b=browsed();if(b){peekOff=false;loadJob(b);return}const j=current();if(j)loadJob(j)}); // peek at the shown image's prompt
+function browseStatus(){const b=browsed(),on=!!(b&&peekOff);$("prog").classList.toggle("showp",on);if(on&&!window._dp)$("ptxt").textContent=`#${b.id} · Show prompt`}
 function frame(){const j=current();const prog=$("prog");
  if(j){prog.classList.add("show","run");
   const part=Math.min((Date.now()-j.stepStart)/j.est,.95);const p=(j.step+part)/j.steps;$("fill").style.width=(p*100).toFixed(2)+"%";
@@ -874,7 +875,7 @@ function frame(){const j=current();const prog=$("prog");
     if(justDone===d.id){const f=$("frame");f.classList.remove("reveal");void f.offsetWidth;f.classList.add("reveal");setTimeout(()=>f.classList.remove("reveal"),1200);justDone=null}
     paint($("cv"),d,1)}$("frame").classList.add("has");$("idle").style.display="none"}
   else if(!d){$("frame").classList.remove("has");$("idle").style.display="";const c=$("cv");if(c.width>1){c.width=1;c.height=1;c.dataset.d="";c.dataset.j=""}}}
- requestAnimationFrame(frame)}
+ browseStatus();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 
 
@@ -950,7 +951,7 @@ $("qwrap").addEventListener("click",e=>{
  if(j.status==="running"){showView("gen");loadJob(j);return}
  if(j.status==="done"){showView("gen");browseTo(j);return} // finished: browse to it in Generating
  loadJob(j)});
-function browseTo(j){browseId=j.id;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();loadJob(j);updNav()}
+function browseTo(j){browseId=j.id;peekOff=false;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();loadJob(j);updNav()}
 let undo=null;var justDone=null;
 let peekJob=null;
 /* the peek bar only offers what would change something: no "Reuse prompt" when the prompt is already your draft;
@@ -964,7 +965,12 @@ function peekButtons(){const j=peekJob;if(!j)return;const pSame=(j.raw||j.prompt
 function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classList.add("peek");P.scrollTop=0;
  const n=$("pname");n.value=j.name||"";n.placeholder="Unnamed";n.readOnly=true;
  peekButtons();$("peekbar").classList.add("show");updPrompt();layoutLeft()}
-function endPeek(){if(browseId!=null){browseId=null;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()} // leaving a browse peek returns to the working view
+/* Two ways out of a browse: the prompt's ✕ (or Esc in the editor) closes only the prompt — your draft comes back, the
+   image stays, and the arrows keep the prompt closed (peekOff) until the browse ends; the image's ✕ (or Esc elsewhere)
+   closes both and returns to the live view. */
+let peekOff=false;
+function closePromptPeek(){if(browseId!=null){peekOff=true;endPeek(true)}else endPeek()}
+function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){browseId=null;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}}
  if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
  const n=$("pname");n.value=S.pname||"";n.placeholder="Add name";n.readOnly=false;
  $("peekbar").classList.remove("show");updPrompt();layoutLeft()}
@@ -972,8 +978,8 @@ function reuse(all){const j=peekJob;if(!j)return;const prev={draft,S:{mp:S.mp,ar
  draft=j.raw||j.prompt;if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps,seedMode:"fixed",seed:j.seed});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}
  endPeek();save();renderAll();P.focus();
  toast(all?`Reused #${j.id} — prompt, settings and LoRAs`:`Reused #${j.id}'s prompt`,"Undo",()=>{draft=prev.draft;P.value=draft;Object.assign(S,prev.S);LORAS.forEach((l,i)=>Object.assign(l,prev.loras[i]));save();renderAll();updPrompt()})}
-$("pkPrompt").onclick=()=>reuse(false);$("pkAll").onclick=()=>reuse(true);$("pkX").onclick=endPeek;
-P.addEventListener("keydown",e=>{if(!peekJob)return;if(e.key==="Escape"){endPeek();return}
+$("pkPrompt").onclick=()=>reuse(false);$("pkAll").onclick=()=>reuse(true);$("pkX").onclick=()=>closePromptPeek();
+P.addEventListener("keydown",e=>{if(!peekJob)return;if(e.key==="Escape"){closePromptPeek();return}
  if(e.key.length===1||e.key==="Backspace"||e.key==="Enter"){if(e.ctrlKey&&e.key==="Enter")return;reuse(false)}});
 function updPrompt(){if(window.nameUI)nameUI();const n=P.value.length;$("pcount").textContent=n?n.toLocaleString()+" chars":"";$("play").classList.toggle("off",!P.value.trim()||!!peekJob);
  $("play").title=peekJob?"Choose Reuse first":(!P.value.trim()?"Write a prompt first":"Add to queue (Ctrl+Enter)")}
@@ -1358,7 +1364,7 @@ applyFont();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");rend
      if(justDone===d.id){const f=$("frame");f.classList.remove("reveal");void f.offsetWidth;f.classList.add("reveal");setTimeout(()=>f.classList.remove("reveal"),1200);justDone=null}
      paint($("cv"),d,1)}$("frame").classList.add("has");$("idle").style.display="none"}
    else if(!d){$("frame").classList.remove("has");$("idle").style.display="";const c=$("cv");if(c.width>1){c.width=1;c.height=1;c.dataset.d="";c.dataset.j=""}}}
-  requestAnimationFrame(frame)};
+  browseStatus();requestAnimationFrame(frame)};
 
  window.jobProgress=function(j){const per=Math.max(1,SEC_PER_STEP[j.mp]||60)*1000;const part=j.steps&&j._ss?Math.min((Date.now()-j._ss)/per,.95):0;
   const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;const started=j.step||j.preview_rev,rm=remaining(j);

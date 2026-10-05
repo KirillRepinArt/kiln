@@ -77,7 +77,9 @@ The queue shows which variant each job got, so a good result can be traced back.
 **Image**
 - Live preview under a soft veil that lifts as the steps land; a burst of embers when it's done.
 - **Browse** finished images with `←` / `→` or the arrows on the image — while a job renders, too. Each image you
-  land on shows its name and prompt (greyed, with Reuse); ✕ or `Esc` returns to your draft and the live render.
+  land on shows its name and prompt (greyed, with Reuse). The prompt's ✕ brings your draft back and keeps the image —
+  arrows then change only the image, and the status line offers *Show prompt*; the image's ✕ (or `Esc`) returns to
+  your draft and the live render.
   On the latest result, the ✕ clears the canvas (`←` brings it back).
 - Click for a **full-size viewer** (fit ↔ 100%, wheel zoom, drag to pan, arrows to browse); double-click opens the
   file in your default app. Hover actions: upscale, open, show in folder, use as a LoRA thumbnail.

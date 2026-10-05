@@ -54,8 +54,8 @@ The queue shows which variant each job got, so a good result can be traced back.
 
 **LoRA library**
 - Faces, Style, Utility as compact two-line items — thumbnail (set one from any finished image), name and switch,
-  weight underneath — in as many centred columns as fit; the thumbnail-size slider sizes the items too. An **Active**
-  strip on top shows what's on.
+  weight underneath — in as many centred columns as fit; the thumbnail-size slider sizes the items too. **Active**
+  LoRAs are listed on top as full items, so their weights can be edited right there.
 - Readable names parsed from common file naming (`krea2_<name>_v2_large_onetrainer` → *Name · v2 · large*),
   double-click to rename, favourites, recent, search.
 - **One face at a time** — LoRAs are global weight changes, so two face LoRAs blend into one face; Kiln
@@ -68,6 +68,8 @@ The queue shows which variant each job got, so a good result can be traced back.
 - Narrow windows stack the image above the prompt; drag the line between them to share the height.
 - Wide windows: drag the prompt box by any empty spot (or its name row) — it snaps to the top, middle or bottom of
   the image. The divider sets its width (up to 900 px); the image column never gets narrower than the tab bar.
+- Layout: the prompt box keeps the width you give it; the right-hand box (image, queue, LoRAs, PNG Info — the same
+  rectangle in every tab) absorbs window changes, and the two are centred together with equal outer margins.
 - Two height modes next to the name: **match the image** (level with the image and its status line) or **full height**.
 - Settings remember model, VAE, text encoder and the rest. **Reset layout** / **Reset everything**.
 - Themes for the play button and progress bar; font choice (Geist, Inter, Satoshi, Manrope, IBM Plex Sans).

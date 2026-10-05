@@ -38,11 +38,12 @@ input,select,textarea{font:inherit;color:var(--text)}
 input[type=range]{accent-color:#E6E6EA}
 :root{--sel:#FFFFFF}
 html,body{height:100%;overflow:hidden}
-.app{display:grid;grid-template-rows:minmax(0,1fr);grid-template-columns:var(--lc,minmax(360px,1fr)) 18px minmax(420px,1fr);padding:18px;height:100vh;margin:0 auto;align-items:stretch}
+.app{display:grid;grid-template-rows:minmax(0,1fr);grid-template-columns:var(--lc,minmax(360px,1fr)) 18px var(--rc,minmax(420px,1fr));padding:18px;height:100vh;margin:0 auto;align-items:stretch}
 .split{cursor:ew-resize;position:relative;touch-action:none}
 .split::after{content:"";position:absolute;top:50%;left:7px;width:4px;height:46px;margin-top:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
 .split:hover::after,.split.drag::after{opacity:1}
 body.resizing,body.resizing *{cursor:ew-resize!important;user-select:none}
+body.liveresize *,body.liveresize *::before,body.liveresize *::after{transition:none!important}
 /* expanded prompt: takes the whole window */
 
 @media (max-width:900px){.app{grid-template-columns:1fr}}
@@ -399,9 +400,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .l2 .star{width:22px;height:22px;flex:none}
 .lth{width:var(--th,48px);height:var(--th,48px);border-radius:10px;overflow:hidden;display:grid;place-items:center;font-weight:600;color:rgba(255,255,255,.75);font-size:calc(var(--th,48px)*.3);cursor:pointer;flex:none}
 .lth img{width:100%;height:100%;object-fit:cover;display:block}
-.lact{display:flex;flex-wrap:wrap;gap:6px;margin:0 2px 12px}
-.lact .lnone{font-size:12.5px;color:var(--faint);padding:4px 0}
-.lacth{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin:2px 4px 8px}
+.lgrid .lnone{grid-column:1/-1;font-size:12.5px;color:var(--faint);padding:2px 4px 10px}
 .chipmore{padding:4px 10px;font-weight:600;color:#d6d6da}
 .left{border-color:#34343a!important}
 .chips{justify-content:flex-start!important;padding:14px 22px 0 22px!important}
@@ -493,7 +492,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
           </div>
           <div class="fchips" id="fchips"></div>
           <div class="warn" id="warn">Two face LoRAs are on — they will blend into one face rather than give you two people.</div>
-          <div class="lacth" id="lacth">Active</div><div class="lact" id="lact"></div>
+
           <div class="lscroll" id="lscroll"></div>
         </div>
       </div>
@@ -708,7 +707,9 @@ function cardNaturalH(){const L=$("left"),w=L.querySelector(".pwrapT");const sc=
 const CARDMAX=900; // wide window: the prompt card never gets wider than this (text stops at ~76ch anyway)
 function tabsW(){const k=document.querySelector(".tabs").children;return k.length?Math.ceil(k[k.length-1].getBoundingClientRect().right-k[0].getBoundingClientRect().left):0}
 function minRight(){return Math.max(420,tabsW()+2)} // the image column never gets narrower than the tab bar
-function applyMode(){const a=document.querySelector(".app");const st=innerWidth<980||innerWidth/innerHeight<1.15||innerWidth-54<360+minRight();
+function applyMode(){const a=document.querySelector(".app"),was=a.classList.contains("stacked");
+ // switch to narrow below 980 px (or a tall window); back to wide only above 1020 px, so dragging near the edge doesn't flicker
+ const st=was?(innerWidth<1020||innerWidth/innerHeight<1.2||innerWidth-54<400+minRight()):(innerWidth<980||innerWidth/innerHeight<1.15||innerWidth-54<360+minRight());
  $("ltitle").dataset.tip=st?"":"Drag to move the prompt box: top · middle · bottom";
  if(a.classList.contains("stacked")!==st){a.classList.toggle("stacked",st);
   // switching layouts: place the image first, then the card, without the glide (it would start from stale positions)
@@ -791,21 +792,27 @@ function paint(cv,job,progress){const [w,h]=SIZES[job.mp][job.ar];const W=Math.r
   c.imageSmoothingEnabled=true;c.imageSmoothingQuality="high";c.clearRect(0,0,W,H);c.drawImage(t,0,0,W,H)}}
 function fitBox(el,ar,bw,bh){const [a,b]=ar.split(":").map(Number);let w=bw,h=bw*b/a;if(h>bh){h=bh;w=bh*a/b}el.style.width=w+"px";el.style.height=h+"px"}
 const BAR=56; // bar block height incl. gap
-/* Wide window: the prompt card and the image are centred as one group (equal space outside both), so a wide image
-   doesn't run to the right edge while the card hugs the middle. The divider sets the card width (S.lw). */
+/* Wide window = a fixed pane (the prompt card, width set with the divider: S.lw) + a flexible pane (the right box).
+   The right box is the same rectangle in every tab — Generating centres the image in it, Queue / LoRAs / PNG Info
+   fill it — so nothing moves when you switch tabs. Card + box are centred as one group (equal outer margins).
+   The box is as wide as the image, but never narrower than the tab bar or two LoRA columns (LISTMIN). */
+const LISTMIN=660;
 function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
  const TW=tabsW();
  if(!stk){const avail=innerWidth-36-18,cw=Math.max(360,Math.min(S.lw||680,CARDMAX,avail-minRight()));const sh=$("stage").getBoundingClientRect().height-BAR;
-  const [a,b]=ar.split(":").map(Number);const iw=Math.min(avail-cw,sh*a/b),rw=Math.max(iw,TW);const side=Math.max(0,Math.floor((avail-cw-rw)/2));
-  app.style.setProperty("--lc",(side+cw)+"px");app.style.setProperty("--cw",cw+"px")}
+  const [a,b]=ar.split(":").map(Number);const iw=Math.min(avail-cw,sh*a/b),rw=Math.floor(Math.min(avail-cw,Math.max(iw,TW,LISTMIN)));const side=Math.max(0,Math.floor((avail-cw-rw)/2));
+  app.style.setProperty("--lc",(side+cw)+"px");app.style.setProperty("--cw",cw+"px");app.style.setProperty("--rc",rw+"px")}
  const st=$("stage").getBoundingClientRect();const f=$("frame");
  fitBox(f,ar,st.width,st.height-BAR);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
- const tbw=stk?w:Math.max(w,TW);const top=Math.max(0,(st.height-h-BAR)/2),left=stk?0:Math.max(0,Math.floor((Math.min(tbw,st.width)-w)/2));f.style.left=left+"px";f.style.top=top+"px";
- const tb=document.querySelector(".tabs");if(tb){if(S.view==="gen"){tb.style.width=tbw+"px";tb.style.transform=top>0?`translateY(${Math.round(top)}px)`:""}
-  else{tb.style.width=$("rpanel").offsetWidth+"px";tb.style.transform=""}} // list views: centred over the panel
+ const top=Math.max(0,(st.height-h-BAR)/2),left=stk?0:Math.max(0,Math.floor((st.width-w)/2));f.style.left=left+"px";f.style.top=top+"px";
+ // tab bar: centred over the box in every tab; in Generating it also sits right on top of the image
+ const tb=document.querySelector(".tabs");if(tb){tb.style.width=stk?"":$("rpanel").offsetWidth+"px";tb.style.transform=S.view==="gen"&&top>0?`translateY(${Math.round(top)}px)`:""}
  const sx=document.querySelector(".app.stacked")?(st.width-w)/2:0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+12)+"px";pr.style.setProperty("--tw",w+"px");
  if(window.layoutLeft)requestAnimationFrame(layoutLeft)}
-window.addEventListener("resize",()=>{applyMode();applyPH();sizeFrame();syncH();moveThumb(true)});
+// live resize: everything follows the window edge directly; animations return ~150 ms after the last resize event
+let lrT=null;
+window.addEventListener("resize",()=>{document.body.classList.add("liveresize");clearTimeout(lrT);lrT=setTimeout(()=>document.body.classList.remove("liveresize"),150);
+ applyMode();applyPH();sizeFrame();syncH();moveThumb(true)});
 document.fonts&&document.fonts.ready.then(()=>moveThumb(true));
 
 /* ======================= queue ======================= */
@@ -1092,7 +1099,6 @@ function renderLoras(){const q=$("lsearch").value.toLowerCase().trim();
  if(S.lfilter==="fav")L=L.filter(l=>l.fav);else if(S.lfilter==="recent")L=L.filter(l=>l.used).sort((a,b)=>b.used-a.used);else if(S.lfilter!=="all")L=L.filter(l=>l.folder===S.lfilter);
  $("warn").classList.toggle("show",LORAS.filter(l=>l.on&&l.folder==="people").length>1);
  const on=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0));
- $("lact").innerHTML=on.length?on.map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-an="${l.name}"><span class="cn" data-tip="Show in the list">${esc(l.display)}</span><b>${fmtW(l.w)}</b><button class="cx" data-tip="Switch off">${IC.x}</button></span>`).join(""):'<span class="lnone">Nothing on — switch LoRAs on below</span>';
  const row=l=>{const [a,b]=l.folder==="people"?[0,2]:[-3,3];return `<div class="li ${l.on?"on":""}" data-ln="${l.name}">
    <div class="lth" data-tg data-tip="Click to switch on/off" style="background:${l.thumb?"#000":`linear-gradient(135deg,hsl(${hue(l.name)},35%,30%),hsl(${(hue(l.name)+50)%360},35%,18%))`}">${l.thumb?`<img src="${l.thumb}" alt="">`:initials(l.display)}</div>
    <div class="lbody"><div class="l1"><div class="nm"><span data-rename title="Double-click to rename">${esc(l.display)}</span>${l.recipe?'<span class="tag">recipe</span>':""}<small>${esc(l.tags||l.note||l.folder)}</small></div>
@@ -1100,21 +1106,16 @@ function renderLoras(){const q=$("lsearch").value.toLowerCase().trim();
    <div class="l2"><input type="range" min="${a}" max="${b}" step="0.05" value="${l.w}"><input type="number" min="${a}" max="${b}" step="0.05" value="${l.w}">
     <button class="star ${l.fav?"on":""}" data-star title="Favorite">★</button></div></div></div>`};
  const srt=g=>S.lfilter==="recent"?g:g.sort((a,b)=>(b.fav-a.fav)||a.display.localeCompare(b.display));
- const G=[["people","Faces"],["style","Style"],["utility","Utility"]],known=G.map(g=>g[0]);let h="";
+ const G=[["people","Faces"],["style","Style"],["utility","Utility"]],known=G.map(g=>g[0]);
+ // Active on top as full, editable items — a mirror: they stay in their own section too, so nothing jumps when toggled
+ let h=`<div class="lsec">Active · ${on.length}</div>`+(on.length?on.map(row).join(""):'<div class="lnone">Nothing on — switch LoRAs on below</div>');
  if(S.lfilter==="recent")h=L.map(row).join("");
  else{for(const [k,t] of G){const g=L.filter(l=>l.folder===k);if(g.length)h+=`<div class="lsec">${t} · ${g.length}</div>${srt(g).map(row).join("")}`}
   const o=L.filter(l=>!known.includes(l.folder));if(o.length)h+=`<div class="lsec">Other · ${o.length}</div>${srt(o).map(row).join("")}`}
- $("lscroll").innerHTML=`<div class="lgrid">${h}${!L.length?'<div class="empty">Nothing here</div>':""}</div>`;alignAct()}
-/* the Active strip lines up with the left edge of the centred LoRA block, not the panel */
-function alignAct(){const g=$("lscroll").querySelector(".lgrid .li"),pad=g?Math.max(0,Math.round(g.getBoundingClientRect().left-$("lscroll").getBoundingClientRect().left)):0;
- $("lact").style.paddingLeft=$("lacth").style.paddingLeft=pad+"px"}
-new ResizeObserver(()=>{if(S.view==="loras")alignAct()}).observe($("lscroll"));
-$("lact").addEventListener("click",e=>{const c=e.target.closest("[data-an]");if(!c)return;const l=LORAS.find(l=>l.name===c.dataset.an);if(!l)return;
- if(e.target.closest(".cx")){toggleL(l);return}
- const el=document.querySelector(`#lscroll [data-ln="${l.name}"]`);if(el){el.scrollIntoView({block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")}});
+ $("lscroll").innerHTML=`<div class="lgrid">${h}${!L.length?'<div class="empty">Nothing here</div>':""}</div>`}
 $("lsearch").oninput=renderLoras;
 $("csize").value=S.th||48;document.documentElement.style.setProperty("--th",(S.th||48)+"px");
-$("csize").addEventListener("input",e=>{S.th=+e.target.value;document.documentElement.style.setProperty("--th",S.th+"px");save();alignAct()});
+$("csize").addEventListener("input",e=>{S.th=+e.target.value;document.documentElement.style.setProperty("--th",S.th+"px");save()});
 $("fchips").onclick=e=>{const b=e.target.closest("[data-f]");if(!b)return;S.lfilter=b.dataset.f;save();renderLoras()};
 $("oneFace").onclick=e=>{e.preventDefault();S.oneFace=!S.oneFace;save();renderLoras()};
 function toggleL(l){if(!l.on&&l.folder==="people"&&S.oneFace)LORAS.forEach(o=>{if(o.folder==="people")o.on=false});l.on=!l.on;if(l.on){l.used=Date.now();l.onAt=Date.now()}save();renderLoras();renderChips()}
@@ -1131,7 +1132,7 @@ $("lscroll").addEventListener("dblclick",e=>{const n=e.target.closest("[data-ren
  const done=()=>{l.display=inp.value.trim()||l.display;save();renderLoras();renderChips()};inp.onblur=done;
  inp.onkeydown=k=>{if(k.key==="Enter")inp.blur();if(k.key==="Escape"){inp.value=l.display;inp.blur()}}});
 $("lscroll").addEventListener("input",e=>{const el=e.target.closest("[data-ln]");if(!el||e.target.classList.contains("nmedit"))return;const l=LORAS.find(l=>l.name===el.dataset.ln);l.w=+e.target.value;
- el.querySelectorAll("input[type=range],input[type=number]").forEach(i=>{if(i!==e.target)i.value=l.w});const s=el.querySelector(".st span");if(s)s.textContent=fmtW(l.w);save();renderChips()});
+ document.querySelectorAll(`#lscroll [data-ln="${CSS.escape(l.name)}"] input[type=range],#lscroll [data-ln="${CSS.escape(l.name)}"] input[type=number]`).forEach(i=>{if(i!==e.target)i.value=l.w});const s=el.querySelector(".st span");if(s)s.textContent=fmtW(l.w);save();renderChips()});
 
 /* ======================= PNG info (real) ======================= */
 let parsed=null;const drop=$("drop");

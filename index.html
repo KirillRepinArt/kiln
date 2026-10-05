@@ -374,6 +374,24 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .ltitle .peekbar{position:static;margin-top:8px;box-shadow:none;max-width:100%}
 .ltitle .peekbar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip[hidden]{display:none}
+/* peeking: the name field shows the peeked image's name, greyed and read-only */
+.ltitle .plbl.peekname .pname{color:#77777e!important}.plbl.peekname .pnx{display:none!important}
+/* height modes: match the image block / full column (icons at the right of the name row) */
+.hmodes{position:absolute;right:22px;bottom:6px;display:flex;gap:4px;z-index:4;opacity:0;transition:opacity .15s}
+#lcol:hover .hmodes,.hmodes.on{opacity:1}
+.hmodes button{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+.hmodes button:hover{background:var(--raised2);color:#fff}.hmodes button.on{background:#f2f2f2;color:#111}
+.hmodes svg{width:16px;height:16px}
+.app.stacked #hmMatch{display:none}
+.left.hm .vedge{display:none}
+.app:not(.stacked) .left.hm,.app:not(.stacked) .ltitle.hm{cursor:default}
+/* LoRA library: one row format with the thumbnail in front, Active strip on top */
+.li{grid-template-columns:var(--th,48px) 1fr 140px 56px auto auto!important}
+.lth{width:var(--th,48px);height:var(--th,48px);border-radius:10px;overflow:hidden;display:grid;place-items:center;font-weight:600;color:rgba(255,255,255,.75);font-size:calc(var(--th,48px)*.3);cursor:pointer;flex:none}
+.lth img{width:100%;height:100%;object-fit:cover;display:block}
+.lact{display:flex;flex-wrap:wrap;gap:6px;margin:0 2px 12px}
+.lact .lnone{font-size:12.5px;color:var(--faint);padding:4px 0}
+.lacth{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin:2px 4px 8px}
 .chipmore{padding:4px 10px;font-weight:600;color:#d6d6da}
 .left{border-color:#34343a!important}
 .chips{justify-content:flex-start!important;padding:14px 22px 0 22px!important}
@@ -399,7 +417,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 
   <div class="lcol" id="lcol">
   <div class="hsplit" id="hsplit" title="Drag to resize · double-click for auto"></div>
-  <div class="ltitle" id="ltitle"><div class="phead"><span class="plbl"><span class="nchip"><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60"><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div><div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt">Reuse prompt</button><button id="pkAll">Reuse all</button><button id="pkX" title="Back to my draft (Esc)">✕</button></div></div>
+  <div class="ltitle" id="ltitle"><div class="phead"><span class="plbl"><span class="nchip"><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60"><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div><div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt">Reuse prompt</button><button id="pkAll">Reuse all</button><button id="pkX" title="Back to my draft (Esc)">✕</button></div><div class="hmodes" id="hmodes"><button id="hmMatch" data-hm="match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/></svg></button><button id="hmFull" data-hm="full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
   <section class="left" id="left">
     <div class="vedge" id="vedge" title="Drag to resize · double-click for auto"></div>
     <div class="chips" id="chips"></div>
@@ -464,11 +482,12 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
         <div class="lwrap">
           <div class="ltop">
             <input class="search" id="lsearch" placeholder="Search by name…">
-            <label class="csz" title="Card size"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><input type="range" class="csize" id="csize" min="72" max="150" step="2"></label>
+            <label class="csz" title="Thumbnail size"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><input type="range" class="csize" id="csize" min="32" max="140" step="2"></label>
             <label class="oneface" id="oneFace" title="Picking a face swaps out the previous one — two face LoRAs blend into one face"><span class="sw" id="ofSw"></span>One face at a time</label>
           </div>
           <div class="fchips" id="fchips"></div>
           <div class="warn" id="warn">Two face LoRAs are on — they will blend into one face rather than give you two people.</div>
+          <div class="lacth">Active</div><div class="lact" id="lact"></div>
           <div class="lscroll" id="lscroll"></div>
         </div>
       </div>
@@ -639,7 +658,7 @@ function grow(){} // column widths now come from sizeFrame()
 P.addEventListener("input",()=>{grow();requestAnimationFrame(layoutLeft);if(!peekJob){draft=P.value;save()}updPrompt()});
 let chipsOpen=false;
 function renderChips(){requestAnimationFrame(()=>window.layoutLeft&&layoutLeft());
- $("chips").innerHTML=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0)).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`).join("");capChips()}
+ $("chips").innerHTML=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0)).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`).join("");capChips();if(typeof peekJob!=="undefined"&&peekJob)peekButtons()}
 /* more than two rows of chips: hide the rest behind a "+N" chip that expands (and collapses again) */
 function capChips(){const box=$("chips");box.querySelector(".chipmore")?.remove();const cs=[...box.querySelectorAll(".chip")];cs.forEach(c=>c.hidden=false);
  const rows=[...new Set(cs.map(c=>c.offsetTop))].sort((a,b)=>a-b);if(rows.length<=2)return;
@@ -690,9 +709,12 @@ function applyMode(){const a=document.querySelector(".app");const st=innerWidth<
   // switching layouts: place the image first, then the card, without the glide (it would start from stale positions)
   const L=$("left"),T=$("ltitle");L.classList.add("nodur");T.classList.add("nodur");lyFrozen=false;lyTop=null;lyCy=null;
   sizeFrame();layoutLeft();moveThumb(true);requestAnimationFrame(()=>{sizeFrame();layoutLeft();requestAnimationFrame(()=>{L.classList.remove("nodur");T.classList.remove("nodur")})})}}
+function cardMinH(){const L=$("left");return L.offsetHeight-L.querySelector(".pwrapT").offsetHeight+84}
 function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol");const TS=$("peekbar").classList.contains("show")?108:64;col.style.setProperty("--ts",TS+"px");
- if(document.querySelector(".app.stacked")){let H;lyTop=0;
-  if(S.sch)H=Math.max(200,Math.min(S.sch,Math.round(innerHeight*.7))); // set with the divider above the name
+ const stk=!!document.querySelector(".app.stacked"),hm=S.hmode==="full"||(S.hmode==="match"&&!stk)?S.hmode:"";L.classList.toggle("hm",!!hm);$("ltitle").classList.toggle("hm",!!hm);
+ if(stk){let H;lyTop=0;
+  if(hm==="full")H=Math.round(innerHeight*.7);
+  else if(S.sch)H=Math.max(200,Math.min(S.sch,Math.round(innerHeight*.7))); // set with the divider above the name
   else{H=Math.min(cardNaturalH(),Math.round(innerHeight*.42));
    const j=browsed()||current()||shownDone(),[a,b]=(j?j.ar:S.ar).split(":").map(Number);
    if(a>b){const want=Math.min(760,innerWidth-36)*b/a,room=innerHeight-36-6-(H+TS+2)-64-BAR;if(room<want)H=Math.max(200,Math.round(H-(want-room)))}} // landscape: at least as wide as the card
@@ -702,6 +724,9 @@ function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol");const TS=
  const f=$("frame").getBoundingClientRect(),c=col.getBoundingClientRect();
  if(S.view==="gen"&&f.height>0){lyCy=f.top+f.height/2-c.top-TS;lyIT=f.top-c.top-TS;const pb=$("prog").getBoundingClientRect();lyIB=(pb.height?pb.bottom:f.bottom)-c.top-TS}
  if(lyCy==null)lyCy=colH/2;
+ if(hm){let top,H;if(hm==="full"){top=0;H=colH}else{top=Math.max(0,lyIT??0);H=Math.min(colH-top,(lyIB??colH)-top)} // match: image top to status line
+  const mn=cardMinH();if(H<mn){H=Math.min(colH,mn);top=Math.max(0,Math.min(colH-H,lyCy-H/2))}
+  lyTop=top;lyBot=top+H;col.style.setProperty("--ltop",(top+TS)+"px");col.style.setProperty("--lh",H+"px");return}
  let H=S.pph?Math.min(Math.max(240,S.pph),colH):Math.min(cardNaturalH(),colH);let top;const pos=S.pos||"mid";
  if(lyFrozen&&lyTop!=null){if(pos==="bot"&&lyBot!=null){top=Math.max(0,lyBot-H);H=Math.min(H,colH-top)}else{top=lyTop;H=Math.min(H,colH-top)}}
  else{top=anchorTop(pos,H,colH);lyBot=top+H}
@@ -713,12 +738,17 @@ $("left").addEventListener("pointerleave",()=>{lyHover=false;thaw()});
 $("left").addEventListener("focusin",freeze);
 $("left").addEventListener("focusout",()=>{if(!lyHover)thaw()});
 new ResizeObserver(()=>layoutLeft()).observe($("lcol"));
+function updHm(){const m=S.hmode||"";$("hmodes").classList.toggle("on",!!m);
+ $("hmMatch").classList.toggle("on",m==="match");$("hmFull").classList.toggle("on",m==="full");
+ $("hmMatch").dataset.tip=m==="match"?"Back to normal height":"Match the image height";$("hmFull").dataset.tip=m==="full"?"Back to normal height":"Full height"}
+$("hmodes").addEventListener("click",e=>{const b=e.target.closest("[data-hm]");if(!b)return;S.hmode=S.hmode===b.dataset.hm?"":b.dataset.hm;save();updHm();lyFrozen=false;layoutLeft()});
+updHm();
 (function(){const L=$("left"),T=$("ltitle"),col=$("lcol");let d=null;
  const NO="input,textarea,button,a,select,.chip,.pwrapT,.vedge,.pop,.cwi";
  const ghosts=["top","mid","bot"].map(p=>{const g=document.createElement("div");g.className="ghost";g.dataset.p=p;col.appendChild(g);return g});
  const geo=()=>{const TS=parseFloat(col.style.getPropertyValue("--ts"))||64;return{TS,colH:col.clientHeight-TS,H:L.offsetHeight}};
  const nearest=(t,H,colH)=>["top","mid","bot"].map(p=>[p,Math.abs(anchorTop(p,H,colH)-t)]).sort((a,b)=>a[1]-b[1])[0][0];
- function down(e){if(document.querySelector(".app.stacked")||e.button!==0||e.target.closest(NO))return;e.preventDefault();
+ function down(e){if(document.querySelector(".app.stacked")||S.hmode||e.button!==0||e.target.closest(NO))return;e.preventDefault();
   d={y0:e.clientY,t0:lyTop||0,moved:false};try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}}
  function move(e){if(!d)return;const dy=e.clientY-d.y0;if(!d.moved&&Math.abs(dy)<5)return;const {TS,colH,H}=geo();
   if(!d.moved){d.moved=true;lyDrag=true;L.classList.add("nodur");T.classList.add("nodur");document.body.classList.add("cardmove");
@@ -735,7 +765,12 @@ new ResizeObserver(()=>layoutLeft()).observe($("lcol"));
 
 /* ======================= tabs ======================= */
 function moveThumb(instant){const t=document.querySelector(".tab.on"),th=$("thumb");if(!t)return;if(instant)th.style.transition="none";th.style.left=t.offsetLeft+"px";th.style.width=t.offsetWidth+"px";if(instant){void th.offsetWidth;th.style.transition=""}}
-function showView(v){S.view=v;$("rpanel").classList.toggle("paneled",v!=="gen");document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));moveThumb();
+function showView(v){const was=S.view;
+ if(was!==v){ // temporary state belongs to the visit: an open preview, a browse, a search, a scroll position
+  if(was==="queue"){if($("ov").classList.contains("show"))closeOv();$("qwrap").scrollTop=0}
+  if(was==="gen"&&browseId!=null)endPeek();
+  if(was==="loras"){$("lsearch").value="";$("lscroll").scrollTop=0}}
+ S.view=v;$("rpanel").classList.toggle("paneled",v!=="gen");document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));moveThumb();
  document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id==="v-"+v));if(v!=="gen"){const tb=document.querySelector(".tabs");if(tb)tb.style.transform=""}if(v==="queue")renderQueue();if(v==="loras")renderLoras();if(v==="gen")sizeFrame()}
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showView(t.dataset.v));
 
@@ -781,8 +816,8 @@ function doneList(){return jobs.filter(j=>j.status==="done")}
 function browsed(){if(browseId==null)return null;const b=jobs.find(j=>j.id===browseId&&j.status==="done");if(!b)browseId=null;return b||null}
 function genNav(dir,dry){const run=!!current(),b=browsed(),cur=b||(run?null:shownDone()),L=doneList();
  let i=cur?L.findIndex(x=>x.id===cur.id):L.length;if(i<0)i=L.length;const n=i+dir;let id;
- if(n<0)return false;if(n>=L.length){if(!(run&&b))return false;id=null}else id=(n===L.length-1&&!run)?null:L[n].id;
- if(!dry){browseId=id;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}return true}
+ if(n<0)return false;if(n>=L.length){if(!b)return false;id=null}else id=L[n].id; // past the newest: back to your working view
+ if(!dry){browseId=id;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else loadJob(L[n])}return true}
 function ovNav(dir,dry){const L=doneList(),i=L.findIndex(x=>x.id===(ovJob&&ovJob.id)),t=L[i+dir];if(i<0||!t)return false;
  if(!dry){const pk=peekJob&&ovJob&&peekJob.id===ovJob.id;openOv(t);if(pk)loadJob(t)}return true}
 function vNav(dir,dry){const L=doneList(),i=L.findIndex(x=>x.id===(V.job&&V.job.id)),t=L[i+dir];if(i<0||!t)return false;if(!dry)openViewer(t);return true}
@@ -903,9 +938,21 @@ $("qwrap").addEventListener("click",e=>{
  loadJob(j);if(j.status==="done")openOv(j)});
 let undo=null;var justDone=null;
 let peekJob=null;
+/* the peek bar only offers what would change something: no "Reuse prompt" when the prompt is already your draft;
+   "Use this seed" when only the seed differs; nothing but ✕ when it all matches */
+function sameLoras(j){const on=LORAS.filter(l=>l.on),jl=j.loras||[];return on.length===jl.length&&jl.every(x=>{const l=on.find(l=>l.name===x.name);return l&&Math.abs(l.w-x.w)<1e-6})}
+function peekButtons(){const j=peekJob;if(!j)return;const pSame=(j.raw||j.prompt||"").trim()===(draft||"").trim();
+ const sSame=j.mp===S.mp&&j.ar===S.ar&&+j.steps===+S.steps&&sameLoras(j),seedSame=S.seedMode==="fixed"&&+S.seed===+j.seed;
+ $("pkPrompt").style.display=pSame?"none":"";const all=$("pkAll");
+ if(!pSame||!sSame){all.style.display="";all.textContent="Reuse all"}else if(!seedSame){all.style.display="";all.textContent="Use this seed"}else all.style.display="none";
+ $("peekLbl").textContent=`#${j.id}${j.status==="running"?" · generating":""} · ${j.ar} · ${j.steps} steps${pSame&&sSame&&seedSame?" · same as your draft":""}`}
 function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classList.add("peek");P.scrollTop=0;
- $("peekLbl").textContent=`#${j.id}${j.status==="running"?" · generating":""} · ${j.ar} · ${j.steps} steps`;$("peekbar").classList.add("show");updPrompt();layoutLeft()}
-function endPeek(){if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;$("peekbar").classList.remove("show");updPrompt();layoutLeft()}
+ const n=$("pname");n.value=j.name||"";n.placeholder="Unnamed";n.readOnly=true;
+ peekButtons();$("peekbar").classList.add("show");updPrompt();layoutLeft()}
+function endPeek(){if(browseId!=null){browseId=null;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()} // leaving a browse peek returns to the working view
+ if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
+ const n=$("pname");n.value=S.pname||"";n.placeholder="Add name";n.readOnly=false;
+ $("peekbar").classList.remove("show");updPrompt();layoutLeft()}
 function reuse(all){const j=peekJob;if(!j)return;const prev={draft,S:{mp:S.mp,ar:S.ar,steps:S.steps,seedMode:S.seedMode,seed:S.seed},loras:LORAS.map(l=>({on:l.on,w:l.w}))};
  draft=j.raw||j.prompt;if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps,seedMode:"fixed",seed:j.seed});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}
  endPeek();save();renderAll();P.focus();
@@ -1016,7 +1063,7 @@ setInterval(()=>{$("frame").classList.toggle("clickable",(!current()||!!browsed(
  document.addEventListener("mousedown",hide);document.addEventListener("wheel",hide,{passive:true});
  const TIPS={pMP:"Image size (megapixels)",pAR:"Aspect ratio",pST:"Sampling steps — scroll to nudge",pSD:"Seed — random each job, or fixed",
   pN:"How many images to queue — scroll to nudge",play:"Add to queue (Ctrl+Enter)",prog:"Click to see this image's prompt · the preview shows the last finished step",
-  stopBtn:"Stop this job",csize:"Card size",lsearch:"Search LoRAs by name",gear:"Settings",ovClose:"Close (Esc)",vclose:"Close (Esc)"};
+  stopBtn:"Stop this job",csize:"Thumbnail size",lsearch:"Search LoRAs by name",gear:"Settings",ovClose:"Close (Esc)",vclose:"Close (Esc)"};
  for(const id in TIPS){const el=$(id);if(el&&!el.title)el.dataset.tip=TIPS[id]}
  const TABT={gen:"The image being made, and the last result",queue:"Running, waiting and finished jobs",loras:"Your LoRA library",png:"Read settings from any Forge PNG"};
  document.querySelectorAll(".tab").forEach(t=>t.dataset.tip=TABT[t.dataset.v]);
@@ -1035,24 +1082,27 @@ function renderLoras(){const q=$("lsearch").value.toLowerCase().trim();
  $("ofSw").classList.toggle("on",S.oneFace);
  let L=LORAS.filter(l=>!q||l.display.toLowerCase().includes(q)||l.name.toLowerCase().includes(q));
  if(S.lfilter==="fav")L=L.filter(l=>l.fav);else if(S.lfilter==="recent")L=L.filter(l=>l.used).sort((a,b)=>b.used-a.used);else if(S.lfilter!=="all")L=L.filter(l=>l.folder===S.lfilter);
- const faces=L.filter(l=>l.folder==="people"),rest=L.filter(l=>l.folder!=="people");
- if(S.lfilter!=="recent")faces.sort((a,b)=>(b.fav-a.fav)||a.display.localeCompare(b.display));
  $("warn").classList.toggle("show",LORAS.filter(l=>l.on&&l.folder==="people").length>1);
- const card=l=>`<div class="card ${l.on?"on":""}" data-ln="${l.name}">
+ const on=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0));
+ $("lact").innerHTML=on.length?on.map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-an="${l.name}"><span class="cn" data-tip="Show in the list">${esc(l.display)}</span><b>${fmtW(l.w)}</b><button class="cx" data-tip="Switch off">${IC.x}</button></span>`).join(""):'<span class="lnone">Nothing on — switch LoRAs on below</span>';
+ const row=l=>{const [a,b]=l.folder==="people"?[0,2]:[-3,3];return `<div class="li ${l.on?"on":""}" data-ln="${l.name}">
+   <div class="lth" data-tg data-tip="Click to switch on/off" style="background:${l.thumb?"#000":`linear-gradient(135deg,hsl(${hue(l.name)},35%,30%),hsl(${(hue(l.name)+50)%360},35%,18%))`}">${l.thumb?`<img src="${l.thumb}" alt="">`:initials(l.display)}</div>
+   <div class="nm"><span data-rename title="Double-click to rename">${esc(l.display)}</span>${l.recipe?'<span class="tag">recipe</span>':""}<small>${esc(l.tags||l.note||l.folder)}</small></div>
+   <input type="range" min="${a}" max="${b}" step="0.05" value="${l.w}"><input type="number" min="${a}" max="${b}" step="0.05" value="${l.w}">
    <button class="star ${l.fav?"on":""}" data-star title="Favorite">★</button>
-   <div class="img" style="background:${l.thumb?"#000":`linear-gradient(135deg,hsl(${hue(l.name)},35%,30%),hsl(${(hue(l.name)+50)%360},35%,18%))`}">${l.thumb?`<img src="${l.thumb}" style="width:100%;height:100%;object-fit:cover">`:initials(l.display)}</div>
-   <div class="cap"><div class="nm" data-rename title="Double-click to rename">${esc(l.display)}</div><div class="tags">${l.tags}</div></div>
-   <div class="st"><input type="range" min="0" max="1.5" step="0.05" value="${l.w}"><span>${fmtW(l.w)}</span></div></div>`;
- const row=l=>`<div class="li ${l.on?"on":""}" data-ln="${l.name}">
-   <span class="sw ${l.on?"on":""}" data-tg title="On/off"></span>
-   <div class="nm"><span data-rename title="Double-click to rename">${esc(l.display)}</span>${l.recipe?'<span class="tag">recipe</span>':""}<small>${l.note||l.folder}</small></div>
-   <input type="range" min="-3" max="3" step="0.05" value="${l.w}"><input type="number" min="-3" max="3" step="0.05" value="${l.w}">
-   <button class="star ${l.fav?"on":""}" data-star title="Favorite">★</button></div>`;
- $("lscroll").innerHTML=(faces.length?`<div class="lsec">Faces · ${faces.length}</div><div class="grid">${faces.map(card).join("")}</div>`:"")+
-  (rest.length?`<div class="lsec">Other</div>${rest.map(row).join("")}`:"")+(!L.length?'<div class="empty">Nothing here</div>':"")}
+   <span class="sw ${l.on?"on":""}" data-tg title="On/off"></span></div>`};
+ const srt=g=>S.lfilter==="recent"?g:g.sort((a,b)=>(b.fav-a.fav)||a.display.localeCompare(b.display));
+ const G=[["people","Faces"],["style","Style"],["utility","Utility"]],known=G.map(g=>g[0]);let h="";
+ if(S.lfilter==="recent")h=L.map(row).join("");
+ else{for(const [k,t] of G){const g=L.filter(l=>l.folder===k);if(g.length)h+=`<div class="lsec">${t} · ${g.length}</div>${srt(g).map(row).join("")}`}
+  const o=L.filter(l=>!known.includes(l.folder));if(o.length)h+=`<div class="lsec">Other · ${o.length}</div>${srt(o).map(row).join("")}`}
+ $("lscroll").innerHTML=h+(!L.length?'<div class="empty">Nothing here</div>':"")}
+$("lact").addEventListener("click",e=>{const c=e.target.closest("[data-an]");if(!c)return;const l=LORAS.find(l=>l.name===c.dataset.an);if(!l)return;
+ if(e.target.closest(".cx")){toggleL(l);return}
+ const el=document.querySelector(`#lscroll [data-ln="${l.name}"]`);if(el){el.scrollIntoView({block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")}});
 $("lsearch").oninput=renderLoras;
-$("csize").value=S.card||104;document.documentElement.style.setProperty("--card",(S.card||104)+"px");
-$("csize").addEventListener("input",e=>{S.card=+e.target.value;document.documentElement.style.setProperty("--card",S.card+"px");save()});
+$("csize").value=S.th||48;document.documentElement.style.setProperty("--th",(S.th||48)+"px");
+$("csize").addEventListener("input",e=>{S.th=+e.target.value;document.documentElement.style.setProperty("--th",S.th+"px");save()});
 $("fchips").onclick=e=>{const b=e.target.closest("[data-f]");if(!b)return;S.lfilter=b.dataset.f;save();renderLoras()};
 $("oneFace").onclick=e=>{e.preventDefault();S.oneFace=!S.oneFace;save();renderLoras()};
 function toggleL(l){if(!l.on&&l.folder==="people"&&S.oneFace)LORAS.forEach(o=>{if(o.folder==="people")o.on=false});l.on=!l.on;if(l.on){l.used=Date.now();l.onAt=Date.now()}save();renderLoras();renderChips()}
@@ -1122,7 +1172,7 @@ $("sTheme").value=S.theme;$("sTheme").onchange=e=>{S.theme=e.target.value;applyT
  if(!current()){const p=$("prog");window._dp=1;p.classList.add("show");sizeFrame();$("fill").style.width="62%";$("ptxt").textContent="Theme preview";$("peta").textContent="";
   clearTimeout(window._dpt);window._dpt=setTimeout(()=>{window._dp=0},2500)}};
 function applyFont(){const f=(S.set||{}).font||"Geist";document.documentElement.style.setProperty("--font",`"${f}"`);requestAnimationFrame(()=>moveThumb(true))}
-$("rLayout").onclick=()=>{S.lw=0;S.pph=0;S.sch=0;S.pos="mid";grow();applyPH();showView("gen");save();sizeFrame();moveThumb(true);$("modal").classList.remove("show");toast("Layout reset")};
+$("rLayout").onclick=()=>{S.lw=0;S.pph=0;S.sch=0;S.pos="mid";S.hmode="";updHm();grow();applyPH();showView("gen");save();sizeFrame();moveThumb(true);$("modal").classList.remove("show");toast("Layout reset")};
 $("rAll").onclick=()=>{if(!confirm("Reset everything? Prompt, name, settings, favourites, thumbnails and layout go back to defaults."))return;try{localStorage.clear()}catch(e){}location.reload()};
 S.set=S.set||{};document.querySelectorAll('[data-set]').forEach(el=>{const k=el.dataset.set;if(S.set[k]!=null)el.value=S.set[k];else S.set[k]=el.value;
  el.addEventListener('change',()=>{S.set[k]=el.value;save();if(k==="font")applyFont()})});
@@ -1149,9 +1199,11 @@ function nextHint(){const n=(S.pname||"").trim();
  if(!n){nameTip(null);return}
  if(window.LIVE){clearTimeout(nnT);nnT=setTimeout(()=>fetch("/api/nextname?name="+encodeURIComponent(n)).then(r=>r.json()).then(d=>nameTip(d.file)).catch(()=>{}),250)}
  else{const slug=slugify(n);nameTip(`${slug}-${String((S.ncount[slug]||0)+1).padStart(3,"0")}.png`)}}
-function nameUI(){nextHint();const l=document.querySelector(".plbl");l.classList.toggle("hasname",!!S.pname.trim());l.classList.toggle("dimname",!!S.pname.trim()&&!P.value.trim())}$("pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();P.focus()}});
+function nameUI(){const l=document.querySelector(".plbl");l.classList.toggle("peekname",!!peekJob);
+ if(peekJob){$("pname").dataset.tip=peekJob.file?`This image: ${peekJob.file}`:"This image";return}
+ nextHint();l.classList.toggle("hasname",!!S.pname.trim());l.classList.toggle("dimname",!!S.pname.trim()&&!P.value.trim())}$("pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();P.focus()}});
 applyMode();$("left").classList.add("nodur");setTimeout(()=>$("left").classList.remove("nodur"),400);
-applyFont();applyPH();updPrompt();applyTheme();showView(["queue","loras","png"].includes(S.view)?S.view:"gen");renderAll();grow();syncH();demoNote();
+applyFont();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");renderAll();grow();syncH();demoNote();
 </script>
 <script>
 /* ======================= LIVE MODE =======================

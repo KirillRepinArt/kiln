@@ -42,14 +42,17 @@ The queue shows which variant each job got, so a good result can be traced back.
 **Image**
 - The frame takes the shape of your next aspect ratio; results stay until you change a setting.
 - A status line under the image: **Ready · ~estimate** when idle, step / time left / **Stop** while running.
-- **Browse** finished images with `←` / `→` or the arrows on the image — while a job renders too; a new result never
-  pulls you away, and stepping past the newest returns to the live render.
+- **Browse** finished images with `←` / `→` or the arrows on the image — while a job renders too. Each image you land on
+  is peeked like a queued job (its name and prompt, greyed, with Reuse); ✕, `Esc` or stepping past the newest returns to
+  your draft and the live render. Reuse buttons only appear when they'd change something ("Use this seed" when only
+  the seed differs).
 - Click a finished image for a **full-size viewer** (fit ↔ 100%, wheel zoom, drag to pan); double-click to open
   it in your default app.
 - Optional **name** for a series → files are numbered `rainy-library-001.png`, `-002`, …
 
 **LoRA library**
-- Faces as a card grid with thumbnails (set one from any finished image), styles and utilities as rows.
+- One list — Faces, Style, Utility — each row with a thumbnail (set one from any finished image; adjustable size),
+  weight and switch. An **Active** strip on top shows what's on.
 - Readable names parsed from common file naming (`krea2_<name>_v2_large_onetrainer` → *Name · v2 · large*),
   double-click to rename, favourites, recent, search.
 - **One face at a time** — LoRAs are global weight changes, so two face LoRAs blend into one face; Kiln
@@ -62,6 +65,7 @@ The queue shows which variant each job got, so a good result can be traced back.
 - Narrow windows stack the image above the prompt; drag the line between them to share the height.
 - Wide windows: drag the prompt box by any empty spot (or its name row) — it snaps to the top, middle or bottom of
   the image. The divider sets its width (up to 900 px); the image column never gets narrower than the tab bar.
+- Two height modes next to the name: **match the image** (level with the image and its status line) or **full height**.
 - Settings remember model, VAE, text encoder and the rest. **Reset layout** / **Reset everything**.
 - Themes for the play button and progress bar; font choice (Geist, Inter, Satoshi, Manrope, IBM Plex Sans).
 

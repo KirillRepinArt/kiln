@@ -45,15 +45,17 @@ The queue shows which variant each job got, so a good result can be traced back.
 - A status line under the image: **Ready · ~estimate** when idle, step / time left / **Stop** while running.
 - **Browse** finished images with `←` / `→` or the arrows on the image — while a job renders too. Each image you land on
   is peeked like a queued job (its name and prompt, greyed, with Reuse); ✕, `Esc` or stepping past the newest returns to
-  your draft and the live render — so does the ✕ on the image. Reuse buttons only appear when they'd change something ("Use this seed" when only
+  your draft and the live render — so does the ✕ on the image. On the last finished image that ✕ clears the canvas
+  (← brings it back). Reuse buttons only appear when they'd change something ("Use this seed" when only
   the seed differs).
 - Click a finished image for a **full-size viewer** (fit ↔ 100%, wheel zoom, drag to pan); double-click to open
   it in your default app.
 - Optional **name** for a series → files are numbered `rainy-library-001.png`, `-002`, …
 
 **LoRA library**
-- Faces, Style, Utility as compact items — thumbnail (set one from any finished image), weight, switch — in as many
-  centred columns as fit; the thumbnail-size slider sizes the items too. An **Active** strip on top shows what's on.
+- Faces, Style, Utility as compact two-line items — thumbnail (set one from any finished image), name and switch,
+  weight underneath — in as many centred columns as fit; the thumbnail-size slider sizes the items too. An **Active**
+  strip on top shows what's on.
 - Readable names parsed from common file naming (`krea2_<name>_v2_large_onetrainer` → *Name · v2 · large*),
   double-click to rename, favourites, recent, search.
 - **One face at a time** — LoRAs are global weight changes, so two face LoRAs blend into one face; Kiln

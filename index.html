@@ -316,7 +316,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .frame .nav{top:max(50%,276px)}
 .bclose{position:absolute;top:10px;left:10px;width:40px;height:40px;border-radius:12px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:6;transition:background .15s}
 .bclose:hover{background:rgba(40,40,44,.9)}.bclose svg{width:16px;height:16px}
-.frame.browsing .bclose{display:grid} /* below the 5 hover buttons when the frame is short */
+.frame.browsing .bclose,.frame.clearable:hover .bclose{display:grid} /* below the 5 hover buttons when the frame is short */
 .nav svg{width:18px;height:18px}.nav:hover{background:rgba(40,40,44,.9)}
 .frame:hover .nav:not(.off),.viewer:hover .nav:not(.off){opacity:1}
 .nav.off{pointer-events:none}
@@ -385,10 +385,18 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .left.hm .vedge{display:none}
 .app:not(.stacked) .left.hm,.app:not(.stacked) .ltitle.hm{cursor:default}
 /* LoRA library: one row format with the thumbnail in front, Active strip on top */
-:root{--liw:calc(var(--th,48px) + 480px)} /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
+:root{--liw:calc(var(--th,48px) + 250px)} /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,min(100%,var(--liw)));justify-content:center;column-gap:16px}
 .lgrid .lsec,.lgrid .empty{grid-column:1/-1}
-.li{grid-template-columns:var(--th,48px) minmax(0,1fr) 120px 56px auto auto!important;min-width:0}
+/* two lines: name (+ tags) and the switch on top, weight under the name — nothing has to line up across rows */
+.lgrid .li{display:flex;align-items:center;gap:12px;min-width:0;padding:8px 10px}
+.lbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.l1,.l2{display:flex;align-items:center;gap:8px;min-width:0}
+.l1 .nm{flex:1;min-width:0}
+.lgrid .li .nm small{display:inline;margin-left:6px;font-size:11.5px}
+.l2 input[type=range]{flex:1;min-width:0}
+.l2 input[type=number]{width:62px;flex:none}
+.l2 .star{width:22px;height:22px;flex:none}
 .lth{width:var(--th,48px);height:var(--th,48px);border-radius:10px;overflow:hidden;display:grid;place-items:center;font-weight:600;color:rgba(255,255,255,.75);font-size:calc(var(--th,48px)*.3);cursor:pointer;flex:none}
 .lth img{width:100%;height:100%;object-fit:cover;display:block}
 .lact{display:flex;flex-wrap:wrap;gap:6px;margin:0 2px 12px}
@@ -462,7 +470,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
             <canvas id="embers"></canvas>
             <canvas id="cv"></canvas>
             <div class="idle" id="idle"><div><span id="idleT">Queue is empty</span><br><small id="idleS">Write a prompt and press ▶ (Ctrl+Enter)</small></div></div>
-            <div class="side" id="sideGen"></div><button class="bclose" id="bclose" title="Back to the live view (Esc)"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button><button class="nav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button>
+            <div class="side" id="sideGen"></div><button class="bclose" id="bclose"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button><button class="nav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button>
           </div>
         </div>
         <div class="prog" id="prog">
@@ -767,7 +775,7 @@ function showView(v){const was=S.view;
   if(was==="queue")$("qwrap").scrollTop=0; // the prompt box (and its peek) is left as it is
   if(was==="loras"){$("lsearch").value="";$("lscroll").scrollTop=0}}
  S.view=v;$("rpanel").classList.toggle("paneled",v!=="gen");document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));moveThumb();
- document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id==="v-"+v));if(v!=="gen"){const tb=document.querySelector(".tabs");if(tb)tb.style.transform=""}if(v==="queue")renderQueue();if(v==="loras")renderLoras();if(v==="gen")sizeFrame()}
+ document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id==="v-"+v));if(v==="queue")renderQueue();if(v==="loras")renderLoras();sizeFrame()}
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showView(t.dataset.v));
 
 /* ======================= mock image ======================= */
@@ -793,7 +801,8 @@ function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.
  const st=$("stage").getBoundingClientRect();const f=$("frame");
  fitBox(f,ar,st.width,st.height-BAR);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
  const tbw=stk?w:Math.max(w,TW);const top=Math.max(0,(st.height-h-BAR)/2),left=stk?0:Math.max(0,Math.floor((Math.min(tbw,st.width)-w)/2));f.style.left=left+"px";f.style.top=top+"px";
- const tb=document.querySelector(".tabs");if(tb){tb.style.width=tbw+"px";tb.style.transform=S.view==="gen"&&top>0?`translateY(${Math.round(top)}px)`:""}
+ const tb=document.querySelector(".tabs");if(tb){if(S.view==="gen"){tb.style.width=tbw+"px";tb.style.transform=top>0?`translateY(${Math.round(top)}px)`:""}
+  else{tb.style.width=$("rpanel").offsetWidth+"px";tb.style.transform=""}} // list views: centred over the panel
  const sx=document.querySelector(".app.stacked")?(st.width-w)/2:0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+12)+"px";pr.style.setProperty("--tw",w+"px");
  if(window.layoutLeft)requestAnimationFrame(layoutLeft)}
 window.addEventListener("resize",()=>{applyMode();applyPH();sizeFrame();syncH();moveThumb(true)});
@@ -995,8 +1004,10 @@ function openInApp(j){toast(`Prototype: would open ${j.file||("#"+j.id+".png")} 
  function bind(el,getJob){el.addEventListener("click",e=>{if(e.target.closest(".side,.nav,.bclose"))return;const j=getJob();if(!j||j.status!=="done")return;clearTimeout(t);t=setTimeout(()=>openViewer(j),230)});
   el.addEventListener("dblclick",e=>{if(e.target.closest(".side,.nav,.bclose"))return;const j=getJob();if(!j||j.status!=="done")return;clearTimeout(t);openInApp(j)})}
  bind($("frame"),()=>current()&&!browsed()?null:shownDone())})();
-setInterval(()=>{$("frame").classList.toggle("clickable",(!current()||!!browsed())&&!!shownDone());$("frame").classList.toggle("browsing",!!browsed());updNav()},300);
-$("bclose").onclick=e=>{e.stopPropagation();endPeek()};
+setInterval(()=>{$("frame").classList.toggle("clickable",(!current()||!!browsed())&&!!shownDone());const br=!!browsed(),cl=!br&&!current()&&!!shownDone();$("frame").classList.toggle("browsing",br);$("frame").classList.toggle("clearable",cl);
+ $("bclose").dataset.tip=br?"Back to the live view (Esc)":"Clear the image — ← brings it back";updNav()},300);
+// browsing: back to the live view; otherwise: clear the finished image (same as changing size or ratio does)
+$("bclose").onclick=e=>{e.stopPropagation();if(browsed()){endPeek();return}staleIf(true);sizeFrame()};
 
 
 /* ======================= effects =======================
@@ -1084,10 +1095,10 @@ function renderLoras(){const q=$("lsearch").value.toLowerCase().trim();
  $("lact").innerHTML=on.length?on.map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-an="${l.name}"><span class="cn" data-tip="Show in the list">${esc(l.display)}</span><b>${fmtW(l.w)}</b><button class="cx" data-tip="Switch off">${IC.x}</button></span>`).join(""):'<span class="lnone">Nothing on — switch LoRAs on below</span>';
  const row=l=>{const [a,b]=l.folder==="people"?[0,2]:[-3,3];return `<div class="li ${l.on?"on":""}" data-ln="${l.name}">
    <div class="lth" data-tg data-tip="Click to switch on/off" style="background:${l.thumb?"#000":`linear-gradient(135deg,hsl(${hue(l.name)},35%,30%),hsl(${(hue(l.name)+50)%360},35%,18%))`}">${l.thumb?`<img src="${l.thumb}" alt="">`:initials(l.display)}</div>
-   <div class="nm"><span data-rename title="Double-click to rename">${esc(l.display)}</span>${l.recipe?'<span class="tag">recipe</span>':""}<small>${esc(l.tags||l.note||l.folder)}</small></div>
-   <input type="range" min="${a}" max="${b}" step="0.05" value="${l.w}"><input type="number" min="${a}" max="${b}" step="0.05" value="${l.w}">
-   <button class="star ${l.fav?"on":""}" data-star title="Favorite">★</button>
-   <span class="sw ${l.on?"on":""}" data-tg title="On/off"></span></div>`};
+   <div class="lbody"><div class="l1"><div class="nm"><span data-rename title="Double-click to rename">${esc(l.display)}</span>${l.recipe?'<span class="tag">recipe</span>':""}<small>${esc(l.tags||l.note||l.folder)}</small></div>
+    <span class="sw ${l.on?"on":""}" data-tg title="On/off"></span></div>
+   <div class="l2"><input type="range" min="${a}" max="${b}" step="0.05" value="${l.w}"><input type="number" min="${a}" max="${b}" step="0.05" value="${l.w}">
+    <button class="star ${l.fav?"on":""}" data-star title="Favorite">★</button></div></div></div>`};
  const srt=g=>S.lfilter==="recent"?g:g.sort((a,b)=>(b.fav-a.fav)||a.display.localeCompare(b.display));
  const G=[["people","Faces"],["style","Style"],["utility","Utility"]],known=G.map(g=>g[0]);let h="";
  if(S.lfilter==="recent")h=L.map(row).join("");

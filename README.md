@@ -1,35 +1,69 @@
 # Kiln
 
+**English** · [Русский](README.ru.md)
+
 **A calm, queue-first front end for [Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo) — built for Krea 2 on modest GPUs.**
 
 Load the queue, close the door, come back to finished images. Kiln is a single-window app for people who
 want Krea 2's quality without Gradio's wall of controls or a node graph — and who generate on hardware where
 one image takes minutes, not seconds.
 
-![Kiln](docs/screenshot.png)
+![Kiln — writing the next prompt while the current image renders](docs/screenshot.png)
 
 > **Status: early, working.** Kiln drives a local Forge Neo through its API: real queue, live previews,
-> your own LoRAs and models. Opened as a plain file it runs as a self-contained demo with simulated generation.
+> your own LoRAs and models. Opened as a plain file, `index.html` runs as a self-contained demo with simulated
+> generation.
 
 ---
 
-## Why
+## Quick start
 
-Most front ends expose everything. Kiln does the opposite: one model family, the handful of settings you
-actually touch, and a queue you can keep feeding while the GPU works. It's designed around slow hardware —
-honest time estimates, overnight batches, and nothing that needs babysitting.
+You need **Windows**, **[Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo)** with a Krea 2
+model, and **Python 3.10 or newer** ([python.org](https://www.python.org/downloads/) — tick *“Add python.exe to
+PATH”* in the installer). Kiln itself has nothing to install.
+
+1. **Turn on Forge's API.** In Forge's `webui-user.bat`, add `--api` to `COMMANDLINE_ARGS`, for example
+   `set COMMANDLINE_ARGS=--api`. Start Forge once and make sure it works on its own.
+2. **Get Kiln.** On this page: **Code → Download ZIP**, unzip anywhere (or `git clone`).
+3. **Double-click `kiln.bat`.** It starts the Kiln server and opens Kiln in its own Edge window.
+   No Edge? It opens in your default browser instead.
+4. **Write a prompt, press ▶** (or `Ctrl+Enter`). Keep writing the next one while it renders.
+
+**Optional — one launcher for both.** Copy `config.example.json` to `config.local.json` and set `"forge_start"`
+to the full path of Forge's `webui-user.bat` (in JSON, write backslashes twice: `"C:\\Forge\\webui-user.bat"`).
+Kiln then starts Forge minimized when it isn't running, and stops it again when you close Kiln — but only if Kiln
+started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it running).
+
+**Defaults.** Kiln starts with Krea 2 Turbo settings: 4 steps, CFG 1, Euler / Simple, shift 1.15. Change them in
+⚙ Settings. Model, VAE and text encoder default to whatever Forge has loaded.
+
+**If something's off**
+
+| You see | Try |
+|---|---|
+| “Forge not running” | Forge isn't started, or `--api` is missing, or it's not on port 7860 (set `"forge_url"` in `config.local.json`). |
+| The Kiln window opens blank | A VPN or proxy grabbing local traffic — Kiln's own window bypasses it; in another browser, exclude `127.0.0.1`. |
+| `kiln.bat` says Python isn't found | Reinstall Python with *“Add python.exe to PATH”* ticked. |
+| Time estimates look wrong | They learn from your own runs — a few images at a given size and they settle. |
+
+---
 
 ## Features
 
 **Queue first**
 - ▶ / `Ctrl+Enter` adds to the queue; it starts immediately if idle. Keep writing while it runs.
-- Drag to reorder, × to remove, **Stop** to cancel the running job.
-- **Count ×N** queues a batch — random seeds, or counting up from a fixed seed.
-- Click a finished job to open it in the Generating view (browsing from there). Click any other job — including the
-  one rendering now, or the status line under the image — to **peek** at its prompt
-  without touching your draft, then **Reuse prompt** or **Reuse all** (settings, seed and LoRAs too). `Esc` goes back to your draft.
+- Drag to reorder, × to remove, **Stop** to cancel the running job. **×N** queues a batch — random seeds, or
+  counting up from a fixed seed.
+- Click a finished job to open it in the Generating view. Click a waiting or running job — or the status line under
+  the image — to **peek** at its prompt without touching your draft, then **Reuse prompt** or **Reuse all**
+  (settings, seed and LoRAs too). The buttons only appear when they'd change something: *“Use this seed”* when
+  only the seed differs.
+- **Honest time estimates** from your own history: the median of your last five runs at the same image size and
+  steps, counted down while the job runs (on real history this halved the error of a per-megapixel average).
+  The queue total uses the same numbers.
 
-**Prompt editor** (CodeMirror 6)
+**Prompt editor** (CodeMirror 6, with spell check)
+
 | Write | Shows as | Sent to the model |
 |---|---|---|
 | `// note to self` | dimmed comment · `Ctrl+/` toggles | **removed** |
@@ -41,90 +75,71 @@ honest time estimates, overnight batches, and nothing that needs babysitting.
 The queue shows which variant each job got, so a good result can be traced back.
 
 **Image**
-- The frame takes the shape of your next aspect ratio; results stay until you change a setting.
-- A status line under the image: **Ready · ~estimate** when idle, step / time left / **Stop** while running.
-- **Browse** finished images with `←` / `→` or the arrows on the image — while a job renders too. Each image you land on
-  is peeked like a queued job (its name and prompt, greyed, with Reuse); ✕, `Esc` or stepping past the newest returns to
-  your draft and the live render — so does the ✕ on the image. On the last finished image that ✕ clears the canvas
-  (← brings it back). Reuse buttons only appear when they'd change something ("Use this seed" when only
-  the seed differs).
-- Click a finished image for a **full-size viewer** (fit ↔ 100%, wheel zoom, drag to pan); double-click to open
-  it in your default app.
-- Optional **name** for a series → files are numbered `rainy-library-001.png`, `-002`, …
+- Live preview under a soft veil that lifts as the steps land; a burst of embers when it's done.
+- **Browse** finished images with `←` / `→` or the arrows on the image — while a job renders, too. Each image you
+  land on shows its name and prompt (greyed, with Reuse); ✕ or `Esc` returns to your draft and the live render.
+  On the latest result, the ✕ clears the canvas (`←` brings it back).
+- Click for a **full-size viewer** (fit ↔ 100%, wheel zoom, drag to pan, arrows to browse); double-click opens the
+  file in your default app. Hover actions: upscale, open, show in folder, use as a LoRA thumbnail.
+- Optional **series name** → files are numbered `rainy-library-001.png`, `-002`, … Without one: date and seed.
 
 **LoRA library**
-- Faces, Style, Utility as compact two-line items — thumbnail (set one from any finished image), name and switch,
-  weight underneath — in as many centred columns as fit; the thumbnail-size slider sizes the items too. **Active**
-  LoRAs are listed on top as full items, so their weights can be edited right there.
-- Readable names parsed from common file naming (`krea2_<name>_v2_large_onetrainer` → *Name · v2 · large*),
+- Faces, Style and Utility as compact items — thumbnail, name, switch, weight — in as many centred columns as fit.
+  The thumbnail slider sizes the items. **Active** LoRAs sit on top, editable right there.
+- Readable names from common file naming (`krea2_<name>_v2_large_onetrainer` → *Name · v2 · large*),
   double-click to rename, favourites, recent, search.
-- **One face at a time** — LoRAs are global weight changes, so two face LoRAs blend into one face; Kiln
-  swaps instead of stacking (switchable).
+- **One face at a time** — LoRAs are global weight changes, so two face LoRAs blend into one face; Kiln swaps
+  instead of stacking (switchable).
+
+**Layout**
+- The prompt box keeps the width you give it (drag the divider; up to 900 px). Drag it by any empty spot to snap it
+  to the top, middle or bottom of the image, or make it **match the image height** / **full height**.
+- The right-hand box — image, Queue, LoRAs, PNG Info — is the same rectangle in every tab and takes up window
+  changes; the two are centred together. Narrow windows stack the image above the prompt, with a draggable split.
 
 **Also**
 - PNG Info: drop any Forge PNG to read its settings and send them to the prompt.
 - Ratio picker with shape previews · ~1 / 1.5 / 2 MP presets (all sides multiples of 16).
-- Window title and favicon show progress; desktop notification when the queue empties (on, silent or off).
-- Narrow windows stack the image above the prompt; drag the line between them to share the height.
-- Wide windows: drag the prompt box by any empty spot (or its name row) — it snaps to the top, middle or bottom of
-  the image. The divider sets its width (up to 900 px); the image column never gets narrower than the tab bar.
-- Layout: the prompt box keeps the width you give it; the right-hand box (image, queue, LoRAs, PNG Info — the same
-  rectangle in every tab) absorbs window changes, and the two are centred together with equal outer margins.
-- Two height modes next to the name: **match the image** (level with the image and its status line) or **full height**.
-- Settings remember model, VAE, text encoder and the rest. **Reset layout** / **Reset everything**.
-- Themes for the play button and progress bar; font choice (Geist, Inter, Satoshi, Manrope, IBM Plex Sans).
+- Window title and favicon show progress; a desktop notification when the queue empties (on, silent or off).
+- Closing the Kiln window stops the server once the queue is done.
+- Themes for the play button and progress bar; fonts: Geist, Inter, Satoshi, Manrope, IBM Plex Sans.
 
-## Run it
+## How it works
 
-**Requirements:** Windows (Linux/macOS work but the launcher is a .bat), Python 3.10+ (standard library only —
-nothing to install), and [Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo) started with
-`--api` (add it to `COMMANDLINE_ARGS` in `webui-user.bat`).
-
-1. Start Forge as usual — or let Kiln do it: set `"forge_start"` in `config.local.json` to the full path of Forge's
-   `webui-user.bat`. Kiln then starts Forge (minimized) when it isn't running, and stops it again when you close Kiln
-   — only if Kiln started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it running).
-2. Double-click **`kiln.bat`** — it starts the Kiln server and opens Kiln in its own Edge window
-   (`http://127.0.0.1:7870`). Or run `python server.py` and open that address in any Chromium browser.
-3. Optional: copy `config.example.json` to `config.local.json` to change the Forge address, port or output folder.
-
-**How it works.** `server.py` owns the queue (saved in `data/queue.json`, so it survives restarts) and feeds Forge
-one job at a time — Forge's own UI keeps working alongside. Images are saved to `outputs/` with the generation
-settings embedded, named after your series (`rainy-library-001.png`) or by date and seed. Model and module choices
-in ⚙ Settings default to whatever Forge has loaded; pick others and Kiln switches before the job runs.
-Time estimates come from your own runs: the median of the last five at the same image size and steps (on real
-history that halved the error of a per-megapixel average), counted down while the job runs.
+`server.py` (Python standard library only) owns the queue — saved in `data/queue.json`, so it survives restarts —
+and feeds Forge one job at a time; Forge's own UI keeps working alongside. Images go to `outputs/` with the
+generation settings embedded, so PNG Info (Kiln's or Forge's) can read them back. Model and module choices in
+⚙ Settings default to whatever Forge has loaded; pick others and Kiln switches before the job runs.
+`index.html` is the whole interface — one file, no build step.
 
 **LoRA folders.** Kiln reads your LoRAs from Forge. Put face LoRAs in a `people` (or `faces`, `characters`)
-subfolder and styles in `style` to get the face grid and filters; the names are configurable.
+subfolder and styles in `style`; the folder names are configurable in `config.local.json`.
 
-**Demo / development.** Open `index.html` directly for the simulated demo, or run
-`python tools/fake_forge.py` and point Kiln at it (`KILN_FORGE_URL=http://127.0.0.1:7861 python server.py`)
-to exercise the whole pipeline without a GPU.
-
-Fonts and the editor load from CDNs; offline, Kiln falls back to system fonts and a plain text box.
+**Demo / development.** Open `index.html` directly for the simulated demo, or run `python tools/fake_forge.py`
+and point Kiln at it (`KILN_FORGE_URL=http://127.0.0.1:7861 python server.py`) to exercise the whole pipeline
+without a GPU. Fonts and the editor load from CDNs; offline, Kiln falls back to system fonts and a plain text box.
 
 ## Design notes
 
 A few rules the interface follows, in case you want to extend it in the same spirit:
 
 - **One accent.** The theme colour appears only on the play button and the progress bar. Values, sliders and
-  selection are neutral; switches use a single system blue for "on".
-- **Pure black, one separation per edge.** `#000` background, `#1C1C1E` panels, faint 1px outlines on panels
-  and inputs only — no drop shadows on black.
-- **The image is bare; text sits on panels.** List views (Queue, LoRAs, PNG Info) get a panel; the image doesn't.
-- **Nothing jumps.** The status line is always there, so the layout doesn't move when a job starts or ends.
-- **The page never scrolls.** The prompt grows to fit, then scrolls inside; drag its bottom edge or the column
-  divider to resize (double-click either to reset).
-- **Motion only when idle.** The starfield lives in the empty image area; the ambient glow only shows while
-  generating, so finished images are judged on neutral grey.
+  selection are neutral; switches use a single system blue for “on”.
+- **Pure black, one separation per edge.** `#000` background, `#1C1C1E` panels, faint 1px outlines — no drop
+  shadows on black.
+- **The image is bare; text sits on panels.** List views get a panel; the image doesn't.
+- **Nothing jumps.** The status line is always there, and switching tabs doesn't move anything.
+- **The page never scrolls.** The prompt grows to fit, then scrolls inside.
+- **Motion with a purpose.** The veil marks an image that isn't ready yet, embers mark one that just is; the
+  starfield stays dim. While you resize the window, nothing animates.
 
 ## Roadmap
 
-1. ~~Forge Neo wiring~~ — done: persistent queue, live previews, real LoRAs/models, upscale, open / show in folder.
-2. ~~App window~~ — `kiln.bat` opens Kiln in an Edge `--app` window. Next: drag finished images straight into
-   Photoshop or Explorer.
+1. ~~Forge Neo wiring~~ — persistent queue, live previews, real LoRAs/models, upscale, open / show in folder.
+2. ~~App window, one launcher~~ — `kiln.bat`, optional Forge start/stop.
 3. **img2img** from the image's hover actions.
-4. Maybe: a ComfyUI backend behind the same interface.
+4. Drag finished images straight into Photoshop or Explorer.
+5. Maybe: a ComfyUI backend behind the same interface.
 
 ## Credits
 

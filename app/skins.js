@@ -72,12 +72,17 @@ function makeCodeBg(){let at=null,key="",streams=[],fatT=0,acc=0;
   ctx.save();ctx.imageSmoothingEnabled=true;
   for(let i=streams.length-1;i>=0;i--){const s=streams[i];s.y+=s.v*sp*dt/1000;const ch=s.s*1.18;
    if(s.y-ch*s.L>H){streams.splice(i,1);continue}
-   if(Math.random()<.02*dt/33)s.g[Math.random()*s.L|0]=Math.random()*GLYPHS.length|0;
+   if(Math.random()<.05*dt/33){(s.hu||(s.hu=[]))[Math.random()*s.L|0]=t+250+Math.random()*550} // a glyph starts hunting
    for(let c=0;c<s.L;c++){const y=s.y-c*ch;if(y<-ch||y>H+ch)continue;
-    let a=s.a*dim*(c===0?1.6:1-c/s.L*.75);
+    const hz=s.hu&&s.hu[c]>t;if(hz)s.g[c]=Math.random()*GLYPHS.length|0;
+    let a=s.a*dim*(c===0||hz?1.6:1-c/s.L*.75);
     if(wave!=null&&wave<1.2){const f=wave*(W+H)-(s.x+y);a*=1+1.6*Math.exp(-f*f/(2*Math.pow(140*d,2)))}
-    ctx.globalAlpha=Math.min(1,a);const row=c===0?1:0,sc=s.s/24;
+    ctx.globalAlpha=Math.min(1,a);const row=c===0||hz?1:0,sc=s.s/24;
     ctx.drawImage(at.a,s.g[c]*at.cw,row*at.ch,at.cw,at.ch,s.x-at.pad*sc,y-at.pad*sc,at.cw*sc,at.ch*sc)}}
+  // where app text sits on the bare background (the name, the status line), the code fades out softly, like depth of field
+  ctx.globalCompositeOperation="destination-out";
+  for(const h of st.holes||[])for(let k=0;k<6;k++){const e=(6-k)*7*d;ctx.globalAlpha=k===5?.9:.16;
+   ctx.beginPath();ctx.roundRect(h.x-e,h.y-e,h.w+2*e,h.h+2*e,14*d+e);ctx.fill()}
   ctx.restore()}}}
 
 /* the render screen while a job is young: an old phosphor monitor. It powers on with a single line that blooms open,
@@ -86,11 +91,12 @@ function makeCodeBg(){let at=null,key="",streams=[],fatT=0,acc=0;
    the clean image. The pointer parts the rain like a lens. */
 function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("2d"),ovl=document.createElement("canvas"),o=ovl.getContext("2d");
  const lumC=document.createElement("canvas"),lc=lumC.getContext("2d",{willReadFrequently:true});
- let at=null,key="",cols=[],nc=0,nr=0,cs=0,chh=0,glyph=null,acc=0,on=-1,lum=null,lumT=0,ow=0,oh=0;
+ let at=null,key="",cols=[],nc=0,nr=0,cs=0,chh=0,glyph=null,hunt=null,acc=0,on=-1,lum=null,lumT=0,ow=0,oh=0,gl=null,glT=0;
  function layout(W,H,d,c3){cs=Math.round(13*d);chh=Math.round(cs*1.18);nc=Math.floor(W/cs);nr=Math.ceil(H/chh);
-  scr.width=W;scr.height=H;at=glyphAtlas(cs,c3[0],"#eafff2",.55);glyph=new Uint8Array(nc*nr).map(()=>Math.random()*GLYPHS.length|0);cols=[];
+  scr.width=W;scr.height=H;at=glyphAtlas(cs,c3[0],"#eafff2",.55);glyph=new Uint8Array(nc*nr).map(()=>Math.random()*GLYPHS.length|0);hunt=new Float32Array(nc*nr);cols=[];
   for(let i=0;i<nc;i++)cols.push(newCol(true))}
- const newCol=first=>({h:first?-1e9:-Math.random()*nr*.5,v:9+Math.random()*16,L:Math.round(nr*(.35+Math.random()*.7)),wait:0});
+ const newCol=first=>({h:first?-1e9:-Math.random()*nr*.5,v:9+Math.random()*16,L:Math.round(nr*(.35+Math.random()*.7)),last:-1});
+ const rnd=()=>Math.random()*GLYPHS.length|0;
  function overlay(W,H,d){if(ow===W&&oh===H)return;ow=ovl.width=W;oh=ovl.height=H;o.clearRect(0,0,W,H);
   const step=Math.max(2,Math.round(3*d));o.fillStyle="rgba(0,0,0,.26)";for(let y=0;y<H;y+=step)o.fillRect(0,y,W,Math.max(1,Math.round(d))); // scanlines
   o.fillStyle="rgba(0,0,0,.07)";for(let x=0;x<W;x+=step)o.fillRect(x,0,Math.max(1,Math.round(d*.8)),H);                                     // phosphor mask
@@ -99,25 +105,39 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
   const r=o.createLinearGradient(0,0,W*.6,H*.6);r.addColorStop(0,"rgba(255,255,255,.05)");r.addColorStop(.35,"rgba(255,255,255,0)");o.fillStyle=r;o.fillRect(0,0,W,H)} // glass reflection
  function sample(src){if(!src||src.width<8)return;lumC.width=nc;lumC.height=nr;lc.drawImage(src,0,0,nc,nr);const p=lc.getImageData(0,0,nc,nr).data;
   lum=new Float32Array(nc*nr);for(let i=0;i<nc*nr;i++)lum[i]=(p[i*4]*.3+p[i*4+1]*.59+p[i*4+2]*.11)/255}
- return{powerOn(t){on=t;cols.forEach(c=>Object.assign(c,newCol(true)));lum=null},
+ /* glitches: rare and short — a block of cells scrambles with a flash, a band of rows tears sideways, or a few columns drop out */
+ function glitch(t){const k=Math.random();
+  if(k<.45)gl={type:"block",until:t+180+Math.random()*220,x0:Math.random()*nc|0,y0:Math.random()*nr|0,w:2+Math.random()*6|0,h:3+Math.random()*7|0};
+  else if(k<.8)gl={type:"tear",until:t+90+Math.random()*110,y0:Math.random()*nr|0,h:1+Math.random()*4|0,dx:(Math.random()<.5?-1:1)*(1+Math.random()*3|0)*cs};
+  else gl={type:"drop",until:t+70+Math.random()*90,x0:Math.random()*nc|0,w:1+Math.random()*4|0}}
+ return{powerOn(t){on=t;cols.forEach(c=>Object.assign(c,newCol(true)));lum=null;gl=null;glT=t+2500+Math.random()*3000},
   draw(ctx,W,H,t,dt,d,c3,st){const k=W+"x"+H+c3[0];if(k!==key){key=k;layout(W,H,d,c3)}overlay(W,H,d);
-   if(on<0)on=t;const age=t-on;
+   if(on<0){on=t;glT=t+2500}const age=t-on;
    if(t-lumT>500){lumT=t;try{sample(st.src)}catch(e){}}
    acc+=dt;if(acc>=33){const step=Math.min(.1,acc/1000);acc=0;              // the code moves at ~30 fps
     const lone=age<1400,res=st.resolve;
+    if(t>glT&&age>2000&&!st.reduce){glitch(t);glT=t+3000+Math.random()*6000}
+    if(gl&&t>gl.until)gl=null;
     for(let i=0;i<nc;i++){const c=cols[i];
      if(c.h<-1e8){const start=lone?(i===Math.floor(nc*.38)?0:null):Math.random()<(.05+res*.4)*(age<3000?.6:1)?0:null; // one lone stream first, then the cascade
       if(start===null)continue;c.h=-Math.random()*3}
-     c.h+=c.v*step;if(Math.random()<.04)glyph[i*nr+(Math.random()*nr|0)]=Math.random()*GLYPHS.length|0;
+     c.h+=c.v*step;const hd=Math.floor(c.h);
+     if(hd!==c.last&&hd>=0&&hd<nr){c.last=hd;const n=i*nr+hd;glyph[n]=rnd();if(Math.random()<.6)hunt[n]=t+120+Math.random()*480} // a fresh cell hunts for its glyph
      if(c.h-c.L>nr){Object.assign(c,newCol(false));c.L=Math.round(nr*(.35+Math.random()*.7+res*.6))}}
+    for(let q=Math.round(nc*.03);q>0;q--){const n=Math.random()*nc*nr|0;if(hunt[n]<t)hunt[n]=t+200+Math.random()*500} // now and then a standing one doubts itself
     s.clearRect(0,0,W,H);const fl=.94+.06*Math.random();                      // flicker
     for(let i=0;i<nc;i++){const c=cols[i];if(c.h<0)continue;const top=Math.max(0,Math.floor(c.h-c.L)),hd=Math.min(nr-1,Math.floor(c.h));
-     for(let r=top;r<=hd;r++){const x=i*cs,y=r*chh;let a=r===hd?1:.42+.5*Math.pow(1-(hd-r)/c.L,.6);
+     const drop=gl&&gl.type==="drop"&&i>=gl.x0&&i<gl.x0+gl.w;if(drop)continue;
+     for(let r=top;r<=hd;r++){const n=i*nr+r,x=i*cs,y=r*chh;let a=r===hd?1:.42+.5*Math.pow(1-(hd-r)/c.L,.6),row=r===hd?1:0;
+      const hunting=hunt[n]>t;if(hunting){glyph[n]=rnd();row=1;a=Math.max(a,.75)}           // still deciding: flickers through glyphs, whiter
+      let dx=0;
+      if(gl){if(gl.type==="block"&&i>=gl.x0&&i<gl.x0+gl.w&&r>=gl.y0&&r<gl.y0+gl.h){glyph[n]=rnd();row=1;a=1}
+       else if(gl.type==="tear"&&r>=gl.y0&&r<gl.y0+gl.h)dx=gl.dx}
       if(res>0&&lum){const L=lum[r*nc+i];a*=1-res+res*(.08+1.5*L*L)}           // the code takes on the image
-      let dx=0;if(st.px!=null){const ddx=x+cs/2-st.px,ddy=y+chh/2-st.py,dd=Math.hypot(ddx,ddy),R=110*d;
-       if(dd<R){const q=dd/R;a*=q*q;dx=ddx/(dd||1)*(R-dd)*.35}}                 // the pointer parts the rain
+      if(st.px!=null){const ddx=x+cs/2-st.px,ddy=y+chh/2-st.py,dd=Math.hypot(ddx,ddy),R=110*d;
+       if(dd<R){const q=dd/R;a*=q*q;dx+=ddx/(dd||1)*(R-dd)*.35}}               // the pointer parts the rain
       if(a<.03)continue;s.globalAlpha=Math.min(1,a*fl);
-      s.drawImage(at.a,glyph[i*nr+r]*at.cw,(r===hd?1:0)*at.ch,at.cw,at.ch,x-at.pad+dx,y-at.pad,at.cw,at.ch)}}
+      s.drawImage(at.a,glyph[n]*at.cw,row*at.ch,at.cw,at.ch,x-at.pad+dx,y-at.pad,at.cw,at.ch)}}
     s.globalAlpha=1}
    const str=st.str;
    ctx.save();
@@ -127,6 +147,7 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
     ctx.fillStyle=g;for(let k=5;k>=0;k--){const h=lh+k*k*3*d;ctx.globalAlpha=fade*(k?.16/(1+k*.5):.95);ctx.fillRect((W-lw)/2,H/2-h/2,lw,h)} // halo layers, then the hot core
     ctx.restore();return}
    ctx.globalAlpha=Math.min(1,str*1.15);ctx.globalCompositeOperation="lighter";ctx.drawImage(scr,0,0);
+   if(gl&&gl.type==="block"){ctx.globalAlpha=.10*str;ctx.fillStyle=c3[0];ctx.fillRect(0,0,W,H)}   // a glitch flashes the tube faintly
    ctx.globalCompositeOperation="source-over";ctx.globalAlpha=Math.min(1,str*1.4);ctx.drawImage(ovl,0,0);
    ctx.restore()},
   sweep(ctx,W,H,p,d,c3){overlay(W,H,d);const y=H*(1-Math.pow(1-p,2.2));                             // finish: one refresh sweeps the screen clean

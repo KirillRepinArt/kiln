@@ -2,7 +2,8 @@
 /* app background, set by the skin: starfield (three parallax layers, gentle twinkle, a rare shooting star),
    northern lights over a dimmer starfield, or sparse cold code. Redrawn at ~30 fps. */
 (function(){const cv=$("stars"),c=cv.getContext("2d");const R=Math.random;let W=0,H=0,stars=[],shoot=null,last=0,lastDraw=0,was="",bcols=null,bcT=0;
- const aur=makeAurora(),code=makeCodeBg();let lastIn=performance.now(),dimV=1;
+ const aur=makeAurora(),code=makeCodeBg();let lastIn=performance.now(),dimV=1,holes=[],holeT=0;
+ const HOLES="#ltitle .phead,#ltitle .peekbar.show,#prog .meta,#idle>div";
  ["pointermove","keydown","wheel"].forEach(ev=>addEventListener(ev,()=>lastIn=performance.now(),{passive:true}));
  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  function init(){const b=cv.getBoundingClientRect();if(!b.width)return;const d=devicePixelRatio||1;
@@ -17,7 +18,9 @@
    c.clearRect(0,0,W,H);const d=devicePixelRatio||1;
    if(bg==="code"){const run=!!current(),f=$("frame").getBoundingClientRect(),cb=cv.getBoundingClientRect();
     dimV+=((!run&&t-lastIn>120000?.45:1)-dimV)*Math.min(1,dt/1500); // idle for 2 min: dims
-    code.draw(c,W,H,t,dt,d,bcols,{run,fx:(f.left+f.width/2-cb.left)*d,dim:dimV,wave:window._bgWave||0,reduce});last=t;requestAnimationFrame(draw);return}
+    if(t-holeT>500){holeT=t;holes=[...document.querySelectorAll(HOLES)].map(el=>el.getBoundingClientRect()).filter(r=>r.width&&r.height)
+     .map(r=>({x:(r.left-cb.left)*d,y:(r.top-cb.top)*d,w:r.width*d,h:r.height*d}))}
+    code.draw(c,W,H,t,dt,d,bcols,{run,fx:(f.left+f.width/2-cb.left)*d,dim:dimV,wave:window._bgWave||0,reduce,holes});last=t;requestAnimationFrame(draw);return}
    const dim=bg==="aurora"?.55:1;
    for(const st of stars){const v=[.002,.0045,.009][st.l]*(reduce?0:1);st.x+=v*dt;st.y+=v*dt*.62;
     if(st.x>W+4)st.x-=W+8;if(st.y>H+4)st.y-=H+8;

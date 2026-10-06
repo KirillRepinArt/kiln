@@ -62,6 +62,7 @@ lock = threading.RLock()
 wake = threading.Event()
 jobs: list[dict] = []
 previews: dict[int, bytes] = {}
+last_preview = {"v": None}  # the previous job's last preview: Forge can still return it while the next job starts
 forge_status = {"ok": False, "error": "not checked yet", "busy": False, "starting": False}
 forge_proc = None  # the Forge we started ourselves (None if Forge was already running or isn't ours)
 QUEUE_FILE, STATS_FILE, HISTORY_FILE = DATA / "queue.json", DATA / "stats.json", DATA / "history.json"
@@ -224,9 +225,11 @@ def poll_progress(job, stop):
                         job["t_first"] = time.time()
                 job["progress"] = round(r.get("progress") or 0, 4)
                 job["eta"] = round(r.get("eta_relative") or 0, 1)
-                if r.get("current_image"):
-                    previews[job["id"]] = base64.b64decode(r["current_image"])
-                    job["preview_rev"] = job.get("preview_rev", 0) + 1
+                if r.get("current_image") and job.get("t_first"):
+                    b = base64.b64decode(r["current_image"])
+                    if b != last_preview["v"] and b != previews.get(job["id"]):
+                        previews[job["id"]] = b
+                        job["preview_rev"] = job.get("preview_rev", 0) + 1
         except Exception:
             pass
         stop.wait(0.8)
@@ -329,7 +332,7 @@ def worker():
             result = "error"; job["error"] = f"{type(e).__name__}: {e}"
         with lock:
             job.update(status=result, finished=time.time())
-            previews.pop(job["id"], None)
+            last_preview["v"] = previews.pop(job["id"], None) or last_preview["v"]
             if result == "done" and job["kind"] == "txt2img":
                 b = mp_bucket(job["spec"]["w"], job["spec"]["h"])
                 per = (job["finished"] - job["started"]) / max(1, job["spec"]["steps"])

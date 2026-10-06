@@ -160,6 +160,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .rpanel{background:transparent;border:1px solid transparent;transition:background .25s var(--ease),border-color .25s var(--ease),box-shadow .25s var(--ease);border-radius:var(--r-panel);flex:1;min-height:0;position:relative;overflow:hidden}
 .rpanel.paneled{background:var(--panel);border-color:#26262a}
 .rpanel.paneled .qwrap,.rpanel.paneled .pwrap{padding:18px}
+.rpanel.paneled .qwrap{inset:12px;padding:6px;border-radius:24px}
 .rpanel.paneled .lwrap{padding:16px 18px}
 .view{position:absolute;inset:0;visibility:hidden;opacity:0;transform:translateY(4px);transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s linear .22s}
 .view.on{visibility:visible;opacity:1;transform:none;transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s}
@@ -264,6 +265,8 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .drop.over{border-color:rgba(255,255,255,.7);color:var(--text)}
 .pout{flex:1;overflow:auto;background:#161618;border-radius:16px;padding:18px 20px;font-size:14px;color:#cfcfd4}
 .pout.raw{white-space:pre-wrap;font-size:13px}
+.pout:empty{display:none}
+.pwrap:has(.pout:empty) .drop{flex:1;display:flex;flex-direction:column;justify-content:center} /* nothing loaded: the whole panel is the drop target */
 .pi-h{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8a8a92;margin:2px 0 8px}
 .pi-p{line-height:1.62;color:#e6e6ea;margin-bottom:18px}
 .pi-p .ln{min-height:1.62em}
@@ -374,6 +377,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .ltitle .peekbar{position:static;margin-top:8px;box-shadow:none;max-width:100%}
 .ltitle .peekbar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip[hidden]{display:none}
+.chips.peek .chip{opacity:.55;pointer-events:none}.chips.peek .chipmore{pointer-events:auto;opacity:1}
 /* peeking: the name field shows the peeked image's name, greyed and read-only */
 .ltitle .plbl.peekname .pname{color:#77777e!important}.plbl.peekname .pnx{display:none!important}
 /* height modes: match the image block / full column (icons at the right of the name row) */
@@ -383,6 +387,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .hmodes button:hover{background:var(--raised2);color:#fff}.hmodes button.on{background:#f2f2f2;color:#111}
 .hmodes svg{width:16px;height:16px}
 .app.stacked #hmMatch{display:none}
+.ltitle:has(.peekbar.show) .hmodes{bottom:var(--hmb,54px)}
 .left.hm .vedge{display:none}
 .app:not(.stacked) .left.hm,.app:not(.stacked) .ltitle.hm{cursor:default}
 /* LoRA library: one row format with the thumbnail in front, Active strip on top */
@@ -501,7 +506,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
         <div class="pwrap">
           <div class="drop" id="drop">Drop a PNG here, or click to choose<br><small>Reads the generation settings Forge stores inside the file</small><input type="file" id="file" accept="image/png" hidden></div>
           <div class="pimg" id="pimg"><img id="pimgEl" alt=""></div>
-          <div class="pout" id="pout">—</div>
+          <div class="pout" id="pout"></div>
           <div class="pact"><button class="pi-raw" id="pClear" style="display:none">Clear</button><button class="pi-raw" id="pRaw" style="display:none;margin-left:6px">Show raw text</button><button class="btn pri" id="pSend" disabled>Send to prompt</button></div>
         </div>
       </div>
@@ -662,6 +667,9 @@ function grow(){} // column widths now come from sizeFrame()
 P.addEventListener("input",()=>{grow();requestAnimationFrame(layoutLeft);if(!peekJob){draft=P.value;save()}updPrompt()});
 let chipsOpen=false;
 function renderChips(){requestAnimationFrame(()=>window.layoutLeft&&layoutLeft());
+ const pk=typeof peekJob!=="undefined"&&peekJob;$("chips").classList.toggle("peek",!!pk);
+ if(pk){$("chips").innerHTML=(pk.loras||[]).map(x=>{const l=LORAS.find(l=>l.name===x.name);
+   return `<span class="chip ${l&&l.folder==="people"?"face":""}"><span class="cn">${esc(l?l.display:x.name)}</span><span class="cw">${fmtW(x.w)}</span></span>`}).join("");capChips();peekButtons();return}
  $("chips").innerHTML=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0)).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`).join("");capChips();if(typeof peekJob!=="undefined"&&peekJob)peekButtons()}
 /* more than two rows of chips: hide the rest behind a "+N" chip that expands (and collapses again) */
 function capChips(){const box=$("chips");box.querySelector(".chipmore")?.remove();const cs=[...box.querySelectorAll(".chip")];cs.forEach(c=>c.hidden=false);
@@ -672,7 +680,7 @@ function capChips(){const box=$("chips");box.querySelector(".chipmore")?.remove(
  const vis=cs.filter(c=>!c.hidden);while(more.offsetTop>lim&&vis.length){const c=vis.pop();c.hidden=true;hid.unshift(c);more.textContent="+"+hid.length}
  more.dataset.tip="Show all · "+hid.map(c=>c.querySelector(".cn").textContent+" "+c.querySelector(".cw").textContent).join(", ")}
 (function(){let w=0;new ResizeObserver(()=>{const n=$("chips").clientWidth;if(n!==w){w=n;capChips()}}).observe($("chips"))})();
-$("chips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;if(c.classList.contains("chipmore")){chipsOpen=!chipsOpen;renderChips();return}const l=LORAS.find(l=>l.name===c.dataset.n);
+$("chips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;if(c.classList.contains("chipmore")){chipsOpen=!chipsOpen;renderChips();return}if(peekJob)return;const l=LORAS.find(l=>l.name===c.dataset.n);
  if(e.target.closest(".cx")){l.on=false;save();renderChips();renderLoras();return}
  S.lfilter=l.folder==="people"?"people":"all";showView("loras");const el=document.querySelector(`[data-ln="${l.name}"]`);
  if(el){el.scrollIntoView({block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")}};
@@ -936,7 +944,7 @@ function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=
    ${k==="pend"?'<span class="handle" title="Drag to reorder">⋮⋮</span>':""}
    <div class="th">${j.status==="done"?`<canvas data-th="${j.id}"></canvas>`:j.status==="cancelled"?"stopped":k==="run"?"…":"#"+j.id}</div>
    <div class="body"><div class="p">${j.file?`<b style="font-weight:600">${esc(j.file)}</b> · `:""}${esc(j.prompt)}</div>
-   <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · seed ${j.seed}${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.finished?` · took ${fmt((j.finished-j.started)*S.demo/1000)}`:""}</div>
+   <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · seed ${j.seed}${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.finished?` · took ${fmt((j.finished-j.started)*(window.LIVE?1:S.demo)/1000)}`:""}</div>
    ${k==="run"?'<div class="mini"><i></i></div>':""}</div>
    ${k!=="done"?`<button class="x" data-x="${j.id}" title="${k==="run"?"Stop":"Remove"}">${IC.x}</button>`:""}</div>`;
  $("qwrap").innerHTML=(run.length?`<div class="qsec">Running</div>${run.map(j=>item(j,"run")).join("")}`:"")+
@@ -964,7 +972,7 @@ function peekButtons(){const j=peekJob;if(!j)return;const pSame=(j.raw||j.prompt
  $("peekLbl").textContent=`#${j.id}${j.status==="running"?" · generating":""} · ${j.ar} · ${j.steps} steps${pSame&&sSame&&seedSame?" · same as your draft":""}`}
 function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classList.add("peek");P.scrollTop=0;
  const n=$("pname");n.value=j.name||"";n.placeholder="Unnamed";n.readOnly=true;
- peekButtons();$("peekbar").classList.add("show");updPrompt();layoutLeft()}
+ peekButtons();$("peekbar").classList.add("show");renderChips();updPrompt();layoutLeft()}
 /* Two ways out of a browse: the prompt's ✕ (or Esc in the editor) closes only the prompt — your draft comes back, the
    image stays, and the arrows keep the prompt closed (peekOff) until the browse ends; the image's ✕ (or Esc elsewhere)
    closes both and returns to the live view. */
@@ -973,7 +981,7 @@ function closePromptPeek(){if(browseId!=null){peekOff=true;endPeek(true)}else en
 function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){browseId=null;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}}
  if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
  const n=$("pname");n.value=S.pname||"";n.placeholder="Add name";n.readOnly=false;
- $("peekbar").classList.remove("show");updPrompt();layoutLeft()}
+ $("peekbar").classList.remove("show");renderChips();updPrompt();layoutLeft()}
 function reuse(all){const j=peekJob;if(!j)return;const prev={draft,S:{mp:S.mp,ar:S.ar,steps:S.steps,seedMode:S.seedMode,seed:S.seed},loras:LORAS.map(l=>({on:l.on,w:l.w}))};
  draft=j.raw||j.prompt;if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps,seedMode:"fixed",seed:j.seed});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}
  endPeek();save();renderAll();P.focus();
@@ -1062,7 +1070,7 @@ $("bclose").onclick=e=>{e.stopPropagation();if(browsed()){endPeek();return}stale
     v.globalAlpha=a;v.strokeStyle="#ffffff";v.lineWidth=.7*d;const L=p.s*4*tw;v.beginPath();v.moveTo(p.x-L,p.y);v.lineTo(p.x+L,p.y);v.moveTo(p.x,p.y-L);v.lineTo(p.x,p.y+L);v.stroke()}
    v.globalAlpha=1;v.globalCompositeOperation="source-over"}else sparks.length=0;
   e.clearRect(0,0,W,H);
-  if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n)embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-(0.05+Math.random()*0.11)*d,life:0,max:2200+Math.random()*2400,r:(1+Math.random()*2)*d,c:Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}
+  if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);
   if(embers.length){e.globalCompositeOperation="lighter";
    embers=embers.filter(p=>{p.life+=dt;if(p.life>p.max)return false;p.x+=(p.vx+Math.sin(p.life/420+p.ph)*.015*d)*dt;p.y+=p.vy*dt;const q=p.life/p.max;
@@ -1075,12 +1083,15 @@ $("bclose").onclick=e=>{e.stopPropagation();if(browsed()){endPeek();return}stale
 /* ======================= tooltips: one consistent style, short delay ======================= */
 (function(){const tip=document.createElement("div");tip.id="tip";document.body.appendChild(tip);let t=null,cur=null;
  function hide(){clearTimeout(t);tip.classList.remove("show");cur=null}
+ let mx=0,my=0;document.addEventListener("mousemove",e=>{mx=e.clientX;my=e.clientY},{passive:true});
  document.addEventListener("mouseover",e=>{const el=e.target.closest("[title],[data-tip]");if(el===cur)return;hide();if(!el)return;
   if(el.hasAttribute("title")){el.dataset.tip=el.getAttribute("title");el.removeAttribute("title")}
   const text=el.dataset.tip;if(!text)return;cur=el;
   t=setTimeout(()=>{if(cur!==el||document.querySelector(".pop.show"))return;tip.textContent=text;tip.classList.add("show");
    const r=el.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight;let x=r.left+r.width/2-w/2,y=r.bottom+8;
-   if(y+h>innerHeight-6)y=r.top-h-8;x=Math.max(6,Math.min(innerWidth-w-6,x));tip.style.transform=`translate(${x}px,${y}px)`},450)});
+   if(y+h>innerHeight-6)y=r.top-h-8;
+   if(y<6){y=Math.max(6,Math.min(innerHeight-h-6,my+18));x=mx-w/2} // taller than the window: follow the pointer instead
+   x=Math.max(6,Math.min(innerWidth-w-6,x));tip.style.transform=`translate(${x}px,${y}px)`},450)});
  document.addEventListener("mousedown",hide);document.addEventListener("wheel",hide,{passive:true});
  const TIPS={pMP:"Image size (megapixels)",pAR:"Aspect ratio",pST:"Sampling steps — scroll to nudge",pSD:"Seed — random each job, or fixed",
   pN:"How many images to queue — scroll to nudge",play:"Add to queue (Ctrl+Enter)",prog:"Click to see this image's prompt · the preview shows the last finished step",
@@ -1114,7 +1125,7 @@ function renderLoras(){const q=$("lsearch").value.toLowerCase().trim();
  const srt=g=>S.lfilter==="recent"?g:g.sort((a,b)=>(b.fav-a.fav)||a.display.localeCompare(b.display));
  const G=[["people","Faces"],["style","Style"],["utility","Utility"]],known=G.map(g=>g[0]);
  // Active on top as full, editable items — a mirror: they stay in their own section too, so nothing jumps when toggled
- let h=`<div class="lsec">Active · ${on.length}</div>`+(on.length?on.map(row).join(""):'<div class="lnone">Nothing on — switch LoRAs on below</div>');
+ let h=S.lfilter!=="all"||q?"":`<div class="lsec">Active · ${on.length}</div>`+(on.length?on.map(row).join(""):'<div class="lnone">Nothing on — switch LoRAs on below</div>');
  if(S.lfilter==="recent")h=L.map(row).join("");
  else{for(const [k,t] of G){const g=L.filter(l=>l.folder===k);if(g.length)h+=`<div class="lsec">${t} · ${g.length}</div>${srt(g).map(row).join("")}`}
   const o=L.filter(l=>!known.includes(l.folder));if(o.length)h+=`<div class="lsec">Other · ${o.length}</div>${srt(o).map(row).join("")}`}
@@ -1171,7 +1182,7 @@ function renderPngInfo(t){const o=$("pout");o.classList.remove("raw");
  const kv=piParams(pline);if(kv.length)h+=`<div class="pi-h">Settings</div><dl class="pi-grid">${kv.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
  o.innerHTML=h;$("pRaw").textContent="Show raw text"}
 $("pClear").onclick=()=>{const el=$("pimgEl");if(el.dataset.u)URL.revokeObjectURL(el.dataset.u);el.removeAttribute("src");el.dataset.u="";$("pimg").classList.remove("show");
- const o=$("pout");o.classList.remove("raw");o.textContent="—";o.dataset.raw="";parsed=null;$("pSend").disabled=true;$("pRaw").style.display="none";$("pClear").style.display="none";$("file").value=""};
+ const o=$("pout");o.classList.remove("raw");o.textContent="";o.dataset.raw="";parsed=null;$("pSend").disabled=true;$("pRaw").style.display="none";$("pClear").style.display="none";$("file").value=""};
 $("pRaw").onclick=()=>{const o=$("pout");if(o.classList.contains("raw")){renderPngInfo(o.dataset.raw)}else{o.classList.add("raw");o.textContent=o.dataset.raw;$("pRaw").textContent="Show formatted"}};
 
 function parseParams(t){const i=t.search(/\n(Negative prompt:|Steps:)/);const prompt=(i>=0?t.slice(0,i):t).trim();
@@ -1241,9 +1252,12 @@ applyFont();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");rend
  const imgs={};
  function img(url){if(!imgs[url]){const i=new Image();i.decoding="async";imgs[url]={i,p:new Promise(r=>{i.onload=()=>r(i);i.onerror=()=>r(null)})};i.src=url}return imgs[url]}
  function urlFor(j){return j.file?`/files/${encodeURIComponent(j.file)}`:null}
- function drawTo(cv,im,natural){const dpr=devicePixelRatio||1;
-  const W=natural?im.naturalWidth:Math.max(64,Math.round((cv.clientWidth||300)*dpr)),H=natural?im.naturalHeight:Math.round(W*im.naturalHeight/im.naturalWidth);
-  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}const c=cv.getContext("2d");c.imageSmoothingQuality="high";c.drawImage(im,0,0,W,H)}
+ function drawTo(cv,im,natural){const dpr=devicePixelRatio||1,iw=im.naturalWidth,ih=im.naturalHeight;
+  if(natural){if(cv.width!==iw||cv.height!==ih){cv.width=iw;cv.height=ih}const c=cv.getContext("2d");c.drawImage(im,0,0);return}
+  // the canvas takes its box's shape; the image keeps its own (a preview of another shape never gets stretched)
+  const cw=cv.clientWidth||300,ch=cv.clientHeight||Math.round(cw*ih/iw);const W=Math.max(64,Math.round(cw*dpr)),H=Math.max(64,Math.round(ch*dpr));
+  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}const c=cv.getContext("2d");c.imageSmoothingQuality="high";c.clearRect(0,0,W,H);
+  const k=cv.id==="cv"?Math.min(W/iw,H/ih):Math.max(W/iw,H/ih);c.drawImage(im,(W-iw*k)/2,(H-ih*k)/2,iw*k,ih*k)}
  window.paint=function(cv,j,progress){const u=urlFor(j);if(!u)return;const e=img(u);
   if(e.i.complete&&e.i.naturalWidth)drawTo(cv,e.i,cv.id==="vcv");else e.p.then(im=>{if(im)drawTo(cv,im,cv.id==="vcv")})};
 
@@ -1256,6 +1270,7 @@ applyFont();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");rend
   forgeOk=s.forge.ok;forgeStarting=!!s.forge.starting;
   if(forgeOk&&!models&&!loadingM){loadingM=true;loadModels(false).then(ok=>{loadingM=false;if(ok){refreshUp();toast("Forge is ready — models and LoRAs loaded")}})}
   for(const b in s.stats.sec_per_step||{})SEC_PER_STEP[b]=Math.max(1,s.stats.sec_per_step[b]);
+  if(typeof dragId!=="undefined"&&dragId!=null){setTimeout(poll,700);return} // dragging in the queue: keep the local order until the drop
   const prev=new Map(jobs.map(j=>[j.id,j]));
   jobs=s.jobs.map(x=>{const u=toUI(x),o=prev.get(u.id);if(o&&o.status==="running"&&u.status==="running"){u._ss=o._ss;u._lastStep=o._lastStep}return u});
   for(const j of jobs){if(j.status==="done"&&!seen.has(j.id)){seen.add(j.id);neKey="";if(!firstPoll){justDone=j.id;resultStale=false;onJobDone(j)}}
@@ -1392,6 +1407,7 @@ if(cm){
  const proto=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,"value");
  const roProto=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,"readOnly");
  const ro=new Compartment();let syncing=false;
+ let rfq=0;const refit=()=>{if(rfq)return;rfq=requestAnimationFrame(()=>{rfq=0;window.layoutLeft&&layoutLeft()})}; // text set from code never fired "input", so the card kept its old height
 
  /* decorations: comments, list markers (hanging), section labels, {variants}, <lora:...> tags */
  const LIST=/^(\s*)(\d+[.)]|[-*•])\s+/, LABEL=/^\s*[A-Za-zА-Яа-яЁё][\w \-/&А-Яа-яЁё]{0,28}:\s*$/, COMMENT=/^\s*\/\//;
@@ -1422,7 +1438,8 @@ if(cm){
  const view=new EditorView({parent:wrap,state:EditorState.create({doc:proto.get.call(ta),extensions:[
   history(),EditorView.lineWrapping,EditorView.contentAttributes.of({spellcheck:"true",autocorrect:"off",autocapitalize:"off"}),placeholder("Describe what you want to see…"),deco,ro.of(EditorState.readOnly.of(false)),
   keymap.of([{key:"Mod-/",run:toggleLineComment},{key:"Mod-Enter",run:()=>{window.addJobs&&addJobs();return true}},...historyKeymap,...defaultKeymap.filter(k=>k.key!=="Mod-Enter")]),
-  EditorView.updateListener.of(u=>{if(u.docChanged&&!syncing){proto.set.call(ta,u.state.doc.toString());ta.dispatchEvent(new Event("input"))}}),
+  EditorView.updateListener.of(u=>{if(u.docChanged&&!syncing){proto.set.call(ta,u.state.doc.toString());ta.dispatchEvent(new Event("input"))}
+   if(u.heightChanged||u.geometryChanged)refit()}),
   EditorView.domEventHandlers({keydown:(e)=>{if(!ta.readOnly)return false;
    if(e.key==="Escape"||e.key.length===1||e.key==="Backspace"||e.key==="Enter"){if(e.ctrlKey&&e.key==="Enter")return false;
     ta.dispatchEvent(new KeyboardEvent("keydown",{key:e.key,ctrlKey:e.ctrlKey}));return true}return false}})
@@ -1434,6 +1451,7 @@ if(cm){
   if(cur!==v){syncing=true;view.dispatch({changes:{from:0,to:cur.length,insert:v}});syncing=false}}});
  Object.defineProperty(ta,"readOnly",{get(){return roProto.get.call(ta)},set(v){roProto.set.call(ta,v);view.dispatch({effects:ro.reconfigure(EditorState.readOnly.of(!!v))})}});
  ta.focus=()=>view.focus();
+ addEventListener("resize",()=>view.requestMeasure());document.fonts&&document.fonts.ready.then(()=>view.requestMeasure());
  new MutationObserver(()=>view.dom.classList.toggle("peek",ta.classList.contains("peek"))).observe(ta,{attributes:true,attributeFilter:["class"]});
  Object.defineProperty(ta,"scrollTop",{get(){return view.scrollDOM.scrollTop},set(v){view.scrollDOM.scrollTop=v}});
  window.__cm=view;

@@ -112,7 +112,7 @@ The queue shows which variant each job got, so a good result can be traced back.
 and feeds Forge one job at a time; Forge's own UI keeps working alongside. Images go to `outputs/` with the
 generation settings embedded, so PNG Info (Kiln's or Forge's) can read them back. Model and module choices in
 ⚙ Settings default to whatever Forge has loaded; pick others and Kiln switches before the job runs.
-`index.html` is the whole interface — one file, no build step.
+The interface is `index.html` plus plain files in `app/` (CSS and scripts), no build step; the server joins them into one page.
 
 **LoRA folders.** Kiln reads your LoRAs from Forge. Put face LoRAs in a `people` (or `faces`, `characters`)
 subfolder and styles in `style`; the folder names are configurable in `config.local.json`.

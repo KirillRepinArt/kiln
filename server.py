@@ -515,6 +515,33 @@ def sniff(b):
     return "image/png" if b[:4] == b"\x89PNG" else "image/jpeg" if b[:2] == b"\xff\xd8" else "image/webp" if b[8:12] == b"WEBP" else "application/octet-stream"
 
 
+def build_page():
+    """index.html with app/*.css|js inlined. Scripts of one bundle become ONE script, so they run back to back exactly
+    like the single file they came from (separate script tags let timers and resize callbacks run in between)."""
+    page = (ROOT / "index.html").read_text(encoding="utf-8")
+    app = ROOT / "app"
+    page = re.sub(r'<link rel="stylesheet" href="app/([\w.-]+)" data-inline>',
+                  lambda m: "<style>\n" + (app / m.group(1)).read_text(encoding="utf-8") + "</style>", page)
+    out, bundle, parts = [], None, []
+
+    def flush():
+        if parts:
+            out.append("<script>\n" + "\n".join(parts) + "</script>\n")
+            parts.clear()
+    pos = 0
+    for m in re.finditer(r'<script src="app/([\w.-]+)" data-bundle="(\w+)"></script>\s*', page):
+        between = page[pos:m.start()]
+        if between.strip() or m.group(2) != bundle:
+            flush()
+            out.append(between)
+        bundle = m.group(2)
+        parts.append(f"/* ---- app/{m.group(1)} ---- */\n" + (app / m.group(1)).read_text(encoding="utf-8"))
+        pos = m.end()
+    flush()
+    out.append(page[pos:])
+    return "".join(out).encode("utf-8")
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
 
@@ -541,11 +568,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urllib.parse.unquote(self.path.split("?")[0])
         if path in ("/", "/index.html"):
-            page = (ROOT / "index.html").read_bytes()
+            page = build_page()
             inject = os.environ.get("KILN_TEST_INJECT")  # test hook: append a script (used by automated UI checks)
             if inject and "test" in self.path:
                 page = page.replace(b"</body>", b"<script>" + Path(inject).read_bytes() + b"</script></body>")
             return self.reply(200, page, MIME[".html"])
+        if path.startswith("/app/"):
+            return self.file(ROOT / "app", path[5:])
         if path.startswith("/docs/"):
             return self.file(ROOT / "docs", path[6:], cache=True)
         if path.startswith("/files/"):

@@ -1,0 +1,96 @@
+/* Kiln · starfield, ambient glow + title/favicon, notifications, veil + embers */
+/* idle starfield: three parallax layers drifting slowly, gentle twinkle, a rare shooting star */
+(function(){const cv=$("stars"),c=cv.getContext("2d");const R=Math.random;let W=0,H=0,stars=[],shoot=null,last=0;
+ const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+ function init(){const b=cv.getBoundingClientRect();if(!b.width)return;const d=devicePixelRatio||1;
+  W=cv.width=Math.round(b.width*d);H=cv.height=Math.round(b.height*d);
+  const n=Math.round(b.width*b.height/3400);stars=[];for(let i=0;i<n;i++){const l=R()<.6?0:R()<.75?1:2;
+   stars.push({x:R()*W,y:R()*H,l,r:(.5+l*.45+R()*.4)*d,p:R()*6.28,s:.6+R()*1.6})}}
+ function draw(t){const idle=((S.set||{}).stars||"on")!=="off";cv.classList.toggle("on",idle);
+  if(idle){if(!W||Math.abs(cv.getBoundingClientRect().width*(devicePixelRatio||1)-W)>2)init();
+   const dt=Math.min(50,t-last);c.clearRect(0,0,W,H);
+   for(const st of stars){const v=[.002,.0045,.009][st.l]*(reduce?0:1);st.x+=v*dt;st.y+=v*dt*.62;
+    if(st.x>W+4)st.x-=W+8;if(st.y>H+4)st.y-=H+8;
+    const tw=reduce?.8:.55+.45*Math.sin(t/1000*st.s+st.p);c.globalAlpha=(.25+st.l*.25)*tw*.62;
+    c.fillStyle=st.l===2?"#fff":"#cfd6ff";c.beginPath();c.arc(st.x,st.y,st.r,0,6.283);c.fill()}
+   if(!reduce){if(!shoot&&R()<dt/9000)shoot={x:W*R()*.7,y:H*R()*.4,vx:.5+R()*.4,vy:.3+R()*.15,life:0};
+    if(shoot){shoot.life+=dt;const k=shoot.life/900,len=120*(devicePixelRatio||1);const x=shoot.x+shoot.vx*shoot.life,y=shoot.y+shoot.vy*shoot.life;
+     const g=c.createLinearGradient(x,y,x-shoot.vx*len,y-shoot.vy*len);g.addColorStop(0,"rgba(255,255,255,.8)");g.addColorStop(1,"rgba(255,255,255,0)");
+     c.globalAlpha=Math.max(0,1-k);c.strokeStyle=g;c.lineWidth=1.4*(devicePixelRatio||1);c.beginPath();c.moveTo(x,y);c.lineTo(x-shoot.vx*len,y-shoot.vy*len);c.stroke();
+     if(k>=1)shoot=null}}
+   c.globalAlpha=1}else if(W&&!cv.classList.contains("on")&&getComputedStyle(cv).opacity<.02)c.clearRect(0,0,W,H);
+  last=t;requestAnimationFrame(draw)}
+ requestAnimationFrame(draw)})();
+
+/* ambient glow + window title + favicon progress ring (throttled) */
+const amb=$("amb"),ambC=amb.getContext("2d"),favC=document.createElement("canvas");favC.width=favC.height=64;
+function jobProgress(j){const part=Math.min((Date.now()-j.stepStart)/j.est,.95)||0;return{p:(j.step+part)/j.steps,left:Math.max(0,(j.steps-j.step-part)*j.est*S.demo/1000)}}
+function status(){const j=current();$("frame").classList.toggle("running",!!j&&!browsed());const pend=jobs.filter(x=>x.status==="pending").length;
+ const gm=(S.set||{}).glow||"gen";
+ const src=(S.view==="gen"&&gm!=="off"&&(j||(gm==="always"&&shownDone())))?$("cv"):null;
+ if(src&&src.width){ambC.imageSmoothingQuality="high";ambC.drawImage(src,0,0,12,12);amb.classList.add("on")}else amb.classList.remove("on");
+ let p=null;
+ if(j){const q=jobProgress(j);p=q.p;
+  document.title=`${Math.min(j.step+1,j.steps)}/${j.steps}${q.left!=null?` · ~${fmt(q.left)}`:""}${pend?` · +${pend}`:""} — Kiln`}
+ else document.title=pend?`${pend} queued — Kiln`:"Kiln";
+ const c=favC.getContext("2d");c.clearRect(0,0,64,64);const cs=getComputedStyle(document.documentElement);
+ const g=c.createLinearGradient(0,0,64,64);g.addColorStop(0,cs.getPropertyValue("--a1").trim()||"#FF8A00");g.addColorStop(1,cs.getPropertyValue("--a3").trim()||"#3FE0F0");
+ c.lineWidth=9;c.lineCap="round";c.strokeStyle="#2f2f34";c.beginPath();c.arc(32,32,24,0,Math.PI*2);c.stroke();
+ c.strokeStyle=g;c.beginPath();c.arc(32,32,24,-Math.PI/2,-Math.PI/2+Math.PI*2*(p==null?1:Math.max(.02,p)));c.stroke();
+ if(p==null){c.fillStyle=g;c.beginPath();c.moveTo(27,21);c.lineTo(43,32);c.lineTo(27,43);c.closePath();c.fill()}
+ $("fav").href=favC.toDataURL("image/png")}
+setInterval(status,400);
+let notifAsked=false;
+function askNotify(){if(notifAsked||!("Notification" in window))return;notifAsked=true;try{if(Notification.permission==="default")Notification.requestPermission()}catch(e){}}
+function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==="pending"))return;if(((S.set||{}).notify||"on")==="off")return;
+ try{if(Notification.permission==="granted")new Notification("Kiln — queue finished",{body:"Last: "+j.prompt.slice(0,80),silent:(S.set||{}).notify==="silent"})}catch(e){}}
+
+
+/* ======================= effects =======================
+   VEIL while a job runs: the young preview is mostly hidden under flowing diagonal light and drifting sparkles,
+   and emerges as progress grows (hover the image to peek through). EMBERS: a short burst when a job finishes. */
+(function(){const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+ const vc=$("veil"),v=vc.getContext("2d"),ec=$("embers"),e=ec.getContext("2d");let W=0,H=0,last=0,str=0,hover=false,sparks=[],embers=[],burst=0,cols=["#FF8A00","#FF5E8A","#3FE0F0"],colT=0;
+ $("frame").addEventListener("pointerenter",()=>hover=true);$("frame").addEventListener("pointerleave",()=>hover=false);
+ function sprite(color,size){const c=document.createElement("canvas");c.width=c.height=size;const g=c.getContext("2d");const r=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  r.addColorStop(0,color);r.addColorStop(.18,color+"cc");r.addColorStop(.45,color+"33");r.addColorStop(1,color+"00");g.fillStyle=r;g.fillRect(0,0,size,size);return c}
+ let spr={};function sprites(){const cs=getComputedStyle(document.documentElement);cols=["--a1","--a2","--a3"].map((k,i)=>cs.getPropertyValue(k).trim()||cols[i]);
+  const hex=c=>{if(/^#[0-9a-f]{6}$/i.test(c))return c;const d=document.createElement("canvas").getContext("2d");d.fillStyle=c;return d.fillStyle};
+  spr={a1:sprite(hex(cols[0]),64),a2:sprite(hex(cols[1]),64),a3:sprite(hex(cols[2]),64),w:sprite("#ffffff",64)}}
+ sprites();
+ window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;burst=2400};
+ function draw(t){const dt=Math.min(50,t-last||16);last=t;if(t-colT>2000){sprites();colT=t}
+  const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
+  if(nw!==W||nh!==H){W=vc.width=ec.width=nw;H=vc.height=ec.height=nh}
+  const j=current();const mode=(S.set||{}).veil||"full";
+  let target=0;if(j&&!browsed()&&S.view==="gen"&&mode!=="off"&&!reduce){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
+   // full while step 1 renders, most of it gone during step 2, a little left on step 3, clear for the last step
+   const K=[[0,1],[.25,1],[.5,.4],[.75,.12],[.92,0]];let k0=0;for(let i=1;i<K.length;i++)if(pr<=K[i][0]){const [a,va]=K[i-1],[b,vb]=K[i];k0=va+(vb-va)*(pr-a)/(b-a);break}
+   target=k0*(mode==="light"?.55:1);if(hover)target*=.12}
+  str+=(target-str)*Math.min(1,dt/260);if(str<.002||browsed())str=0; // a finished image you browse to shows clean at once
+  document.getElementById("frame").style.setProperty("--vf",str?`blur(${(24*str).toFixed(1)}px) brightness(${(1-.45*str).toFixed(3)}) saturate(${(1-.4*str).toFixed(3)})`:"none");
+  v.clearRect(0,0,W,H);
+  if(str>0&&W){const T=t/1000;
+   v.globalCompositeOperation="source-over";v.fillStyle=`rgba(8,8,12,${.30*str})`;v.fillRect(0,0,W,H);
+   v.globalCompositeOperation="lighter";
+   for(let k=0;k<3;k++){const span=W+H,off=((T*(38+k*17)*d+k*span/3)%(span*1.4))-span*.2;
+    const g=v.createLinearGradient(off,0,off+H*.9,H*.9);const a=(.10-.025*k)*str;const col=k===1?cols[2]:cols[k===0?0:1];
+    g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.45,"rgba(0,0,0,0)");g.addColorStop(.5,col);g.addColorStop(.55,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,0)");
+    v.globalAlpha=a*2.2;v.fillStyle=g;v.fillRect(0,0,W,H)}
+   const want=Math.round(230*str*(W*H)/(700*900*d*d));while(sparks.length<want)sparks.push({x:Math.random()*(W+40*d)-20*d,y:Math.random()*(H+40*d)-20*d,s:(.5+Math.random()*1.3)*d,v:(.012+Math.random()*.03)*d,ph:Math.random()*6.28,tw:.6+Math.random()*1.8,c:Math.random()<.5?"w":(Math.random()<.5?"a3":"a1")});
+   if(sparks.length>want)sparks.length=want;
+   for(const p of sparks){p.x+=p.v*dt;p.y+=p.v*dt*.62;const m=20*d;if(p.x>W+m)p.x-=W+2*m;if(p.y>H+m)p.y-=H+2*m; // wrap around: density stays even however long the render
+    const tw=Math.max(0,Math.sin(T*p.tw*3+p.ph));const a=tw*tw*str*.9;if(a<.01)continue;
+    v.globalAlpha=a*.55;const r=p.s*7;v.drawImage(spr[p.c],p.x-r,p.y-r,r*2,r*2);
+    v.globalAlpha=a;v.strokeStyle="#ffffff";v.lineWidth=.7*d;const L=p.s*4*tw;v.beginPath();v.moveTo(p.x-L,p.y);v.lineTo(p.x+L,p.y);v.moveTo(p.x,p.y-L);v.lineTo(p.x,p.y+L);v.stroke()}
+   v.globalAlpha=1;v.globalCompositeOperation="source-over"}else sparks.length=0;
+  e.clearRect(0,0,W,H);
+  if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
+  burst=Math.max(0,burst-dt);
+  if(embers.length){e.globalCompositeOperation="lighter";
+   embers=embers.filter(p=>{p.life+=dt;if(p.life>p.max)return false;p.x+=(p.vx+Math.sin(p.life/420+p.ph)*.015*d)*dt;p.y+=p.vy*dt;const q=p.life/p.max;
+    const a=Math.min(1,q*6)*(1-q)*(.75+.25*Math.sin(p.life/90+p.ph));const r=p.r*5*(1-q*.4);
+    e.globalAlpha=a*.7;e.drawImage(spr[p.c],p.x-r,p.y-r,r*2,r*2);e.globalAlpha=a;e.drawImage(spr.w,p.x-r*.25,p.y-r*.25,r*.5,r*.5);return true});
+   e.globalCompositeOperation="source-over";e.globalAlpha=1}
+  requestAnimationFrame(draw)}
+ requestAnimationFrame(draw)})();

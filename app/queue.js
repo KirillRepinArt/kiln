@@ -57,9 +57,20 @@ P.addEventListener("keydown",e=>{if(!peekJob)return;if(e.key==="Escape"){closePr
  if(e.key.length===1||e.key==="Backspace"||e.key==="Enter"){if(e.ctrlKey&&e.key==="Enter")return;reuse(false)}});
 function updPrompt(){if(window.nameUI)nameUI();const n=P.value.length;$("pcount").textContent=n?n.toLocaleString()+" chars":"";$("play").classList.toggle("off",!P.value.trim()||!!peekJob);
  $("play").title=peekJob?"Choose Reuse first":(!P.value.trim()?"Write a prompt first":"Add to queue (Ctrl+Enter)")}
-let dragId=null;
-$("qwrap").addEventListener("dragstart",e=>{const q=e.target.closest(".qi");if(!q)return;dragId=+q.dataset.id;q.classList.add("drag")});
-$("qwrap").addEventListener("dragend",()=>{dragId=null;renderQueue()});
-$("qwrap").addEventListener("dragover",e=>{e.preventDefault();const q=e.target.closest(".qi");if(!q||dragId==null)return;const t=jobs.find(j=>j.id==+q.dataset.id);
- if(!t||t.status!=="pending"||t.id===dragId)return;const a=jobs.findIndex(j=>j.id===dragId),b=jobs.indexOf(t);const [m]=jobs.splice(a,1);jobs.splice(b,0,m);renderQueue();
- const n=document.querySelector(`.qi[data-id="${dragId}"]`);if(n)n.classList.add("drag")});
+/* drag to reorder: the dragged row itself moves in the list (no re-render while dragging — that swapped the element
+   under the pointer and made the cursor flicker); it moves once the pointer crosses a row's middle, so rows don't
+   ping-pong; the others slide out of the way */
+let dragId=null,dragEl=null;
+$("qwrap").addEventListener("dragstart",e=>{const q=e.target.closest('.qi[draggable="true"]');if(!q)return;dragId=+q.dataset.id;dragEl=q;q.classList.add("drag");
+ e.dataTransfer.effectAllowed="move";try{e.dataTransfer.setData("text/plain",String(dragId))}catch(_){}});
+$("qwrap").addEventListener("dragover",e=>{if(!dragEl)return;e.preventDefault();e.dataTransfer.dropEffect="move";
+ const q=e.target.closest('.qi[draggable="true"]');if(!q||q===dragEl)return;const r=q.getBoundingClientRect(),after=e.clientY>r.top+r.height/2;
+ if(after?q.nextElementSibling===dragEl:q.previousElementSibling===dragEl)return;
+ const rows=[...$("qwrap").querySelectorAll('.qi[draggable="true"]')],before=new Map(rows.map(x=>[x,x.getBoundingClientRect().top]));
+ if(after)q.after(dragEl);else q.before(dragEl);
+ for(const x of rows){if(x===dragEl)continue;const d=before.get(x)-x.getBoundingClientRect().top;if(Math.abs(d)<1)continue;
+  x.style.transition="none";x.style.transform=`translateY(${d}px)`;requestAnimationFrame(()=>{x.style.transition="transform .22s var(--ease)";x.style.transform=""})}});
+$("qwrap").addEventListener("drop",e=>{if(dragEl)e.preventDefault()});
+$("qwrap").addEventListener("dragend",()=>{if(!dragEl)return;const ids=[...$("qwrap").querySelectorAll('.qi[draggable="true"]')].map(x=>+x.dataset.id);
+ const pend=ids.map(id=>jobs.find(j=>j.id===id)).filter(Boolean);let k=0;jobs=jobs.map(j=>j.status==="pending"&&pend.includes(j)?pend[k++]:j); // the new order, in place of the old
+ dragEl.classList.remove("drag");dragId=null;dragEl=null;renderQueue()});

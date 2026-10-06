@@ -32,7 +32,7 @@
   forgeOk=s.forge.ok;forgeStarting=!!s.forge.starting;
   if(forgeOk&&!models&&!loadingM){loadingM=true;loadModels(false).then(ok=>{loadingM=false;if(ok){refreshUp();toast("Forge is ready — models and LoRAs loaded")}})}
   for(const b in s.stats.sec_per_step||{})SEC_PER_STEP[b]=Math.max(1,s.stats.sec_per_step[b]);
-  if(typeof dragId!=="undefined"&&dragId!=null){setTimeout(poll,700);return} // dragging in the queue: keep the local order until the drop
+  if((typeof dragId!=="undefined"&&dragId!=null)||window._rp){setTimeout(poll,700);return} // dragging, or the new order not saved yet: keep the local order
   const prev=new Map(jobs.map(j=>[j.id,j]));
   jobs=s.jobs.map(x=>{const u=toUI(x),o=prev.get(u.id);if(o&&o.status==="running"&&u.status==="running"){u._ss=o._ss;u._lastStep=o._lastStep}return u});
   for(const j of jobs){if(j.status==="done"&&!seen.has(j.id)){seen.add(j.id);neKey="";if(!firstPoll){justDone=j.id;resultStale=false;onJobDone(j)}}
@@ -58,7 +58,8 @@
   if(!forgeOk)setTimeout(()=>toast("Queued — Forge isn't running yet, jobs start when it is"),2300);poll()};
  window.stopJob=async function(j){if(!j)return;await api(`/api/jobs/${j.id}/cancel`,{});if(j.status==="running")toast("Stopping…");poll()};
  $("qwrap").addEventListener("drop",()=>{},true);
- $("qwrap").addEventListener("dragend",()=>{const ids=[...document.querySelectorAll('.qi[draggable="true"]')].map(q=>+q.dataset.id);api("/api/reorder",{ids}).then(poll)});
+ $("qwrap").addEventListener("dragend",()=>{const ids=[...document.querySelectorAll('.qi[draggable="true"]')].map(q=>+q.dataset.id);window._rp=true;
+  api("/api/reorder",{ids}).finally(()=>{window._rp=false;poll()})});
  $("qwrap").addEventListener("click",e=>{if(e.target.id==="clearDone"){e.stopImmediatePropagation();api("/api/clear",{}).then(poll)}},true);
  window.openInApp=j=>api("/api/open",{id:j.id});
  function act(a,j){if(!j)return;

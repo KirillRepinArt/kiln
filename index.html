@@ -120,10 +120,11 @@
       <label>Veil while generating</label><select data-set="veil"><option value="full">Full</option><option value="light">Light</option><option value="off">Off</option></select>
       <label>Embers when done</label><select data-set="embers"><option value="on">On</option><option value="off">Off</option></select>
       <label>Notify when done</label><select data-set="notify"><option value="on">On</option><option value="silent">Silent</option><option value="off">Off</option></select>
-      <label>Starfield background</label><select data-set="stars"><option value="on">On</option><option value="off">Off</option></select>
+      <label>Background</label><select data-set="stars"><option value="on">On</option><option value="off">Off</option></select>
       <div class="fgh">Appearance</div>
       <label>Font</label><select data-set="font" id="sFont"><option value="Geist">Geist</option><option value="Inter">Inter</option><option value="Satoshi">Satoshi</option><option value="Manrope">Manrope</option><option value="IBM Plex Sans">IBM Plex Sans</option></select>
-      <label>Theme</label><select id="sTheme"><option value="ice">Ember → Ice</option><option value="sunset">Sunset</option><option value="aurora">Aurora</option><option value="ember">Ember</option></select>
+      <label>Glass panels</label><select data-set="glass"><option value="off">Off</option><option value="on">On · frosted, background shows through</option></select>
+      <label>Theme</label><select id="sTheme"><option value="ice">Ember → Ice</option><option value="sunset">Sunset</option><option value="aurora">Aurora · northern lights</option><option value="emerald">Emerald · Matrix rain</option><option value="ember">Ember</option></select>
       <label>Demo speed</label><select id="sDemo"><option value="20">×20 (prototype)</option><option value="60">×60</option><option value="1">real time</option></select>
     </div>
     <div class="pact" style="justify-content:space-between"><div style="display:flex;gap:8px"><button class="btn" id="rLayout" title="Column width, prompt height, tab — nothing else">Reset layout</button><button class="btn" id="rAll" title="Everything stored in this app">Reset everything…</button></div><button class="btn" id="mClose">Close</button></div>
@@ -138,6 +139,7 @@
 <script src="app/composer.js" data-bundle="core"></script>
 <script src="app/cardlayout.js" data-bundle="core"></script>
 <script src="app/stage.js" data-bundle="core"></script>
+<script src="app/skins.js" data-bundle="core"></script>
 <script src="app/effects.js" data-bundle="core"></script>
 <script src="app/queue.js" data-bundle="core"></script>
 <script src="app/viewer.js" data-bundle="core"></script>

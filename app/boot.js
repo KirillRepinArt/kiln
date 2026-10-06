@@ -21,4 +21,4 @@ function nameUI(){const l=document.querySelector(".plbl");l.classList.toggle("pe
  if(peekJob){$("pname").dataset.tip=peekJob.file?`This image: ${peekJob.file}`:"This image";return}
  nextHint();l.classList.toggle("hasname",!!S.pname.trim());l.classList.toggle("dimname",!!S.pname.trim()&&!P.value.trim())}$("pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();P.focus()}});
 applyMode();$("left").classList.add("nodur");setTimeout(()=>$("left").classList.remove("nodur"),400);
-applyFont();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");renderAll();grow();syncH();demoNote();
+applyFont();applyGlass();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");renderAll();grow();syncH();demoNote();

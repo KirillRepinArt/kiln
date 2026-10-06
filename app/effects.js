@@ -1,8 +1,9 @@
 /* Kiln · starfield, ambient glow + title/favicon, notifications, veil + embers */
 /* app background, set by the skin: starfield (three parallax layers, gentle twinkle, a rare shooting star),
-   northern lights over a dimmer starfield, or Matrix rain. Redrawn at ~30 fps. */
+   northern lights over a dimmer starfield, or sparse cold code. Redrawn at ~30 fps. */
 (function(){const cv=$("stars"),c=cv.getContext("2d");const R=Math.random;let W=0,H=0,stars=[],shoot=null,last=0,lastDraw=0,was="",bcols=null,bcT=0;
- const aur=makeAurora(),rain=makeRain();
+ const aur=makeAurora(),code=makeCodeBg();let lastIn=performance.now(),dimV=1;
+ ["pointermove","keydown","wheel"].forEach(ev=>addEventListener(ev,()=>lastIn=performance.now(),{passive:true}));
  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  function init(){const b=cv.getBoundingClientRect();if(!b.width)return;const d=devicePixelRatio||1;
   W=cv.width=Math.round(b.width*d);H=cv.height=Math.round(b.height*d);
@@ -10,11 +11,13 @@
    stars.push({x:R()*W,y:R()*H,l,r:(.5+l*.45+R()*.4)*d,p:R()*6.28,s:.6+R()*1.6})}}
  function draw(t){const idle=((S.set||{}).stars||"on")!=="off";cv.classList.toggle("on",idle);
   if(idle){if(!W||Math.abs(cv.getBoundingClientRect().width*(devicePixelRatio||1)-W)>2)init();
-   const bg=skin().bg;if(bg!==was){was=bg;c.clearRect(0,0,W,H);rain.reset()}
+   const bg=skin().bg;if(bg!==was){was=bg;c.clearRect(0,0,W,H)}
    if(t-lastDraw<31){last=t;requestAnimationFrame(draw);return}const dt=Math.min(66,t-lastDraw);lastDraw=t;
    if(!bcols||bcT!==window._themeV){bcols=themeCols();bcT=window._themeV}
    c.clearRect(0,0,W,H);const d=devicePixelRatio||1;
-   if(bg==="matrix"){rain.draw(c,W,H,reduce?0:dt,d,bcols,{size:15,alpha:.3,density:.55,speed:.8,fade:.09});last=t;requestAnimationFrame(draw);return}
+   if(bg==="code"){const run=!!current(),f=$("frame").getBoundingClientRect(),cb=cv.getBoundingClientRect();
+    dimV+=((!run&&t-lastIn>120000?.45:1)-dimV)*Math.min(1,dt/1500); // idle for 2 min: dims
+    code.draw(c,W,H,t,dt,d,bcols,{run,fx:(f.left+f.width/2-cb.left)*d,dim:dimV,wave:window._bgWave||0,reduce});last=t;requestAnimationFrame(draw);return}
    const dim=bg==="aurora"?.55:1;
    for(const st of stars){const v=[.002,.0045,.009][st.l]*(reduce?0:1);st.x+=v*dt;st.y+=v*dt*.62;
     if(st.x>W+4)st.x-=W+8;if(st.y>H+4)st.y-=H+8;
@@ -59,7 +62,9 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    and emerges as progress grows (hover the image to peek through). EMBERS: a short burst when a job finishes. */
 (function(){const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  const vc=$("veil"),v=vc.getContext("2d"),ec=$("embers"),e=ec.getContext("2d");let W=0,H=0,last=0,str=0,hover=false,sparks=[],embers=[],burst=0,cols=["#FF8A00","#FF5E8A","#3FE0F0"],colT=0;
- const aur=makeAurora(),rain=makeRain();
+ const aur=makeAurora(),crt=makeCRT();let crtJob=null,px=null,py=null,sweepT=0;
+ const smooth=(a,b,x)=>{const q=Math.max(0,Math.min(1,(x-a)/(b-a)));return q*q*(3-2*q)};
+ $("frame").addEventListener("pointermove",ev=>{const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;px=(ev.clientX-b.left)*d;py=(ev.clientY-b.top)*d});
  $("frame").addEventListener("pointerenter",()=>hover=true);$("frame").addEventListener("pointerleave",()=>hover=false);
  function sprite(color,size){const c=document.createElement("canvas");c.width=c.height=size;const g=c.getContext("2d");const r=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
   r.addColorStop(0,color);r.addColorStop(.18,color+"cc");r.addColorStop(.45,color+"33");r.addColorStop(1,color+"00");g.fillStyle=r;g.fillRect(0,0,size,size);return c}
@@ -67,23 +72,27 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
   const hex=c=>{if(/^#[0-9a-f]{6}$/i.test(c))return c;const d=document.createElement("canvas").getContext("2d");d.fillStyle=c;return d.fillStyle};
   spr={a1:sprite(hex(cols[0]),64),a2:sprite(hex(cols[1]),64),a3:sprite(hex(cols[2]),64),w:sprite("#ffffff",64)}}
  sprites();
- window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;burst=2400};
+ window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
+ if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return} // the screen refreshes clean; a wave runs through the background
+ burst=2400};
  function draw(t){const dt=Math.min(50,t-last||16);last=t;if(colT!==window._themeV){sprites();colT=window._themeV}
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
   if(nw!==W||nh!==H){W=vc.width=ec.width=nw;H=vc.height=ec.height=nh}
-  const j=current();const mode=(S.set||{}).veil||"full";
+  const j=current();const mode=(S.set||{}).veil||"full";const cover0=skin().cover;
+  if(cover0==="crt"){const k=j&&!browsed()?j.id:(Date.now()<(window._cpv||0)?"pv"+window._cpv:null);if(k!==crtJob){crtJob=k;if(k!=null)crt.powerOn(t)}} // a new job: the screen powers on
   let target=0;if(j&&!browsed()&&S.view==="gen"&&mode!=="off"&&!reduce){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
    // full while step 1 renders, most of it gone during step 2, a little left on step 3, clear for the last step
-   const K=[[0,1],[.25,1],[.5,.4],[.75,.12],[.92,0]];let k0=0;for(let i=1;i<K.length;i++)if(pr<=K[i][0]){const [a,va]=K[i-1],[b,vb]=K[i];k0=va+(vb-va)*(pr-a)/(b-a);break}
-   target=k0*(mode==="light"?.55:1);if(hover)target*=.12}
-  else if(!j&&Date.now()<(window._cpv||0)&&S.view==="gen"&&mode!=="off"&&!reduce&&$("frame").classList.contains("has"))target=hover?.1:.8; // theme picked: preview the cover on the shown image
+   const K=cover0==="crt"?[[0,1],[.25,1],[.5,.85],[.75,.45],[.92,0]]:[[0,1],[.25,1],[.5,.4],[.75,.12],[.92,0]]; /* the CRT stays longer: the code forms the image on steps 2–3 */let k0=0;for(let i=1;i<K.length;i++)if(pr<=K[i][0]){const [a,va]=K[i-1],[b,vb]=K[i];k0=va+(vb-va)*(pr-a)/(b-a);break}
+   target=k0*(mode==="light"?.55:1);if(hover)target*=cover0==="crt"?.75:.12}
+  else if(!j&&Date.now()<(window._cpv||0)&&S.view==="gen"&&mode!=="off"&&!reduce&&$("frame").classList.contains("has"))target=hover?(cover0==="crt"?.6:.1):.8; // theme picked: preview the cover on the shown image
   str+=(target-str)*Math.min(1,dt/260);if(str<.002||(browsed()&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
   document.getElementById("frame").style.setProperty("--vf",str?`blur(${(24*str).toFixed(1)}px) brightness(${(1-.45*str).toFixed(3)}) saturate(${(1-.4*str).toFixed(3)})`:"none");
   v.clearRect(0,0,W,H);
   if(str>0&&W){const T=t/1000;
    const cover=skin().cover;
-   v.globalCompositeOperation="source-over";v.fillStyle=cover==="matrix"?`rgba(0,12,5,${.84*str})`:`rgba(8,8,12,${.30*str})`;v.fillRect(0,0,W,H);
-   if(cover==="matrix"){rain.draw(v,W,H,dt,d,cols.map(toHex),{size:15,alpha:Math.min(1,str*1.25),density:.8,speed:1.15,fade:.1,glow:.9});sparks.length=0}
+   v.globalCompositeOperation="source-over";v.fillStyle=cover==="crt"?`rgba(0,9,4,${.88*str})`:`rgba(8,8,12,${.30*str})`;v.fillRect(0,0,W,H);
+   if(cover==="crt"){const pr=j?Math.max(0,Math.min(1,jobProgress(j).p||0)):.55;
+    crt.draw(v,W,H,t,dt,d,cols.map(toHex),{str,resolve:smooth(.18,.6,pr),src:$("cv"),px:hover?px:null,py});sparks.length=0}
    else if(cover==="aurora"){aur.draw(v,W,H,T,cols.map(toHex),{scale:5,top:.28,band:.34,len:.36,ribbons:3,alpha:Math.min(1,str*1.15),blend:"lighter"})}
    v.globalCompositeOperation="lighter";
    if(cover==="bands")
@@ -91,7 +100,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
     const g=v.createLinearGradient(off,0,off+H*.9,H*.9);const a=(.10-.025*k)*str;const col=k===1?cols[2]:cols[k===0?0:1];
     g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.45,"rgba(0,0,0,0)");g.addColorStop(.5,col);g.addColorStop(.55,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,0)");
     v.globalAlpha=a*2.2;v.fillStyle=g;v.fillRect(0,0,W,H)}
-   const want=cover==="matrix"?0:Math.round((cover==="aurora"?90:230)*str*(W*H)/(700*900*d*d));while(sparks.length<want)sparks.push({x:Math.random()*(W+40*d)-20*d,y:Math.random()*(H+40*d)-20*d,s:(.5+Math.random()*1.3)*d,v:(.012+Math.random()*.03)*d,ph:Math.random()*6.28,tw:.6+Math.random()*1.8,c:Math.random()<.5?"w":(Math.random()<.5?"a3":"a1")});
+   const want=cover==="crt"?0:Math.round((cover==="aurora"?90:230)*str*(W*H)/(700*900*d*d));while(sparks.length<want)sparks.push({x:Math.random()*(W+40*d)-20*d,y:Math.random()*(H+40*d)-20*d,s:(.5+Math.random()*1.3)*d,v:(.012+Math.random()*.03)*d,ph:Math.random()*6.28,tw:.6+Math.random()*1.8,c:Math.random()<.5?"w":(Math.random()<.5?"a3":"a1")});
    if(sparks.length>want)sparks.length=want;
    for(const p of sparks){p.x+=p.v*dt;p.y+=p.v*dt*.62;const m=20*d;if(p.x>W+m)p.x-=W+2*m;if(p.y>H+m)p.y-=H+2*m; // wrap around: density stays even however long the render
     const tw=Math.max(0,Math.sin(T*p.tw*3+p.ph));const a=tw*tw*str*.9;if(a<.01)continue;
@@ -99,6 +108,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
     v.globalAlpha=a;v.strokeStyle="#ffffff";v.lineWidth=.7*d;const L=p.s*4*tw;v.beginPath();v.moveTo(p.x-L,p.y);v.lineTo(p.x+L,p.y);v.moveTo(p.x,p.y-L);v.lineTo(p.x,p.y+L);v.stroke()}
    v.globalAlpha=1;v.globalCompositeOperation="source-over"}else sparks.length=0;
   e.clearRect(0,0,W,H);
+  if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}
   if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);
   if(embers.length){e.globalCompositeOperation="lighter";

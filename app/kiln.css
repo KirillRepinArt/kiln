@@ -4,7 +4,7 @@
   --a1:#FF8A00; --a2:#FF5E8A; --a3:#3FE0F0; --ink:#140b00;
   --grad:linear-gradient(135deg in oklch,var(--a1),var(--a2) 55%,var(--a3));
   --flow:linear-gradient(90deg in oklch,var(--a1),var(--a2),var(--a3),var(--a2),var(--a1));
-  --r-panel:34px; --r-pill:999px;
+  --r-panel:24px; --r-pill:999px;
   --ease:cubic-bezier(.2,.8,.2,1); --dur:.2s;
 }
 *{box-sizing:border-box}
@@ -147,7 +147,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .rpanel{background:transparent;border:1px solid transparent;transition:background .25s var(--ease),border-color .25s var(--ease),box-shadow .25s var(--ease);border-radius:var(--r-panel);flex:1;min-height:0;position:relative;overflow:hidden}
 .rpanel.paneled{background:var(--panel);border-color:#26262a}
 .rpanel.paneled .qwrap,.rpanel.paneled .pwrap{padding:18px}
-.rpanel.paneled .qwrap{inset:12px;padding:6px;border-radius:24px}
+.rpanel.paneled .qwrap{inset:12px;padding:6px;border-radius:12px}
 .rpanel.paneled .lwrap{padding:16px 18px}
 .view{position:absolute;inset:0;visibility:hidden;opacity:0;transform:translateY(4px);transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s linear .22s}
 .view.on{visibility:visible;opacity:1;transform:none;transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s}
@@ -156,7 +156,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .stage .frame{position:absolute}
 @keyframes develop{0%{filter:brightness(1.35) saturate(1.2)}100%{filter:none}}
 .frame.reveal{animation:develop 1.1s var(--ease)}
-.frame{position:relative;border-radius:14px;overflow:hidden;background:transparent;outline:1px solid #1d1d22;outline-offset:-1px}
+.frame{position:relative;border-radius:var(--r-panel);overflow:hidden;background:transparent;outline:1px solid #1d1d22;outline-offset:-1px}
 .frame canvas{width:100%;height:100%;display:block}
 #cv{position:relative;z-index:1;filter:var(--vf,none)}
 .frame.has{background:#07070a;outline:1px solid rgba(255,255,255,.07);outline-offset:-1px}
@@ -166,7 +166,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .side{position:absolute;right:10px;top:10px;z-index:5;display:flex;flex-direction:column;gap:6px;opacity:0;transition:opacity .15s}
 .frame.has:hover .side{opacity:1}
 .frame.running .side{display:none}
-.side button{width:40px;height:40px;border-radius:12px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;position:relative}
+.side button{width:40px;height:40px;border-radius:14px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;position:relative}
 .side button:hover{background:rgba(40,40,44,.9)} .side svg{width:20px;height:20px}
 .side button::after{content:attr(data-tip);position:absolute;right:48px;white-space:nowrap;background:#111;padding:4px 8px;border-radius:8px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .12s}
 .side button:hover::after{opacity:1}
@@ -192,7 +192,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .qsec button:hover{color:var(--text)}
 @keyframes qin{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
 .qi.new{animation:qin .35s var(--ease)}
-.qi{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:var(--raised);margin-bottom:8px;cursor:pointer}
+.qi{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--raised);margin-bottom:8px;cursor:pointer}
 .qi:hover{background:var(--raised2)} .qi.drag{opacity:.4}
 .qi .handle{color:var(--faint);cursor:grab;width:14px}
 .qi .th{width:46px;height:46px;border-radius:10px;background:#222;flex:none;overflow:hidden;display:grid;place-items:center;color:var(--faint);font-size:11px}
@@ -221,7 +221,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .warn.show{display:block}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--card,104px),1fr));gap:10px;margin-bottom:14px}
 .card .img{font-size:calc(var(--card,104px)*.24)!important}
-.card{transition:background var(--dur),border-color var(--dur),transform var(--dur) var(--ease);background:var(--raised);border-radius:16px;overflow:hidden;cursor:pointer;position:relative;border:1px solid transparent}
+.card{transition:background var(--dur),border-color var(--dur),transform var(--dur) var(--ease);background:var(--raised);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;border:1px solid transparent}
 .card:hover{background:var(--raised2);transform:translateY(-2px)} .card.on{border-color:rgba(255,255,255,.85)}
 .card .img{aspect-ratio:1/1;display:grid;place-items:center;font-size:28px;font-weight:600;color:rgba(255,255,255,.75)}
 .card .cap{padding:7px 9px 8px}
@@ -248,9 +248,9 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 @keyframes flash{0%{box-shadow:0 0 0 2px #fff}100%{box-shadow:0 0 0 0 transparent}}
 
 .pwrap{position:absolute;inset:0;padding:4px 2px 18px;display:flex;flex-direction:column;gap:12px}
-.drop{border:2px dashed #3d3d42;border-radius:22px;padding:26px;text-align:center;color:var(--muted);cursor:pointer}
+.drop{border:2px dashed #3d3d42;border-radius:16px;padding:26px;text-align:center;color:var(--muted);cursor:pointer}
 .drop.over{border-color:rgba(255,255,255,.7);color:var(--text)}
-.pout{flex:1;overflow:auto;background:#161618;border-radius:16px;padding:18px 20px;font-size:14px;color:#cfcfd4}
+.pout{flex:1;overflow:auto;background:#161618;border-radius:14px;padding:18px 20px;font-size:14px;color:#cfcfd4}
 .pout.raw{white-space:pre-wrap;font-size:13px}
 .pout:empty{display:none}
 .pwrap:has(.pout:empty) .drop{flex:1;display:flex;flex-direction:column;justify-content:center} /* nothing loaded: the whole panel is the drop target */
@@ -277,7 +277,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:100;visibility:hidden;opacity:0;transition:opacity .22s var(--ease),visibility 0s linear .22s}
 .modal.show{visibility:visible;opacity:1;transition:opacity .22s var(--ease),visibility 0s}
 .modal .mcard{transform:scale(.97);transition:transform .22s var(--ease)} .modal.show .mcard{transform:none}
-.mcard{width:min(560px,92vw);background:var(--panel);border:1px solid var(--line);border-radius:26px;padding:22px 24px}
+.mcard{width:min(560px,92vw);background:var(--panel);border:1px solid var(--line);border-radius:var(--r-panel);padding:22px 24px}
 .mcard h2{margin:0 0 14px;font-size:18px;font-weight:600}
 .fg{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;align-items:center;font-size:14px}
 .fg label{color:var(--muted)}
@@ -305,7 +305,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .nav{position:absolute;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;z-index:6;opacity:0;transition:opacity .15s,background .15s}
 .nav.prev{left:10px}.nav.next{right:10px}
 .frame .nav{top:max(50%,276px)}
-.bclose{position:absolute;top:10px;left:10px;width:40px;height:40px;border-radius:12px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:6;transition:background .15s}
+.bclose{position:absolute;top:10px;left:10px;width:40px;height:40px;border-radius:14px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:6;transition:background .15s}
 .bclose:hover{background:rgba(40,40,44,.9)}.bclose svg{width:16px;height:16px}
 .frame.browsing .bclose,.frame.clearable:hover .bclose{display:grid} /* below the 5 hover buttons when the frame is short */
 .nav svg{width:18px;height:18px}.nav:hover{background:rgba(40,40,44,.9)}
@@ -411,11 +411,23 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .app.stacked .stage .frame{left:50%!important;transform:translateX(-50%)}
 .app.stacked .right .tabs{align-self:center;width:auto!important}
 
-/* ---- glass panels (Settings → Appearance): see-through, frosted, a light top edge; needs the animated background behind it ---- */
-body.glass .left,body.glass .seg,body.glass .rpanel.paneled,body.glass .mcard,body.glass .pop,body.glass .toast,body.glass .peekbar{
- background:rgba(30,30,36,.42)!important;-webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);
- border-color:rgba(255,255,255,.11)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 rgba(255,255,255,.04),0 10px 40px rgba(0,0,0,.25)}
+/* ---- glass (Settings → Glass panels): the animated background shows through.
+   Text panels get heavy frosting and a darker tint (text never sits on moving code); controls are light glass capsules;
+   Play is tinted glass — the theme gradient under a glossy sheen. ---- */
+body.glass .left,body.glass .rpanel.paneled,body.glass .mcard{background:rgba(16,18,20,.64)!important;-webkit-backdrop-filter:blur(28px) saturate(1.5);backdrop-filter:blur(28px) saturate(1.5);
+ border-color:rgba(255,255,255,.10)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 12px 40px rgba(0,0,0,.3)}
+body.glass .seg,body.glass .pop,body.glass .toast,body.glass .peekbar,body.glass #tip{background:rgba(30,32,36,.5)!important;-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);
+ border-color:rgba(255,255,255,.12)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 30px rgba(0,0,0,.3)}
 body.glass .seg .thumb{background:rgba(255,255,255,.16)}
-body.glass .qi,body.glass .search{background:rgba(255,255,255,.07)}
-body.glass .qi:hover{background:rgba(255,255,255,.11)}
+body.glass .flink,body.glass .gear,body.glass .pill:hover,body.glass .pill.open,body.glass .qb:not(.on),body.glass .btn:not(.pri),body.glass .peekbar button:not(#pkAll),
+body.glass .qsec button,body.glass .stop,body.glass .chip,body.glass .fchips button:not(.on),body.glass .qi .x:hover,body.glass .hmodes button:hover:not(.on),body.glass .iconbtn,body.glass .pi-raw{
+ background:rgba(255,255,255,.08)!important;-webkit-backdrop-filter:blur(12px) saturate(1.6);backdrop-filter:blur(12px) saturate(1.6);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.04),0 0 0 1px rgba(255,255,255,.08)}
+body.glass .flink:hover,body.glass .gear:hover,body.glass .btn:not(.pri):hover,body.glass .chip:hover,body.glass .stop:hover{background:rgba(255,255,255,.14)!important}
+body.glass .side button,body.glass .nav,body.glass .bclose,body.glass .vclose{background:rgba(20,22,24,.35)!important;-webkit-backdrop-filter:blur(14px) saturate(1.7);backdrop-filter:blur(14px) saturate(1.7);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.10)}
+body.glass .play{box-shadow:inset 0 1px 1px rgba(255,255,255,.55),inset 0 -6px 14px rgba(0,0,0,.18),0 6px 22px rgba(0,0,0,.35)}
+body.glass .play::after{content:"";position:absolute;inset:2px 7px auto 7px;height:46%;border-radius:999px;background:linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,0));pointer-events:none}
+body.glass .qi,body.glass .search{background:rgba(255,255,255,.06)}
+body.glass .qi:hover{background:rgba(255,255,255,.10)}
 body.glass .pout{background:rgba(0,0,0,.25)}

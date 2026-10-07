@@ -364,8 +364,8 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .ltitle .pnx{opacity:0;transition:opacity .15s}.ltitle:hover .plbl.hasname .pnx{opacity:1}
 .ltitle .plbl.dimname .pname{color:#9a9aa2}
 /* looking at an old prompt: the Reuse bar stands where Play is, the pills show that job's settings, greyed */
-.controls .peekbar{position:static;order:2;box-shadow:none;margin-left:auto;flex:none}
-.left.peeking .play{display:none}.left.peeking .pills{opacity:.5;pointer-events:none;flex-wrap:nowrap;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}.left.peeking #pN{display:none}
+/* the Reuse bar floats just above the name: it is replacing the working file, title included; the name row never moves */
+.ltitle .peekbar{position:absolute;left:50%;right:auto;transform:translateX(-50%);bottom:calc(100% + 4px);max-width:calc(100% - 16px);white-space:nowrap;z-index:5}.left.peeking .pills{opacity:.5;pointer-events:none;flex-wrap:nowrap;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}.left.peeking #pN{display:none}
 .chip[hidden]{display:none}
 .chips.peek .chip{opacity:.55;pointer-events:none}.chips.peek .chipmore{pointer-events:auto;opacity:1}
 /* peeking: the name field shows the peeked image's name, greyed and read-only */
@@ -436,7 +436,7 @@ body.glass .seg .thumb{background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0
 /* thin: controls (the pills carry theirs on ::before, so their pop-ups can blur the prompt too) */
 body.glass .pill::before{background:color-mix(in oklab,rgba(255,255,255,.07),var(--a1) 10%);-webkit-backdrop-filter:blur(10px) saturate(1.7);backdrop-filter:blur(10px) saturate(1.7);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(255,255,255,.07)}
-body.glass .pill{isolation:isolate}body.glass .controls .peekbar{position:relative}body.glass .mcard{position:relative}
+body.glass .pill{isolation:isolate}body.glass .mcard{position:relative}
 body.glass .pill:hover::before,body.glass .pill.open::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--a1) 12%)}
 body.glass .pill:hover,body.glass .pill.open{background:transparent}
 body.glass .flink,body.glass .gear,body.glass .qb:not(.on),body.glass .btn:not(.pri),body.glass .peekbar button:not(#pkAll),body.glass .qsec button,body.glass .stop,
@@ -464,3 +464,6 @@ body.glass .play::after{content:"";position:absolute;inset:2px 7px auto 7px;heig
 body.glass .left .controls{position:absolute;left:0;right:0;bottom:0;z-index:2}
 body.glass .left .pwrapT .cm-scroller{padding-bottom:calc(var(--ctrlh,64px) - 6px);-webkit-mask-image:linear-gradient(#000 calc(100% - var(--ctrlh,64px) - 14px),rgba(0,0,0,.35) calc(100% - 22px));mask-image:linear-gradient(#000 calc(100% - var(--ctrlh,64px) - 14px),rgba(0,0,0,.35) calc(100% - 22px))}
 body.glass .left .pwrapT .cm-editor{margin-bottom:0}
+body.glass .play{background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 58%,#0c100e),color-mix(in oklab,var(--a2) 48%,#0c100e) 55%,color-mix(in oklab,var(--a3) 42%,#0c100e))}
+body.glass .play svg path{fill:#effff4}
+body.glass .play:hover{filter:brightness(1.18) saturate(1.1)}

@@ -18,13 +18,12 @@
 
   <div class="lcol" id="lcol">
   <div class="hsplit" id="hsplit" title="Drag to resize · double-click for auto"></div>
-  <div class="ltitle" id="ltitle"><div class="phead"><span class="plbl"><span class="nchip"><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60"><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div><div class="hmodes" id="hmodes"><button id="hmMatch" data-hm="match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/></svg></button><button id="hmFull" data-hm="full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
+  <div class="ltitle" id="ltitle"><div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt">Reuse prompt</button><button id="pkAll">Reuse all</button><button id="pkX" title="Back to my draft (Esc)">✕</button></div><div class="phead"><span class="plbl"><span class="nchip"><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60"><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div><div class="hmodes" id="hmodes"><button id="hmMatch" data-hm="match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/></svg></button><button id="hmFull" data-hm="full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
   <section class="left" id="left">
     <div class="vedge" id="vedge" title="Drag to resize · double-click for auto"></div>
     <div class="chips" id="chips"></div>
     <div class="pwrapT"><span class="pcount" id="pcount"></span><textarea id="prompt" spellcheck="true" placeholder="Describe what you want to see…"></textarea></div>
     <div class="controls">
-      <div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt">Reuse prompt</button><button id="pkAll">Reuse all</button><button id="pkX" title="Back to my draft (Esc)">✕</button></div>
       <button class="play" id="play" title="Add to queue (Ctrl+Enter)">
         <svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="var(--ink)"/></svg>
         <span class="badge" id="badge">0</span>

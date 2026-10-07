@@ -4,7 +4,7 @@
 (function(){const cv=$("stars"),c=cv.getContext("2d");const R=Math.random;let W=0,H=0,stars=[],shoot=null,last=0,lastDraw=0,was="",bcols=null,bcT=0;
  const aur=makeAurora(),code=makeCodeBg();let lastIn=performance.now(),dimV=1,holes=[],holeT=0,pmx=-1,pmy=-1,pmT=0;
  addEventListener("pointermove",ev=>{pmx=ev.clientX;pmy=ev.clientY;pmT=performance.now()},{passive:true});
- const HOLES="#ltitle .phead,#prog .meta,#idle>div";
+ const HOLES="#ltitle .phead,#ltitle .peekbar.show,#prog .meta,#idle>div";
  ["pointermove","keydown","wheel"].forEach(ev=>addEventListener(ev,()=>lastIn=performance.now(),{passive:true}));
  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  function init(){const b=cv.getBoundingClientRect();if(!b.width)return;const d=devicePixelRatio||1;

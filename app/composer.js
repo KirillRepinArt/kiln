@@ -66,9 +66,9 @@ function renderChips(){requestAnimationFrame(()=>window.layoutLeft&&layoutLeft()
  const pk=typeof peekJob!=="undefined"&&peekJob;$("chips").classList.toggle("peek",!!pk);
  if(pk){$("chips").innerHTML=(pk.loras||[]).map(x=>{const l=LORAS.find(l=>l.name===x.name);
    return `<span class="chip ${l&&l.folder==="people"?"face":""}"><span class="cn">${esc(l?l.display:x.name)}</span><span class="cw">${fmtW(x.w)}</span></span>`}).join("");
-  $("chips").insertAdjacentHTML("afterbegin",'<span class="chiplbl">LoRA</span>');capChips();peekButtons();return}
+  $("chips").insertAdjacentHTML("afterbegin",`<span class="chiplbl">${(pk.loras||[]).length===1?"LoRA":"LoRAs"}</span>`);capChips();peekButtons();return}
  $("chips").innerHTML=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0)).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}" draggable="true"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`).join("");
- $("chips").insertAdjacentHTML("afterbegin",'<span class="chiplbl" data-tip="LoRAs used for the next image · drag to reorder">LoRA</span>');
+ $("chips").insertAdjacentHTML("afterbegin",`<span class="chiplbl" data-tip="LoRAs used for the next image · drag to reorder">${LORAS.filter(l=>l.on).length===1?"LoRA":"LoRAs"}</span>`);
  $("chips").insertAdjacentHTML("beforeend",'<button class="chip chipadd" data-tip="Add a LoRA — opens the library">+</button>');capChips();if(typeof peekJob!=="undefined"&&peekJob)peekButtons()}
 /* more than two rows of chips: hide the rest behind a "+N" chip that expands (and collapses again) */
 function capChips(){const box=$("chips");box.querySelector(".chipmore")?.remove();const cs=[...box.querySelectorAll(".chip[data-n]")];cs.forEach(c=>c.hidden=false);

@@ -26,34 +26,55 @@ function harmonics(hex){const[L,C,h]=hex2oklch(hex),f=(dh,cm=1,l=L)=>oklch2hex(l
  return{an:f(toBlue(32)),comp:f(180,.9),tri1:f(120),tri2:f(240),cool:mixHex("#9fb6cc",hex,.2)}} // cool: a cold steel with a fifth of the theme in it — cold for every theme
 function themeCols(){const cs=getComputedStyle(document.documentElement);return ["--a1","--a2","--a3"].map(k=>toHex(cs.getPropertyValue(k).trim()||"#ffffff"))}
 
-/* northern lights, after real photos: the base of a curtain is a soft-edged bright green (the oxygen line), rays rise from it
-   as pillars of very different height and fade up through mint into magenta; a soft green glow sits behind; a slow ripple
-   travels along the curtain. Drawn at 1/6 size and scaled up — the scaling is the softness. */
-function makeAurora(){const off=document.createElement("canvas"),o=off.getContext("2d");let ray=null,glow=null,key="";
- function strips(c){const r=document.createElement("canvas");r.width=1;r.height=256;let g=r.getContext("2d"),gr=g.createLinearGradient(0,0,0,256);
-  gr.addColorStop(0,rgba(c[2],0));gr.addColorStop(.22,rgba(c[2],.12));gr.addColorStop(.45,rgba(c[1],.22));gr.addColorStop(.72,rgba(c[0],.62));
-  gr.addColorStop(.86,rgba(c[0],.95));gr.addColorStop(.9,rgba(mixHex(c[0],"#ffffff",.35),.9));gr.addColorStop(.95,rgba(c[0],.4));gr.addColorStop(1,rgba(c[0],0));
+/* northern lights, after real photos. Each curtain is a free curve laid along a great diagonal arc (high on the right,
+   down toward the lower left) that folds and unfolds; vertical rays rise from it. Nothing slides: the folds, the ray
+   heights and the bright patches come from slowly evolving noise, so the shape keeps changing and never repeats.
+   Near curtains are big and bright, far ones thin and high. Colour by altitude: green base, a whitish hot edge, mint,
+   magenta, faint red at the top. Mostly calm — every minute or two a surge brightens along the curtain while the rays
+   dance faster. Drawn at 1/5–1/6 size and scaled up (the scaling is the softness). */
+const _hash=(i,j)=>{let n=(Math.imul(i,374761393)+Math.imul(j,668265263))|0;n=Math.imul(n^(n>>>13),1274126177);return((n^(n>>>16))>>>0)/4294967296};
+function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+ const a=_hash(xi,yi),b=_hash(xi+1,yi),c=_hash(xi,yi+1),d=_hash(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
+function fbm(x,y){return .55*vnoise(x,y)+.3*vnoise(x*2.1+5.2,y*2.1+1.3)+.15*vnoise(x*4.3+9.7,y*4.3+7.1)}
+const AURORA_LAYOUTS={ // arc ends (fractions of width / height), how much the arc bows, ray length, depth (1 = near)
+ sky:[{a:[1.03,-.03],b:[-.03,.32],sag:.05,len:.17,depth:.45},{a:[1.1,.12],b:[-.1,.7],sag:.1,len:.36,depth:1}],
+ frame:[{a:[1.05,.08],b:[-.05,.45],sag:.06,len:.3,depth:.6},{a:[1.1,.18],b:[-.1,.64],sag:.08,len:.44,depth:1}]};
+function makeAurora(){const off=document.createElement("canvas"),o=off.getContext("2d"),soft=document.createElement("canvas"),sf=soft.getContext("2d");let ray=null,glow=null,key="",tt=0,lastT=null,surgeAt=null,nextSurge=null;
+ function strips(c){const red=mixHex(c[2],"#ff3355",.5),hot=mixHex(c[0],"#ffffff",.4);
+  const r=document.createElement("canvas");r.width=1;r.height=256;let g=r.getContext("2d"),gr=g.createLinearGradient(0,0,0,256);
+  gr.addColorStop(0,rgba(red,0));gr.addColorStop(.12,rgba(red,.09));gr.addColorStop(.3,rgba(c[2],.18));gr.addColorStop(.5,rgba(c[1],.28));
+  gr.addColorStop(.74,rgba(c[0],.7));gr.addColorStop(.87,rgba(c[0],.95));gr.addColorStop(.91,rgba(hot,.95));gr.addColorStop(.95,rgba(c[0],.45));gr.addColorStop(1,rgba(c[0],0));
   g.fillStyle=gr;g.fillRect(0,0,1,256);
   const w=document.createElement("canvas");w.width=1;w.height=128;g=w.getContext("2d");gr=g.createLinearGradient(0,0,0,128);
-  gr.addColorStop(0,rgba(c[0],0));gr.addColorStop(.55,rgba(c[0],.5));gr.addColorStop(1,rgba(c[0],0));g.fillStyle=gr;g.fillRect(0,0,1,128);return[r,w]}
+  gr.addColorStop(0,rgba(c[0],0));gr.addColorStop(.6,rgba(c[0],.5));gr.addColorStop(1,rgba(c[0],0));g.fillStyle=gr;g.fillRect(0,0,1,128);return[r,w]}
  return{draw(ctx,W,H,T,cols,op){const sc=op.scale||6,w=Math.max(40,Math.round(W/sc)),h=Math.max(30,Math.round(H/sc));
-  if(off.width!==w||off.height!==h){off.width=w;off.height=h}
+  if(off.width!==w||off.height!==h){off.width=soft.width=w;off.height=soft.height=h}
   const k=cols.join();if(k!==key){[ray,glow]=strips(cols);key=k}
-  o.clearRect(0,0,w,h);o.globalCompositeOperation="lighter";const N=op.curtains||2;
-  for(let r=0;r<N;r++){const ph=r*2.7+.9,depth=1-.3*r,base=h*(op.top+(op.spread||.08)*r),amp=h*.085*depth,len=h*(op.len||.32)*depth;
-   for(let x=0;x<w;x++){const u=x/w;
-    const y=base+Math.sin(u*3.4-T*.08+ph)*amp+Math.sin(u*9.5-T*.05+ph*1.7)*amp*.35;          // the curtain's lower edge swings slowly
-    const pillar=Math.pow(.5+.5*Math.sin(u*31-T*.22+ph*3),3)*.75+Math.pow(.5+.5*Math.sin(u*13+T*.09+ph),2)*.45; // pillars of light
-    const ripple=.65+.35*Math.sin(u*22-T*.9+ph);                                            // a travelling ripple
-    const s=u*1.15-.07+.1*Math.sin(T*.03+r*1.9),env=s<=0||s>=1?0:Math.pow(Math.sin(Math.PI*s),.7); // fades out at the ends
-    const gl=env*depth*(.16+.1*Math.sin(u*4.1-T*.04+ph))*(op.gain||1);                       // the glow behind: continuous, on every column
-    if(gl>.005){o.globalAlpha=Math.min(1,gl);o.drawImage(glow,x,y-len*.55,1.8,len*.75)}
-    const a=Math.min(1,pillar*ripple*env*depth*(op.gain||1));if(a<.01)continue;
-    const hh=len*(.45+.9*Math.pow(.5+.5*Math.sin(u*6.3-T*.06+ph*2.1),1.5));                 // rays of very different height
-    o.globalAlpha=a*.85;o.drawImage(ray,x,y-hh,1.8,hh*1.06)}}
+  const dT=lastT==null?0:Math.max(0,Math.min(.2,T-lastT));lastT=T;
+  let surge=0,su=0;                                                              // a surge: brightening travelling along the curtain
+  if(op.auto){if(nextSurge==null)nextSurge=T+25+Math.random()*50;if(T>nextSurge&&surgeAt==null){surgeAt=T;nextSurge=T+60+Math.random()*60}
+   if(surgeAt!=null){const p=(T-surgeAt)/7;if(p>=1)surgeAt=null;else{surge=p<.2?p/.2:p>.7?(1-p)/.3:1;su=p*1.3-.15}}}
+  const boost=Math.max(surge,op.boost||0);tt+=dT*(1+2.2*boost);                // the rays dance faster while it lasts
+  o.clearRect(0,0,w,h);o.globalCompositeOperation="lighter";
+  for(const L of AURORA_LAYOUTS[op.layout||"sky"]){const A=[L.a[0]*w,L.a[1]*h],B=[L.b[0]*w,L.b[1]*h],dx=B[0]-A[0],dy=B[1]-A[1],len=Math.hypot(dx,dy),
+    tx=dx/len,ty=dy/len,nx=ty,ny=-tx,ln=h*L.len,dep=L.depth,N=Math.ceil(len/.8),z=L.depth*9.3;  // nx,ny: the arc bows toward the lower right
+   for(let i=0;i<=N;i++){const s=i/N;
+    const fold=(fbm(s*2.4+z,tt*.045)-.5)*h*.22*dep,along=(fbm(s*5.5+3+z,tt*.07)-.5)*len*.05;   // the curve folds and unfolds
+    const off2=Math.sin(Math.PI*s)*L.sag*h+fold,x=A[0]+tx*(s*len+along)-nx*off2,y=A[1]+ty*(s*len+along)-ny*off2;
+    const q=Math.min(1,Math.max(0,s*1.1-.05)),env=q<=0||q>=1?0:Math.pow(Math.sin(Math.PI*q),.6);
+    if(env<.01)continue;
+    const patch=Math.pow(fbm(s*3.2+z*.3,tt*.05),2.2)*2.8;                        // bright and dim stretches, slowly changing
+    const gl=env*dep*(.1+.1*patch)*(1+boost)*(op.gain||1);                        // the glow behind: continuous
+    if(gl>.005){o.globalAlpha=Math.min(1,gl);o.drawImage(glow,x,y-ln*.5,1.6,ln*.7)}
+    const sg=surge?surge*Math.exp(-Math.pow(s-su,2)/.024):0;
+    const I=Math.min(1,Math.pow(fbm(s*34+z,tt*.35),2.2)*2.2*patch*env*dep*(op.gain||1)*(1+1.3*boost)+sg*env*.9);
+    if(I<.012)continue;
+    const hh=ln*(.35+1.05*Math.pow(fbm(s*7+z*.5,tt*.09),1.3))*(1+.3*boost);     // rays of very different height
+    o.globalAlpha=I*.85;o.drawImage(ray,x,y-hh,1.6,hh*1.06)}}
   o.globalAlpha=1;o.globalCompositeOperation="source-over";
+  sf.clearRect(0,0,w,h);sf.filter="blur(1.1px)";sf.drawImage(off,0,0);sf.filter="none";   /* a touch of blur at low size: no stair-steps after scaling */
   ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.globalAlpha=op.alpha;ctx.globalCompositeOperation=op.blend||"source-over";
-  ctx.drawImage(off,0,0,W,H);ctx.restore()}}}
+  ctx.drawImage(soft,0,0,W,H);ctx.restore()}}}
 
 /* the render screen of Aurora: a long exposure of the night sky. The aurora in the upper sky, star trails that lengthen
    as the exposure runs, live film grain, and a small camera readout counting the job's real time; the image develops out
@@ -66,7 +87,7 @@ function makeCamera(){const aur=makeAurora(),grain=document.createElement("canva
     for(let i=0;i<170;i++){const x=Math.random()*W,y=Math.random()*H*.85,dx=x-px,dy=y-py;stars.push({r:Math.hypot(dx,dy),a:Math.atan2(dy,dx),b:.15+Math.pow(Math.random(),3)*.85,px,py})}}
    const str=st.str,age=Math.max(0,st.age||0);
    ctx.save();
-   aur.draw(ctx,W,H,t/1000,cols,{scale:5,top:.42,len:.36,curtains:2,spread:.07,alpha:Math.min(1,str*1.1),blend:"lighter",gain:1.2});
+   aur.draw(ctx,W,H,t/1000,cols,{scale:5,layout:"frame",auto:true,alpha:Math.min(1,str*1.1),blend:"lighter",gain:1.15});
    // star trails: arcs around a pole off the top-left, longer the longer the exposure has run
    const span=Math.min(.42,.004+age*.0026);ctx.globalCompositeOperation="lighter";ctx.lineCap="round";
    for(const s of stars){ctx.globalAlpha=s.b*.55*str;ctx.strokeStyle="#dfe9ff";ctx.lineWidth=(.6+s.b*.9)*d;ctx.beginPath();ctx.arc(s.px,s.py,s.r,s.a,s.a+span);ctx.stroke()}

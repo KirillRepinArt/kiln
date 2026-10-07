@@ -27,7 +27,7 @@
     const tw=reduce?.8:.55+.45*Math.sin(t/1000*st.s+st.p);c.globalAlpha=(.25+st.l*.25)*tw*.62*dim;
     c.fillStyle=st.l===2?"#fff":"#cfd6ff";c.beginPath();c.arc(st.x,st.y,st.r,0,6.283);c.fill()}
    if(bg==="aurora"){const wv=window._bgWave?(t-window._bgWave)/1800:9,fl=wv>=0&&wv<1?Math.sin(Math.PI*wv):0; /* an image landed: the sky flares */
-    aur.draw(c,W,H,reduce?0:t/1000,bcols,{scale:6,top:.36,len:.3,curtains:2,spread:.08,alpha:.42*(1+1.4*fl),blend:"lighter",gain:1+fl})}
+    aur.draw(c,W,H,reduce?0:t/1000,bcols,{scale:6,layout:"sky",auto:!reduce,alpha:.46*(1+1.2*fl),blend:"lighter",boost:fl})}
    if(!reduce&&bg==="stars"){if(!shoot&&R()<dt/9000)shoot={x:W*R()*.7,y:H*R()*.4,vx:.5+R()*.4,vy:.3+R()*.15,life:0};
     if(shoot){shoot.life+=dt;const k=shoot.life/900,len=120*(devicePixelRatio||1);const x=shoot.x+shoot.vx*shoot.life,y=shoot.y+shoot.vy*shoot.life;
      const g=c.createLinearGradient(x,y,x-shoot.vx*len,y-shoot.vy*len);g.addColorStop(0,"rgba(255,255,255,.8)");g.addColorStop(1,"rgba(255,255,255,0)");
@@ -118,7 +118,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    v.globalAlpha=1;v.globalCompositeOperation="source-over"}else sparks.length=0;
   e.clearRect(0,0,W,H);
   if(flareT&&W){const p=(t-flareT)/1700;if(p>=1||p<0)flareT=0;else if(S.view==="gen"){const a=p<.18?p/.18:Math.pow(1-(p-.18)/.82,1.5);
-   flareA.draw(e,W,H,t/250,cols.map(toHex),{scale:5,top:.55,len:.55,curtains:2,spread:.1,alpha:a,blend:"lighter",gain:1.6})}}
+   flareA.draw(e,W,H,t/1000,cols.map(toHex),{scale:5,layout:"frame",alpha:a,blend:"lighter",gain:1.5,boost:1})}}
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}
   if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);

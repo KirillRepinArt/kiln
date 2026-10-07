@@ -109,8 +109,10 @@
  const fx=$("fghFx");for(const el of [upl,up,usl,us])fg.insertBefore(el,fx);
  for(const el of [up,us]){el.addEventListener("change",()=>{S.set[el.dataset.set]=el.value;save()})}
  const refreshUp=()=>{if(!models)return;up.innerHTML=models.upscalers.map(u=>`<option>${esc(u)}</option>`).join("");if(S.set.upscaler)up.value=S.set.upscaler;us.value=S.set.upscale||"2"};
- const rb=document.createElement("button");rb.className="btn";rb.textContent="Refresh models & LoRAs";rb.onclick=async()=>{rb.textContent="Refreshing…";await loadModels(true);refreshUp();rb.textContent="Refresh models & LoRAs";toast("Models and LoRAs refreshed")};
- document.querySelector(".mcard .pact div").append(rb);
+ const rb=document.createElement("button");rb.className="iconbtn";rb.title="Refresh models & LoRAs from Forge";
+ rb.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg>';
+ rb.onclick=async()=>{rb.classList.add("spin");await loadModels(true);refreshUp();rb.classList.remove("spin");toast("Models and LoRAs refreshed")};
+ document.querySelector(".mcard .mact").prepend(rb);
 
  /* ---------- progress: real steps, smooth glide in between, live preview ---------- */
  let lastPrev=0,prevLoading=false;

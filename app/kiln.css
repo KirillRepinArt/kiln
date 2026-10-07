@@ -59,7 +59,7 @@ body.vresizing,body.vresizing *{cursor:ns-resize!important;user-select:none}
 .pwrapT:focus-within .pcount{opacity:1}
 .pname{text-align:center}
 .pwrapT{position:relative;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden}
-textarea#prompt.peek{color:#8d8d94}
+textarea#prompt.peek{color:#b6bcc0}
 .pwrapT.cm-on textarea#prompt{display:none}
 .pwrapT .cm-editor{flex:0 1 auto;min-height:84px;max-height:100%;margin:8px 12px 8px 0;outline:0!important;background:transparent;font:inherit}
 .pwrapT .cm-scroller{overflow:auto;font-family:inherit;line-height:1.62}
@@ -68,7 +68,7 @@ textarea#prompt.peek{color:#8d8d94}
 .pwrapT .cm-cursor{border-left:2px solid #fff}
 .pwrapT .cm-selectionBackground,.pwrapT .cm-focused .cm-selectionBackground{background:color-mix(in oklab,var(--an,#7890ff) 36%,transparent)!important}
 .pwrapT .cm-placeholder{color:var(--faint)}
-.pwrapT .cm-editor.peek .cm-content{color:#8d8d94}
+.pwrapT .cm-editor.peek .cm-content{color:#b6bcc0}
 /* structure styling */
 .cm-ln-comment{color:#6c6c74;font-style:italic}
 .cm-ln-list{text-indent:-2.4em}
@@ -370,9 +370,9 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .ltitle .peekbar{position:static;margin-top:12px;margin-bottom:-8px;box-shadow:none;max-width:calc(100% - 136px);white-space:nowrap}
 .ltitle .peekbar>span{overflow:hidden;text-overflow:ellipsis;min-width:0}.peekbar .sm{display:none}
 @container (max-width:470px){.ltitle .peekbar .lg{display:none}.ltitle .peekbar .sm{display:inline}.ltitle #peekLbl{display:none}}
-.left.peeking .pills{opacity:.5;pointer-events:none}.left.peeking #pN{display:none}
+.left.peeking .pills{opacity:.66;pointer-events:none}.left.peeking #pN{display:none}
 .chip[hidden]{display:none}
-.chips.peek .chip{opacity:.55;pointer-events:none}.chips.peek .chipmore{pointer-events:auto;opacity:1}
+.chips.peek .chip{opacity:.68;pointer-events:none}.chips.peek .chipmore{pointer-events:auto;opacity:1}
 /* peeking: the name field shows the peeked image's name, greyed and read-only */
 .ltitle .plbl.peekname .pname{color:#77777e!important}.plbl.peekname .pnx{display:none!important}
 /* height modes: match the image block / full column (icons at the right of the name row) */
@@ -435,19 +435,19 @@ body.glass .left,body.glass .rpanel.paneled,body.glass .mcard,body.glass .seg,bo
 body.glass .left::before,body.glass .rpanel.paneled::before,body.glass .mcard::before,body.glass .seg::before,body.glass .peekbar::before,body.glass .pill::before{
  content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none}
 /* regular */
-body.glass .left::before,body.glass .seg::before,body.glass .peekbar::before{background:color-mix(in oklab,rgba(18,20,22,.28),var(--a1) 6%);
- -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(2.1);backdrop-filter:blur(16px) saturate(2.4) brightness(2.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03)}
+body.glass .left::before,body.glass .seg::before,body.glass .peekbar::before{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);
+ -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03)}
 body.glass .pop,body.glass .toast,body.glass #tip{background:color-mix(in oklab,rgba(26,28,32,.42),var(--a1) 6%)!important;
  -webkit-backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);border-color:rgba(255,255,255,.14)!important;
  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 36px rgba(0,0,0,.4)}
 /* thick */
-body.glass .rpanel.paneled::before,body.glass .mcard::before{background:color-mix(in oklab,rgba(16,18,20,.3),var(--a1) 5%);
- -webkit-backdrop-filter:blur(16px) saturate(2.2) brightness(2.1);backdrop-filter:blur(16px) saturate(2.2) brightness(2.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+body.glass .rpanel.paneled::before,body.glass .mcard::before{background:color-mix(in oklab,rgba(16,18,20,var(--gtk,.3)),var(--a1) 5%);
+ -webkit-backdrop-filter:blur(16px) saturate(2.2) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.2) brightness(var(--gtb,2.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
 body.glass .left,body.glass .rpanel.paneled,body.glass .mcard{box-shadow:0 18px 50px rgba(0,0,0,.35)}
 body.glass .seg .thumb{background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
 /* thin: controls (the pills carry theirs on ::before, so their pop-ups can blur the prompt too) */
-body.glass .pill::before{background:color-mix(in oklab,rgba(255,255,255,.07),var(--cool,#9ab) 16%);-webkit-backdrop-filter:blur(10px) saturate(1.7);backdrop-filter:blur(10px) saturate(1.7);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(255,255,255,.07)}
+body.glass .pill::before{background:color-mix(in oklab,rgba(255,255,255,.045),var(--cool,#9ab) 14%);-webkit-backdrop-filter:blur(10px) saturate(1.7);backdrop-filter:blur(10px) saturate(1.7);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(255,255,255,.04),0 0 0 1px rgba(255,255,255,.1)}
 body.glass .pill{isolation:isolate}body.glass .mcard{position:relative}
 body.glass .pill:hover::before,body.glass .pill.open::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--cool,#9ab) 18%)}
 body.glass .pill:hover,body.glass .pill.open{background:transparent}
@@ -482,8 +482,8 @@ body.glass .play svg path{fill:#effff4}
 body.glass .play:hover{filter:brightness(1.18) saturate(1.1);box-shadow:inset 0 1px 1px rgba(255,255,255,.55),inset 0 -6px 14px rgba(0,0,0,.18),0 0 0 3px color-mix(in oklab,var(--an) 45%,transparent)}
 /* nothing to show: the image area is regular glass, the code's light blurred behind it */
 body.glass .frame:not(.has){outline-color:rgba(255,255,255,.12)}
-body.glass .frame:not(.has)::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:color-mix(in oklab,rgba(18,20,22,.28),var(--a1) 6%);
- -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(2.1);backdrop-filter:blur(16px) saturate(2.4) brightness(2.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+body.glass .frame:not(.has)::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);
+ -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
 /* the theme's title font (Emerald: Courier Prime, glowing faintly, spaced like a title card) */
 .ltitle .pname{font-family:var(--font-title,inherit)}
 body.skin-emerald .ltitle .pname{font-weight:700;letter-spacing:.06em;text-shadow:0 0 14px color-mix(in oklab,var(--a1) 45%,transparent)}
@@ -494,6 +494,20 @@ body.skin-emerald .ltitle .pname{font-weight:700;letter-spacing:.06em;text-shado
    transparent, so the blur popped in only after the fade (seen going Queue -> Generating) */
 body.glass .view{opacity:1;transform:none;transition:visibility 0s}
 /* the chip row's label (the same small caps as STYLE: in the prompt) and its + */
-.chiplbl{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:#8a8a92;margin:0 6px 0 12px;user-select:none}
+.chiplbl{font-size:12px;letter-spacing:.02em;color:#8f959a;margin:0 6px 0 12px;user-select:none} /* LoRA / LoRAs, spelled as written */
 .chipadd{padding:4px 11px!important;color:#cfd3d6;font-weight:600}.chipadd:hover{color:#fff}
 .chips.peek .chiplbl{opacity:1}
+/* glass thickness per theme: Aurora's sky is bright, so its glass is thicker and gathers less light than Emerald's */
+body.skin-aurora{--gta:.48;--gtk:.52;--gtb:1.35}
+/* Settings: in glass mode it appears at once (a fading dialog would switch its glass off until the fade ends);
+   only the dark overlay eases in */
+body.glass .modal{opacity:1;background:rgba(0,0,0,0);transition:background-color .22s var(--ease),visibility 0s linear .22s}
+body.glass .modal.show{background:rgba(0,0,0,.55);transition:background-color .22s var(--ease),visibility 0s}
+/* Settings: a fixed header (✕ where it sits elsewhere in Kiln, the title, icon actions); only the content scrolls */
+.mcard{display:flex;flex-direction:column;padding:0!important;overflow:hidden!important}
+.mhead{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:1px solid rgba(255,255,255,.06);flex:none}
+.mhead h2{margin:0!important;flex:1;font-size:18px}
+.mhead .mact{display:flex;gap:6px}
+.mhead .iconbtn svg{width:17px;height:17px}
+.mbody{overflow:auto;padding:16px 24px 22px}
+.iconbtn.spin svg{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}

@@ -53,8 +53,8 @@ function makeAurora(){const off=document.createElement("canvas"),o=off.getContex
   const dT=lastT==null?0:Math.max(0,Math.min(.2,T-lastT));lastT=T;
   let surge=0,su=0;                                                              // a surge: brightening travelling along the curtain
   if(op.auto){if(nextSurge==null)nextSurge=T+25+Math.random()*50;if(T>nextSurge&&surgeAt==null){surgeAt=T;nextSurge=T+60+Math.random()*60}
-   if(surgeAt!=null){const p=(T-surgeAt)/7;if(p>=1)surgeAt=null;else{surge=p<.2?p/.2:p>.7?(1-p)/.3:1;su=p*1.3-.15}}}
-  const boost=Math.max(surge,op.boost||0);tt+=dT*(1+2.2*boost);                // the rays dance faster while it lasts
+   if(surgeAt!=null){const p=(T-surgeAt)/11;if(p>=1)surgeAt=null;else{const e=p<.3?p/.3:p>.6?(1-p)/.4:1;surge=e*e*(3-2*e);su=p*1.3-.15}}}
+  const boost=Math.max(surge,op.boost||0);tt+=dT*(1+.7*boost);                // the rays dance faster while it lasts
   o.clearRect(0,0,w,h);o.globalCompositeOperation="lighter";
   for(const L of AURORA_LAYOUTS[op.layout||"sky"]){const A=[L.a[0]*w,L.a[1]*h],B=[L.b[0]*w,L.b[1]*h],dx=B[0]-A[0],dy=B[1]-A[1],len=Math.hypot(dx,dy),
     tx=dx/len,ty=dy/len,nx=ty,ny=-tx,ln=h*L.len,dep=L.depth,N=Math.ceil(len/.8),z=L.depth*9.3;  // nx,ny: the arc bows toward the lower right
@@ -74,7 +74,38 @@ function makeAurora(){const off=document.createElement("canvas"),o=off.getContex
   o.globalAlpha=1;o.globalCompositeOperation="source-over";
   sf.clearRect(0,0,w,h);sf.filter="blur(1.1px)";sf.drawImage(off,0,0);sf.filter="none";   /* a touch of blur at low size: no stair-steps after scaling */
   ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.globalAlpha=op.alpha;ctx.globalCompositeOperation=op.blend||"source-over";
-  ctx.drawImage(soft,0,0,W,H);ctx.restore()}}}
+  ctx.drawImage(soft,0,0,W,H);ctx.restore()},canvas(){return soft}}}
+
+/* Aurora's background as a night landscape, the classic aurora photograph: stars wheeling slowly around the pole star
+   (the earth turning, as in a timelapse — about one turn in 20 minutes), the aurora over a dark mountain ridge, and a
+   still lake below that mirrors the sky, softened. */
+function makeNightSky(){const aur=makeAurora();let stars=[],ridge=[],key="";
+ return{draw(ctx,W,H,t,d,cols,op){const k=W+"x"+H;if(k!==key){key=k;stars=[];const n=Math.round(W*H/(4200*d*d));
+   for(let i=0;i<n;i++)stars.push({x:(Math.random()*1.8-.4)*W,y:(Math.random()*1.8-.6)*H,b:.18+Math.pow(Math.random(),2.6)*.82,s:(.6+Math.random()*1.2)*d,p:Math.random()*6.3,tw:.4+Math.random()*1.4});
+   ridge=Array.from({length:97},(_,i)=>.55*fbm(i*.09,3.7)+.45*Math.pow(fbm(i*.23,8.1),1.6))}
+  const HY=H*.76,px=W*.86,py=-H*.06,ang=op.reduce?0:t/1000*.0052,ca=Math.cos(ang),sa=Math.sin(ang),T=t/1000;
+  ctx.save();ctx.beginPath();ctx.rect(0,0,W,HY);ctx.clip();ctx.fillStyle="#e2e8ff";
+  for(const s of stars){const dx=s.x-px,dy=s.y-py,x=px+dx*ca-dy*sa,y=py+dx*sa+dy*ca;if(x<-3||x>W+3||y<-3||y>HY)continue;
+   ctx.globalAlpha=s.b*(op.reduce?.8:.62+.38*Math.sin(T*s.tw+s.p))*.75;ctx.fillRect(x,y,s.s,s.s)}
+  ctx.restore();
+  aur.draw(ctx,W,H,op.reduce?0:T,cols,op.aur);
+  // the lake: the sky mirrored about the horizon, squashed a little, dimmer
+  const soft=aur.canvas(),kq=.85;
+  ctx.save();ctx.beginPath();ctx.rect(0,HY,W,H-HY);ctx.clip();ctx.globalCompositeOperation="lighter";
+  ctx.translate(0,HY*(1+kq));ctx.scale(1,-kq);ctx.imageSmoothingEnabled=true;
+  ctx.globalAlpha=op.aur.alpha*.34;ctx.drawImage(soft,0,0,W,H);ctx.globalAlpha=op.aur.alpha*.12;ctx.drawImage(soft,2*d,0,W,H);   // a faint shimmer
+  ctx.restore();
+  // a faint glow over the horizon (airglow, far twilight): it is what makes the ridge read against the sky; mirrored in the lake
+  const tint=mixHex(mixHex(cols[0],"#2a6a8a",.55),"#000000",.15),ga=.16*(.8+.4*op.aur.alpha);
+  let g=ctx.createLinearGradient(0,HY-H*.34,0,HY);g.addColorStop(0,rgba(tint,0));g.addColorStop(1,rgba(tint,ga));ctx.fillStyle=g;ctx.fillRect(0,HY-H*.34,W,H*.34);
+  g=ctx.createLinearGradient(0,HY,0,H);g.addColorStop(0,rgba(tint,ga*.7));g.addColorStop(1,rgba(tint,0));ctx.fillStyle=g;ctx.fillRect(0,HY,W,H-HY);
+  // the ridge, and its reflection
+  const peak=i=>HY-H*(.015+ridge[i]*.13);
+  ctx.save();ctx.fillStyle="#010203";ctx.beginPath();ctx.moveTo(0,HY);for(let i=0;i<ridge.length;i++)ctx.lineTo(W*i/(ridge.length-1),peak(i));ctx.lineTo(W,HY);ctx.closePath();ctx.fill();
+  ctx.fillStyle="#020406";ctx.beginPath();ctx.moveTo(0,HY);for(let i=0;i<ridge.length;i++)ctx.lineTo(W*i/(ridge.length-1),HY+(HY-peak(i))*kq);ctx.lineTo(W,HY);ctx.closePath();ctx.fill();
+  const hl=ctx.createLinearGradient(0,HY-2*d,0,HY+2*d);hl.addColorStop(0,"rgba(120,200,170,0)");hl.addColorStop(.5,`rgba(120,200,170,${.08*op.aur.alpha})`);hl.addColorStop(1,"rgba(120,200,170,0)");
+  ctx.fillStyle=hl;ctx.fillRect(0,HY-2*d,W,4*d);                                                // the waterline catches a little light
+  ctx.restore()}}}
 
 /* the render screen of Aurora: a long exposure of the night sky. The aurora in the upper sky, star trails that lengthen
    as the exposure runs, live film grain, and a small camera readout counting the job's real time; the image develops out

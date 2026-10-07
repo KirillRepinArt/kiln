@@ -2,7 +2,7 @@
 /* app background, set by the skin: starfield (three parallax layers, gentle twinkle, a rare shooting star),
    northern lights over a dimmer starfield, or sparse cold code. Redrawn at ~30 fps. */
 (function(){const cv=$("stars"),c=cv.getContext("2d");const R=Math.random;let W=0,H=0,stars=[],shoot=null,last=0,lastDraw=0,was="",bcols=null,bcT=0;
- const aur=makeAurora(),code=makeCodeBg();let lastIn=performance.now(),dimV=1,holes=[],holeT=0;
+ const aur=makeAurora(),night=makeNightSky(),code=makeCodeBg();let lastIn=performance.now(),dimV=1,holes=[],holeT=0;
  const HOLES="#ltitle .phead,#ltitle .peekbar.show,#prog .meta,#idle>div";
  ["pointermove","keydown","wheel"].forEach(ev=>addEventListener(ev,()=>lastIn=performance.now(),{passive:true}));
  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -22,12 +22,12 @@
      .map(r=>({x:(r.left-cb.left)*d,y:(r.top-cb.top)*d,w:r.width*d,h:r.height*d}))}
     code.draw(c,W,H,t,dt,d,bcols,{run,fx:(f.left+f.width/2-cb.left)*d,dim:dimV,wave:window._bgWave||0,reduce,holes});last=t;requestAnimationFrame(draw);return}
    const dim=bg==="aurora"?.55:1;
-   for(const st of stars){const v=[.002,.0045,.009][st.l]*(reduce?0:1);st.x+=v*dt;st.y+=v*dt*.62;
+   if(bg!=="aurora")for(const st of stars){const v=[.002,.0045,.009][st.l]*(reduce?0:1);st.x+=v*dt;st.y+=v*dt*.62;
     if(st.x>W+4)st.x-=W+8;if(st.y>H+4)st.y-=H+8;
     const tw=reduce?.8:.55+.45*Math.sin(t/1000*st.s+st.p);c.globalAlpha=(.25+st.l*.25)*tw*.62*dim;
     c.fillStyle=st.l===2?"#fff":"#cfd6ff";c.beginPath();c.arc(st.x,st.y,st.r,0,6.283);c.fill()}
-   if(bg==="aurora"){const wv=window._bgWave?(t-window._bgWave)/1800:9,fl=wv>=0&&wv<1?Math.sin(Math.PI*wv):0; /* an image landed: the sky flares */
-    aur.draw(c,W,H,reduce?0:t/1000,bcols,{scale:6,layout:"sky",auto:!reduce,alpha:.46*(1+1.2*fl),blend:"lighter",boost:fl})}
+   if(bg==="aurora"){const wv=window._bgWave?(t-window._bgWave)/4200:9,fl=wv>=0&&wv<1?Math.pow(Math.sin(Math.PI*Math.pow(wv,.7)),2):0; /* an image landed: the sky swells, slowly */
+    night.draw(c,W,H,t,d,bcols,{reduce,aur:{scale:6,layout:"sky",auto:!reduce,alpha:.46*(1+.8*fl),blend:"lighter",boost:fl*.6}})}
    if(!reduce&&bg==="stars"){if(!shoot&&R()<dt/9000)shoot={x:W*R()*.7,y:H*R()*.4,vx:.5+R()*.4,vy:.3+R()*.15,life:0};
     if(shoot){shoot.life+=dt;const k=shoot.life/900,len=120*(devicePixelRatio||1);const x=shoot.x+shoot.vx*shoot.life,y=shoot.y+shoot.vy*shoot.life;
      const g=c.createLinearGradient(x,y,x-shoot.vx*len,y-shoot.vy*len);g.addColorStop(0,"rgba(255,255,255,.8)");g.addColorStop(1,"rgba(255,255,255,0)");
@@ -117,8 +117,8 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
     v.globalAlpha=a;v.strokeStyle="#ffffff";v.lineWidth=.7*d;const L=p.s*4*tw;v.beginPath();v.moveTo(p.x-L,p.y);v.lineTo(p.x+L,p.y);v.moveTo(p.x,p.y-L);v.lineTo(p.x,p.y+L);v.stroke()}
    v.globalAlpha=1;v.globalCompositeOperation="source-over"}else sparks.length=0;
   e.clearRect(0,0,W,H);
-  if(flareT&&W){const p=(t-flareT)/1700;if(p>=1||p<0)flareT=0;else if(S.view==="gen"){const a=p<.18?p/.18:Math.pow(1-(p-.18)/.82,1.5);
-   flareA.draw(e,W,H,t/1000,cols.map(toHex),{scale:5,layout:"frame",alpha:a,blend:"lighter",gain:1.5,boost:1})}}
+  if(flareT&&W){const p=(t-flareT)/4200;if(p>=1||p<0)flareT=0;else if(S.view==="gen"){const q=p<.25?p/.25:1-(p-.25)/.75,a=.85*q*q*(3-2*q); /* a slow swell, a long glow, a long fade */
+   flareA.draw(e,W,H,t/1000,cols.map(toHex),{scale:5,layout:"frame",alpha:a,blend:"lighter",gain:1.3,boost:.5})}}
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}
   if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);

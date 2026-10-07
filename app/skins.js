@@ -77,7 +77,7 @@ function glyphAtlas(cs,trail,head,glowT,glowH){const pad=Math.ceil(cs*.45),cw=cs
 function makeCodeBg(){let at=null,at2=null,key="",streams=[],fatT=0,acc=0,events=[],evT=8000+Math.random()*12000;
  const spawn=(W,H,d,run,fx,fat,first)=>{const r=Math.random(),s=(fat?54+Math.random()*46:7+Math.pow(r,3)*26)*d;
   const x=run&&!fat&&Math.random()<.35?fx+(Math.random()-.5)*W*.35:Math.random()*W;
-  const L=Math.round(fat?6+Math.random()*7:Math.random()<.08?26+Math.random()*30:5+Math.random()*18); /* now and then a long one */return{x,s,y:first?Math.random()*H*1.2:-Math.random()*H*.3,v:(55+2.4*s/d)*d*(.75+Math.random()*.5),L,
+  const L=Math.round(fat?6+Math.random()*7:Math.random()<.08?26+Math.random()*30:5+Math.random()*18); /* now and then a long one */return{x,s,y:first?Math.random()*H*1.2:-Math.random()*H*.3,v:(55+2.4*s/d)*d*(()=>{const r=Math.random();return r<.06?1.8+Math.random()*.7:r<.14?.3+Math.random()*.15:.5+Math.random()})(),L, /* ×0.5–1.5, a rare racer, a rare drifter */
    alt:Math.random()<.1,g:Array.from({length:L},()=>Math.random()*GLYPHS.length|0),a:fat?.10+Math.random()*.06:.16+(1-s/(34*d))*.18,fat}};
  return{draw(ctx,W,H,t,dt,d,cols,st){const k=cols[2]+cols[0];if(k!==key){key=k;
    const cold=mixHex(mixHex(cols[2],"#9ad7e6",.45),"#8a9aa0",.25);at=glyphAtlas(24,cold,"#e9fbff",.1,.4);
@@ -123,7 +123,7 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
   scr.width=W;scr.height=H;at=glyphAtlas(cs,c3[0],"#eafff2",.16,.6);glyph=new Uint8Array(nc*nr).map(()=>Math.random()*GLYPHS.length|0);hunt=new Float32Array(nc*nr);cols=[];
   for(let i=0;i<nc;i++)cols.push(newCol(true))}
  const lenFor=res=>{const r=Math.random();return Math.max(3,Math.round(r<.15?3+Math.random()*6:r>.9?nr*(1+Math.random()*.8):nr*(.3+Math.random()*.6+res*.5)))}; // short bursts, long runs
- const newCol=first=>({h:first?-1e9:-Math.random()*nr*.5,v:9+Math.random()*16,L:lenFor(0),last:-1});
+ const newCol=first=>({h:first?-1e9:-Math.random()*nr*.5,v:Math.random()<.05?34+Math.random()*12:5+Math.random()*24,L:lenFor(0),last:-1});
  const rnd=()=>Math.random()*GLYPHS.length|0;
  function overlay(W,H,d){if(ow===W&&oh===H)return;ow=ovl.width=W;oh=ovl.height=H;o.clearRect(0,0,W,H);
   const step=Math.max(2,Math.round(3*d));o.fillStyle="rgba(0,0,0,.26)";for(let y=0;y<H;y+=step)o.fillRect(0,y,W,Math.max(1,Math.round(d))); // scanlines

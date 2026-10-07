@@ -66,7 +66,7 @@ textarea#prompt.peek{color:#8d8d94}
 .pwrapT .cm-content{padding:4px 0 10px 0;caret-color:#fff;font-size:15px}
 .pwrapT .cm-line{padding:0 max(14px,calc(100% - 34px - 76ch)) 0 34px}
 .pwrapT .cm-cursor{border-left:2px solid #fff}
-.pwrapT .cm-selectionBackground,.pwrapT .cm-focused .cm-selectionBackground{background:rgba(120,140,255,.28)!important}
+.pwrapT .cm-selectionBackground,.pwrapT .cm-focused .cm-selectionBackground{background:color-mix(in oklab,var(--an,#7890ff) 36%,transparent)!important}
 .pwrapT .cm-placeholder{color:var(--faint)}
 .pwrapT .cm-editor.peek .cm-content{color:#8d8d94}
 /* structure styling */
@@ -367,7 +367,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 /* the Reuse bar floats just above the name: it is replacing the working file, title included; the name row never moves */
 /* the Reuse bar: under the name, in the row of the height buttons — centred, with their room reserved on both sides */
 .ltitle{container-type:inline-size}
-.ltitle .peekbar{position:static;margin-top:12px;box-shadow:none;max-width:calc(100% - 136px);white-space:nowrap}
+.ltitle .peekbar{position:static;margin-top:12px;margin-bottom:-8px;box-shadow:none;max-width:calc(100% - 136px);white-space:nowrap}
 .ltitle .peekbar>span{overflow:hidden;text-overflow:ellipsis;min-width:0}.peekbar .sm{display:none}
 @container (max-width:470px){.ltitle .peekbar .lg{display:none}.ltitle .peekbar .sm{display:inline}.ltitle #peekLbl{display:none}}
 .left.peeking .pills{opacity:.5;pointer-events:none}.left.peeking #pN{display:none}
@@ -430,27 +430,27 @@ body.glass .left::before,body.glass .rpanel.paneled::before,body.glass .mcard::b
  content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none}
 /* regular */
 body.glass .left::before,body.glass .seg::before,body.glass .peekbar::before{background:color-mix(in oklab,rgba(18,20,22,.28),var(--a1) 6%);
- -webkit-backdrop-filter:blur(26px) saturate(2.2) brightness(1.8);backdrop-filter:blur(26px) saturate(2.2) brightness(1.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03)}
+ -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(2.1);backdrop-filter:blur(16px) saturate(2.4) brightness(2.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03)}
 body.glass .pop,body.glass .toast,body.glass #tip{background:color-mix(in oklab,rgba(26,28,32,.42),var(--a1) 6%)!important;
  -webkit-backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);border-color:rgba(255,255,255,.14)!important;
  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 36px rgba(0,0,0,.4)}
 /* thick */
 body.glass .rpanel.paneled::before,body.glass .mcard::before{background:color-mix(in oklab,rgba(16,18,20,.3),var(--a1) 5%);
- -webkit-backdrop-filter:blur(22px) saturate(2) brightness(1.8);backdrop-filter:blur(22px) saturate(2) brightness(1.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+ -webkit-backdrop-filter:blur(16px) saturate(2.2) brightness(2.1);backdrop-filter:blur(16px) saturate(2.2) brightness(2.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
 body.glass .left,body.glass .rpanel.paneled,body.glass .mcard{box-shadow:0 18px 50px rgba(0,0,0,.35)}
 body.glass .seg .thumb{background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
 /* thin: controls (the pills carry theirs on ::before, so their pop-ups can blur the prompt too) */
-body.glass .pill::before{background:color-mix(in oklab,rgba(255,255,255,.07),var(--a1) 10%);-webkit-backdrop-filter:blur(10px) saturate(1.7);backdrop-filter:blur(10px) saturate(1.7);
+body.glass .pill::before{background:color-mix(in oklab,rgba(255,255,255,.07),var(--cool,#9ab) 16%);-webkit-backdrop-filter:blur(10px) saturate(1.7);backdrop-filter:blur(10px) saturate(1.7);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(255,255,255,.07)}
 body.glass .pill{isolation:isolate}body.glass .mcard{position:relative}
-body.glass .pill:hover::before,body.glass .pill.open::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--a1) 12%)}
+body.glass .pill:hover::before,body.glass .pill.open::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--cool,#9ab) 18%)}
 body.glass .pill:hover,body.glass .pill.open{background:transparent}
 body.glass .flink,body.glass .gear,body.glass .qb:not(.on),body.glass .btn:not(.pri),body.glass .peekbar button:not(#pkAll),body.glass .qsec button,body.glass .stop,
 body.glass .chip,body.glass .fchips button:not(.on),body.glass .iconbtn,body.glass .pi-raw,body.glass .hmodes button:not(.on),body.glass .qi .x,body.glass .search{
- background:color-mix(in oklab,rgba(255,255,255,.08),var(--a1) 10%)!important;-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);
+ background:color-mix(in oklab,rgba(255,255,255,.08),var(--cool,#9ab) 16%)!important;-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 0 0 1px rgba(255,255,255,.07)}
 body.glass .flink:hover,body.glass .gear:hover,body.glass .btn:not(.pri):hover,body.glass .chip:hover,body.glass .stop:hover,body.glass .qb:not(.on):hover,
-body.glass .fchips button:not(.on):hover,body.glass .hmodes button:not(.on):hover,body.glass .qi .x:hover,body.glass .peekbar button:not(#pkAll):hover{background:color-mix(in oklab,rgba(255,255,255,.16),var(--a1) 12%)!important}
+body.glass .fchips button:not(.on):hover,body.glass .hmodes button:not(.on):hover,body.glass .qi .x:hover,body.glass .peekbar button:not(#pkAll):hover{background:color-mix(in oklab,rgba(255,255,255,.16),var(--cool,#9ab) 18%)!important}
 body.glass .hmodes button:not(.on){background:transparent!important;box-shadow:none}body.glass .hmodes button:not(.on):hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.17)}
 body.glass .qi .x{background:transparent!important;box-shadow:none}
 body.glass .side button,body.glass .nav,body.glass .bclose,body.glass .vclose{background:rgba(20,22,24,.38)!important;-webkit-backdrop-filter:blur(18px) saturate(1.7);backdrop-filter:blur(18px) saturate(1.7);
@@ -473,8 +473,14 @@ body.glass .left .pwrapT .cm-scroller{padding-bottom:calc(var(--ctrlh,64px) - 6p
 body.glass .left .pwrapT .cm-editor{margin-bottom:0}
 body.glass .play{background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 58%,#0c100e),color-mix(in oklab,var(--a2) 48%,#0c100e) 55%,color-mix(in oklab,var(--a3) 42%,#0c100e))}
 body.glass .play svg path{fill:#effff4}
-body.glass .play:hover{filter:brightness(1.18) saturate(1.1)}
+body.glass .play:hover{filter:brightness(1.18) saturate(1.1);box-shadow:inset 0 1px 1px rgba(255,255,255,.55),inset 0 -6px 14px rgba(0,0,0,.18),0 0 0 3px color-mix(in oklab,var(--an) 45%,transparent)}
 /* nothing to show: the image area is regular glass, the code's light blurred behind it */
 body.glass .frame:not(.has){outline-color:rgba(255,255,255,.12)}
 body.glass .frame:not(.has)::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:color-mix(in oklab,rgba(18,20,22,.28),var(--a1) 6%);
- -webkit-backdrop-filter:blur(26px) saturate(2.2) brightness(1.8);backdrop-filter:blur(26px) saturate(2.2) brightness(1.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+ -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(2.1);backdrop-filter:blur(16px) saturate(2.4) brightness(2.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+/* the theme's title font (Emerald: Courier Prime, glowing faintly, spaced like a title card) */
+.ltitle .pname{font-family:var(--font-title,inherit)}
+body.skin-emerald .ltitle .pname{font-weight:700;letter-spacing:.06em;text-shadow:0 0 14px color-mix(in oklab,var(--a1) 45%,transparent)}
+/* seeds you can copy */
+.seedc{cursor:copy;border-bottom:1px dotted rgba(255,255,255,.22)}.seedc:hover{color:var(--text)}
+.left.peeking #pSD{pointer-events:auto;cursor:copy}

@@ -21,7 +21,7 @@ function applyMode(){const a=document.querySelector(".app"),was=a.classList.cont
   const L=$("left"),T=$("ltitle");L.classList.add("nodur");T.classList.add("nodur");lyFrozen=false;lyTop=null;lyCy=null;
   sizeFrame();layoutLeft();moveThumb(true);requestAnimationFrame(()=>{sizeFrame();layoutLeft();requestAnimationFrame(()=>{L.classList.remove("nodur");T.classList.remove("nodur")})})}}
 function cardMinH(){const L=$("left");return L.offsetHeight-L.querySelector(".pwrapT").offsetHeight+84}
-function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol");const TS=$("peekbar").classList.contains("show")?112:64; // the Reuse bar takes the row above the box; the name moves upcol.style.setProperty("--ts",TS+"px");
+function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol");const TS=$("peekbar").classList.contains("show")?104:64; // the Reuse bar takes the row above the box; the name moves upcol.style.setProperty("--ts",TS+"px");
  const stk=!!document.querySelector(".app.stacked"),hm=S.hmode==="full"||(S.hmode==="match"&&!stk)?S.hmode:"";L.classList.toggle("hm",!!hm);$("ltitle").classList.toggle("hm",!!hm);
  if(stk){let H;lyTop=0;
   if(hm==="full")H=Math.round(innerHeight*.7);

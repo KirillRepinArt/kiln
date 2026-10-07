@@ -3,10 +3,27 @@
    screen. The other themes keep the starfield and the light bands. Everything is cheap on purpose (the GPU is busy
    generating): pre-drawn glyphs and patterns, low resolution where softness is the look, ~30 fps. */
 const SKINS={ice:{bg:"stars",cover:"bands"},sunset:{bg:"stars",cover:"bands"},ember:{bg:"stars",cover:"bands"},
- aurora:{bg:"aurora",cover:"aurora"},emerald:{bg:"code",cover:"crt"}};
+ aurora:{bg:"aurora",cover:"aurora"},emerald:{bg:"code",cover:"crt",font:"IBM Plex Mono",title:"Courier Prime"}};
 function skin(){return SKINS[S.theme]||SKINS.ice}
 function toHex(c){if(/^#[0-9a-f]{6}$/i.test(c))return c;const d=document.createElement("canvas").getContext("2d");d.fillStyle=c;return d.fillStyle}
 function rgba(hex,a){const n=parseInt(toHex(hex).slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`}
+/* harmonic colours: from the theme's main colour, in OKLCH (perceptual: equal lightness looks equally bright) —
+   a neighbour hue on the cooler side, the complement, the triad, and a calm "cool" tone for controls. Used 60-30-10:
+   tinted neutrals, the theme colour, tiny accents. */
+function _lin(c){c/=255;return c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4)}
+function _gam(x){x=x<=.0031308?12.92*x:1.055*Math.pow(Math.max(0,x),1/2.4)-.055;return Math.round(Math.max(0,Math.min(1,x))*255)}
+function hex2oklch(hex){const n=parseInt(toHex(hex).slice(1),16),r=_lin(n>>16&255),g=_lin(n>>8&255),b=_lin(n&255);
+ const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),q=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
+ const L=.2104542553*l+.793617785*m-.0040720468*q,A=1.9779984951*l-2.428592205*m+.4505937099*q,B=.0259040371*l+.7827717662*m-.808675766*q;
+ return[L,Math.hypot(A,B),(Math.atan2(B,A)*180/Math.PI+360)%360]}
+function _rgb(L,C,h){const A=C*Math.cos(h*Math.PI/180),B=C*Math.sin(h*Math.PI/180);
+ const l=(L+.3963377774*A+.2158037573*B)**3,m=(L-.1055613458*A-.0638541728*B)**3,q=(L-.0894841775*A-1.291485548*B)**3;
+ return[4.0767416621*l-3.3077115913*m+.2309699292*q,-1.2684380046*l+2.6097574011*m-.3413193965*q,-.0041960863*l-.7034186147*m+1.707614701*q]}
+function oklch2hex(L,C,h){for(let i=0;i<30&&_rgb(L,C,h).some(v=>v<-.001||v>1.001);i++)C*=.9; // keep it inside sRGB by easing the chroma
+ return"#"+_rgb(L,C,h).map(v=>_gam(v).toString(16).padStart(2,"0")).join("")}
+function harmonics(hex){const[L,C,h]=hex2oklch(hex),f=(dh,cm=1,l=L)=>oklch2hex(l,C*cm,((h+dh)%360+360)%360);
+ const toBlue=d=>{const df=((250-h)%360+540)%360-180;return Math.sign(df||1)*Math.min(Math.abs(df),d)}; // turn toward blue
+ return{an:f(toBlue(32)),comp:f(180,.9),tri1:f(120),tri2:f(240),cool:mixHex("#9fb6cc",hex,.2)}} // cool: a cold steel with a fifth of the theme in it — cold for every theme
 function themeCols(){const cs=getComputedStyle(document.documentElement);return ["--a1","--a2","--a3"].map(k=>toHex(cs.getPropertyValue(k).trim()||"#ffffff"))}
 
 /* northern lights: a few curtains, each a row of thin vertical strokes — bright lower edge (a1), fading up through a2
@@ -47,23 +64,24 @@ const GLYPHS=(()=>{const P=s=>s.split(";").map(l=>l.trim().split(",").map(p=>p.t
  return kana.map(P).map((g,i)=>i%2?g:mir(g)).concat(other.map(P))})();
 
 /* an atlas: every glyph pre-drawn with its glow, in the trail colour and the head colour; cells are drawn from it */
-function glyphAtlas(cs,trail,head,glow){const pad=Math.ceil(cs*.45),cw=cs+pad*2,ch=Math.round(cs*1.18)+pad*2,n=GLYPHS.length;
+function glyphAtlas(cs,trail,head,glowT,glowH){const pad=Math.ceil(cs*.45),cw=cs+pad*2,ch=Math.round(cs*1.18)+pad*2,n=GLYPHS.length;
  const a=document.createElement("canvas");a.width=cw*n;a.height=ch*2;const g=a.getContext("2d");g.lineCap="square";g.lineJoin="miter";
  const sx=cs*.62/4,sy=cs*1.0/6,ox=pad+cs*.19,oy=pad+cs*.09;
- [trail,head].forEach((col,row)=>{g.strokeStyle=col;g.lineWidth=Math.max(1,cs*.14);g.shadowColor=col;g.shadowBlur=glow*cs*(row?1.4:1);
+ [trail,head].forEach((col,row)=>{g.strokeStyle=col;g.lineWidth=Math.max(1,cs*.14);g.shadowColor=col;g.shadowBlur=(row?glowH:glowT)*cs; // the trail is crisp, only the head glows
   GLYPHS.forEach((gl,i)=>{g.beginPath();for(const line of gl){line.forEach(([x,y],k)=>{const px=i*cw+ox+x*sx,py=row*ch+oy+y*sy;k?g.lineTo(px,py):g.moveTo(px,py)})}g.stroke()})});
  return{a,cw,ch,pad,n}}
 
 /* background: sparse, slow, pale and cold, with a wide range of sizes — tiny sharp far columns, now and then one fat soft
    near one. Size sets depth: speed, blur and brightness. It answers the app quietly: almost still and dimming when idle,
    livelier and drifting toward the render window while a job runs, one wave of light when an image lands. */
-function makeCodeBg(){let at=null,key="",streams=[],fatT=0,acc=0;
+function makeCodeBg(){let at=null,at2=null,key="",streams=[],fatT=0,acc=0;
  const spawn=(W,H,d,run,fx,fat,first)=>{const r=Math.random(),s=(fat?54+Math.random()*46:7+Math.pow(r,3)*26)*d;
   const x=run&&!fat&&Math.random()<.35?fx+(Math.random()-.5)*W*.35:Math.random()*W;
   const L=Math.round(6+Math.random()*(fat?7:18));return{x,s,y:first?Math.random()*H*1.2:-Math.random()*H*.3,v:(55+2.4*s/d)*d*(.75+Math.random()*.5),L,
-   g:Array.from({length:L},()=>Math.random()*GLYPHS.length|0),a:fat?.10+Math.random()*.06:.16+(1-s/(34*d))*.18,fat}};
+   alt:Math.random()<.1,g:Array.from({length:L},()=>Math.random()*GLYPHS.length|0),a:fat?.10+Math.random()*.06:.16+(1-s/(34*d))*.18,fat}};
  return{draw(ctx,W,H,t,dt,d,cols,st){const k=cols[2]+cols[0];if(k!==key){key=k;
-   const cold=mixHex(mixHex(cols[2],"#9ad7e6",.45),"#8a9aa0",.25);at=glyphAtlas(24,cold,"#e9fbff",.35);streams=[]}
+   const cold=mixHex(mixHex(cols[2],"#9ad7e6",.45),"#8a9aa0",.25);at=glyphAtlas(24,cold,"#e9fbff",.1,.4);
+   at2=glyphAtlas(24,mixHex(mixHex(harmonics(cols[0]).an,"#9ad7e6",.4),"#8a9aa0",.25),"#e9fbff",.1,.4);streams=[]} // ~1 column in 10 in the neighbour hue
   const want=Math.round(W/(115*d)*(st.run?1.25:1));
   const first=!streams.length;while(streams.filter(s=>!s.fat).length<want)streams.push(spawn(W,H,d,st.run,st.fx,false,first));
   fatT-=dt;if(fatT<=0&&!streams.some(s=>s.fat)){streams.push(spawn(W,H,d,st.run,st.fx,true));fatT=10000+Math.random()*10000}
@@ -71,7 +89,7 @@ function makeCodeBg(){let at=null,key="",streams=[],fatT=0,acc=0;
   const wave=st.wave?(t-st.wave)/1300:null;
   ctx.save();ctx.imageSmoothingEnabled=true;
   for(let i=streams.length-1;i>=0;i--){const s=streams[i];s.y+=s.v*sp*dt/1000;const ch=s.s*1.18;
-   const X=s.x;
+   const X=s.x,A=s.alt?at2:at;
    if(!s.hr)s.hr=Math.random()<.12?1.6+Math.random()*1.4:.5+Math.random()*1.5; // its head changes 0.5–2 times a second, now and then a livelier one
    if(Math.random()<s.hr*dt/1000)s.g[0]=Math.random()*GLYPHS.length|0;
    if(s.y-ch*s.L>H){streams.splice(i,1);continue}
@@ -81,8 +99,8 @@ function makeCodeBg(){let at=null,key="",streams=[],fatT=0,acc=0;
     let a=s.a*dim*(c===0?1.6:1-c/s.L*.75);
     if(wave!=null&&wave<1.2){const f=wave*(W+H)-(s.x+y);a*=1+1.6*Math.exp(-f*f/(2*Math.pow(140*d,2)))}
     ctx.globalAlpha=Math.min(1,a);const row=c===0?1:0,sc=s.s/24;
-    ctx.drawImage(at.a,s.g[c]*at.cw,row*at.ch,at.cw,at.ch,X-at.pad*sc,y-at.pad*sc,at.cw*sc,at.ch*sc)
-    if(c===0){ctx.globalAlpha=Math.min(1,a)*(.2+.16*Math.sin(t/1100+s.x*.01)); /* the glow breathes */ctx.drawImage(at.a,s.g[0]*at.cw,at.ch,at.cw,at.ch,X-at.pad*sc*1.7-s.s*.35,y-at.pad*sc*1.7-ch*.35,at.cw*sc*1.7,at.ch*sc*1.7)}}}
+    ctx.drawImage(A.a,s.g[c]*A.cw,row*A.ch,A.cw,A.ch,X-A.pad*sc,y-A.pad*sc,A.cw*sc,A.ch*sc)
+    if(c===0){ctx.globalAlpha=Math.min(1,a)*(.06+.34*Math.pow(.5+.5*Math.sin(t/(700+s.s*6)+s.x*.013),2)); /* only the head glows, pulsing slowly */ctx.drawImage(A.a,s.g[0]*A.cw,A.ch,A.cw,A.ch,X-A.pad*sc*1.7-s.s*.35,y-A.pad*sc*1.7-ch*.35,A.cw*sc*1.7,A.ch*sc*1.7)}}}
   // where app text sits on the bare background (the name, the status line), the code fades out softly, like depth of field
   ctx.globalCompositeOperation="destination-out";
   for(const h of st.holes||[])for(let k=0;k<6;k++){const e=(6-k)*7*d;ctx.globalAlpha=k===5?.9:.16;
@@ -97,7 +115,7 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
  const lumC=document.createElement("canvas"),lc=lumC.getContext("2d",{willReadFrequently:true});
  let at=null,key="",cols=[],nc=0,nr=0,cs=0,chh=0,glyph=null,hunt=null,acc=0,on=-1,lum=null,lumT=0,ow=0,oh=0,gl=null,glT=0;
  function layout(W,H,d,c3){cs=Math.round(13*d);chh=Math.round(cs*1.18);nc=Math.floor(W/cs);nr=Math.ceil(H/chh);
-  scr.width=W;scr.height=H;at=glyphAtlas(cs,c3[0],"#eafff2",.55);glyph=new Uint8Array(nc*nr).map(()=>Math.random()*GLYPHS.length|0);hunt=new Float32Array(nc*nr);cols=[];
+  scr.width=W;scr.height=H;at=glyphAtlas(cs,c3[0],"#eafff2",.16,.6);glyph=new Uint8Array(nc*nr).map(()=>Math.random()*GLYPHS.length|0);hunt=new Float32Array(nc*nr);cols=[];
   for(let i=0;i<nc;i++)cols.push(newCol(true))}
  const newCol=first=>({h:first?-1e9:-Math.random()*nr*.5,v:9+Math.random()*16,L:Math.round(nr*(.35+Math.random()*.7)),last:-1});
  const rnd=()=>Math.random()*GLYPHS.length|0;
@@ -143,7 +161,7 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
        if(dd<R){const q=dd/R;a*=q*q*(3-2*q)}}                                    // around the pointer the characters go out: a lens
       if(a<.03)continue;s.globalAlpha=Math.min(1,a*fl);
       s.drawImage(at.a,glyph[n]*at.cw,row*at.ch,at.cw,at.ch,x-at.pad+dx,y-at.pad,at.cw,at.ch)
-      if(r===hd){s.globalAlpha=Math.min(1,a*fl)*.35;s.drawImage(at.a,glyph[n]*at.cw,at.ch,at.cw,at.ch,x-at.pad*1.7+dx-cs*.35,y-at.pad*1.7-chh*.35,at.cw*1.7,at.ch*1.7)}}} // its halo
+      if(r===hd){s.globalAlpha=Math.min(1,a*fl)*(.08+.42*Math.pow(.5+.5*Math.sin(t/520+i*1.7),2)); /* a pulsing head, not a double image */s.drawImage(at.a,glyph[n]*at.cw,at.ch,at.cw,at.ch,x-at.pad*1.7+dx-cs*.35,y-at.pad*1.7-chh*.35,at.cw*1.7,at.ch*1.7)}}} // its halo
     s.globalAlpha=1}
    const str=st.str;
    ctx.save();
@@ -153,12 +171,12 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
     ctx.fillStyle=g;for(let k=5;k>=0;k--){const h=lh+k*k*3*d;ctx.globalAlpha=fade*(k?.16/(1+k*.5):.95);ctx.fillRect((W-lw)/2,H/2-h/2,lw,h)} // halo layers, then the hot core
     ctx.restore();return}
    ctx.globalAlpha=Math.min(1,str*1.15);ctx.globalCompositeOperation="lighter";ctx.drawImage(scr,0,0);
-   if(gl&&gl.type==="block"){ctx.globalAlpha=.10*str;ctx.fillStyle=c3[0];ctx.fillRect(0,0,W,H)}   // a glitch flashes the tube faintly
+   if(gl&&gl.type==="block"){ctx.globalAlpha=.12*str;ctx.fillStyle=(window.HARM||{}).comp||c3[0];ctx.fillRect(0,0,W,H)} // a glitch flashes the tube in the complementary hue
    ctx.globalCompositeOperation="source-over";ctx.globalAlpha=Math.min(1,str*1.4);ctx.drawImage(ovl,0,0);
    ctx.restore()},
-  sweep(ctx,W,H,p,d,c3){overlay(W,H,d);const y=H*(1-Math.pow(1-p,2.2));                             // finish: one refresh sweeps the screen clean
-   ctx.save();ctx.beginPath();ctx.rect(0,y,W,H-y);ctx.clip();ctx.globalAlpha=.85*(1-p*.4);ctx.drawImage(ovl,0,0);ctx.fillStyle=rgba(c3[0],.10);ctx.fillRect(0,y,W,H-y);ctx.restore();
-   ctx.save();ctx.globalCompositeOperation="lighter";const g=ctx.createLinearGradient(0,y-46*d,0,y+6*d);g.addColorStop(0,rgba(c3[0],0));g.addColorStop(.85,rgba("#eafff2",.5*(1-p)));g.addColorStop(1,rgba(c3[0],0));
+  sweep(ctx,W,H,p,d,c3){overlay(W,H,d);const y=H*(1-Math.pow(1-p,2.2)),ac=(window.HARM||{}).an||c3[0]; /* the neighbour hue */                             // finish: one refresh sweeps the screen clean
+   ctx.save();ctx.beginPath();ctx.rect(0,y,W,H-y);ctx.clip();ctx.globalAlpha=.85*(1-p*.4);ctx.drawImage(ovl,0,0);ctx.fillStyle=rgba(ac,.10);ctx.fillRect(0,y,W,H-y);ctx.restore();
+   ctx.save();ctx.globalCompositeOperation="lighter";const g=ctx.createLinearGradient(0,y-46*d,0,y+6*d);g.addColorStop(0,rgba(ac,0));g.addColorStop(.85,rgba("#eafff2",.5*(1-p)));g.addColorStop(1,rgba(ac,0));
    ctx.fillStyle=g;ctx.fillRect(0,y-46*d,W,52*d);ctx.restore()}}}
 function mixHex(a,b,t){const A=parseInt(toHex(a).slice(1),16),B=parseInt(toHex(b).slice(1),16);const m=s=>Math.round(((A>>s)&255)*(1-t)+((B>>s)&255)*t);
  return "#"+[16,8,0].map(s=>m(s).toString(16).padStart(2,"0")).join("")}

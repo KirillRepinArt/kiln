@@ -10,7 +10,7 @@ function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=
    ${k==="pend"?'<span class="handle" title="Drag to reorder">⋮⋮</span>':""}
    <div class="th">${j.status==="done"?`<canvas data-th="${j.id}"></canvas>`:j.status==="cancelled"?"stopped":k==="run"?"…":"#"+j.id}</div>
    <div class="body"><div class="p">${j.file?`<b style="font-weight:600">${esc(j.file)}</b> · `:""}${esc(j.prompt)}</div>
-   <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · seed ${j.seed}${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.finished?` · took ${fmt((j.finished-j.started)*(window.LIVE?1:S.demo)/1000)}`:""}</div>
+   <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · <span class="seedc" data-seed="${j.seed}" data-tip="Click to copy the seed">seed ${j.seed}</span>${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.finished?` · took ${fmt((j.finished-j.started)*(window.LIVE?1:S.demo)/1000)}`:""}</div>
    ${k==="run"?'<div class="mini"><i></i></div>':""}</div>
    ${k!=="done"?`<button class="x" data-x="${j.id}" title="${k==="run"?"Stop":"Remove"}">${IC.x}</button>`:""}</div>`;
  $("qwrap").innerHTML=(run.length?`<div class="qsec">Running</div>${run.map(j=>item(j,"run")).join("")}`:"")+
@@ -19,6 +19,7 @@ function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=
   (done.length?`<div class="qsec"><span>Finished</span><button id="clearDone">Clear list</button></div>${done.map(j=>item(j,"done")).join("")}`:"");
  done.forEach(j=>{const c=document.querySelector(`canvas[data-th="${j.id}"]`);if(c&&j.status==="done")paint(c,j,1)})}
 $("qwrap").addEventListener("click",e=>{
+ const sc=e.target.closest(".seedc");if(sc){e.stopPropagation();copySeed(sc.dataset.seed);return}
  if(e.target.id==="clearDone"){jobs=jobs.filter(j=>j.status==="pending"||j.status==="running");renderAll();return}
  const x=e.target.closest("[data-x]");if(x){stopJob(jobs.find(j=>j.id==+x.dataset.x));return}
  const q=e.target.closest(".qi");if(!q)return;const j=jobs.find(j=>j.id==+q.dataset.id);

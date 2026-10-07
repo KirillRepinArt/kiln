@@ -73,7 +73,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
   r.addColorStop(0,color);r.addColorStop(.18,color+"cc");r.addColorStop(.45,color+"33");r.addColorStop(1,color+"00");g.fillStyle=r;g.fillRect(0,0,size,size);return c}
  let spr={};function sprites(){const cs=getComputedStyle(document.documentElement);cols=["--a1","--a2","--a3"].map((k,i)=>cs.getPropertyValue(k).trim()||cols[i]);
   const hex=c=>{if(/^#[0-9a-f]{6}$/i.test(c))return c;const d=document.createElement("canvas").getContext("2d");d.fillStyle=c;return d.fillStyle};
-  spr={a1:sprite(hex(cols[0]),64),a2:sprite(hex(cols[1]),64),a3:sprite(hex(cols[2]),64),w:sprite("#ffffff",64)}}
+  spr={a1:sprite(hex(cols[0]),64),a2:sprite(hex(cols[1]),64),a3:sprite(hex(cols[2]),64),w:sprite("#ffffff",64),comp:sprite(hex((window.HARM||{}).comp||cols[2]),64)}}
  sprites();
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return} // the screen refreshes clean; a wave runs through the background
@@ -103,7 +103,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
     const g=v.createLinearGradient(off,0,off+H*.9,H*.9);const a=(.10-.025*k)*str;const col=k===1?cols[2]:cols[k===0?0:1];
     g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.45,"rgba(0,0,0,0)");g.addColorStop(.5,col);g.addColorStop(.55,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,0)");
     v.globalAlpha=a*2.2;v.fillStyle=g;v.fillRect(0,0,W,H)}
-   const want=cover==="crt"?0:Math.round((cover==="aurora"?90:230)*str*(W*H)/(700*900*d*d));while(sparks.length<want)sparks.push({x:Math.random()*(W+40*d)-20*d,y:Math.random()*(H+40*d)-20*d,s:(.5+Math.random()*1.3)*d,v:(.012+Math.random()*.03)*d,ph:Math.random()*6.28,tw:.6+Math.random()*1.8,c:Math.random()<.5?"w":(Math.random()<.5?"a3":"a1")});
+   const want=cover==="crt"?0:Math.round((cover==="aurora"?90:230)*str*(W*H)/(700*900*d*d));while(sparks.length<want)sparks.push({x:Math.random()*(W+40*d)-20*d,y:Math.random()*(H+40*d)-20*d,s:(.5+Math.random()*1.3)*d,v:(.012+Math.random()*.03)*d,ph:Math.random()*6.28,tw:.6+Math.random()*1.8,c:Math.random()<.07?"comp":Math.random()<.5?"w":(Math.random()<.5?"a3":"a1")});
    if(sparks.length>want)sparks.length=want;
    for(const p of sparks){p.x+=p.v*dt;p.y+=p.v*dt*.62;const m=20*d;if(p.x>W+m)p.x-=W+2*m;if(p.y>H+m)p.y-=H+2*m; // wrap around: density stays even however long the render
     const tw=Math.max(0,Math.sin(T*p.tw*3+p.ph));const a=tw*tw*str*.9;if(a<.01)continue;
@@ -112,7 +112,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    v.globalAlpha=1;v.globalCompositeOperation="source-over"}else sparks.length=0;
   e.clearRect(0,0,W,H);
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}
-  if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
+  if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);
   if(embers.length){e.globalCompositeOperation="lighter";
    embers=embers.filter(p=>{p.life+=dt;if(p.life>p.max)return false;p.x+=(p.vx+Math.sin(p.life/420+p.ph)*.015*d)*dt;p.y+=p.vy*dt;const q=p.life/p.max;

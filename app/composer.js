@@ -9,7 +9,8 @@ function idleText(){const [w,h]=SIZES[S.mp][S.ar];const had=jobs.some(j=>j.statu
  $("idleS").textContent=had?"Your last image is in Queue → Finished":"Write a prompt and press ▶ (Ctrl+Enter)"}
 function renderPills(){idleText();
  const pk=typeof peekJob!=="undefined"&&peekJob; // peeking: the pills show that job's own settings
- const v=pk?{mp:pk.mp,ar:pk.ar,steps:pk.steps,seed:pk.seed!=null?String(pk.seed):"—",n:1}:{mp:S.mp,ar:S.ar,steps:S.steps,seed:S.seedMode==="random"?"Random":"Fixed",n:S.n};
+ const v=pk?{mp:pk.mp,ar:pk.ar,steps:pk.steps,seed:pk.seed!=null?String(pk.seed):"—",n:1}:{mp:S.mp,ar:S.ar,steps:S.steps,seed:S.seedMode==="random"?"Random":String(S.seed),n:S.n};
+ $("pSD").dataset.tip=pk?"Click to copy this seed":"Seed — random each job, or fixed";
  $("vMP").textContent=v.mp+" MP";$("vAR").innerHTML=v.ar+'<span class="w"> Ratio</span>';$("vST").innerHTML=v.steps+'<span class="w"> Steps</span>';
  $("vSD").textContent=v.seed;$("vN").textContent="×"+v.n;
  $("popMP").innerHTML=["1.0","1.5","2.0"].map(m=>`<div class="opt ${m===S.mp?"on":""}" data-v="${m}">${m} MP <small>~${SEC_PER_STEP[m]}s/step</small></div>`).join("");
@@ -18,18 +19,20 @@ function renderPills(){idleText();
  if(!$("popST").classList.contains("show"))$("popST").innerHTML=slider("st",1,30,S.steps,[4,6,8,12],stepsHint());
  if(!$("popN").classList.contains("show"))$("popN").innerHTML=slider("cn",1,50,S.n,[1,4,8,16],countHint());
  $("popSD").innerHTML=`<div class="opt ${S.seedMode==="random"?"on":""}" data-v="random">Random each job</div>
-   <div class="row"><input type="number" id="seedIn" value="${S.seed}" style="width:140px"><button class="iconbtn" id="dice" title="New random seed">${IC.dice}</button></div>
+   <div class="row"><input type="number" id="seedIn" value="${S.seed}" style="width:140px"><button class="iconbtn" id="dice" title="New random seed">${IC.dice}</button><button class="iconbtn" id="seedCopy" title="Copy the seed">${IC.copy}</button></div>
    <div class="opt ${S.seedMode==="fixed"?"on":""}" data-v="fixed">Fixed</div>`;
  sizeFrame()}
 function closePops(){document.querySelectorAll(".pop.show").forEach(p=>{p.classList.remove("show");p.parentElement.classList.remove("open")});renderPills()}
 function staleIf(ch){if(ch&&!current()&&lastDone()){resultStale=true;$("cv").dataset.d="";$("frame").classList.remove("has")}}
 const PILLS=[["pMP","popMP",v=>{staleIf(S.mp!==v);S.mp=v}],["pAR","popAR",v=>{staleIf(S.ar!==v);S.ar=v}],["pST","popST",v=>S.steps=+v],["pN","popN",v=>S.n=+v],["pSD","popSD",v=>S.seedMode=v]];
+function copySeed(s){if(s==null||s==="")return;navigator.clipboard.writeText(String(s)).then(()=>toast(`Seed ${s} copied`),()=>toast("Couldn't copy the seed"))}
 PILLS.forEach(([b,p,set])=>{$(b).addEventListener("click",e=>{const pop=$(p);
+ if(b==="pSD"&&typeof peekJob!=="undefined"&&peekJob){copySeed(peekJob.seed);return} // an old job: the seed pill copies its seed
  if(e.target.closest(".pop")&&!e.target.closest(".opt,.rt,.qb"))return;
  const o=e.target.closest(".opt,.rt");if(o){set(o.dataset.v);save();closePops();return}
  const q=e.target.closest(".qb");if(q){set(q.dataset.q);save();pop.classList.remove("show");renderPills();pop.classList.add("show");return}
  const was=pop.classList.contains("show");closePops();if(!was){pop.classList.add("show");$(b).classList.add("open")}})});
-document.addEventListener("click",e=>{if(e.target.closest("#dice")){S.seed=Math.floor(Math.random()*4294967295);S.seedMode="fixed";save();renderPills();$("popSD").classList.add("show");return}
+document.addEventListener("click",e=>{if(e.target.closest("#seedCopy")){copySeed(S.seed);return}if(e.target.closest("#dice")){S.seed=Math.floor(Math.random()*4294967295);S.seedMode="fixed";save();renderPills();$("popSD").classList.add("show");return}
  if(!e.target.isConnected||e.target.closest(".pill"))return;closePops()});
 document.addEventListener("input",e=>{const id=e.target.id;
  if(id==="stR"||id==="stN"){S.steps=clamp(+e.target.value,1,60);$(id==="stR"?"stN":"stR").value=S.steps;$("vST").innerHTML=S.steps+'<span class="w"> Steps</span>';$("stH").textContent=stepsHint();save()}

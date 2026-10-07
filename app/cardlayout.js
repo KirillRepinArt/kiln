@@ -21,7 +21,8 @@ function applyMode(){const a=document.querySelector(".app"),was=a.classList.cont
   const L=$("left"),T=$("ltitle");L.classList.add("nodur");T.classList.add("nodur");lyFrozen=false;lyTop=null;lyCy=null;
   sizeFrame();layoutLeft();moveThumb(true);requestAnimationFrame(()=>{sizeFrame();layoutLeft();requestAnimationFrame(()=>{L.classList.remove("nodur");T.classList.remove("nodur")})})}}
 function cardMinH(){const L=$("left");return L.offsetHeight-L.querySelector(".pwrapT").offsetHeight+84}
-function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol");const TS=$("peekbar").classList.contains("show")?104:64; // the Reuse bar takes the row above the box; the name moves upcol.style.setProperty("--ts",TS+"px");
+function chipsH(){const c=$("chips");return c.childElementCount?c.offsetHeight+10:0} // the chip row under the box, and its gap
+function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol"),CH=chipsH();const TS=$("peekbar").classList.contains("show")?104:64; /* the Reuse bar takes the row above the box; the name moves up */col.style.setProperty("--ts",TS+"px");
  const stk=!!document.querySelector(".app.stacked"),hm=S.hmode==="full"||(S.hmode==="match"&&!stk)?S.hmode:"";L.classList.toggle("hm",!!hm);$("ltitle").classList.toggle("hm",!!hm);
  if(stk){let H;lyTop=0;
   if(hm==="full")H=Math.round(innerHeight*.7);
@@ -29,19 +30,20 @@ function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol");const TS=
   else{H=Math.min(cardNaturalH(),Math.round(innerHeight*.42));
    const j=browsed()||current()||shownDone(),[a,b]=(j?j.ar:S.ar).split(":").map(Number);
    if(a>b){const want=Math.min(760,innerWidth-36)*b/a,room=innerHeight-36-6-(H+TS+2)-64-BAR;if(room<want)H=Math.max(200,Math.round(H-(want-room)))}} // landscape: at least as wide as the card
-  const lch=(H+TS+2)+"px",chg=col.style.getPropertyValue("--lch")!==lch;
-  col.style.setProperty("--lch",lch);col.style.setProperty("--ltop",TS+"px");col.style.setProperty("--lh",H+"px");if(chg)requestAnimationFrame(sizeFrame);return}
+  const lch=(H+TS+2+CH)+"px",chg=col.style.getPropertyValue("--lch")!==lch;
+  col.style.setProperty("--lch",lch);col.style.setProperty("--ltop",TS+"px");col.style.setProperty("--lh",H+"px");col.style.setProperty("--chtop",(TS+H+10)+"px");if(chg)requestAnimationFrame(sizeFrame);return}
  const colH=col.clientHeight-TS;if(colH<=0)return;
  const f=$("frame").getBoundingClientRect(),c=col.getBoundingClientRect();
  if(S.view==="gen"&&f.height>0){lyCy=f.top+f.height/2-c.top-TS;lyIT=f.top-c.top-TS;const pb=$("prog").getBoundingClientRect();lyIB=(pb.height?pb.bottom:f.bottom)-c.top-TS}
  if(lyCy==null)lyCy=colH/2;
  if(hm){let top,H;if(hm==="full"){top=0;H=colH}else{top=Math.max(0,lyIT??0);H=Math.min(colH-top,(lyIB??colH)-top)} // match: image top to status line
-  const mn=cardMinH();if(H<mn){H=Math.min(colH,mn);top=Math.max(0,Math.min(colH-H,lyCy-H/2))}
-  lyTop=top;lyBot=top+H;col.style.setProperty("--ltop",(top+TS)+"px");col.style.setProperty("--lh",H+"px");return}
- let H=S.pph?Math.min(Math.max(240,S.pph),colH):Math.min(cardNaturalH(),colH);let top;const pos=S.pos||"mid";
- if(lyFrozen&&lyTop!=null){if(pos==="bot"&&lyBot!=null){top=Math.max(0,lyBot-H);H=Math.min(H,colH-top)}else{top=lyTop;H=Math.min(H,colH-top)}}
- else{top=anchorTop(pos,H,colH);lyBot=top+H}
- lyTop=top;col.style.setProperty("--ltop",(top+TS)+"px");col.style.setProperty("--lh",H+"px")}
+  H=Math.max(0,H-CH);const mn=cardMinH();if(H<mn){H=Math.min(colH-CH,mn);top=Math.max(0,Math.min(colH-H-CH,lyCy-(H+CH)/2))}
+  lyTop=top;lyBot=top+H+CH;col.style.setProperty("--ltop",(top+TS)+"px");col.style.setProperty("--lh",H+"px");col.style.setProperty("--chtop",(top+TS+H+10)+"px");return}
+ // the box and its chip row are placed as one group
+ const room=colH-CH;let H=S.pph?Math.min(Math.max(240,S.pph),room):Math.min(cardNaturalH(),room);let top;const pos=S.pos||"mid";
+ if(lyFrozen&&lyTop!=null){if(pos==="bot"&&lyBot!=null){top=Math.max(0,lyBot-H-CH);H=Math.min(H,room-top)}else{top=lyTop;H=Math.min(H,room-top)}}
+ else{top=anchorTop(pos,H+CH,colH);lyBot=top+H+CH}
+ lyTop=top;col.style.setProperty("--ltop",(top+TS)+"px");col.style.setProperty("--lh",H+"px");col.style.setProperty("--chtop",(top+TS+H+10)+"px")}
 function freeze(){clearTimeout(lyT);lyFrozen=true}
 function thaw(){clearTimeout(lyT);lyT=setTimeout(()=>{const ed=document.activeElement&&$("left").contains(document.activeElement);if(lyHover||ed)return;lyFrozen=false;S.pph=0;layoutLeft()},500)}
 $("left").addEventListener("pointerenter",()=>{lyHover=true;freeze()});
@@ -64,7 +66,7 @@ updHm();
  function move(e){if(!d)return;const dy=e.clientY-d.y0;if(!d.moved&&Math.abs(dy)<5)return;const {TS,colH,H}=geo();
   if(!d.moved){d.moved=true;lyDrag=true;L.classList.add("nodur");T.classList.add("nodur");document.body.classList.add("cardmove");
    ghosts.forEach(g=>{g.style.top=(anchorTop(g.dataset.p,H,colH)+TS)+"px";g.style.height=H+"px";g.classList.add("show")})}
-  const t=Math.max(0,Math.min(colH-H,d.t0+dy));col.style.setProperty("--ltop",(t+TS)+"px");d.t=t;
+  const t=Math.max(0,Math.min(colH-H-chipsH(),d.t0+dy));col.style.setProperty("--ltop",(t+TS)+"px");col.style.setProperty("--chtop",(t+TS+H+10)+"px");d.t=t;
   const n=nearest(t,H,colH);ghosts.forEach(g=>g.classList.toggle("near",g.dataset.p===n))}
  function up(){if(!d)return;const was=d;d=null;if(!was.moved)return;const {colH,H}=geo();S.pos=nearest(was.t,H,colH);save();
   lyDrag=false;L.classList.remove("nodur");T.classList.remove("nodur");document.body.classList.remove("cardmove");ghosts.forEach(g=>g.classList.remove("show","near"));

@@ -83,7 +83,10 @@ function makeCodeBg(){let at=null,at2=null,key="",streams=[],fatT=0,acc=0;
    const cold=mixHex(mixHex(cols[2],"#9ad7e6",.45),"#8a9aa0",.25);at=glyphAtlas(24,cold,"#e9fbff",.1,.4);
    at2=glyphAtlas(24,mixHex(mixHex(harmonics(cols[0]).an,"#9ad7e6",.4),"#8a9aa0",.25),"#e9fbff",.1,.4);streams=[]} // ~1 column in 10 in the neighbour hue
   const want=Math.round(W/(115*d)*(st.run?1.25:1));
-  const first=!streams.length;while(streams.filter(s=>!s.fat).length<want)streams.push(spawn(W,H,d,st.run,st.fx,false,first));
+  const first=!streams.length;while(streams.filter(s=>!s.fat).length<want){const b=spawn(W,H,d,st.run,st.fx,false,first);streams.push(b);
+   if(Math.random()<.14){for(let k=1,n=2+(Math.random()*3|0);k<n;k++){ // now and then a cluster: 2–4 close columns of a similar size and pace
+    const o=spawn(W,H,d,st.run,st.fx,false,first),sz=b.s*(.8+Math.random()*.4);o.s=sz;o.x=b.x+(k%2?1:-1)*Math.ceil(k/2)*b.s*(1.05+Math.random()*.5);
+    o.v=b.v*(.85+Math.random()*.3);o.y=b.y-Math.random()*b.s*6;o.a=b.a*(.8+Math.random()*.4);streams.push(o)}}}
   fatT-=dt;if(fatT<=0&&!streams.some(s=>s.fat)){streams.push(spawn(W,H,d,st.run,st.fx,true));fatT=10000+Math.random()*10000}
   const sp=(st.run?1:.55)*(st.reduce?0:1),dim=st.dim;
   const wave=st.wave?(t-st.wave)/1300:null;
@@ -141,8 +144,8 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
     if(t>glT&&age>2000&&!st.reduce){glitch(t);glT=t+6000+Math.random()*8000}
     if(gl&&t>gl.until)gl=null;
     for(let i=0;i<nc;i++){const c=cols[i];
-     if(c.h<-1e8){const start=lone?(i===Math.floor(nc*.38)?0:null):Math.random()<(.05+res*.4)*(age<3000?.6:1)?0:null; // one lone stream first, then the cascade
-      if(start===null)continue;c.h=-Math.random()*3}
+     if(c.h<-1e8){const start=lone?(i===Math.floor(nc*.38)?0:null):Math.random()<(.05+res*.4)*(age<3000?.6:1)*(c.boost>t?5:1)?0:null; // one lone stream first, then the cascade
+      if(start===null)continue;c.h=-Math.random()*3;for(let k=-3;k<=3;k++)if(k&&cols[i+k])cols[i+k].boost=t+700} // a start makes its neighbours likelier to start: patches, not an even rain
      c.h+=c.v*step;const hd=Math.floor(c.h);
      if(hd!==c.last&&hd>=0&&hd<nr){c.last=hd;const n=i*nr+hd;glyph[n]=rnd();if(Math.random()<.25)hunt[n]=t+600+Math.random()*1000} // now and then a fresh cell isn't sure yet
      if(c.h-c.L>nr){Object.assign(c,newCol(false));c.L=Math.round(nr*(.35+Math.random()*.7+res*.6))}}

@@ -402,8 +402,13 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .lgrid .lnone{grid-column:1/-1;font-size:12.5px;color:var(--faint);padding:2px 4px 10px}
 .chipmore{padding:4px 10px;font-weight:600;color:#d6d6da}
 .left{border-color:#34343a!important}
-.chips{justify-content:flex-start!important;padding:14px 22px 0 22px!important}
-.chips:empty{padding:6px 0 0!important}
+/* LoRA chips live under the prompt box, centred, moving with it (layoutLeft sets --chtop); drag one to reorder */
+#lcol>.chips{position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--chtop,0px);justify-content:center!important;padding:0 14px!important;transition:top .4s var(--ease)}
+#lcol>.chips:empty{display:none}
+.app.stacked #lcol>.chips{right:auto;left:50%;transform:translateX(-50%);width:min(100%,760px)}
+body.liveresize #lcol>.chips,body.cardmove #lcol>.chips{transition:none}
+.chip[draggable=true]{cursor:grab}.chip.dragging{opacity:.35}
+.left{padding-top:12px}
 .controls{justify-content:space-between!important;padding:8px 14px 14px 14px!important}
 .controls .play{order:2;width:52px;height:52px}
 .controls .play svg{width:22px;height:22px}

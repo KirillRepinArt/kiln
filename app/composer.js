@@ -66,7 +66,7 @@ function renderChips(){requestAnimationFrame(()=>window.layoutLeft&&layoutLeft()
  const pk=typeof peekJob!=="undefined"&&peekJob;$("chips").classList.toggle("peek",!!pk);
  if(pk){$("chips").innerHTML=(pk.loras||[]).map(x=>{const l=LORAS.find(l=>l.name===x.name);
    return `<span class="chip ${l&&l.folder==="people"?"face":""}"><span class="cn">${esc(l?l.display:x.name)}</span><span class="cw">${fmtW(x.w)}</span></span>`}).join("");capChips();peekButtons();return}
- $("chips").innerHTML=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0)).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`).join("");capChips();if(typeof peekJob!=="undefined"&&peekJob)peekButtons()}
+ $("chips").innerHTML=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0)).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}" draggable="true"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`).join("");capChips();if(typeof peekJob!=="undefined"&&peekJob)peekButtons()}
 /* more than two rows of chips: hide the rest behind a "+N" chip that expands (and collapses again) */
 function capChips(){const box=$("chips");box.querySelector(".chipmore")?.remove();const cs=[...box.querySelectorAll(".chip")];cs.forEach(c=>c.hidden=false);
  const rows=[...new Set(cs.map(c=>c.offsetTop))].sort((a,b)=>a-b);if(rows.length<=2)return;
@@ -95,4 +95,19 @@ $("chips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;if(c.class
  box.addEventListener("wheel",e=>{const el=e.target.closest(".cw");if(!el)return;e.preventDefault();const l=lor(el);setW(l,l.w+(e.deltaY<0?1:-1)*(e.shiftKey?.01:.05),el)},{passive:false});
  box.addEventListener("click",e=>{if(e.target.closest(".cw,.cwi"))e.stopImmediatePropagation()},true)})();
 
+/* drag a chip to reorder: it moves in place, the others slide aside; the order is kept (onAt), so it sticks */
+(function(){const box=$("chips");let dragEl=null,noDrag=false;
+ box.addEventListener("pointerdown",e=>{noDrag=!!e.target.closest(".cw,.cx,.cwi")},true); // the weight and ✕ keep their own gestures
+ box.addEventListener("dragstart",e=>{const c=e.target.closest(".chip[data-n]");if(!c||noDrag||(typeof peekJob!=="undefined"&&peekJob)){e.preventDefault();return}
+  dragEl=c;c.classList.add("dragging");e.dataTransfer.effectAllowed="move";try{e.dataTransfer.setData("text/plain",c.dataset.n)}catch(_){}});
+ box.addEventListener("dragover",e=>{if(!dragEl)return;e.preventDefault();e.dataTransfer.dropEffect="move";const q=e.target.closest(".chip[data-n]");if(!q||q===dragEl)return;
+  const r=q.getBoundingClientRect(),after=e.clientX>r.left+r.width/2;if(after?q.nextElementSibling===dragEl:q.previousElementSibling===dragEl)return;
+  const all=[...box.querySelectorAll(".chip[data-n]")],before=new Map(all.map(x=>[x,x.getBoundingClientRect()]));
+  if(after)q.after(dragEl);else q.before(dragEl);
+  for(const x of all){if(x===dragEl)continue;const b=before.get(x),n=x.getBoundingClientRect(),dx=b.left-n.left,dy=b.top-n.top;if(Math.abs(dx)+Math.abs(dy)<1)continue;
+   x.style.transition="none";x.style.transform=`translate(${dx}px,${dy}px)`;requestAnimationFrame(()=>{x.style.transition="transform .2s var(--ease)";x.style.transform=""})}});
+ box.addEventListener("drop",e=>{if(dragEl)e.preventDefault()});
+ box.addEventListener("dragend",()=>{if(!dragEl)return;dragEl.classList.remove("dragging");const t=Date.now();
+  [...box.querySelectorAll(".chip[data-n]")].forEach((c,i)=>{const l=LORAS.find(l=>l.name===c.dataset.n);if(l)l.onAt=t+i});
+  dragEl=null;save();renderChips();if(S.view==="loras")renderLoras()})})();
 function fmtW(w){return (+w).toFixed(2).replace(/\.?0+$/,"")}

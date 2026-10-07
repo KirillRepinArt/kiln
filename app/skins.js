@@ -89,7 +89,7 @@ function makeNightSky(){const aur=makeAurora();let stars=[],ridge=[],ridge2=[],k
   for(const s of stars){const dx=s.x-px,dy=s.y-py,x=px+dx*ca-dy*sa,y=py+dx*sa+dy*ca;if(x<-3||x>W+3||y<-3||y>HY)continue;
    ctx.globalAlpha=s.b*(op.reduce?.8:.62+.38*Math.sin(T*s.tw+s.p))*.75;ctx.fillRect(x,y,s.s,s.s)}
   ctx.restore();
-  aur.draw(ctx,W,H,op.reduce?0:T*1.8,cols,op.aur);   // evolves ~1.8x faster than real time: the good shapes come sooner
+  aur.draw(ctx,W,H,op.reduce?0:T*1.4,cols,op.aur);   // evolves ~1.4x faster than real time: the good shapes come sooner
   if(!land)return;
   // the lake: the sky mirrored about the horizon, squashed a little, dimmer
   const soft=aur.canvas(),kq=.85;
@@ -127,7 +127,7 @@ function makeCamera(){const aur=makeAurora(),grain=document.createElement("canva
     for(let i=0;i<170;i++){const x=Math.random()*W,y=Math.random()*H*.85,dx=x-px,dy=y-py;stars.push({r:Math.hypot(dx,dy),a:Math.atan2(dy,dx),b:.15+Math.pow(Math.random(),3)*.85,px,py})}}
    const str=st.str,age=Math.max(0,st.age||0);
    ctx.save();
-   aur.draw(ctx,W,H,t/1000*1.8,cols,{scale:5,layout:"frame",auto:true,alpha:Math.min(1,str*1.1),blend:"lighter",gain:1.15});
+   aur.draw(ctx,W,H,t/1000*1.4,cols,{scale:5,layout:"frame",auto:true,alpha:Math.min(1,str*1.1),blend:"lighter",gain:1.15});
    // star trails: arcs around a pole off the top-left, longer the longer the exposure has run
    const span=Math.min(.42,.004+age*.0026);ctx.globalCompositeOperation="lighter";ctx.lineCap="round";
    for(const s of stars){ctx.globalAlpha=s.b*.55*str;ctx.strokeStyle="#dfe9ff";ctx.lineWidth=(.6+s.b*.9)*d;ctx.beginPath();ctx.arc(s.px,s.py,s.r,s.a,s.a+span);ctx.stroke()}

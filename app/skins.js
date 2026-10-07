@@ -77,19 +77,19 @@ function makeAurora(){const off=document.createElement("canvas"),o=off.getContex
   ctx.drawImage(soft,0,0,W,H);ctx.restore()},canvas(){return soft}}}
 
 /* Aurora's background as a night landscape, the classic aurora photograph: stars wheeling slowly around the pole star
-   (the earth turning, as in a timelapse — about one turn in 20 minutes), the aurora over a dark mountain ridge, and a
+   (the earth turning, as in a timelapse — about one turn in 7 minutes), the aurora over a dark mountain ridge, and a
    still lake below that mirrors the sky, softened. */
 function makeNightSky(){const aur=makeAurora();let stars=[],ridge=[],ridge2=[],key="";
  return{draw(ctx,W,H,t,d,cols,op){const k=W+"x"+H;if(k!==key){key=k;stars=[];const n=Math.round(W*H/(4200*d*d));
    for(let i=0;i<n;i++)stars.push({x:(Math.random()*1.8-.4)*W,y:(Math.random()*1.8-.6)*H,b:.18+Math.pow(Math.random(),2.6)*.82,s:(.6+Math.random()*1.2)*d,p:Math.random()*6.3,tw:.4+Math.random()*1.4});
    ridge=Array.from({length:97},(_,i)=>.55*fbm(i*.09,3.7)+.45*Math.pow(fbm(i*.23,8.1),1.6));
    ridge2=Array.from({length:97},(_,i)=>.6*fbm(i*.06+11,2.3)+.4*Math.pow(fbm(i*.17+4,5.9),1.4))}
-  const land=!!op.landscape,HY=land?H*.76:H,px=W*.86,py=-H*.06,ang=op.reduce?0:t/1000*.0052,ca=Math.cos(ang),sa=Math.sin(ang),T=t/1000;
+  const land=!!op.landscape,HY=land?H*.76:H,px=W*.86,py=-H*.06,ang=op.reduce?0:t/1000*.0157,ca=Math.cos(ang),sa=Math.sin(ang),T=t/1000;
   ctx.save();ctx.beginPath();ctx.rect(0,0,W,HY);ctx.clip();ctx.fillStyle="#e2e8ff";
   for(const s of stars){const dx=s.x-px,dy=s.y-py,x=px+dx*ca-dy*sa,y=py+dx*sa+dy*ca;if(x<-3||x>W+3||y<-3||y>HY)continue;
    ctx.globalAlpha=s.b*(op.reduce?.8:.62+.38*Math.sin(T*s.tw+s.p))*.75;ctx.fillRect(x,y,s.s,s.s)}
   ctx.restore();
-  aur.draw(ctx,W,H,op.reduce?0:T*1.4,cols,op.aur);   // evolves ~1.4x faster than real time: the good shapes come sooner
+  aur.draw(ctx,W,H,op.reduce?0:T*1.2,cols,op.aur);   // evolves ~1.2x faster than real time: the good shapes come sooner
   if(!land)return;
   // the lake: the sky mirrored about the horizon, squashed a little, dimmer
   const soft=aur.canvas(),kq=.85;
@@ -127,7 +127,7 @@ function makeCamera(){const aur=makeAurora(),grain=document.createElement("canva
     for(let i=0;i<170;i++){const x=Math.random()*W,y=Math.random()*H*.85,dx=x-px,dy=y-py;stars.push({r:Math.hypot(dx,dy),a:Math.atan2(dy,dx),b:.15+Math.pow(Math.random(),3)*.85,px,py})}}
    const str=st.str,age=Math.max(0,st.age||0);
    ctx.save();
-   aur.draw(ctx,W,H,t/1000*1.4,cols,{scale:5,layout:"frame",auto:true,alpha:Math.min(1,str*1.1),blend:"lighter",gain:1.15});
+   aur.draw(ctx,W,H,t/1000*1.2,cols,{scale:5,layout:"frame",auto:true,alpha:Math.min(1,str*1.1),blend:"lighter",gain:1.15});
    // star trails: arcs around a pole off the top-left, longer the longer the exposure has run
    const span=Math.min(.42,.004+age*.0026);ctx.globalCompositeOperation="lighter";ctx.lineCap="round";
    for(const s of stars){ctx.globalAlpha=s.b*.55*str;ctx.strokeStyle="#dfe9ff";ctx.lineWidth=(.6+s.b*.9)*d;ctx.beginPath();ctx.arc(s.px,s.py,s.r,s.a,s.a+span);ctx.stroke()}

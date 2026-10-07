@@ -80,8 +80,11 @@ function makeAurora(){const off=document.createElement("canvas"),o=off.getContex
    (the earth turning, as in a timelapse — about one turn in 10 minutes), the aurora over a dark mountain ridge, and a
    still lake below that mirrors the sky, softened. */
 function makeNightSky(){const aur=makeAurora();let stars=[],ridge=[],ridge2=[],key="";
- return{draw(ctx,W,H,t,d,cols,op){const k=W+"x"+H;if(k!==key){key=k;stars=[];const n=Math.round(W*H/(4200*d*d));
-   for(let i=0;i<n;i++)stars.push({x:(Math.random()*1.8-.4)*W,y:(Math.random()*1.8-.6)*H,b:.18+Math.pow(Math.random(),2.6)*.82,s:(.6+Math.random()*1.2)*d,p:Math.random()*6.3,tw:.4+Math.random()*1.4});
+ return{draw(ctx,W,H,t,d,cols,op){const k=W+"x"+H;if(k!==key){key=k;stars=[];
+   /* stars spread evenly over a disc around the pole that reaches the farthest corner, so turning never empties a corner */
+   const qx=W*.86,qy=-H*.06,R=Math.hypot(Math.max(qx,W-qx),H-qy)+20*d,n=Math.round(Math.PI*R*R/(3400*d*d));
+   for(let i=0;i<n;i++){const r=R*Math.sqrt(Math.random()),a=Math.random()*6.2832;
+    stars.push({x:qx+r*Math.cos(a),y:qy+r*Math.sin(a),b:.18+Math.pow(Math.random(),2.6)*.82,s:(.6+Math.random()*1.2)*d,p:Math.random()*6.3,tw:.4+Math.random()*1.4})}
    ridge=Array.from({length:97},(_,i)=>.55*fbm(i*.09,3.7)+.45*Math.pow(fbm(i*.23,8.1),1.6));
    ridge2=Array.from({length:97},(_,i)=>.6*fbm(i*.06+11,2.3)+.4*Math.pow(fbm(i*.17+4,5.9),1.4))}
   const land=!!op.landscape,HY=land?H*.76:H,px=W*.86,py=-H*.06,ang=op.reduce?0:t/1000*.0104,ca=Math.cos(ang),sa=Math.sin(ang),T=t/1000;

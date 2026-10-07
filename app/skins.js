@@ -71,9 +71,7 @@ function makeCodeBg(){let at=null,key="",streams=[],fatT=0,acc=0;
   const wave=st.wave?(t-st.wave)/1300:null;
   ctx.save();ctx.imageSmoothingEnabled=true;
   for(let i=streams.length-1;i>=0;i--){const s=streams[i];s.y+=s.v*sp*dt/1000;const ch=s.s*1.18;
-   // near the pointer a column eases a little to the side, and drifts back when it leaves
-   let tgt=0;if(st.ptr){const dx=s.x-st.ptr.x,R=190*d;if(Math.abs(dx)<R&&st.ptr.y>s.y-ch*s.L-R&&st.ptr.y<s.y+R)tgt=Math.sign(dx||1)*(R-Math.abs(dx))/R*34*d}
-   s.ox=(s.ox||0)+(tgt-(s.ox||0))*Math.min(1,dt/900);const X=s.x+s.ox;
+   const X=s.x;
    if(!s.hr)s.hr=Math.random()<.12?1.6+Math.random()*1.4:.5+Math.random()*1.5; // its head changes 0.5–2 times a second, now and then a livelier one
    if(Math.random()<s.hr*dt/1000)s.g[0]=Math.random()*GLYPHS.length|0;
    if(s.y-ch*s.L>H){streams.splice(i,1);continue}
@@ -142,7 +140,7 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
        else if(gl.type==="tear"&&r>=gl.y0&&r<gl.y0+gl.h)dx=gl.dx}
       if(res>0&&lum){const L=lum[r*nc+i];a*=1-res+res*(.08+1.5*L*L)}           // the code takes on the image
       if(st.px!=null){const ddx=x+cs/2-st.px,ddy=y+chh/2-st.py,dd=Math.hypot(ddx,ddy),R=110*d;
-       if(dd<R){const q=dd/R;a*=q*q;dx+=ddx/(dd||1)*(R-dd)*.35}}               // the pointer parts the rain
+       if(dd<R){const q=dd/R;a*=q*q*(3-2*q)}}                                    // around the pointer the characters go out: a lens
       if(a<.03)continue;s.globalAlpha=Math.min(1,a*fl);
       s.drawImage(at.a,glyph[n]*at.cw,row*at.ch,at.cw,at.ch,x-at.pad+dx,y-at.pad,at.cw,at.ch)
       if(r===hd){s.globalAlpha=Math.min(1,a*fl)*.35;s.drawImage(at.a,glyph[n]*at.cw,at.ch,at.cw,at.ch,x-at.pad*1.7+dx-cs*.35,y-at.pad*1.7-chh*.35,at.cw*1.7,at.ch*1.7)}}} // its halo

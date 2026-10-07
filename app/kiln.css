@@ -79,7 +79,7 @@ textarea#prompt.peek{color:#8d8d94}
 .cm-lora{background:#2a2a30;border-radius:6px;color:#bdbdc6;padding:0 3px;box-shadow:0 0 0 1px #3a3a42}
 .peekbar{position:absolute;right:16px;bottom:10px;display:none;align-items:center;gap:6px;padding:5px 5px 5px 12px;border-radius:999px;background:#2c2c31;border:1px solid #3a3a40;box-shadow:0 8px 24px rgba(0,0,0,.5);font-size:12.5px;z-index:3}
 .peekbar.show{display:flex}
-.peekbar span{color:var(--muted);margin-right:4px}
+.peekbar>span{color:var(--muted);margin-right:4px}
 .peekbar button{padding:5px 11px;border-radius:999px;background:#3a3a40;font-size:12.5px}
 .peekbar button:hover{background:#4a4a52}
 .peekbar #pkAll{background:#fff;color:#111;font-weight:600}
@@ -365,7 +365,12 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .ltitle .plbl.dimname .pname{color:#9a9aa2}
 /* looking at an old prompt: the Reuse bar stands where Play is, the pills show that job's settings, greyed */
 /* the Reuse bar floats just above the name: it is replacing the working file, title included; the name row never moves */
-.ltitle .peekbar{position:absolute;left:50%;right:auto;transform:translateX(-50%);bottom:calc(100% + 4px);max-width:calc(100% - 16px);white-space:nowrap;z-index:5}.left.peeking .pills{opacity:.5;pointer-events:none;flex-wrap:nowrap;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}.left.peeking #pN{display:none}
+/* the Reuse bar: under the name, in the row of the height buttons — centred, with their room reserved on both sides */
+.ltitle{container-type:inline-size}
+.ltitle .peekbar{position:static;margin-top:12px;box-shadow:none;max-width:calc(100% - 136px);white-space:nowrap}
+.ltitle .peekbar>span{overflow:hidden;text-overflow:ellipsis;min-width:0}.peekbar .sm{display:none}
+@container (max-width:470px){.ltitle .peekbar .lg{display:none}.ltitle .peekbar .sm{display:inline}.ltitle #peekLbl{display:none}}
+.left.peeking .pills{opacity:.5;pointer-events:none}.left.peeking #pN{display:none}
 .chip[hidden]{display:none}
 .chips.peek .chip{opacity:.55;pointer-events:none}.chips.peek .chipmore{pointer-events:auto;opacity:1}
 /* peeking: the name field shows the peeked image's name, greyed and read-only */
@@ -419,6 +424,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
    Glass that holds glass of its own carries it on a ::before layer, not on itself: in Chromium an element with a
    backdrop-filter becomes the backdrop of its children, so glass inside glass could not blur what is really under it
    (the prompt under a pop-up, the text under the pills). ---- */
+body.glass .ltitle .peekbar{position:relative}
 body.glass .left,body.glass .rpanel.paneled,body.glass .mcard,body.glass .seg,body.glass .peekbar{background:transparent!important;isolation:isolate;border-color:rgba(255,255,255,.12)!important}
 body.glass .left::before,body.glass .rpanel.paneled::before,body.glass .mcard::before,body.glass .seg::before,body.glass .peekbar::before,body.glass .pill::before{
  content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none}
@@ -429,8 +435,8 @@ body.glass .pop,body.glass .toast,body.glass #tip{background:color-mix(in oklab,
  -webkit-backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);border-color:rgba(255,255,255,.14)!important;
  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 36px rgba(0,0,0,.4)}
 /* thick */
-body.glass .rpanel.paneled::before,body.glass .mcard::before{background:color-mix(in oklab,rgba(16,18,20,.5),var(--a1) 5%);
- -webkit-backdrop-filter:blur(34px) saturate(1.8) brightness(1.4);backdrop-filter:blur(34px) saturate(1.8) brightness(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+body.glass .rpanel.paneled::before,body.glass .mcard::before{background:color-mix(in oklab,rgba(16,18,20,.3),var(--a1) 5%);
+ -webkit-backdrop-filter:blur(22px) saturate(2) brightness(1.8);backdrop-filter:blur(22px) saturate(2) brightness(1.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
 body.glass .left,body.glass .rpanel.paneled,body.glass .mcard{box-shadow:0 18px 50px rgba(0,0,0,.35)}
 body.glass .seg .thumb{background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
 /* thin: controls (the pills carry theirs on ::before, so their pop-ups can blur the prompt too) */
@@ -450,13 +456,14 @@ body.glass .qi .x{background:transparent!important;box-shadow:none}
 body.glass .side button,body.glass .nav,body.glass .bclose,body.glass .vclose{background:rgba(20,22,24,.38)!important;-webkit-backdrop-filter:blur(18px) saturate(1.7);backdrop-filter:blur(18px) saturate(1.7);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.10)}
 /* thin rows inside thick panels */
-body.glass .qi{background:rgba(255,255,255,.055);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
-body.glass .qi:hover{background:rgba(255,255,255,.10)}
+body.glass .qi{background:color-mix(in oklab,rgba(12,14,14,.42),var(--a1) 4%);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+body.glass .qi:hover{background:color-mix(in oklab,rgba(40,44,44,.5),var(--a1) 6%)}
+body.glass .li{background:color-mix(in oklab,rgba(12,14,14,.3),var(--a1) 3%)}
 body.glass .li:hover{background:rgba(255,255,255,.06)}body.glass .li.on{background:rgba(255,255,255,.05)}
 body.glass .pout{background:rgba(0,0,0,.22)}body.glass .drop{border-color:rgba(255,255,255,.18)}
 body.glass .fg select option{background:#1d2120}
 /* Play: tinted glass — the theme gradient under a glossy sheen */
-body.glass .play{box-shadow:inset 0 1px 1px rgba(255,255,255,.55),inset 0 -6px 14px rgba(0,0,0,.18),0 6px 22px rgba(0,0,0,.35)}
+body.glass .play{box-shadow:inset 0 1px 1px rgba(255,255,255,.55),inset 0 -6px 14px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.22)}
 body.glass .play::after{content:"";position:absolute;inset:2px 7px auto 7px;height:46%;border-radius:999px;background:linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,0));pointer-events:none}
 
 /* the pill row floats over the bottom of the glass box: the prompt scrolls under it, fading and blurring (Liquid Glass's
@@ -467,3 +474,7 @@ body.glass .left .pwrapT .cm-editor{margin-bottom:0}
 body.glass .play{background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 58%,#0c100e),color-mix(in oklab,var(--a2) 48%,#0c100e) 55%,color-mix(in oklab,var(--a3) 42%,#0c100e))}
 body.glass .play svg path{fill:#effff4}
 body.glass .play:hover{filter:brightness(1.18) saturate(1.1)}
+/* nothing to show: the image area is regular glass, the code's light blurred behind it */
+body.glass .frame:not(.has){outline-color:rgba(255,255,255,.12)}
+body.glass .frame:not(.has)::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:color-mix(in oklab,rgba(18,20,22,.28),var(--a1) 6%);
+ -webkit-backdrop-filter:blur(26px) saturate(2.2) brightness(1.8);backdrop-filter:blur(26px) saturate(2.2) brightness(1.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}

@@ -34,7 +34,8 @@ function sameLoras(j){const on=LORAS.filter(l=>l.on),jl=j.loras||[];return on.le
 function peekButtons(){const j=peekJob;if(!j)return;const pSame=(j.raw||j.prompt||"").trim()===(draft||"").trim();
  const sSame=j.mp===S.mp&&j.ar===S.ar&&+j.steps===+S.steps&&sameLoras(j),seedSame=S.seedMode==="fixed"&&+S.seed===+j.seed;
  $("pkPrompt").style.display=pSame?"none":"";const all=$("pkAll");
- if(!pSame||!sSame){all.style.display="";all.textContent="Reuse all"}else if(!seedSame){all.style.display="";all.textContent="Use this seed"}else all.style.display="none";
+ const lbl=(lg,sm)=>`<span class="lg">${lg}</span><span class="sm">${sm}</span>`; // the short form shows when the box is narrow
+ if(!pSame||!sSame){all.style.display="";all.innerHTML=lbl("Reuse all","All")}else if(!seedSame){all.style.display="";all.innerHTML=lbl("Use this seed","Seed")}else all.style.display="none";
  $("peekLbl").textContent=`#${j.id}${j.status==="running"?" · generating":""}${pSame&&sSame&&seedSame?" · same as your draft":""}`}
 function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classList.add("peek");P.scrollTop=0;
  const n=$("pname");n.value=j.name||"";n.placeholder="Unnamed";n.readOnly=true;

@@ -209,7 +209,7 @@ function makeCodeBg(){let at=null,at2=null,key="",streams=[],fatT=0,acc=0,events
 /* the render screen while a job is young: an old phosphor monitor. It powers on with a single line that blooms open,
    one lone stream falls, then the cascade fills the screen — fine, bright, standing text written by bright heads.
    As the steps go on the code takes on your image's light and dark (it forms the picture), and the screen hands over to
-   the clean image. The pointer parts the rain like a lens. */
+   the clean image. */
 function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("2d"),ovl=document.createElement("canvas"),o=ovl.getContext("2d");
  const lumC=document.createElement("canvas"),lc=lumC.getContext("2d",{willReadFrequently:true});
  let at=null,key="",cols=[],nc=0,nr=0,cs=0,chh=0,glyph=null,hunt=null,acc=0,on=-1,lum=null,lumT=0,ow=0,oh=0,gl=null,glT=0;
@@ -257,8 +257,6 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
       if(gl){if(gl.type==="block"&&i>=gl.x0&&i<gl.x0+gl.w&&r>=gl.y0&&r<gl.y0+gl.h){glyph[n]=rnd();row=1;a=1}
        else if(gl.type==="tear"&&r>=gl.y0&&r<gl.y0+gl.h)dx=gl.dx}
       if(res>0&&lum){const L=lum[r*nc+i];a*=1-res+res*(.08+1.5*L*L)}           // the code takes on the image
-      if(st.px!=null){const ddx=x+cs/2-st.px,ddy=y+chh/2-st.py,dd=Math.hypot(ddx,ddy),R=110*d;
-       if(dd<R){const q=dd/R;a*=q*q*(3-2*q)}}                                    // around the pointer the characters go out: a lens
       if(a<.03)continue;s.globalAlpha=Math.min(1,a*fl);
       s.drawImage(at.a,glyph[n]*at.cw,row*at.ch,at.cw,at.ch,x-at.pad+dx,y-at.pad,at.cw,at.ch)
       if(r===hd){s.globalAlpha=Math.min(1,a*fl)*(.08+.42*Math.pow(.5+.5*Math.sin(t/520+i*1.7),2)); /* a pulsing head, not a double image */s.drawImage(at.a,glyph[n]*at.cw,at.ch,at.cw,at.ch,x-at.pad*1.7+dx-cs*.35,y-at.pad*1.7-chh*.35,at.cw*1.7,at.ch*1.7)}}} // its halo

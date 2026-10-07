@@ -72,12 +72,12 @@ function makeCodeBg(){let at=null,key="",streams=[],fatT=0,acc=0;
   ctx.save();ctx.imageSmoothingEnabled=true;
   for(let i=streams.length-1;i>=0;i--){const s=streams[i];s.y+=s.v*sp*dt/1000;const ch=s.s*1.18;
    if(s.y-ch*s.L>H){streams.splice(i,1);continue}
-   if(Math.random()<.05*dt/33){(s.hu||(s.hu=[]))[Math.random()*s.L|0]=t+250+Math.random()*550} // a glyph starts hunting
+   if(Math.random()<.015*dt/33){(s.hu||(s.hu=[]))[Math.random()*s.L|0]=t+700+Math.random()*1000} // now and then a glyph isn't sure
    for(let c=0;c<s.L;c++){const y=s.y-c*ch;if(y<-ch||y>H+ch)continue;
-    const hz=s.hu&&s.hu[c]>t;if(hz)s.g[c]=Math.random()*GLYPHS.length|0;
-    let a=s.a*dim*(c===0||hz?1.6:1-c/s.L*.75);
+    const hz=s.hu&&s.hu[c]>t;if(hz&&Math.random()<.12*dt/33)s.g[c]=Math.random()*GLYPHS.length|0;
+    let a=s.a*dim*(c===0?1.6:1-c/s.L*.75);
     if(wave!=null&&wave<1.2){const f=wave*(W+H)-(s.x+y);a*=1+1.6*Math.exp(-f*f/(2*Math.pow(140*d,2)))}
-    ctx.globalAlpha=Math.min(1,a);const row=c===0||hz?1:0,sc=s.s/24;
+    ctx.globalAlpha=Math.min(1,a);const row=c===0?1:0,sc=s.s/24;
     ctx.drawImage(at.a,s.g[c]*at.cw,row*at.ch,at.cw,at.ch,s.x-at.pad*sc,y-at.pad*sc,at.cw*sc,at.ch*sc)}}
   // where app text sits on the bare background (the name, the status line), the code fades out softly, like depth of field
   ctx.globalCompositeOperation="destination-out";
@@ -110,26 +110,26 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
   if(k<.45)gl={type:"block",until:t+180+Math.random()*220,x0:Math.random()*nc|0,y0:Math.random()*nr|0,w:2+Math.random()*6|0,h:3+Math.random()*7|0};
   else if(k<.8)gl={type:"tear",until:t+90+Math.random()*110,y0:Math.random()*nr|0,h:1+Math.random()*4|0,dx:(Math.random()<.5?-1:1)*(1+Math.random()*3|0)*cs};
   else gl={type:"drop",until:t+70+Math.random()*90,x0:Math.random()*nc|0,w:1+Math.random()*4|0}}
- return{powerOn(t){on=t;cols.forEach(c=>Object.assign(c,newCol(true)));lum=null;gl=null;glT=t+2500+Math.random()*3000},
+ return{powerOn(t){on=t;cols.forEach(c=>Object.assign(c,newCol(true)));lum=null;gl=null;glT=t+4000+Math.random()*5000},
   draw(ctx,W,H,t,dt,d,c3,st){const k=W+"x"+H+c3[0];if(k!==key){key=k;layout(W,H,d,c3)}overlay(W,H,d);
    if(on<0){on=t;glT=t+2500}const age=t-on;
    if(t-lumT>500){lumT=t;try{sample(st.src)}catch(e){}}
    acc+=dt;if(acc>=33){const step=Math.min(.1,acc/1000);acc=0;              // the code moves at ~30 fps
     const lone=age<1400,res=st.resolve;
-    if(t>glT&&age>2000&&!st.reduce){glitch(t);glT=t+3000+Math.random()*6000}
+    if(t>glT&&age>2000&&!st.reduce){glitch(t);glT=t+6000+Math.random()*8000}
     if(gl&&t>gl.until)gl=null;
     for(let i=0;i<nc;i++){const c=cols[i];
      if(c.h<-1e8){const start=lone?(i===Math.floor(nc*.38)?0:null):Math.random()<(.05+res*.4)*(age<3000?.6:1)?0:null; // one lone stream first, then the cascade
       if(start===null)continue;c.h=-Math.random()*3}
      c.h+=c.v*step;const hd=Math.floor(c.h);
-     if(hd!==c.last&&hd>=0&&hd<nr){c.last=hd;const n=i*nr+hd;glyph[n]=rnd();if(Math.random()<.6)hunt[n]=t+120+Math.random()*480} // a fresh cell hunts for its glyph
+     if(hd!==c.last&&hd>=0&&hd<nr){c.last=hd;const n=i*nr+hd;glyph[n]=rnd();if(Math.random()<.25)hunt[n]=t+600+Math.random()*1000} // now and then a fresh cell isn't sure yet
      if(c.h-c.L>nr){Object.assign(c,newCol(false));c.L=Math.round(nr*(.35+Math.random()*.7+res*.6))}}
-    for(let q=Math.round(nc*.03);q>0;q--){const n=Math.random()*nc*nr|0;if(hunt[n]<t)hunt[n]=t+200+Math.random()*500} // now and then a standing one doubts itself
+    for(let q=Math.round(nc*.008);q>0;q--){const n=Math.random()*nc*nr|0;if(hunt[n]<t)hunt[n]=t+700+Math.random()*900} // rarely, a standing one doubts itself
     s.clearRect(0,0,W,H);const fl=.94+.06*Math.random();                      // flicker
     for(let i=0;i<nc;i++){const c=cols[i];if(c.h<0)continue;const top=Math.max(0,Math.floor(c.h-c.L)),hd=Math.min(nr-1,Math.floor(c.h));
      const drop=gl&&gl.type==="drop"&&i>=gl.x0&&i<gl.x0+gl.w;if(drop)continue;
      for(let r=top;r<=hd;r++){const n=i*nr+r,x=i*cs,y=r*chh;let a=r===hd?1:.42+.5*Math.pow(1-(hd-r)/c.L,.6),row=r===hd?1:0;
-      const hunting=hunt[n]>t;if(hunting){glyph[n]=rnd();row=1;a=Math.max(a,.75)}           // still deciding: flickers through glyphs, whiter
+      const hunting=hunt[n]>t;if(hunting&&Math.random()<.12)glyph[n]=rnd();                // still deciding: changes every ~¼–½ s, calmly
       let dx=0;
       if(gl){if(gl.type==="block"&&i>=gl.x0&&i<gl.x0+gl.w&&r>=gl.y0&&r<gl.y0+gl.h){glyph[n]=rnd();row=1;a=1}
        else if(gl.type==="tear"&&r>=gl.y0&&r<gl.y0+gl.h)dx=gl.dx}

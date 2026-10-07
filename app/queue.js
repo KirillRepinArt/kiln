@@ -35,10 +35,10 @@ function peekButtons(){const j=peekJob;if(!j)return;const pSame=(j.raw||j.prompt
  const sSame=j.mp===S.mp&&j.ar===S.ar&&+j.steps===+S.steps&&sameLoras(j),seedSame=S.seedMode==="fixed"&&+S.seed===+j.seed;
  $("pkPrompt").style.display=pSame?"none":"";const all=$("pkAll");
  if(!pSame||!sSame){all.style.display="";all.textContent="Reuse all"}else if(!seedSame){all.style.display="";all.textContent="Use this seed"}else all.style.display="none";
- $("peekLbl").textContent=`#${j.id}${j.status==="running"?" · generating":""} · ${j.ar} · ${j.steps} steps${pSame&&sSame&&seedSame?" · same as your draft":""}`}
+ $("peekLbl").textContent=`#${j.id}${j.status==="running"?" · generating":""}${pSame&&sSame&&seedSame?" · same as your draft":""}`}
 function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classList.add("peek");P.scrollTop=0;
  const n=$("pname");n.value=j.name||"";n.placeholder="Unnamed";n.readOnly=true;
- peekButtons();$("peekbar").classList.add("show");renderChips();updPrompt();layoutLeft()}
+ peekButtons();$("peekbar").classList.add("show");$("left").classList.add("peeking");renderChips();renderPills();updPrompt();layoutLeft()}
 /* Two ways out of a browse: the prompt's ✕ (or Esc in the editor) closes only the prompt — your draft comes back, the
    image stays, and the arrows keep the prompt closed (peekOff) until the browse ends; the image's ✕ (or Esc elsewhere)
    closes both and returns to the live view. */
@@ -47,7 +47,7 @@ function closePromptPeek(){if(browseId!=null){peekOff=true;endPeek(true)}else en
 function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){browseId=null;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}}
  if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
  const n=$("pname");n.value=S.pname||"";n.placeholder="Add name";n.readOnly=false;
- $("peekbar").classList.remove("show");renderChips();updPrompt();layoutLeft()}
+ $("peekbar").classList.remove("show");$("left").classList.remove("peeking");renderChips();renderPills();updPrompt();layoutLeft()}
 function reuse(all){const j=peekJob;if(!j)return;const prev={draft,S:{mp:S.mp,ar:S.ar,steps:S.steps,seedMode:S.seedMode,seed:S.seed},loras:LORAS.map(l=>({on:l.on,w:l.w}))};
  draft=j.raw||j.prompt;if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps,seedMode:"fixed",seed:j.seed});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}
  endPeek();save();renderAll();P.focus();

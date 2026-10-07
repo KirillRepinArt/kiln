@@ -21,7 +21,7 @@ function applyMode(){const a=document.querySelector(".app"),was=a.classList.cont
   const L=$("left"),T=$("ltitle");L.classList.add("nodur");T.classList.add("nodur");lyFrozen=false;lyTop=null;lyCy=null;
   sizeFrame();layoutLeft();moveThumb(true);requestAnimationFrame(()=>{sizeFrame();layoutLeft();requestAnimationFrame(()=>{L.classList.remove("nodur");T.classList.remove("nodur")})})}}
 function cardMinH(){const L=$("left");return L.offsetHeight-L.querySelector(".pwrapT").offsetHeight+84}
-function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol");const TS=$("peekbar").classList.contains("show")?108:64;col.style.setProperty("--ts",TS+"px");
+function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol");const TS=64; // the name row never changes height (the Reuse bar sits in the controls row)col.style.setProperty("--ts",TS+"px");
  const stk=!!document.querySelector(".app.stacked"),hm=S.hmode==="full"||(S.hmode==="match"&&!stk)?S.hmode:"";L.classList.toggle("hm",!!hm);$("ltitle").classList.toggle("hm",!!hm);
  if(stk){let H;lyTop=0;
   if(hm==="full")H=Math.round(innerHeight*.7);
@@ -73,3 +73,5 @@ updHm();
  // the empty space under the text belongs to the editor: a click there puts the cursor at the end
  document.querySelector(".pwrapT").addEventListener("mousedown",e=>{if(!e.target.classList.contains("pwrapT"))return;e.preventDefault();P.focus();
   if(window.__cm){const v=window.__cm;v.dispatch({selection:{anchor:v.state.doc.length}})}})})();
+// glass mode floats the controls row over the prompt: the text needs that much room to scroll clear of it
+new ResizeObserver(()=>{$("left").style.setProperty("--ctrlh",$("left").querySelector(".controls").offsetHeight+"px");layoutLeft()}).observe(document.querySelector("#left .controls"));

@@ -363,14 +363,15 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .ltitle .plbl.hasname .pname{padding:2px 6px;margin-left:0}
 .ltitle .pnx{opacity:0;transition:opacity .15s}.ltitle:hover .plbl.hasname .pnx{opacity:1}
 .ltitle .plbl.dimname .pname{color:#9a9aa2}
-.ltitle .peekbar{position:static;margin-top:8px;box-shadow:none;max-width:100%}
-.ltitle .peekbar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* looking at an old prompt: the Reuse bar stands where Play is, the pills show that job's settings, greyed */
+.controls .peekbar{position:static;order:2;box-shadow:none;margin-left:auto;flex:none}
+.left.peeking .play{display:none}.left.peeking .pills{opacity:.5;pointer-events:none;flex-wrap:nowrap;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}.left.peeking #pN{display:none}
 .chip[hidden]{display:none}
 .chips.peek .chip{opacity:.55;pointer-events:none}.chips.peek .chipmore{pointer-events:auto;opacity:1}
 /* peeking: the name field shows the peeked image's name, greyed and read-only */
 .ltitle .plbl.peekname .pname{color:#77777e!important}.plbl.peekname .pnx{display:none!important}
 /* height modes: match the image block / full column (icons at the right of the name row) */
-.hmodes{position:absolute;right:12px;top:10px;display:flex;gap:2px;padding:2px;border-radius:10px;background:var(--panel);z-index:4;opacity:0;transition:opacity .15s}
+.hmodes{position:absolute;right:22px;bottom:6px;display:flex;gap:4px;z-index:4;opacity:0;transition:opacity .15s}
 #lcol:hover .hmodes,.hmodes.on{opacity:1}
 .hmodes button{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
 .hmodes button:hover{background:var(--raised2);color:#fff}.hmodes button.on{background:#f2f2f2;color:#111}
@@ -433,8 +434,13 @@ body.glass .qi,body.glass .search{background:rgba(255,255,255,.06)}
 body.glass .qi:hover{background:rgba(255,255,255,.10)}
 body.glass .pout{background:rgba(0,0,0,.25)}
 /* the prompt box is real glass: clearly see-through, but blurred so hard that anything behind it is only moving light */
-body.glass .left{background:color-mix(in oklab,rgba(18,20,22,.34),var(--a1) 6%)!important;-webkit-backdrop-filter:blur(42px) saturate(1.7) brightness(.9);backdrop-filter:blur(42px) saturate(1.7) brightness(.9);
+body.glass .left{background:color-mix(in oklab,rgba(18,20,22,.26),var(--a1) 6%)!important;-webkit-backdrop-filter:blur(26px) saturate(2.2) brightness(1.9);backdrop-filter:blur(26px) saturate(2.2) brightness(1.9);
  border-color:rgba(255,255,255,.13)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03),0 18px 50px rgba(0,0,0,.35)}
 /* its controls are glass capsules sitting on it, always visible; hover brightens */
-body.glass .pill{background:color-mix(in oklab,rgba(255,255,255,.07),var(--a1) 10%);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(255,255,255,.07)}
+body.glass .pill{background:color-mix(in oklab,rgba(255,255,255,.07),var(--a1) 10%);-webkit-backdrop-filter:blur(8px) saturate(1.6);backdrop-filter:blur(8px) saturate(1.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(255,255,255,.07)}
 body.glass .pill:hover,body.glass .pill.open{background:color-mix(in oklab,rgba(255,255,255,.14),var(--a1) 12%)!important}
+/* the pill row floats over the bottom of the glass box: the prompt scrolls under it, fading and blurring (Liquid Glass's
+   scroll-edge effect); the last line can always scroll clear of it */
+body.glass .left .controls{position:absolute;left:0;right:0;bottom:0;z-index:2}
+body.glass .left .pwrapT .cm-scroller{padding-bottom:calc(var(--ctrlh,64px) - 6px);-webkit-mask-image:linear-gradient(#000 calc(100% - var(--ctrlh,64px) - 14px),rgba(0,0,0,.35) calc(100% - 22px));mask-image:linear-gradient(#000 calc(100% - var(--ctrlh,64px) - 14px),rgba(0,0,0,.35) calc(100% - 22px))}
+body.glass .left .pwrapT .cm-editor{margin-bottom:0}

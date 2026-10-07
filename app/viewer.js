@@ -26,6 +26,8 @@ function openInApp(j){toast(`Prototype: would open ${j.file||("#"+j.id+".png")} 
   el.addEventListener("dblclick",e=>{if(e.target.closest(".side,.nav,.bclose"))return;const j=getJob();if(!j||j.status!=="done")return;clearTimeout(t);openInApp(j)})}
  bind($("frame"),()=>current()&&!browsed()?null:shownDone())})();
 setInterval(()=>{$("frame").classList.toggle("clickable",(!current()||!!browsed())&&!!shownDone());const br=!!browsed(),cl=!br&&!current()&&!!shownDone();$("frame").classList.toggle("browsing",br);$("frame").classList.toggle("clearable",cl);
- $("bclose").dataset.tip=br?"Back to the live view (Esc)":"Clear the image — ← brings it back";updNav()},300);
+ $("bclose").dataset.tip=br&&current()?"Back to the render (Esc)":"Close the image (Esc) — ← brings it back";updNav()},300);
 // browsing: back to the live view; otherwise: clear the finished image (same as changing size or ratio does)
-$("bclose").onclick=e=>{e.stopPropagation();if(browsed()){endPeek();return}staleIf(true);sizeFrame()};
+/* ✕ closes the image: idle -> the empty Ready screen (← brings it back); while generating -> back to the render */
+function closeShown(){if(browsed()){endPeek();if(current())return}staleIf(true);sizeFrame()}
+$("bclose").onclick=e=>{e.stopPropagation();closeShown()};

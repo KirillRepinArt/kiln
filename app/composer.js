@@ -8,8 +8,10 @@ function idleText(){const [w,h]=SIZES[S.mp][S.ar];const had=jobs.some(j=>j.statu
  $("idleT").textContent=had?`Next: ${S.ar} · ${w}×${h}`:"Queue is empty";
  $("idleS").textContent=had?"Your last image is in Queue → Finished":"Write a prompt and press ▶ (Ctrl+Enter)"}
 function renderPills(){idleText();
- $("vMP").textContent=S.mp+" MP";$("vAR").innerHTML=S.ar+'<span class="w"> Ratio</span>';$("vST").innerHTML=S.steps+'<span class="w"> Steps</span>';
- $("vSD").textContent=S.seedMode==="random"?"Random":"Fixed";$("vN").textContent="×"+S.n;
+ const pk=typeof peekJob!=="undefined"&&peekJob; // peeking: the pills show that job's own settings
+ const v=pk?{mp:pk.mp,ar:pk.ar,steps:pk.steps,seed:pk.seed!=null?String(pk.seed):"—",n:1}:{mp:S.mp,ar:S.ar,steps:S.steps,seed:S.seedMode==="random"?"Random":"Fixed",n:S.n};
+ $("vMP").textContent=v.mp+" MP";$("vAR").innerHTML=v.ar+'<span class="w"> Ratio</span>';$("vST").innerHTML=v.steps+'<span class="w"> Steps</span>';
+ $("vSD").textContent=v.seed;$("vN").textContent="×"+v.n;
  $("popMP").innerHTML=["1.0","1.5","2.0"].map(m=>`<div class="opt ${m===S.mp?"on":""}" data-v="${m}">${m} MP <small>~${SEC_PER_STEP[m]}s/step</small></div>`).join("");
  $("popAR").innerHTML=`<div class="rgrid">${RATIOS.map(r=>{const [a,b]=r.split(":").map(Number);const k=34/Math.max(a,b);const [w,h]=SIZES[S.mp][r];
    return `<div class="rt ${r===S.ar?"on":""}" data-v="${r}"><div class="shape" style="width:${Math.round(a*k)}px;height:${Math.round(b*k)}px"></div><div class="t">${r}</div><div class="px">${w}×${h}</div></div>`}).join("")}</div>`;

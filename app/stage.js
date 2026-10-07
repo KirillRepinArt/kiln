@@ -83,7 +83,7 @@ $("play").onclick=()=>{askNotify();addJobs()};
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();addJobs()}
  if(e.key==="Escape"){if($("viewer").classList.contains("show")){closeViewer();return}
   if($("modal").classList.contains("show")){$("modal").classList.remove("show");return}
-  if(browseId!=null&&!(e.target.closest&&e.target.closest(".pwrapT"))){endPeek();return} // Esc outside the editor leaves the browse
+  if(browseId!=null&&!(e.target.closest&&e.target.closest(".pwrapT"))){closeShown();return} // Esc outside the editor = the image's ✕
   closePops()}});
 function tick(){if(current())return;const j=jobs.find(j=>j.status==="pending");if(!j){renderAll();return}
  j.status="running";j.started=Date.now();j.step=0;j.stepStart=Date.now();const est=SEC_PER_STEP[j.mp]*1000/S.demo;j.est=est;const r=rng(j.seed^0x9e37);

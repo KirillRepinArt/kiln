@@ -71,6 +71,10 @@ function makeCodeBg(){let at=null,key="",streams=[],fatT=0,acc=0;
   const wave=st.wave?(t-st.wave)/1300:null;
   ctx.save();ctx.imageSmoothingEnabled=true;
   for(let i=streams.length-1;i>=0;i--){const s=streams[i];s.y+=s.v*sp*dt/1000;const ch=s.s*1.18;
+   // near the pointer a column eases a little to the side, and drifts back when it leaves
+   let tgt=0;if(st.ptr){const dx=s.x-st.ptr.x,R=190*d;if(Math.abs(dx)<R&&st.ptr.y>s.y-ch*s.L-R&&st.ptr.y<s.y+R)tgt=Math.sign(dx||1)*(R-Math.abs(dx))/R*34*d}
+   s.ox=(s.ox||0)+(tgt-(s.ox||0))*Math.min(1,dt/900);const X=s.x+s.ox;
+   if(Math.random()<.4)s.g[0]=Math.random()*GLYPHS.length|0; // the head is a comet
    if(s.y-ch*s.L>H){streams.splice(i,1);continue}
    if(Math.random()<.015*dt/33){(s.hu||(s.hu=[]))[Math.random()*s.L|0]=t+700+Math.random()*1000} // now and then a glyph isn't sure
    for(let c=0;c<s.L;c++){const y=s.y-c*ch;if(y<-ch||y>H+ch)continue;
@@ -78,7 +82,8 @@ function makeCodeBg(){let at=null,key="",streams=[],fatT=0,acc=0;
     let a=s.a*dim*(c===0?1.6:1-c/s.L*.75);
     if(wave!=null&&wave<1.2){const f=wave*(W+H)-(s.x+y);a*=1+1.6*Math.exp(-f*f/(2*Math.pow(140*d,2)))}
     ctx.globalAlpha=Math.min(1,a);const row=c===0?1:0,sc=s.s/24;
-    ctx.drawImage(at.a,s.g[c]*at.cw,row*at.ch,at.cw,at.ch,s.x-at.pad*sc,y-at.pad*sc,at.cw*sc,at.ch*sc)}}
+    ctx.drawImage(at.a,s.g[c]*at.cw,row*at.ch,at.cw,at.ch,X-at.pad*sc,y-at.pad*sc,at.cw*sc,at.ch*sc)
+    if(c===0){ctx.globalAlpha=Math.min(1,a)*.35;ctx.drawImage(at.a,s.g[0]*at.cw,at.ch,at.cw,at.ch,X-at.pad*sc*1.7-s.s*.35,y-at.pad*sc*1.7-ch*.35,at.cw*sc*1.7,at.ch*sc*1.7)}}}
   // where app text sits on the bare background (the name, the status line), the code fades out softly, like depth of field
   ctx.globalCompositeOperation="destination-out";
   for(const h of st.holes||[])for(let k=0;k<6;k++){const e=(6-k)*7*d;ctx.globalAlpha=k===5?.9:.16;
@@ -130,6 +135,7 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
      const drop=gl&&gl.type==="drop"&&i>=gl.x0&&i<gl.x0+gl.w;if(drop)continue;
      for(let r=top;r<=hd;r++){const n=i*nr+r,x=i*cs,y=r*chh;let a=r===hd?1:.42+.5*Math.pow(1-(hd-r)/c.L,.6),row=r===hd?1:0;
       const hunting=hunt[n]>t;if(hunting&&Math.random()<.12)glyph[n]=rnd();                // still deciding: changes every ~¼–½ s, calmly
+      if(r===hd&&Math.random()<.45)glyph[n]=rnd();                                         // the head never settles: a comet
       let dx=0;
       if(gl){if(gl.type==="block"&&i>=gl.x0&&i<gl.x0+gl.w&&r>=gl.y0&&r<gl.y0+gl.h){glyph[n]=rnd();row=1;a=1}
        else if(gl.type==="tear"&&r>=gl.y0&&r<gl.y0+gl.h)dx=gl.dx}
@@ -137,7 +143,8 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
       if(st.px!=null){const ddx=x+cs/2-st.px,ddy=y+chh/2-st.py,dd=Math.hypot(ddx,ddy),R=110*d;
        if(dd<R){const q=dd/R;a*=q*q;dx+=ddx/(dd||1)*(R-dd)*.35}}               // the pointer parts the rain
       if(a<.03)continue;s.globalAlpha=Math.min(1,a*fl);
-      s.drawImage(at.a,glyph[n]*at.cw,row*at.ch,at.cw,at.ch,x-at.pad+dx,y-at.pad,at.cw,at.ch)}}
+      s.drawImage(at.a,glyph[n]*at.cw,row*at.ch,at.cw,at.ch,x-at.pad+dx,y-at.pad,at.cw,at.ch)
+      if(r===hd){s.globalAlpha=Math.min(1,a*fl)*.35;s.drawImage(at.a,glyph[n]*at.cw,at.ch,at.cw,at.ch,x-at.pad*1.7+dx-cs*.35,y-at.pad*1.7-chh*.35,at.cw*1.7,at.ch*1.7)}}} // its halo
     s.globalAlpha=1}
    const str=st.str;
    ctx.save();

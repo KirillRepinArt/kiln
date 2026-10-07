@@ -3,7 +3,7 @@
    screen. The other themes keep the starfield and the light bands. Everything is cheap on purpose (the GPU is busy
    generating): pre-drawn glyphs and patterns, low resolution where softness is the look, ~30 fps. */
 const SKINS={ice:{bg:"stars",cover:"bands"},sunset:{bg:"stars",cover:"bands"},ember:{bg:"stars",cover:"bands"},
- aurora:{bg:"aurora",cover:"aurora"},emerald:{bg:"code",cover:"crt",font:"IBM Plex Mono",title:"Courier Prime"}};
+ aurora:{bg:"aurora",cover:"camera"},emerald:{bg:"code",cover:"crt",font:"IBM Plex Mono",title:"Courier Prime"}};
 function skin(){return SKINS[S.theme]||SKINS.ice}
 function toHex(c){if(/^#[0-9a-f]{6}$/i.test(c))return c;const d=document.createElement("canvas").getContext("2d");d.fillStyle=c;return d.fillStyle}
 function rgba(hex,a){const n=parseInt(toHex(hex).slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`}
@@ -26,26 +26,59 @@ function harmonics(hex){const[L,C,h]=hex2oklch(hex),f=(dh,cm=1,l=L)=>oklch2hex(l
  return{an:f(toBlue(32)),comp:f(180,.9),tri1:f(120),tri2:f(240),cool:mixHex("#9fb6cc",hex,.2)}} // cool: a cold steel with a fifth of the theme in it — cold for every theme
 function themeCols(){const cs=getComputedStyle(document.documentElement);return ["--a1","--a2","--a3"].map(k=>toHex(cs.getPropertyValue(k).trim()||"#ffffff"))}
 
-/* northern lights: a few curtains, each a row of thin vertical strokes — bright lower edge (a1), fading up through a2
-   into a3. The curtains sway and their rays shimmer; everything drifts slowly to the right. */
-function makeAurora(){const off=document.createElement("canvas"),o=off.getContext("2d");let strip=null,key="";
- function mkStrip(c){const s=document.createElement("canvas");s.width=1;s.height=160;const g=s.getContext("2d"),gr=g.createLinearGradient(0,0,0,160);
-  gr.addColorStop(0,rgba(c[2],0));gr.addColorStop(.3,rgba(c[2],.18));gr.addColorStop(.6,rgba(c[1],.42));gr.addColorStop(.82,rgba(c[0],.85));gr.addColorStop(.88,rgba("#eafff6",.75));gr.addColorStop(.93,rgba(c[0],.35));gr.addColorStop(1,rgba(c[0],0));
-  g.fillStyle=gr;g.fillRect(0,0,1,160);return s}
+/* northern lights, after real photos: the base of a curtain is a soft-edged bright green (the oxygen line), rays rise from it
+   as pillars of very different height and fade up through mint into magenta; a soft green glow sits behind; a slow ripple
+   travels along the curtain. Drawn at 1/6 size and scaled up — the scaling is the softness. */
+function makeAurora(){const off=document.createElement("canvas"),o=off.getContext("2d");let ray=null,glow=null,key="";
+ function strips(c){const r=document.createElement("canvas");r.width=1;r.height=256;let g=r.getContext("2d"),gr=g.createLinearGradient(0,0,0,256);
+  gr.addColorStop(0,rgba(c[2],0));gr.addColorStop(.22,rgba(c[2],.12));gr.addColorStop(.45,rgba(c[1],.22));gr.addColorStop(.72,rgba(c[0],.62));
+  gr.addColorStop(.86,rgba(c[0],.95));gr.addColorStop(.9,rgba(mixHex(c[0],"#ffffff",.35),.9));gr.addColorStop(.95,rgba(c[0],.4));gr.addColorStop(1,rgba(c[0],0));
+  g.fillStyle=gr;g.fillRect(0,0,1,256);
+  const w=document.createElement("canvas");w.width=1;w.height=128;g=w.getContext("2d");gr=g.createLinearGradient(0,0,0,128);
+  gr.addColorStop(0,rgba(c[0],0));gr.addColorStop(.55,rgba(c[0],.5));gr.addColorStop(1,rgba(c[0],0));g.fillStyle=gr;g.fillRect(0,0,1,128);return[r,w]}
  return{draw(ctx,W,H,T,cols,op){const sc=op.scale||6,w=Math.max(40,Math.round(W/sc)),h=Math.max(30,Math.round(H/sc));
   if(off.width!==w||off.height!==h){off.width=w;off.height=h}
-  const k=cols.join();if(k!==key){strip=mkStrip(cols);key=k}
-  o.clearRect(0,0,w,h);o.globalCompositeOperation="lighter";const N=op.ribbons||3;
-  for(let r=0;r<N;r++){const ph=r*2.3+.7,base=h*(op.top+op.band*(N>1?r/(N-1):0)),amp=h*.06,len=h*(op.len||.3)*(1-.12*r);
+  const k=cols.join();if(k!==key){[ray,glow]=strips(cols);key=k}
+  o.clearRect(0,0,w,h);o.globalCompositeOperation="lighter";const N=op.curtains||2;
+  for(let r=0;r<N;r++){const ph=r*2.7+.9,depth=1-.3*r,base=h*(op.top+(op.spread||.08)*r),amp=h*.085*depth,len=h*(op.len||.32)*depth;
    for(let x=0;x<w;x++){const u=x/w;
-    const y=base+Math.sin(u*5.2-T*.12+ph)*amp+Math.sin(u*12.5-T*.07+ph*1.7)*amp*.4;
-    const ray=Math.pow(.5+.5*Math.sin(u*46-T*.55+ph*3)*Math.sin(u*19-T*.21+ph),1.6)*(.55+.45*Math.sin(u*3.1-T*.05+ph*2)); // shimmering rays, brighter and darker stretches
-    const s=u*1.15-.08+.12*Math.sin(T*.04+r*1.9),env=s<=0||s>=1?0:Math.sin(Math.PI*s); // fades out at the ends
-    const a=ray*env*(.75-.14*r);if(a<.02)continue;
-    const hh=len*(.7+.3*Math.sin(u*7-T*.09+ph));o.globalAlpha=a;o.drawImage(strip,x,y-hh,1.7,hh)}}
+    const y=base+Math.sin(u*3.4-T*.08+ph)*amp+Math.sin(u*9.5-T*.05+ph*1.7)*amp*.35;          // the curtain's lower edge swings slowly
+    const pillar=Math.pow(.5+.5*Math.sin(u*31-T*.22+ph*3),3)*.75+Math.pow(.5+.5*Math.sin(u*13+T*.09+ph),2)*.45; // pillars of light
+    const ripple=.65+.35*Math.sin(u*22-T*.9+ph);                                            // a travelling ripple
+    const s=u*1.15-.07+.1*Math.sin(T*.03+r*1.9),env=s<=0||s>=1?0:Math.pow(Math.sin(Math.PI*s),.7); // fades out at the ends
+    const gl=env*depth*(.16+.1*Math.sin(u*4.1-T*.04+ph))*(op.gain||1);                       // the glow behind: continuous, on every column
+    if(gl>.005){o.globalAlpha=Math.min(1,gl);o.drawImage(glow,x,y-len*.55,1.8,len*.75)}
+    const a=Math.min(1,pillar*ripple*env*depth*(op.gain||1));if(a<.01)continue;
+    const hh=len*(.45+.9*Math.pow(.5+.5*Math.sin(u*6.3-T*.06+ph*2.1),1.5));                 // rays of very different height
+    o.globalAlpha=a*.85;o.drawImage(ray,x,y-hh,1.8,hh*1.06)}}
   o.globalAlpha=1;o.globalCompositeOperation="source-over";
   ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.globalAlpha=op.alpha;ctx.globalCompositeOperation=op.blend||"source-over";
   ctx.drawImage(off,0,0,W,H);ctx.restore()}}}
+
+/* the render screen of Aurora: a long exposure of the night sky. The aurora in the upper sky, star trails that lengthen
+   as the exposure runs, live film grain, and a small camera readout counting the job's real time; the image develops out
+   of the dark as the steps go on. */
+function makeCamera(){const aur=makeAurora(),grain=document.createElement("canvas"),gg=grain.getContext("2d");let stars=[],sk="",pat=null;
+ grain.width=grain.height=160;const id=gg.createImageData(160,160);
+ for(let i=0;i<id.data.length;i+=4){const v=Math.random()*255|0;id.data[i]=id.data[i+1]=id.data[i+2]=v;id.data[i+3]=255}gg.putImageData(id,0,0);
+ return{reset(){sk=""},
+  draw(ctx,W,H,t,d,cols,st){const k=W+"x"+H;if(k!==sk){sk=k;const px=-W*.15,py=-H*.3;stars=[];
+    for(let i=0;i<170;i++){const x=Math.random()*W,y=Math.random()*H*.85,dx=x-px,dy=y-py;stars.push({r:Math.hypot(dx,dy),a:Math.atan2(dy,dx),b:.15+Math.pow(Math.random(),3)*.85,px,py})}}
+   const str=st.str,age=Math.max(0,st.age||0);
+   ctx.save();
+   aur.draw(ctx,W,H,t/1000,cols,{scale:5,top:.42,len:.36,curtains:2,spread:.07,alpha:Math.min(1,str*1.1),blend:"lighter",gain:1.2});
+   // star trails: arcs around a pole off the top-left, longer the longer the exposure has run
+   const span=Math.min(.42,.004+age*.0026);ctx.globalCompositeOperation="lighter";ctx.lineCap="round";
+   for(const s of stars){ctx.globalAlpha=s.b*.55*str;ctx.strokeStyle="#dfe9ff";ctx.lineWidth=(.6+s.b*.9)*d;ctx.beginPath();ctx.arc(s.px,s.py,s.r,s.a,s.a+span);ctx.stroke()}
+   // live film grain
+   ctx.globalCompositeOperation="overlay";ctx.globalAlpha=.22*str;if(!pat)pat=ctx.createPattern(grain,"repeat");
+   ctx.translate(Math.random()*160|0,Math.random()*160|0);ctx.fillStyle=pat;ctx.fillRect(-160,-160,W+320,H+320);ctx.setTransform(1,0,0,1,0,0);
+   // the camera readout
+   ctx.globalCompositeOperation="source-over";const fs=Math.round(11*d),m=Math.round(14*d),mm=String(Math.floor(age/60)).padStart(2,"0"),ss=String(Math.floor(age%60)).padStart(2,"0");
+   ctx.font=`500 ${fs}px "IBM Plex Mono",ui-monospace,monospace`;ctx.textBaseline="bottom";
+   ctx.globalAlpha=str*(.55+.45*(Math.sin(t/420)>0?1:0));ctx.fillStyle="#ff5a4e";ctx.beginPath();ctx.arc(m+fs*.35,H-m-fs*.42,fs*.3,0,6.283);ctx.fill(); // the recording dot blinks
+   ctx.globalAlpha=str*.62;ctx.fillStyle="#e8f0ec";ctx.fillText(`EXP ${mm}:${ss}  ·  ƒ/1.4  ·  ISO 6400`,m+fs*1.1,H-m);
+   ctx.restore()}}}
 
 /* ---------- Code (Emerald): our own glyphs, a cold sparse background, a CRT render screen ----------
    Inspired by the film's rain, not copied: the glyphs are drawn here from straight strokes on a 4×6 grid

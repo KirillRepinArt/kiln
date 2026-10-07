@@ -1,6 +1,6 @@
 /* Kiln · settings, themes */
 /* ======================= settings / themes ======================= */
-const THEMES={ice:["#FF8A00","#FF5E8A","#3FE0F0","#140b00"],sunset:["#FFB020","#FF3D7F","#8B5CF6","#16060d"],aurora:["#2DD4BF","#38BDF8","#A78BFA","#04201c"],ember:["#E8361C","#FF8A00","#FFD166","#1a0500"],emerald:["#00E676","#76FF03","#B9F6CA","#00140a"]};
+const THEMES={ice:["#FF8A00","#FF5E8A","#3FE0F0","#140b00"],sunset:["#FFB020","#FF3D7F","#8B5CF6","#16060d"],aurora:["#3CF29F","#86F0DD","#C46BFF","#03140e"],ember:["#E8361C","#FF8A00","#FFD166","#1a0500"],emerald:["#00E676","#76FF03","#B9F6CA","#00140a"]};
 function applyTheme(){const t=THEMES[S.theme]||THEMES.ice;const r=document.documentElement.style;["--a1","--a2","--a3","--ink"].forEach((k,i)=>r.setProperty(k,t[i]));
  const hm=harmonics(t[0]);window.HARM=hm;for(const k in hm)r.setProperty("--"+k,hm[k]);
  [...document.body.classList].filter(c=>c.startsWith("skin-")).forEach(c=>document.body.classList.remove(c));document.body.classList.add("skin-"+(S.theme||"ice"));

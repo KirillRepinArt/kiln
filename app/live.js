@@ -37,6 +37,7 @@
   jobs=s.jobs.map(x=>{const u=toUI(x),o=prev.get(u.id);if(o&&o.status==="running"&&u.status==="running"){u._ss=o._ss;u._lastStep=o._lastStep}return u});
   for(const j of jobs){if(j.status==="done"&&!seen.has(j.id)){seen.add(j.id);neKey="";if(!firstPoll){justDone=j.id;resultStale=false;onJobDone(j)}}
    if(j.status==="error"&&!seen.has("e"+j.id)){seen.add("e"+j.id);if(!firstPoll)toast(`Job #${j.id} failed: ${j.error||"error"}`)}}
+  if(firstPoll){const d=lastDone();if(d&&S.clearedId===d.id)resultStale=true;window._jobsReady=true} // you had closed the image last time
   firstPoll=false;
   if(peekJob)peekJob=jobs.find(j=>j.id===peekJob.id)||peekJob;
   const ns=jobs.map(j=>`${j.id}:${j.status}:${j.file}`).join("|");

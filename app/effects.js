@@ -26,7 +26,8 @@
     if(st.x>W+4)st.x-=W+8;if(st.y>H+4)st.y-=H+8;
     const tw=reduce?.8:.55+.45*Math.sin(t/1000*st.s+st.p);c.globalAlpha=(.25+st.l*.25)*tw*.62*dim;
     c.fillStyle=st.l===2?"#fff":"#cfd6ff";c.beginPath();c.arc(st.x,st.y,st.r,0,6.283);c.fill()}
-   if(bg==="aurora")aur.draw(c,W,H,reduce?0:t/1000,bcols,{scale:6,top:.1,band:.2,len:.3,ribbons:3,alpha:.32,blend:"lighter"});
+   if(bg==="aurora"){const wv=window._bgWave?(t-window._bgWave)/1800:9,fl=wv>=0&&wv<1?Math.sin(Math.PI*wv):0; /* an image landed: the sky flares */
+    aur.draw(c,W,H,reduce?0:t/1000,bcols,{scale:6,top:.36,len:.3,curtains:2,spread:.08,alpha:.42*(1+1.4*fl),blend:"lighter",gain:1+fl})}
    if(!reduce&&bg==="stars"){if(!shoot&&R()<dt/9000)shoot={x:W*R()*.7,y:H*R()*.4,vx:.5+R()*.4,vy:.3+R()*.15,life:0};
     if(shoot){shoot.life+=dt;const k=shoot.life/900,len=120*(devicePixelRatio||1);const x=shoot.x+shoot.vx*shoot.life,y=shoot.y+shoot.vy*shoot.life;
      const g=c.createLinearGradient(x,y,x-shoot.vx*len,y-shoot.vy*len);g.addColorStop(0,"rgba(255,255,255,.8)");g.addColorStop(1,"rgba(255,255,255,0)");
@@ -39,7 +40,9 @@
 /* ambient glow + window title + favicon progress ring (throttled) */
 const amb=$("amb"),ambC=amb.getContext("2d"),favC=document.createElement("canvas");favC.width=favC.height=64;
 function jobProgress(j){const part=Math.min((Date.now()-j.stepStart)/j.est,.95)||0;return{p:(j.step+part)/j.steps,left:Math.max(0,(j.steps-j.step-part)*j.est*S.demo/1000)}}
-function status(){const j=current();$("frame").classList.toggle("running",!!j&&!browsed());const pend=jobs.filter(x=>x.status==="pending").length;
+function status(){const j=current();
+ if(window._jobsReady){const d=lastDone(),v=resultStale&&d?d.id:null;if((S.clearedId??null)!==v){S.clearedId=v;save()}} // remember: closed on a clean screen
+ $("frame").classList.toggle("running",!!j&&!browsed());const pend=jobs.filter(x=>x.status==="pending").length;
  const gm=(S.set||{}).glow||"gen";
  const src=(S.view==="gen"&&gm!=="off"&&(j||(gm==="always"&&shownDone())))?$("cv"):null;
  if(src&&src.width){ambC.imageSmoothingQuality="high";ambC.drawImage(src,0,0,12,12);amb.classList.add("on")}else amb.classList.remove("on");
@@ -65,7 +68,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    and emerges as progress grows (hover the image to peek through). EMBERS: a short burst when a job finishes. */
 (function(){const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  const vc=$("veil"),v=vc.getContext("2d"),ec=$("embers"),e=ec.getContext("2d");let W=0,H=0,last=0,str=0,hover=false,sparks=[],embers=[],burst=0,cols=["#FF8A00","#FF5E8A","#3FE0F0"],colT=0;
- const aur=makeAurora(),crt=makeCRT();let crtJob=null,px=null,py=null,sweepT=0;
+ const aur=makeAurora(),crt=makeCRT(),cam=makeCamera(),flareA=makeAurora();let crtJob=null,px=null,py=null,sweepT=0,flareT=0;
  const smooth=(a,b,x)=>{const q=Math.max(0,Math.min(1,(x-a)/(b-a)));return q*q*(3-2*q)};
  $("frame").addEventListener("pointermove",ev=>{const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;px=(ev.clientX-b.left)*d;py=(ev.clientY-b.top)*d});
  $("frame").addEventListener("pointerenter",()=>hover=true);$("frame").addEventListener("pointerleave",()=>hover=false);
@@ -76,34 +79,37 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
   spr={a1:sprite(hex(cols[0]),64),a2:sprite(hex(cols[1]),64),a3:sprite(hex(cols[2]),64),w:sprite("#ffffff",64),comp:sprite(hex((window.HARM||{}).comp||cols[2]),64)}}
  sprites();
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
- if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return} // the screen refreshes clean; a wave runs through the background
+ if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
+ if(skin().cover==="camera"){flareT=performance.now();window._bgWave=flareT;return} // a substorm: the curtain flares across the frame // the screen refreshes clean; a wave runs through the background
  burst=2400};
  function draw(t){const dt=Math.min(50,t-last||16);last=t;if(colT!==window._themeV){sprites();colT=window._themeV}
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
   if(nw!==W||nh!==H){W=vc.width=ec.width=nw;H=vc.height=ec.height=nh}
   const j=current();const mode=(S.set||{}).veil||"full";const cover0=skin().cover;
-  if(cover0==="crt"){const k=j&&!browsed()?j.id:(Date.now()<(window._cpv||0)?"pv"+window._cpv:null);if(k!==crtJob){crtJob=k;if(k!=null)crt.powerOn(t)}} // a new job: the screen powers on
+  if(cover0==="crt"||cover0==="camera"){const k=j&&!browsed()?j.id:(Date.now()<(window._cpv||0)?"pv"+window._cpv:null);
+   if(k!==crtJob){crtJob=k;if(k!=null){if(cover0==="crt")crt.powerOn(t);else cam.reset()}}} // a new job: the screen powers on / a new exposure starts
   let target=0;if(j&&!browsed()&&S.view==="gen"&&mode!=="off"&&!reduce){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
    // full while step 1 renders, most of it gone during step 2, a little left on step 3, clear for the last step
-   const K=cover0==="crt"?[[0,1],[.25,1],[.5,.85],[.75,.45],[.92,0]]:[[0,1],[.25,1],[.5,.4],[.75,.12],[.92,0]]; /* the CRT stays longer: the code forms the image on steps 2–3 */let k0=0;for(let i=1;i<K.length;i++)if(pr<=K[i][0]){const [a,va]=K[i-1],[b,vb]=K[i];k0=va+(vb-va)*(pr-a)/(b-a);break}
-   target=k0*(mode==="light"?.55:1);if(hover)target*=cover0==="crt"?.75:.12}
+   const K=cover0==="crt"||cover0==="camera"?[[0,1],[.25,1],[.5,.85],[.75,.45],[.92,0]]:[[0,1],[.25,1],[.5,.4],[.75,.12],[.92,0]]; /* the CRT stays longer: the code forms the image on steps 2–3 */let k0=0;for(let i=1;i<K.length;i++)if(pr<=K[i][0]){const [a,va]=K[i-1],[b,vb]=K[i];k0=va+(vb-va)*(pr-a)/(b-a);break}
+   target=k0*(mode==="light"?.55:1);if(hover)target*=cover0==="crt"?.75:cover0==="camera"?.3:.12}
   else if(!j&&Date.now()<(window._cpv||0)&&S.view==="gen"&&mode!=="off"&&!reduce&&$("frame").classList.contains("has"))target=hover?(cover0==="crt"?.6:.1):.8; // theme picked: preview the cover on the shown image
   str+=(target-str)*Math.min(1,dt/260);if(str<.002||(browsed()&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
   document.getElementById("frame").style.setProperty("--vf",str?`blur(${(24*str).toFixed(1)}px) brightness(${(1-.45*str).toFixed(3)}) saturate(${(1-.4*str).toFixed(3)})`:"none");
   v.clearRect(0,0,W,H);
   if(str>0&&W){const T=t/1000;
    const cover=skin().cover;
-   v.globalCompositeOperation="source-over";v.fillStyle=cover==="crt"?`rgba(0,9,4,${.88*str})`:`rgba(8,8,12,${.30*str})`;v.fillRect(0,0,W,H);
+   v.globalCompositeOperation="source-over";v.fillStyle=cover==="crt"?`rgba(0,9,4,${.88*str})`:cover==="camera"?`rgba(2,5,9,${.62*str})`:`rgba(8,8,12,${.30*str})`;v.fillRect(0,0,W,H);
    if(cover==="crt"){const pr=j?Math.max(0,Math.min(1,jobProgress(j).p||0)):.55;
     crt.draw(v,W,H,t,dt,d,cols.map(toHex),{str,resolve:smooth(.18,.6,pr),src:$("cv"),px:hover?px:null,py});sparks.length=0}
-   else if(cover==="aurora"){aur.draw(v,W,H,T,cols.map(toHex),{scale:5,top:.28,band:.34,len:.36,ribbons:3,alpha:Math.min(1,str*1.15),blend:"lighter"})}
+   else if(cover==="camera"){const age=j&&j.started?(Date.now()-j.started)/1000:Math.max(0,(Date.now()-(window._cpv||Date.now())+6000)/1000);
+    cam.draw(v,W,H,t,d,cols.map(toHex),{str,age})}
    v.globalCompositeOperation="lighter";
    if(cover==="bands")
    for(let k=0;k<3;k++){const span=W+H,off=((T*(38+k*17)*d+k*span/3)%(span*1.4))-span*.2;
     const g=v.createLinearGradient(off,0,off+H*.9,H*.9);const a=(.10-.025*k)*str;const col=k===1?cols[2]:cols[k===0?0:1];
     g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.45,"rgba(0,0,0,0)");g.addColorStop(.5,col);g.addColorStop(.55,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,0)");
     v.globalAlpha=a*2.2;v.fillStyle=g;v.fillRect(0,0,W,H)}
-   const want=cover==="crt"?0:Math.round((cover==="aurora"?90:230)*str*(W*H)/(700*900*d*d));while(sparks.length<want)sparks.push({x:Math.random()*(W+40*d)-20*d,y:Math.random()*(H+40*d)-20*d,s:(.5+Math.random()*1.3)*d,v:(.012+Math.random()*.03)*d,ph:Math.random()*6.28,tw:.6+Math.random()*1.8,c:Math.random()<.07?"comp":Math.random()<.5?"w":(Math.random()<.5?"a3":"a1")});
+   const want=cover==="crt"||cover==="camera"?0:Math.round(230*str*(W*H)/(700*900*d*d));while(sparks.length<want)sparks.push({x:Math.random()*(W+40*d)-20*d,y:Math.random()*(H+40*d)-20*d,s:(.5+Math.random()*1.3)*d,v:(.012+Math.random()*.03)*d,ph:Math.random()*6.28,tw:.6+Math.random()*1.8,c:Math.random()<.07?"comp":Math.random()<.5?"w":(Math.random()<.5?"a3":"a1")});
    if(sparks.length>want)sparks.length=want;
    for(const p of sparks){p.x+=p.v*dt;p.y+=p.v*dt*.62;const m=20*d;if(p.x>W+m)p.x-=W+2*m;if(p.y>H+m)p.y-=H+2*m; // wrap around: density stays even however long the render
     const tw=Math.max(0,Math.sin(T*p.tw*3+p.ph));const a=tw*tw*str*.9;if(a<.01)continue;
@@ -111,6 +117,8 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
     v.globalAlpha=a;v.strokeStyle="#ffffff";v.lineWidth=.7*d;const L=p.s*4*tw;v.beginPath();v.moveTo(p.x-L,p.y);v.lineTo(p.x+L,p.y);v.moveTo(p.x,p.y-L);v.lineTo(p.x,p.y+L);v.stroke()}
    v.globalAlpha=1;v.globalCompositeOperation="source-over"}else sparks.length=0;
   e.clearRect(0,0,W,H);
+  if(flareT&&W){const p=(t-flareT)/1700;if(p>=1||p<0)flareT=0;else if(S.view==="gen"){const a=p<.18?p/.18:Math.pow(1-(p-.18)/.82,1.5);
+   flareA.draw(e,W,H,t/250,cols.map(toHex),{scale:5,top:.55,len:.55,curtains:2,spread:.1,alpha:a,blend:"lighter",gain:1.6})}}
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}
   if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);

@@ -462,7 +462,7 @@ body.glass .qi .x{background:transparent!important;box-shadow:none}
 body.glass .side button,body.glass .nav,body.glass .bclose,body.glass .vclose{background:rgba(20,22,24,.38)!important;-webkit-backdrop-filter:blur(18px) saturate(1.7);backdrop-filter:blur(18px) saturate(1.7);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.10)}
 /* thin rows inside thick panels */
-body.glass .qi{background:color-mix(in oklab,rgba(12,14,14,.42),var(--a1) 4%);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+body.glass .qi{background:color-mix(in oklab,rgba(12,14,14,.5),var(--a1) 4%);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
 body.glass .qi:hover{background:color-mix(in oklab,rgba(40,44,44,.5),var(--a1) 6%)}
 body.glass .li{background:color-mix(in oklab,rgba(12,14,14,.3),var(--a1) 3%)}
 body.glass .li:hover{background:rgba(255,255,255,.06)}body.glass .li.on{background:rgba(255,255,255,.05)}
@@ -511,3 +511,5 @@ body.glass .modal.show{background:rgba(0,0,0,.55);transition:background-color .2
 .mhead .iconbtn svg{width:17px;height:17px}
 .mbody{overflow:auto;padding:16px 24px 22px}
 .iconbtn.spin svg{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+/* closing Settings is instant (re-blurring the glass on every frame of a shrink was the lag) */
+body.glass .modal:not(.show),.modal:not(.show) .mcard{transition:none}

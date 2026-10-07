@@ -13,7 +13,7 @@
  function draw(t){const idle=((S.set||{}).stars||"on")!=="off";cv.classList.toggle("on",idle);
   if(idle){if(!W||Math.abs(cv.getBoundingClientRect().width*(devicePixelRatio||1)-W)>2)init();
    const bg=skin().bg;if(bg!==was){was=bg;c.clearRect(0,0,W,H)}
-   if(t-lastDraw<31){last=t;requestAnimationFrame(draw);return}const dt=Math.min(66,t-lastDraw);lastDraw=t;
+   if(t-lastDraw<(current()?49:31)){last=t;requestAnimationFrame(draw);return}/* ~30 fps, ~20 while a job runs: the GPU is Forge's then */const dt=Math.min(66,t-lastDraw);lastDraw=t;
    if(!bcols||bcT!==window._themeV){bcols=themeCols();bcT=window._themeV}
    c.clearRect(0,0,W,H);const d=devicePixelRatio||1;
    if(bg==="code"){const run=!!current(),f=$("frame").getBoundingClientRect(),cb=cv.getBoundingClientRect();
@@ -27,7 +27,7 @@
     const tw=reduce?.8:.55+.45*Math.sin(t/1000*st.s+st.p);c.globalAlpha=(.25+st.l*.25)*tw*.62*dim;
     c.fillStyle=st.l===2?"#fff":"#cfd6ff";c.beginPath();c.arc(st.x,st.y,st.r,0,6.283);c.fill()}
    if(bg==="aurora"){const wv=window._bgWave?(t-window._bgWave)/4200:9,fl=wv>=0&&wv<1?Math.pow(Math.sin(Math.PI*Math.pow(wv,.7)),2):0; /* an image landed: the sky swells, slowly */
-    night.draw(c,W,H,t,d,bcols,{reduce,aur:{scale:6,layout:"sky",auto:!reduce,alpha:.46*(1+.8*fl),blend:"lighter",boost:fl*.6}})}
+    night.draw(c,W,H,t,d,bcols,{reduce,landscape:(S.set||{}).landscape==="on",aur:{scale:6,layout:"sky",auto:!reduce,alpha:.46*(1+.8*fl),blend:"lighter",boost:fl*.6}})}
    if(!reduce&&bg==="stars"){if(!shoot&&R()<dt/9000)shoot={x:W*R()*.7,y:H*R()*.4,vx:.5+R()*.4,vy:.3+R()*.15,life:0};
     if(shoot){shoot.life+=dt;const k=shoot.life/900,len=120*(devicePixelRatio||1);const x=shoot.x+shoot.vx*shoot.life,y=shoot.y+shoot.vy*shoot.life;
      const g=c.createLinearGradient(x,y,x-shoot.vx*len,y-shoot.vy*len);g.addColorStop(0,"rgba(255,255,255,.8)");g.addColorStop(1,"rgba(255,255,255,0)");

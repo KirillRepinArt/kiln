@@ -74,19 +74,21 @@ function glyphAtlas(cs,trail,head,glowT,glowH){const pad=Math.ceil(cs*.45),cw=cs
 /* background: sparse, slow, pale and cold, with a wide range of sizes — tiny sharp far columns, now and then one fat soft
    near one. Size sets depth: speed, blur and brightness. It answers the app quietly: almost still and dimming when idle,
    livelier and drifting toward the render window while a job runs, one wave of light when an image lands. */
-function makeCodeBg(){let at=null,at2=null,key="",streams=[],fatT=0,acc=0;
+function makeCodeBg(){let at=null,at2=null,key="",streams=[],fatT=0,acc=0,events=[],evT=8000+Math.random()*12000;
  const spawn=(W,H,d,run,fx,fat,first)=>{const r=Math.random(),s=(fat?54+Math.random()*46:7+Math.pow(r,3)*26)*d;
   const x=run&&!fat&&Math.random()<.35?fx+(Math.random()-.5)*W*.35:Math.random()*W;
-  const L=Math.round(6+Math.random()*(fat?7:18));return{x,s,y:first?Math.random()*H*1.2:-Math.random()*H*.3,v:(55+2.4*s/d)*d*(.75+Math.random()*.5),L,
+  const L=Math.round(fat?6+Math.random()*7:Math.random()<.08?26+Math.random()*30:5+Math.random()*18); /* now and then a long one */return{x,s,y:first?Math.random()*H*1.2:-Math.random()*H*.3,v:(55+2.4*s/d)*d*(.75+Math.random()*.5),L,
    alt:Math.random()<.1,g:Array.from({length:L},()=>Math.random()*GLYPHS.length|0),a:fat?.10+Math.random()*.06:.16+(1-s/(34*d))*.18,fat}};
  return{draw(ctx,W,H,t,dt,d,cols,st){const k=cols[2]+cols[0];if(k!==key){key=k;
    const cold=mixHex(mixHex(cols[2],"#9ad7e6",.45),"#8a9aa0",.25);at=glyphAtlas(24,cold,"#e9fbff",.1,.4);
    at2=glyphAtlas(24,mixHex(mixHex(harmonics(cols[0]).an,"#9ad7e6",.4),"#8a9aa0",.25),"#e9fbff",.1,.4);streams=[]} // ~1 column in 10 in the neighbour hue
   const want=Math.round(W/(115*d)*(st.run?1.25:1));
-  const first=!streams.length;while(streams.filter(s=>!s.fat).length<want){const b=spawn(W,H,d,st.run,st.fx,false,first);streams.push(b);
-   if(Math.random()<.14){for(let k=1,n=2+(Math.random()*3|0);k<n;k++){ // now and then a cluster: 2–4 close columns of a similar size and pace
-    const o=spawn(W,H,d,st.run,st.fx,false,first),sz=b.s*(.8+Math.random()*.4);o.s=sz;o.x=b.x+(k%2?1:-1)*Math.ceil(k/2)*b.s*(1.05+Math.random()*.5);
-    o.v=b.v*(.85+Math.random()*.3);o.y=b.y-Math.random()*b.s*6;o.a=b.a*(.8+Math.random()*.4);streams.push(o)}}}
+  const first=!streams.length;while(streams.filter(s=>!s.fat&&!s.ev).length<want)streams.push(spawn(W,H,d,st.run,st.fx,false,first));
+  /* clusters: every 15–35 s a small area comes alive — 3–8 columns over 1.5–4 s, each its own size, speed and length */
+  evT-=dt;if(evT<=0&&!st.reduce){evT=15000+Math.random()*20000;const dur=1500+Math.random()*2500,n=3+(Math.random()*6|0);
+   events.push({x:(.08+Math.random()*.84)*W,w:(80+Math.random()*170)*d,at:Array.from({length:n},()=>t+Math.random()*dur).sort((a,b)=>a-b)})}
+  for(let i=events.length-1;i>=0;i--){const ev=events[i];while(ev.at.length&&ev.at[0]<=t){ev.at.shift();const o=spawn(W,H,d,false,0,false,false);
+    o.x=ev.x+(Math.random()-.5)*ev.w;o.ev=1;streams.push(o)}if(!ev.at.length)events.splice(i,1)}
   fatT-=dt;if(fatT<=0&&!streams.some(s=>s.fat)){streams.push(spawn(W,H,d,st.run,st.fx,true));fatT=10000+Math.random()*10000}
   const sp=(st.run?1:.55)*(st.reduce?0:1),dim=st.dim;
   const wave=st.wave?(t-st.wave)/1300:null;
@@ -120,7 +122,8 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
  function layout(W,H,d,c3){cs=Math.round(13*d);chh=Math.round(cs*1.18);nc=Math.floor(W/cs);nr=Math.ceil(H/chh);
   scr.width=W;scr.height=H;at=glyphAtlas(cs,c3[0],"#eafff2",.16,.6);glyph=new Uint8Array(nc*nr).map(()=>Math.random()*GLYPHS.length|0);hunt=new Float32Array(nc*nr);cols=[];
   for(let i=0;i<nc;i++)cols.push(newCol(true))}
- const newCol=first=>({h:first?-1e9:-Math.random()*nr*.5,v:9+Math.random()*16,L:Math.round(nr*(.35+Math.random()*.7)),last:-1});
+ const lenFor=res=>{const r=Math.random();return Math.max(3,Math.round(r<.15?3+Math.random()*6:r>.9?nr*(1+Math.random()*.8):nr*(.3+Math.random()*.6+res*.5)))}; // short bursts, long runs
+ const newCol=first=>({h:first?-1e9:-Math.random()*nr*.5,v:9+Math.random()*16,L:lenFor(0),last:-1});
  const rnd=()=>Math.random()*GLYPHS.length|0;
  function overlay(W,H,d){if(ow===W&&oh===H)return;ow=ovl.width=W;oh=ovl.height=H;o.clearRect(0,0,W,H);
   const step=Math.max(2,Math.round(3*d));o.fillStyle="rgba(0,0,0,.26)";for(let y=0;y<H;y+=step)o.fillRect(0,y,W,Math.max(1,Math.round(d))); // scanlines
@@ -148,7 +151,7 @@ function makeCRT(){const scr=document.createElement("canvas"),s=scr.getContext("
       if(start===null)continue;c.h=-Math.random()*3;for(let k=-3;k<=3;k++)if(k&&cols[i+k])cols[i+k].boost=t+700} // a start makes its neighbours likelier to start: patches, not an even rain
      c.h+=c.v*step;const hd=Math.floor(c.h);
      if(hd!==c.last&&hd>=0&&hd<nr){c.last=hd;const n=i*nr+hd;glyph[n]=rnd();if(Math.random()<.25)hunt[n]=t+600+Math.random()*1000} // now and then a fresh cell isn't sure yet
-     if(c.h-c.L>nr){Object.assign(c,newCol(false));c.L=Math.round(nr*(.35+Math.random()*.7+res*.6))}}
+     if(c.h-c.L>nr){Object.assign(c,newCol(false));c.L=lenFor(res)}}
     for(let q=Math.round(nc*.008);q>0;q--){const n=Math.random()*nc*nr|0;if(hunt[n]<t)hunt[n]=t+700+Math.random()*900} // rarely, a standing one doubts itself
     s.clearRect(0,0,W,H);const fl=.94+.06*Math.random();                      // flicker
     for(let i=0;i<nc;i++){const c=cols[i];if(c.h<0)continue;const top=Math.max(0,Math.floor(c.h-c.L)),hd=Math.min(nr-1,Math.floor(c.h));

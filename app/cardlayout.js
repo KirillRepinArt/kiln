@@ -21,7 +21,7 @@ function applyMode(){const a=document.querySelector(".app"),was=a.classList.cont
   const L=$("left"),T=$("ltitle");L.classList.add("nodur");T.classList.add("nodur");lyFrozen=false;lyTop=null;lyCy=null;
   sizeFrame();layoutLeft();moveThumb(true);requestAnimationFrame(()=>{sizeFrame();layoutLeft();requestAnimationFrame(()=>{L.classList.remove("nodur");T.classList.remove("nodur")})})}}
 function cardMinH(){const L=$("left");return L.offsetHeight-L.querySelector(".pwrapT").offsetHeight+84}
-function chipsH(){const c=$("chips");return c.childElementCount?c.offsetHeight+10:0} // the chip row under the box, and its gap
+function chipsH(){const c=$("chips");return c.childElementCount?c.offsetHeight+10:0} // the row always shows ("LoRA +") // the chip row under the box, and its gap
 function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol"),CH=chipsH();const TS=$("peekbar").classList.contains("show")?104:64; /* the Reuse bar takes the row above the box; the name moves up */col.style.setProperty("--ts",TS+"px");
  const stk=!!document.querySelector(".app.stacked"),hm=S.hmode==="full"||(S.hmode==="match"&&!stk)?S.hmode:"";L.classList.toggle("hm",!!hm);$("ltitle").classList.toggle("hm",!!hm);
  if(stk){let H;lyTop=0;

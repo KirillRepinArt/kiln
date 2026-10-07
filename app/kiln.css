@@ -64,7 +64,7 @@ textarea#prompt.peek{color:#8d8d94}
 .pwrapT .cm-editor{flex:0 1 auto;min-height:84px;max-height:100%;margin:8px 12px 8px 0;outline:0!important;background:transparent;font:inherit}
 .pwrapT .cm-scroller{overflow:auto;font-family:inherit;line-height:1.62}
 .pwrapT .cm-content{padding:4px 0 10px 0;caret-color:#fff;font-size:15px}
-.pwrapT .cm-line{padding:0 max(14px,calc(100% - 34px - 76ch)) 0 34px}
+.pwrapT .cm-line{padding:0 max(16px,calc(100% - 28px - 76ch)) 0 28px}
 .pwrapT .cm-cursor{border-left:2px solid #fff}
 .pwrapT .cm-selectionBackground,.pwrapT .cm-focused .cm-selectionBackground{background:color-mix(in oklab,var(--an,#7890ff) 36%,transparent)!important}
 .pwrapT .cm-placeholder{color:var(--faint)}
@@ -105,7 +105,7 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .badge.show{display:grid}
 .pills{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-left:4px;flex:0 1 auto;min-width:0}
 .pills .pill{flex:0 0 auto}
-.pill{position:relative;height:38px;padding:0 11px;border-radius:var(--r-pill);background:transparent;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#CDCDCD;font-weight:500;transition:color var(--dur),background var(--dur)}
+.pill{position:relative;height:38px;padding:0 12px;border-radius:var(--r-pill);background:transparent;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#CDCDCD;font-weight:500;transition:color var(--dur),background var(--dur)}
 .pill:hover,.pill.open{color:var(--text);background:var(--raised)}
 .pill .lbl{font-size:10.5px;line-height:1;margin-bottom:3px;color:var(--muted);font-weight:400}
 .pill .val{font-size:15px;line-height:1.1;white-space:nowrap}
@@ -403,15 +403,16 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .chipmore{padding:4px 10px;font-weight:600;color:#d6d6da}
 .left{border-color:#34343a!important}
 /* LoRA chips live under the prompt box, centred, moving with it (layoutLeft sets --chtop); drag one to reorder */
-#lcol>.chips{position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--chtop,0px);justify-content:center!important;padding:0 14px!important;transition:top .4s var(--ease)}
+#lcol>.chips{position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--chtop,0px);justify-content:flex-start!important;align-items:center;padding:0 16px!important;transition:top .4s var(--ease)}
 #lcol>.chips:empty{display:none}
 .app.stacked #lcol>.chips{right:auto;left:50%;transform:translateX(-50%);width:min(100%,760px)}
 body.liveresize #lcol>.chips,body.cardmove #lcol>.chips{transition:none}
 .chip[draggable=true]{cursor:grab}.chip.dragging{opacity:.35}
 .left{padding-top:12px}
-.controls{justify-content:space-between!important;padding:8px 14px 14px 14px!important}
-.controls .play{order:2;width:52px;height:52px}
-.controls .play svg{width:22px;height:22px}
+/* one inset (16 px) left, bottom and right; pills and Play share their bottom edge; pill text lines up with the prompt (28 px) */
+.controls{justify-content:space-between!important;align-items:flex-end!important;padding:8px 16px 16px 16px!important}
+.controls .play{order:2;width:44px;height:44px}
+.controls .play svg{width:19px;height:19px}
 .pills{justify-content:flex-start!important;margin-left:0!important}
 
 /* ---- stacked layout (narrow or tall window): image on top, prompt card below ---- */
@@ -492,3 +493,7 @@ body.skin-emerald .ltitle .pname{font-weight:700;letter-spacing:.06em;text-shado
 /* glass: tabs switch at once — a fading view is partly transparent, and Chromium turns off the glass inside anything partly
    transparent, so the blur popped in only after the fade (seen going Queue -> Generating) */
 body.glass .view{opacity:1;transform:none;transition:visibility 0s}
+/* the chip row's label (the same small caps as STYLE: in the prompt) and its + */
+.chiplbl{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:#8a8a92;margin:0 6px 0 12px;user-select:none}
+.chipadd{padding:4px 11px!important;color:#cfd3d6;font-weight:600}.chipadd:hover{color:#fff}
+.chips.peek .chiplbl{opacity:1}

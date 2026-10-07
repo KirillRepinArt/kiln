@@ -65,10 +65,13 @@ let chipsOpen=false;
 function renderChips(){requestAnimationFrame(()=>window.layoutLeft&&layoutLeft());
  const pk=typeof peekJob!=="undefined"&&peekJob;$("chips").classList.toggle("peek",!!pk);
  if(pk){$("chips").innerHTML=(pk.loras||[]).map(x=>{const l=LORAS.find(l=>l.name===x.name);
-   return `<span class="chip ${l&&l.folder==="people"?"face":""}"><span class="cn">${esc(l?l.display:x.name)}</span><span class="cw">${fmtW(x.w)}</span></span>`}).join("");capChips();peekButtons();return}
- $("chips").innerHTML=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0)).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}" draggable="true"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`).join("");capChips();if(typeof peekJob!=="undefined"&&peekJob)peekButtons()}
+   return `<span class="chip ${l&&l.folder==="people"?"face":""}"><span class="cn">${esc(l?l.display:x.name)}</span><span class="cw">${fmtW(x.w)}</span></span>`}).join("");
+  $("chips").insertAdjacentHTML("afterbegin",'<span class="chiplbl">LoRA</span>');capChips();peekButtons();return}
+ $("chips").innerHTML=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0)).map(l=>`<span class="chip ${l.folder==="people"?"face":""}" data-n="${l.name}" draggable="true"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`).join("");
+ $("chips").insertAdjacentHTML("afterbegin",'<span class="chiplbl" data-tip="LoRAs used for the next image · drag to reorder">LoRA</span>');
+ $("chips").insertAdjacentHTML("beforeend",'<button class="chip chipadd" data-tip="Add a LoRA — opens the library">+</button>');capChips();if(typeof peekJob!=="undefined"&&peekJob)peekButtons()}
 /* more than two rows of chips: hide the rest behind a "+N" chip that expands (and collapses again) */
-function capChips(){const box=$("chips");box.querySelector(".chipmore")?.remove();const cs=[...box.querySelectorAll(".chip")];cs.forEach(c=>c.hidden=false);
+function capChips(){const box=$("chips");box.querySelector(".chipmore")?.remove();const cs=[...box.querySelectorAll(".chip[data-n]")];cs.forEach(c=>c.hidden=false);
  const rows=[...new Set(cs.map(c=>c.offsetTop))].sort((a,b)=>a-b);if(rows.length<=2)return;
  const more=document.createElement("button");more.className="chip chipmore";box.append(more);
  if(chipsOpen){more.textContent="Show less";more.dataset.tip="Back to two rows";return}
@@ -76,7 +79,7 @@ function capChips(){const box=$("chips");box.querySelector(".chipmore")?.remove(
  const vis=cs.filter(c=>!c.hidden);while(more.offsetTop>lim&&vis.length){const c=vis.pop();c.hidden=true;hid.unshift(c);more.textContent="+"+hid.length}
  more.dataset.tip="Show all · "+hid.map(c=>c.querySelector(".cn").textContent+" "+c.querySelector(".cw").textContent).join(", ")}
 (function(){let w=0;new ResizeObserver(()=>{const n=$("chips").clientWidth;if(n!==w){w=n;capChips()}}).observe($("chips"))})();
-$("chips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;if(c.classList.contains("chipmore")){chipsOpen=!chipsOpen;renderChips();return}if(peekJob)return;const l=LORAS.find(l=>l.name===c.dataset.n);
+$("chips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;if(c.classList.contains("chipadd")){showView("loras");return}if(c.classList.contains("chipmore")){chipsOpen=!chipsOpen;renderChips();return}if(peekJob)return;const l=LORAS.find(l=>l.name===c.dataset.n);
  if(e.target.closest(".cx")){l.on=false;save();renderChips();renderLoras();return}
  S.lfilter=l.folder==="people"?"people":"all";showView("loras");const el=document.querySelector(`[data-ln="${l.name}"]`);
  if(el){el.scrollIntoView({block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")}};

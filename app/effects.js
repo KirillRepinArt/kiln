@@ -126,7 +126,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    const fr=$("frame");
    if(fgA>.01){if(t-haloT>=48){haloT=t;
      const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.45*env(t-gi.met,1300)+.6*env(t-stormAt,2600);
-     const a=fr.getBoundingClientRect(),dp=devicePixelRatio||1,R=130,cw=Math.round((a.width+2*R)*dp),ch=Math.round((a.height+2*R)*dp);
+     const a=fr.getBoundingClientRect(),dp=devicePixelRatio||1,R=95,   /* the bloom's reach (css px): 130 read too wide on screen */cw=Math.round((a.width+2*R)*dp),ch=Math.round((a.height+2*R)*dp);
      if(fg.width!==cw||fg.height!==ch){fg.width=cw;fg.height=ch}
      const fs=fg.style;fs.left=(a.left-R)+"px";fs.top=(a.top-R)+"px";fs.width=(a.width+2*R)+"px";fs.height=(a.height+2*R)+"px";fs.opacity="1";
      const X=R*dp,Y=R*dp,FW=a.width*dp,FH=a.height*dp,rad=(parseFloat(getComputedStyle(fr).borderTopLeftRadius)||24)*dp,hc=cols.map(toHex);

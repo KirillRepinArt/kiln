@@ -221,14 +221,18 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
   const g=ctx.createLinearGradient(tx,ty,hx,hy);g.addColorStop(0,"rgba(230,236,255,0)");g.addColorStop(1,`rgba(235,240,255,${a})`);
   ctx.strokeStyle=g;ctx.lineWidth=.9*d;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(hx,hy);ctx.stroke();ctx.restore()}
  let lastMet=-1e9,heroes=[];
- return{glowInfo(){return{src:sm2,met:lastMet}},
-  reset(){sk="";span=0;lastStep=null;meteors=[];hasMask=false;mt=mcur=null;ae=1},
+ /* the end of the exposure: the shutter closes — the sky and the counter stop, the dot goes out — and the aurora breaks up
+    once (brighter, rays dancing faster) while the night is still up; effects.js then fades the night and the image emerges */
+ let finT=null,fin=null,live={th:0,age:0,span:0,pr:0};
+ return{finish(t){finT=t;fin=null},glowInfo(){return{src:sm2,met:lastMet}},
+  reset(){sk="";span=0;lastStep=null;meteors=[];hasMask=false;mt=mcur=null;ae=1;finT=null;fin=null},
   draw(ctx,W,H,t,d,cols,st){const k=W+"x"+H;if(k!==sk){sk=k;M=Math.round(60*d);lit.width=W;lit.height=H;build(W,H,d);filmT=-1e9;pending=false;gen++;
     if(film&&film.close)film.close();if(prev&&prev.close)prev.close();film=prev=null;if(wk)wk.postMessage({init:{B:batches,P,W,H,M,d}})}
    const dt=lt==null?16:Math.min(100,Math.max(0,t-lt));lt=t;
-   const str=st.str,age=Math.max(0,st.age||0),pr=Math.max(0,Math.min(1,st.prog||0)),sky=st.sky!=null?st.sky:t/1000,th=OMEGA*sky;
-   const want=SPAN*Math.min(1,pr/.9);span=filmT<-1e8?want:span+(want-span)*Math.min(1,dt/2500);   // eases: a step finishing early or late doesn't jolt the trails
-   if(st.step!=null&&lastStep!=null&&st.step>lastStep)meteor(W,H,d,t);if(st.step!=null)lastStep=st.step;    // a meteor for each finished step
+   let str=st.str,age=Math.max(0,st.age||0),pr=Math.max(0,Math.min(1,st.prog||0)),sky=st.sky!=null?st.sky:t/1000,th=OMEGA*sky;
+   const fz=finT!=null&&t>=finT;if(fz){if(!fin)fin={...live};th=fin.th;age=fin.age;pr=fin.pr}           // the shutter has closed: the sky and the counter stop
+   const want=SPAN*Math.min(1,pr/.9);span=fz?fin.span:filmT<-1e8?want:span+(want-span)*Math.min(1,dt/2500);if(!fz)live={th,age,span,pr};   // eases: a step finishing early or late doesn't jolt the trails
+   if(!fz&&st.step!=null&&lastStep!=null&&st.step>lastStep)meteor(W,H,d,t);if(st.step!=null)lastStep=st.step;    // a meteor for each finished step
    if(!pending&&t-filmT>2000){filmT=t;
     if(wk){pending=true;wk.postMessage({gen,th,sp:span,seg:SEG})}
     else{if(!fb){fb=document.createElement("canvas")}fb.width=W+2*M;fb.height=H+2*M;exposeTrails(fb.getContext("2d"),batches,P,W,H,M,d,span,th,SEG);film=fb;filmTh=th}}
@@ -239,8 +243,9 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
    if(hasMask){lc.globalCompositeOperation="destination-in";lc.imageSmoothingEnabled=true;lc.imageSmoothingQuality="high";lc.drawImage(mask,0,0,W,H);lc.globalCompositeOperation="source-over"}
    ctx.save();
    const w4=Math.max(40,Math.round(W/4)),h4=Math.max(30,Math.round(H/4));if(sm.width!==w4||sm.height!==h4){sm.width=sm2.width=w4;sm.height=sm2.height=h4}
-   smc.clearRect(0,0,w4,h4);aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",auto:true,alpha:1,blend:"lighter",gain:.62*ae,surgeK:.45});   // gentler surges: a dark theme
-   if(wk&&!aeBusy&&t-aeT>250){aeT=t;aeBusy=true;                                                  // auto-exposure, like the camera it is, metered on the highlights (worker)
+   smc.clearRect(0,0,w4,h4);const brk=fz?(ms=>ms<300?(ms/300)*(ms/300):ms<800?1:Math.exp(-(ms-800)/1400))(t-finT):0;
+   aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",auto:true,alpha:1,blend:"lighter",gain:.62*ae,surgeK:.45,boost:.55*brk});   // gentler surges: a dark theme
+   if(wk&&!fz&&!aeBusy&&t-aeT>250){aeT=t;aeBusy=true;                                                  // auto-exposure, like the camera it is, metered on the highlights (worker)
     createImageBitmap(sm,{resizeWidth:64,resizeHeight:80,resizeQuality:"medium"}).then(b=>wk.postMessage({ae:b},[b]),()=>aeBusy=false)}
    sm2c.clearRect(0,0,w4,h4);sm2c.filter="blur(1.4px)";sm2c.drawImage(sm,0,0);sm2c.filter="none";
    ctx.globalCompositeOperation="screen";ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";   /* screen, not add: the soft and sharp aurora layers stacked additively and clipped to white in a surge */
@@ -255,8 +260,8 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
    ctx.translate(Math.random()*160|0,Math.random()*160|0);ctx.fillStyle=pat;ctx.fillRect(-160,-160,W+320,H+320);ctx.setTransform(1,0,0,1,0,0);
    ctx.globalCompositeOperation="source-over";const fs=Math.round(11*d),m=Math.round(14*d),mm=String(Math.floor(age/60)).padStart(2,"0"),sc=String(Math.floor(age%60)).padStart(2,"0");
    ctx.font=`500 ${fs}px "IBM Plex Mono",ui-monospace,monospace`;ctx.textBaseline="bottom";
-   ctx.globalAlpha=str*(.55+.45*(Math.sin(t/420)>0?1:0));ctx.fillStyle="#ff5a4e";ctx.beginPath();ctx.arc(m+fs*.35,H-m-fs*.42,fs*.3,0,6.283);ctx.fill();
-   ctx.globalAlpha=str*.62;ctx.fillStyle="#e8f0ec";ctx.fillText(`EXP ${mm}:${sc}  ·  ƒ/1.4  ·  ISO 6400`,m+fs*1.1,H-m);
+   ctx.globalAlpha=fz?0:str*(.55+.45*(Math.sin(t/420)>0?1:0));ctx.fillStyle="#ff5a4e";ctx.beginPath();ctx.arc(m+fs*.35,H-m-fs*.42,fs*.3,0,6.283);ctx.fill();
+   ctx.globalAlpha=Math.min(1,str*(.62+(fz?.38*Math.max(0,1-Math.abs(t-finT-350)/450):0)));ctx.fillStyle="#e8f0ec";ctx.fillText(`EXP ${mm}:${sc}  ·  ƒ/1.4  ·  ISO 6400`,m+fs*1.1,H-m);
    ctx.restore()}}}
 
 /* Aurora's halo: the image box glows while a job runs. Two layers, built with the user over many clips:

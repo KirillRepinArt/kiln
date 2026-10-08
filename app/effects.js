@@ -80,7 +80,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  sprites();
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
- if(skin().cover==="camera"){const n=performance.now();fadeT=n;finishAt=n;fadeFrom=nstr;window._bgWave=n;return} /* the night layer fades slowly and the image emerges; the halo swells once as it goes */
+ if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1200;finishAt=n;fadeFrom=nstr;window._bgWave=n;return} /* the shutter closes and the aurora breaks up; ~1.2 s later the night fades slowly and the image emerges */
  burst=2400};
  function draw(t){const dt=Math.min(50,t-last||16);last=t;if(colT!==window._themeV){sprites();colT=window._themeV}
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
@@ -94,7 +94,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    target=k0*(mode==="light"?.55:1);if(cover0==="camera")tN=(pr>=.5?Math.max(k0,HOLD):k0)*(mode==="light"?.55:1)*(hover?.12:1);if(hover)target*=.12}
   else if(!j&&Date.now()<(window._cpv||0)&&S.view==="gen"&&mode!=="off"&&!reduce&&$("frame").classList.contains("has"))target=hover?.1:.8; // theme picked: preview the cover on the shown image
   str+=(target-str)*Math.min(1,dt/260);if(str<.002||(browsed()&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
-  if(tN==null)tN=target;if(j&&!browsed())fadeT=0;else if(fadeT){const p=(t-fadeT)/FADE;if(p>=1)fadeT=0;else tN=fadeFrom*(.5+.5*Math.cos(Math.PI*p))*(hover?.12:1)} // after the finish: a slow fade, slow at first
+  if(tN==null)tN=target;if(j&&!browsed())fadeT=0;else if(fadeT){const p=Math.max(0,(t-fadeT)/FADE);if(p>=1)fadeT=0;else tN=fadeFrom*(.5+.5*Math.cos(Math.PI*p))*(hover?.12:1)} // after the finish: a slow fade, slow at first
   nstr+=(tN-nstr)*Math.min(1,dt/260);if(nstr<.002||(browsed()&&!(Date.now()<(window._cpv||0))))nstr=0;
   document.getElementById("frame").style.setProperty("--vf",str?`blur(${(24*str).toFixed(1)}px) brightness(${(1-.45*str).toFixed(3)}) saturate(${(1-.4*str).toFixed(3)})`:"none");
   v.clearRect(0,0,W,H);

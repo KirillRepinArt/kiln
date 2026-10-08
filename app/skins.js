@@ -275,8 +275,10 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
 function makeHalo(){const so=document.createElement("canvas"),sx=so.getContext("2d"),sb=document.createElement("canvas"),sbx=sb.getContext("2d");
  const swN=document.createElement("canvas"),swW=document.createElement("canvas"),swT=document.createElement("canvas"),swT2=document.createElement("canvas"),ts=document.createElement("canvas");
  let sstrip=null,key="",spts=null,pk="",lastT=null,fT=0,swKey="",rimPts=null,rk="";
- const patches=Array.from({length:10},(_,i)=>({s:i/10+Math.random()*.06,v:(Math.random()<.5?-1:1)*(.003+Math.random()*.004),w:.022+Math.random()*.03,
-  per:3+Math.random()*6,ph:Math.random()*6.283,d:.55+Math.random()*.45}));
+ /* normalised: the lobes stay evenly spaced and turn round the border together (each with a small wobble of its own), and
+    their pulses are staggered (golden-ratio phases), so there is always light on every side and never a moment when all dip */
+ const patches=Array.from({length:10},(_,i)=>({s0:i/10,s:i/10,wob:Math.random()*6.283,wf:.05+Math.random()*.06,w:.024+Math.random()*.022,
+  per:3+Math.random()*6,ph:i*2.39996,d:.7+Math.random()*.3}));let spin=0;
  function strip(c){const red=mixHex(c[2],"#ff3355",.45),s=document.createElement("canvas");s.width=1;s.height=256;
   const g=s.getContext("2d"),gr=g.createLinearGradient(0,0,0,256);                                  // base (y=256) at the edge, a long smooth fall-off
   /* ambient light, not a second edge: less saturated (toward a dark teal), and dimmer right at the edge so the hot edge
@@ -301,9 +303,9 @@ function makeHalo(){const so=document.createElement("canvas"),sx=so.getContext("
    const sw=Math.round((FW+2*P)/5),sh=Math.round((FH+2*P)/5);
    const kk=sw+"x"+sh+"x"+op.radius;if(kk!==pk){pk=kk;so.width=sb.width=sw;so.height=sb.height=sh;spts=perimeter(P/5,P/5,FW/5,FH/5,op.radius/5,1.2)}
    const dT=lastT==null?0:Math.max(0,Math.min(.2,T-lastT));lastT=T;const B=op.boost||0;
-   for(const p of patches)p.s=(p.s+p.v*dT+1)%1;                                                    // the lobes drift round the border
+   spin=(spin+.004*dT)%1;for(const p of patches)p.s=(p.s0+spin+.022*Math.sin(T*p.wf*6.283+p.wob)+1)%1;   // they turn together, each wobbling a little
    sx.setTransform(1,0,0,1,0,0);sx.clearRect(0,0,sw,sh);sx.globalCompositeOperation="lighter";const SR=P/5;
-   for(const q of spts){const f=field(q.s)*q.w*(1+B);if(f<.01)continue;
+   for(const q of spts){const f=(.18+.82*field(q.s))*q.w*(1+B);if(f<.01)continue;   /* a gentle floor */
     const hh=SR*(.6+.44*Math.min(1,f))*(.55+.45*q.w);sx.setTransform(-q.ny,q.nx,-q.nx,-q.ny,q.x,q.y);sx.globalAlpha=Math.min(1,f*.28);sx.drawImage(sstrip,-3.8,-hh,7.6,hh)}   /* ~6 strips overlap at a point */
    sx.setTransform(1,0,0,1,0,0);sx.globalAlpha=1;
    sbx.clearRect(0,0,sw,sh);sbx.filter="blur(.8px)";sbx.drawImage(so,0,0);sbx.filter="none";      // blurred at 1/5 size, then scaled straight up
@@ -320,7 +322,7 @@ function makeHalo(){const so=document.createElement("canvas"),sx=so.getContext("
    const k=[X,Y,FW,FH,op.radius].join();if(k!==rk){rk=k;rimPts=perimeter(X,Y,FW,FH,op.radius,3)}
    const sw=Math.ceil(bw/4),sh=Math.ceil(bh/4);if(ts.width!==sw||ts.height!==sh){ts.width=sw;ts.height=sh}
    const tint=(c,col,pick)=>{const t=ts.getContext("2d");t.clearRect(0,0,sw,sh);t.lineCap="round";t.lineWidth=M/2;t.strokeStyle=col;
-    for(let i=0;i<rimPts.length;i+=2){const a=rimPts[i],f=Math.min(1.3,field(a.s)),lit=(.03+.68*Math.pow(Math.min(1,f),1.3))*(.6+.4*a.w)*(1+.6*(op.boost||0))*op.alpha;
+    for(let i=0;i<rimPts.length;i+=2){const a=rimPts[i],f=Math.min(1.3,field(a.s)),lit=(.12+.58*Math.pow(Math.min(1,f),1.3))*(.6+.4*a.w)*(1+.6*(op.boost||0))*op.alpha;
      const wide=Math.min(1,Math.max(0,(f-.15)/.75))*(.5+.5*a.w),al=lit*pick(wide);if(al<.01)continue;   // how far it reaches here follows the lobe
      t.globalAlpha=Math.min(1,al*.5);t.beginPath();t.moveTo((a.x-X+M)/4,(a.y-Y+M)/4);t.lineTo((a.x-X+M)/4+.01,(a.y-Y+M)/4);t.stroke()}t.globalAlpha=1;   /* round dots at 1/4 size: smooth, no wedges at corners */
     const g=c.getContext("2d");g.globalCompositeOperation="source-over";g.clearRect(0,0,bw,bh);g.imageSmoothingEnabled=true;g.imageSmoothingQuality="high";g.drawImage(ts,0,0,bw,bh)};

@@ -122,8 +122,8 @@ function makeNightSky(){const aur=makeAurora();let stars=[],ridge=[],ridge2=[],k
    real statistics (a few bright, thousands faint); one bright band of orbits, a quiet centre, a fade to a floor outside.
    Starlight shows the image: trails are brighter where the preview is bright. A meteor for each finished step, streaming
    in from a shower's radiant just off the frame (some sporadic) with a lingering train; now and then a satellite. The
-   aurora is smeared by the exposure into a soft glow. The finish is a meteor storm (effects.js holds the night layer at
-   70 % until then and fades it slowly after).
+   aurora is smeared by the exposure into a soft glow. At the finish the night layer (held at 70 % by effects.js) fades
+   slowly and the image emerges.
    Cheap: a worker exposes the trails (culled, batched by look) into a film a little larger than the frame every 2 s;
    in between, the film is just rotated. */
 AURORA_LAYOUTS.cam=[{a:[1.05,-.06],b:[-.05,.3],sag:.05,len:.26,depth:.55},{a:[1.1,.02],b:[-.12,.72],sag:.1,len:.44,depth:1}];
@@ -193,11 +193,11 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
   for(let i=0;i<L.length;i++)L[i]=(q[i*4]*.3+q[i*4+1]*.59+q[i*4+2]*.11)/255;setMask(L,nc,nr,res)}
  function easeMask(dt){if(!mcur)return false;const k=Math.min(1,dt/1500),D=mimg.data;                 // a new preview (once a step) eases in, never snaps
   for(let i=0;i<mcur.length;i++){mcur[i]+=(mt[i]-mcur[i])*k;const o=i*4;D[o]=D[o+1]=D[o+2]=255;D[o+3]=255*mcur[i]}mc.putImageData(mimg,0,0);return true}
- function meteor(W,H,d,t,list,shower){const D=Math.hypot(W,H);let x,y,dx,dy,L;
-  if(Math.random()<(shower||.7)){const rx=-W*.12,ry=-H*.1;x=W*(.05+Math.random()*.75);y=H*(.03+Math.random()*.55);    // shower: from a radiant just off the frame
+ function meteor(W,H,d,t){const D=Math.hypot(W,H);let x,y,dx,dy,L;
+  if(Math.random()<.7){const rx=-W*.12,ry=-H*.1;x=W*(.05+Math.random()*.75);y=H*(.03+Math.random()*.55);    // shower: from a radiant just off the frame
    dx=x-rx;dy=y-ry;const s0=Math.hypot(dx,dy);dx/=s0;dy/=s0;L=Math.min(D*.9,s0*(.5+.7*Math.random()))}      // farther from the radiant = longer
   else{const a=Math.random()*6.2832;x=W*(.1+Math.random()*.8);y=H*(.05+Math.random()*.6);dx=Math.cos(a);dy=Math.sin(a);L=D*(.2+.35*Math.random())} // a sporadic: any way
-  (list||meteors).push({x,y,dx,dy,len:L,t0:t,dur:650+900*L/D,w:(1.3+Math.random()*.9)*d});lastMet=Math.max(lastMet,t)}
+  meteors.push({x,y,dx,dy,len:L,t0:t,dur:650+900*L/D,w:(1.3+Math.random()*.9)*d});lastMet=Math.max(lastMet,t)}
  function drawMeteors(ctx,t,d,str,list){ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineCap="round";const vis=Math.min(1,str*1.3+.3);
   const out=(list||meteors).filter(m=>{const p=(t-m.t0)/m.dur;if(p<0)return true;const TR=2.4;if(p>=1+TR)return false;     // the train lingers ~2.4 durations
    const hp=1-Math.pow(1-Math.min(1,p),1.6),hx=m.x+m.dx*m.len*hp,hy=m.y+m.dy*m.len*hp;
@@ -220,13 +220,8 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
   const a=.5*Math.min(1,str*1.2)*(p>1?1-(p-1)/.6:1);ctx.save();ctx.globalCompositeOperation="lighter";
   const g=ctx.createLinearGradient(tx,ty,hx,hy);g.addColorStop(0,"rgba(230,236,255,0)");g.addColorStop(1,`rgba(235,240,255,${a})`);
   ctx.strokeStyle=g;ctx.lineWidth=.9*d;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(hx,hy);ctx.stroke();ctx.restore()}
- let storm=[],lastMet=-1e9,heroes=[];
- /* the finish: a meteor storm. ~22 meteors from the shower's radiant over ~2 s — building, a peak, tailing off — faster than
-    the step meteors, a few of them bright fireballs whose trains linger over the finished image */
- function startStorm(W,H,d,t){storm=[];const n=20+(Math.random()*6|0);
-  for(let i=0;i<n;i++){const u=(Math.random()+Math.random())/2;meteor(W,H,d,t+u*2100,storm,.9);const m=storm[storm.length-1];
-   m.dur*=.6;if(Math.random()<.18){m.w*=1.7;m.len*=1.15}}}
- return{glowInfo(){return{src:sm2,met:lastMet}},storm(W,H,d,t){startStorm(W,H,d,t)},drawStorm(ctx,W,H,t,d){if(!storm.length)return false;storm=drawMeteors(ctx,t,d,1,storm);return storm.length>0},
+ let lastMet=-1e9,heroes=[];
+ return{glowInfo(){return{src:sm2,met:lastMet}},
   reset(){sk="";span=0;lastStep=null;meteors=[];hasMask=false;mt=mcur=null;ae=1},
   draw(ctx,W,H,t,d,cols,st){const k=W+"x"+H;if(k!==sk){sk=k;M=Math.round(60*d);lit.width=W;lit.height=H;build(W,H,d);filmT=-1e9;pending=false;gen++;
     if(film&&film.close)film.close();if(prev&&prev.close)prev.close();film=prev=null;if(wk)wk.postMessage({init:{B:batches,P,W,H,M,d}})}
@@ -270,7 +265,7 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
    - the edge: a thin glow hard against the image, falling off outward like light (inverse-square), that swells from
      ~3 to ~20 px where a lobe is bright and shrinks where it is dim, so it breathes with the bloom
    Its own clock only: nothing here is paced by the job's speed (it must look the same on any GPU). Swells (a meteor,
-   the finish storm) come in through `boost` with a soft envelope from effects.js. Drawn at device pixels; the bloom at
+   the finish) come in through `boost` with a soft envelope from effects.js. Drawn at device pixels; the bloom at
    1/5 size, the edge from two fixed band shapes cut by a lobe-lit tint, so a frame is a handful of image draws. */
 function makeHalo(){const so=document.createElement("canvas"),sx=so.getContext("2d"),sb=document.createElement("canvas"),sbx=sb.getContext("2d");
  const swN=document.createElement("canvas"),swW=document.createElement("canvas"),swT=document.createElement("canvas"),swT2=document.createElement("canvas"),ts=document.createElement("canvas");

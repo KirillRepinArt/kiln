@@ -68,7 +68,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    and emerges as progress grows (hover the image to peek through). EMBERS: a short burst when a job finishes. */
 (function(){const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  const vc=$("veil"),v=vc.getContext("2d"),ec=$("embers"),e=ec.getContext("2d");let W=0,H=0,last=0,str=0,hover=false,sparks=[],embers=[],burst=0,cols=["#FF8A00","#FF5E8A","#3FE0F0"],colT=0;
- const aur=makeAurora(),crt=makeCRT(),cam=makeCamera();let crtJob=null,sweepT=0,nstr=0,fadeT=0,fadeFrom=0,fgA=0,stormAt=-1e9,haloT=0;const fg=$("fglow"),fgc=fg.getContext("2d"),halo=makeHalo();
+ const aur=makeAurora(),crt=makeCRT(),cam=makeCamera();let crtJob=null,sweepT=0,nstr=0,fadeT=0,fadeFrom=0,fgA=0,finishAt=-1e9,haloT=0;const fg=$("fglow"),fgc=fg.getContext("2d"),halo=makeHalo();
  const dith=document.createElement("canvas");dith.width=dith.height=64;{const g=dith.getContext("2d"),d=g.createImageData(64,64);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255|0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}g.putImageData(d,0,0)}const HOLD=.7,FADE=5000; /* Aurora: the night layer holds at 70 % from mid-job, then fades slowly after the finish */
  const smooth=(a,b,x)=>{const q=Math.max(0,Math.min(1,(x-a)/(b-a)));return q*q*(3-2*q)};
  $("frame").addEventListener("pointerenter",()=>hover=true);$("frame").addEventListener("pointerleave",()=>hover=false);
@@ -80,7 +80,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  sprites();
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
- if(skin().cover==="camera"){const n=performance.now();cam.storm(W,H,devicePixelRatio||1,n);fadeT=n;stormAt=n;fadeFrom=nstr;window._bgWave=n;return} /* a meteor storm over the night sky, which then fades slowly */
+ if(skin().cover==="camera"){const n=performance.now();fadeT=n;finishAt=n;fadeFrom=nstr;window._bgWave=n;return} /* the night layer fades slowly and the image emerges; the halo swells once as it goes */
  burst=2400};
  function draw(t){const dt=Math.min(50,t-last||16);last=t;if(colT!==window._themeV){sprites();colT=window._themeV}
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
@@ -119,13 +119,13 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
     v.globalAlpha=a;v.strokeStyle="#ffffff";v.lineWidth=.7*d;const L=p.s*4*tw;v.beginPath();v.moveTo(p.x-L,p.y);v.lineTo(p.x+L,p.y);v.moveTo(p.x,p.y-L);v.lineTo(p.x,p.y+L);v.stroke()}
    v.globalAlpha=1;v.globalCompositeOperation="source-over"}else sparks.length=0;
   /* Aurora's halo: the image box glows (skins.js makeHalo). On while a job runs, fading out with the night layer after
-     the finish. A step's meteor makes it respond, the finish storm more — always with a soft rise (~0.4 s) and fall,
+     the finish. A step's meteor makes it respond, the finish a little more — always with a soft rise (~0.4 s) and fall,
      never a jump. ~20 fps: it moves slowly. */
   {const gm=(S.set||{}).glow||"gen",on=cover0==="camera"&&gm!=="off"&&S.view==="gen"&&nstr>0;
    fgA+=((on?Math.min(1,nstr/HOLD):0)-fgA)*Math.min(1,dt/400);
    const fr=$("frame");
    if(fgA>.01){if(t-haloT>=48){haloT=t;
-     const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.3*env(t-gi.met,1300)+.45*env(t-stormAt,2600);
+     const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.3*env(t-gi.met,1300)+.45*env(t-finishAt,2600);
      const a=fr.getBoundingClientRect(),dp=devicePixelRatio||1,R=95,   /* the bloom's reach (css px): 130 read too wide on screen */cw=Math.round((a.width+2*R)*dp),ch=Math.round((a.height+2*R)*dp);
      if(fg.width!==cw||fg.height!==ch){fg.width=cw;fg.height=ch}
      const fs=fg.style;fs.left=(a.left-R)+"px";fs.top=(a.top-R)+"px";fs.width=(a.width+2*R)+"px";fs.height=(a.height+2*R)+"px";fs.opacity="1";
@@ -139,7 +139,6 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
      fgc.globalCompositeOperation="source-over";fr.classList.add("halo")}}
    else if(fg.style.opacity!=="0"){fg.style.opacity="0";fr.classList.remove("halo")}}
   e.clearRect(0,0,W,H);
-  if(W&&S.view==="gen")cam.drawStorm(e,W,H,t,d);
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}
   if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);

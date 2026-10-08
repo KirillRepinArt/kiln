@@ -26,7 +26,7 @@
     if(st.x>W+4)st.x-=W+8;if(st.y>H+4)st.y-=H+8;
     const tw=reduce?.8:.55+.45*Math.sin(t/1000*st.s+st.p);c.globalAlpha=(.25+st.l*.25)*tw*.62*dim;
     c.fillStyle=st.l===2?"#fff":"#cfd6ff";c.beginPath();c.arc(st.x,st.y,st.r,0,6.283);c.fill()}
-   if(bg==="aurora"){const wv=window._bgWave?(t-window._bgWave)/4200:9,fl=wv>=0&&wv<1?Math.pow(Math.sin(Math.PI*Math.pow(wv,.7)),2):0; /* an image landed: the sky swells, slowly */
+   if(bg==="aurora"){const wv=window._bgWave?(t-window._bgWave)/2800:9,fl=wv>=0&&wv<1?Math.pow(Math.sin(Math.PI*Math.pow(wv,.7)),2):0; /* an image landed: the sky swells, slowly */
     night.draw(c,W,H,t,d,bcols,{reduce,landscape:(S.set||{}).landscape==="on",aur:{scale:6,layout:"sky",auto:!reduce,alpha:.46*(1+.8*fl),blend:"lighter",boost:fl*.6}})}
    if(!reduce&&bg==="stars"){if(!shoot&&R()<dt/9000)shoot={x:W*R()*.7,y:H*R()*.4,vx:.5+R()*.4,vy:.3+R()*.15,life:0};
     if(shoot){shoot.life+=dt;const k=shoot.life/900,len=120*(devicePixelRatio||1);const x=shoot.x+shoot.vx*shoot.life,y=shoot.y+shoot.vy*shoot.life;
@@ -81,7 +81,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
  if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1400;fadeDur=500;finishAt=n;finStr=str;
-  setTimeout(()=>{if(S.view==="gen"){burst=burstMax=2400;embersHalf=true}},1400);   /* the release throws stars over the photo; they fade about halfway up */
+  setTimeout(()=>{if(S.view==="gen"){burst=burstMax=1500;embersHalf=true}},1400);   /* the release throws stars over the photo: a 1.5 s window (the late ones cut), fading ~60 % of the way up */
   setTimeout(()=>{try{$("frame").animate([{scale:"1"},{scale:"1.012",offset:.3},{scale:"1"}],{duration:560,easing:"cubic-bezier(.2,.9,.25,1)"})}catch(e){}},1400);   /* the release lands: the box swells a hair and settles */fadeFrom=nstr;window._bgWave=n+700;return} /* the crescendo (skins.js): 1.4 s of build, then the night clears in ~0.5 s under the flash (which lasts ~0.9 s): no dip. The sky behind
    the app answers ~0.7 s later (its swell peaks around the release) */
  burst=burstMax=2400;embersHalf=false};
@@ -148,12 +148,12 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
   e.clearRect(0,0,W,H);
   if(W&&S.view==="gen"&&skin().cover==="camera")cam.drawFlash(e,W,H,t,cols.map(toHex));
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}
-  if(burst>0&&W&&S.view==="gen"){const k=burst/burstMax;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:embersHalf?mx*.5:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
+  if(burst>0&&W&&S.view==="gen"){const k=burst/burstMax;                          /* full rate at the start, tapering to 0 over the window */let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:embersHalf?mx*.6:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);
   if(embers.length){e.globalCompositeOperation="lighter";
    const hardStars=skin().cover==="camera";
    embers=embers.filter(p=>{p.life+=dt;if(p.life>p.max)return false;p.x+=(p.vx+Math.sin(p.life/420+p.ph)*.015*d)*dt;p.y+=p.vy*dt;const q=p.life/p.max;
-    const a=Math.min(1,q*6)*(1-q)*(.75+.25*Math.sin(p.life/90+p.ph));const r=p.r*5*(1-q*.4);
+    const a=Math.min(1,q*6)*(hardStars?Math.pow(1-q,1.8):1-q)*(.75+.25*Math.sin(p.life/90+p.ph));const r=p.r*5*(1-q*.4);
     if(hardStars){if(p.g==null){p.g=Math.random()<.14;p.sc=Math.random()<.25?mixHex("#eef3ff",toHex(cols[1]),.45):"#eef3ff"}   // Aurora: crisp stars, like its sky — a few with a small glint
      const s=Math.max(1,p.r*(p.g?1.15:.75)),tw=a*(.6+.4*Math.sin(p.life/140+p.ph*3));e.globalAlpha=tw;e.fillStyle=p.sc;e.fillRect(Math.round(p.x-s/2),Math.round(p.y-s/2),Math.ceil(s),Math.ceil(s));
      if(p.g){const L=s*3.2;e.globalAlpha=tw*.55;e.strokeStyle=p.sc;e.lineWidth=Math.max(.6,d*.6);e.beginPath();e.moveTo(p.x-L,p.y);e.lineTo(p.x+L,p.y);e.moveTo(p.x,p.y-L);e.lineTo(p.x,p.y+L);e.stroke()}return true}

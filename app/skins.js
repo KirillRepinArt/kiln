@@ -126,7 +126,7 @@ function makeNightSky(){const aur=makeAurora();let stars=[],ridge=[],ridge2=[],k
    70 % until then and fades it slowly after).
    Cheap: a worker exposes the trails (culled, batched by look) into a film a little larger than the frame every 2 s;
    in between, the film is just rotated. */
-AURORA_LAYOUTS.cam=[{a:[1.05,-.06],b:[-.05,.3],sag:.05,len:.2,depth:.5},{a:[1.1,.02],b:[-.12,.72],sag:.1,len:.34,depth:.9}];
+AURORA_LAYOUTS.cam=[{a:[1.05,-.06],b:[-.05,.3],sag:.05,len:.26,depth:.55},{a:[1.1,.02],b:[-.12,.72],sag:.1,len:.44,depth:1}];
 /* star trails for Aurora's camera: every star's arc from its tail to its head, in SEG pieces that fade toward the tail.
    Pure (no outside state), because a worker runs it from its source text: the GPU then never has to raster thousands of
    thin arcs at once — that stalled the whole page every redraw. */
@@ -145,19 +145,28 @@ function exposeTrails(g,B,P,W,H,M,d,sp,th,SEG){g.setTransform(1,0,0,1,0,0);g.cle
  g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="source-over";g.globalAlpha=1}
 /* the worker: software raster on its own thread (willReadFrequently), the result handed back as an ImageBitmap */
 function trailsWorker(){let B,P,W,H,M,d,cv,g;
- onmessage=e=>{const m=e.data;if(m.init){({B,P,W,H,M,d}=m.init);cv=new OffscreenCanvas(W+2*M,H+2*M);g=cv.getContext("2d",{willReadFrequently:true});return}
+ const px=bm=>{const c=new OffscreenCanvas(bm.width,bm.height),x=c.getContext("2d",{willReadFrequently:true});x.drawImage(bm,0,0);bm.close();return x.getImageData(0,0,c.width,c.height).data};
+ onmessage=e=>{const m=e.data;
+  if(m.ae){const q=px(m.ae),hg=new Uint32Array(64);let n=0;                                            // auto-exposure: the brightest 1 % of the aurora
+   for(let i=0;i<q.length;i+=4){hg[Math.min(63,((q[i]*.3+q[i+1]*.59+q[i+2]*.11)*q[i+3]/65025*64)|0)]++;n++}
+   let c=0,b=63;for(;b>0;b--){c+=hg[b];if(c>=n*.01)break}postMessage({hi:(b+.5)/64});return}
+  if(m.lum){const q=px(m.lum),L=new Float32Array(q.length/4);for(let i=0;i<L.length;i++)L[i]=(q[i*4]*.3+q[i*4+1]*.59+q[i*4+2]*.11)/255;   // the preview's light and dark
+   postMessage({lum:L,nc:m.nc,nr:m.nr},[L.buffer]);return}
+  if(m.init){({B,P,W,H,M,d}=m.init);cv=new OffscreenCanvas(W+2*M,H+2*M);g=cv.getContext("2d",{willReadFrequently:true});return}
   exposeTrails(g,B,P,W,H,M,d,m.sp,m.th,m.seg);const bm=cv.transferToImageBitmap();postMessage({gen:m.gen,th:m.th,bm},[bm])}}
 function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"),lc=lit.getContext("2d");
  const grain=document.createElement("canvas"),gg=grain.getContext("2d"),sm=document.createElement("canvas"),smc=sm.getContext("2d"),sm2=document.createElement("canvas"),sm2c=sm2.getContext("2d");
  const mask=document.createElement("canvas"),mc=mask.getContext("2d"),lum=document.createElement("canvas"),lu=lum.getContext("2d",{willReadFrequently:true});
- const OMEGA=.0104,SPAN=.49,SEG=8;                                                      // rad/s as the background sky; 28°
+ const OMEGA=.0104,SPAN=.49,SEG=8,AE_LEVEL=.42;                                                      // rad/s as the background sky; 28°
  /* the film, a little larger than the frame so stars turning in from the edge are already there: re-exposed every 2 s by
     a worker, shown rotated by however far the sky has turned since */
- let film=null,M=0,pending=false,gen=0,wk=null,fb=null;
+ let film=null,M=0,pending=false,gen=0,wk=null,fb=null,prev=null,prevTh=0,fresh=false,xfT=-1e9,aeBusy=false,lumBusy=false,lumRes=0;
  try{wk=new Worker(URL.createObjectURL(new Blob([exposeTrails.toString()+";("+trailsWorker.toString()+")()"],{type:"text/javascript"})));
-  wk.onmessage=e=>{const m=e.data;if(m.gen!==gen){m.bm.close();return}if(film&&film.close)film.close();film=m.bm;filmTh=m.th;pending=false};
+  wk.onmessage=e=>{const m=e.data;if(m.hi!=null){aeBusy=false;ae=Math.max(.6,Math.min(2.5,ae*Math.pow(AE_LEVEL/Math.max(.02,m.hi),.06)));return}   // a slow pull (~8 s) to just under white on screen
+   if(m.lum){lumBusy=false;setMask(m.lum,m.nc,m.nr,lumRes);return}
+   if(m.gen!==gen){m.bm.close();return}if(prev&&prev.close)prev.close();prev=film;prevTh=filmTh;film=m.bm;filmTh=m.th;fresh=true;pending=false};
   wk.onerror=()=>{wk=null;pending=false}}catch(e){wk=null}                                        // no worker: expose on the page (slower)
- let batches=[],sk="",pat=null,filmT=-1e9,filmTh=0,span=0,P={px:0,py:0},meteors=[],sat=null,satAt=null,lastStep=null,maskT=-1e9,hasMask=false;
+ let batches=[],sk="",pat=null,filmT=-1e9,filmTh=0,span=0,P={px:0,py:0},meteors=[],sat=null,satAt=null,lastStep=null,maskT=-1e9,hasMask=false,lt=null,mt=null,mcur=null,mimg=null,ae=1,aeT=-1e9;
  grain.width=grain.height=160;const id=gg.createImageData(160,160);
  for(let i=0;i<id.data.length;i+=4){const v=Math.random()*255|0;id.data[i]=id.data[i+1]=id.data[i+2]=v;id.data[i+3]=255}gg.putImageData(id,0,0);
  const TINT=["#dfe8ff","#f4f6ff","#ffffff","#ffe2c4","#cddcff"],ss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t)};
@@ -173,9 +182,15 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
   for(let i=0;i<60;i++)add(10*d+R*.26*Math.pow(Math.random(),.7),1.5+Math.random()*3,true);   // a few fine orbits around the pole
   batches=[...map.values()].sort((a,b)=>a.a-b.a)}
  /* starlight shows the image: an alpha mask from the preview's light and dark (tiny, scaled up soft) */
- function makeMask(src,W,H,res){if(!src||src.width<8)return false;const nc=40,nr=Math.max(8,Math.round(40*H/W));lum.width=nc;lum.height=nr;lu.drawImage(src,0,0,nc,nr);
-  const p=lu.getImageData(0,0,nc,nr),q=p.data;for(let i=0;i<q.length;i+=4){const L=(q[i]*.3+q[i+1]*.59+q[i+2]*.11)/255;q[i]=q[i+1]=q[i+2]=255;q[i+3]=255*(1-res*.65*(1-Math.min(1,1.5*L)))}   // dark parts down to ~45 %, bright parts full
-  mask.width=nc;mask.height=nr;mc.putImageData(p,0,0);return true}
+ function setMask(L,nc,nr,res){if(!mimg||mimg.width!==nc||mimg.height!==nr){mask.width=nc;mask.height=nr;mimg=mc.createImageData(nc,nr);mcur=null}
+  mt=new Float32Array(nc*nr);for(let i=0;i<nc*nr;i++)mt[i]=1-res*.65*(1-Math.min(1,1.5*L[i]));        // dark parts down to ~45 %, bright parts full
+  if(!mcur)mcur=Float32Array.from(mt)}
+ function sampleMask(src,W,H,res){if(!src||src.width<8)return;const nc=40,nr=Math.max(8,Math.round(40*H/W));
+  if(wk){if(!lumBusy){lumBusy=true;lumRes=res;createImageBitmap(src,{resizeWidth:nc,resizeHeight:nr,resizeQuality:"medium"}).then(b=>wk.postMessage({lum:b,nc,nr},[b]),()=>lumBusy=false)}return}
+  lum.width=nc;lum.height=nr;lu.drawImage(src,0,0,nc,nr);const q=lu.getImageData(0,0,nc,nr).data,L=new Float32Array(nc*nr);   // no worker: read it here
+  for(let i=0;i<L.length;i++)L[i]=(q[i*4]*.3+q[i*4+1]*.59+q[i*4+2]*.11)/255;setMask(L,nc,nr,res)}
+ function easeMask(dt){if(!mcur)return false;const k=Math.min(1,dt/1500),D=mimg.data;                 // a new preview (once a step) eases in, never snaps
+  for(let i=0;i<mcur.length;i++){mcur[i]+=(mt[i]-mcur[i])*k;const o=i*4;D[o]=D[o+1]=D[o+2]=255;D[o+3]=255*mcur[i]}mc.putImageData(mimg,0,0);return true}
  function meteor(W,H,d,t,list,shower){const D=Math.hypot(W,H);let x,y,dx,dy,L;
   if(Math.random()<(shower||.7)){const rx=-W*.12,ry=-H*.1;x=W*(.05+Math.random()*.75);y=H*(.03+Math.random()*.55);    // shower: from a radiant just off the frame
    dx=x-rx;dy=y-ry;const s0=Math.hypot(dx,dy);dx/=s0;dy/=s0;L=Math.min(D*.9,s0*(.5+.7*Math.random()))}      // farther from the radiant = longer
@@ -210,24 +225,29 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
   for(let i=0;i<n;i++){const u=(Math.random()+Math.random())/2;meteor(W,H,d,t+u*2100,storm,.9);const m=storm[storm.length-1];
    m.dur*=.6;if(Math.random()<.18){m.w*=1.7;m.len*=1.15}}}
  return{storm(W,H,d,t){startStorm(W,H,d,t)},drawStorm(ctx,W,H,t,d){if(!storm.length)return false;storm=drawMeteors(ctx,t,d,1,storm);return storm.length>0},
-  reset(){sk="";span=0;lastStep=null;meteors=[];hasMask=false},
+  reset(){sk="";span=0;lastStep=null;meteors=[];hasMask=false;mt=mcur=null;ae=1},
   draw(ctx,W,H,t,d,cols,st){const k=W+"x"+H;if(k!==sk){sk=k;M=Math.round(60*d);lit.width=W;lit.height=H;build(W,H,d);filmT=-1e9;pending=false;gen++;
-    if(film&&film.close)film.close();film=null;if(wk)wk.postMessage({init:{B:batches,P,W,H,M,d}})}
+    if(film&&film.close)film.close();if(prev&&prev.close)prev.close();film=prev=null;if(wk)wk.postMessage({init:{B:batches,P,W,H,M,d}})}
+   const dt=lt==null?16:Math.min(100,Math.max(0,t-lt));lt=t;
    const str=st.str,age=Math.max(0,st.age||0),pr=Math.max(0,Math.min(1,st.prog||0)),sky=st.sky!=null?st.sky:t/1000,th=OMEGA*sky;
-   const want=SPAN*Math.min(1,pr/.9);span=filmT<-1e8?want:span+(want-span)*.08;
+   const want=SPAN*Math.min(1,pr/.9);span=filmT<-1e8?want:span+(want-span)*Math.min(1,dt/2500);   // eases: a step finishing early or late doesn't jolt the trails
    if(st.step!=null&&lastStep!=null&&st.step>lastStep)meteor(W,H,d,t);if(st.step!=null)lastStep=st.step;    // a meteor for each finished step
    if(!pending&&t-filmT>2000){filmT=t;
     if(wk){pending=true;wk.postMessage({gen,th,sp:span,seg:SEG})}
     else{if(!fb){fb=document.createElement("canvas")}fb.width=W+2*M;fb.height=H+2*M;exposeTrails(fb.getContext("2d"),batches,P,W,H,M,d,span,th,SEG);film=fb;filmTh=th}}
-   lc.clearRect(0,0,W,H);if(film){lc.save();lc.translate(P.px,P.py);lc.rotate(th-filmTh);lc.translate(-P.px,-P.py);lc.drawImage(film,-M,-M);lc.restore()}
-   const res=ss(.12,.6,pr);if(t-maskT>400){maskT=t;try{hasMask=makeMask(st.src,W,H,res)}catch(e){hasMask=false}}
+   if(fresh){fresh=false;xfT=t}const xf=prev?Math.min(1,(t-xfT)/600):1;if(prev&&xf>=1){if(prev.close)prev.close();prev=null}
+   const put=(img,a,ang)=>{lc.save();lc.globalAlpha=a;lc.globalCompositeOperation="lighter";lc.translate(P.px,P.py);lc.rotate(th-ang);lc.translate(-P.px,-P.py);lc.drawImage(img,-M,-M);lc.restore()};
+   lc.clearRect(0,0,W,H);if(film)put(film,xf,filmTh);if(prev)put(prev,1-xf,prevTh);                 // the new film cross-fades in over 0.6 s
+   const res=ss(.12,.6,pr);if(t-maskT>400){maskT=t;try{sampleMask(st.src,W,H,res)}catch(e){}}hasMask=easeMask(dt);
    if(hasMask){lc.globalCompositeOperation="destination-in";lc.imageSmoothingEnabled=true;lc.imageSmoothingQuality="high";lc.drawImage(mask,0,0,W,H);lc.globalCompositeOperation="source-over"}
    ctx.save();
    const w4=Math.max(40,Math.round(W/4)),h4=Math.max(30,Math.round(H/4));if(sm.width!==w4||sm.height!==h4){sm.width=sm2.width=w4;sm.height=sm2.height=h4}
-   smc.clearRect(0,0,w4,h4);aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",alpha:1,blend:"lighter",gain:.62});
-   sm2c.clearRect(0,0,w4,h4);sm2c.filter="blur(2.5px)";sm2c.drawImage(sm,0,0);sm2c.filter="none";
+   smc.clearRect(0,0,w4,h4);aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",auto:true,alpha:1,blend:"lighter",gain:.62*ae});
+   if(wk&&!aeBusy&&t-aeT>500){aeT=t;aeBusy=true;                                                  // auto-exposure, like the camera it is, metered on the highlights (worker)
+    createImageBitmap(sm,{resizeWidth:64,resizeHeight:80,resizeQuality:"medium"}).then(b=>wk.postMessage({ae:b},[b]),()=>aeBusy=false)}
+   sm2c.clearRect(0,0,w4,h4);sm2c.filter="blur(1.4px)";sm2c.drawImage(sm,0,0);sm2c.filter="none";
    ctx.globalCompositeOperation="lighter";ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
-   ctx.globalAlpha=Math.min(1,str*1.1);ctx.drawImage(sm2,0,0,W,H);ctx.globalAlpha=Math.min(1,str*.15);ctx.drawImage(sm,0,0,W,H);
+   ctx.globalAlpha=Math.min(1,str*1.3);ctx.drawImage(sm2,0,0,W,H);ctx.globalAlpha=Math.min(1,str*.4);ctx.drawImage(sm,0,0,W,H);   // keeps its rays
    ctx.globalAlpha=Math.min(1,Math.pow(str,1.4)*1.15);ctx.drawImage(lit,0,0);ctx.globalAlpha=1;
    drawSat(ctx,W,H,t,d,str);meteors=drawMeteors(ctx,t,d,str);
    ctx.globalCompositeOperation="overlay";ctx.globalAlpha=.07*str;if(!pat)pat=ctx.createPattern(grain,"repeat");

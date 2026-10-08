@@ -151,8 +151,12 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
   if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);
   if(embers.length){e.globalCompositeOperation="lighter";
+   const hardStars=skin().cover==="camera";
    embers=embers.filter(p=>{p.life+=dt;if(p.life>p.max)return false;p.x+=(p.vx+Math.sin(p.life/420+p.ph)*.015*d)*dt;p.y+=p.vy*dt;const q=p.life/p.max;
     const a=Math.min(1,q*6)*(1-q)*(.75+.25*Math.sin(p.life/90+p.ph));const r=p.r*5*(1-q*.4);
+    if(hardStars){if(p.g==null){p.g=Math.random()<.14;p.sc=Math.random()<.25?mixHex("#eef3ff",toHex(cols[1]),.45):"#eef3ff"}   // Aurora: crisp stars, like its sky — a few with a small glint
+     const s=Math.max(1,p.r*(p.g?1.15:.75)),tw=a*(.6+.4*Math.sin(p.life/140+p.ph*3));e.globalAlpha=tw;e.fillStyle=p.sc;e.fillRect(Math.round(p.x-s/2),Math.round(p.y-s/2),Math.ceil(s),Math.ceil(s));
+     if(p.g){const L=s*3.2;e.globalAlpha=tw*.55;e.strokeStyle=p.sc;e.lineWidth=Math.max(.6,d*.6);e.beginPath();e.moveTo(p.x-L,p.y);e.lineTo(p.x+L,p.y);e.moveTo(p.x,p.y-L);e.lineTo(p.x,p.y+L);e.stroke()}return true}
     e.globalAlpha=a*.7;e.drawImage(spr[p.c],p.x-r,p.y-r,r*2,r*2);e.globalAlpha=a;e.drawImage(spr.w,p.x-r*.25,p.y-r*.25,r*.5,r*.5);return true});
    e.globalCompositeOperation="source-over";e.globalAlpha=1}
   requestAnimationFrame(draw)}

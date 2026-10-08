@@ -252,7 +252,7 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
    if(hasMask){lc.globalCompositeOperation="destination-in";lc.imageSmoothingEnabled=true;lc.imageSmoothingQuality="high";lc.drawImage(mask,0,0,W,H);lc.globalCompositeOperation="source-over"}
    ctx.save();
    const w4=Math.max(40,Math.round(W/4)),h4=Math.max(30,Math.round(H/4));if(sm.width!==w4||sm.height!==h4){sm.width=sm2.width=w4;sm.height=sm2.height=h4}
-   smc.clearRect(0,0,w4,h4);const brk=fz?Math.pow(ramp,1.2)*1.1:0;   /* the aurora flares from the first moment of the build (a gentler curve than the spin: brightness is noticed later than motion) */
+   smc.clearRect(0,0,w4,h4);const brk=fz&&ramp>.3?Math.pow((ramp-.3)/.7,1.3)*1.1:0;   /* the aurora answers the build: it starts ~0.4 s in, after the spin and the light, and catches up by the peak */
    aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",auto:true,alpha:1,blend:"lighter",gain:.62*ae,surgeK:.45,boost:brk});   // gentler surges: a dark theme
    if(wk&&!fz&&!aeBusy&&t-aeT>250){aeT=t;aeBusy=true;                                                  // auto-exposure, like the camera it is, metered on the highlights (worker)
     createImageBitmap(sm,{resizeWidth:64,resizeHeight:80,resizeQuality:"medium"}).then(b=>wk.postMessage({ae:b},[b]),()=>aeBusy=false)}

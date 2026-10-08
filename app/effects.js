@@ -80,7 +80,8 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  sprites();
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
- if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1400;fadeDur=500;finishAt=n;finStr=str;fadeFrom=nstr;window._bgWave=n;return} /* the crescendo (skins.js): 1.4 s of build, then the night clears in ~0.5 s under the flash (which lasts ~0.9 s): no dip */
+ if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1400;fadeDur=500;finishAt=n;finStr=str;fadeFrom=nstr;window._bgWave=n+700;return} /* the crescendo (skins.js): 1.4 s of build, then the night clears in ~0.5 s under the flash (which lasts ~0.9 s): no dip. The sky behind
+   the app answers ~0.7 s later (its swell peaks around the release) */
  burst=2400};
  /* F8: replay the theme's finish over the image on show — to tune it without waiting for a job (Aurora: the cover first) */
  addEventListener("keydown",e=>{if(e.key!=="F8"||current()||S.view!=="gen"||!$("frame").classList.contains("has"))return;e.preventDefault();

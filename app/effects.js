@@ -68,7 +68,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    and emerges as progress grows (hover the image to peek through). EMBERS: a short burst when a job finishes. */
 (function(){const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  const vc=$("veil"),v=vc.getContext("2d"),ec=$("embers"),e=ec.getContext("2d");let W=0,H=0,last=0,str=0,hover=false,sparks=[],embers=[],burst=0,cols=["#FF8A00","#FF5E8A","#3FE0F0"],colT=0;
- const aur=makeAurora(),crt=makeCRT(),cam=makeCamera(),flareA=makeAurora();let crtJob=null,sweepT=0,flareT=0;
+ const aur=makeAurora(),crt=makeCRT(),cam=makeCamera();let crtJob=null,sweepT=0,nstr=0,fadeT=0,fadeFrom=0;const HOLD=.7,FADE=5000; /* Aurora: the night layer holds at 70 % from mid-job, then fades slowly after the finish */
  const smooth=(a,b,x)=>{const q=Math.max(0,Math.min(1,(x-a)/(b-a)));return q*q*(3-2*q)};
  $("frame").addEventListener("pointerenter",()=>hover=true);$("frame").addEventListener("pointerleave",()=>hover=false);
  function sprite(color,size){const c=document.createElement("canvas");c.width=c.height=size;const g=c.getContext("2d");const r=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
@@ -79,7 +79,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  sprites();
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
- if(skin().cover==="camera"){flareT=performance.now();window._bgWave=flareT;return} // a substorm: the curtain flares across the frame // the screen refreshes clean; a wave runs through the background
+ if(skin().cover==="camera"){const n=performance.now();cam.storm(W,H,devicePixelRatio||1,n);fadeT=n;fadeFrom=nstr;window._bgWave=n;return} /* a meteor storm over the night sky, which then fades slowly */
  burst=2400};
  function draw(t){const dt=Math.min(50,t-last||16);last=t;if(colT!==window._themeV){sprites();colT=window._themeV}
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
@@ -87,21 +87,23 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
   const j=current();const mode=(S.set||{}).veil||"full";const cover0=skin().cover;
   if(cover0==="crt"||cover0==="camera"){const k=j&&!browsed()?j.id:(Date.now()<(window._cpv||0)?"pv"+window._cpv:null);
    if(k!==crtJob){crtJob=k;if(k!=null){if(cover0==="crt")crt.powerOn(t);else cam.reset()}}} // a new job: the screen powers on / a new exposure starts
-  let target=0;if(j&&!browsed()&&S.view==="gen"&&mode!=="off"&&!reduce){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
+  let target=0,tN=null;if(j&&!browsed()&&S.view==="gen"&&mode!=="off"&&!reduce){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
    // full while step 1 renders, most of it gone during step 2, a little left on step 3, clear for the last step
    const K=cover0==="crt"||cover0==="camera"?[[0,1],[.25,1],[.5,.85],[.75,.45],[.92,0]]:[[0,1],[.25,1],[.5,.4],[.75,.12],[.92,0]]; /* the CRT stays longer: the code forms the image on steps 2–3 */let k0=0;for(let i=1;i<K.length;i++)if(pr<=K[i][0]){const [a,va]=K[i-1],[b,vb]=K[i];k0=va+(vb-va)*(pr-a)/(b-a);break}
-   target=k0*(mode==="light"?.55:1);if(hover)target*=.12}
+   target=k0*(mode==="light"?.55:1);if(cover0==="camera")tN=(pr>=.5?Math.max(k0,HOLD):k0)*(mode==="light"?.55:1)*(hover?.12:1);if(hover)target*=.12}
   else if(!j&&Date.now()<(window._cpv||0)&&S.view==="gen"&&mode!=="off"&&!reduce&&$("frame").classList.contains("has"))target=hover?.1:.8; // theme picked: preview the cover on the shown image
   str+=(target-str)*Math.min(1,dt/260);if(str<.002||(browsed()&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
+  if(tN==null)tN=target;if(j&&!browsed())fadeT=0;else if(fadeT){const p=(t-fadeT)/FADE;if(p>=1)fadeT=0;else tN=fadeFrom*(.5+.5*Math.cos(Math.PI*p))*(hover?.12:1)} // after the finish: a slow fade, slow at first
+  nstr+=(tN-nstr)*Math.min(1,dt/260);if(nstr<.002||(browsed()&&!(Date.now()<(window._cpv||0))))nstr=0;
   document.getElementById("frame").style.setProperty("--vf",str?`blur(${(24*str).toFixed(1)}px) brightness(${(1-.45*str).toFixed(3)}) saturate(${(1-.4*str).toFixed(3)})`:"none");
   v.clearRect(0,0,W,H);
-  if(str>0&&W){const T=t/1000;
+  if((cover0==="camera"?nstr:str)>0&&W){const T=t/1000;
    const cover=skin().cover;
-   v.globalCompositeOperation="source-over";v.fillStyle=cover==="crt"?`rgba(0,9,4,${.88*str})`:cover==="camera"?`rgba(2,5,9,${.8*str})`:`rgba(8,8,12,${.30*str})`;v.fillRect(0,0,W,H);
+   v.globalCompositeOperation="source-over";v.fillStyle=cover==="crt"?`rgba(0,9,4,${.88*str})`:cover==="camera"?`rgba(2,5,9,${.8*nstr})`:`rgba(8,8,12,${.30*str})`;v.fillRect(0,0,W,H);
    if(cover==="crt"){const pr=j?Math.max(0,Math.min(1,jobProgress(j).p||0)):.55;
     crt.draw(v,W,H,t,dt,d,cols.map(toHex),{str,resolve:smooth(.18,.6,pr),src:$("cv")});sparks.length=0}
    else if(cover==="camera"){const age=j&&j.started?(Date.now()-j.started)/1000:Math.max(0,(Date.now()-(window._cpv||Date.now())+6000)/1000);
-    cam.draw(v,W,H,t,d,cols.map(toHex),{str,age,prog:j?Math.max(0,Math.min(1,jobProgress(j).p||0)):.55})}
+    cam.draw(v,W,H,t,d,cols.map(toHex),{str:nstr,age,prog:j?Math.max(0,Math.min(1,jobProgress(j).p||0)):.55,step:j?j.step:null,src:$("cv")})}
    v.globalCompositeOperation="lighter";
    if(cover==="bands")
    for(let k=0;k<3;k++){const span=W+H,off=((T*(38+k*17)*d+k*span/3)%(span*1.4))-span*.2;
@@ -116,8 +118,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
     v.globalAlpha=a;v.strokeStyle="#ffffff";v.lineWidth=.7*d;const L=p.s*4*tw;v.beginPath();v.moveTo(p.x-L,p.y);v.lineTo(p.x+L,p.y);v.moveTo(p.x,p.y-L);v.lineTo(p.x,p.y+L);v.stroke()}
    v.globalAlpha=1;v.globalCompositeOperation="source-over"}else sparks.length=0;
   e.clearRect(0,0,W,H);
-  if(flareT&&W){const p=(t-flareT)/4200;if(p>=1||p<0)flareT=0;else if(S.view==="gen"){const q=p<.25?p/.25:1-(p-.25)/.75,a=.85*q*q*(3-2*q); /* a slow swell, a long glow, a long fade */
-   flareA.draw(e,W,H,t/1000,cols.map(toHex),{scale:5,layout:"frame",alpha:a,blend:"lighter",gain:1.3,boost:.5})}}
+  if(W&&S.view==="gen")cam.drawStorm(e,W,H,t,d);
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}
   if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);

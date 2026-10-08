@@ -116,62 +116,125 @@ function makeNightSky(){const aur=makeAurora();let stars=[],ridge=[],ridge2=[],k
   ctx.fillStyle=hl;ctx.fillRect(0,HY-2*d,W,4*d);                                                // the waterline catches a little light
   ctx.restore()}}}
 
-/* the render screen of Aurora: a long exposure, after real star-trail photos (Takasaka, Yukon 2010). The pole is inside
-   the frame, so every trail is a ring around one visible centre. Stars follow real statistics (each step fainter, ~3x
-   more of them): a few bright trails, dozens of medium ones, thousands of hair-thin faint ones — the depth. One bright
-   band of orbits; inside it a ceiling keeps the centre fine and quiet, outside it the stars fade to a floor. Trail
-   length follows the job's progress: dots at the start, 28° by 90 % (the photo's length, ~1 h 50 min of sky). The
-   aurora is smeared by the exposure into a soft glow. Your image develops out of the dark under it all.
-   Cheap on purpose: the trails go to a "film" canvas at most 4 times a second, only stars whose trail can reach the
-   frame are kept, and they are stroked in batches of the same look. */
+/* the render screen of Aurora: a comet-mode star-trail time-lapse, after real photos (Takasaka, Yukon 2010).
+   The pole is inside the frame and the sky turns at the background's speed (one turn in ~10 min); each trail has a bright
+   head (the star now) and a tail fading behind it, lengthening with the job's progress to the photo's 28°. Stars follow
+   real statistics (a few bright, thousands faint); one bright band of orbits, a quiet centre, a fade to a floor outside.
+   Starlight shows the image: trails are brighter where the preview is bright. A meteor for each finished step, streaming
+   in from a shower's radiant just off the frame (some sporadic) with a lingering train; now and then a satellite. The
+   aurora is smeared by the exposure into a soft glow. The finish is a meteor storm (effects.js holds the night layer at
+   70 % until then and fades it slowly after).
+   Cheap: a worker exposes the trails (culled, batched by look) into a film a little larger than the frame every 2 s;
+   in between, the film is just rotated. */
 AURORA_LAYOUTS.cam=[{a:[1.05,-.06],b:[-.05,.3],sag:.05,len:.2,depth:.5},{a:[1.1,.02],b:[-.12,.72],sag:.1,len:.34,depth:.9}];
-const SPAN_MAX=.49;
-function makeCamera(){const aur=makeAurora(),film=document.createElement("canvas"),fc=film.getContext("2d"),grain=document.createElement("canvas"),gg=grain.getContext("2d");
- const sm=document.createElement("canvas"),smc=sm.getContext("2d"),sm2=document.createElement("canvas"),sm2c=sm2.getContext("2d");
- let batches=[],sk="",pat=null,shown=-1,filmT=0,span=0,P={px:0,py:0};
+/* star trails for Aurora's camera: every star's arc from its tail to its head, in SEG pieces that fade toward the tail.
+   Pure (no outside state), because a worker runs it from its source text: the GPU then never has to raster thousands of
+   thin arcs at once — that stalled the whole page every redraw. */
+function exposeTrails(g,B,P,W,H,M,d,sp,th,SEG){g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W+2*M,H+2*M);
+ g.setTransform(1,0,0,1,M,M);g.globalCompositeOperation="lighter";g.lineCap="butt";               /* square ends: a tail's pieces meet without overlapping */
+ const inF=(r,a)=>{const x=P.px+r*Math.cos(a),y=P.py+r*Math.sin(a);return x>-M&&x<W+M&&y>-M&&y<H+M};
+ for(const b of B){const paths=[];for(let k=0;k<SEG;k++)paths.push(new Path2D());
+  for(let i=0;i<b.s.length;i+=2){const r=b.s[i],h=b.s[i+1]+th,sw=Math.max(sp,1.1*d/r);
+   if(!inF(r,h)&&!inF(r,h-sw/2)&&!inF(r,h-sw))continue;
+   for(let k=0;k<SEG;k++){const a0=h-sw+sw*k/SEG,a1=h-sw+sw*(k+1)/SEG;if(sw<=1.1*d/r*1.01&&k<SEG-1)continue;   // a dot: just the head
+    paths[k].moveTo(P.px+r*Math.cos(a0),P.py+r*Math.sin(a0));paths[k].arc(P.px,P.py,r,a0,a1)}}
+  g.strokeStyle=b.c;
+  for(let k=0;k<SEG;k++){const fade=.12+.88*Math.pow((k+1)/SEG,1.3);                                // the tail fades behind the head
+   g.globalAlpha=b.a*fade;g.lineWidth=b.w;g.stroke(paths[k]);
+   if(b.bloom){g.globalAlpha=b.a*fade*.1;g.lineWidth=b.w*3;g.stroke(paths[k])}}}
+ g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="source-over";g.globalAlpha=1}
+/* the worker: software raster on its own thread (willReadFrequently), the result handed back as an ImageBitmap */
+function trailsWorker(){let B,P,W,H,M,d,cv,g;
+ onmessage=e=>{const m=e.data;if(m.init){({B,P,W,H,M,d}=m.init);cv=new OffscreenCanvas(W+2*M,H+2*M);g=cv.getContext("2d",{willReadFrequently:true});return}
+  exposeTrails(g,B,P,W,H,M,d,m.sp,m.th,m.seg);const bm=cv.transferToImageBitmap();postMessage({gen:m.gen,th:m.th,bm},[bm])}}
+function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"),lc=lit.getContext("2d");
+ const grain=document.createElement("canvas"),gg=grain.getContext("2d"),sm=document.createElement("canvas"),smc=sm.getContext("2d"),sm2=document.createElement("canvas"),sm2c=sm2.getContext("2d");
+ const mask=document.createElement("canvas"),mc=mask.getContext("2d"),lum=document.createElement("canvas"),lu=lum.getContext("2d",{willReadFrequently:true});
+ const OMEGA=.0104,SPAN=.49,SEG=8;                                                      // rad/s as the background sky; 28°
+ /* the film, a little larger than the frame so stars turning in from the edge are already there: re-exposed every 2 s by
+    a worker, shown rotated by however far the sky has turned since */
+ let film=null,M=0,pending=false,gen=0,wk=null,fb=null;
+ try{wk=new Worker(URL.createObjectURL(new Blob([exposeTrails.toString()+";("+trailsWorker.toString()+")()"],{type:"text/javascript"})));
+  wk.onmessage=e=>{const m=e.data;if(m.gen!==gen){m.bm.close();return}if(film&&film.close)film.close();film=m.bm;filmTh=m.th;pending=false};
+  wk.onerror=()=>{wk=null;pending=false}}catch(e){wk=null}                                        // no worker: expose on the page (slower)
+ let batches=[],sk="",pat=null,filmT=-1e9,filmTh=0,span=0,P={px:0,py:0},meteors=[],sat=null,satAt=null,lastStep=null,maskT=-1e9,hasMask=false;
  grain.width=grain.height=160;const id=gg.createImageData(160,160);
  for(let i=0;i<id.data.length;i+=4){const v=Math.random()*255|0;id.data[i]=id.data[i+1]=id.data[i+2]=v;id.data[i+3]=255}gg.putImageData(id,0,0);
  const TINT=["#dfe8ff","#f4f6ff","#ffffff","#ffe2c4","#cddcff"],ss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t)};
- function build(W,H,d){const px=W*.6,py=H*.15,R=Math.hypot(Math.max(px,W-px),Math.max(py,H-py))+8*d,m=4*d,map=new Map();P={px,py};
-  const reach=(r,a)=>{for(let k=0;k<=4;k++){const b=a-SPAN_MAX*k/4,x=px+r*Math.cos(b),y=py+r*Math.sin(b);if(x>-m&&x<W+m&&y>-m&&y<H+m)return true}return false};
-  const add=(r,f,fine)=>{const a0=Math.random()*6.2832;if(!reach(r,a0))return;const q=r/R;
-   const cap=(.2+.7*ss(.1,.42,q))*(.5+.5*ss(.015,.08,q)),                                        /* inside the band: a ceiling, thinning right at the pole */
-    g=Math.max(.3,(1-.7*ss(.48,1,q))*(1-.95*ss(.68,.82,q)))*(fine?1:.7+.3*ss(.36,.42,q));          /* the band of orbits; outside it a fade to a floor */
+ function build(W,H,d){const px=W*.6,py=H*.15,R=Math.hypot(Math.max(px,W-px),Math.max(py,H-py))+8*d,map=new Map();P={px,py};
+  const add=(r,f,fine)=>{const q=r/R;
+   const cap=(.2+.7*ss(.1,.42,q))*(.5+.5*ss(.015,.08,q)),g=Math.max(.3,(1-.7*ss(.48,1,q))*(1-.95*ss(.68,.82,q)))*(fine?1:.7+.3*ss(.36,.42,q));
    const al=Math.min(.9,.075*Math.pow(f,.72),cap)*g;if(al<.012)return;
    const w=Math.min(1.7,.42+.17*Math.sqrt(f)),c=f>4&&!fine?TINT[Math.random()*TINT.length|0]:"#e6ecff";
-   const key=c+"|"+Math.round(al*40)+"|"+Math.round(w*8)+"|"+(f>14?1:0);                            /* stars that look alike share one stroke */
-   let b=map.get(key);if(!b)map.set(key,b={c,a:Math.round(al*40)/40,w:Math.round(w*8)/8*d,bloom:f>14,s:[]});b.s.push(r,a0)};
+   const key=c+"|"+Math.round(al*40)+"|"+Math.round(w*8)+"|"+(f>14?1:0);
+   let b=map.get(key);if(!b)map.set(key,b={c,a:Math.round(al*40)/40,w:Math.round(w*8)/8*d,bloom:f>14,s:[]});b.s.push(r,Math.random()*6.2832)};
   const n=Math.round(Math.PI*R*R/(800*d*d));
-  for(let i=0;i<n;i++)add(R*Math.sqrt(Math.random()),Math.min(60,Math.pow(Math.random(),-1/1.1)));  // brightness: N(>f) ~ f^-1.1
-  for(let i=0;i<175;i++)add(6*d+R*.26*Math.pow(Math.random(),.8),1.5+Math.random()*3,true);         // the fine little orbits around the pole
+  for(let i=0;i<n;i++)add(R*Math.sqrt(Math.random()),Math.min(60,Math.pow(Math.random(),-1/1.1)));
+  for(let i=0;i<60;i++)add(10*d+R*.26*Math.pow(Math.random(),.7),1.5+Math.random()*3,true);   // a few fine orbits around the pole
   batches=[...map.values()].sort((a,b)=>a.a-b.a)}
- function expose(d,sp){fc.clearRect(0,0,film.width,film.height);fc.globalCompositeOperation="lighter";fc.lineCap="round";
-  for(const b of batches){fc.beginPath();for(let i=0;i<b.s.length;i+=2){const r=b.s[i],a=b.s[i+1],sw=Math.max(sp,1.1*d/r);   // at least a dot
-    fc.moveTo(P.px+r*Math.cos(a),P.py+r*Math.sin(a));fc.arc(P.px,P.py,r,a,a-sw,true)}
-   fc.strokeStyle=b.c;fc.globalAlpha=b.a;fc.lineWidth=b.w;fc.stroke();
-   if(b.bloom){fc.globalAlpha=b.a*.1;fc.lineWidth=b.w*3;fc.stroke()}}                               // bright ones bloom
-  fc.globalCompositeOperation="source-over";fc.globalAlpha=1}
- return{reset(){sk="";span=0},                                                                       // a new job: a new sky, a fresh exposure
-  draw(ctx,W,H,t,d,cols,st){const k=W+"x"+H;if(k!==sk){sk=k;film.width=W;film.height=H;build(W,H,d);shown=-1}
-   const str=st.str,age=Math.max(0,st.age||0),pr=Math.max(0,Math.min(1,st.prog||0));
-   span+=(SPAN_MAX*Math.min(1,pr/.9)-span)*.08;                                                      // loosely tied to the progress: it eases, never jumps
-   if(shown<0||(Math.abs(span-shown)>.002&&t-filmT>250)){filmT=t;shown=span;expose(d,span)}
+ /* starlight shows the image: an alpha mask from the preview's light and dark (tiny, scaled up soft) */
+ function makeMask(src,W,H,res){if(!src||src.width<8)return false;const nc=40,nr=Math.max(8,Math.round(40*H/W));lum.width=nc;lum.height=nr;lu.drawImage(src,0,0,nc,nr);
+  const p=lu.getImageData(0,0,nc,nr),q=p.data;for(let i=0;i<q.length;i+=4){const L=(q[i]*.3+q[i+1]*.59+q[i+2]*.11)/255;q[i]=q[i+1]=q[i+2]=255;q[i+3]=255*(1-res*.65*(1-Math.min(1,1.5*L)))}   // dark parts down to ~45 %, bright parts full
+  mask.width=nc;mask.height=nr;mc.putImageData(p,0,0);return true}
+ function meteor(W,H,d,t,list,shower){const D=Math.hypot(W,H);let x,y,dx,dy,L;
+  if(Math.random()<(shower||.7)){const rx=-W*.12,ry=-H*.1;x=W*(.05+Math.random()*.75);y=H*(.03+Math.random()*.55);    // shower: from a radiant just off the frame
+   dx=x-rx;dy=y-ry;const s0=Math.hypot(dx,dy);dx/=s0;dy/=s0;L=Math.min(D*.9,s0*(.5+.7*Math.random()))}      // farther from the radiant = longer
+  else{const a=Math.random()*6.2832;x=W*(.1+Math.random()*.8);y=H*(.05+Math.random()*.6);dx=Math.cos(a);dy=Math.sin(a);L=D*(.2+.35*Math.random())} // a sporadic: any way
+  (list||meteors).push({x,y,dx,dy,len:L,t0:t,dur:650+900*L/D,w:(1.3+Math.random()*.9)*d})}
+ function drawMeteors(ctx,t,d,str,list){ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineCap="round";const vis=Math.min(1,str*1.3+.3);
+  const out=(list||meteors).filter(m=>{const p=(t-m.t0)/m.dur;if(p<0)return true;const TR=2.4;if(p>=1+TR)return false;     // the train lingers ~2.4 durations
+   const hp=1-Math.pow(1-Math.min(1,p),1.6),hx=m.x+m.dx*m.len*hp,hy=m.y+m.dy*m.len*hp;
+   // the persistent train: a faint glow along the path that fades slowly and widens a little
+   const tr=p<1?Math.min(1,p*3)*.22:.22*Math.pow(1-(p-1)/TR,1.5);
+   if(tr>.004){const g=ctx.createLinearGradient(m.x,m.y,hx,hy);g.addColorStop(0,"rgba(150,255,210,0)");g.addColorStop(.6,`rgba(170,255,220,${tr*vis})`);g.addColorStop(1,`rgba(190,255,230,${tr*vis*(p<1?1:.6)})`);
+    ctx.strokeStyle=g;ctx.lineWidth=m.w*(2.2+(p>1?(p-1)*1.5:0));ctx.beginPath();ctx.moveTo(m.x,m.y);ctx.lineTo(hx,hy);ctx.stroke()}
+   if(p<1){const a=(p<.08?p/.08:1)*(p>.75?(1-p)/.25:1)*vis,tl=m.len*Math.min(.4,p*.9),tx=hx-m.dx*tl,ty=hy-m.dy*tl;
+    const g=ctx.createLinearGradient(tx,ty,hx,hy);g.addColorStop(0,"rgba(220,255,240,0)");g.addColorStop(1,`rgba(245,255,250,${a})`);
+    ctx.strokeStyle=g;ctx.lineWidth=m.w;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(hx,hy);ctx.stroke();
+    ctx.globalAlpha=.25;ctx.lineWidth=m.w*4;ctx.stroke();ctx.globalAlpha=1;                                       // its glow
+    ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.beginPath();ctx.arc(hx,hy,m.w*1.1,0,6.283);ctx.fill()}
+   return true});
+  ctx.restore();return out}
+ function drawSat(ctx,W,H,t,d,str){if(satAt==null)satAt=t+60000+Math.random()*60000;
+  if(!sat&&t>satAt){const e=Math.random()<.5,y0=H*(.1+Math.random()*.7),y1=H*(.1+Math.random()*.7);
+   sat={x0:e?-10*d:W+10*d,y0,x1:e?W+10*d:-10*d,y1,t0:t,dur:11000+Math.random()*5000}}
+  if(!sat)return;const p=(t-sat.t0)/sat.dur;if(p>1.6){sat=null;satAt=t+70000+Math.random()*60000;return}
+  const hp=Math.min(1,p),hx=sat.x0+(sat.x1-sat.x0)*hp,hy=sat.y0+(sat.y1-sat.y0)*hp,back=.35,tp=Math.max(0,p-back),tx=sat.x0+(sat.x1-sat.x0)*Math.min(1,tp),ty=sat.y0+(sat.y1-sat.y0)*Math.min(1,tp);
+  const a=.5*Math.min(1,str*1.2)*(p>1?1-(p-1)/.6:1);ctx.save();ctx.globalCompositeOperation="lighter";
+  const g=ctx.createLinearGradient(tx,ty,hx,hy);g.addColorStop(0,"rgba(230,236,255,0)");g.addColorStop(1,`rgba(235,240,255,${a})`);
+  ctx.strokeStyle=g;ctx.lineWidth=.9*d;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(hx,hy);ctx.stroke();ctx.restore()}
+ let storm=[];
+ /* the finish: a meteor storm. ~22 meteors from the shower's radiant over ~2 s — building, a peak, tailing off — faster than
+    the step meteors, a few of them bright fireballs whose trains linger over the finished image */
+ function startStorm(W,H,d,t){storm=[];const n=20+(Math.random()*6|0);
+  for(let i=0;i<n;i++){const u=(Math.random()+Math.random())/2;meteor(W,H,d,t+u*2100,storm,.9);const m=storm[storm.length-1];
+   m.dur*=.6;if(Math.random()<.18){m.w*=1.7;m.len*=1.15}}}
+ return{storm(W,H,d,t){startStorm(W,H,d,t)},drawStorm(ctx,W,H,t,d){if(!storm.length)return false;storm=drawMeteors(ctx,t,d,1,storm);return storm.length>0},
+  reset(){sk="";span=0;lastStep=null;meteors=[];hasMask=false},
+  draw(ctx,W,H,t,d,cols,st){const k=W+"x"+H;if(k!==sk){sk=k;M=Math.round(60*d);lit.width=W;lit.height=H;build(W,H,d);filmT=-1e9;pending=false;gen++;
+    if(film&&film.close)film.close();film=null;if(wk)wk.postMessage({init:{B:batches,P,W,H,M,d}})}
+   const str=st.str,age=Math.max(0,st.age||0),pr=Math.max(0,Math.min(1,st.prog||0)),sky=st.sky!=null?st.sky:t/1000,th=OMEGA*sky;
+   const want=SPAN*Math.min(1,pr/.9);span=filmT<-1e8?want:span+(want-span)*.08;
+   if(st.step!=null&&lastStep!=null&&st.step>lastStep)meteor(W,H,d,t);if(st.step!=null)lastStep=st.step;    // a meteor for each finished step
+   if(!pending&&t-filmT>2000){filmT=t;
+    if(wk){pending=true;wk.postMessage({gen,th,sp:span,seg:SEG})}
+    else{if(!fb){fb=document.createElement("canvas")}fb.width=W+2*M;fb.height=H+2*M;exposeTrails(fb.getContext("2d"),batches,P,W,H,M,d,span,th,SEG);film=fb;filmTh=th}}
+   lc.clearRect(0,0,W,H);if(film){lc.save();lc.translate(P.px,P.py);lc.rotate(th-filmTh);lc.translate(-P.px,-P.py);lc.drawImage(film,-M,-M);lc.restore()}
+   const res=ss(.12,.6,pr);if(t-maskT>400){maskT=t;try{hasMask=makeMask(st.src,W,H,res)}catch(e){hasMask=false}}
+   if(hasMask){lc.globalCompositeOperation="destination-in";lc.imageSmoothingEnabled=true;lc.imageSmoothingQuality="high";lc.drawImage(mask,0,0,W,H);lc.globalCompositeOperation="source-over"}
    ctx.save();
-   // the aurora, smeared by the exposure: drawn small, blurred, scaled up
    const w4=Math.max(40,Math.round(W/4)),h4=Math.max(30,Math.round(H/4));if(sm.width!==w4||sm.height!==h4){sm.width=sm2.width=w4;sm.height=sm2.height=h4}
-   smc.clearRect(0,0,w4,h4);aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",alpha:1,blend:"lighter",gain:.62}); /* no surges: a long exposure is calm, the finish flare is the big moment. Gain set on 10 min of frames: typical = the approved stills */
+   smc.clearRect(0,0,w4,h4);aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",alpha:1,blend:"lighter",gain:.62});
    sm2c.clearRect(0,0,w4,h4);sm2c.filter="blur(2.5px)";sm2c.drawImage(sm,0,0);sm2c.filter="none";
    ctx.globalCompositeOperation="lighter";ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
    ctx.globalAlpha=Math.min(1,str*1.1);ctx.drawImage(sm2,0,0,W,H);ctx.globalAlpha=Math.min(1,str*.15);ctx.drawImage(sm,0,0,W,H);
-   // the trails leave a little before the glow once the image comes through
-   ctx.globalAlpha=Math.min(1,Math.pow(str,1.4)*1.15);ctx.drawImage(film,0,0);
-   // a fine, quiet grain
+   ctx.globalAlpha=Math.min(1,Math.pow(str,1.4)*1.15);ctx.drawImage(lit,0,0);ctx.globalAlpha=1;
+   drawSat(ctx,W,H,t,d,str);meteors=drawMeteors(ctx,t,d,str);
    ctx.globalCompositeOperation="overlay";ctx.globalAlpha=.07*str;if(!pat)pat=ctx.createPattern(grain,"repeat");
    ctx.translate(Math.random()*160|0,Math.random()*160|0);ctx.fillStyle=pat;ctx.fillRect(-160,-160,W+320,H+320);ctx.setTransform(1,0,0,1,0,0);
-   // the camera readout
    ctx.globalCompositeOperation="source-over";const fs=Math.round(11*d),m=Math.round(14*d),mm=String(Math.floor(age/60)).padStart(2,"0"),sc=String(Math.floor(age%60)).padStart(2,"0");
    ctx.font=`500 ${fs}px "IBM Plex Mono",ui-monospace,monospace`;ctx.textBaseline="bottom";
-   ctx.globalAlpha=str*(.55+.45*(Math.sin(t/420)>0?1:0));ctx.fillStyle="#ff5a4e";ctx.beginPath();ctx.arc(m+fs*.35,H-m-fs*.42,fs*.3,0,6.283);ctx.fill(); // the recording dot blinks
+   ctx.globalAlpha=str*(.55+.45*(Math.sin(t/420)>0?1:0));ctx.fillStyle="#ff5a4e";ctx.beginPath();ctx.arc(m+fs*.35,H-m-fs*.42,fs*.3,0,6.283);ctx.fill();
    ctx.globalAlpha=str*.62;ctx.fillStyle="#e8f0ec";ctx.fillText(`EXP ${mm}:${sc}  ·  ƒ/1.4  ·  ISO 6400`,m+fs*1.1,H-m);
    ctx.restore()}}}
 

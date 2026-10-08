@@ -301,7 +301,7 @@ function makeHalo(){const so=document.createElement("canvas"),sx=so.getContext("
    for(const p of patches)p.s=(p.s+p.v*dT+1)%1;                                                    // the lobes drift round the border
    sx.setTransform(1,0,0,1,0,0);sx.clearRect(0,0,sw,sh);sx.globalCompositeOperation="lighter";const SR=P/5;
    for(const q of spts){const f=field(q.s)*q.w*(1+B);if(f<.01)continue;
-    const hh=SR*(.6+.6*Math.min(1,f))*(.55+.45*q.w);sx.setTransform(-q.ny,q.nx,-q.nx,-q.ny,q.x,q.y);sx.globalAlpha=Math.min(1,f*.28);sx.drawImage(sstrip,-3.8,-hh,7.6,hh)}   /* ~6 strips overlap at a point */
+    const hh=SR*(.6+.44*Math.min(1,f))*(.55+.45*q.w);sx.setTransform(-q.ny,q.nx,-q.nx,-q.ny,q.x,q.y);sx.globalAlpha=Math.min(1,f*.28);sx.drawImage(sstrip,-3.8,-hh,7.6,hh)}   /* ~6 strips overlap at a point */
    sx.setTransform(1,0,0,1,0,0);sx.globalAlpha=1;
    sbx.clearRect(0,0,sw,sh);sbx.filter="blur(.8px)";sbx.drawImage(so,0,0);sbx.filter="none";      // blurred at 1/5 size, then scaled straight up
    ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.globalCompositeOperation="lighter";ctx.globalAlpha=op.alpha;

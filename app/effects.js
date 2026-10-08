@@ -44,7 +44,7 @@ function status(){const j=current();
  if(window._jobsReady){const d=lastDone(),v=resultStale&&d?d.id:null;if((S.clearedId??null)!==v){S.clearedId=v;save()}} // remember: closed on a clean screen
  $("frame").classList.toggle("running",!!j&&!browsed());const pend=jobs.filter(x=>x.status==="pending").length;
  const gm=(S.set||{}).glow||"gen";
- const src=(S.view==="gen"&&gm!=="off"&&(j||(gm==="always"&&shownDone())))?$("cv"):null;
+ const src=(S.view==="gen"&&gm!=="off"&&!(j&&skin().cover==="camera")&&(j||(gm==="always"&&shownDone())))?$("cv"):null;   /* Aurora has its frame glow instead */
  if(src&&src.width){ambC.imageSmoothingQuality="high";ambC.drawImage(src,0,0,12,12);amb.classList.add("on")}else amb.classList.remove("on");
  let p=null;
  if(j){const q=jobProgress(j);p=q.p;
@@ -68,7 +68,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    and emerges as progress grows (hover the image to peek through). EMBERS: a short burst when a job finishes. */
 (function(){const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  const vc=$("veil"),v=vc.getContext("2d"),ec=$("embers"),e=ec.getContext("2d");let W=0,H=0,last=0,str=0,hover=false,sparks=[],embers=[],burst=0,cols=["#FF8A00","#FF5E8A","#3FE0F0"],colT=0;
- const aur=makeAurora(),crt=makeCRT(),cam=makeCamera();let crtJob=null,sweepT=0,nstr=0,fadeT=0,fadeFrom=0;const HOLD=.7,FADE=5000; /* Aurora: the night layer holds at 70 % from mid-job, then fades slowly after the finish */
+ const aur=makeAurora(),crt=makeCRT(),cam=makeCamera();let crtJob=null,sweepT=0,nstr=0,fadeT=0,fadeFrom=0,fgA=0,stormAt=-1e9;const fg=$("fglow"),fgc=fg.getContext("2d");const HOLD=.7,FADE=5000; /* Aurora: the night layer holds at 70 % from mid-job, then fades slowly after the finish */
  const smooth=(a,b,x)=>{const q=Math.max(0,Math.min(1,(x-a)/(b-a)));return q*q*(3-2*q)};
  $("frame").addEventListener("pointerenter",()=>hover=true);$("frame").addEventListener("pointerleave",()=>hover=false);
  function sprite(color,size){const c=document.createElement("canvas");c.width=c.height=size;const g=c.getContext("2d");const r=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
@@ -79,7 +79,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  sprites();
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
- if(skin().cover==="camera"){const n=performance.now();cam.storm(W,H,devicePixelRatio||1,n);fadeT=n;fadeFrom=nstr;window._bgWave=n;return} /* a meteor storm over the night sky, which then fades slowly */
+ if(skin().cover==="camera"){const n=performance.now();cam.storm(W,H,devicePixelRatio||1,n);fadeT=n;stormAt=n;fadeFrom=nstr;window._bgWave=n;return} /* a meteor storm over the night sky, which then fades slowly */
  burst=2400};
  function draw(t){const dt=Math.min(50,t-last||16);last=t;if(colT!==window._themeV){sprites();colT=window._themeV}
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
@@ -117,6 +117,17 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
     v.globalAlpha=a*.55;const r=p.s*7;v.drawImage(spr[p.c],p.x-r,p.y-r,r*2,r*2);
     v.globalAlpha=a;v.strokeStyle="#ffffff";v.lineWidth=.7*d;const L=p.s*4*tw;v.beginPath();v.moveTo(p.x-L,p.y);v.lineTo(p.x+L,p.y);v.moveTo(p.x,p.y-L);v.lineTo(p.x,p.y+L);v.stroke()}
    v.globalAlpha=1;v.globalCompositeOperation="source-over"}else sparks.length=0;
+  /* Aurora: light spills from behind the image box — the cover's own aurora, scaled up soft past the edges; a meteor
+     brightens it a moment, the finish storm swells it while the night layer fades */
+  {const gm=(S.set||{}).glow||"gen",on=cover0==="camera"&&gm!=="off"&&S.view==="gen"&&nstr>0;
+   const gi=on?cam.glowInfo():null,pulse=gi?Math.max(0,1-(t-gi.met)/1400)*.3+Math.max(0,1-(t-stormAt)/3500)*.35:0;
+   fgA+=((on?Math.min(1,.3+.7*nstr+pulse):0)-fgA)*Math.min(1,dt/250);
+   if(fgA>.01&&gi&&gi.src.width){const a=$("frame").getBoundingClientRect(),pad=48,gw=64,gh=Math.max(16,Math.round(64*(a.height+2*pad)/(a.width+2*pad)));
+    if(fg.width!==gw||fg.height!==gh){fg.width=gw;fg.height=gh}
+    const fs=fg.style;fs.left=(a.left-pad)+"px";fs.top=(a.top-pad)+"px";fs.width=(a.width+2*pad)+"px";fs.height=(a.height+2*pad)+"px";fs.opacity=(fgA*.5).toFixed(3);
+    fgc.globalCompositeOperation="source-over";fgc.fillStyle=rgba(toHex(cols[0]),.28);fgc.fillRect(0,0,gw,gh);   // a faint rim in the theme colour, everywhere
+    fgc.globalCompositeOperation="lighter";fgc.imageSmoothingQuality="high";fgc.drawImage(gi.src,0,0,gw,gh);fgc.globalCompositeOperation="source-over"}   // the curtains, carried out past the edge
+   else if(fg.style.opacity!=="0")fg.style.opacity="0"}
   e.clearRect(0,0,W,H);
   if(W&&S.view==="gen")cam.drawStorm(e,W,H,t,d);
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}

@@ -53,7 +53,7 @@ function makeAurora(){const off=document.createElement("canvas"),o=off.getContex
   const dT=lastT==null?0:Math.max(0,Math.min(.2,T-lastT));lastT=T;
   let surge=0,su=0;                                                              // a surge: brightening travelling along the curtain
   if(op.auto){if(nextSurge==null)nextSurge=T+25+Math.random()*50;if(T>nextSurge&&surgeAt==null){surgeAt=T;nextSurge=T+60+Math.random()*60}
-   if(surgeAt!=null){const p=(T-surgeAt)/11;if(p>=1)surgeAt=null;else{const e=p<.3?p/.3:p>.6?(1-p)/.4:1;surge=e*e*(3-2*e);su=p*1.3-.15}}}
+   if(surgeAt!=null){const p=(T-surgeAt)/11;if(p>=1)surgeAt=null;else{const e=p<.3?p/.3:p>.6?(1-p)/.4:1;surge=e*e*(3-2*e)*(op.surgeK??1);su=p*1.3-.15}}}
   const boost=Math.max(surge,op.boost||0);tt+=dT*(1+.7*boost);                // the rays dance faster while it lasts
   o.clearRect(0,0,w,h);o.globalCompositeOperation="lighter";
   for(const L of AURORA_LAYOUTS[op.layout||"sky"]){const A=[L.a[0]*w,L.a[1]*h],B=[L.b[0]*w,L.b[1]*h],dx=B[0]-A[0],dy=B[1]-A[1],len=Math.hypot(dx,dy),
@@ -157,12 +157,12 @@ function trailsWorker(){let B,P,W,H,M,d,cv,g;
 function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"),lc=lit.getContext("2d");
  const grain=document.createElement("canvas"),gg=grain.getContext("2d"),sm=document.createElement("canvas"),smc=sm.getContext("2d"),sm2=document.createElement("canvas"),sm2c=sm2.getContext("2d");
  const mask=document.createElement("canvas"),mc=mask.getContext("2d"),lum=document.createElement("canvas"),lu=lum.getContext("2d",{willReadFrequently:true});
- const OMEGA=.0104,SPAN=.49,SEG=8,AE_LEVEL=.42;                                                      // rad/s as the background sky; 28°
+ const OMEGA=.0104,SPAN=.49,SEG=8,AE_LEVEL=.36;                                                      // rad/s as the background sky; 28°
  /* the film, a little larger than the frame so stars turning in from the edge are already there: re-exposed every 2 s by
     a worker, shown rotated by however far the sky has turned since */
  let film=null,M=0,pending=false,gen=0,wk=null,fb=null,prev=null,prevTh=0,fresh=false,xfT=-1e9,aeBusy=false,lumBusy=false,lumRes=0;
  try{wk=new Worker(URL.createObjectURL(new Blob([exposeTrails.toString()+";("+trailsWorker.toString()+")()"],{type:"text/javascript"})));
-  wk.onmessage=e=>{const m=e.data;if(m.hi!=null){aeBusy=false;ae=Math.max(.6,Math.min(2.5,ae*Math.pow(AE_LEVEL/Math.max(.02,m.hi),.06)));return}   // a slow pull (~8 s) to just under white on screen
+  wk.onmessage=e=>{const m=e.data;if(m.hi!=null){aeBusy=false;const r=AE_LEVEL/Math.max(.02,m.hi);ae=Math.max(.6,Math.min(2,ae*Math.pow(r,r<1?.35:.03)));return}   // quick to darken (~1 s), slow to brighten (~8 s)
    if(m.lum){lumBusy=false;setMask(m.lum,m.nc,m.nr,lumRes);return}
    if(m.gen!==gen){m.bm.close();return}if(prev&&prev.close)prev.close();prev=film;prevTh=filmTh;film=m.bm;filmTh=m.th;fresh=true;pending=false};
   wk.onerror=()=>{wk=null;pending=false}}catch(e){wk=null}                                        // no worker: expose on the page (slower)
@@ -180,6 +180,8 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
   const n=Math.round(Math.PI*R*R/(800*d*d));
   for(let i=0;i<n;i++)add(R*Math.sqrt(Math.random()),Math.min(60,Math.pow(Math.random(),-1/1.1)));
   for(let i=0;i<60;i++)add(10*d+R*.26*Math.pow(Math.random(),.7),1.5+Math.random()*3,true);   // a few fine orbits around the pole
+  heroes=[];for(let i=0;i<2;i++){let r=0,a=0;for(let k=0;k<80;k++){r=R*(.74+Math.random()*.18);a=Math.random()*6.2832;const x=px+r*Math.cos(a),y=py+r*Math.sin(a);if(x>W*.08&&x<W*.92&&y>H*.6&&y<H*.95)break}
+   heroes.push({r,a,c:TINT[Math.random()*TINT.length|0],w:1.6*d})}                                   // two bright stars low in the frame: drawn on top, no fade, no mask
   batches=[...map.values()].sort((a,b)=>a.a-b.a)}
  /* starlight shows the image: an alpha mask from the preview's light and dark (tiny, scaled up soft) */
  function setMask(L,nc,nr,res){if(!mimg||mimg.width!==nc||mimg.height!==nr){mask.width=nc;mask.height=nr;mimg=mc.createImageData(nc,nr);mcur=null}
@@ -195,7 +197,7 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
   if(Math.random()<(shower||.7)){const rx=-W*.12,ry=-H*.1;x=W*(.05+Math.random()*.75);y=H*(.03+Math.random()*.55);    // shower: from a radiant just off the frame
    dx=x-rx;dy=y-ry;const s0=Math.hypot(dx,dy);dx/=s0;dy/=s0;L=Math.min(D*.9,s0*(.5+.7*Math.random()))}      // farther from the radiant = longer
   else{const a=Math.random()*6.2832;x=W*(.1+Math.random()*.8);y=H*(.05+Math.random()*.6);dx=Math.cos(a);dy=Math.sin(a);L=D*(.2+.35*Math.random())} // a sporadic: any way
-  (list||meteors).push({x,y,dx,dy,len:L,t0:t,dur:650+900*L/D,w:(1.3+Math.random()*.9)*d})}
+  (list||meteors).push({x,y,dx,dy,len:L,t0:t,dur:650+900*L/D,w:(1.3+Math.random()*.9)*d});lastMet=Math.max(lastMet,t)}
  function drawMeteors(ctx,t,d,str,list){ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineCap="round";const vis=Math.min(1,str*1.3+.3);
   const out=(list||meteors).filter(m=>{const p=(t-m.t0)/m.dur;if(p<0)return true;const TR=2.4;if(p>=1+TR)return false;     // the train lingers ~2.4 durations
    const hp=1-Math.pow(1-Math.min(1,p),1.6),hx=m.x+m.dx*m.len*hp,hy=m.y+m.dy*m.len*hp;
@@ -218,13 +220,13 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
   const a=.5*Math.min(1,str*1.2)*(p>1?1-(p-1)/.6:1);ctx.save();ctx.globalCompositeOperation="lighter";
   const g=ctx.createLinearGradient(tx,ty,hx,hy);g.addColorStop(0,"rgba(230,236,255,0)");g.addColorStop(1,`rgba(235,240,255,${a})`);
   ctx.strokeStyle=g;ctx.lineWidth=.9*d;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(hx,hy);ctx.stroke();ctx.restore()}
- let storm=[];
+ let storm=[],lastMet=-1e9,heroes=[];
  /* the finish: a meteor storm. ~22 meteors from the shower's radiant over ~2 s — building, a peak, tailing off — faster than
     the step meteors, a few of them bright fireballs whose trains linger over the finished image */
  function startStorm(W,H,d,t){storm=[];const n=20+(Math.random()*6|0);
   for(let i=0;i<n;i++){const u=(Math.random()+Math.random())/2;meteor(W,H,d,t+u*2100,storm,.9);const m=storm[storm.length-1];
    m.dur*=.6;if(Math.random()<.18){m.w*=1.7;m.len*=1.15}}}
- return{storm(W,H,d,t){startStorm(W,H,d,t)},drawStorm(ctx,W,H,t,d){if(!storm.length)return false;storm=drawMeteors(ctx,t,d,1,storm);return storm.length>0},
+ return{glowInfo(){return{src:sm2,met:lastMet}},storm(W,H,d,t){startStorm(W,H,d,t)},drawStorm(ctx,W,H,t,d){if(!storm.length)return false;storm=drawMeteors(ctx,t,d,1,storm);return storm.length>0},
   reset(){sk="";span=0;lastStep=null;meteors=[];hasMask=false;mt=mcur=null;ae=1},
   draw(ctx,W,H,t,d,cols,st){const k=W+"x"+H;if(k!==sk){sk=k;M=Math.round(60*d);lit.width=W;lit.height=H;build(W,H,d);filmT=-1e9;pending=false;gen++;
     if(film&&film.close)film.close();if(prev&&prev.close)prev.close();film=prev=null;if(wk)wk.postMessage({init:{B:batches,P,W,H,M,d}})}
@@ -242,13 +244,17 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
    if(hasMask){lc.globalCompositeOperation="destination-in";lc.imageSmoothingEnabled=true;lc.imageSmoothingQuality="high";lc.drawImage(mask,0,0,W,H);lc.globalCompositeOperation="source-over"}
    ctx.save();
    const w4=Math.max(40,Math.round(W/4)),h4=Math.max(30,Math.round(H/4));if(sm.width!==w4||sm.height!==h4){sm.width=sm2.width=w4;sm.height=sm2.height=h4}
-   smc.clearRect(0,0,w4,h4);aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",auto:true,alpha:1,blend:"lighter",gain:.62*ae});
-   if(wk&&!aeBusy&&t-aeT>500){aeT=t;aeBusy=true;                                                  // auto-exposure, like the camera it is, metered on the highlights (worker)
+   smc.clearRect(0,0,w4,h4);aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",auto:true,alpha:1,blend:"lighter",gain:.62*ae,surgeK:.6});   // gentler surges: a dark theme
+   if(wk&&!aeBusy&&t-aeT>250){aeT=t;aeBusy=true;                                                  // auto-exposure, like the camera it is, metered on the highlights (worker)
     createImageBitmap(sm,{resizeWidth:64,resizeHeight:80,resizeQuality:"medium"}).then(b=>wk.postMessage({ae:b},[b]),()=>aeBusy=false)}
    sm2c.clearRect(0,0,w4,h4);sm2c.filter="blur(1.4px)";sm2c.drawImage(sm,0,0);sm2c.filter="none";
    ctx.globalCompositeOperation="lighter";ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
    ctx.globalAlpha=Math.min(1,str*1.3);ctx.drawImage(sm2,0,0,W,H);ctx.globalAlpha=Math.min(1,str*.4);ctx.drawImage(sm,0,0,W,H);   // keeps its rays
-   ctx.globalAlpha=Math.min(1,Math.pow(str,1.4)*1.15);ctx.drawImage(lit,0,0);ctx.globalAlpha=1;
+   ctx.globalAlpha=Math.min(1,Math.pow(str,1.4)*1.15);ctx.drawImage(lit,0,0);
+   ctx.lineCap="butt";for(const s of heroes){const h=s.a+th,sw=Math.max(span,1.1*d/s.r),fa=Math.min(1,Math.pow(str,1.4)*1.15);   // the two bright ones
+    ctx.strokeStyle=s.c;for(let k=0;k<SEG;k++){const a0=h-sw+sw*k/SEG;ctx.globalAlpha=fa*.9*(.12+.88*Math.pow((k+1)/SEG,1.3));ctx.lineWidth=s.w;ctx.beginPath();ctx.arc(P.px,P.py,s.r,a0,a0+sw/SEG);ctx.stroke()}
+    ctx.globalAlpha=fa*.25;ctx.lineWidth=s.w*3.5;ctx.beginPath();ctx.arc(P.px,P.py,s.r,h-sw*.3,h);ctx.stroke();                          // a little bloom near the head
+    ctx.globalAlpha=fa;ctx.fillStyle="#ffffff";ctx.beginPath();ctx.arc(P.px+s.r*Math.cos(h),P.py+s.r*Math.sin(h),s.w*.9,0,6.283);ctx.fill()}   // the star itselfctx.globalAlpha=1;
    drawSat(ctx,W,H,t,d,str);meteors=drawMeteors(ctx,t,d,str);
    ctx.globalCompositeOperation="overlay";ctx.globalAlpha=.07*str;if(!pat)pat=ctx.createPattern(grain,"repeat");
    ctx.translate(Math.random()*160|0,Math.random()*160|0);ctx.fillStyle=pat;ctx.fillRect(-160,-160,W+320,H+320);ctx.setTransform(1,0,0,1,0,0);

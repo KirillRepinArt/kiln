@@ -68,7 +68,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    and emerges as progress grows (hover the image to peek through). EMBERS: a short burst when a job finishes. */
 (function(){const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  const vc=$("veil"),v=vc.getContext("2d"),ec=$("embers"),e=ec.getContext("2d");let W=0,H=0,last=0,str=0,hover=false,sparks=[],embers=[],burst=0,cols=["#FF8A00","#FF5E8A","#3FE0F0"],colT=0;
- const aur=makeAurora(),crt=makeCRT(),cam=makeCamera();let crtJob=null,sweepT=0,nstr=0,fadeT=0,fadeFrom=0,fgA=0,finishAt=-1e9,haloT=0,fadeDur=0;const fg=$("fglow"),fgc=fg.getContext("2d"),halo=makeHalo();
+ const aur=makeAurora(),crt=makeCRT(),cam=makeCamera();let crtJob=null,sweepT=0,nstr=0,fadeT=0,fadeFrom=0,fgA=0,finishAt=-1e9,haloT=0,fadeDur=0,finStr=0;const fg=$("fglow"),fgc=fg.getContext("2d"),halo=makeHalo();
  const dith=document.createElement("canvas");dith.width=dith.height=64;{const g=dith.getContext("2d"),d=g.createImageData(64,64);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255|0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}g.putImageData(d,0,0)}const HOLD=.7,FADE=5000; /* Aurora: the night layer holds at 70 % from mid-job, then fades slowly after the finish */
  const smooth=(a,b,x)=>{const q=Math.max(0,Math.min(1,(x-a)/(b-a)));return q*q*(3-2*q)};
  $("frame").addEventListener("pointerenter",()=>hover=true);$("frame").addEventListener("pointerleave",()=>hover=false);
@@ -80,7 +80,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  sprites();
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
- if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1400;fadeDur=500;finishAt=n;fadeFrom=nstr;window._bgWave=n;return} /* the crescendo (skins.js): 1.4 s of build, then the night clears in ~0.5 s under the flash (which lasts ~0.9 s): no dip */
+ if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1400;fadeDur=500;finishAt=n;finStr=str;fadeFrom=nstr;window._bgWave=n;return} /* the crescendo (skins.js): 1.4 s of build, then the night clears in ~0.5 s under the flash (which lasts ~0.9 s): no dip */
  burst=2400};
  /* F8: replay the theme's finish over the image on show — to tune it without waiting for a job (Aurora: the cover first) */
  addEventListener("keydown",e=>{if(e.key!=="F8"||current()||S.view!=="gen"||!$("frame").classList.contains("has"))return;e.preventDefault();
@@ -96,6 +96,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    const K=cover0==="crt"||cover0==="camera"?[[0,1],[.25,1],[.5,.85],[.75,.45],[.92,0]]:[[0,1],[.25,1],[.5,.4],[.75,.12],[.92,0]]; /* the CRT stays longer: the code forms the image on steps 2–3 */let k0=0;for(let i=1;i<K.length;i++)if(pr<=K[i][0]){const [a,va]=K[i-1],[b,vb]=K[i];k0=va+(vb-va)*(pr-a)/(b-a);break}
    target=k0*(mode==="light"?.55:1);if(cover0==="camera")tN=(pr>=.5?Math.max(k0,HOLD):k0)*(mode==="light"?.55:1)*(hover?.12:1);if(hover)target*=.12}
   else if(!j&&Date.now()<(window._cpv||0)&&S.view==="gen"&&mode!=="off"&&!reduce&&$("frame").classList.contains("has"))target=hover?.1:.8; // theme picked: preview the cover on the shown image
+  if(cover0==="camera"){const r=t-finishAt;if(r<1400)target=Math.max(target,finStr);else if(r<1900)target=Math.max(target,finStr*(.5+.5*Math.cos(Math.PI*(r-1400)/500)))}   // the image's blur holds through the crescendo and lifts with the night
   str+=(target-str)*Math.min(1,dt/260);if(str<.002||(browsed()&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
   if(tN==null)tN=target;if(j&&!browsed())fadeT=0;else if(fadeT){const p=Math.max(0,(t-fadeT)/(fadeDur||FADE));if(p>=1){fadeT=0;fadeDur=0}else tN=fadeFrom*(.5+.5*Math.cos(Math.PI*p))*(hover?.12:1)} // after the finish: a slow fade, slow at first
   nstr+=(tN-nstr)*Math.min(1,dt/260);if(nstr<.002||(browsed()&&!(Date.now()<(window._cpv||0))))nstr=0;

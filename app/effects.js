@@ -132,7 +132,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
      const X=R*dp,Y=R*dp,FW=a.width*dp,FH=a.height*dp,rad=(parseFloat(getComputedStyle(fr).borderTopLeftRadius)||24)*dp,hc=cols.map(toHex);
      const k=fgA*(reduce?.75+.25*Math.sin(t/1800):1);                                                // reduced motion: a still glow that gently breathes
      fgc.clearRect(0,0,cw,ch);
-     halo.draw(fgc,X,Y,FW,FH,reduce?0:t/1000,hc,{reach:R*dp,radius:rad,alpha:.55*k,boost});   /* supporting light: kept below the cover's own */
+     halo.draw(fgc,X,Y,FW,FH,reduce?0:t/1000,hc,{reach:R*dp,radius:rad,alpha:.32*k,boost});   /* ambient: low opacity, the hot edge is the key light */
      halo.edge(fgc,X,Y,FW,FH,hc,{radius:rad,alpha:k,boost,narrow:3*dp,wide:20*dp});
      fgc.globalCompositeOperation="source-atop";fgc.globalAlpha=.05;fgc.fillStyle=fgc.createPattern(dith,"repeat");fgc.fillRect(0,0,cw,ch);   // a whisper of grain: no banding on near-black
      fgc.globalCompositeOperation="destination-out";fgc.globalAlpha=1;fgc.beginPath();fgc.roundRect(X+dp,Y+dp,FW-2*dp,FH-2*dp,Math.max(0,rad-dp));fgc.fill();   // nothing behind the image itself

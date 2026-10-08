@@ -279,7 +279,10 @@ function makeHalo(){const so=document.createElement("canvas"),sx=so.getContext("
   per:3+Math.random()*6,ph:Math.random()*6.283,d:.55+Math.random()*.45}));
  function strip(c){const red=mixHex(c[2],"#ff3355",.45),s=document.createElement("canvas");s.width=1;s.height=256;
   const g=s.getContext("2d"),gr=g.createLinearGradient(0,0,0,256);                                  // base (y=256) at the edge, a long smooth fall-off
-  gr.addColorStop(0,rgba(red,0));gr.addColorStop(.25,rgba(c[2],.07));gr.addColorStop(.55,rgba(c[1],.22));gr.addColorStop(.85,rgba(c[0],.5));gr.addColorStop(1,rgba(c[0],.6));
+  /* ambient light, not a second edge: less saturated (toward a dark teal), and dimmer right at the edge so the hot edge
+     keeps a darker margin to pop against; its mass sits a little further out */
+  const a0=mixHex(c[0],"#3d6e66",.3),a1=mixHex(c[1],"#4d6f6b",.3);
+  gr.addColorStop(0,rgba(red,0));gr.addColorStop(.25,rgba(c[2],.06));gr.addColorStop(.55,rgba(a1,.2));gr.addColorStop(.8,rgba(a0,.42));gr.addColorStop(.93,rgba(a0,.34));gr.addColorStop(1,rgba(a0,.26));
   g.fillStyle=gr;g.fillRect(0,0,1,256);return s}
  /* points round the rounded rectangle: position, outward normal, side weight (the bottom shorter), position along it */
  function perimeter(x0,y0,w,h,rr,step){const p=[],L=2*(w+h-4*rr)+2*Math.PI*rr;let s=0;
@@ -317,7 +320,7 @@ function makeHalo(){const so=document.createElement("canvas"),sx=so.getContext("
    const k=[X,Y,FW,FH,op.radius].join();if(k!==rk){rk=k;rimPts=perimeter(X,Y,FW,FH,op.radius,3)}
    const sw=Math.ceil(bw/4),sh=Math.ceil(bh/4);if(ts.width!==sw||ts.height!==sh){ts.width=sw;ts.height=sh}
    const tint=(c,col,pick)=>{const t=ts.getContext("2d");t.clearRect(0,0,sw,sh);t.lineCap="round";t.lineWidth=M/2;t.strokeStyle=col;
-    for(let i=0;i<rimPts.length;i+=2){const a=rimPts[i],f=Math.min(1.3,field(a.s)),lit=(.03+.62*Math.pow(Math.min(1,f),1.3))*(.6+.4*a.w)*(1+.6*(op.boost||0))*op.alpha;
+    for(let i=0;i<rimPts.length;i+=2){const a=rimPts[i],f=Math.min(1.3,field(a.s)),lit=(.03+.68*Math.pow(Math.min(1,f),1.3))*(.6+.4*a.w)*(1+.6*(op.boost||0))*op.alpha;
      const wide=Math.min(1,Math.max(0,(f-.15)/.75))*(.5+.5*a.w),al=lit*pick(wide);if(al<.01)continue;   // how far it reaches here follows the lobe
      t.globalAlpha=Math.min(1,al*.5);t.beginPath();t.moveTo((a.x-X+M)/4,(a.y-Y+M)/4);t.lineTo((a.x-X+M)/4+.01,(a.y-Y+M)/4);t.stroke()}t.globalAlpha=1;   /* round dots at 1/4 size: smooth, no wedges at corners */
     const g=c.getContext("2d");g.globalCompositeOperation="source-over";g.clearRect(0,0,bw,bh);g.imageSmoothingEnabled=true;g.imageSmoothingQuality="high";g.drawImage(ts,0,0,bw,bh)};

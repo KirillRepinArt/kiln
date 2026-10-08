@@ -162,7 +162,7 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
     a worker, shown rotated by however far the sky has turned since */
  let film=null,M=0,pending=false,gen=0,wk=null,fb=null,prev=null,prevTh=0,fresh=false,xfT=-1e9,aeBusy=false,lumBusy=false,lumRes=0;
  try{wk=new Worker(URL.createObjectURL(new Blob([exposeTrails.toString()+";("+trailsWorker.toString()+")()"],{type:"text/javascript"})));
-  wk.onmessage=e=>{const m=e.data;if(m.hi!=null){aeBusy=false;const r=AE_LEVEL/Math.max(.02,m.hi);ae=Math.max(.6,Math.min(2,ae*Math.pow(r,r<1?.35:.03)));return}   // quick to darken (~1 s), slow to brighten (~8 s)
+  wk.onmessage=e=>{const m=e.data;if(m.hi!=null){aeBusy=false;const r=AE_LEVEL/Math.max(.02,m.hi);ae=Math.max(.6,Math.min(1.7,ae*Math.pow(r,r<1?.35:.03)));return}   // quick to darken (~1 s), slow to brighten (~8 s)
    if(m.lum){lumBusy=false;setMask(m.lum,m.nc,m.nr,lumRes);return}
    if(m.gen!==gen){m.bm.close();return}if(prev&&prev.close)prev.close();prev=film;prevTh=filmTh;film=m.bm;filmTh=m.th;fresh=true;pending=false};
   wk.onerror=()=>{wk=null;pending=false}}catch(e){wk=null}                                        // no worker: expose on the page (slower)
@@ -239,12 +239,12 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
    if(hasMask){lc.globalCompositeOperation="destination-in";lc.imageSmoothingEnabled=true;lc.imageSmoothingQuality="high";lc.drawImage(mask,0,0,W,H);lc.globalCompositeOperation="source-over"}
    ctx.save();
    const w4=Math.max(40,Math.round(W/4)),h4=Math.max(30,Math.round(H/4));if(sm.width!==w4||sm.height!==h4){sm.width=sm2.width=w4;sm.height=sm2.height=h4}
-   smc.clearRect(0,0,w4,h4);aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",auto:true,alpha:1,blend:"lighter",gain:.62*ae,surgeK:.6});   // gentler surges: a dark theme
+   smc.clearRect(0,0,w4,h4);aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",auto:true,alpha:1,blend:"lighter",gain:.62*ae,surgeK:.45});   // gentler surges: a dark theme
    if(wk&&!aeBusy&&t-aeT>250){aeT=t;aeBusy=true;                                                  // auto-exposure, like the camera it is, metered on the highlights (worker)
     createImageBitmap(sm,{resizeWidth:64,resizeHeight:80,resizeQuality:"medium"}).then(b=>wk.postMessage({ae:b},[b]),()=>aeBusy=false)}
    sm2c.clearRect(0,0,w4,h4);sm2c.filter="blur(1.4px)";sm2c.drawImage(sm,0,0);sm2c.filter="none";
-   ctx.globalCompositeOperation="lighter";ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
-   ctx.globalAlpha=Math.min(1,str*1.3);ctx.drawImage(sm2,0,0,W,H);ctx.globalAlpha=Math.min(1,str*.4);ctx.drawImage(sm,0,0,W,H);   // keeps its rays
+   ctx.globalCompositeOperation="screen";ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";   /* screen, not add: the soft and sharp aurora layers stacked additively and clipped to white in a surge */
+   ctx.globalAlpha=Math.min(1,str*1.3);ctx.drawImage(sm2,0,0,W,H);ctx.globalAlpha=Math.min(1,str*.4);ctx.drawImage(sm,0,0,W,H);ctx.globalCompositeOperation="lighter";   // keeps its rays
    ctx.globalAlpha=Math.min(1,Math.pow(str,1.4)*1.15);ctx.drawImage(lit,0,0);
    ctx.lineCap="butt";for(const s of heroes){const h=s.a+th,sw=Math.max(span,1.1*d/s.r),fa=Math.min(1,Math.pow(str,1.4)*1.15);   // the two bright ones
     ctx.strokeStyle=s.c;for(let k=0;k<SEG;k++){const a0=h-sw+sw*k/SEG;ctx.globalAlpha=fa*.9*(.12+.88*Math.pow((k+1)/SEG,1.3));ctx.lineWidth=s.w;ctx.beginPath();ctx.arc(P.px,P.py,s.r,a0,a0+sw/SEG);ctx.stroke()}

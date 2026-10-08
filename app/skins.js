@@ -116,29 +116,63 @@ function makeNightSky(){const aur=makeAurora();let stars=[],ridge=[],ridge2=[],k
   ctx.fillStyle=hl;ctx.fillRect(0,HY-2*d,W,4*d);                                                // the waterline catches a little light
   ctx.restore()}}}
 
-/* the render screen of Aurora: a long exposure of the night sky. The aurora in the upper sky, star trails that lengthen
-   as the exposure runs, live film grain, and a small camera readout counting the job's real time; the image develops out
-   of the dark as the steps go on. */
-function makeCamera(){const aur=makeAurora(),grain=document.createElement("canvas"),gg=grain.getContext("2d");let stars=[],sk="",pat=null;
+/* the render screen of Aurora: a long exposure, after real star-trail photos (Takasaka, Yukon 2010). The pole is inside
+   the frame, so every trail is a ring around one visible centre. Stars follow real statistics (each step fainter, ~3x
+   more of them): a few bright trails, dozens of medium ones, thousands of hair-thin faint ones — the depth. One bright
+   band of orbits; inside it a ceiling keeps the centre fine and quiet, outside it the stars fade to a floor. Trail
+   length follows the job's progress: dots at the start, 28° by 90 % (the photo's length, ~1 h 50 min of sky). The
+   aurora is smeared by the exposure into a soft glow. Your image develops out of the dark under it all.
+   Cheap on purpose: the trails go to a "film" canvas at most 4 times a second, only stars whose trail can reach the
+   frame are kept, and they are stroked in batches of the same look. */
+AURORA_LAYOUTS.cam=[{a:[1.05,-.06],b:[-.05,.3],sag:.05,len:.2,depth:.5},{a:[1.1,.02],b:[-.12,.72],sag:.1,len:.34,depth:.9}];
+const SPAN_MAX=.49;
+function makeCamera(){const aur=makeAurora(),film=document.createElement("canvas"),fc=film.getContext("2d"),grain=document.createElement("canvas"),gg=grain.getContext("2d");
+ const sm=document.createElement("canvas"),smc=sm.getContext("2d"),sm2=document.createElement("canvas"),sm2c=sm2.getContext("2d");
+ let batches=[],sk="",pat=null,shown=-1,filmT=0,span=0,P={px:0,py:0};
  grain.width=grain.height=160;const id=gg.createImageData(160,160);
  for(let i=0;i<id.data.length;i+=4){const v=Math.random()*255|0;id.data[i]=id.data[i+1]=id.data[i+2]=v;id.data[i+3]=255}gg.putImageData(id,0,0);
- return{reset(){sk=""},
-  draw(ctx,W,H,t,d,cols,st){const k=W+"x"+H;if(k!==sk){sk=k;const px=-W*.15,py=-H*.3;stars=[];
-    for(let i=0;i<170;i++){const x=Math.random()*W,y=Math.random()*H*.85,dx=x-px,dy=y-py;stars.push({r:Math.hypot(dx,dy),a:Math.atan2(dy,dx),b:.15+Math.pow(Math.random(),3)*.85,px,py})}}
-   const str=st.str,age=Math.max(0,st.age||0);
+ const TINT=["#dfe8ff","#f4f6ff","#ffffff","#ffe2c4","#cddcff"],ss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t)};
+ function build(W,H,d){const px=W*.6,py=H*.15,R=Math.hypot(Math.max(px,W-px),Math.max(py,H-py))+8*d,m=4*d,map=new Map();P={px,py};
+  const reach=(r,a)=>{for(let k=0;k<=4;k++){const b=a-SPAN_MAX*k/4,x=px+r*Math.cos(b),y=py+r*Math.sin(b);if(x>-m&&x<W+m&&y>-m&&y<H+m)return true}return false};
+  const add=(r,f,fine)=>{const a0=Math.random()*6.2832;if(!reach(r,a0))return;const q=r/R;
+   const cap=(.2+.7*ss(.1,.42,q))*(.5+.5*ss(.015,.08,q)),                                        /* inside the band: a ceiling, thinning right at the pole */
+    g=Math.max(.3,(1-.7*ss(.48,1,q))*(1-.95*ss(.68,.82,q)))*(fine?1:.7+.3*ss(.36,.42,q));          /* the band of orbits; outside it a fade to a floor */
+   const al=Math.min(.9,.075*Math.pow(f,.72),cap)*g;if(al<.012)return;
+   const w=Math.min(1.7,.42+.17*Math.sqrt(f)),c=f>4&&!fine?TINT[Math.random()*TINT.length|0]:"#e6ecff";
+   const key=c+"|"+Math.round(al*40)+"|"+Math.round(w*8)+"|"+(f>14?1:0);                            /* stars that look alike share one stroke */
+   let b=map.get(key);if(!b)map.set(key,b={c,a:Math.round(al*40)/40,w:Math.round(w*8)/8*d,bloom:f>14,s:[]});b.s.push(r,a0)};
+  const n=Math.round(Math.PI*R*R/(800*d*d));
+  for(let i=0;i<n;i++)add(R*Math.sqrt(Math.random()),Math.min(60,Math.pow(Math.random(),-1/1.1)));  // brightness: N(>f) ~ f^-1.1
+  for(let i=0;i<175;i++)add(6*d+R*.26*Math.pow(Math.random(),.8),1.5+Math.random()*3,true);         // the fine little orbits around the pole
+  batches=[...map.values()].sort((a,b)=>a.a-b.a)}
+ function expose(d,sp){fc.clearRect(0,0,film.width,film.height);fc.globalCompositeOperation="lighter";fc.lineCap="round";
+  for(const b of batches){fc.beginPath();for(let i=0;i<b.s.length;i+=2){const r=b.s[i],a=b.s[i+1],sw=Math.max(sp,1.1*d/r);   // at least a dot
+    fc.moveTo(P.px+r*Math.cos(a),P.py+r*Math.sin(a));fc.arc(P.px,P.py,r,a,a-sw,true)}
+   fc.strokeStyle=b.c;fc.globalAlpha=b.a;fc.lineWidth=b.w;fc.stroke();
+   if(b.bloom){fc.globalAlpha=b.a*.1;fc.lineWidth=b.w*3;fc.stroke()}}                               // bright ones bloom
+  fc.globalCompositeOperation="source-over";fc.globalAlpha=1}
+ return{reset(){sk="";span=0},                                                                       // a new job: a new sky, a fresh exposure
+  draw(ctx,W,H,t,d,cols,st){const k=W+"x"+H;if(k!==sk){sk=k;film.width=W;film.height=H;build(W,H,d);shown=-1}
+   const str=st.str,age=Math.max(0,st.age||0),pr=Math.max(0,Math.min(1,st.prog||0));
+   span+=(SPAN_MAX*Math.min(1,pr/.9)-span)*.08;                                                      // loosely tied to the progress: it eases, never jumps
+   if(shown<0||(Math.abs(span-shown)>.002&&t-filmT>250)){filmT=t;shown=span;expose(d,span)}
    ctx.save();
-   aur.draw(ctx,W,H,t/1000,cols,{scale:5,layout:"frame",auto:true,alpha:Math.min(1,str*1.1),blend:"lighter",gain:1.15});
-   // star trails: arcs around a pole off the top-left, longer the longer the exposure has run
-   const span=Math.min(.42,.004+age*.0026);ctx.globalCompositeOperation="lighter";ctx.lineCap="round";
-   for(const s of stars){ctx.globalAlpha=s.b*.55*str;ctx.strokeStyle="#dfe9ff";ctx.lineWidth=(.6+s.b*.9)*d;ctx.beginPath();ctx.arc(s.px,s.py,s.r,s.a,s.a+span);ctx.stroke()}
-   // live film grain
-   ctx.globalCompositeOperation="overlay";ctx.globalAlpha=.22*str;if(!pat)pat=ctx.createPattern(grain,"repeat");
+   // the aurora, smeared by the exposure: drawn small, blurred, scaled up
+   const w4=Math.max(40,Math.round(W/4)),h4=Math.max(30,Math.round(H/4));if(sm.width!==w4||sm.height!==h4){sm.width=sm2.width=w4;sm.height=sm2.height=h4}
+   smc.clearRect(0,0,w4,h4);aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",alpha:1,blend:"lighter",gain:.62}); /* no surges: a long exposure is calm, the finish flare is the big moment. Gain set on 10 min of frames: typical = the approved stills */
+   sm2c.clearRect(0,0,w4,h4);sm2c.filter="blur(2.5px)";sm2c.drawImage(sm,0,0);sm2c.filter="none";
+   ctx.globalCompositeOperation="lighter";ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
+   ctx.globalAlpha=Math.min(1,str*1.1);ctx.drawImage(sm2,0,0,W,H);ctx.globalAlpha=Math.min(1,str*.15);ctx.drawImage(sm,0,0,W,H);
+   // the trails leave a little before the glow once the image comes through
+   ctx.globalAlpha=Math.min(1,Math.pow(str,1.4)*1.15);ctx.drawImage(film,0,0);
+   // a fine, quiet grain
+   ctx.globalCompositeOperation="overlay";ctx.globalAlpha=.07*str;if(!pat)pat=ctx.createPattern(grain,"repeat");
    ctx.translate(Math.random()*160|0,Math.random()*160|0);ctx.fillStyle=pat;ctx.fillRect(-160,-160,W+320,H+320);ctx.setTransform(1,0,0,1,0,0);
    // the camera readout
-   ctx.globalCompositeOperation="source-over";const fs=Math.round(11*d),m=Math.round(14*d),mm=String(Math.floor(age/60)).padStart(2,"0"),ss=String(Math.floor(age%60)).padStart(2,"0");
+   ctx.globalCompositeOperation="source-over";const fs=Math.round(11*d),m=Math.round(14*d),mm=String(Math.floor(age/60)).padStart(2,"0"),sc=String(Math.floor(age%60)).padStart(2,"0");
    ctx.font=`500 ${fs}px "IBM Plex Mono",ui-monospace,monospace`;ctx.textBaseline="bottom";
    ctx.globalAlpha=str*(.55+.45*(Math.sin(t/420)>0?1:0));ctx.fillStyle="#ff5a4e";ctx.beginPath();ctx.arc(m+fs*.35,H-m-fs*.42,fs*.3,0,6.283);ctx.fill(); // the recording dot blinks
-   ctx.globalAlpha=str*.62;ctx.fillStyle="#e8f0ec";ctx.fillText(`EXP ${mm}:${ss}  ·  ƒ/1.4  ·  ISO 6400`,m+fs*1.1,H-m);
+   ctx.globalAlpha=str*.62;ctx.fillStyle="#e8f0ec";ctx.fillText(`EXP ${mm}:${sc}  ·  ƒ/1.4  ·  ISO 6400`,m+fs*1.1,H-m);
    ctx.restore()}}}
 
 /* ---------- Code (Emerald): our own glyphs, a cold sparse background, a CRT render screen ----------

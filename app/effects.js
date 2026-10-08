@@ -90,18 +90,18 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
   let target=0;if(j&&!browsed()&&S.view==="gen"&&mode!=="off"&&!reduce){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
    // full while step 1 renders, most of it gone during step 2, a little left on step 3, clear for the last step
    const K=cover0==="crt"||cover0==="camera"?[[0,1],[.25,1],[.5,.85],[.75,.45],[.92,0]]:[[0,1],[.25,1],[.5,.4],[.75,.12],[.92,0]]; /* the CRT stays longer: the code forms the image on steps 2–3 */let k0=0;for(let i=1;i<K.length;i++)if(pr<=K[i][0]){const [a,va]=K[i-1],[b,vb]=K[i];k0=va+(vb-va)*(pr-a)/(b-a);break}
-   target=k0*(mode==="light"?.55:1);if(hover)target*=cover0==="camera"?.3:.12}
+   target=k0*(mode==="light"?.55:1);if(hover)target*=.12}
   else if(!j&&Date.now()<(window._cpv||0)&&S.view==="gen"&&mode!=="off"&&!reduce&&$("frame").classList.contains("has"))target=hover?.1:.8; // theme picked: preview the cover on the shown image
   str+=(target-str)*Math.min(1,dt/260);if(str<.002||(browsed()&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
   document.getElementById("frame").style.setProperty("--vf",str?`blur(${(24*str).toFixed(1)}px) brightness(${(1-.45*str).toFixed(3)}) saturate(${(1-.4*str).toFixed(3)})`:"none");
   v.clearRect(0,0,W,H);
   if(str>0&&W){const T=t/1000;
    const cover=skin().cover;
-   v.globalCompositeOperation="source-over";v.fillStyle=cover==="crt"?`rgba(0,9,4,${.88*str})`:cover==="camera"?`rgba(2,5,9,${.62*str})`:`rgba(8,8,12,${.30*str})`;v.fillRect(0,0,W,H);
+   v.globalCompositeOperation="source-over";v.fillStyle=cover==="crt"?`rgba(0,9,4,${.88*str})`:cover==="camera"?`rgba(2,5,9,${.8*str})`:`rgba(8,8,12,${.30*str})`;v.fillRect(0,0,W,H);
    if(cover==="crt"){const pr=j?Math.max(0,Math.min(1,jobProgress(j).p||0)):.55;
     crt.draw(v,W,H,t,dt,d,cols.map(toHex),{str,resolve:smooth(.18,.6,pr),src:$("cv")});sparks.length=0}
    else if(cover==="camera"){const age=j&&j.started?(Date.now()-j.started)/1000:Math.max(0,(Date.now()-(window._cpv||Date.now())+6000)/1000);
-    cam.draw(v,W,H,t,d,cols.map(toHex),{str,age})}
+    cam.draw(v,W,H,t,d,cols.map(toHex),{str,age,prog:j?Math.max(0,Math.min(1,jobProgress(j).p||0)):.55})}
    v.globalCompositeOperation="lighter";
    if(cover==="bands")
    for(let k=0;k<3;k++){const span=W+H,off=((T*(38+k*17)*d+k*span/3)%(span*1.4))-span*.2;

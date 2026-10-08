@@ -68,7 +68,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    and emerges as progress grows (hover the image to peek through). EMBERS: a short burst when a job finishes. */
 (function(){const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
  const vc=$("veil"),v=vc.getContext("2d"),ec=$("embers"),e=ec.getContext("2d");let W=0,H=0,last=0,str=0,hover=false,sparks=[],embers=[],burst=0,cols=["#FF8A00","#FF5E8A","#3FE0F0"],colT=0;
- const aur=makeAurora(),crt=makeCRT(),cam=makeCamera();let crtJob=null,sweepT=0,nstr=0,fadeT=0,fadeFrom=0,fgA=0,finishAt=-1e9,haloT=0,fadeDur=0,finStr=0;const fg=$("fglow"),fgc=fg.getContext("2d"),halo=makeHalo();
+ const aur=makeAurora(),crt=makeCRT(),cam=makeCamera();let crtJob=null,sweepT=0,nstr=0,fadeT=0,fadeFrom=0,fgA=0,finishAt=-1e9,haloT=0,fadeDur=0,finStr=0,motes=[],motesFor=0;const fg=$("fglow"),fgc=fg.getContext("2d"),halo=makeHalo();
  const dith=document.createElement("canvas");dith.width=dith.height=64;{const g=dith.getContext("2d"),d=g.createImageData(64,64);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255|0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}g.putImageData(d,0,0)}const HOLD=.7,FADE=5000; /* Aurora: the night layer holds at 70 % from mid-job, then fades slowly after the finish */
  const smooth=(a,b,x)=>{const q=Math.max(0,Math.min(1,(x-a)/(b-a)));return q*q*(3-2*q)};
  $("frame").addEventListener("pointerenter",()=>hover=true);$("frame").addEventListener("pointerleave",()=>hover=false);
@@ -80,7 +80,8 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  sprites();
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
- if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1400;fadeDur=500;finishAt=n;finStr=str;fadeFrom=nstr;window._bgWave=n+700;return} /* the crescendo (skins.js): 1.4 s of build, then the night clears in ~0.5 s under the flash (which lasts ~0.9 s): no dip. The sky behind
+ if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1400;fadeDur=500;finishAt=n;finStr=str;
+  setTimeout(()=>{try{$("frame").animate([{scale:"1"},{scale:"1.012",offset:.3},{scale:"1"}],{duration:560,easing:"cubic-bezier(.2,.9,.25,1)"})}catch(e){}},1400);   /* the release lands: the box swells a hair and settles */fadeFrom=nstr;window._bgWave=n+700;return} /* the crescendo (skins.js): 1.4 s of build, then the night clears in ~0.5 s under the flash (which lasts ~0.9 s): no dip. The sky behind
    the app answers ~0.7 s later (its swell peaks around the release) */
  burst=2400};
  /* F8: replay the theme's finish over the image on show — to tune it without waiting for a job (Aurora: the cover first) */
@@ -127,10 +128,11 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
      the finish. A step's meteor makes it respond, the finish a little more — always with a soft rise (~0.4 s) and fall,
      never a jump. ~20 fps: it moves slowly. */
   {const gm=(S.set||{}).glow||"gen",on=cover0==="camera"&&gm!=="off"&&S.view==="gen"&&nstr>0;
+   if(S.view!=="gen")motes.length=0;
    fgA+=((on?Math.min(1,nstr/HOLD):0)-fgA)*Math.min(1,dt/400);
    const fr=$("frame");
-   if(fgA>.01){if(t-haloT>=48){haloT=t;
-     const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.3*env(t-gi.met,1300)+(f=>f<0?0:f<1?.8*f*f*f:.8*Math.exp(-(f-1)*1.6))((t-finishAt)/1400);   /* builds with the crescendo, lets go at the release */
+   if(fgA>.01||motes.length){if(t-haloT>=(motes.length||t-finishAt<2200?14:48)){haloT=t;          /* full frame rate while the finish and its sparks run */
+     const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.3*env(t-gi.met,1300)+(f=>f<0?0:f<1?.8*f*f*f:f<1.15?.8+.6*(x=>x*x*(3-2*x))((f-1)/.15):1.4*Math.exp(-(f-1.15)*2.2))((t-finishAt)/1400);   /* builds with the crescendo, exhales at the release */
      const a=fr.getBoundingClientRect(),dp=devicePixelRatio||1,R=95,   /* the bloom's reach (css px): 130 read too wide on screen */cw=Math.round((a.width+2*R)*dp),ch=Math.round((a.height+2*R)*dp);
      if(fg.width!==cw||fg.height!==ch){fg.width=cw;fg.height=ch}
      const fs=fg.style;fs.left=(a.left-R)+"px";fs.top=(a.top-R)+"px";fs.width=(a.width+2*R)+"px";fs.height=(a.height+2*R)+"px";fs.opacity="1";
@@ -139,6 +141,15 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
      fgc.clearRect(0,0,cw,ch);
      halo.draw(fgc,X,Y,FW,FH,reduce?0:t/1000,hc,{reach:R*dp,radius:rad,alpha:.32*k,boost});   /* ambient: low opacity, the hot edge is the key light */
      halo.edge(fgc,X,Y,FW,FH,hc,{radius:rad,alpha:k,boost,narrow:3*dp,wide:20*dp});
+     if(finishAt>0&&motesFor!==finishAt&&t>=finishAt+1400&&!reduce){motesFor=finishAt;          // the release throws off sparks of the halo's light
+      for(let i=0;i<48;i++){const u=Math.random();let x,y;if(u<.38){x=-(3+Math.random()*24)*dp;y=FH*(.2+Math.random()*.8)}
+       else if(u<.76){x=FW+(3+Math.random()*24)*dp;y=FH*(.2+Math.random()*.8)}else{x=Math.random()*FW;y=FH+(3+Math.random()*12)*dp}
+       motes.push({x,y,vx:(Math.random()-.5)*22,vy:-(40+Math.random()*100),ph:Math.random()*6.28,born:t+Math.random()*420,life:1200+Math.random()*1300,r:(.9+Math.random()*1.5)*dp,c:Math.random()<.12?"a3":Math.random()<.55?"a1":"a2"})}}
+     if(motes.length){fgc.globalCompositeOperation="lighter";
+      motes=motes.filter(m=>{const a=t-m.born;if(a<0)return true;if(a>m.life)return false;const q=a/m.life,sec=a/1000;
+       const px=X+m.x+(m.vx*sec+6*Math.sin(sec*2.2+m.ph))*dp,py=Y+m.y+(m.vy*sec-26*sec*sec)*dp,al=Math.min(1,q*7)*Math.pow(1-q,1.4),rr=m.r*4.5;   // buoyant: they speed up as they rise
+       fgc.globalAlpha=al*.75;fgc.drawImage(spr[m.c],px-rr,py-rr,2*rr,2*rr);fgc.globalAlpha=al;fgc.drawImage(spr.w,px-m.r*.6,py-m.r*.6,m.r*1.2,m.r*1.2);return true});
+      fgc.globalCompositeOperation="source-over";fgc.globalAlpha=1}
      fgc.globalCompositeOperation="source-atop";fgc.globalAlpha=.05;fgc.fillStyle=fgc.createPattern(dith,"repeat");fgc.fillRect(0,0,cw,ch);   // a whisper of grain: no banding on near-black
      fgc.globalCompositeOperation="destination-out";fgc.globalAlpha=1;fgc.beginPath();fgc.roundRect(X+dp,Y+dp,FW-2*dp,FH-2*dp,Math.max(0,rad-dp));fgc.fill();   // nothing behind the image itself
      fgc.globalCompositeOperation="source-over";fr.classList.add("halo")}}

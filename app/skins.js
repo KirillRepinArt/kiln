@@ -225,7 +225,11 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
     the peak a soft exposure flash; effects.js then dissolves the night in ~0.9 s and the image is there. Deterministic —
     it starts when the job is done, never on a guess of when it will be. The counter stops, the dot goes out. */
  const RAMP=1400;let finT=null,fin=null,live={th:0,age:0,span:0,pr:0},spinA=0,spinW=0;
- return{finish(t){finT=t;fin=null;spinA=spinW=0},glowInfo(){return{src:sm2,met:lastMet}},
+ return{finish(t){finT=t;fin=null;spinA=spinW=0},
+  /* the peak's soft exposure flash: its own layer (effects.js draws it above the cover) so it runs its full course after
+     the night has cleared — the sky is gone under it, then it hands over to the clean image */
+  drawFlash(ctx,W,H,t,cols){if(finT==null)return;const r=t-finT-RAMP,fl=r<-150?0:r<0?(r+150)/150:r<900?.5+.5*Math.cos(Math.PI*r/900):0;if(fl<.01)return;
+   ctx.save();ctx.globalCompositeOperation="screen";ctx.globalAlpha=.3*fl;ctx.fillStyle=mixHex(cols[1],"#ffffff",.6);ctx.fillRect(0,0,W,H);ctx.restore()},glowInfo(){return{src:sm2,met:lastMet}},
   reset(){sk="";span=0;lastStep=null;meteors=[];hasMask=false;mt=mcur=null;ae=1;finT=null;fin=null;spinA=spinW=0},
   draw(ctx,W,H,t,d,cols,st){const k=W+"x"+H;if(k!==sk){sk=k;M=Math.round(60*d);lit.width=W;lit.height=H;build(W,H,d);filmT=-1e9;pending=false;gen++;
     if(film&&film.close)film.close();if(prev&&prev.close)prev.close();film=prev=null;if(wk)wk.postMessage({init:{B:batches,P,W,H,M,d}})}
@@ -233,6 +237,7 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
    let str=st.str,age=Math.max(0,st.age||0),pr=Math.max(0,Math.min(1,st.prog||0)),sky=st.sky!=null?st.sky:t/1000,th=OMEGA*sky;
    const fz=finT!=null&&t>=finT,ramp=fz?Math.min(1,(t-finT)/RAMP):0,acc=ramp*ramp*ramp;
    if(fz){if(!fin)fin={...live};spinW=3.2*acc;spinA+=spinW*dt/1000;th=fin.th+spinA;age=fin.age;pr=fin.pr}   // the sky spins up; the counter stops
+   if(fz)str*=Math.max(0,1-Math.max(0,t-finT-RAMP)/450);                                               /* at the peak the flash consumes the sky: gone in ~0.45 s */
    const want=SPAN*Math.min(1,pr/.9);span=fz?fin.span:filmT<-1e8?want:span+(want-span)*Math.min(1,dt/2500);if(!fz)live={th,age,span,pr};   // eases: a step finishing early or late doesn't jolt the trails
    if(!fz&&st.step!=null&&lastStep!=null&&st.step>lastStep)meteor(W,H,d,t);if(st.step!=null)lastStep=st.step;    // a meteor for each finished step
    if(!pending&&t-filmT>2000){filmT=t;
@@ -264,7 +269,6 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
    ctx.translate(Math.random()*160|0,Math.random()*160|0);ctx.fillStyle=pat;ctx.fillRect(-160,-160,W+320,H+320);ctx.setTransform(1,0,0,1,0,0);
    ctx.globalCompositeOperation="source-over";const fs=Math.round(11*d),m=Math.round(14*d),mm=String(Math.floor(age/60)).padStart(2,"0"),sc=String(Math.floor(age%60)).padStart(2,"0");
    ctx.font=`500 ${fs}px "IBM Plex Mono",ui-monospace,monospace`;ctx.textBaseline="bottom";
-   if(fz){const r=t-finT-RAMP,fl=r<-150?0:r<0?(r+150)/150:Math.exp(-r/350);if(fl>.01){ctx.globalCompositeOperation="screen";ctx.globalAlpha=.3*fl;ctx.fillStyle=mixHex(cols[1],"#ffffff",.6);ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation="source-over"}}   // the peak: a soft exposure flash
    ctx.globalAlpha=fz?0:str*(.55+.45*(Math.sin(t/420)>0?1:0));ctx.fillStyle="#ff5a4e";ctx.beginPath();ctx.arc(m+fs*.35,H-m-fs*.42,fs*.3,0,6.283);ctx.fill();
    ctx.globalAlpha=str*.62;ctx.fillStyle="#e8f0ec";ctx.fillText(`EXP ${mm}:${sc}  ·  ƒ/1.4  ·  ISO 6400`,m+fs*1.1,H-m);
    ctx.restore()}}}

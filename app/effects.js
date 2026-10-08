@@ -80,8 +80,11 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  sprites();
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
- if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1400;fadeDur=900;finishAt=n;fadeFrom=nstr;window._bgWave=n;return} /* the crescendo (skins.js): 1.4 s of build, then the night dissolves in ~0.9 s */
+ if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1400;fadeDur=500;finishAt=n;fadeFrom=nstr;window._bgWave=n;return} /* the crescendo (skins.js): 1.4 s of build, then the night clears in ~0.5 s under the flash (which lasts ~0.9 s): no dip */
  burst=2400};
+ /* F8: replay the theme's finish over the image on show — to tune it without waiting for a job (Aurora: the cover first) */
+ addEventListener("keydown",e=>{if(e.key!=="F8"||current()||S.view!=="gen"||!$("frame").classList.contains("has"))return;e.preventDefault();
+  if(skin().cover==="camera"){window._cpv=Date.now()+1600;setTimeout(()=>window.emberBurst&&emberBurst(),1500)}else window.emberBurst&&emberBurst()});
  function draw(t){const dt=Math.min(50,t-last||16);last=t;if(colT!==window._themeV){sprites();colT=window._themeV}
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
   if(nw!==W||nh!==H){W=vc.width=ec.width=nw;H=vc.height=ec.height=nh}
@@ -139,6 +142,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
      fgc.globalCompositeOperation="source-over";fr.classList.add("halo")}}
    else if(fg.style.opacity!=="0"){fg.style.opacity="0";fr.classList.remove("halo")}}
   e.clearRect(0,0,W,H);
+  if(W&&S.view==="gen"&&skin().cover==="camera")cam.drawFlash(e,W,H,t,cols.map(toHex));
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}
   if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);

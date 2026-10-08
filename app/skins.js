@@ -264,6 +264,67 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
    ctx.globalAlpha=str*.62;ctx.fillStyle="#e8f0ec";ctx.fillText(`EXP ${mm}:${sc}  ·  ƒ/1.4  ·  ISO 6400`,m+fs*1.1,H-m);
    ctx.restore()}}}
 
+/* Aurora's halo: the image box glows while a job runs. Two layers, built with the user over many clips:
+   - the bloom: ~10 soft lobes of light drifting slowly round the border, each pulsing on its own 3–9 s rhythm (green
+     at the edge, mint further out, a hint of magenta at the far end); the bottom is shorter (the status sits under it)
+   - the edge: a thin glow hard against the image, falling off outward like light (inverse-square), that swells from
+     ~3 to ~20 px where a lobe is bright and shrinks where it is dim, so it breathes with the bloom
+   Its own clock only: nothing here is paced by the job's speed (it must look the same on any GPU). Swells (a meteor,
+   the finish storm) come in through `boost` with a soft envelope from effects.js. Drawn at device pixels; the bloom at
+   1/5 size, the edge from two fixed band shapes cut by a lobe-lit tint, so a frame is a handful of image draws. */
+function makeHalo(){const so=document.createElement("canvas"),sx=so.getContext("2d"),sb=document.createElement("canvas"),sbx=sb.getContext("2d");
+ const swN=document.createElement("canvas"),swW=document.createElement("canvas"),swT=document.createElement("canvas"),swT2=document.createElement("canvas"),ts=document.createElement("canvas");
+ let sstrip=null,key="",spts=null,pk="",lastT=null,fT=0,swKey="",rimPts=null,rk="";
+ const patches=Array.from({length:10},(_,i)=>({s:i/10+Math.random()*.06,v:(Math.random()<.5?-1:1)*(.003+Math.random()*.004),w:.022+Math.random()*.03,
+  per:3+Math.random()*6,ph:Math.random()*6.283,d:.55+Math.random()*.45}));
+ function strip(c){const red=mixHex(c[2],"#ff3355",.45),s=document.createElement("canvas");s.width=1;s.height=256;
+  const g=s.getContext("2d"),gr=g.createLinearGradient(0,0,0,256);                                  // base (y=256) at the edge, a long smooth fall-off
+  gr.addColorStop(0,rgba(red,0));gr.addColorStop(.25,rgba(c[2],.07));gr.addColorStop(.55,rgba(c[1],.22));gr.addColorStop(.85,rgba(c[0],.5));gr.addColorStop(1,rgba(c[0],.6));
+  g.fillStyle=gr;g.fillRect(0,0,1,256);return s}
+ /* points round the rounded rectangle: position, outward normal, side weight (the bottom shorter), position along it */
+ function perimeter(x0,y0,w,h,rr,step){const p=[],L=2*(w+h-4*rr)+2*Math.PI*rr;let s=0;
+  const seg=[[x0+rr,y0,1,0,w-2*rr,"t"],[x0+w,y0+rr,0,1,h-2*rr,"r"],[x0+w-rr,y0+h,-1,0,w-2*rr,"b"],[x0,y0+h-rr,0,-1,h-2*rr,"l"]];
+  const corners=[[x0+w-rr,y0+rr,-Math.PI/2],[x0+w-rr,y0+h-rr,0],[x0+rr,y0+h-rr,Math.PI/2],[x0+rr,y0+rr,Math.PI]];
+  const wt={t:1,r:.9,b:.45,l:.9},nxt=["r","b","l","t"];
+  for(let i=0;i<4;i++){const [sx0,sy0,dx,dy,len,side]=seg[i];for(let d=0;d<len;d+=step)p.push({x:sx0+dx*d,y:sy0+dy*d,nx:dy,ny:-dx,w:wt[side],s:(s+d)/L});s+=len;
+   const [cx,cy,a0]=corners[i],arc=Math.PI/2*rr;for(let d=0;d<arc;d+=step){const a=a0+d/rr;p.push({x:cx+rr*Math.cos(a),y:cy+rr*Math.sin(a),nx:Math.cos(a),ny:Math.sin(a),w:wt[side]+(wt[nxt[i]]-wt[side])*d/arc,s:(s+d)/L})}s+=arc}
+  return p}
+ /* how lit the border is at s: the lobes, each pulsing */
+ const field=s=>{let v=0;for(const p of patches){let ds=Math.abs(s-p.s);ds=Math.min(ds,1-ds);if(ds<p.w*3){const pul=.3+.7*Math.pow(.5+.5*Math.sin(fT*6.283/p.per+p.ph),2);
+   v+=Math.exp(-(ds*ds)/(2*p.w*p.w))*pul*p.d}}return v};
+ return{
+  /* the bloom, around a frame at X,Y (FW×FH) in ctx's pixels, reaching op.reach out */
+  draw(ctx,X,Y,FW,FH,T,cols,op){fT=T;const P=op.reach,k=cols.join();if(k!==key){sstrip=strip(cols);key=k}
+   const sw=Math.round((FW+2*P)/5),sh=Math.round((FH+2*P)/5);
+   const kk=sw+"x"+sh+"x"+op.radius;if(kk!==pk){pk=kk;so.width=sb.width=sw;so.height=sb.height=sh;spts=perimeter(P/5,P/5,FW/5,FH/5,op.radius/5,1.2)}
+   const dT=lastT==null?0:Math.max(0,Math.min(.2,T-lastT));lastT=T;const B=op.boost||0;
+   for(const p of patches)p.s=(p.s+p.v*dT+1)%1;                                                    // the lobes drift round the border
+   sx.setTransform(1,0,0,1,0,0);sx.clearRect(0,0,sw,sh);sx.globalCompositeOperation="lighter";const SR=P/5;
+   for(const q of spts){const f=field(q.s)*q.w*(1+B);if(f<.01)continue;
+    const hh=SR*(.6+.6*Math.min(1,f))*(.55+.45*q.w);sx.setTransform(-q.ny,q.nx,-q.nx,-q.ny,q.x,q.y);sx.globalAlpha=Math.min(1,f*.28);sx.drawImage(sstrip,-3.8,-hh,7.6,hh)}   /* ~6 strips overlap at a point */
+   sx.setTransform(1,0,0,1,0,0);sx.globalAlpha=1;
+   sbx.clearRect(0,0,sw,sh);sbx.filter="blur(.8px)";sbx.drawImage(so,0,0);sbx.filter="none";      // blurred at 1/5 size, then scaled straight up
+   ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.globalCompositeOperation="lighter";ctx.globalAlpha=op.alpha;
+   ctx.drawImage(sb,X-P,Y-P,FW+2*P,FH+2*P);ctx.restore()},
+  /* the edge: two fixed inverse-square bands (narrow, wide), drawn once per size; each frame a lobe-lit tint picks the
+     wide one where a lobe is bright and the narrow one where it is dim. Starts half a pixel under the image: no gap. */
+  edge(ctx,X,Y,FW,FH,cols,op){const W1=op.narrow,W2=op.wide,M=Math.ceil(W2*1.6+4),bw=Math.ceil(FW+2*M),bh=Math.ceil(FH+2*M);
+   const mk=[bw,bh,W1,W2,op.radius].join();
+   if(mk!==swKey){swKey=mk;for(const c of [swN,swW,swT,swT2]){c.width=bw;c.height=bh}
+    const F=(d,w)=>1/(1+Math.pow(d/(1.15*w/7),2));
+    for(const [c,w] of [[swN,W1],[swW,W2]]){const g=c.getContext("2d");g.clearRect(0,0,bw,bh);g.strokeStyle="#fff";g.lineWidth=.6;
+     for(let d=-.5;d<w*1.6;d+=.5){g.globalAlpha=Math.min(1,F(Math.max(0,d),w));g.beginPath();g.roundRect(M-d,M-d,FW+2*d,FH+2*d,Math.max(0,op.radius+d));g.stroke()}g.globalAlpha=1}}   // concentric: the radius grows outward
+   const k=[X,Y,FW,FH,op.radius].join();if(k!==rk){rk=k;rimPts=perimeter(X,Y,FW,FH,op.radius,3)}
+   const sw=Math.ceil(bw/4),sh=Math.ceil(bh/4);if(ts.width!==sw||ts.height!==sh){ts.width=sw;ts.height=sh}
+   const tint=(c,col,pick)=>{const t=ts.getContext("2d");t.clearRect(0,0,sw,sh);t.lineCap="round";t.lineWidth=M/2;t.strokeStyle=col;
+    for(let i=0;i<rimPts.length;i+=2){const a=rimPts[i],f=Math.min(1.3,field(a.s)),lit=(.03+.9*Math.pow(Math.min(1,f),1.3))*(.6+.4*a.w)*(1+.6*(op.boost||0))*op.alpha;
+     const wide=Math.min(1,Math.max(0,(f-.15)/.75))*(.5+.5*a.w),al=lit*pick(wide);if(al<.01)continue;   // how far it reaches here follows the lobe
+     t.globalAlpha=Math.min(1,al*.5);t.beginPath();t.moveTo((a.x-X+M)/4,(a.y-Y+M)/4);t.lineTo((a.x-X+M)/4+.01,(a.y-Y+M)/4);t.stroke()}t.globalAlpha=1;   /* round dots at 1/4 size: smooth, no wedges at corners */
+    const g=c.getContext("2d");g.globalCompositeOperation="source-over";g.clearRect(0,0,bw,bh);g.imageSmoothingEnabled=true;g.imageSmoothingQuality="high";g.drawImage(ts,0,0,bw,bh)};
+   const cut=(c,m)=>{const g=c.getContext("2d");g.globalCompositeOperation="destination-in";g.drawImage(m,0,0);g.globalCompositeOperation="source-over"};
+   tint(swT,cols[0],w=>1-w);cut(swT,swN);tint(swT2,mixHex(cols[0],cols[1],.35),w=>w);cut(swT2,swW);
+   ctx.save();ctx.globalCompositeOperation="lighter";ctx.drawImage(swT,X-M,Y-M);ctx.drawImage(swT2,X-M,Y-M);ctx.restore()}}}
+
 /* ---------- Code (Emerald): our own glyphs, a cold sparse background, a CRT render screen ----------
    Inspired by the film's rain, not copied: the glyphs are drawn here from straight strokes on a 4×6 grid
    (blocky, half of them mirrored), so the set is ours to ship. */

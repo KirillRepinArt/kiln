@@ -14,11 +14,9 @@
 ::-webkit-scrollbar-thumb:active{background:#74747c;border-width:2px;background-clip:padding-box}
 svg *{stroke-linecap:round;stroke-linejoin:round}
 .app{position:relative;z-index:1}
-/* light spilling from behind the image box (Aurora's cover): its live aurora, scaled up soft, behind the panels */
-#fglow{position:fixed;left:0;top:0;width:0;height:0;z-index:0;pointer-events:none;opacity:0;mix-blend-mode:screen;filter:blur(12px) saturate(1.25);
- -webkit-mask-image:linear-gradient(to right,transparent,#000 48px,#000 calc(100% - 48px),transparent),linear-gradient(to bottom,transparent,#000 48px,#000 calc(100% - 48px),transparent);
- mask-image:linear-gradient(to right,transparent,#000 48px,#000 calc(100% - 48px),transparent),linear-gradient(to bottom,transparent,#000 48px,#000 calc(100% - 48px),transparent);
- -webkit-mask-composite:source-in;mask-composite:intersect}
+/* Aurora's halo round the image box (skins.js makeHalo), behind the panels, drawn at device pixels */
+#fglow{position:fixed;left:0;top:0;width:0;height:0;z-index:0;pointer-events:none;opacity:0;mix-blend-mode:screen}
+.frame.halo{outline-color:transparent}
 #amb{position:absolute;inset:0;width:100%;height:100%;z-index:0;-webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent 100%);mask-image:radial-gradient(closest-side,#000 55%,transparent 100%);opacity:0;transition:opacity 1.2s var(--ease);pointer-events:none;image-rendering:auto;filter:saturate(1.25) brightness(.85)}
 #amb.on{opacity:.32}
 .stage,.prog{z-index:1}

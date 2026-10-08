@@ -228,7 +228,7 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
  return{finish(t){finT=t;fin=null;spinA=spinW=0},
   /* the peak's soft exposure flash: its own layer (effects.js draws it above the cover) so it runs its full course after
      the night has cleared — the sky is gone under it, then it hands over to the clean image */
-  drawFlash(ctx,W,H,t,cols){if(finT==null)return;const r=t-finT-RAMP,fl=r<-150?0:r<0?(r+150)/150:r<900?.5+.5*Math.cos(Math.PI*r/900):0;if(fl<.01)return;
+  drawFlash(ctx,W,H,t,cols){if(finT==null)return;const r=t-finT-RAMP,fl=r<0?Math.pow(Math.max(0,1+r/RAMP),2):r<900?.5+.5*Math.cos(Math.PI*r/900):0;   /* the light builds through the whole ramp, then releases */if(fl<.01)return;
    ctx.save();ctx.globalCompositeOperation="screen";ctx.globalAlpha=.3*fl;ctx.fillStyle=mixHex(cols[1],"#ffffff",.6);ctx.fillRect(0,0,W,H);ctx.restore()},glowInfo(){return{src:sm2,met:lastMet}},
   reset(){sk="";span=0;lastStep=null;meteors=[];hasMask=false;mt=mcur=null;ae=1;finT=null;fin=null;spinA=spinW=0},
   draw(ctx,W,H,t,d,cols,st){const k=W+"x"+H;if(k!==sk){sk=k;M=Math.round(60*d);lit.width=W;lit.height=H;build(W,H,d);filmT=-1e9;pending=false;gen++;
@@ -252,7 +252,7 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
    if(hasMask){lc.globalCompositeOperation="destination-in";lc.imageSmoothingEnabled=true;lc.imageSmoothingQuality="high";lc.drawImage(mask,0,0,W,H);lc.globalCompositeOperation="source-over"}
    ctx.save();
    const w4=Math.max(40,Math.round(W/4)),h4=Math.max(30,Math.round(H/4));if(sm.width!==w4||sm.height!==h4){sm.width=sm2.width=w4;sm.height=sm2.height=h4}
-   smc.clearRect(0,0,w4,h4);const brk=fz?acc*1.1:0;   /* the aurora flares with the build */
+   smc.clearRect(0,0,w4,h4);const brk=fz?Math.pow(ramp,1.2)*1.1:0;   /* the aurora flares from the first moment of the build (a gentler curve than the spin: brightness is noticed later than motion) */
    aur.draw(smc,w4,h4,t/1000,cols,{scale:2,layout:"cam",auto:true,alpha:1,blend:"lighter",gain:.62*ae,surgeK:.45,boost:brk});   // gentler surges: a dark theme
    if(wk&&!fz&&!aeBusy&&t-aeT>250){aeT=t;aeBusy=true;                                                  // auto-exposure, like the camera it is, metered on the highlights (worker)
     createImageBitmap(sm,{resizeWidth:64,resizeHeight:80,resizeQuality:"medium"}).then(b=>wk.postMessage({ae:b},[b]),()=>aeBusy=false)}

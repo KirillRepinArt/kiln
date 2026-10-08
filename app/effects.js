@@ -67,7 +67,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    VEIL while a job runs: the young preview is mostly hidden under flowing diagonal light and drifting sparkles,
    and emerges as progress grows (hover the image to peek through). EMBERS: a short burst when a job finishes. */
 (function(){const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
- const vc=$("veil"),v=vc.getContext("2d"),ec=$("embers"),e=ec.getContext("2d");let W=0,H=0,last=0,str=0,hover=false,sparks=[],embers=[],burst=0,cols=["#FF8A00","#FF5E8A","#3FE0F0"],colT=0;
+ const vc=$("veil"),v=vc.getContext("2d"),ec=$("embers"),e=ec.getContext("2d");let W=0,H=0,last=0,str=0,hover=false,sparks=[],embers=[],burst=0,burstMax=2400,cols=["#FF8A00","#FF5E8A","#3FE0F0"],colT=0;
  const aur=makeAurora(),crt=makeCRT(),cam=makeCamera();let crtJob=null,sweepT=0,nstr=0,fadeT=0,fadeFrom=0,fgA=0,finishAt=-1e9,haloT=0,fadeDur=0,finStr=0;const fg=$("fglow"),fgc=fg.getContext("2d"),halo=makeHalo();
  const dith=document.createElement("canvas");dith.width=dith.height=64;{const g=dith.getContext("2d"),d=g.createImageData(64,64);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255|0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}g.putImageData(d,0,0)}const HOLD=.7,FADE=5000; /* Aurora: the night layer holds at 70 % from mid-job, then fades slowly after the finish */
  const smooth=(a,b,x)=>{const q=Math.max(0,Math.min(1,(x-a)/(b-a)));return q*q*(3-2*q)};
@@ -81,10 +81,10 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
  if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1400;fadeDur=500;finishAt=n;finStr=str;
-  setTimeout(()=>{if(S.view==="gen")burst=2400},1400);   /* the release throws sparks over the photo, in the theme's colours */
+  setTimeout(()=>{if(S.view==="gen")burst=burstMax=1200},1400);   /* the release throws stars over the photo: half the usual window, so half as many and done sooner */
   setTimeout(()=>{try{$("frame").animate([{scale:"1"},{scale:"1.012",offset:.3},{scale:"1"}],{duration:560,easing:"cubic-bezier(.2,.9,.25,1)"})}catch(e){}},1400);   /* the release lands: the box swells a hair and settles */fadeFrom=nstr;window._bgWave=n+700;return} /* the crescendo (skins.js): 1.4 s of build, then the night clears in ~0.5 s under the flash (which lasts ~0.9 s): no dip. The sky behind
    the app answers ~0.7 s later (its swell peaks around the release) */
- burst=2400};
+ burst=burstMax=2400};
  /* F8: replay the theme's finish over the image on show — to tune it without waiting for a job (Aurora: the cover first) */
  addEventListener("keydown",e=>{if(e.key!=="F8"||current()||S.view!=="gen"||!$("frame").classList.contains("has"))return;e.preventDefault();
   if(skin().cover==="camera"){window._cpv=Date.now()+1600;setTimeout(()=>window.emberBurst&&emberBurst(),1500)}else window.emberBurst&&emberBurst()});
@@ -148,7 +148,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
   e.clearRect(0,0,W,H);
   if(W&&S.view==="gen"&&skin().cover==="camera")cam.drawFlash(e,W,H,t,cols.map(toHex));
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}
-  if(burst>0&&W&&S.view==="gen"){const k=burst/2400;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
+  if(burst>0&&W&&S.view==="gen"){const k=burst/burstMax;let n=dt*.09*k*(W/600);while(n-->0||Math.random()<n){const mx=2200+Math.random()*2400;embers.push({x:Math.random()*W,y:H+6*d,vx:(Math.random()-.5)*.03*d,vy:-H*(.75+Math.random()*.6)/mx,life:0,max:mx,r:(1+Math.random()*2)*d,c:Math.random()<.05?"comp":Math.random()<.65?"a1":"a2",ph:Math.random()*6.28})}}
   burst=Math.max(0,burst-dt);
   if(embers.length){e.globalCompositeOperation="lighter";
    const hardStars=skin().cover==="camera";

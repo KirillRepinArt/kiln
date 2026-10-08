@@ -125,14 +125,14 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
    fgA+=((on?Math.min(1,nstr/HOLD):0)-fgA)*Math.min(1,dt/400);
    const fr=$("frame");
    if(fgA>.01){if(t-haloT>=48){haloT=t;
-     const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.45*env(t-gi.met,1300)+.6*env(t-stormAt,2600);
+     const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.3*env(t-gi.met,1300)+.45*env(t-stormAt,2600);
      const a=fr.getBoundingClientRect(),dp=devicePixelRatio||1,R=95,   /* the bloom's reach (css px): 130 read too wide on screen */cw=Math.round((a.width+2*R)*dp),ch=Math.round((a.height+2*R)*dp);
      if(fg.width!==cw||fg.height!==ch){fg.width=cw;fg.height=ch}
      const fs=fg.style;fs.left=(a.left-R)+"px";fs.top=(a.top-R)+"px";fs.width=(a.width+2*R)+"px";fs.height=(a.height+2*R)+"px";fs.opacity="1";
      const X=R*dp,Y=R*dp,FW=a.width*dp,FH=a.height*dp,rad=(parseFloat(getComputedStyle(fr).borderTopLeftRadius)||24)*dp,hc=cols.map(toHex);
      const k=fgA*(reduce?.75+.25*Math.sin(t/1800):1);                                                // reduced motion: a still glow that gently breathes
      fgc.clearRect(0,0,cw,ch);
-     halo.draw(fgc,X,Y,FW,FH,reduce?0:t/1000,hc,{reach:R*dp,radius:rad,alpha:.75*k,boost});
+     halo.draw(fgc,X,Y,FW,FH,reduce?0:t/1000,hc,{reach:R*dp,radius:rad,alpha:.55*k,boost});   /* supporting light: kept below the cover's own */
      halo.edge(fgc,X,Y,FW,FH,hc,{radius:rad,alpha:k,boost,narrow:3*dp,wide:20*dp});
      fgc.globalCompositeOperation="source-atop";fgc.globalAlpha=.05;fgc.fillStyle=fgc.createPattern(dith,"repeat");fgc.fillRect(0,0,cw,ch);   // a whisper of grain: no banding on near-black
      fgc.globalCompositeOperation="destination-out";fgc.globalAlpha=1;fgc.beginPath();fgc.roundRect(X+dp,Y+dp,FW-2*dp,FH-2*dp,Math.max(0,rad-dp));fgc.fill();   // nothing behind the image itself

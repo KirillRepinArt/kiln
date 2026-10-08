@@ -285,13 +285,13 @@ function makeHalo(){const so=document.createElement("canvas"),sx=so.getContext("
  function perimeter(x0,y0,w,h,rr,step){const p=[],L=2*(w+h-4*rr)+2*Math.PI*rr;let s=0;
   const seg=[[x0+rr,y0,1,0,w-2*rr,"t"],[x0+w,y0+rr,0,1,h-2*rr,"r"],[x0+w-rr,y0+h,-1,0,w-2*rr,"b"],[x0,y0+h-rr,0,-1,h-2*rr,"l"]];
   const corners=[[x0+w-rr,y0+rr,-Math.PI/2],[x0+w-rr,y0+h-rr,0],[x0+rr,y0+h-rr,Math.PI/2],[x0+rr,y0+rr,Math.PI]];
-  const wt={t:1,r:.9,b:.45,l:.9},nxt=["r","b","l","t"];
+  const wt={t:.7,r:.8,b:.45,l:.8},nxt=["r","b","l","t"];   /* the top quieter too: the tab bar sits right above it */
   for(let i=0;i<4;i++){const [sx0,sy0,dx,dy,len,side]=seg[i];for(let d=0;d<len;d+=step)p.push({x:sx0+dx*d,y:sy0+dy*d,nx:dy,ny:-dx,w:wt[side],s:(s+d)/L});s+=len;
    const [cx,cy,a0]=corners[i],arc=Math.PI/2*rr;for(let d=0;d<arc;d+=step){const a=a0+d/rr;p.push({x:cx+rr*Math.cos(a),y:cy+rr*Math.sin(a),nx:Math.cos(a),ny:Math.sin(a),w:wt[side]+(wt[nxt[i]]-wt[side])*d/arc,s:(s+d)/L})}s+=arc}
   return p}
  /* how lit the border is at s: the lobes, each pulsing */
  const field=s=>{let v=0;for(const p of patches){let ds=Math.abs(s-p.s);ds=Math.min(ds,1-ds);if(ds<p.w*3){const pul=.3+.7*Math.pow(.5+.5*Math.sin(fT*6.283/p.per+p.ph),2);
-   v+=Math.exp(-(ds*ds)/(2*p.w*p.w))*pul*p.d}}return v};
+   v+=Math.exp(-(ds*ds)/(2*p.w*p.w))*pul*p.d}}return v<.5?v:.5+(v-.5)/(1+1.5*(v-.5))};   // a soft knee: stacked lobes never light the whole edge at full
  return{
   /* the bloom, around a frame at X,Y (FW×FH) in ctx's pixels, reaching op.reach out */
   draw(ctx,X,Y,FW,FH,T,cols,op){fT=T;const P=op.reach,k=cols.join();if(k!==key){sstrip=strip(cols);key=k}
@@ -317,7 +317,7 @@ function makeHalo(){const so=document.createElement("canvas"),sx=so.getContext("
    const k=[X,Y,FW,FH,op.radius].join();if(k!==rk){rk=k;rimPts=perimeter(X,Y,FW,FH,op.radius,3)}
    const sw=Math.ceil(bw/4),sh=Math.ceil(bh/4);if(ts.width!==sw||ts.height!==sh){ts.width=sw;ts.height=sh}
    const tint=(c,col,pick)=>{const t=ts.getContext("2d");t.clearRect(0,0,sw,sh);t.lineCap="round";t.lineWidth=M/2;t.strokeStyle=col;
-    for(let i=0;i<rimPts.length;i+=2){const a=rimPts[i],f=Math.min(1.3,field(a.s)),lit=(.03+.9*Math.pow(Math.min(1,f),1.3))*(.6+.4*a.w)*(1+.6*(op.boost||0))*op.alpha;
+    for(let i=0;i<rimPts.length;i+=2){const a=rimPts[i],f=Math.min(1.3,field(a.s)),lit=(.03+.62*Math.pow(Math.min(1,f),1.3))*(.6+.4*a.w)*(1+.6*(op.boost||0))*op.alpha;
      const wide=Math.min(1,Math.max(0,(f-.15)/.75))*(.5+.5*a.w),al=lit*pick(wide);if(al<.01)continue;   // how far it reaches here follows the lobe
      t.globalAlpha=Math.min(1,al*.5);t.beginPath();t.moveTo((a.x-X+M)/4,(a.y-Y+M)/4);t.lineTo((a.x-X+M)/4+.01,(a.y-Y+M)/4);t.stroke()}t.globalAlpha=1;   /* round dots at 1/4 size: smooth, no wedges at corners */
     const g=c.getContext("2d");g.globalCompositeOperation="source-over";g.clearRect(0,0,bw,bh);g.imageSmoothingEnabled=true;g.imageSmoothingQuality="high";g.drawImage(ts,0,0,bw,bh)};

@@ -96,7 +96,8 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  const EYE='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
   SHUT='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 10.5c2.2 2.6 5.2 4 9 4s6.8-1.4 9-4"/><path d="M6.2 13.6 4.6 16M12 14.6V17.4M17.8 13.6l1.6 2.4"/></svg>';
  function coverUI(){const st=CV.held||CV.on;cbtn.innerHTML=st?EYE:SHUT;cbtn.dataset.tip=st?"Show the image (F9)":"Cover the image (F9)";cbtn.classList.toggle("lit",CV.held)}
- function toggleCover(){if(CV.held||CV.on){CV.lift=true;CV.force=false}else{CV.force=true;CV.lift=false}coverUI()}
+ function toggleCover(){if(CV.held||CV.on){CV.lift=true;CV.force=false}else if(CV.lift&&current()&&!browsed())CV.lift=false;   /* mid-job: back to the normal cover (fades with the steps, peeks on hover) */
+ else{CV.force=true;CV.lift=false}coverUI()}
  window.toggleCover=toggleCover;window.coverHeld=()=>CV.held;
  cbtn.onclick=e=>{e.stopPropagation();toggleCover()};coverUI();
  addEventListener("keydown",e=>{if(e.key!=="F9"||e.repeat)return;e.preventDefault();toggleCover()},true);   /* works while typing in the prompt */

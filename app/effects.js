@@ -100,7 +100,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  window.toggleCover=toggleCover;window.coverHeld=()=>CV.held;
  cbtn.onclick=e=>{e.stopPropagation();toggleCover()};coverUI();
  addEventListener("keydown",e=>{if(e.key!=="F9"||e.repeat)return;e.preventDefault();toggleCover()},true);   /* works while typing in the prompt */
- function draw(t){const dt=Math.min(50,t-last||16);last=t;if(colT!==window._themeV){sprites();colT=window._themeV}
+ function draw(t){const dt=Math.min(50,t-last||16),dtr=Math.min(1000,t-last||16);last=t;   /* dtr: real time, so the cover's fades keep their speed when the page runs slow (the GPU busy loading a model) */if(colT!==window._themeV){sprites();colT=window._themeV}
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
   if(nw!==W||nh!==H){W=vc.width=ec.width=nw;H=vc.height=ec.height=nh}
   const j=current();const mode=(S.set||{}).veil||"full";const cover0=skin().cover;const fr0=$("frame");
@@ -117,9 +117,9 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
   else if(!j&&Date.now()<(window._cpv||0)&&S.view==="gen"&&mode!=="off"&&!reduce&&$("frame").classList.contains("has"))target=hover?.1:.8; // theme picked: preview the cover on the shown image
   if(cover0==="camera"){const r=t-finishAt;if(r<1400)target=Math.max(target,finStr);else if(r<1900)target=Math.max(target,finStr*(.5+.5*Math.cos(Math.PI*(r-1400)/500)))}   // the image's blur holds through the crescendo and lifts with the night
   if(held){target=1;tN=1}                                                                    // held: full, no fading with the steps, no hover peek
-  str+=(target-str)*Math.min(1,dt/260);if(str<.002||(browsed()&&!held&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
+  str+=(target-str)*Math.min(1,dtr/260);if(str<.002||(browsed()&&!held&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
   if(tN==null)tN=target;if(j&&!browsed())fadeT=0;else if(fadeT){const p=Math.max(0,(t-fadeT)/(fadeDur||FADE));if(p>=1){fadeT=0;fadeDur=0}else tN=fadeFrom*(.5+.5*Math.cos(Math.PI*p))*(hover?.12:1)} // after the finish: a slow fade, slow at first
-  nstr+=(tN-nstr)*Math.min(1,dt/260);if(nstr<.002||(browsed()&&!held&&!(Date.now()<(window._cpv||0))))nstr=0;
+  nstr+=(tN-nstr)*Math.min(1,dtr/260);if(nstr<.002||(browsed()&&!held&&!(Date.now()<(window._cpv||0))))nstr=0;
   {const on=!held&&!!j&&!browsed()&&S.view==="gen"&&(cover0==="camera"?nstr:str)>.05;if(on!==CV.on){CV.on=on;coverUI()}}
   document.getElementById("frame").style.setProperty("--vf",str?`blur(${(24*str).toFixed(1)}px) brightness(${(1-.45*str).toFixed(3)}) saturate(${(1-.4*str).toFixed(3)})`:"none");
   v.clearRect(0,0,W,H);

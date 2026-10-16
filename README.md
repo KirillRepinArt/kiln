@@ -56,7 +56,7 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
   counting up from a fixed seed.
 - Click a finished job to open it in the Generating view. Click a waiting or running job — or the status line under
   the image — to **peek** at its prompt without touching your draft, then **Reuse prompt** or **Reuse all**
-  (settings, seed and LoRAs too). The buttons only appear when they'd change something: *“Use this seed”* when
+  (settings, seed and LoRAs too). Reusing a named image also takes its name, so the next one joins the series. The buttons only appear when they'd change something: *“Use this seed”* when
   only the seed differs.
 - **Honest time estimates** from your own history: the median of your last five runs at the same image size and
   steps, counted down while the job runs (on real history this halved the error of a per-megapixel average).
@@ -76,6 +76,10 @@ The queue shows which variant each job got, so a good result can be traced back.
 
 **Image**
 - Live preview under a soft veil that lifts as the steps land; a burst of embers when it's done.
+- **Cover** (Settings → Cover): full, light or off, optionally skipped on jobs under 10 s. The eye at the image's top
+  right (or `F9`, even while typing) lifts it for this job — or puts a full cover on whatever is shown. **Privacy
+  hold** keeps every job's cover on through all steps and after the finish until you lift it; a held cover never
+  shows the picture (no blur, no peek on hover, no full-size viewer).
 - **Browse** finished images with `←` / `→` or the arrows on the image — while a job renders, too. Each image you
   land on shows its name and prompt (greyed, with Reuse). The prompt's ✕ brings your draft back and keeps the image —
   arrows then change only the image, and the status line offers *Show prompt*; the image's ✕ (or `Esc`) returns to

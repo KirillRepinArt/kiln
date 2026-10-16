@@ -44,7 +44,7 @@ function status(){const j=current();
  if(window._jobsReady){const d=lastDone(),v=resultStale&&d?d.id:null;if((S.clearedId??null)!==v){S.clearedId=v;save()}} // remember: closed on a clean screen
  $("frame").classList.toggle("running",!!j&&!browsed());const pend=jobs.filter(x=>x.status==="pending").length;
  const gm=(S.set||{}).glow||"gen";
- const src=(S.view==="gen"&&gm!=="off"&&!(j&&skin().cover==="camera")&&(j||(gm==="always"&&shownDone())))?$("cv"):null;   /* Aurora has its frame glow instead */
+ const src=(S.view==="gen"&&gm!=="off"&&!(j&&skin().cover==="camera")&&!$("frame").classList.contains("held")&&(j||(gm==="always"&&shownDone())))?$("cv"):null;   /* Aurora has its frame glow instead */
  if(src&&src.width){ambC.imageSmoothingQuality="high";ambC.drawImage(src,0,0,12,12);amb.classList.add("on")}else amb.classList.remove("on");
  let p=null;
  if(j){const q=jobProgress(j);p=q.p;
@@ -78,7 +78,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
   const hex=c=>{if(/^#[0-9a-f]{6}$/i.test(c))return c;const d=document.createElement("canvas").getContext("2d");d.fillStyle=c;return d.fillStyle};
   spr={a1:sprite(hex(cols[0]),64),a2:sprite(hex(cols[1]),64),a3:sprite(hex(cols[2]),64),w:sprite("#ffffff",64),comp:sprite(hex((window.HARM||{}).comp||cols[2]),64)}}
  sprites();
- window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off")return;
+ window.emberBurst=function(){if(reduce||((S.set||{}).embers||"on")==="off"||$("frame").classList.contains("held"))return;
  if(skin().cover==="crt"){sweepT=performance.now();window._bgWave=sweepT;return}
  if(skin().cover==="camera"){const n=performance.now();cam.finish(n);fadeT=n+1400;fadeDur=500;finishAt=n;finStr=str;
   setTimeout(()=>{if(S.view==="gen"){burst=burstMax=1500;embersHalf=true}},1400);   /* the release throws stars over the photo: a 1.5 s window (the late ones cut), fading ~60 % of the way up */
@@ -88,30 +88,49 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
  /* F8: replay the theme's finish over the image on show — to tune it without waiting for a job (Aurora: the cover first) */
  addEventListener("keydown",e=>{if(e.key!=="F8"||current()||S.view!=="gen"||!$("frame").classList.contains("has"))return;e.preventDefault();
   if(skin().cover==="camera"){window._cpv=Date.now()+1600;setTimeout(()=>window.emberBurst&&emberBurst(),1500)}else window.emberBurst&&emberBurst()});
+ /* the cover button (top right of the image) and F9. Lift: the cover leaves this job (the next one is covered again).
+    Put on: a full cover over whatever is shown, until you lift it. Privacy hold (Settings → Cover): every job's cover
+    stays full through all steps and after the finish until lifted. A held cover never shows the image: the picture
+    is hidden outright (no blur, no hover peek, no starlight/code drawn from it, no finish, no ambient glow) */
+ const CV={lift:false,force:false,job:null,held:false,on:false,t0:0,pr:.55};const cbtn=$("cbtn");
+ const EYE='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  SHUT='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 10.5c2.2 2.6 5.2 4 9 4s6.8-1.4 9-4"/><path d="M6.2 13.6 4.6 16M12 14.6V17.4M17.8 13.6l1.6 2.4"/></svg>';
+ function coverUI(){const st=CV.held||CV.on;cbtn.innerHTML=st?EYE:SHUT;cbtn.dataset.tip=st?"Show the image (F9)":"Cover the image (F9)";cbtn.classList.toggle("lit",CV.held)}
+ function toggleCover(){if(CV.held||CV.on){CV.lift=true;CV.force=false}else{CV.force=true;CV.lift=false}coverUI()}
+ window.toggleCover=toggleCover;window.coverHeld=()=>CV.held;
+ cbtn.onclick=e=>{e.stopPropagation();toggleCover()};coverUI();
+ addEventListener("keydown",e=>{if(e.key!=="F9"||e.repeat)return;e.preventDefault();toggleCover()},true);   /* works while typing in the prompt */
  function draw(t){const dt=Math.min(50,t-last||16);last=t;if(colT!==window._themeV){sprites();colT=window._themeV}
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
   if(nw!==W||nh!==H){W=vc.width=ec.width=nw;H=vc.height=ec.height=nh}
-  const j=current();const mode=(S.set||{}).veil||"full";const cover0=skin().cover;
-  if(cover0==="crt"||cover0==="camera"){const k=j&&!browsed()?j.id:(Date.now()<(window._cpv||0)?"pv"+window._cpv:null);
+  const j=current();const mode=(S.set||{}).veil||"full";const cover0=skin().cover;const fr0=$("frame");
+  if(j&&!browsed()&&j.id!==CV.job){CV.job=j.id;CV.lift=false;coverUI()}                       // a new job is covered again
+  const held=fr0.classList.contains("has")&&S.view==="gen"&&!CV.lift&&(CV.force||(S.set||{}).privacy==="on");
+  if(held!==CV.held){CV.held=held;fr0.classList.toggle("held",held);coverUI();if(held&&!j)CV.t0=Date.now()-20000}
+  const fast=(S.set||{}).fastcover==="skip"&&j&&window.LIVE&&j.est>0&&j.est<10;                // Settings → Cover: no cover on quick jobs
+  if(cover0==="crt"||cover0==="camera"){const k=j&&!browsed()?j.id:(Date.now()<(window._cpv||0)?"pv"+window._cpv:held?(crtJob??"held"):null);   // held after the finish: the same exposure goes on
    if(k!==crtJob){crtJob=k;if(k!=null){if(cover0==="crt")crt.powerOn(t);else cam.reset()}}} // a new job: the screen powers on / a new exposure starts
-  let target=0,tN=null;if(j&&!browsed()&&S.view==="gen"&&mode!=="off"&&!reduce){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
+  let target=0,tN=null;if(j&&!browsed()&&S.view==="gen"&&mode!=="off"&&!reduce&&!CV.lift&&!fast){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
    // full while step 1 renders, most of it gone during step 2, a little left on step 3, clear for the last step
    const K=cover0==="crt"||cover0==="camera"?[[0,1],[.25,1],[.5,.85],[.75,.45],[.92,0]]:[[0,1],[.25,1],[.5,.4],[.75,.12],[.92,0]]; /* the CRT stays longer: the code forms the image on steps 2–3 */let k0=0;for(let i=1;i<K.length;i++)if(pr<=K[i][0]){const [a,va]=K[i-1],[b,vb]=K[i];k0=va+(vb-va)*(pr-a)/(b-a);break}
    target=k0*(mode==="light"?.55:1);if(cover0==="camera")tN=(pr>=.5?Math.max(k0,HOLD):k0)*(mode==="light"?.55:1)*(hover?.12:1);if(hover)target*=.12}
   else if(!j&&Date.now()<(window._cpv||0)&&S.view==="gen"&&mode!=="off"&&!reduce&&$("frame").classList.contains("has"))target=hover?.1:.8; // theme picked: preview the cover on the shown image
   if(cover0==="camera"){const r=t-finishAt;if(r<1400)target=Math.max(target,finStr);else if(r<1900)target=Math.max(target,finStr*(.5+.5*Math.cos(Math.PI*(r-1400)/500)))}   // the image's blur holds through the crescendo and lifts with the night
-  str+=(target-str)*Math.min(1,dt/260);if(str<.002||(browsed()&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
+  if(held){target=1;tN=1}                                                                    // held: full, no fading with the steps, no hover peek
+  str+=(target-str)*Math.min(1,dt/260);if(str<.002||(browsed()&&!held&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
   if(tN==null)tN=target;if(j&&!browsed())fadeT=0;else if(fadeT){const p=Math.max(0,(t-fadeT)/(fadeDur||FADE));if(p>=1){fadeT=0;fadeDur=0}else tN=fadeFrom*(.5+.5*Math.cos(Math.PI*p))*(hover?.12:1)} // after the finish: a slow fade, slow at first
-  nstr+=(tN-nstr)*Math.min(1,dt/260);if(nstr<.002||(browsed()&&!(Date.now()<(window._cpv||0))))nstr=0;
+  nstr+=(tN-nstr)*Math.min(1,dt/260);if(nstr<.002||(browsed()&&!held&&!(Date.now()<(window._cpv||0))))nstr=0;
+  {const on=!held&&!!j&&!browsed()&&S.view==="gen"&&(cover0==="camera"?nstr:str)>.05;if(on!==CV.on){CV.on=on;coverUI()}}
   document.getElementById("frame").style.setProperty("--vf",str?`blur(${(24*str).toFixed(1)}px) brightness(${(1-.45*str).toFixed(3)}) saturate(${(1-.4*str).toFixed(3)})`:"none");
   v.clearRect(0,0,W,H);
   if((cover0==="camera"?nstr:str)>0&&W){const T=t/1000;
    const cover=skin().cover;
    v.globalCompositeOperation="source-over";v.fillStyle=cover==="crt"?`rgba(0,9,4,${.88*str})`:cover==="camera"?`rgba(2,5,9,${.8*nstr})`:`rgba(8,8,12,${.30*str})`;v.fillRect(0,0,W,H);
    if(cover==="crt"){const pr=j?Math.max(0,Math.min(1,jobProgress(j).p||0)):.55;
-    crt.draw(v,W,H,t,dt,d,cols.map(toHex),{str,resolve:smooth(.18,.6,pr),src:$("cv")});sparks.length=0}
-   else if(cover==="camera"){const age=j&&j.started?(Date.now()-j.started)/1000:Math.max(0,(Date.now()-(window._cpv||Date.now())+6000)/1000);
-    cam.draw(v,W,H,t,d,cols.map(toHex),{str:nstr,age,prog:j?Math.max(0,Math.min(1,jobProgress(j).p||0)):.55,step:j?j.step:null,src:$("cv")})}
+    crt.draw(v,W,H,t,dt,d,cols.map(toHex),{str,resolve:held?0:smooth(.18,.6,pr),src:held?null:$("cv")});sparks.length=0}
+   else if(cover==="camera"){if(j&&j.started)CV.t0=j.started;if(j)CV.pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
+    const age=j&&j.started||held?(Date.now()-CV.t0)/1000:Math.max(0,(Date.now()-(window._cpv||Date.now())+6000)/1000);
+    cam.draw(v,W,H,t,d,cols.map(toHex),{str:nstr,age,prog:j?CV.pr:held?Math.max(CV.pr,.55):.55,step:j?j.step:null,src:held?null:$("cv"),noImg:held})}
    v.globalCompositeOperation="lighter";
    if(cover==="bands")
    for(let k=0;k<3;k++){const span=W+H,off=((T*(38+k*17)*d+k*span/3)%(span*1.4))-span*.2;

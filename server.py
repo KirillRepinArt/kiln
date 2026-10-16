@@ -281,6 +281,8 @@ def run_txt2img(job):
     seed = info.get("seed", sp.get("seed"))
     if infotext and img[:8] == b"\x89PNG\r\n\x1a\n" and not png_has_text(img, "parameters"):
         img = png_add_text(img, "parameters", infotext)
+    if sp.get("name", "").strip() and img[:8] == b"\x89PNG\r\n\x1a\n":
+        img = png_add_text(img, "kiln_name", sp["name"].strip())  # the series name, for PNG Info -> Send to prompt
     name = next_filename(sp.get("name", ""), seed)
     (OUT / name).write_bytes(img)
     with lock:

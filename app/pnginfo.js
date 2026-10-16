@@ -5,14 +5,17 @@ drop.onclick=()=>$("file").click();$("file").onchange=e=>e.target.files[0]&&read
 ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over")}));
 ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over")}));
 drop.addEventListener("drop",e=>{const f=e.dataTransfer.files[0];if(f)readPng(f)});
-async function readPng(f){try{const u=URL.createObjectURL(f);const el=$("pimgEl");if(el.dataset.u)URL.revokeObjectURL(el.dataset.u);el.dataset.u=u;el.src=u;$("pimg").classList.add("show");$("pClear").style.display=""}catch(e){}const b=new Uint8Array(await f.arrayBuffer());const dv=new DataView(b.buffer);let o=8,txt=null;const dec=new TextDecoder("latin1"),u8=new TextDecoder("utf-8");
+let kname=null;
+/* the series name: Kiln writes it into its PNGs (kiln_name); older Kiln files give it back from the file name (slug-NNN.png) */
+function nameFrom(f){if(kname)return kname;const m=(f.name||"").match(/^(.+?)-\d{3,}(?:_x[\d.]+)?\.png$/i);return m&&!/^kiln-\d{8}-\d{6}$|^\d+$/.test(m[1])?m[1].replace(/-/g," "):""}
+async function readPng(f){kname=null;try{const u=URL.createObjectURL(f);const el=$("pimgEl");if(el.dataset.u)URL.revokeObjectURL(el.dataset.u);el.dataset.u=u;el.src=u;$("pimg").classList.add("show");$("pClear").style.display=""}catch(e){}const b=new Uint8Array(await f.arrayBuffer());const dv=new DataView(b.buffer);let o=8,txt=null;const dec=new TextDecoder("latin1"),u8=new TextDecoder("utf-8");
  if(b[1]!==0x50){$("pout").textContent="Not a PNG file.";return}
  while(o<b.length){const len=dv.getUint32(o),type=dec.decode(b.slice(o+4,o+8)),d=b.slice(o+8,o+8+len);
   if(type==="tEXt"){const z=d.indexOf(0);if(dec.decode(d.slice(0,z))==="parameters")txt=u8.decode(d.slice(z+1))}
-  if(type==="iTXt"){const z=d.indexOf(0);if(dec.decode(d.slice(0,z))==="parameters"){let p=z+3;p=d.indexOf(0,p)+1;p=d.indexOf(0,p)+1;txt=u8.decode(d.slice(p))}}
+  if(type==="iTXt"){const z=d.indexOf(0),k=dec.decode(d.slice(0,z));if(k==="parameters"||k==="kiln_name"){let p=z+3;p=d.indexOf(0,p)+1;p=d.indexOf(0,p)+1;const v=u8.decode(d.slice(p));if(k==="parameters")txt=v;else kname=v}}
   if(type==="IEND")break;o+=12+len}
  if(!txt){$("pout").textContent="No generation settings found in this PNG.";$("pSend").disabled=true;return}
- $("pout").dataset.raw=txt;parsed=parseParams(txt);renderPngInfo(txt);$("pSend").disabled=false;$("pRaw").style.display=""}
+ $("pout").dataset.raw=txt;parsed=parseParams(txt);parsed.name=nameFrom(f);renderPngInfo(txt);$("pSend").disabled=false;$("pRaw").style.display=""}
 
 /* ---------- PNG Info: prompt rendered like the editor + settings table ---------- */
 function piLine(t){const e=esc(t).replace(/&lt;lora:([^&]*?)&gt;/g,'<span class="cm-lora">&lt;lora:$1&gt;</span>').replace(/\{([^{}]*\|[^{}]*)\}/g,'<span class="cm-variant">{$1}</span>');
@@ -41,4 +44,5 @@ $("pSend").onclick=()=>{if(!parsed)return;P.value=parsed.prompt;draft=parsed.pro
  if(parsed.steps)S.steps=parsed.steps;if(parsed.seed){S.seed=parsed.seed;S.seedMode="fixed"}
  if(parsed.size){const [w,h]=parsed.size.split("x").map(Number);let best=null;for(const m in SIZES)for(const r in SIZES[m]){const [a,b]=SIZES[m][r];const d=Math.abs(a-w)+Math.abs(b-h);if(!best||d<best.d)best={m,r,d}}if(best){S.mp=best.m;S.ar=best.r}}
  parsed.loras.forEach(pl=>{const l=LORAS.find(l=>l.name.toLowerCase()===pl.name.toLowerCase());if(l){l.on=true;l.w=pl.w}});
- save();renderAll();grow();toast("Settings loaded into the prompt — seed fixed")};
+ if(parsed.name){S.pname=parsed.name;$("pname").value=S.pname}
+ save();renderAll();grow();toast(parsed.name?`Loaded into the prompt as “${parsed.name}” — seed fixed`:"Settings loaded into the prompt — seed fixed")};

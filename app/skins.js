@@ -248,7 +248,7 @@ function makeCamera(){const aur=makeAurora(),lit=document.createElement("canvas"
    lc.clearRect(0,0,W,H);
    const nb=spinW>.05?6:1,sweep=spinW*.07;                                                            // ~70 ms of shutter: the trails smear into rings
    for(let b=0;b<nb;b++){const o=nb>1?-sweep*b/(nb-1):0,wb=1/nb;if(film)put(film,xf*wb,filmTh-o);if(prev)put(prev,(1-xf)*wb,prevTh-o)}                 // the new film cross-fades in over 0.6 s
-   const res=ss(.12,.6,pr);if(t-maskT>400){maskT=t;try{sampleMask(st.src,W,H,res)}catch(e){}}hasMask=easeMask(dt);
+   const res=ss(.12,.6,pr);if(st.noImg){mt=mcur=null;hasMask=false}else{if(t-maskT>400){maskT=t;try{sampleMask(st.src,W,H,res)}catch(e){}}hasMask=easeMask(dt)}   /* held (privacy): no starlight from the image */
    if(hasMask){lc.globalCompositeOperation="destination-in";lc.imageSmoothingEnabled=true;lc.imageSmoothingQuality="high";lc.drawImage(mask,0,0,W,H);lc.globalCompositeOperation="source-over"}
    ctx.save();
    const w4=Math.max(40,Math.round(W/4)),h4=Math.max(30,Math.round(H/4));if(sm.width!==w4||sm.height!==h4){sm.width=sm2.width=w4;sm.height=sm2.height=h4}

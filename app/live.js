@@ -106,13 +106,22 @@
  const up=document.createElement("select");up.dataset.set="upscaler";const upl=document.createElement("label");upl.textContent="Upscaler";
  const us=document.createElement("select");us.dataset.set="upscale";us.innerHTML='<option value="2">×2</option><option value="1.5">×1.5</option><option value="4">×4</option>';
  const usl=document.createElement("label");usl.textContent="Upscale by";
- const fx=$("fghFx");for(const el of [upl,up,usl,us])fg.insertBefore(el,fx);
+ const fx=$("fghAp");for(const el of [upl,up,usl,us])fg.insertBefore(el,fx);   /* at the end of Output, above Appearance */
  for(const el of [up,us]){el.addEventListener("change",()=>{S.set[el.dataset.set]=el.value;save()})}
  const refreshUp=()=>{if(!models)return;up.innerHTML=models.upscalers.map(u=>`<option>${esc(u)}</option>`).join("");if(S.set.upscaler)up.value=S.set.upscaler;us.value=S.set.upscale||"2"};
  const rb=document.createElement("button");rb.className="iconbtn";rb.title="Refresh models & LoRAs from Forge";
  rb.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg>';
  rb.onclick=async()=>{rb.classList.add("spin");await loadModels(true);refreshUp();rb.classList.remove("spin");toast("Models and LoRAs refreshed")};
  document.querySelector(".mcard .mact").prepend(rb);
+ /* the LoRA tab rescans the folder: with its button, and on its own when the tab opens (at most once a minute, never
+    while a job runs — Forge is busy then); a quiet note only when something changed */
+ let lscanT=0;
+ async function rescanLoras(manual){if(!manual&&(current()||Date.now()-lscanT<60000||!forgeOk))return;lscanT=Date.now();const b=$("lRefresh");b.classList.add("spin");
+  const before=new Set(LORAS.map(l=>l.name)),ok=await loadModels(true);b.classList.remove("spin");if(!ok){if(manual)toast("Forge isn't reachable — LoRAs not rescanned");return}
+  const added=LORAS.filter(l=>!before.has(l.name)).length,gone=[...before].filter(n=>!LORAS.some(l=>l.name===n)).length;
+  if(added||gone)toast([added&&`${added} new LoRA${added>1?"s":""}`,gone&&`${gone} gone`].filter(Boolean).join(" · "));else if(manual)toast("LoRAs are up to date")}
+ $("lRefresh").onclick=()=>rescanLoras(true);
+ document.querySelector('.tab[data-v="loras"]').addEventListener("click",()=>rescanLoras(false));
 
  /* ---------- progress: real steps, smooth glide in between, live preview ---------- */
  let lastPrev=0,prevLoading=false;

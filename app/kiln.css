@@ -516,3 +516,32 @@ body.glass .modal.show{background:rgba(0,0,0,.55);transition:background-color .2
 .iconbtn.spin svg{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
 /* closing Settings is instant (re-blurring the glass on every frame of a shrink was the lag) */
 body.glass .modal:not(.show),.modal:not(.show) .mcard{transition:none}
+/* ---- notes of 2026-10-08 ---- */
+/* the cover button: top right of the image (left of the hover buttons when they show); on hover, and always while the
+   cover is held so you can see how to lift it */
+.cbtn{position:absolute;top:10px;right:10px;z-index:6;width:40px;height:40px;border-radius:14px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:none;place-items:center;opacity:0;transition:opacity .15s,background .15s}
+.cbtn svg{width:20px;height:20px}.cbtn:hover{background:rgba(40,40,44,.9)}
+.frame.has .cbtn{display:grid}.frame.has:hover .cbtn{opacity:1}.frame.held .cbtn{opacity:.55}.frame.held:hover .cbtn{opacity:1}
+.frame.has:not(.running):not(.held) .cbtn{right:58px}
+body.glass .cbtn{background:rgba(20,22,24,.38)!important;-webkit-backdrop-filter:blur(18px) saturate(1.7);backdrop-filter:blur(18px) saturate(1.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.10)}
+body.glass .cbtn:hover{background:rgba(44,48,50,.5)!important}
+/* held: the picture is hidden outright (never a blur: a blur still shows shapes and skin tones) */
+.frame.held #cv{visibility:hidden}.frame.held .side{display:none}.frame.held{cursor:default}
+/* Settings: hovering a field is a thin glass capsule, like every other control */
+body.glass .fg select:hover,body.glass .fg input:not([readonly]):hover{background-color:color-mix(in oklab,rgba(255,255,255,.08),var(--cool,#9ab) 16%);box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 0 0 1px rgba(255,255,255,.06)}
+body.glass .fg select:focus,body.glass .fg input:not([readonly]):focus{background-color:color-mix(in oklab,rgba(255,255,255,.11),var(--cool,#9ab) 18%);border-color:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+body.glass .fg input[readonly]:hover{background-color:transparent}
+body.glass .iconbtn:hover{background:color-mix(in oklab,rgba(255,255,255,.16),var(--cool,#9ab) 18%)!important}
+/* the queue count on Start: a small glass capsule instead of a flat white disc */
+body.glass .badge{background:color-mix(in oklab,rgba(255,255,255,.2),var(--cool,#9ab) 16%);color:#fff;-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 0 0 1px rgba(255,255,255,.14),0 1px 4px rgba(0,0,0,.3)}
+/* Forge ↗ and the gear sit in the tab bar's row over the bright sky: the same regular glass as the tab bar (a tinted base
+   that gathers the light), not the thin clear capsule that let the aurora read as if it were on top of them */
+body.glass .flink,body.glass .gear{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%)!important;
+ -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03),0 0 0 1px rgba(255,255,255,.1)}
+body.glass .flink:hover,body.glass .gear:hover{background:color-mix(in oklab,rgba(44,48,50,var(--gta,.28)),var(--a1) 8%)!important;color:var(--text)}
+/* the character count: in glass the controls float over the prompt's bottom, so it sits just above them, under Start */
+body.glass .left .pcount{right:18px;bottom:calc(var(--ctrlh,64px) - 2px)}
+/* LoRA tab: rescan */
+.ltop #lRefresh{flex:none}

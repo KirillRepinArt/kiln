@@ -44,3 +44,4 @@ $("lscroll").addEventListener("dblclick",e=>{const n=e.target.closest("[data-ren
  inp.onkeydown=k=>{if(k.key==="Enter")inp.blur();if(k.key==="Escape"){inp.value=l.display;inp.blur()}}});
 $("lscroll").addEventListener("input",e=>{const el=e.target.closest("[data-ln]");if(!el||e.target.classList.contains("nmedit"))return;const l=LORAS.find(l=>l.name===el.dataset.ln);l.w=+e.target.value;
  document.querySelectorAll(`#lscroll [data-ln="${CSS.escape(l.name)}"] input[type=range],#lscroll [data-ln="${CSS.escape(l.name)}"] input[type=number]`).forEach(i=>{if(i!==e.target)i.value=l.w});const s=el.querySelector(".st span");if(s)s.textContent=fmtW(l.w);save();renderChips()});
+$("lRefresh").onclick=()=>toast("Prototype: would rescan the LoRA folder"); /* live.js replaces this */

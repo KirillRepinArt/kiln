@@ -7,12 +7,13 @@ txt2img blocks for steps x STEP_SECONDS, /progress reports steps and a live prev
     python tools/fake_forge.py            # listens on 127.0.0.1:7861
     python tools/fake_forge.py 7861 0.5   # port, seconds per step
 """
-import base64, json, random, struct, sys, threading, time, zlib
+import base64, json, random, re, struct, sys, threading, time, zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 7861
 STEP_SECONDS = float(sys.argv[2]) if len(sys.argv) > 2 else 0.6
 
+FILL = re.compile(r"\[fill:([0-9a-fA-F]{6})\]")  # test hook: a prompt with [fill:ff0000] gives a solid image
 state = {"job_count": 0, "sampling_step": 0, "sampling_steps": 0, "interrupted": False, "preview": None, "t0": 0.0}
 options = {"sd_model_checkpoint": "krea2_turbo_fp8_scaled.safetensors", "forge_additional_modules": [],
            "live_previews_enable": True, "show_progress_every_n_steps": 1}
@@ -38,11 +39,13 @@ LORAS = [  # neutral demo names; folder comes from the path, as with real Forge
 ]
 
 
-def png(w, h, seed, blur=0.0):
-    """Small RGB gradient PNG; `blur` 0..1 flattens it (fake 'early step' look)."""
+def png(w, h, seed, blur=0.0, fill=None):
+    """Small RGB gradient PNG; `blur` 0..1 flattens it (fake 'early step' look); `fill` "rrggbb" makes it solid."""
     r = random.Random(seed)
     c1 = [r.randint(30, 200) for _ in range(3)]
     c2 = [r.randint(30, 200) for _ in range(3)]
+    if fill:
+        c1 = c2 = [int(fill[i:i + 2], 16) for i in (0, 2, 4)]
     if blur:
         mid = [(a + b) // 2 for a, b in zip(c1, c2)]
         c1 = [int(a * (1 - blur) + m * blur) for a, m in zip(c1, mid)]
@@ -102,6 +105,10 @@ class H(BaseHTTPRequestHandler):
         b = self.body()
         if p == "/sdapi/v1/options":
             options.update(b); return self.send(None)
+        if p == "/sdapi/v1/refresh-loras":  # test hook: each rescan finds one more LoRA
+            n = sum(1 for x in LORAS if x[0].startswith("new_lora_"))
+            LORAS.append((f"new_lora_{n + 1}", f"Lora/new_lora_{n + 1}.safetensors"))
+            return self.send(None)
         if p == "/sdapi/v1/interrupt":
             with lock: state["interrupted"] = True
             return self.send({})
@@ -109,6 +116,7 @@ class H(BaseHTTPRequestHandler):
             return self.send({"image": b.get("image", ""), "html_info": "upscaled (fake)"})
         if p == "/sdapi/v1/txt2img":
             w, h, steps, seed = b.get("width", 1024), b.get("height", 1024), b.get("steps", 4), b.get("seed", -1)
+            m = FILL.search(b.get("prompt", "")); fill = m.group(1) if m else None
             if seed in (-1, None): seed = random.randint(0, 2**32 - 1)
             with lock:
                 state.update(job_count=1, sampling_step=0, sampling_steps=steps, interrupted=False, preview=None, t0=time.time())
@@ -117,13 +125,13 @@ class H(BaseHTTPRequestHandler):
                 with lock:
                     if state["interrupted"]: break
                     state["sampling_step"] = i + 1
-                    state["preview"] = base64.b64encode(png(w // 16, h // 16, seed, blur=1 - (i + 1) / steps)).decode()
+                    state["preview"] = base64.b64encode(png(w // 16, h // 16, seed, blur=1 - (i + 1) / steps, fill=fill)).decode()
             with lock:
                 state.update(job_count=0, preview=None)
             info = {"infotexts": [f"{b.get('prompt','')}\nSteps: {steps}, Sampler: {b.get('sampler_name')}, "
                                   f"Schedule type: {b.get('scheduler')}, CFG scale: {b.get('cfg_scale')}, Seed: {seed}, "
                                   f"Size: {w}x{h}, Model: {options['sd_model_checkpoint']}"], "seed": seed}
-            return self.send({"images": [base64.b64encode(png(w // 4, h // 4, seed)).decode()],
+            return self.send({"images": [base64.b64encode(png(w // 4, h // 4, seed, fill=fill)).decode()],
                               "parameters": b, "info": json.dumps(info)})
         self.send({"detail": "Not Found"}, 404)
 

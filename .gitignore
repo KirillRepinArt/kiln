@@ -23,3 +23,6 @@ config.local.json
 app/fonts/satoshi/
 .env
 *.log
+
+# test screenshots
+tools/tests/out/

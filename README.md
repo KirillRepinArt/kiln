@@ -123,7 +123,8 @@ subfolder and styles in `style`; the folder names are configurable in `config.lo
 
 **Demo / development.** Open `index.html` directly for the simulated demo, or run `python tools/fake_forge.py`
 and point Kiln at it (`KILN_FORGE_URL=http://127.0.0.1:7861 python server.py`) to exercise the whole pipeline
-without a GPU.
+without a GPU. `node tools/tests/run.mjs` runs the end-to-end tests (Node 22+, Edge or Chrome): each test starts
+its own fake Forge, Kiln and a headless browser. Changes are listed in `CHANGELOG.md`.
 
 **Offline.** Kiln asks nothing of the internet: its fonts (`app/fonts/`) and the prompt editor
 (`app/vendor/codemirror.js`) ship with it. Satoshi is the one font that can't be included — its licence doesn't

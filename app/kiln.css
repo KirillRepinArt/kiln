@@ -567,3 +567,12 @@ body.glass .btn.pri,body.glass .peekbar #pkAll{position:relative;color:var(--ink
  -webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -4px 10px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25)}
 body.glass .btn.pri:hover,body.glass .peekbar #pkAll:hover{filter:brightness(1.1) saturate(1.05)}
+/* Start = the main action: the same tinted glass as Send to prompt (the theme gradient, see-through, glass edge) with a
+   dark triangle; nothing to queue: plain thin glass and a grey triangle */
+.play:not(.off){background:var(--grad)}.play:not(.off) svg path{fill:var(--ink)}
+.play:not(.off):hover{filter:brightness(1.1) saturate(1.05)!important}
+body.glass .play:not(.off){background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 80%,transparent),color-mix(in oklab,var(--a2) 72%,transparent) 55%,color-mix(in oklab,var(--a3) 66%,transparent))!important;
+ -webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -4px 10px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25)!important}
+body.glass .play:not(.off)::before{display:none}
+body.glass .play:not(.off) svg path{fill:var(--ink)}

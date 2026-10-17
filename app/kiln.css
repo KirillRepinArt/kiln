@@ -576,3 +576,25 @@ body.glass .play:not(.off){background:linear-gradient(135deg in oklch,color-mix(
  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -4px 10px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25)!important}
 body.glass .play:not(.off)::before{display:none}
 body.glass .play:not(.off) svg path{fill:var(--ink)}
+
+/* ---- Phase 1 batch A ---- */
+/* Stop: a proper button at the end of the status row (V3); while stopping the bar freezes and greys (V5) */
+.prog .meta{height:36px}
+.prog .stop{height:36px;padding:0 15px 0 12px;font-size:13.5px;gap:7px}.prog .stop svg{width:11px;height:11px}
+.prog.stopping .fill{filter:grayscale(1) brightness(.7)}.prog.stopping .fill::before{animation-play-state:paused}
+.prog.stopping .stop{opacity:.45;pointer-events:none}
+#ptxt .sub{color:var(--muted);font-weight:400}
+/* Keep seed: next to Send to prompt, and as a lock in the peek bar */
+.pact .keepseed{margin-right:auto;margin-left:10px}
+.peekbar .pkseed{width:30px;padding:0!important;display:grid;place-items:center;color:var(--muted)}.peekbar .pkseed svg{width:14px;height:14px}
+.peekbar .pkseed.on{color:var(--a1)}
+/* About */
+.about{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.about span{color:var(--muted);margin-right:4px}
+.updres{grid-column:1/-1;font-size:13px;color:var(--muted);line-height:1.5}.updres:empty{display:none}
+.updres code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:5px}.updres a{color:var(--a3)}
+/* the shortcut sheet */
+.kgrid{display:grid;grid-template-columns:auto 1fr;gap:9px 18px;align-items:center;font-size:14px}
+.kgrid .kt{color:var(--muted)}.kgrid.mouse .kk{color:var(--text);font-size:13px}
+kbd{display:inline-block;min-width:24px;padding:2px 7px;border-radius:7px;background:rgba(255,255,255,.08);box-shadow:inset 0 -1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(255,255,255,.08);
+ font:500 12.5px var(--font,Inter),system-ui;text-align:center;color:var(--text)}
+.keys .mcard{width:min(520px,92vw)}.keys .fgh{margin:16px 0 10px}

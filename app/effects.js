@@ -59,8 +59,10 @@ function status(){const j=current();
 setInterval(status,400);
 let notifAsked=false;
 function askNotify(){if(notifAsked||!("Notification" in window))return;notifAsked=true;try{if(Notification.permission==="default")Notification.requestPermission()}catch(e){}}
-function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==="pending"))return;if(((S.set||{}).notify||"on")==="off")return;
- try{if(Notification.permission==="granted")new Notification("Kiln — queue finished",{body:"Last: "+j.prompt.slice(0,80),silent:(S.set||{}).notify==="silent"})}catch(e){}}
+/* notifications are neutral: never the prompt, the name or a picture (they end up in the Windows notification centre) */
+let doneRun=0;
+function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>x.status==="pending"))return;const n=doneRun;doneRun=0;if(((S.set||{}).notify||"on")==="off")return;
+ try{if(Notification.permission==="granted")new Notification("Kiln",{body:n>1?`Queue finished · ${n} images`:"Your image is ready",silent:(S.set||{}).notify==="silent"})}catch(e){}}
 
 
 /* ======================= effects =======================

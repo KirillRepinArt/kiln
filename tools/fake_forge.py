@@ -88,6 +88,8 @@ class H(BaseHTTPRequestHandler):
             return self.send([{"name": n} for n in ("4x-ClearRealityV1", "4x-UltraSharpV2", "R-ESRGAN 4x+")])
         if p == "/sdapi/v1/loras":
             return self.send([{"name": n, "alias": n, "path": path, "metadata": {}} for n, path in LORAS])
+        if p == "/tags":  # test hook: stands in for GitHub's tag list (Kiln's update check)
+            return self.send([{"name": "v0.1"}, {"name": "v9.2"}, {"name": "good-2026"}])
         if p == "/sdapi/v1/progress":
             with lock:
                 s = dict(state)

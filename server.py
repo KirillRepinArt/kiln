@@ -509,6 +509,25 @@ def get_models(refresh=False):
 
 
 # ---------------------------------------------------------------- HTTP
+VERSION = "0.1"  # bumped when a roadmap phase is tagged (see CHANGELOG.md)
+REPO = "KirillRepinArt/kiln"
+
+
+def check_update():
+    """Newest vX.Y tag on GitHub vs this VERSION. Only runs when the user presses Check for updates."""
+    url = os.environ.get("KILN_UPDATE_URL") or f"https://api.github.com/repos/{REPO}/tags"  # env: tests point it at the fake Forge
+    req = urllib.request.Request(url, headers={"User-Agent": "Kiln", "Accept": "application/vnd.github+json"})
+    with _opener.open(req, timeout=10) as r:  # direct: Python misreads a SOCKS system proxy (VPN clients) as socks4 and fails
+        tags = [t["name"] for t in json.loads(r.read())]
+    def ver(t):
+        m = re.fullmatch(r"v(\d+)\.(\d+)(?:\.(\d+))?", t)
+        return tuple(int(x or 0) for x in m.groups()) if m else None
+    vs = sorted((v, t) for t in tags if (v := ver(t)))
+    latest = vs[-1][1] if vs else None
+    return {"current": VERSION, "latest": latest, "newer": bool(vs) and vs[-1][0] > ver("v" + VERSION),
+            "url": f"https://github.com/{REPO}"}
+
+
 MIME = {".html": "text/html; charset=utf-8", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp",
         ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".ico": "image/x-icon",
         ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8"}
@@ -588,7 +607,7 @@ class Handler(BaseHTTPRequestHandler):
             client["last"] = time.time()
             with lock:
                 return self.reply(200, {"forge": forge_status, "jobs": with_estimates(jobs), "stats": stats,
-                                        "out_dir": str(OUT)})
+                                        "out_dir": str(OUT), "version": VERSION})
         if path == "/api/nextname":
             name = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
             if not name.strip():
@@ -618,6 +637,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200, {"est": estimate(b.get("spec") or {})[0]})
             except Exception as e:
                 return self.reply(400, {"error": str(e)})
+        if path == "/api/update-check":
+            try:
+                return self.reply(200, check_update())
+            except Exception as e:
+                return self.reply(200, {"error": f"GitHub not reachable ({type(e).__name__})", "current": VERSION})
         if path == "/api/bye":  # a Kiln window is closing (sendBeacon from pagehide)
             client["bye"] = time.time()
             return self.reply(200, {})
@@ -642,7 +666,7 @@ class Handler(BaseHTTPRequestHandler):
                 if j["status"] == "pending":
                     jobs.remove(j)
                 elif j["status"] == "running":
-                    j["_cancel"] = True
+                    j["_cancel"] = True; j["stopping"] = True
                     try: forge("POST", "/sdapi/v1/interrupt", {})
                     except Exception: pass
                 save_queue()

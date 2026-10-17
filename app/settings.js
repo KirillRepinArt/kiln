@@ -17,6 +17,7 @@ $("rAll").onclick=()=>{if(!confirm("Reset everything? Prompt, name, settings, fa
 S.set=S.set||{};document.querySelectorAll('[data-set]').forEach(el=>{const k=el.dataset.set;if(S.set[k]!=null)el.value=S.set[k];else S.set[k]=el.value;
  el.addEventListener('change',()=>{S.set[k]=el.value;save();if(k==="font"){S.set.fontPicked=1;save();applyFont()}if(k==="glass")applyGlass()})});
 function applyGlass(){document.body.classList.toggle("glass",(S.set||{}).glass==="on")}
+$("updBtn").onclick=()=>toast("The update check needs the Kiln server (kiln.bat)");$("keysBtn").onclick=()=>openKeys();
 $("gear").onclick=()=>$("modal").classList.add("show");$("mClose").onclick=()=>$("modal").classList.remove("show");
 $("modal").onclick=e=>{if(e.target.id==="modal")$("modal").classList.remove("show")};
 $("sDemo").value=String(S.demo);$("sDemo").onchange=e=>{S.demo=+e.target.value;save();demoNote()};

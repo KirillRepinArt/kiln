@@ -39,10 +39,18 @@ $("pRaw").onclick=()=>{const o=$("pout");if(o.classList.contains("raw")){renderP
 function parseParams(t){const i=t.search(/\n(Negative prompt:|Steps:)/);const prompt=(i>=0?t.slice(0,i):t).trim();
  const g=k=>{const m=t.match(new RegExp(k+":\\s*([^,\\n]+)"));return m?m[1].trim():null};
  const loras=[...prompt.matchAll(/<lora:([^:>]+):([-\d.]+)>/g)].map(m=>({name:m[1],w:+m[2]}));
- return{prompt:prompt.replace(/<lora:[^>]+>/g,"").trim(),steps:+g("Steps")||null,seed:+g("Seed")||null,size:g("Size"),loras}}
+ return{prompt:prompt.replace(/<lora:[^>]+>/g,"").trim(),steps:+g("Steps")||null,seed:+g("Seed")||null,size:g("Size"),loras,
+  cfg:g("CFG scale"),sampler:g("Sampler"),schedule:g("Schedule type")}}
+/* Keep seed (shared with the peek bar's lock): off = a new random seed, for variations; on = the image's own seed */
+function keepSeedUI(){$("pKeepSw").classList.toggle("on",!!S.keepSeed);const k=$("pkSeed");if(k){k.classList.toggle("on",!!S.keepSeed);
+ k.dataset.tip=S.keepSeed?"Keep seed: on — Reuse all uses this image's seed":"Keep seed: off — Reuse all makes a variation (new random seed)"}}
+$("pKeep").onclick=e=>{e.preventDefault();S.keepSeed=!S.keepSeed;save();keepSeedUI()};keepSeedUI();
 $("pSend").onclick=()=>{if(!parsed)return;P.value=parsed.prompt;draft=parsed.prompt;
- if(parsed.steps)S.steps=parsed.steps;if(parsed.seed){S.seed=parsed.seed;S.seedMode="fixed"}
+ if(parsed.steps)S.steps=parsed.steps;if(parsed.seed&&S.keepSeed){S.seed=parsed.seed;S.seedMode="fixed"}else S.seedMode="random";
+ S.set=S.set||{};const setF=(k,v)=>{const el=document.querySelector(`[data-set="${k}"]`);if(!el||v==null)return;
+  if(el.tagName==="SELECT"&&![...el.options].some(o=>o.value===v)){const o=document.createElement("option");o.textContent=o.value=v;el.appendChild(o)}el.value=v;S.set[k]=v};
+ if(parsed.cfg)setF("cfg",parsed.cfg);if(parsed.sampler)setF("sampler",parsed.sampler+(parsed.schedule?" · "+parsed.schedule:""));
  if(parsed.size){const [w,h]=parsed.size.split("x").map(Number);let best=null;for(const m in SIZES)for(const r in SIZES[m]){const [a,b]=SIZES[m][r];const d=Math.abs(a-w)+Math.abs(b-h);if(!best||d<best.d)best={m,r,d}}if(best){S.mp=best.m;S.ar=best.r}}
  parsed.loras.forEach(pl=>{const l=LORAS.find(l=>l.name.toLowerCase()===pl.name.toLowerCase());if(l){l.on=true;l.w=pl.w}});
  if(parsed.name){S.pname=parsed.name;$("pname").value=S.pname}
- save();renderAll();grow();toast(parsed.name?`Loaded into the prompt as “${parsed.name}” — seed fixed`:"Settings loaded into the prompt — seed fixed")};
+ save();showView("gen");renderAll();grow();toast(`Loaded into the prompt${parsed.name?` as “${parsed.name}”`:""} — ${S.keepSeed?"its seed":"new random seed"}`)};

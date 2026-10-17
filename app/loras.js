@@ -1,10 +1,12 @@
 /* Kiln · LoRA library tab */
 /* ======================= LoRA library ======================= */
+const FTIP={people:"Faces: LoRAs in a people, faces, characters or persons folder",style:"Style: LoRAs in a style folder",
+ utility:"Utility: LoRAs in any other folder — the folder names are set in config.local.json"};
 const FILTERS=[["all","All"],["people","Faces"],["style","Style"],["utility","Utility"],["fav","★ Favorites"],["recent","Recent"]];
 function initials(n){return n.slice(0,2).toUpperCase()}
 function hue(n){let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))%360;return h}
 function renderLoras(){const q=$("lsearch").value.toLowerCase().trim();
- $("fchips").innerHTML=FILTERS.map(([k,t])=>`<button class="${S.lfilter===k?"on":""}" data-f="${k}">${t}</button>`).join("");
+ $("fchips").innerHTML=FILTERS.map(([k,t])=>`<button class="${S.lfilter===k?"on":""}" data-f="${k}"${FTIP[k]?` data-tip="${FTIP[k]}"`:""}>${t}</button>`).join("");
  $("ofSw").classList.toggle("on",S.oneFace);
  let L=LORAS.filter(l=>!q||l.display.toLowerCase().includes(q)||l.name.toLowerCase().includes(q));
  if(S.lfilter==="fav")L=L.filter(l=>l.fav);else if(S.lfilter==="recent")L=L.filter(l=>l.used).sort((a,b)=>b.used-a.used);else if(S.lfilter!=="all")L=L.filter(l=>l.folder===S.lfilter);

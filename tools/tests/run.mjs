@@ -38,7 +38,8 @@ async function launch(name, { step = 0.6, width = 1513, height = 900 } = {}) {
   run(PY, ["tools/fake_forge.py", String(fport), String(step)]);
   await waitHttp(`http://127.0.0.1:${fport}/sdapi/v1/options`);
   run(PY, ["-c", "import server; server.CFG['exit_when_closed']=False; server.CFG['forge_start']=''; server.main()"],
-    { KILN_PORT: String(kport), KILN_FORGE_URL: `http://127.0.0.1:${fport}`, KILN_OUTPUT_DIR: out, KILN_DATA_DIR: data, PYTHONUNBUFFERED: "1" });
+    { KILN_PORT: String(kport), KILN_FORGE_URL: `http://127.0.0.1:${fport}`, KILN_OUTPUT_DIR: out, KILN_DATA_DIR: data, PYTHONUNBUFFERED: "1",
+      KILN_UPDATE_URL: `http://127.0.0.1:${fport}/tags` });
   await waitHttp(`http://127.0.0.1:${kport}/api/state`);
   const url = `http://127.0.0.1:${kport}/`;
   // --no-proxy-server like kiln.bat: a system proxy (VPN client, antivirus web filter) must not stall the local page

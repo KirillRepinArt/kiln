@@ -36,7 +36,8 @@ function peekButtons(){const j=peekJob;if(!j)return;const pSame=(j.raw||j.prompt
  const sSame=j.mp===S.mp&&j.ar===S.ar&&+j.steps===+S.steps&&sameLoras(j),seedSame=S.seedMode==="fixed"&&+S.seed===+j.seed;
  $("pkPrompt").style.display=pSame?"none":"";const all=$("pkAll");
  const lbl=(lg,sm)=>`<span class="lg">${lg}</span><span class="sm">${sm}</span>`; // the short form shows when the box is narrow
- if(!pSame||!sSame){all.style.display="";all.innerHTML=lbl("Reuse all","All")}else if(!seedSame){all.style.display="";all.innerHTML=lbl("Use this seed","Seed")}else all.style.display="none";
+ if(!pSame||!sSame){all.style.display="";all.dataset.m="all";all.innerHTML=lbl("Reuse all","All")}else if(!seedSame){all.style.display="";all.dataset.m="seed";all.innerHTML=lbl("Use this seed","Seed")}else all.style.display="none";
+ $("pkSeed").style.display=all.style.display==="none"||all.dataset.m==="seed"?"none":"";
  $("peekLbl").textContent=`#${j.id}${j.status==="running"?" · generating":""}${pSame&&sSame&&seedSame?" · same as your draft":""}`}
 function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classList.add("peek");P.scrollTop=0;
  const n=$("pname");n.value=j.name||"";n.placeholder="Unnamed";n.readOnly=true;
@@ -50,11 +51,12 @@ function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){browseId=null;
  if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
  const n=$("pname");n.value=S.pname||"";n.placeholder="Add name";n.readOnly=false;
  $("peekbar").classList.remove("show");$("left").classList.remove("peeking");renderChips();renderPills();updPrompt();layoutLeft()}
-function reuse(all){const j=peekJob;if(!j)return;const prev={draft,S:{mp:S.mp,ar:S.ar,steps:S.steps,seedMode:S.seedMode,seed:S.seed,pname:S.pname},loras:LORAS.map(l=>({on:l.on,w:l.w}))};
- draft=j.raw||j.prompt;if((j.name||"").trim())S.pname=j.name.trim();   /* reusing the working file, title included: the next image joins its series */if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps,seedMode:"fixed",seed:j.seed});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}
+function reuse(all,seedToo){const j=peekJob;const fixed=!!(seedToo||S.keepSeed);if(!j)return;const prev={draft,S:{mp:S.mp,ar:S.ar,steps:S.steps,seedMode:S.seedMode,seed:S.seed,pname:S.pname},loras:LORAS.map(l=>({on:l.on,w:l.w}))};
+ draft=j.raw||j.prompt;if((j.name||"").trim())S.pname=j.name.trim();   /* reusing the working file, title included: the next image joins its series */if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps},fixed?{seedMode:"fixed",seed:j.seed}:{seedMode:"random"});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}
  endPeek();save();renderAll();P.focus();
- toast(all?`Reused #${j.id} — prompt, settings and LoRAs`:`Reused #${j.id}'s prompt`,"Undo",()=>{draft=prev.draft;P.value=draft;Object.assign(S,prev.S);$("pname").value=S.pname||"";LORAS.forEach((l,i)=>Object.assign(l,prev.loras[i]));save();renderAll();updPrompt()})}
-$("pkPrompt").onclick=()=>reuse(false);$("pkAll").onclick=()=>reuse(true);$("pkX").onclick=()=>closePromptPeek();
+ toast(all?`Reused #${j.id} — prompt, settings and LoRAs${fixed?", its seed":", new seed"}`:`Reused #${j.id}'s prompt`,"Undo",()=>{draft=prev.draft;P.value=draft;Object.assign(S,prev.S);$("pname").value=S.pname||"";LORAS.forEach((l,i)=>Object.assign(l,prev.loras[i]));save();renderAll();updPrompt()})}
+$("pkPrompt").onclick=()=>reuse(false);$("pkAll").onclick=()=>reuse(true,$("pkAll").dataset.m==="seed");
+$("pkSeed").onclick=e=>{e.stopPropagation();S.keepSeed=!S.keepSeed;save();keepSeedUI()};$("pkX").onclick=()=>closePromptPeek();
 P.addEventListener("keydown",e=>{if(!peekJob)return;if(e.key==="Escape"){closePromptPeek();return}
  if(e.key.length===1||e.key==="Backspace"||e.key==="Enter"){if(e.ctrlKey&&e.key==="Enter")return;reuse(false)}});
 function updPrompt(){if(window.nameUI)nameUI();const n=P.value.length;$("pcount").textContent=n?n.toLocaleString()+" chars":"";$("play").classList.toggle("off",!P.value.trim()||!!peekJob);

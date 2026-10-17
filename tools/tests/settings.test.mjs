@@ -1,8 +1,8 @@
 // Settings layout and the offline promise.
 
 export async function order(k, t) {
-  t.ok(await k.ev(`[...document.querySelectorAll(".mcard .fgh")].map(e=>e.textContent).join(",")`) === "Model,Output,Appearance,Effects,Cover",
-    "groups: Model, Output, Appearance, Effects, Cover", await k.ev(`[...document.querySelectorAll(".mcard .fgh")].map(e=>e.textContent).join(",")`));
+  const groups = await k.ev(`[...document.querySelectorAll("#modal .fgh")].map(e=>e.textContent).join(",")`);
+  t.ok(groups === "Model,Output,Appearance,Effects,Cover,About", "groups: Model, Output, Appearance, Effects, Cover, About", groups);
   const themes = await k.ev(`[...$("sTheme").options].map(o=>o.textContent)`);
   t.ok(JSON.stringify(themes) === JSON.stringify([...themes].sort((a, b) => a.localeCompare(b))), "themes A–Z", themes);
   t.ok(await k.ev(`!!(document.querySelector('[data-set="upscaler"]').compareDocumentPosition($("fghAp"))&Node.DOCUMENT_POSITION_FOLLOWING)`),

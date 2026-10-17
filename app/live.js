@@ -35,7 +35,7 @@
  /* ---------- server job -> UI job ---------- */
  function toUI(s){const sp=s.spec||{};return Object.assign({},sp,{id:s.id,kind:s.kind,status:s.status,file:s.file||null,
   seed:s.seed_used??sp.seed,est:s.est,est_first:s.est_first,t_first:s.t_first&&s.t_first*1000,step:s.step||0,steps:s.steps||sp.steps||0,progress:s.progress||0,eta:s.eta,preview_rev:s.preview_rev||0,
-  error:s.error,started:s.started&&s.started*1000,finished:s.finished&&s.finished*1000,loras:sp.loras||[],mp:sp.mp||"1.0",ar:sp.ar||"1:1"})}
+  error:s.error,started:s.started&&s.started*1000,finished:s.finished&&s.finished*1000,loras:sp.loras||[],mp:sp.mp||"1.0",ar:sp.ar||"1:1",warm:!!s.warm,stopping:!!s.stopping,created:s.created&&s.created*1000})}
  let sig="",forgeOk=true,forgeStarting=false,firstPoll=true,loadingM=false;const seen=new Set();
  async function poll(){let s;try{s=await (await fetch("/api/state")).json()}catch(e){forgeMsg("Kiln server not reachable");return}
   forgeOk=s.forge.ok;forgeStarting=!!s.forge.starting;
@@ -46,7 +46,9 @@
   jobs=s.jobs.map(x=>{const u=toUI(x),o=prev.get(u.id);if(o&&o.status==="running"&&u.status==="running"){u._ss=o._ss;u._lastStep=o._lastStep}return u});
   for(const j of jobs){if(j.status==="done"&&!seen.has(j.id)){seen.add(j.id);neKey="";if(!firstPoll){justDone=j.id;resultStale=false;onJobDone(j)}}
    if(j.status==="error"&&!seen.has("e"+j.id)){seen.add("e"+j.id);if(!firstPoll)toast(`Job #${j.id} failed: ${j.error||"error"}`)}}
-  if(firstPoll){const d=lastDone();if(d&&S.clearedId===d.id)resultStale=true;window._jobsReady=true} // you had closed the image last time
+  if(firstPoll){const d=lastDone();if(d&&S.clearedId===d.id)resultStale=true;window._jobsReady=true; // you had closed the image last time
+   if(S.seenDone!=null){const n=jobs.filter(x=>x.status==="done"&&x.id>S.seenDone).length;if(n)setTimeout(()=>toast(`${n} image${n>1?"s":""} finished while Kiln was closed`),1200)}}
+  {const m=Math.max(0,...jobs.filter(x=>x.status==="done").map(x=>x.id));if(m!==S.seenDone){S.seenDone=m;save()}}
   firstPoll=false;
   if(peekJob)peekJob=jobs.find(j=>j.id===peekJob.id)||peekJob;
   const ns=jobs.map(j=>`${j.id}:${j.status}:${j.file}`).join("|");
@@ -66,7 +68,7 @@
     checkpoint:set.ckpt||undefined,modules:mods.length?mods:undefined,shift:+(set.shift||1.15),cfg:+(set.cfg||1),sampler,scheduler})}
   save();await api("/api/jobs",{jobs:specs});toast(S.n>1?`Added ${S.n} jobs to the queue`:"Added to queue");
   if(!forgeOk)setTimeout(()=>toast("Queued — Forge isn't running yet, jobs start when it is"),2300);poll()};
- window.stopJob=async function(j){if(!j)return;await api(`/api/jobs/${j.id}/cancel`,{});if(j.status==="running")toast("Stopping…");poll()};
+ window.stopJob=async function(j){if(!j)return;if(j.status==="running")j.stopping=true;await api(`/api/jobs/${j.id}/cancel`,{});poll()};
  $("qwrap").addEventListener("drop",()=>{},true);
  $("qwrap").addEventListener("dragend",()=>{const ids=[...document.querySelectorAll('.qi[draggable="true"]')].map(q=>+q.dataset.id);window._rp=true;
   api("/api/reorder",{ids}).finally(()=>{window._rp=false;poll()})});
@@ -122,6 +124,12 @@
  rb.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg>';
  rb.onclick=async()=>{rb.classList.add("spin");await loadModels(true);refreshUp();rb.classList.remove("spin");toast("Models and LoRAs refreshed")};
  document.querySelector(".mcard .mact").prepend(rb);
+ /* About: the version, and a manual update check — the only time Kiln goes online, and only when you ask */
+ $("aboutV").textContent="Kiln "+(st.version||"");
+ $("updBtn").onclick=async()=>{const b=$("updBtn"),o=$("updRes");b.disabled=true;o.textContent="Checking GitHub…";let r;
+  try{r=await api("/api/update-check",{})}catch(e){r={error:"Kiln server not reachable"}}b.disabled=false;
+  o.innerHTML=r.error?esc(r.error):r.newer?`<b>${esc(r.latest)} is available</b> (you have v${esc(r.current)}). To update: in the Kiln folder run <code>git pull</code> — or download the ZIP from <a href="${esc(r.url)}" target="_blank" rel="noopener">GitHub</a> — then close Kiln and run kiln.bat again.`
+   :`You have the latest version (v${esc(r.current)}).`};
  /* the LoRA tab rescans the folder: with its button, and on its own when the tab opens (at most once a minute, never
     while a job runs — Forge is busy then); a quiet note only when something changed */
  let lscanT=0;
@@ -138,6 +146,9 @@
  function remaining(j){if(!j.est||!j.started)return null;const el=(Date.now()-j.started)/1000;let f=1;
   if(j.t_first&&j.est_first){const at=(j.t_first-j.started)/1000;f=Math.max(.75,Math.min(2.5,at/j.est_first))}
   const r=j.est*f-el;return r>2?r:null} // overdue: fall back to step timing
+ /* before the first step: a word in Kiln's spirit, with the real state small beside it */
+ const WORDS=["Stoking the kiln","Kindling","Warming up","Simmering","Firing up","Tempering","Gathering embers"];
+ function setTxt(h){const el=$("ptxt");if(el.innerHTML!==h)el.innerHTML=h}
  let nextEst=null,neKey="";
  function refreshEst(){const [w,h]=SIZES[S.mp][S.ar],k=`${w}x${h}x${S.steps}`;if(k===neKey)return;neKey=k;
   api("/api/estimate",{spec:{w,h,steps:S.steps}}).then(r=>{if(neKey===k)nextEst=r.est}).catch(()=>{})}
@@ -146,16 +157,18 @@
    const per=Math.max(1,SEC_PER_STEP[j.mp]||60)*1000;
    if(j._lastStep!==j.step){j._lastStep=j.step;j._ss=Date.now()}
    const part=j.steps?Math.min((Date.now()-(j._ss||Date.now()))/per,.95):0;
-   const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;$("fill").style.width=(p*100).toFixed(2)+"%";
+   const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;prog.classList.toggle("stopping",!!j.stopping);if(!j.stopping)$("fill").style.width=(p*100).toFixed(2)+"%";
    const rm=remaining(j),left=rm!=null?rm:(j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000));
-   const started=j.step||j.preview_rev;$("ptxt").textContent=j.kind==="upscale"?"Upscaling…":started?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`:"Loading model…";
-   $("peta").textContent=j.kind==="upscale"?"":(started||rm!=null)?`~${fmt(left)} left`:"";
+   const started=j.step||j.preview_rev;
+   if(j.stopping){setTxt("Stopping after this step");$("peta").textContent=`≤ ~${fmt(per/1000)}`}   /* Forge only stops between steps */
+   else{setTxt(j.kind==="upscale"?"Upscaling…":started?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`:`${WORDS[j.id%WORDS.length]}… <span class="sub">· ${j.warm?"starting":"loading model"}</span>`);
+    $("peta").textContent=j.kind==="upscale"?"":(started||rm!=null)?`~${fmt(left)} left`:""}
    if(S.view==="gen"&&!browsed()){const f=$("frame");f.classList.add("has");$("idle").style.display="none";
     if(+$("cv").dataset.j!==j.id){$("cv").dataset.j=j.id;$("cv").dataset.d="";$("cv").dataset.want="";lastPrev=0;const c=$("cv");c.width=1;c.height=1;sizeFrame()}
     if(j.preview_rev&&j.preview_rev!==lastPrev&&!prevLoading){prevLoading=true;const r=j.preview_rev;const i=new Image();
      const jid=j.id;i.onload=()=>{if(+$("cv").dataset.j===jid&&!browsed())drawTo($("cv"),i,false);lastPrev=r;prevLoading=false};i.onerror=()=>{prevLoading=false;lastPrev=r};i.src=`/api/preview/${j.id}?r=${r}`}}
    const mini=document.querySelector(`.qi[data-id="${j.id}"] .mini i`);if(mini)mini.style.width=(p*100)+"%";
-  }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run");$("fill").style.width="0%";
+  }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run","stopping");$("fill").style.width="0%";
     if(!forgeOk){$("ptxt").textContent=forgeStarting?"Starting Forge…":"Forge not running";$("peta").textContent=forgeStarting?"jobs start when it's ready":"queue waits for it"}
     else{refreshEst();$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`}}
   if(!j||browsed()){const d=shownDone();

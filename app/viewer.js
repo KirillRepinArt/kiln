@@ -31,3 +31,7 @@ setInterval(()=>{$("frame").classList.toggle("clickable",(!current()||!!browsed(
 /* ✕ closes the image: idle -> the empty Ready screen (← brings it back); while generating -> back to the render */
 function closeShown(){if(browsed()){endPeek();if(current())return}staleIf(true);sizeFrame()}
 $("bclose").onclick=e=>{e.stopPropagation();closeShown()};
+document.addEventListener("keydown",e=>{if(e.key!=="Delete"||e.ctrlKey||e.altKey)return;const a=document.activeElement;
+ if(a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))||$("modal").classList.contains("show"))return;
+ const j=$("viewer").classList.contains("show")?V.job:S.view==="gen"&&(!current()||browsed())?shownDone():null;
+ if(j&&j.status==="done"&&!$("frame").classList.contains("held")){e.preventDefault();deleteJob(j)}});

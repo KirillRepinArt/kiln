@@ -52,11 +52,17 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
 
 **Queue first**
 - ▶ / `Ctrl+Enter` adds to the queue; it starts immediately if idle. Keep writing while it runs.
-- Drag to reorder, × to remove, **Stop** to cancel the running job. **×N** queues a batch — random seeds, or
-  counting up from a fixed seed.
+- Drag to reorder, × to remove, **Stop** to cancel the running job (it stops after the current step — Forge can't
+  stop mid-step — and says so). **×N** queues a batch — random seeds, or counting up from a fixed seed.
+- **Pause after this** (Queue tab): the current image finishes, nothing new starts until you resume.
+- Rows show when a job was added, finished and how long it took; the running row shows the live render (not with
+  Privacy hold on); hover a finished thumbnail for a bigger look. A waiting job's name can be changed in its peek.
+- **Delete** an image (`Del`, or the trash button on the image): it goes to the Recycle Bin, with Undo. ✕ on a
+  finished row only takes it off the list. Images deleted outside Kiln show as *file deleted* (**Remove missing**).
+- An **upscale** goes to the front of the line: seconds, right after the current image.
 - Click a finished job to open it in the Generating view. Click a waiting or running job — or the status line under
   the image — to **peek** at its prompt without touching your draft, then **Reuse prompt** or **Reuse all**
-  (settings, seed and LoRAs too). Reusing a named image also takes its name, so the next one joins the series. The buttons only appear when they'd change something: *“Use this seed”* when
+  (settings and LoRAs; its seed too if the 🔒 next to it is on — off gives a variation). Reusing a named image also takes its name, so the next one joins the series. The buttons only appear when they'd change something: *“Use this seed”* when
   only the seed differs.
 - **Honest time estimates** from your own history: the median of your last five runs at the same image size and
   steps, counted down while the job runs (on real history this halved the error of a per-megapixel average).
@@ -85,6 +91,9 @@ The queue shows which variant each job got, so a good result can be traced back.
   arrows then change only the image, and the status line offers *Show prompt*; the image's ✕ (or `Esc`) returns to
   your draft and the live render.
   On the latest result, the ✕ clears the canvas (`←` brings it back).
+- **Notifications** say only that an image is ready — never the prompt or the name. Reopening Kiln tells you how
+  many images finished while it was closed.
+- `?` lists every keyboard shortcut.
 - Click for a **full-size viewer** (fit ↔ 100%, wheel zoom, drag to pan, arrows to browse); double-click opens the
   file in your default app. Hover actions: upscale, open, show in folder, use as a LoRA thumbnail.
 - Optional **series name** → files are numbered `rainy-library-001.png`, `-002`, … Without one: date and seed.

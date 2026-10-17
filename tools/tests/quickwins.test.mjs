@@ -35,13 +35,11 @@ export async function reuseKeepSeed(k, t) {
 
 export async function startLine(k, t) {
   await k.job("a fox", { steps: 3 });
-  await k.until(`!!current()`, 5000);
-  const txt = await k.ev(`$("ptxt").textContent`);
-  t.ok(/…\s*· (loading model|starting)/.test(txt), "before the first step: a word + the real state", txt);
-  await k.until(`current()&&current().step>=1`, 10000);
-  t.ok(/^Step \d\/3$/.test(await k.ev(`$("ptxt").textContent`)), "then the steps");
+  const ok = await k.until(`/… · (loading model|starting)/.test($("ptxt").textContent)`, 8000, 100);
+  t.ok(ok, "before the first step: a word + the real state", await k.ev(`$("ptxt").textContent`));
+  t.ok(await k.until(`/^Step [0-9]+.3$/.test($("ptxt").textContent)`, 20000), "then the steps", await k.ev(`$("ptxt").textContent`));
 }
-startLine.opts = { step: 2 };
+startLine.opts = { step: 5 };
 
 export async function stopping(k, t) {
   await k.job("an owl", { steps: 5 }); await k.until(`current()&&current().step>=1`, 15000);
@@ -72,7 +70,7 @@ export async function shortcuts(k, t) {
   await k.ev(`(document.activeElement.blur(),1)`);
   await k.ev(`(document.body.dispatchEvent(new KeyboardEvent("keydown",{key:"?",bubbles:true})),1)`);
   t.ok(await k.ev(`$("keys").classList.contains("show")`), "? opens the shortcut sheet");
-  t.ok(await k.ev(`$("keys").textContent.includes("F9")`), "it lists F9");
+  t.ok(await k.ev(`["F9","F8","Del","Ctrl+Enter"].every(x=>$("keys").textContent.includes(x))`), "it lists F9, F8, Del, Ctrl+Enter");
   await k.ev(`(document.body.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})),1)`);
   t.ok(!(await k.ev(`$("keys").classList.contains("show")`)), "Esc closes it");
   await k.ev(`(P.focus(),1)`); await k.key("?");

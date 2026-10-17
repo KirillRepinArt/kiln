@@ -66,6 +66,8 @@ last_preview = {"v": None}  # the previous job's last preview: Forge can still r
 forge_status = {"ok": False, "error": "not checked yet", "busy": False, "starting": False}
 forge_proc = None  # the Forge we started ourselves (None if Forge was already running or isn't ours)
 QUEUE_FILE, STATS_FILE, HISTORY_FILE = DATA / "queue.json", DATA / "stats.json", DATA / "history.json"
+FLAGS_FILE, TRASH = DATA / "flags.json", DATA / "trash"
+flags = {"paused": False}  # Pause queue: the running job finishes, nothing new starts
 stats = {"sec_per_step": {}}  # MP bucket -> seconds per step (end to end, incl. load/decode) — last-resort estimate
 # Finished runs, for time estimates (see estimate()). "warm" = the run repeated the previous run's setup — recorded
 # for later analysis; on the data so far it didn't predict anything.
@@ -89,6 +91,13 @@ def load_state():
     for j in jobs:  # a crash mid-job: run it again
         if j["status"] == "running":
             j.update(status="pending", step=0, progress=0)
+    if FLAGS_FILE.exists():
+        try:
+            flags.update(json.loads(FLAGS_FILE.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    for j in [j for j in jobs if j["status"] == "deleted"]:  # deleted before a restart: past the undo window now
+        finish_delete(j["id"])
     if STATS_FILE.exists():
         try:
             stats = json.loads(STATS_FILE.read_text(encoding="utf-8"))
@@ -153,14 +162,47 @@ def estimate(sp):
 
 
 def with_estimates(js):
-    """Public job list with est / est_first on waiting jobs."""
+    """Public job list with est / est_first on waiting jobs; finished files that are gone are marked missing;
+    deleted jobs (waiting out their undo window) are left out."""
     out = []
     for j in js:
+        if j["status"] == "deleted":
+            continue
         pj = public(j)
+        if j["status"] == "done" and j.get("file") and not (OUT / j["file"]).exists():
+            pj["missing"] = True
         if j["status"] == "pending" and j.get("kind", "txt2img") == "txt2img":
             pj["est"], pj["est_first"] = estimate(j["spec"])
         out.append(pj)
     return out
+
+
+def recycle(path):
+    """Send a file to the Recycle Bin (Windows) — never a hard delete. Elsewhere it stays in data/trash."""
+    if os.name != "nt" or os.environ.get("KILN_NO_RECYCLE"):  # tests: never fill the real Recycle Bin
+        return False
+    import ctypes
+    from ctypes import wintypes
+
+    class SHFILEOPSTRUCTW(ctypes.Structure):
+        _fields_ = [("hwnd", wintypes.HWND), ("wFunc", wintypes.UINT), ("pFrom", wintypes.LPCWSTR), ("pTo", wintypes.LPCWSTR),
+                    ("fFlags", ctypes.c_uint16), ("fAnyOperationsAborted", wintypes.BOOL), ("hNameMappings", ctypes.c_void_p),
+                    ("lpszProgressTitle", wintypes.LPCWSTR)]
+    op = SHFILEOPSTRUCTW(None, 3, str(path) + "\0", None, 0x40 | 0x10 | 0x04 | 0x400, False, None, None)  # FO_DELETE, ALLOWUNDO|NOCONFIRMATION|SILENT|NOERRORUI
+    return ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op)) == 0
+
+
+def finish_delete(jid):
+    """The undo window is over: the file goes to the Recycle Bin and the job off the list."""
+    with lock:
+        j = next((x for x in jobs if x["id"] == jid), None)
+        if not j or j["status"] != "deleted":
+            return
+        t = TRASH / j["file"]
+        if t.exists():
+            recycle(t)
+        jobs.remove(j)
+        save_queue()
 
 
 def next_id():
@@ -307,7 +349,7 @@ def run_upscale(job):
 def worker():
     while True:
         with lock:
-            job = next((j for j in jobs if j["status"] == "pending"), None)
+            job = None if flags["paused"] else next((j for j in jobs if j["status"] == "pending"), None)
         if not job:
             wake.wait(2); wake.clear()
             continue
@@ -607,7 +649,7 @@ class Handler(BaseHTTPRequestHandler):
             client["last"] = time.time()
             with lock:
                 return self.reply(200, {"forge": forge_status, "jobs": with_estimates(jobs), "stats": stats,
-                                        "out_dir": str(OUT), "version": VERSION})
+                                        "out_dir": str(OUT), "version": VERSION, "paused": flags["paused"]})
         if path == "/api/nextname":
             name = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
             if not name.strip():
@@ -671,6 +713,44 @@ class Handler(BaseHTTPRequestHandler):
                     except Exception: pass
                 save_queue()
             return self.reply(200, {"ok": True})
+        if path == "/api/pause":  # Pause queue after the current job / Resume
+            with lock:
+                flags["paused"] = bool(b.get("paused"))
+                FLAGS_FILE.write_text(json.dumps(flags), encoding="utf-8")
+            wake.set()
+            return self.reply(200, {"paused": flags["paused"]})
+        m = re.fullmatch(r"/api/jobs/(\d+)/(remove|delete|undelete|name)", path)
+        if m:
+            jid, act = int(m.group(1)), m.group(2)
+            with lock:
+                j = next((x for x in jobs if x["id"] == jid), None)
+                if not j:
+                    return self.reply(404, {"error": "no such job"})
+                if act == "remove" and j["status"] in ("done", "cancelled", "error"):  # off the list; the file stays
+                    jobs.remove(j)
+                elif act == "name" and j["status"] == "pending":  # the file name is only decided when the image is saved
+                    j["spec"]["name"] = str(b.get("name", "")).strip()[:60]
+                elif act == "delete" and j["status"] == "done" and j.get("file"):
+                    src = OUT / j["file"]
+                    TRASH.mkdir(parents=True, exist_ok=True)
+                    if src.exists():
+                        src.replace(TRASH / j["file"])
+                    j["status"] = "deleted"
+                    threading.Timer(12, finish_delete, [jid]).start()  # the undo window, then the Recycle Bin
+                elif act == "undelete" and j["status"] == "deleted":
+                    t = TRASH / j["file"]
+                    if t.exists():
+                        t.replace(OUT / j["file"])
+                    j["status"] = "done"
+                else:
+                    return self.reply(409, {"error": f"can't {act} a {j['status']} job"})
+                save_queue()
+            return self.reply(200, {"ok": True})
+        if path == "/api/remove-missing":
+            with lock:
+                jobs[:] = [j for j in jobs if not (j["status"] == "done" and j.get("file") and not (OUT / j["file"]).exists())]
+                save_queue()
+            return self.reply(200, {"ok": True})
         if path == "/api/reorder":
             order = b.get("ids", [])
             with lock:
@@ -705,7 +785,8 @@ class Handler(BaseHTTPRequestHandler):
                      "spec": {"source": src["file"], "upscaler": b.get("upscaler"), "scale": b.get("scale", 2),
                               "prompt": f"Upscale ×{b.get('scale', 2)} · {src['file']}", "name": "", "w": src["spec"]["w"],
                               "h": src["spec"]["h"], "steps": 0, "mp": src["spec"].get("mp"), "ar": src["spec"].get("ar")}}
-                jobs.append(j); save_queue()
+                first = next((i for i, x in enumerate(jobs) if x["status"] == "pending"), len(jobs))
+                jobs.insert(first, j); save_queue()  # seconds next to minutes: it runs right after the current image
             wake.set()
             return self.reply(200, {"ids": [j["id"]]})
         if path == "/api/thumb":

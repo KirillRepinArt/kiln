@@ -49,7 +49,7 @@ function status(){const j=current();
  let p=null;
  if(j){const q=jobProgress(j);p=q.p;
   document.title=`${Math.min(j.step+1,j.steps)}/${j.steps}${q.left!=null?` · ~${fmt(q.left)}`:""}${pend?` · +${pend}`:""} — Kiln`}
- else document.title=pend?`${pend} queued — Kiln`:"Kiln";
+ else document.title=pend?`${window.qPaused?"Paused · ":""}${pend} queued — Kiln`:"Kiln";
  const c=favC.getContext("2d");c.clearRect(0,0,64,64);const cs=getComputedStyle(document.documentElement);
  const g=c.createLinearGradient(0,0,64,64);g.addColorStop(0,cs.getPropertyValue("--a1").trim()||"#FF8A00");g.addColorStop(1,cs.getPropertyValue("--a3").trim()||"#3FE0F0");
  c.lineWidth=9;c.lineCap="round";c.strokeStyle="#2f2f34";c.beginPath();c.arc(32,32,24,0,Math.PI*2);c.stroke();

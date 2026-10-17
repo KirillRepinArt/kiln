@@ -8,7 +8,8 @@ function syncH(){document.documentElement.style.setProperty("--rightH",$("right"
 function renderAll(){const n=jobs.filter(j=>j.status==="pending"||j.status==="running").length;
  $("badge").textContent=n;$("badge").classList.toggle("show",n>0);$("tabN").textContent=n||"";requestAnimationFrame(()=>moveThumb(true));
  renderPills();renderChips();if(S.view==="queue")renderQueue();if(S.view==="loras")renderLoras()}
-$("pname").value=S.pname||"";$("pname").addEventListener("input",e=>{S.pname=e.target.value;save();nameUI()});
+$("pname").value=S.pname||"";$("pname").addEventListener("input",e=>{if(peekJob){$("pnSave").classList.toggle("show",e.target.value.trim()!==(peekJob.name||"").trim());return}   /* a waiting job's name: saved with its button */
+ S.pname=e.target.value;save();nameUI()});
 $("pnx").onclick=()=>{$("pname").value="";S.pname="";save();nameUI();$("pname").focus()};
 let nnT=null;
 function slugify(n){return n.toLowerCase().replace(/[^\p{L}\p{N}_]+/gu,"-").replace(/^-|-$/g,"").slice(0,60)||"kiln"} // same rule as server.py
@@ -19,6 +20,6 @@ function nextHint(){const n=(S.pname||"").trim();
  else{const slug=slugify(n);nameTip(`${slug}-${String((S.ncount[slug]||0)+1).padStart(3,"0")}.png`)}}
 function nameUI(){const l=document.querySelector(".plbl");l.classList.toggle("peekname",!!peekJob);
  if(peekJob){$("pname").dataset.tip=peekJob.file?`This image: ${peekJob.file}`:"This image";return}
- nextHint();l.classList.toggle("hasname",!!S.pname.trim());l.classList.toggle("dimname",!!S.pname.trim()&&!P.value.trim())}$("pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();P.focus()}});
+ nextHint();l.classList.toggle("hasname",!!S.pname.trim());l.classList.toggle("dimname",!!S.pname.trim()&&!P.value.trim())}$("pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();if(peekJob&&$("pnSave").classList.contains("show")){saveJobName();return}P.focus()}});
 applyMode();$("left").classList.add("nodur");setTimeout(()=>$("left").classList.remove("nodur"),400);
 applyFont();applyGlass();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");renderAll();grow();syncH();demoNote();

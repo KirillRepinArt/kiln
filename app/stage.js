@@ -21,7 +21,7 @@ function paint(cv,job,progress){const [w,h]=SIZES[job.mp][job.ar];const W=Math.r
   const t=document.createElement("canvas");t.width=sw;t.height=sh;const tc=t.getContext("2d");tc.imageSmoothingQuality="high";tc.drawImage(cv,0,0,sw,sh);
   c.imageSmoothingEnabled=true;c.imageSmoothingQuality="high";c.clearRect(0,0,W,H);c.drawImage(t,0,0,W,H)}}
 function fitBox(el,ar,bw,bh){const [a,b]=ar.split(":").map(Number);let w=bw,h=bw*b/a;if(h>bh){h=bh;w=bh*a/b}el.style.width=w+"px";el.style.height=h+"px"}
-const BAR=56; // bar block height incl. gap
+const BAR=66; // bar block height incl. gap: 12 + track 10 + 7 + status row 36
 /* Wide window = a fixed pane (the prompt card, width set with the divider: S.lw) + a flexible pane (the right box).
    The right box is the same rectangle in every tab — Generating centres the image in it, Queue / LoRAs / PNG Info
    fill it — so nothing moves when you switch tabs. Card + box are centred as one group (equal outer margins).
@@ -85,7 +85,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKe
   if($("modal").classList.contains("show")){$("modal").classList.remove("show");return}
   if(browseId!=null&&!(e.target.closest&&e.target.closest(".pwrapT"))){closeShown();return} // Esc outside the editor = the image's ✕
   closePops()}});
-function tick(){if(current())return;const j=jobs.find(j=>j.status==="pending");if(!j){renderAll();return}
+function tick(){if(current()||window.qPaused)return;const j=jobs.find(j=>j.status==="pending");if(!j){renderAll();return}
  j.status="running";j.started=Date.now();j.step=0;j.stepStart=Date.now();const est=SEC_PER_STEP[j.mp]*1000/S.demo;j.est=est;const r=rng(j.seed^0x9e37);
  const next=()=>{if(j.status!=="running")return;j.timer=setTimeout(()=>{if(j.status!=="running")return;j.step++;j.stepStart=Date.now();
    if(j.step>=j.steps){j.status="done";j.finished=Date.now();justDone=j.id;resultStale=false;onJobDone(j);renderAll();tick()}else next()},est*(.8+r()*.4))};next();renderAll()}

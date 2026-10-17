@@ -42,6 +42,7 @@ const IC={
  thumb:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5"/><rect x="2.5" y="2.5" width="19" height="19" rx="4"/></svg>',
  x:'<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>',
  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>',
+ trash:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 12.5h9l1-12.5M10 11v5.5M14 11v5.5"/></svg>',
  dice:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="#fff"/><circle cx="15" cy="15" r="1.2" fill="#fff"/><circle cx="15" cy="9" r="1.2" fill="#fff"/><circle cx="9" cy="15" r="1.2" fill="#fff"/></svg>',
 };
 function sideButtons(el,getJob){el.innerHTML=
@@ -49,10 +50,12 @@ function sideButtons(el,getJob){el.innerHTML=
   <button data-tip="Upscale" data-a="up">${IC.up}</button>
   <button data-tip="Open in default app" data-a="open">${IC.open}</button>
   <button data-tip="Show in folder" data-a="folder">${IC.folder}</button>
-  <button data-tip="Use as LoRA thumbnail" data-a="thumb">${IC.thumb}</button>`;
+  <button data-tip="Use as LoRA thumbnail" data-a="thumb">${IC.thumb}</button>
+  <button data-tip="Delete (Del) — to the Recycle Bin" data-a="del">${IC.trash}</button>`;
  el.onclick=e=>{const b=e.target.closest("button");if(!b)return;e.stopPropagation();
   if(b.dataset.a==="thumb"){setThumbs(getJob());return}
-  toast({i2i:"Prototype: would send this image to img2img",up:"Prototype: would upscale with your default upscaler",open:"Prototype: would open the PNG in your default app",folder:"Prototype: would open Explorer with the file selected"}[b.dataset.a])}}
+  if(b.dataset.a==="del"){deleteJob(getJob());return}
+ toast({i2i:"Prototype: would send this image to img2img",up:"Prototype: would upscale with your default upscaler",open:"Prototype: would open the PNG in your default app",folder:"Prototype: would open Explorer with the file selected"}[b.dataset.a])}}
 sideButtons($("sideGen"),()=>shownDone());
 function setThumbs(j){if(!j)return;const faces=j.loras.map(x=>LORAS.find(l=>l.name===x.name)).filter(l=>l&&l.folder==="people");
  if(!faces.length){toast("This image used no face LoRA");return}

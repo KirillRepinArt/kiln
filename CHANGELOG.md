@@ -2,6 +2,19 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
+## Unreleased (Phase 1)
+
+- **Queue:** Pause after the current image · delete to the Recycle Bin with Undo (`Del`) · remove a finished row from
+  the list · added / done / took times · rename a waiting job · live render in the running row · bigger preview on
+  hovering a thumbnail · upscales jump the line · files deleted outside Kiln marked, with Remove missing.
+- **Stop** is a proper button; stopping freezes the bar and says it stops after the current step.
+- Before the first step the status reads e.g. *Kindling… · loading model* (or *· starting* when the model is loaded).
+- **Send to prompt** (PNG Info) switches to Generating and brings CFG, sampler and schedule too. **Keep seed** —
+  next to Send and as a lock in the peek bar — decides between the image's seed and a fresh one (default: fresh).
+- Notifications are neutral; reopening Kiln says how many images finished while it was closed.
+- Settings → About: the version and a manual **Check for updates** (the only time Kiln goes online, only when you
+  press it). `?` opens a keyboard shortcut sheet. LoRA category chips explain they come from your folders.
+
 ## v0.1 — 2026-10-17
 
 The first tagged version: everything up to the start of the roadmap's Phase 1.

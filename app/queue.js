@@ -6,20 +6,30 @@ function renderQueue(){const before={};document.querySelectorAll(".qi").forEach(
   requestAnimationFrame(()=>{q.style.transition="transform .3s var(--ease)";q.style.transform=""})})}
 function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=jobs.filter(j=>j.status==="pending"),done=jobs.filter(j=>j.status==="done"||j.status==="cancelled").reverse();
  const left=pend.reduce((a,j)=>a+jEst(j),0);
- const item=(j,k)=>`<div class="qi" data-id="${j.id}" draggable="${k==="pend"}">
+ const item=(j,k)=>`<div class="qi${j.missing?" missing":""}" data-id="${j.id}" draggable="${k==="pend"}">
    ${k==="pend"?'<span class="handle" title="Drag to reorder">⋮⋮</span>':""}
-   <div class="th">${j.status==="done"?`<canvas data-th="${j.id}"></canvas>`:j.status==="cancelled"?"stopped":k==="run"?"…":"#"+j.id}</div>
+   <div class="th">${j.missing?"gone":j.status==="done"?`<canvas data-th="${j.id}"></canvas>`:j.status==="cancelled"?"stopped":k==="run"?(window.LIVE&&(S.set||{}).privacy!=="on"?`<img class="lp" data-lp="${j.id}" alt="">`:"…"):"#"+j.id}</div>
    <div class="body"><div class="p">${j.file?`<b style="font-weight:600">${esc(j.file)}</b> · `:""}${esc(j.prompt)}</div>
-   <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · <span class="seedc" data-seed="${j.seed}" data-tip="Click to copy the seed">seed ${j.seed}</span>${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.finished?` · took ${fmt((j.finished-j.started)*(window.LIVE?1:S.demo)/1000)}`:""}</div>
+   <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · <span class="seedc" data-seed="${j.seed}" data-tip="Click to copy the seed">seed ${j.seed}</span>${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.missing?' · <span class="gone">file deleted</span>':""}</div>
+   ${j.created||j.finished?`<div class="meta times">${j.created?`added ${clock(j.created)}`:""}${j.finished&&j.status==="done"?` · done ${clock(j.finished)}`:""}${j.finished&&j.started?` · took ${fmt((j.finished-j.started)*(window.LIVE?1:S.demo)/1000)}`:""}</div>`:""}
    ${k==="run"?'<div class="mini"><i></i></div>':""}</div>
-   ${k!=="done"?`<button class="x" data-x="${j.id}" title="${k==="run"?"Stop":"Remove"}">${IC.x}</button>`:""}</div>`;
+   ${k!=="done"?`<button class="x" data-x="${j.id}" title="${k==="run"?"Stop":"Remove"}">${IC.x}</button>`:`<button class="x" data-rm="${j.id}" title="Remove from the list — the file stays">${IC.x}</button>`}</div>`;
  $("qwrap").innerHTML=(run.length?`<div class="qsec">Running</div>${run.map(j=>item(j,"run")).join("")}`:"")+
-  `<div class="qsec"><span>Up next ${pend.length?`· ${pend.length} · ~${fmt(left)}`:""}</span></div>`+
+  `<div class="qsec"><span>Up next ${pend.length?`· ${pend.length} · ~${fmt(left)}`:""}${window.qPaused?' · <b class="paused">paused</b>':""}</span><button id="pauseQ" data-tip="${window.qPaused?"Start the waiting jobs again":"The current image finishes; nothing new starts until you resume"}">${window.qPaused?"Resume":"Pause after this"}</button></div>`+
   (pend.length?pend.map(j=>item(j,"pend")).join(""):'<div class="empty">Nothing queued</div>')+
-  (done.length?`<div class="qsec"><span>Finished</span><button id="clearDone">Clear list</button></div>${done.map(j=>item(j,"done")).join("")}`:"");
- done.forEach(j=>{const c=document.querySelector(`canvas[data-th="${j.id}"]`);if(c&&j.status==="done")paint(c,j,1)})}
+  (done.length?`<div class="qsec"><span>Finished</span><span>${done.some(j=>j.missing)?`<button id="rmMissing">Remove missing (${done.filter(j=>j.missing).length})</button> `:""}<button id="clearDone">Clear list</button></span></div>${done.map(j=>item(j,"done")).join("")}`:"");
+ done.forEach(j=>{const c=document.querySelector(`canvas[data-th="${j.id}"]`);if(c&&j.status==="done"&&!j.missing)paint(c,j,1)})}
+function clock(ms){const d=new Date(ms),t=d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});return d.toDateString()===new Date().toDateString()?t:d.toLocaleDateString([],{month:"short",day:"numeric"})+" "+t}
+/* demo versions; live.js replaces them with server calls */
+window.removeJob=j=>{jobs=jobs.filter(x=>x!==j);renderAll()};
+window.deleteJob=j=>{if(!j)return;toast("Prototype: would move the file to the Recycle Bin")};
+window.setPaused=p=>{window.qPaused=p;renderAll();if(!p)tick()};
+window.renameJob=(j,n)=>{j.name=n;toast("Name saved")};
 $("qwrap").addEventListener("click",e=>{
  const sc=e.target.closest(".seedc");if(sc){e.stopPropagation();copySeed(sc.dataset.seed);return}
+ if(e.target.id==="pauseQ"){setPaused(!window.qPaused);return}
+ if(e.target.id==="rmMissing"){removeMissing();return}
+ const rm=e.target.closest("[data-rm]");if(rm){removeJob(jobs.find(j=>j.id==+rm.dataset.rm));return}
  if(e.target.id==="clearDone"){jobs=jobs.filter(j=>j.status==="pending"||j.status==="running");renderAll();return}
  const x=e.target.closest("[data-x]");if(x){stopJob(jobs.find(j=>j.id==+x.dataset.x));return}
  const q=e.target.closest(".qi");if(!q)return;const j=jobs.find(j=>j.id==+q.dataset.id);
@@ -40,7 +50,7 @@ function peekButtons(){const j=peekJob;if(!j)return;const pSame=(j.raw||j.prompt
  $("pkSeed").style.display=all.style.display==="none"||all.dataset.m==="seed"?"none":"";
  $("peekLbl").textContent=`#${j.id}${j.status==="running"?" · generating":""}${pSame&&sSame&&seedSame?" · same as your draft":""}`}
 function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classList.add("peek");P.scrollTop=0;
- const n=$("pname");n.value=j.name||"";n.placeholder="Unnamed";n.readOnly=true;
+ const n=$("pname");n.value=j.name||"";n.placeholder=j.status==="pending"?"Name this job":"Unnamed";n.readOnly=j.status!=="pending";$("pnSave").classList.remove("show");
  peekButtons();$("peekbar").classList.add("show");$("left").classList.add("peeking");renderChips();renderPills();updPrompt();layoutLeft()}
 /* Two ways out of a browse: the prompt's ✕ (or Esc in the editor) closes only the prompt — your draft comes back, the
    image stays, and the arrows keep the prompt closed (peekOff) until the browse ends; the image's ✕ (or Esc elsewhere)
@@ -50,7 +60,18 @@ function closePromptPeek(){if(browseId!=null){peekOff=true;endPeek(true)}else en
 function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){browseId=null;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}}
  if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
  const n=$("pname");n.value=S.pname||"";n.placeholder="Add name";n.readOnly=false;
- $("peekbar").classList.remove("show");$("left").classList.remove("peeking");renderChips();renderPills();updPrompt();layoutLeft()}
+ $("peekbar").classList.remove("show");$("pnSave").classList.remove("show");$("left").classList.remove("peeking");renderChips();renderPills();updPrompt();layoutLeft()}
+function saveJobName(){const j=peekJob;if(!j||j.status!=="pending")return;const v=$("pname").value.trim();renameJob(j,v);j.name=v;$("pnSave").classList.remove("show")}
+$("pnSave").onclick=e=>{e.stopPropagation();saveJobName()};
+/* Q5: hover a finished thumbnail for a bigger look */
+(function(){const pop=document.createElement("div");pop.id="qpop";document.body.appendChild(pop);let t=null,cur=null;
+ const hide=()=>{clearTimeout(t);cur=null;pop.classList.remove("show")};
+ $("qwrap").addEventListener("mouseover",e=>{const c=e.target.closest(".qi .th canvas");if(c===cur)return;hide();if(!c||!window.fileUrl)return;cur=c;
+  const j=jobs.find(x=>x.id==+c.dataset.th);if(!j||!j.file)return;
+  t=setTimeout(()=>{if(cur!==c)return;const r=c.getBoundingClientRect(),[a,b]=(j.ar||"1:1").split(":").map(Number),w=a>=b?320:Math.round(320*a/b),h=Math.round(w*b/a);
+   pop.innerHTML=`<img src="${fileUrl(j)}" alt="">`;pop.style.width=w+"px";pop.style.height=h+"px";
+   const x=r.right+12+w<innerWidth?r.right+12:r.left-12-w,y=Math.max(8,Math.min(innerHeight-h-8,r.top+r.height/2-h/2));pop.style.transform=`translate(${x}px,${y}px)`;pop.classList.add("show")},350)});
+ $("qwrap").addEventListener("mouseleave",hide);$("qwrap").addEventListener("scroll",hide,{passive:true});$("qwrap").addEventListener("mousedown",hide)})();
 function reuse(all,seedToo){const j=peekJob;const fixed=!!(seedToo||S.keepSeed);if(!j)return;const prev={draft,S:{mp:S.mp,ar:S.ar,steps:S.steps,seedMode:S.seedMode,seed:S.seed,pname:S.pname},loras:LORAS.map(l=>({on:l.on,w:l.w}))};
  draft=j.raw||j.prompt;if((j.name||"").trim())S.pname=j.name.trim();   /* reusing the working file, title included: the next image joins its series */if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps},fixed?{seedMode:"fixed",seed:j.seed}:{seedMode:"random"});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}
  endPeek();save();renderAll();P.focus();

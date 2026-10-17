@@ -35,10 +35,10 @@
  /* ---------- server job -> UI job ---------- */
  function toUI(s){const sp=s.spec||{};return Object.assign({},sp,{id:s.id,kind:s.kind,status:s.status,file:s.file||null,
   seed:s.seed_used??sp.seed,est:s.est,est_first:s.est_first,t_first:s.t_first&&s.t_first*1000,step:s.step||0,steps:s.steps||sp.steps||0,progress:s.progress||0,eta:s.eta,preview_rev:s.preview_rev||0,
-  error:s.error,started:s.started&&s.started*1000,finished:s.finished&&s.finished*1000,loras:sp.loras||[],mp:sp.mp||"1.0",ar:sp.ar||"1:1",warm:!!s.warm,stopping:!!s.stopping,created:s.created&&s.created*1000})}
+  error:s.error,started:s.started&&s.started*1000,finished:s.finished&&s.finished*1000,loras:sp.loras||[],mp:sp.mp||"1.0",ar:sp.ar||"1:1",warm:!!s.warm,stopping:!!s.stopping,missing:!!s.missing,created:s.created&&s.created*1000})}
  let sig="",forgeOk=true,forgeStarting=false,firstPoll=true,loadingM=false;const seen=new Set();
  async function poll(){let s;try{s=await (await fetch("/api/state")).json()}catch(e){forgeMsg("Kiln server not reachable");return}
-  forgeOk=s.forge.ok;forgeStarting=!!s.forge.starting;
+  forgeOk=s.forge.ok;forgeStarting=!!s.forge.starting;if(window.qPaused!==!!s.paused){window.qPaused=!!s.paused;sig=""}
   if(forgeOk&&!models&&!loadingM){loadingM=true;loadModels(false).then(ok=>{loadingM=false;if(ok){refreshUp();toast("Forge is ready — models and LoRAs loaded")}})}
   for(const b in s.stats.sec_per_step||{})SEC_PER_STEP[b]=Math.max(1,s.stats.sec_per_step[b]);
   if((typeof dragId!=="undefined"&&dragId!=null)||window._rp){setTimeout(poll,700);return} // dragging, or the new order not saved yet: keep the local order
@@ -51,7 +51,7 @@
   {const m=Math.max(0,...jobs.filter(x=>x.status==="done").map(x=>x.id));if(m!==S.seenDone){S.seenDone=m;save()}}
   firstPoll=false;
   if(peekJob)peekJob=jobs.find(j=>j.id===peekJob.id)||peekJob;
-  const ns=jobs.map(j=>`${j.id}:${j.status}:${j.file}`).join("|");
+  const ns=jobs.map(j=>`${j.id}:${j.status}:${j.file}:${j.missing?1:0}:${j.name||""}`).join("|");
   if(ns!==sig){sig=ns;renderAll()}else{const n=jobs.filter(j=>j.status==="pending"||j.status==="running").length;$("badge").textContent=n;$("badge").classList.toggle("show",n>0);$("tabN").textContent=n||""}
   setTimeout(poll,current()?700:1800)}
 
@@ -74,12 +74,24 @@
   api("/api/reorder",{ids}).finally(()=>{window._rp=false;poll()})});
  $("qwrap").addEventListener("click",e=>{if(e.target.id==="clearDone"){e.stopImmediatePropagation();api("/api/clear",{}).then(poll)}},true);
  window.openInApp=j=>api("/api/open",{id:j.id});
+ window.fileUrl=urlFor;
+ window.removeJob=async j=>{if(!j)return;await api(`/api/jobs/${j.id}/remove`,{});poll()};
+ window.removeMissing=async()=>{await api("/api/remove-missing",{});poll()};
+ window.setPaused=async p=>{await api("/api/pause",{paused:p});window.qPaused=p;sig="";poll();toast(p?"Queue paused — the current image finishes, nothing new starts":"Queue resumed")};
+ window.renameJob=async(j,n)=>{await api(`/api/jobs/${j.id}/name`,{name:n});toast(n?`Name saved — it will be saved as ${slugify(n)}-NNN.png`:"Name cleared — it will be named by date and seed");poll()};
+ /* Q1: delete = to the Recycle Bin, with Undo (the server waits 12 s before it really goes) */
+ window.deleteJob=async j=>{if(!j)return;const r=await api(`/api/jobs/${j.id}/delete`,{});if(r.error){toast(r.error);return}
+  if($("viewer").classList.contains("show")&&V.job&&V.job.id===j.id)closeViewer();
+  if(peekJob&&peekJob.id===j.id)endPeek();
+  toast("Moved to the Recycle Bin","Undo",async()=>{await api(`/api/jobs/${j.id}/undelete`,{});poll()});poll()};
+ $("resumeBtn").onclick=e=>{e.stopPropagation();setPaused(false)};
  function act(a,j){if(!j)return;
   if(a==="open")return api("/api/open",{id:j.id});
   if(a==="folder")return api("/api/reveal",{id:j.id});
   if(a==="up"){const u=(S.set||{}).upscaler||(models&&models.upscalers[0]);if(!u)return toast("No upscalers found in Forge");
    return api("/api/upscale",{id:j.id,upscaler:u,scale:+((S.set||{}).upscale||2)}).then(()=>{toast(`Upscale ×${(S.set||{}).upscale||2} queued (${u})`);poll()})}
-  if(a==="i2i")return toast("img2img is next on the roadmap")}
+  if(a==="i2i")return toast("img2img is next on the roadmap");
+  if(a==="del")return deleteJob(j)}
  for(const [el,get] of [[$("sideGen"),()=>shownDone()]]){
   el.addEventListener("click",e=>{const b=e.target.closest("button");if(!b||b.dataset.a==="thumb")return;e.stopImmediatePropagation();act(b.dataset.a,get())},true)}
 
@@ -168,9 +180,12 @@
     if(j.preview_rev&&j.preview_rev!==lastPrev&&!prevLoading){prevLoading=true;const r=j.preview_rev;const i=new Image();
      const jid=j.id;i.onload=()=>{if(+$("cv").dataset.j===jid&&!browsed())drawTo($("cv"),i,false);lastPrev=r;prevLoading=false};i.onerror=()=>{prevLoading=false;lastPrev=r};i.src=`/api/preview/${j.id}?r=${r}`}}
    const mini=document.querySelector(`.qi[data-id="${j.id}"] .mini i`);if(mini)mini.style.width=(p*100)+"%";
+   const lp=document.querySelector(`img[data-lp="${j.id}"]`);if(lp&&j.preview_rev&&lp.dataset.r!=j.preview_rev){lp.dataset.r=j.preview_rev;lp.src=`/api/preview/${j.id}?r=${j.preview_rev}`}   /* Q6: the render, small, in its queue row */
   }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run","stopping");$("fill").style.width="0%";
     if(!forgeOk){$("ptxt").textContent=forgeStarting?"Starting Forge…":"Forge not running";$("peta").textContent=forgeStarting?"jobs start when it's ready":"queue waits for it"}
-    else{refreshEst();$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`}}
+    else if(window.qPaused&&jobs.some(x=>x.status==="pending")){$("ptxt").textContent="Queue paused";$("peta").textContent=`${jobs.filter(x=>x.status==="pending").length} waiting`}
+    else{refreshEst();$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`}
+   prog.classList.toggle("paused",!!window.qPaused&&jobs.some(x=>x.status==="pending"))}
   if(!j||browsed()){const d=shownDone();
    if(d&&S.view==="gen"){if($("cv").dataset.d!=d.id){$("cv").dataset.d=d.id;$("cv").dataset.j="";sizeFrame();
      if(justDone===d.id){const f=$("frame");f.classList.remove("reveal");void f.offsetWidth;f.classList.add("reveal");setTimeout(()=>f.classList.remove("reveal"),1200);justDone=null}

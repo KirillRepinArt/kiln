@@ -20,7 +20,7 @@
 
   <div class="lcol" id="lcol">
   <div class="hsplit" id="hsplit" title="Drag to resize · double-click for auto"></div>
-  <div class="ltitle" id="ltitle"><div class="phead"><span class="plbl"><span class="nchip"><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60"><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div><div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt"><span class="lg">Reuse prompt</span><span class="sm">Prompt</span></button><button id="pkAll"></button><button id="pkSeed" class="pkseed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button><button id="pkX" title="Back to my draft (Esc)">✕</button></div><div class="hmodes" id="hmodes"><button id="hmMatch" data-hm="match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/></svg></button><button id="hmFull" data-hm="full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
+  <div class="ltitle" id="ltitle"><div class="phead"><span class="plbl"><span class="nchip"><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60"><button class="pnsave" id="pnSave">Save name</button><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div><div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt"><span class="lg">Reuse prompt</span><span class="sm">Prompt</span></button><button id="pkAll"></button><button id="pkSeed" class="pkseed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button><button id="pkX" title="Back to my draft (Esc)">✕</button></div><div class="hmodes" id="hmodes"><button id="hmMatch" data-hm="match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/></svg></button><button id="hmFull" data-hm="full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
   <section class="left" id="left">
     <div class="vedge" id="vedge" title="Drag to resize · double-click for auto"></div>
     <div class="pwrapT"><span class="pcount" id="pcount"></span><textarea id="prompt" spellcheck="true" placeholder="Describe what you want to see…"></textarea></div>
@@ -69,7 +69,7 @@
         <div class="prog" id="prog">
           <div class="track" id="track"><div class="fill" id="fill"></div></div>
           <div class="meta"><span id="ptxt"></span><span class="eta" id="peta"></span>
-          <button class="stop" id="stopBtn" title="Stop this job"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="#fff"/></svg>Stop</button></div>
+          <button class="resume" id="resumeBtn" title="Resume the queue">Resume</button><button class="stop" id="stopBtn" title="Stop this job"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="#fff"/></svg>Stop</button></div>
         </div>
       </div>
 
@@ -135,8 +135,9 @@
       <label>Fast jobs (under 10 s)</label><select data-set="fastcover"><option value="cover">Cover them too</option><option value="skip">No cover</option></select>
       <label>Privacy hold</label><select data-set="privacy"><option value="off">Off · the cover clears as the image forms</option><option value="on">On · stays until you lift it (F9 or the eye)</option></select>
       <div class="fgh">About</div>
-      <label>Version</label><div class="about"><span id="aboutV">Kiln</span><button class="btn" id="updBtn">Check for updates</button><button class="btn" id="keysBtn">Keyboard shortcuts</button></div>
+      <label>Version</label><div class="about"><span id="aboutV">Kiln</span><button class="btn" id="updBtn">Check for updates</button></div>
       <div class="updres" id="updRes"></div>
+      <label>Shortcuts</label><div class="about"><button class="btn" id="keysBtn">Keyboard shortcuts</button><span>or press ?</span></div>
     </div>
     </div>
   </div>

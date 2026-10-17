@@ -89,6 +89,12 @@ export async function missingFiles(k, t) {
   unlinkSync(join(k.out, await k.ev(`jobs.filter(j=>j.status==="done")[0].file`)));
   await k.ev(`(showView("queue"),1)`);
   t.ok(await k.until(`!!document.querySelector(".qi.missing")`, 5000), "a file deleted on disk shows greyed, 'file deleted'");
+  t.ok(await k.ev(`!!document.querySelector(".qi.missing [data-rm]")`), "a missing row has its own ✕");
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".qi.missing [data-rm]")).opacity`) === "1", "…not dimmed with the row");
+  await k.ev(`(document.querySelector(".qi.missing [data-rm]").click(),1)`); await k.sleep(1200);
+  t.ok(await k.ev(`jobs.filter(j=>j.status==="done").length`) === 1, "✕ on a missing row removes it");
+  await k.job("a bear", { steps: 2 }); await done(k, 2);
+  unlinkSync(join(k.out, await k.ev(`lastDone().file`))); await k.until(`!!document.querySelector(".qi.missing")`, 5000);
   await k.ev(`($("rmMissing").click(),1)`); await k.sleep(1200);
-  t.ok(await k.ev(`jobs.filter(j=>j.status==="done").length`) === 1, "Remove missing clears just those");
+  t.ok(await k.ev(`jobs.filter(j=>j.status==="done").length`) === 1, "Remove missing clears all of those at once");
 }

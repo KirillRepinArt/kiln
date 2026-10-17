@@ -600,7 +600,7 @@ kbd{display:inline-block;min-width:24px;padding:2px 7px;border-radius:7px;backgr
 .keys .mcard{width:min(520px,92vw)}.keys .fgh{margin:16px 0 10px}
 
 /* ---- Phase 1 batch B ---- */
-.qi.missing{opacity:.55}.qi.missing .th{font-size:10.5px}.qi .gone{color:#e0a060}
+.qi.missing>:not(.x){opacity:.5}   /* the row fades, its ✕ (remove from the list) stays clear */.qi.missing .th{font-size:10.5px}.qi .gone{color:#e0a060}
 .qi .meta.times{font-size:11.5px;color:var(--faint)}
 .qi .th img.lp{width:100%;height:100%;object-fit:cover}
 .qsec .paused{color:var(--a1);font-weight:600}

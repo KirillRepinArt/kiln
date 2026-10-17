@@ -105,7 +105,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();if(jobs.some(x=>x.status==
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
   if(nw!==W||nh!==H){W=vc.width=ec.width=nw;H=vc.height=ec.height=nh}
   const j=current();const mode=(S.set||{}).veil||"full";const cover0=skin().cover;const fr0=$("frame");
-  if(j&&!browsed()&&j.id!==CV.job){CV.job=j.id;CV.lift=false;coverUI()}                       // a new job is covered again
+  {const sh=browsed()?browsed().id:j?j.id:(shownDone()||{}).id;if(sh!==CV.job){CV.job=sh;CV.lift=false;coverUI()}}   // a lift is for the image it was made on: browse to another one (or back to the render) and its cover returns
   const held=fr0.classList.contains("has")&&S.view==="gen"&&!CV.lift&&(CV.force||(S.set||{}).privacy==="on");
   if(held!==CV.held){CV.held=held;fr0.classList.toggle("held",held);coverUI();if(held&&!j)CV.t0=Date.now()-20000}
   const fast=(S.set||{}).fastcover==="skip"&&j&&window.LIVE&&j.est>0&&j.est<10;                // Settings → Cover: no cover on quick jobs

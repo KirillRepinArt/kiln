@@ -108,7 +108,7 @@ The queue shows which variant each job got, so a good result can be traced back.
 - Ratio picker with shape previews · ~1 / 1.5 / 2 MP presets (all sides multiples of 16).
 - Window title and favicon show progress; a desktop notification when the queue empties (on, silent or off).
 - Closing the Kiln window stops the server once the queue is done.
-- Themes for the play button and progress bar; fonts: Geist, Inter, Satoshi, Manrope, IBM Plex Sans.
+- Themes for the play button and progress bar; fonts: Geist, Inter, Manrope, IBM Plex Sans, Satoshi (optional, see Offline).
 
 ## How it works
 
@@ -123,7 +123,11 @@ subfolder and styles in `style`; the folder names are configurable in `config.lo
 
 **Demo / development.** Open `index.html` directly for the simulated demo, or run `python tools/fake_forge.py`
 and point Kiln at it (`KILN_FORGE_URL=http://127.0.0.1:7861 python server.py`) to exercise the whole pipeline
-without a GPU. Fonts and the editor load from CDNs; offline, Kiln falls back to system fonts and a plain text box.
+without a GPU.
+
+**Offline.** Kiln asks nothing of the internet: its fonts (`app/fonts/`) and the prompt editor
+(`app/vendor/codemirror.js`) ship with it. Satoshi is the one font that can't be included — its licence doesn't
+allow a public repository; `app/fonts/README.md` says how to add your own copy (without it, Kiln uses Geist).
 
 ## Design notes
 
@@ -150,7 +154,7 @@ A few rules the interface follows, in case you want to extend it in the same spi
 ## Credits
 
 [Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo) ·
-[CodeMirror 6](https://codemirror.net/) · fonts: Geist, Inter, Manrope, IBM Plex Sans (Google Fonts), Satoshi
+[CodeMirror 6](https://codemirror.net/) · fonts: Geist, Inter, Manrope, IBM Plex, Courier Prime (SIL OFL, bundled), Satoshi
 (Fontshare). Not affiliated with Krea.
 
 ## License

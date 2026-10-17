@@ -510,7 +510,8 @@ def get_models(refresh=False):
 
 # ---------------------------------------------------------------- HTTP
 MIME = {".html": "text/html; charset=utf-8", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp",
-        ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".ico": "image/x-icon"}
+        ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".ico": "image/x-icon",
+        ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8"}
 
 
 def sniff(b):

@@ -20,8 +20,17 @@
   const cw=cv.clientWidth||300,ch=cv.clientHeight||Math.round(cw*ih/iw);const W=Math.max(64,Math.round(cw*dpr)),H=Math.max(64,Math.round(ch*dpr));
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}const c=cv.getContext("2d");c.imageSmoothingQuality="high";c.clearRect(0,0,W,H);
   const k=cv.id==="cv"?Math.min(W/iw,H/ih):Math.max(W/iw,H/ih);c.drawImage(im,(W-iw*k)/2,(H-ih*k)/2,iw*k,ih*k)}
- window.paint=function(cv,j,progress){const u=urlFor(j);if(!u)return;const e=img(u);
-  if(e.i.complete&&e.i.naturalWidth)drawTo(cv,e.i,cv.id==="vcv");else e.p.then(im=>{if(im)drawTo(cv,im,cv.id==="vcv")})};
+ /* a canvas only ever shows the image it was last asked for: while that one loads it is blank (never the previous
+    picture or a cancelled job's preview stretched to the new shape), a load that lands after you moved on is dropped,
+    and a file that's gone says so */
+ window.paint=function(cv,j,progress){const u=urlFor(j);if(!u)return;const e=img(u),nat=cv.id==="vcv";cv.dataset.want=j.id;
+  if(e.i.complete&&e.i.naturalWidth){drawTo(cv,e.i,nat);return}
+  if(cv.id==="cv"){cv.width=1;cv.height=1}
+  e.p.then(im=>{if(cv.dataset.want!=String(j.id))return;if(im)drawTo(cv,im,nat);else{delete imgs[u];missing(cv,j)}})};
+ function missing(cv,j){const dpr=devicePixelRatio||1,W=Math.max(64,Math.round((cv.clientWidth||300)*dpr)),H=Math.max(64,Math.round((cv.clientHeight||300)*dpr));
+  cv.width=W;cv.height=H;const c=cv.getContext("2d"),f=getComputedStyle(document.body).fontFamily;c.fillStyle="#0b0b0e";c.fillRect(0,0,W,H);
+  c.textAlign="center";c.textBaseline="middle";c.fillStyle="#9a9a9f";c.font=`500 ${15*dpr}px ${f}`;c.fillText("Image file not found",W/2,H/2-10*dpr);
+  c.fillStyle="#5e5e64";c.font=`${12*dpr}px ${f}`;c.fillText((j.file||"")+" — moved or deleted",W/2,H/2+14*dpr)}
 
  /* ---------- server job -> UI job ---------- */
  function toUI(s){const sp=s.spec||{};return Object.assign({},sp,{id:s.id,kind:s.kind,status:s.status,file:s.file||null,
@@ -142,9 +151,9 @@
    const started=j.step||j.preview_rev;$("ptxt").textContent=j.kind==="upscale"?"Upscaling…":started?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`:"Loading model…";
    $("peta").textContent=j.kind==="upscale"?"":(started||rm!=null)?`~${fmt(left)} left`:"";
    if(S.view==="gen"&&!browsed()){const f=$("frame");f.classList.add("has");$("idle").style.display="none";
-    if(+$("cv").dataset.j!==j.id){$("cv").dataset.j=j.id;$("cv").dataset.d="";lastPrev=0;const c=$("cv");c.width=1;c.height=1;sizeFrame()}
+    if(+$("cv").dataset.j!==j.id){$("cv").dataset.j=j.id;$("cv").dataset.d="";$("cv").dataset.want="";lastPrev=0;const c=$("cv");c.width=1;c.height=1;sizeFrame()}
     if(j.preview_rev&&j.preview_rev!==lastPrev&&!prevLoading){prevLoading=true;const r=j.preview_rev;const i=new Image();
-     i.onload=()=>{drawTo($("cv"),i,false);lastPrev=r;prevLoading=false};i.onerror=()=>{prevLoading=false;lastPrev=r};i.src=`/api/preview/${j.id}?r=${r}`}}
+     const jid=j.id;i.onload=()=>{if(+$("cv").dataset.j===jid&&!browsed())drawTo($("cv"),i,false);lastPrev=r;prevLoading=false};i.onerror=()=>{prevLoading=false;lastPrev=r};i.src=`/api/preview/${j.id}?r=${r}`}}
    const mini=document.querySelector(`.qi[data-id="${j.id}"] .mini i`);if(mini)mini.style.width=(p*100)+"%";
   }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run");$("fill").style.width="0%";
     if(!forgeOk){$("ptxt").textContent=forgeStarting?"Starting Forge…":"Forge not running";$("peta").textContent=forgeStarting?"jobs start when it's ready":"queue waits for it"}

@@ -20,7 +20,7 @@ svg *{stroke-linecap:round;stroke-linejoin:round}
 #amb{position:absolute;inset:0;width:100%;height:100%;z-index:0;-webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent 100%);mask-image:radial-gradient(closest-side,#000 55%,transparent 100%);opacity:0;transition:opacity 1.2s var(--ease);pointer-events:none;image-rendering:auto;filter:saturate(1.25) brightness(.85)}
 #amb.on{opacity:.32}
 .stage,.prog{z-index:1}
-html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font,Inter),"Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font,Inter),"Geist","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 .prog .txt,.qi .meta,.pill .val,.chip b,.card .st span,.rt .px,.pop .hint{font-variant-numeric:tabular-nums}
 .tab,.ptitle,.mcard h2{letter-spacing:-.01em}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
@@ -545,3 +545,25 @@ body.glass .flink:hover,body.glass .gear:hover{background:color-mix(in oklab,rgb
 body.glass .left .pcount{right:18px;bottom:calc(var(--ctrlh,64px) - 2px)}
 /* LoRA tab: rescan */
 .ltop #lRefresh{flex:none}
+/* ---- 2026-10-17: Start like every other control — a plain capsule (thin glass in glass mode), the theme's colours in the
+   triangle; nothing to queue: the triangle goes the grey of the "Seed" label ---- */
+.play,.controls .play{background:var(--raised);filter:none!important;box-shadow:none;--play-fill:url(#playGrad)}
+.play:hover{background:var(--raised2);transform:none}
+.play svg path{fill:var(--play-fill);transition:fill .2s}
+.play.off svg path{fill:var(--muted)}
+.play.off,.play.off:hover{background:var(--raised)}
+.controls .play svg{width:20px;height:20px;margin-left:2px}
+body.glass .play{background:transparent!important;isolation:isolate;box-shadow:none!important}
+body.glass .play::after{display:none}
+body.glass .play::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;
+ background:color-mix(in oklab,rgba(255,255,255,.045),var(--cool,#9ab) 14%);-webkit-backdrop-filter:blur(10px) saturate(1.7);backdrop-filter:blur(10px) saturate(1.7);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(255,255,255,.04),0 0 0 1px rgba(255,255,255,.1)}
+body.glass .play:not(.off):hover::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--cool,#9ab) 18%)}
+body.glass .play svg path{fill:var(--play-fill)}body.glass .play.off svg path{fill:var(--muted)}
+/* main actions (Send to prompt, Reuse all / Use this seed): tinted glass — the theme gradient, see-through, with the
+   glass's light edge, instead of a flat fill */
+body.glass .btn.pri,body.glass .peekbar #pkAll{position:relative;color:var(--ink);font-weight:600;
+ background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 80%,transparent),color-mix(in oklab,var(--a2) 72%,transparent) 55%,color-mix(in oklab,var(--a3) 66%,transparent))!important;
+ -webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -4px 10px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25)}
+body.glass .btn.pri:hover,body.glass .peekbar #pkAll:hover{filter:brightness(1.1) saturate(1.05)}

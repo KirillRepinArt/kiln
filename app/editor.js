@@ -1,8 +1,10 @@
-/* CodeMirror 6 prompt editor. Falls back to the plain textarea if the CDN is unreachable. */
+/* CodeMirror 6 prompt editor, bundled in app/vendor/codemirror.js (works offline). Opened as a file, the browser won't
+   load a local module, so it tries the CDN; failing both, the plain textarea stays. */
 (async function(){
 const V="?deps=@codemirror/state@6.4.1";
 let cm;
-try{
+try{cm=await import("./app/vendor/codemirror.js")}catch(e){}
+if(!cm)try{
  const st=await import("https://esm.sh/@codemirror/state@6.4.1");
  const vw=await import("https://esm.sh/@codemirror/view@6.26.3"+V);
  const cmd=await import("https://esm.sh/@codemirror/commands@6.5.0"+V+",@codemirror/view@6.26.3");

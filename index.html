@@ -6,9 +6,10 @@
 <meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark">
 <title>Kiln</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
-<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<!-- fonts ship with Kiln: it works offline and asks nothing of the internet. Satoshi is optional (its licence keeps
+     it out of the public repo — see app/fonts/README.md) -->
+<link rel="stylesheet" href="app/fonts/fonts.css">
+<link rel="stylesheet" href="app/fonts/satoshi/satoshi.css">
 <link rel="icon" id="fav" href="data:,">
 <link rel="stylesheet" href="app/kiln.css" data-inline>
 </head>
@@ -25,7 +26,7 @@
     <div class="pwrapT"><span class="pcount" id="pcount"></span><textarea id="prompt" spellcheck="true" placeholder="Describe what you want to see…"></textarea></div>
     <div class="controls">
       <button class="play" id="play" title="Add to queue (Ctrl+Enter)">
-        <svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="var(--ink)"/></svg>
+        <svg viewBox="0 0 24 24"><defs><linearGradient id="playGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--a1)"/><stop offset=".55" style="stop-color:var(--a2)"/><stop offset="1" style="stop-color:var(--a3)"/></linearGradient></defs><path d="M6.5 4.6l13 7.4-13 7.4z"/></svg>
         <span class="badge" id="badge">0</span>
       </button>
       <div class="pills">

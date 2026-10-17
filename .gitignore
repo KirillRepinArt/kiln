@@ -19,5 +19,7 @@ __pycache__/
 .venv/
 venv/
 config.local.json
+# Satoshi: its licence (ITF FFL) doesn't allow a public repository — each install adds its own copy
+app/fonts/satoshi/
 .env
 *.log

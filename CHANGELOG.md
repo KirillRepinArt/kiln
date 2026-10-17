@@ -12,6 +12,9 @@ Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when th
 - **Send to prompt** (PNG Info) switches to Generating and brings CFG, sampler and schedule too. **Keep seed** —
   next to Send and as a lock in the peek bar — decides between the image's seed and a fresh one (default: fresh).
 - Notifications are neutral; reopening Kiln says how many images finished while it was closed.
+- **Images are never cached by the browser** (a deleted picture used to live on in Edge's disk cache for a day); the
+  first page load of each run clears what earlier versions left. A file deleted outside Kiln shows a card — Restore
+  from Recycle Bin · Save back · Render again (same seed, same name) · Remove from list — never the picture.
 - Settings → About: the version and a manual **Check for updates** (the only time Kiln goes online, only when you
   press it). `?` opens a keyboard shortcut sheet. LoRA category chips explain they come from your folders.
 

@@ -22,8 +22,8 @@ function closeViewer(){$("viewer").classList.remove("show");V.job=null}
 function openInApp(j){toast(`Prototype: would open ${j.file||("#"+j.id+".png")} in your default app`)}
 /* click the finished image (Generating view and queue overlay) */
 (function(){let t=null;
- function bind(el,getJob){el.addEventListener("click",e=>{if(e.target.closest(".side,.nav,.bclose,.cbtn")||el.classList.contains("held"))return;const j=getJob();if(!j||j.status!=="done")return;clearTimeout(t);t=setTimeout(()=>openViewer(j),230)});
-  el.addEventListener("dblclick",e=>{if(e.target.closest(".side,.nav,.bclose,.cbtn")||el.classList.contains("held"))return;const j=getJob();if(!j||j.status!=="done")return;clearTimeout(t);openInApp(j)})}
+ function bind(el,getJob){el.addEventListener("click",e=>{if(e.target.closest(".side,.nav,.bclose,.cbtn,.miss")||el.classList.contains("held"))return;const j=getJob();if(!j||j.status!=="done"||j.missing)return;clearTimeout(t);t=setTimeout(()=>openViewer(j),230)});
+  el.addEventListener("dblclick",e=>{if(e.target.closest(".side,.nav,.bclose,.cbtn,.miss")||el.classList.contains("held"))return;const j=getJob();if(!j||j.status!=="done"||j.missing)return;clearTimeout(t);openInApp(j)})}
  bind($("frame"),()=>current()&&!browsed()?null:shownDone())})();
 setInterval(()=>{$("frame").classList.toggle("clickable",(!current()||!!browsed())&&!!shownDone());const br=!!browsed(),cl=!br&&!current()&&!!shownDone();$("frame").classList.toggle("browsing",br);$("frame").classList.toggle("clearable",cl);
  $("bclose").dataset.tip=br&&current()?"Back to the render (Esc)":"Close the image (Esc) — ← brings it back";updNav()},300);

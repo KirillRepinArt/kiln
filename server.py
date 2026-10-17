@@ -192,6 +192,34 @@ def recycle(path):
     return ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op)) == 0
 
 
+def recycled(dest):
+    """Find a file in the Recycle Bin by its original path: ($I info file, $R data file), or None.
+    Each deleted item is a pair in <drive>:\\$Recycle.Bin\\<user SID>\\ — $Ixxxx holds the original path
+    (Windows 10+: version 2 header, then the path length and the UTF-16 path), $Rxxxx the file itself."""
+    root = Path(os.environ.get("KILN_RECYCLE_ROOT") or (Path(dest).anchor + "$Recycle.Bin"))  # env: tests
+    want = str(Path(dest)).lower()
+    try:
+        bins = [d for d in root.iterdir() if d.is_dir()]
+    except OSError:
+        return None
+    for b in bins:
+        try:
+            infos = list(b.glob("$I*"))
+        except OSError:
+            continue
+        for i in infos:
+            try:
+                raw = i.read_bytes()
+                ver = struct.unpack("<q", raw[:8])[0]
+                orig = (raw[28:28 + 2 * struct.unpack("<i", raw[24:28])[0]] if ver == 2 else raw[24:544]).decode("utf-16-le").split("\0")[0]
+            except Exception:
+                continue
+            r = i.with_name("$R" + i.name[2:])
+            if orig.lower() == want and r.exists():
+                return i, r
+    return None
+
+
 def finish_delete(jid):
     """The undo window is over: the file goes to the Recycle Bin and the job off the list."""
     with lock:
@@ -325,7 +353,8 @@ def run_txt2img(job):
         img = png_add_text(img, "parameters", infotext)
     if sp.get("name", "").strip() and img[:8] == b"\x89PNG\r\n\x1a\n":
         img = png_add_text(img, "kiln_name", sp["name"].strip())  # the series name, for PNG Info -> Send to prompt
-    name = next_filename(sp.get("name", ""), seed)
+    again = Path(sp.get("as_file") or "").name  # Render again: back under its own name, if that's free
+    name = again if again.endswith(".png") and not (OUT / again).exists() else next_filename(sp.get("name", ""), seed)
     (OUT / name).write_bytes(img)
     with lock:
         job.update(file=name, seed_used=seed, infotext=infotext)
@@ -609,13 +638,15 @@ def build_page():
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
 
-    def reply(self, code, body=b"", ctype="application/json", cache=False):
+    def reply(self, code, body=b"", ctype="application/json", cache=False, headers=None):
         if isinstance(body, (dict, list)) or body is None:
             body = json.dumps(body, ensure_ascii=False).encode()
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "max-age=86400" if cache else "no-store")
+        for k, v in (headers or {}).items():
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(body)
 
@@ -636,13 +667,17 @@ class Handler(BaseHTTPRequestHandler):
             inject = os.environ.get("KILN_TEST_INJECT")  # test hook: append a script (used by automated UI checks)
             if inject and "test" in self.path:
                 page = page.replace(b"</body>", b"<script>" + Path(inject).read_bytes() + b"</script></body>")
-            return self.reply(200, page, MIME[".html"])
+            extra = {}
+            if not client.get("purged"):  # older versions cached images for a day: clear the browser's cache once per run
+                client["purged"] = True
+                extra["Clear-Site-Data"] = '"cache"'
+            return self.reply(200, page, MIME[".html"], headers=extra)
         if path.startswith("/app/"):
             return self.file(ROOT / "app", path[5:])
         if path.startswith("/docs/"):
             return self.file(ROOT / "docs", path[6:], cache=True)
-        if path.startswith("/files/"):
-            return self.file(OUT, path[7:], cache=True)
+        if path.startswith("/files/"):  # never cached: a deleted image must not live on in the browser's disk cache
+            return self.file(OUT, path[7:])
         if path.startswith("/thumbs/"):
             return self.file(THUMBS, path[8:])
         if path == "/api/state":
@@ -745,6 +780,36 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     return self.reply(409, {"error": f"can't {act} a {j['status']} job"})
                 save_queue()
+            return self.reply(200, {"ok": True})
+        m = re.fullmatch(r"/api/jobs/(\d+)/(recycled|restore|saveback)", path)
+        if m:  # a file deleted outside Kiln: is it in the Recycle Bin / put it back / write back the copy the page still holds
+            jid, act = int(m.group(1)), m.group(2)
+            with lock:
+                j = next((x for x in jobs if x["id"] == jid), None)
+            if not j or not j.get("file"):
+                return self.reply(404, {"error": "no such image"})
+            dest = OUT / j["file"]
+            if dest.exists():
+                return self.reply(200, {"ok": True, "exists": True})
+            if act == "recycled":
+                return self.reply(200, {"found": recycled(dest) is not None})
+            if act == "restore":
+                hit = recycled(dest)
+                if not hit:
+                    return self.reply(404, {"error": "not in the Recycle Bin any more"})
+                hit[1].replace(dest)
+                try: hit[0].unlink()
+                except OSError: pass
+                return self.reply(200, {"ok": True})
+            data = str(b.get("data", ""))
+            if not data.startswith("data:image/png;base64,"):
+                return self.reply(400, {"error": "no image"})
+            img = base64.b64decode(data.split(",", 1)[1])
+            if j.get("infotext"):
+                img = png_add_text(img, "parameters", j["infotext"])  # the canvas copy lost the PNG's text: put it back
+            if (j.get("spec") or {}).get("name", "").strip():
+                img = png_add_text(img, "kiln_name", j["spec"]["name"].strip())
+            dest.write_bytes(img)
             return self.reply(200, {"ok": True})
         if path == "/api/remove-missing":
             with lock:

@@ -58,7 +58,10 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
 - Rows show when a job was added, finished and how long it took; the running row shows the live render (not with
   Privacy hold on); hover a finished thumbnail for a bigger look. A waiting job's name can be changed in its peek.
 - **Delete** an image (`Del`, or the trash button on the image): it goes to the Recycle Bin, with Undo. ✕ on a
-  finished row only takes it off the list. Images deleted outside Kiln show as *file deleted* (**Remove missing**).
+  finished row only takes it off the list. Images deleted outside Kiln show as *file deleted* (**Remove missing**);
+  browsing to one shows a card instead of the picture, with the ways back that apply: **Restore from Recycle Bin**
+  (the original file), **Save back** (if Kiln still holds it from this session), **Render again** (same seed, same
+  file name) or **Remove from list**.
 - An **upscale** goes to the front of the line: seconds, right after the current image.
 - Click a finished job to open it in the Generating view. Click a waiting or running job — or the status line under
   the image — to **peek** at its prompt without touching your draft, then **Reuse prompt** or **Reuse all**

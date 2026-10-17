@@ -23,19 +23,32 @@
  /* a canvas only ever shows the image it was last asked for: while that one loads it is blank (never the previous
     picture or a cancelled job's preview stretched to the new shape), a load that lands after you moved on is dropped,
     and a file that's gone says so */
- window.paint=function(cv,j,progress){const u=urlFor(j);if(!u)return;const e=img(u),nat=cv.id==="vcv";cv.dataset.want=j.id;
+ window.paint=function(cv,j,progress){const u=urlFor(j);if(!u)return;if(j.missing){cv.dataset.want=j.id;if(cv.id==="cv")missing(cv,j);return}const e=img(u),nat=cv.id==="vcv";cv.dataset.want=j.id;
   if(e.i.complete&&e.i.naturalWidth){drawTo(cv,e.i,nat);return}
   if(cv.id==="cv"){cv.width=1;cv.height=1}
   e.p.then(im=>{if(cv.dataset.want!=String(j.id))return;if(im)drawTo(cv,im,nat);else{delete imgs[u];missing(cv,j)}})};
  function missing(cv,j){const dpr=devicePixelRatio||1,W=Math.max(64,Math.round((cv.clientWidth||300)*dpr)),H=Math.max(64,Math.round((cv.clientHeight||300)*dpr));
-  cv.width=W;cv.height=H;const c=cv.getContext("2d"),f=getComputedStyle(document.body).fontFamily;c.fillStyle="#0b0b0e";c.fillRect(0,0,W,H);
-  c.textAlign="center";c.textBaseline="middle";c.fillStyle="#9a9a9f";c.font=`500 ${15*dpr}px ${f}`;c.fillText("Image file not found",W/2,H/2-10*dpr);
-  c.fillStyle="#5e5e64";c.font=`${12*dpr}px ${f}`;c.fillText((j.file||"")+" — moved or deleted",W/2,H/2+14*dpr)}
+  cv.width=W;cv.height=H;const c=cv.getContext("2d");c.fillStyle="#0b0b0e";c.fillRect(0,0,W,H)}   /* the words and the ways back are on the card (#missCard) */
+ /* the missing-file card: what can bring it back, best first */
+ const inBin={};
+ function missUI(d){const on=!!(d&&d.missing&&S.view==="gen"&&!current()||d&&d.missing&&browsed());$("frame").classList.toggle("missing",on);if(!on)return;
+  $("missFile").textContent=d.file;if(inBin[d.id]===undefined){inBin[d.id]=null;api(`/api/jobs/${d.id}/recycled`,{}).then(r=>inBin[d.id]=!!r.found).catch(()=>{})}
+  const held=imgs[urlFor(d)],copy=!!(held&&held.i.complete&&held.i.naturalWidth);
+  $("mRestore").style.display=inBin[d.id]?"":"none";$("mSave").style.display=copy&&!inBin[d.id]?"":"none";
+  $("missHint").textContent=inBin[d.id]?"It's in the Recycle Bin — Restore puts the original file back.":copy?"Kiln still has it from this session — Save back writes it to the output folder again.":"Render again makes it anew from the same prompt, seed and settings."}
+ const shownMissing=()=>{const d=shownDone();return d&&d.missing?d:null};
+ $("mRestore").onclick=async()=>{const d=shownMissing();if(!d)return;const r=await api(`/api/jobs/${d.id}/restore`,{});toast(r.error||"Restored from the Recycle Bin");delete inBin[d.id];poll()};
+ $("mSave").onclick=async()=>{const d=shownMissing();if(!d)return;const e=imgs[urlFor(d)];if(!e||!e.i.naturalWidth)return toast("Kiln no longer has a copy");
+  const c=document.createElement("canvas");c.width=e.i.naturalWidth;c.height=e.i.naturalHeight;c.getContext("2d").drawImage(e.i,0,0);
+  const r=await api(`/api/jobs/${d.id}/saveback`,{data:c.toDataURL("image/png")});toast(r.error||`Saved back as ${d.file}`);delete imgs[urlFor(d)];poll()};
+ $("mAgain").onclick=async()=>{const d=shownMissing();if(!d)return;const sp=Object.assign({},d.spec,{seed:d.seed,as_file:d.file});
+  await api("/api/jobs",{jobs:[sp]});await api(`/api/jobs/${d.id}/remove`,{});toast(`Rendering it again — same seed, saved as ${d.file}`);poll()};
+ $("mRemove").onclick=()=>{const d=shownMissing();if(d)removeJob(d)};
 
  /* ---------- server job -> UI job ---------- */
  function toUI(s){const sp=s.spec||{};return Object.assign({},sp,{id:s.id,kind:s.kind,status:s.status,file:s.file||null,
   seed:s.seed_used??sp.seed,est:s.est,est_first:s.est_first,t_first:s.t_first&&s.t_first*1000,step:s.step||0,steps:s.steps||sp.steps||0,progress:s.progress||0,eta:s.eta,preview_rev:s.preview_rev||0,
-  error:s.error,started:s.started&&s.started*1000,finished:s.finished&&s.finished*1000,loras:sp.loras||[],mp:sp.mp||"1.0",ar:sp.ar||"1:1",warm:!!s.warm,stopping:!!s.stopping,missing:!!s.missing,created:s.created&&s.created*1000})}
+  error:s.error,started:s.started&&s.started*1000,finished:s.finished&&s.finished*1000,loras:sp.loras||[],mp:sp.mp||"1.0",ar:sp.ar||"1:1",spec:sp,warm:!!s.warm,stopping:!!s.stopping,missing:!!s.missing,created:s.created&&s.created*1000})}
  let sig="",forgeOk=true,forgeStarting=false,firstPoll=true,loadingM=false;const seen=new Set();
  async function poll(){let s;try{s=await (await fetch("/api/state")).json()}catch(e){forgeMsg("Kiln server not reachable");return}
   forgeOk=s.forge.ok;forgeStarting=!!s.forge.starting;if(window.qPaused!==!!s.paused){window.qPaused=!!s.paused;sig=""}
@@ -187,11 +200,11 @@
     else{refreshEst();$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`}
    prog.classList.toggle("paused",!!window.qPaused&&jobs.some(x=>x.status==="pending"))}
   if(!j||browsed()){const d=shownDone();
-   if(d&&S.view==="gen"){if($("cv").dataset.d!=d.id){$("cv").dataset.d=d.id;$("cv").dataset.j="";sizeFrame();
+   if(d&&S.view==="gen"){if($("cv").dataset.d!=d.id||$("cv").dataset.m!==String(!!d.missing)){$("cv").dataset.d=d.id;$("cv").dataset.m=String(!!d.missing);$("cv").dataset.j="";sizeFrame();
      if(justDone===d.id){const f=$("frame");f.classList.remove("reveal");void f.offsetWidth;f.classList.add("reveal");setTimeout(()=>f.classList.remove("reveal"),1200);justDone=null}
      paint($("cv"),d,1)}$("frame").classList.add("has");$("idle").style.display="none"}
    else if(!d){$("frame").classList.remove("has");$("idle").style.display="";const c=$("cv");if(c.width>1){c.width=1;c.height=1;c.dataset.d="";c.dataset.j=""}}}
-  browseStatus();requestAnimationFrame(frame)};
+  missUI(!j||browsed()?shownDone():null);browseStatus();requestAnimationFrame(frame)};
 
  window.jobProgress=function(j){const per=Math.max(1,SEC_PER_STEP[j.mp]||60)*1000;const part=j.steps&&j._ss?Math.min((Date.now()-j._ss)/per,.95):0;
   const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;const started=j.step||j.preview_rev,rm=remaining(j);

@@ -28,7 +28,7 @@ const freePort = () => new Promise(r => { const s = createServer(); s.listen(0, 
 async function waitHttp(url, ms = 15000) { const t = Date.now(); while (Date.now() - t < ms) { try { await fetch(url); return } catch (e) { await sleep(150) } } throw new Error("no answer from " + url) }
 
 /* one Kiln instance + browser page, with the helpers a test uses */
-async function launch(name, { step = 0.6, width = 1513, height = 900 } = {}) {
+async function launch(name, { step = 0.6, width = 1513, height = 900, env = {} } = {}) {
   const dir = join(tmpdir(), `kiln-test-${name}-${Date.now()}`), out = join(dir, "out"), data = join(dir, "data");
   mkdirSync(out, { recursive: true }); mkdirSync(data, { recursive: true });
   const [fport, kport, dport] = [await freePort(), await freePort(), await freePort()];
@@ -39,7 +39,7 @@ async function launch(name, { step = 0.6, width = 1513, height = 900 } = {}) {
   await waitHttp(`http://127.0.0.1:${fport}/sdapi/v1/options`);
   run(PY, ["-c", "import server; server.CFG['exit_when_closed']=False; server.CFG['forge_start']=''; server.main()"],
     { KILN_PORT: String(kport), KILN_FORGE_URL: `http://127.0.0.1:${fport}`, KILN_OUTPUT_DIR: out, KILN_DATA_DIR: data, PYTHONUNBUFFERED: "1",
-      KILN_UPDATE_URL: `http://127.0.0.1:${fport}/tags`, KILN_NO_RECYCLE: "1" });
+      KILN_UPDATE_URL: `http://127.0.0.1:${fport}/tags`, KILN_NO_RECYCLE: "1", ...env });
   await waitHttp(`http://127.0.0.1:${kport}/api/state`);
   const url = `http://127.0.0.1:${kport}/`;
   // --no-proxy-server like kiln.bat: a system proxy (VPN client, antivirus web filter) must not stall the local page

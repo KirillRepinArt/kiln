@@ -624,3 +624,9 @@ body.glass .ltitle .plbl.peekname .pname:not([readonly]){background:color-mix(in
 .ltitle .plbl .pname:not([readonly]){padding:2px 12px!important;transition:background .15s,box-shadow .15s}
 body.glass .pnsave{background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 80%,transparent),color-mix(in oklab,var(--a2) 72%,transparent) 55%,color-mix(in oklab,var(--a3) 66%,transparent));
  -webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25);padding:4px 12px}
+
+/* the missing-file card (a file deleted outside Kiln): no picture, just the ways back */
+.miss{display:none;position:absolute;inset:0;z-index:4;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center}
+.frame.missing .miss{display:flex}.frame.missing .side,.frame.missing .cbtn{display:none!important}.frame.missing{cursor:default}
+.miss .mt{font-size:16px;font-weight:600;color:var(--text)}.miss .mf{font-size:12.5px;color:var(--muted);word-break:break-all}
+.miss .ma{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}.miss .mh{font-size:12.5px;color:var(--faint);max-width:340px}

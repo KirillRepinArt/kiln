@@ -63,6 +63,9 @@
             <canvas id="embers"></canvas>
             <canvas id="cv"></canvas>
             <div class="idle" id="idle"><div><span id="idleT">Queue is empty</span><br><small id="idleS">Write a prompt and press ▶ (Ctrl+Enter)</small></div></div>
+            <div class="miss" id="missCard"><div class="mt">This file was deleted outside Kiln</div><div class="mf" id="missFile"></div>
+              <div class="ma"><button class="btn pri" id="mRestore">Restore from Recycle Bin</button><button class="btn pri" id="mSave">Save back</button><button class="btn" id="mAgain">Render again</button><button class="btn" id="mRemove">Remove from list</button></div>
+              <div class="mh" id="missHint"></div></div>
             <div class="side" id="sideGen"></div><button class="cbtn" id="cbtn"></button><button class="bclose" id="bclose"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button><button class="nav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button>
           </div>
         </div>

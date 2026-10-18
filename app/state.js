@@ -29,7 +29,12 @@ const S={pname:"",ncount:{},pph:0,lw:0,mp:"1.5",ar:"3:4",steps:4,seedMode:"rando
 let draft="";let jobs=[];let nextId=1;
 try{const sv=JSON.parse(localStorage.getItem("kiln_state")||"{}");Object.assign(S,sv.S||{});draft=sv.draft||"";
  (sv.loras||[]).forEach(x=>{const l=LORAS.find(l=>l.name===x.name);if(l)Object.assign(l,x)})}catch(e){}
-function save(){try{localStorage.setItem("kiln_state",JSON.stringify({S,draft,loras:LORAS.map(({name,on,onAt,w,fav,used,display,thumb})=>({name,on,onAt,w,fav,used,display,thumb}))}))}catch(e){}}
+/* LoRA entries are merged, never replaced: a LoRA this page doesn't know right now (the demo list at start-up, before
+   Forge's list arrives; a LoRA moved away for a while) keeps its saved name, weight and star. Replacing the list once
+   wiped every renamed LoRA (2026-10-18). */
+function save(){try{let old=[];try{old=JSON.parse(localStorage.getItem("kiln_state")||"{}").loras||[]}catch(e){}
+ const cur=LORAS.map(({name,on,onAt,w,fav,used,display,thumb})=>({name,on,onAt,w,fav,used,display,thumb})),have=new Set(cur.map(l=>l.name));
+ localStorage.setItem("kiln_state",JSON.stringify({S,draft,loras:cur.concat(old.filter(l=>l&&!have.has(l.name)))}))}catch(e){}}
 const $=id=>document.getElementById(id);
 const P=$("prompt");
 P.value=draft||"";

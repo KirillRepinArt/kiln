@@ -137,7 +137,13 @@
   sel("ckpt",models.checkpoints.map(c=>({v:c,t:c.replace(/\s*\[[0-9a-f]+\]$/,"")})),`Keep Forge's current (${curCk||"none"})`);
   const vae=models.modules.filter(m=>/vae|\bae\b/i.test(m.name)),te=models.modules.filter(m=>!/vae|\bae\b/i.test(m.name));
   sel("vae",vae.map(m=>({v:m.file,t:m.name})),"Keep Forge's current");sel("te",te.map(m=>({v:m.file,t:m.name})),"Keep Forge's current");
-  renderLoras();renderChips();return true}
+  renderLoras();renderChips();restoreLoras();return true}
+ /* a one-time restore of LoRA names, stars and weights the server holds in data/lora_restore.json */
+ let restoreTried=false;
+ async function restoreLoras(){if(restoreTried)return;restoreTried=true;let r;try{const x=await fetch("/api/lora-restore");if(!x.ok)return;r=await x.json()}catch(e){return}
+  let n=0;for(const x of r.loras||[]){const l=LORAS.find(l=>l.name===x.name);if(!l)continue;
+   if(x.display)l.display=x.display;if(x.fav!=null)l.fav=!!x.fav;if(x.w!=null)l.w=+x.w;if(x.used)l.used=x.used;n++}
+  save();renderLoras();renderChips();await api("/api/lora-restore",{done:true});if(n)toast(`Restored names, stars and weights for ${n} LoRAs`)}
  // settings: read-only server facts + upscaler choice
  const fg=document.querySelector(".mcard .fg");
  fg.querySelector('[data-set="outdir"]').value=st.out_dir;fg.querySelector('[data-set="outdir"]').readOnly=true;

@@ -2,6 +2,12 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
+## v0.2.1 — 2026-10-18
+
+- **Fix:** updating to v0.2 could wipe your LoRA names, stars and weights (a one-time settings conversion saved before
+  Forge's LoRA list had loaded). Saving now merges and never drops a LoRA it doesn't currently know. If yours were
+  wiped, they can be restored from a `data/lora_restore.json` file, which Kiln applies once on start.
+
 ## v0.2 — 2026-10-18 (Phase 1)
 
 - **Queue:** Pause after the current image · delete to the Recycle Bin with Undo (`Del`) · remove a finished row from

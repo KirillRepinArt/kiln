@@ -165,7 +165,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
      fgc.globalCompositeOperation="source-atop";fgc.globalAlpha=.05;fgc.fillStyle=fgc.createPattern(dith,"repeat");fgc.fillRect(0,0,cw,ch);   // a whisper of grain: no banding on near-black
      fgc.globalCompositeOperation="destination-out";fgc.globalAlpha=1;fgc.beginPath();fgc.roundRect(X+dp,Y+dp,FW-2*dp,FH-2*dp,Math.max(0,rad-dp));fgc.fill();   // nothing behind the image itself
      fgc.globalCompositeOperation="source-over";fr.classList.add("halo")}}
-   else if(fg.style.opacity!=="0"||fg.style.display!=="none"){fg.style.opacity="0";fg.style.display="none";fr.classList.remove("halo")}   /* gone, not just transparent: a blended layer left in the page makes Edge composite the background as a separate surface (a seam showed through every glass panel) */}
+   else if(fg.style.opacity!=="0"||fg.style.display!=="none"){fg.style.opacity="0";fg.style.display="none";fr.classList.remove("halo")}   /* gone, not just transparent: a blended layer left in the page still costs Edge a separate compositing surface */}
   e.clearRect(0,0,W,H);
   if(W&&S.view==="gen"&&skin().cover==="camera")cam.drawFlash(e,W,H,t,cols.map(toHex));
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}

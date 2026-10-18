@@ -2,7 +2,7 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
-## Unreleased (Phase 1)
+## v0.2 — 2026-10-18 (Phase 1)
 
 - **Queue:** Pause after the current image · delete to the Recycle Bin with Undo (`Del`) · remove a finished row from
   the list · added / done / took times · rename a waiting job · live render in the running row · bigger preview on
@@ -17,6 +17,12 @@ Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when th
   from Recycle Bin · Save back · Render again (same seed, same name) · Remove from list — never the picture.
 - Settings → About: the version and a manual **Check for updates** (the only time Kiln goes online, only when you
   press it). `?` opens a keyboard shortcut sheet. LoRA category chips explain they come from your folders.
+- **Privacy** — the eye or `F9`: the picture fully covered (running or finished), the prompt, name and LoRAs hidden;
+  stays on across jobs and restarts. Replaces the Privacy hold setting.
+- File names are never reused (a deleted number used to be handed out again, and the queue showed the old picture).
+- Deleting while browsing lands on the neighbouring image · Stop counts down · 0.5 MP · the LoRA list stays put when
+  you switch one on · the prompt box no longer keeps a stray scrollbar · calmer queue reordering.
+- Known: on Aurora a faint horizontal line can flicker behind glass panels (GPU-specific, parked).
 
 ## v0.1 — 2026-10-17
 

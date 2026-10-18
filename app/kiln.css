@@ -648,9 +648,6 @@ body.glass .badge{background:color-mix(in oklab,rgba(22,24,26,.75),var(--cool,#9
 .pwrapT .cm-scroller{scrollbar-gutter:stable}
 body.private .cbtn{display:grid!important;opacity:.7}body.private .frame:hover .cbtn{opacity:1}
 body.glass .left .privov{bottom:var(--ctrlh,64px)}
-/* the LoRA list on its own layer: drawn once and moved, not re-drawn each time the glass behind it re-blurs the
-   animated background (thin slider tracks at half-pixel positions flickered — gone in Solid) */
-body.glass .lscroll{will-change:transform}
 /* the queue count back on Start's corner (the dark pill reads well there); the character count moves left of Start */
 .controls .play .badge{top:-5px;right:-6px}
 body.glass .left .pcount{right:72px}

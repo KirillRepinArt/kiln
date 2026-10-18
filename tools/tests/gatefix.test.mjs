@@ -56,9 +56,11 @@ export async function halfMegapixel(k, t) {
   t.ok(await k.ev(`$("popMP").textContent.includes("0.5 MP")`), "offered in the size pill");
 }
 
-export async function badgeClearOfStart(k, t) {
+export async function badgeAndCount(k, t) {
   await k.ev(`(setPaused(true),1)`); await k.sleep(300);
   await k.job("a", { steps: 2 }); await k.job("b", { steps: 2 }); await k.sleep(1500);
-  const b = await k.rect("#badge"), p = await k.rect("#play");
-  t.ok(b.right > p.right + 2 && b.top < p.top - 2, "the count sits outside the Start circle", { b, p });
+  await k.ev(`(P.value="short",draft=P.value,P.focus(),updPrompt(),1)`); await k.sleep(400);
+  const b = await k.rect("#badge"), p = await k.rect("#play"), c = await k.rect("#pcount");
+  t.ok(b.left < p.right && b.bottom > p.top, "the queue count sits on Start's corner", { b, p });
+  t.ok(c.right <= b.left || c.bottom <= b.top || c.top >= b.bottom, "the character count doesn't collide with it", { c, b });
 }

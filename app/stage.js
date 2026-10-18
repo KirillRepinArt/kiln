@@ -29,32 +29,56 @@ const BAR=66; // bar block height incl. gap: 12 + track 10 + 7 + status row 36
    follows the cursor, and on release the pair glides back to centre — the same rule as resizing the window.
    (Design agreed 2026-10-18 after the first try left a growing gap in the middle.) */
 const LISTMIN=660,GAP=18,PWMIN=360;
-const layDef=()=>({pw:680,rw:Math.max(LISTMIN,tabsW()+2)});
-function layGeo(){const L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw}:{})),W=innerWidth-36,minR=minRight();
- let pw=Math.max(PWMIN,Math.min(L.pw,CARDMAX,W-GAP-minR)),rw=Math.max(minR,Math.min(L.rw,W-GAP-pw));   // too narrow: the image area gives way first, then the prompt
- const m=Math.max(0,(W-GAP-pw-rw)/2);return{pw,rw,mL:m,mR:m,W,minR,off:0}}
+/* Two remembered widths for the right side: rw = the panel width of Queue / LoRAs / PNG Info (the same for every
+   picture); iw = in Generating, the largest the picture may be (null = no cap). In Generating the image area HUGS the
+   picture: as wide as the picture shown (or, idle, the next ratio) at the available height, capped by iw — so the prompt
+   always sits 18 px from the actual picture. Changes glide (CSS transition on the grid). Nothing moves under the
+   cursor: while the pointer is over the picture the whole layout holds (a new picture fits inside the held area); while
+   it is over the prompt the prompt holds its place and only the picture side reshapes. Leaving lets it glide. */
+const layDef=()=>({pw:680,rw:Math.max(LISTMIN,tabsW()+2),iw:null});
+const lay={holdImg:false,holdCard:false,last:null,drag:false};
+function hugW(){const j=browsed()||current()||shownDone(),ar=j?j.ar:S.ar,[a,b]=ar.split(":").map(Number),h=$("stage").getBoundingClientRect().height-BAR;return h>0?h*a/b:9999}
+function layGeo(){const L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw}:{})),W=innerWidth-36,minR=minRight(),gen=S.view==="gen";
+ let pw=Math.max(PWMIN,Math.min(L.pw,CARDMAX,W-GAP-minR));
+ const want=gen?Math.min(L.iw||1e9,lay.drag?1e9:hugW()):L.rw;
+ let rw=Math.max(minR,Math.min(want,W-GAP-pw));                  // too narrow: the image area gives way first, then the prompt
+ if(gen&&lay.drag)rw=Math.max(minR,Math.min(L.iw||W-GAP-pw,W-GAP-pw));   // while an edge is held in Generating: the area is the cap itself
+ const m=Math.max(0,(W-GAP-pw-rw)/2);return{pw,rw,mL:m,mR:m,W,minR,off:0,gen}}
 function layApply(g){const app=document.querySelector(".app"),st=app.style,px=v=>Math.round(v*10)/10+"px";
  const mL=Math.max(0,g.mL+(g.off||0)),mR=Math.max(0,g.W-GAP-g.pw-g.rw-mL);
- st.setProperty("--mL",px(mL));st.setProperty("--pw",px(g.pw));st.setProperty("--gap",px(GAP));st.setProperty("--rw",px(g.rw));st.setProperty("--mR",px(mR));st.setProperty("--cw",px(g.pw))}
+ st.setProperty("--mL",px(mL));st.setProperty("--pw",px(g.pw));st.setProperty("--gap",px(GAP));st.setProperty("--rw",px(g.rw));st.setProperty("--mR",px(mR));st.setProperty("--cw",px(g.pw));
+ lay.last=Object.assign({},g,{mL,mR,off:0})}
+/* what to apply now, honouring the holds */
+function layNow(){const g=layGeo();if(!lay.last||lay.drag)return g;
+ if(lay.holdImg)return lay.last;                                                       // pointer over the picture: everything holds
+ if(lay.holdCard&&Math.abs(g.pw-lay.last.pw)<1){g.off=lay.last.mL-g.mL;return g}     // pointer over the prompt: it keeps its place
+ return g}
 /* an edge drag, in px from where it started. dv = the divider (the prompt's inner edge and the image area's inner edge
    are the same boundary): one panel grows exactly as much as the other shrinks. po / ro = the outer edges: that panel
-   changes and the pair is held still (off) so the edge stays under the cursor; layRelease() lets it re-centre. */
+   changes and the pair is held still (off) so the edge stays under the cursor; layRelease() lets it re-centre.
+   In Generating the right-side width written is the picture's cap (iw), elsewhere the panel width (rw). */
 function layDrag(edge,g0,dx){const g=Object.assign({},g0);
  if(edge==="dv"){const pw=Math.max(PWMIN,Math.min(CARDMAX,g0.pw+g0.rw-g0.minR,g0.pw+dx));g.rw=g0.rw-(pw-g0.pw);g.pw=pw}
  if(edge==="po"){const pw=Math.max(PWMIN,Math.min(CARDMAX,g0.pw+g0.mL,g0.pw-dx));g.pw=pw;const W2=g.W-GAP-g.pw-g.rw;g.off=(g0.mL-(pw-g0.pw))-W2/2}
  if(edge==="ro"){const rw=Math.max(g0.minR,Math.min(g0.rw+g0.mR,g0.rw+dx));g.rw=rw;const W2=g.W-GAP-g.pw-g.rw;g.off=g0.mL-W2/2}
  g.mL=g.mR=Math.max(0,(g.W-GAP-g.pw-g.rw)/2);
- S.lay.pw=Math.round(g.pw);S.lay.rw=Math.round(g.rw);layApply(g);return g}
-function layRelease(){const app=document.querySelector(".app");app.classList.add("recentre");layApply(layGeo());setTimeout(()=>app.classList.remove("recentre"),420)}
+ S.lay.pw=Math.round(g.pw);if(g0.gen)S.lay.iw=Math.round(g.rw);else S.lay.rw=Math.round(g.rw);layApply(g);return g}
+function layRelease(){lay.drag=false;sizeFrame()}
 function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
- if(!stk&&!sizeFrame.hold)layApply(layGeo());
- const st=$("stage").getBoundingClientRect();const f=$("frame");
- fitBox(f,ar,st.width,st.height-BAR);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
- const top=Math.max(0,(st.height-h-BAR)/2),left=stk?0:Math.max(0,Math.floor((st.width-w)/2));f.style.left=left+"px";f.style.top=top+"px";
+ if(!stk&&!sizeFrame.hold)layApply(layNow());
+ /* the target geometry, not a measurement: the grid may be mid-glide */
+ const st=$("stage").getBoundingClientRect(),SW=stk?st.width:lay.last.rw;const f=$("frame");
+ fitBox(f,ar,SW,st.height-BAR);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
+ const top=Math.max(0,(st.height-h-BAR)/2),left=stk?0:Math.max(0,Math.floor((SW-w)/2));f.style.left=left+"px";f.style.top=top+"px";
  // tab bar: centred over the box in every tab; in Generating it also sits right on top of the image
- const tb=document.querySelector(".tabs");if(tb){tb.style.width=stk?"":$("rpanel").offsetWidth+"px";tb.style.transform=S.view==="gen"&&top>0?`translateY(${Math.round(top)}px)`:""}
+ const tb=document.querySelector(".tabs");if(tb){tb.style.width=stk?"":SW+"px";tb.style.transform=S.view==="gen"&&top>0?`translateY(${Math.round(top)}px)`:""}
  const sx=document.querySelector(".app.stacked")?(st.width-w)/2:0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+12)+"px";pr.style.setProperty("--tw",w+"px");
  if(window.layoutLeft)requestAnimationFrame(layoutLeft)}
+/* the holds: over the picture, over the prompt (card, its name row, its LoRA chips) */
+$("frame").addEventListener("pointerenter",()=>{lay.holdImg=true});
+$("frame").addEventListener("pointerleave",()=>{lay.holdImg=false;sizeFrame()});
+$("lcol").addEventListener("pointerenter",()=>{lay.holdCard=true});
+$("lcol").addEventListener("pointerleave",()=>{lay.holdCard=false;setTimeout(()=>{if(!lay.holdCard)sizeFrame()},350)});
 // live resize: everything follows the window edge directly; animations return ~150 ms after the last resize event
 let lrT=null;
 window.addEventListener("resize",()=>{document.body.classList.add("liveresize");clearTimeout(lrT);lrT=setTimeout(()=>document.body.classList.remove("liveresize"),150);

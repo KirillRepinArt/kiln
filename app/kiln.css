@@ -672,5 +672,8 @@ body.laydrag *{transition:none!important}
 .laymenu{top:52px;bottom:auto;left:auto;right:0;transform-origin:top right;min-width:230px}
 .laymenu{min-width:270px}.laymenu .opt{white-space:nowrap;align-items:baseline}
 
-/* Phase 2a redesign: the pair glides back to centre after an outer edge is released */
-.app.recentre{transition:grid-template-columns .35s cubic-bezier(.4,0,.2,1)}
+/* Phase 2a: every layout change glides (released edges, picture changes, tab switches); drags and window resizes
+   follow directly (body.laydrag / body.liveresize switch transitions off) */
+.app{transition:grid-template-columns .35s cubic-bezier(.4,0,.2,1)}
+.tabs{transition:width .35s cubic-bezier(.4,0,.2,1),transform .4s var(--ease)}
+.right .tabs{transition:width .35s cubic-bezier(.4,0,.2,1),transform .4s var(--ease)}

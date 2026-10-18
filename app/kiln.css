@@ -651,3 +651,23 @@ body.glass .left .privov{bottom:var(--ctrlh,64px)}
 /* the queue count back on Start's corner (the dark pill reads well there); the character count moves left of Start */
 .controls .play .badge{top:-5px;right:-6px}
 body.glass .left .pcount{right:72px}
+
+/* ---- Phase 2a: two panels with their own widths (stage.js layGeo) ---- */
+.app{grid-template-columns:var(--mL,1fr) var(--pw,680px) var(--gap,18px) var(--rw,660px) var(--mR,1fr)!important}
+.app>.lcol{grid-column:2}.app>.split{grid-column:3;cursor:default;pointer-events:none}.app>.right{grid-column:4}
+.app>.split::after{display:none}
+.app.stacked{grid-template-columns:1fr!important}.app.stacked>*{grid-column:1/-1!important}
+.app>.lcol,.app>.right{position:relative}
+/* the four edges: a 12 px grab strip on each vertical edge, a grip line on hover */
+.pedge{position:absolute;top:0;bottom:0;width:12px;z-index:8;cursor:ew-resize;touch-action:none}
+.pedge.po{left:-8px}.pedge.pi{right:-8px}.pedge.ri{left:-8px}.pedge.ro{right:-8px}
+.pedge::after{content:"";position:absolute;top:50%;left:4px;width:4px;height:46px;margin-top:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
+.pedge:hover::after,.pedge.drag::after{opacity:.9}
+.app.stacked .pedge{display:none}
+/* while sizing the right area, show the region the picture fits into (in Generating it is otherwise invisible) */
+.right.edgehint::before{content:"";position:absolute;inset:64px 0 0 0;border:1px dashed rgba(255,255,255,.18);border-radius:var(--r-panel);pointer-events:none;z-index:7}
+body.laydrag *{transition:none!important}
+/* the Layout button and its menu */
+.laywrap{position:relative;display:inline-flex}
+.laymenu{top:52px;bottom:auto;left:auto;right:0;transform-origin:top right;min-width:230px}
+.laymenu{min-width:270px}.laymenu .opt{white-space:nowrap;align-items:baseline}

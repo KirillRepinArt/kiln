@@ -57,7 +57,7 @@ function updHm(){const m=S.hmode||"";$("hmodes").classList.toggle("on",!!m);
 $("hmodes").addEventListener("click",e=>{const b=e.target.closest("[data-hm]");if(!b)return;S.hmode=S.hmode===b.dataset.hm?"":b.dataset.hm;save();updHm();lyFrozen=false;layoutLeft()});
 updHm();
 (function(){const L=$("left"),T=$("ltitle"),col=$("lcol");let d=null;
- const NO="input,textarea,button,a,select,.chip,.pwrapT,.vedge,.pop,.cwi";
+ const NO="input,textarea,button,a,select,.chip,.pwrapT,.vedge,.pedge,.pop,.cwi";
  const ghosts=["top","mid","bot"].map(p=>{const g=document.createElement("div");g.className="ghost";g.dataset.p=p;col.appendChild(g);return g});
  const geo=()=>{const TS=parseFloat(col.style.getPropertyValue("--ts"))||64;return{TS,colH:col.clientHeight-TS,H:L.offsetHeight}};
  const nearest=(t,H,colH)=>["top","mid","bot"].map(p=>[p,Math.abs(anchorTop(p,H,colH)-t)]).sort((a,b)=>a[1]-b[1])[0][0];

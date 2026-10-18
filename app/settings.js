@@ -12,7 +12,11 @@ $("sTheme").value=S.theme;$("sTheme").onchange=e=>{S.theme=e.target.value;applyT
 function applyFont(){S.set=S.set||{};if(!S.set.fontPicked)S.set.font="theme";const sk=skin(),th=S.set.font==="theme",f=th?(sk.font||"Geist"):S.set.font,rs=document.documentElement.style;
  rs.setProperty("--font",`"${f}"`);if(th&&sk.title)rs.setProperty("--font-title",`"${sk.title}"`);else rs.removeProperty("--font-title");
  const sel=document.getElementById("sFont");if(sel)sel.value=S.set.font;requestAnimationFrame(()=>moveThumb(true))}
-$("rLayout").onclick=()=>{S.lw=0;S.pph=0;S.sch=0;S.pos="mid";S.hmode="";updHm();grow();applyPH();showView("gen");save();sizeFrame();moveThumb(true);$("modal").classList.remove("show");toast("Layout reset")};
+$("rLayout").onclick=()=>{resetLayout();showView("gen");$("modal").classList.remove("show");toast("Layout reset")};
+/* the Layout button by the gear: a small menu (docking joins it in Phase 2a step 2) */
+(function(){const b=$("layBtn"),m=$("layMenu");b.onclick=e=>{e.stopPropagation();m.classList.toggle("show")};
+ document.addEventListener("click",e=>{if(!e.target.closest("#layMenu"))m.classList.remove("show")});
+ m.addEventListener("click",e=>{const a=e.target.closest("[data-lay]");if(!a)return;m.classList.remove("show");if(a.dataset.lay==="reset"){resetLayout();toast("Layout reset — the default sizes, centred")}})})();
 $("rAll").onclick=()=>{if(!confirm("Reset everything? Prompt, name, settings, favourites, thumbnails and layout go back to defaults."))return;try{localStorage.clear()}catch(e){}location.reload()};
 S.set=S.set||{};document.querySelectorAll('[data-set]').forEach(el=>{const k=el.dataset.set;if(S.set[k]!=null)el.value=S.set[k];else S.set[k]=el.value;
  el.addEventListener('change',()=>{S.set[k]=el.value;save();if(k==="font"){S.set.fontPicked=1;save();applyFont()}if(k==="glass")applyGlass()})});

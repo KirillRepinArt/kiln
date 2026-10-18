@@ -22,16 +22,34 @@ function paint(cv,job,progress){const [w,h]=SIZES[job.mp][job.ar];const W=Math.r
   c.imageSmoothingEnabled=true;c.imageSmoothingQuality="high";c.clearRect(0,0,W,H);c.drawImage(t,0,0,W,H)}}
 function fitBox(el,ar,bw,bh){const [a,b]=ar.split(":").map(Number);let w=bw,h=bw*b/a;if(h>bh){h=bh;w=bh*a/b}el.style.width=w+"px";el.style.height=h+"px"}
 const BAR=66; // bar block height incl. gap: 12 + track 10 + 7 + status row 36
-/* Wide window = a fixed pane (the prompt card, width set with the divider: S.lw) + a flexible pane (the right box).
-   The right box is the same rectangle in every tab — Generating centres the image in it, Queue / LoRAs / PNG Info
-   fill it — so nothing moves when you switch tabs. Card + box are centred as one group (equal outer margins).
-   The box is as wide as the image, but never narrower than the tab bar or two LoRA columns (LISTMIN). */
-const LISTMIN=660;
+/* Wide window = two panels with their own widths — the prompt (pw) and the right area (rw) — and three free spaces
+   around them: left margin, gap, right margin. Each of the four vertical edges trades width between its own panel and
+   the free space beside it; the other panel never moves. The free spaces are stored as shares (fl, fg, fr) of whatever
+   room is left, so a window resize spreads it proportionally and the layout keeps its shape. The right area is the same
+   rectangle in every tab and for every image shape: Generating fits the picture into it, Queue / LoRAs / PNG Info fill
+   it. S.lay = {pw, rw, fl, fg, fr}; no S.lay = the default (today's centred pair). */
+const LISTMIN=660,GAPMIN=18,PWMIN=360;
+const layDef=()=>({pw:680,rw:Math.max(LISTMIN,tabsW()+2),fl:.5,fg:0,fr:.5});
+function layGeo(){const L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw}:{})),W=innerWidth-36,minR=minRight();
+ let pw=Math.max(PWMIN,Math.min(L.pw,CARDMAX,W-GAPMIN-minR)),rw=Math.max(minR,Math.min(L.rw,W-GAPMIN-pw));
+ const free=Math.max(0,W-GAPMIN-pw-rw),s=(L.fl+L.fg+L.fr)||1;
+ return{pw,rw,mL:free*L.fl/s,gap:GAPMIN+free*L.fg/s,mR:free*L.fr/s,W,minR}}
+function layApply(g){const app=document.querySelector(".app"),st=app.style,px=v=>Math.round(v*10)/10+"px";
+ st.setProperty("--mL",px(g.mL));st.setProperty("--pw",px(g.pw));st.setProperty("--gap",px(g.gap));st.setProperty("--rw",px(g.rw));st.setProperty("--mR",px(g.mR));st.setProperty("--cw",px(g.pw))}
+/* an edge drag, in px: the panel and its neighbouring free space change; then the shares are recomputed */
+function layDrag(edge,g0,dx){const g=Object.assign({},g0),mx=CARDMAX;
+ if(edge==="po"){const pw=Math.max(PWMIN,Math.min(mx,g.pw+g.mL,g0.pw-dx));g.mL-=pw-g.pw;g.pw=pw}
+ /* inner edges: the gap gives way first; past it the other panel is pushed — it slides, its width never changes */
+ if(edge==="pi"){const pw=Math.max(PWMIN,Math.min(mx,g.pw+g.gap-GAPMIN+g.mR,g0.pw+dx)),grow=pw-g.pw;
+  if(grow<0)g.gap-=grow;else{const fromGap=Math.min(grow,g.gap-GAPMIN);g.gap-=fromGap;g.mR-=grow-fromGap}g.pw=pw}
+ if(edge==="ri"){const rw=Math.max(g.minR,Math.min(g.rw+g.gap-GAPMIN+g.mL,g0.rw-dx)),grow=rw-g.rw;
+  if(grow<0)g.gap-=grow;else{const fromGap=Math.min(grow,g.gap-GAPMIN);g.gap-=fromGap;g.mL-=grow-fromGap}g.rw=rw}
+ if(edge==="ro"){const rw=Math.max(g.minR,Math.min(g.rw+g.mR,g0.rw+dx));g.mR-=rw-g.rw;g.rw=rw}
+ const free=g.mL+(g.gap-GAPMIN)+g.mR;S.lay.pw=Math.round(g.pw);S.lay.rw=Math.round(g.rw);
+ if(free>.5){S.lay.fl=g.mL/free;S.lay.fg=(g.gap-GAPMIN)/free;S.lay.fr=g.mR/free}
+ layApply(g)}
 function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
- const TW=tabsW();
- if(!stk){const avail=innerWidth-36-18,cw=Math.max(360,Math.min(S.lw||680,CARDMAX,avail-minRight()));const sh=$("stage").getBoundingClientRect().height-BAR;
-  const [a,b]=ar.split(":").map(Number);const iw=Math.min(avail-cw,sh*a/b),rw=Math.floor(Math.min(avail-cw,Math.max(iw,TW,LISTMIN)));const side=Math.max(0,Math.floor((avail-cw-rw)/2));
-  app.style.setProperty("--lc",(side+cw)+"px");app.style.setProperty("--cw",cw+"px");app.style.setProperty("--rc",rw+"px")}
+ if(!stk)layApply(layGeo());
  const st=$("stage").getBoundingClientRect();const f=$("frame");
  fitBox(f,ar,st.width,st.height-BAR);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
  const top=Math.max(0,(st.height-h-BAR)/2),left=stk?0:Math.max(0,Math.floor((st.width-w)/2));f.style.left=left+"px";f.style.top=top+"px";

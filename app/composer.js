@@ -54,11 +54,22 @@ function grow(){} // column widths now come from sizeFrame()
  g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;S.sch=Math.max(200,Math.min(Math.round(innerHeight*.7),Math.round(h0-(e.clientY-y0))));layoutLeft()});
  g.addEventListener("pointerup",()=>{g.classList.remove("drag");document.body.classList.remove("vresizing");save()});
  g.addEventListener("dblclick",()=>{S.sch=0;save();layoutLeft();toast("Image / prompt split back to auto")});})();
-(function(){const g=$("split");let x0=0,w0=0;
- g.addEventListener("pointerdown",e=>{e.preventDefault();g.setPointerCapture(e.pointerId);g.classList.add("drag");document.body.classList.add("resizing");x0=e.clientX;w0=$("left").getBoundingClientRect().width});
- g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;const max=Math.min(CARDMAX,innerWidth-36-18-minRight());S.lw=Math.max(360,Math.min(max,Math.round(w0+e.clientX-x0)));grow();sizeFrame();moveThumb(true)});
- g.addEventListener("pointerup",()=>{g.classList.remove("drag");document.body.classList.remove("resizing");save()});
- g.addEventListener("dblclick",()=>{S.lw=0;save();grow();sizeFrame();moveThumb(true)});})();
+/* the four panel edges (Phase 2a): po/pi = the prompt's outer/inner edge, ri/ro = the right area's inner/outer edge.
+   Drag: only that panel and the free space beside it change. Double-click: that panel back to its default width. */
+(function(){const mk=(parent,e,tip)=>{const h=document.createElement("div");h.className="pedge "+e;h.dataset.e=e;h.dataset.tip=tip;parent.appendChild(h);return h};
+ const hs=[mk($("left"),"po","Drag to resize the prompt · double-click for its default width"),mk($("left"),"pi","Drag to resize the prompt · double-click for its default width"),
+  mk($("right"),"ri","Drag to resize the image area · double-click for its default width"),mk($("right"),"ro","Drag to resize the image area · double-click for its default width")];
+ let d=null;
+ for(const h of hs){
+  h.addEventListener("pointerdown",ev=>{if(document.querySelector(".app.stacked")||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);   /* not the card's move gesture */
+   d={e:h.dataset.e,x0:ev.clientX,g0:layGeo()};h.classList.add("drag");document.body.classList.add("resizing","laydrag");if(h.dataset.e[0]==="r")$("right").classList.add("edgehint")});
+  h.addEventListener("pointermove",ev=>{if(!d)return;layDrag(d.e,d.g0,ev.clientX-d.x0);sizeFrame();moveThumb(true)});
+  const up=()=>{if(!d)return;d=null;h.classList.remove("drag");document.body.classList.remove("resizing","laydrag");$("right").classList.remove("edgehint");save();sizeFrame()};
+  h.addEventListener("pointerup",up);h.addEventListener("pointercancel",up);
+  h.addEventListener("dblclick",()=>{const df=layDef();if(h.dataset.e[0]==="p")S.lay.pw=df.pw;else S.lay.rw=df.rw;save();sizeFrame();moveThumb(true)});
+  h.addEventListener("pointerenter",()=>{if(h.dataset.e[0]==="r")$("right").classList.add("edgehint")});
+  h.addEventListener("pointerleave",()=>{if(!d)$("right").classList.remove("edgehint")})}})();
+function resetLayout(){S.lay=null;delete S.lw;S.pph=0;S.sch=0;S.pos="mid";S.hmode="";updHm();applyPH();save();sizeFrame();moveThumb(true);layoutLeft()}
 
 P.addEventListener("input",()=>{grow();requestAnimationFrame(layoutLeft);if(!peekJob){draft=P.value;save()}updPrompt()});
 let chipsOpen=false;

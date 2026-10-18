@@ -156,7 +156,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
      const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.3*env(t-gi.met,1300)+(f=>f<0?0:f<1?.8*f*f*f:f<1.15?.8+.6*(x=>x*x*(3-2*x))((f-1)/.15):1.4*Math.exp(-(f-1.15)*2.2))((t-finishAt)/1400);   /* builds with the crescendo, exhales at the release */
      const a=fr.getBoundingClientRect(),dp=devicePixelRatio||1,R=95,   /* the bloom's reach (css px): 130 read too wide on screen */cw=Math.round((a.width+2*R)*dp),ch=Math.round((a.height+2*R)*dp);
      if(fg.width!==cw||fg.height!==ch){fg.width=cw;fg.height=ch}
-     const fs=fg.style;fs.left=(a.left-R)+"px";fs.top=(a.top-R)+"px";fs.width=(a.width+2*R)+"px";fs.height=(a.height+2*R)+"px";fs.opacity="1";
+     const fs=fg.style;fs.left=(a.left-R)+"px";fs.top=(a.top-R)+"px";fs.width=(a.width+2*R)+"px";fs.height=(a.height+2*R)+"px";fs.opacity="1";fs.display="";
      const X=R*dp,Y=R*dp,FW=a.width*dp,FH=a.height*dp,rad=(parseFloat(getComputedStyle(fr).borderTopLeftRadius)||24)*dp,hc=cols.map(toHex);
      const k=fgA*(reduce?.75+.25*Math.sin(t/1800):1);                                                // reduced motion: a still glow that gently breathes
      fgc.clearRect(0,0,cw,ch);
@@ -165,7 +165,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
      fgc.globalCompositeOperation="source-atop";fgc.globalAlpha=.05;fgc.fillStyle=fgc.createPattern(dith,"repeat");fgc.fillRect(0,0,cw,ch);   // a whisper of grain: no banding on near-black
      fgc.globalCompositeOperation="destination-out";fgc.globalAlpha=1;fgc.beginPath();fgc.roundRect(X+dp,Y+dp,FW-2*dp,FH-2*dp,Math.max(0,rad-dp));fgc.fill();   // nothing behind the image itself
      fgc.globalCompositeOperation="source-over";fr.classList.add("halo")}}
-   else if(fg.style.opacity!=="0"){fg.style.opacity="0";fr.classList.remove("halo")}}
+   else if(fg.style.opacity!=="0"||fg.style.display!=="none"){fg.style.opacity="0";fg.style.display="none";fr.classList.remove("halo")}   /* gone, not just transparent: a blended layer left in the page makes Edge composite the background as a separate surface (a seam showed through every glass panel) */}
   e.clearRect(0,0,W,H);
   if(W&&S.view==="gen"&&skin().cover==="camera")cam.drawFlash(e,W,H,t,cols.map(toHex));
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}

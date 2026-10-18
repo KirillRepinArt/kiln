@@ -16,7 +16,8 @@ $("rLayout").onclick=()=>{resetLayout();showView("gen");$("modal").classList.rem
 /* the Layout button by the gear: a small menu (docking joins it in Phase 2a step 2) */
 (function(){const b=$("layBtn"),m=$("layMenu");b.onclick=e=>{e.stopPropagation();m.classList.toggle("show")};
  document.addEventListener("click",e=>{if(!e.target.closest("#layMenu"))m.classList.remove("show")});
- m.addEventListener("click",e=>{const a=e.target.closest("[data-lay]");if(!a)return;m.classList.remove("show");if(a.dataset.lay==="reset"){resetLayout();toast("Layout reset — the default sizes, centred")}})})();
+ m.addEventListener("click",e=>{const a=e.target.closest("[data-lay]");if(!a)return;m.classList.remove("show");if(a.dataset.lay==="reset"){resetLayout();toast("Sizes reset — the default widths, centred")}else setDock(a.dataset.lay)});
+ window.layMenuUI=()=>m.querySelectorAll("[data-lay]").forEach(o=>o.classList.toggle("on",o.dataset.lay===(S.dock||"left")));layMenuUI();b.addEventListener("click",layMenuUI)})();
 $("rAll").onclick=()=>{if(!confirm("Reset everything? Prompt, name, settings, favourites, thumbnails and layout go back to defaults."))return;try{localStorage.clear()}catch(e){}location.reload()};
 S.set=S.set||{};document.querySelectorAll('[data-set]').forEach(el=>{const k=el.dataset.set;if(S.set[k]!=null)el.value=S.set[k];else S.set[k]=el.value;
  el.addEventListener('change',()=>{S.set[k]=el.value;save();if(k==="font"){S.set.fontPicked=1;save();applyFont()}if(k==="glass")applyGlass()})});

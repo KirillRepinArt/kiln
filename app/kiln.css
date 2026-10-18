@@ -677,3 +677,23 @@ body.laydrag *{transition:none!important}
 .app{transition:grid-template-columns .25s cubic-bezier(.4,0,.2,1)}
 .tabs{transition:width .25s cubic-bezier(.4,0,.2,1),transform .4s var(--ease)}
 .right .tabs{transition:width .25s cubic-bezier(.4,0,.2,1),transform .4s var(--ease)}
+
+/* ---- Phase 2a step 2: docking ---- */
+/* the prompt on the right: the grid mirrored, the edges on the other sides */
+.app.pright{grid-template-columns:var(--mL,1fr) var(--rw,660px) var(--gap,18px) var(--pw,680px) var(--mR,1fr)!important}
+.app.pright>.lcol{grid-column:4}.app.pright>.right{grid-column:2}
+.app.pright .pedge.po{left:auto;right:-8px}.app.pright .pedge.pi{right:auto;left:-8px}
+.app.pright .pedge.ri{left:auto;right:-8px}.app.pright .pedge.ro{right:auto;left:-8px}
+.app.pright .left,.app.pright .ltitle,.app.pright .ghost,.app.pright #lcol>.chips{right:auto;left:0}
+/* the drop zones while you drag the prompt by its name line */
+.dockzone{position:fixed;z-index:90;display:none;align-items:center;justify-content:center;pointer-events:none;border:2px dashed rgba(255,255,255,.22);border-radius:24px;
+ background:rgba(255,255,255,.03);color:rgba(255,255,255,.55);font-size:14px;font-weight:500;transition:background .15s,border-color .15s,color .15s}
+.dockzone.show{display:flex}.dockzone.near{background:color-mix(in oklab,var(--a1) 14%,transparent);border-color:color-mix(in oklab,var(--a1) 70%,transparent);color:#fff}
+.dockzone.left{left:12px;top:12px;bottom:22%;width:28%}.dockzone.right{right:12px;top:12px;bottom:22%;width:28%}.dockzone.below{left:12px;right:12px;bottom:12px;height:18%}
+.laymenu .lsep{height:1px;margin:6px 4px;background:rgba(255,255,255,.08)}
+.laymenu .opt.on{font-weight:600;color:#fff}.laymenu .opt.on::before{content:"✓";margin-right:6px;color:var(--a1)}
+/* side by side, everything sits in row 1: auto-placement can't go back left, so with the prompt on the right the image
+   area would wrap onto a second row */
+.app:not(.stacked)>.lcol,.app:not(.stacked)>.split,.app:not(.stacked)>.right{grid-row:1}
+.laymenu .opt[data-lay]::before{content:"";display:inline-block;width:18px;flex:none}.laymenu .opt.on::before{content:"✓";margin-right:0;color:var(--a1)}
+.laymenu .opt[data-lay]{justify-content:flex-start;gap:0}.laymenu .opt small{margin-left:auto;padding-left:16px}

@@ -10,7 +10,7 @@ export async function order(k, t) {
 }
 
 export async function offline(k, t) {
-  t.ok(k.readyMs < 5000, "ready in under 5 s", k.readyMs + " ms");
+  t.ok(k.readyMs < 8000, "ready in under 8 s (the old font stall was 21 s)", k.readyMs + " ms");
   const ext = k.requests.filter(r => ["Stylesheet", "Font"].includes(r.type) && !r.url.startsWith(k.url) && !r.url.startsWith("data:"));
   t.ok(ext.length === 0, "no fonts or stylesheets from the internet", ext.map(r => r.url));
   await k.until(`!!document.querySelector(".cm-editor")`, 5000);

@@ -63,13 +63,29 @@ function layNow(){const g=layGeo();if(!lay.last||lay.drag)return g;
    are the same boundary): one panel grows exactly as much as the other shrinks. po / ro = the outer edges: that panel
    changes and the pair is held still (off) so the edge stays under the cursor; layRelease() lets it re-centre.
    In Generating the right-side width written is the picture's cap (iw), elsewhere the panel width (rw). */
-function layDrag(edge,g0,dx){const g=Object.assign({},g0),W=layW();
+function layDrag(edge,g0,dx){const g=Object.assign({},g0),W=layW(),R=document.querySelector(".app").classList.contains("pright");
+ if(R){dx=-dx;if(edge==="po"||edge==="ro")return layDragR(edge,g0,dx,W)}   /* prompt on the right: everything mirrored */
  if(edge==="dv"){const pw=Math.max(PWMIN,Math.min(CARDMAX,g0.pw+g0.rw-g0.minR,g0.pw+dx));g.rw=g0.rw-(pw-g0.pw);g.pw=pw}
  if(edge==="po"){const pw=Math.max(PWMIN,Math.min(CARDMAX,g0.pw+g0.mL,g0.pw-dx));g.pw=pw;const W2=g.W-GAP-g.pw-g.rw;g.off=(g0.mL-(pw-g0.pw))-W2/2}
  if(edge==="ro"){const rw=Math.max(g0.minR,Math.min(g0.rw+g0.mR,g0.rw+dx));g.rw=rw;const W2=g.W-GAP-g.pw-g.rw;g.off=g0.mL-W2/2}
  g.mL=g.mR=Math.max(0,(g.W-GAP-g.pw-g.rw)/2);
  S.lay.pw=g.pw/W;if(g0.gen)S.lay.iw=g.rw/W;else S.lay.rw=g.rw/W;layApply(g);return g}
+/* prompt on the right: the left margin sits next to the image area's outer edge */
+function layDragR(edge,g0,dx,W){const g=Object.assign({},g0);
+ if(edge==="po"){const pw=Math.max(PWMIN,Math.min(CARDMAX,g0.pw+g0.mR,g0.pw-dx));g.pw=pw;const W2=g.W-GAP-g.pw-g.rw;g.off=g0.mL-W2/2}
+ if(edge==="ro"){const rw=Math.max(g0.minR,Math.min(g0.rw+g0.mL,g0.rw+dx));g.rw=rw;const W2=g.W-GAP-g.pw-g.rw;g.off=(g0.mL-(rw-g0.rw))-W2/2}   /* dx arrives mirrored: leftwards grows it */
+ g.mL=g.mR=Math.max(0,(g.W-GAP-g.pw-g.rw)/2);
+ S.lay.pw=g.pw/W;if(g0.gen)S.lay.iw=g.rw/W;else S.lay.rw=g.rw/W;layApply(g);return g}
 function layRelease(){lay.drag=false;sizeFrame()}
+/* the prompt's place: "left" / "right" beside the picture (horizontal) or "below" it (vertical). Switching slides both
+   panels from where they were to where they go. */
+function setDock(z){if((S.dock||"left")===z)return;
+ const els=[$("lcol"),$("right")],r0=els.map(e=>e.getBoundingClientRect());S.dock=z;save();
+ const L=$("left"),T=$("ltitle");L.classList.add("nodur");T.classList.add("nodur");lyFrozen=false;lyTop=null;lyCy=null;
+ applyMode();sizeFrame();layoutLeft();moveThumb(true);
+ els.forEach((e,i)=>{const r=e.getBoundingClientRect();try{e.animate([{transform:`translate(${r0[i].left-r.left}px,${r0[i].top-r.top}px)`,opacity:.6},{transform:"none",opacity:1}],{duration:380,easing:"cubic-bezier(.4,0,.2,1)"})}catch(_){}});
+ requestAnimationFrame(()=>{sizeFrame();layoutLeft();requestAnimationFrame(()=>{L.classList.remove("nodur");T.classList.remove("nodur")})});
+ if(window.layMenuUI)layMenuUI()}
 function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
  if(!stk&&!sizeFrame.hold)layApply(layNow());
  /* the target geometry, not a measurement: the grid may be mid-glide */

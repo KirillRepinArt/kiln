@@ -50,7 +50,8 @@ function peekButtons(){const j=peekJob;if(!j)return;const pSame=(j.raw||j.prompt
  $("pkSeed").style.display=all.style.display==="none"||all.dataset.m==="seed"?"none":"";
  $("peekLbl").textContent=`#${j.id}${j.status==="running"?" · generating":""}${pSame&&sSame&&seedSame?" · same as your draft":""}`}
 function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classList.add("peek");P.scrollTop=0;
- const n=$("pname");n.value=j.name||"";n.placeholder=j.status==="pending"?"Name this job":"Unnamed";n.readOnly=j.status!=="pending";$("pnSave").classList.remove("show");
+ const n=$("pname");delete n.dataset.title;n.value=j.name||"";n.placeholder=j.status==="pending"?"Name this job":"Unnamed";n.readOnly=!(j.status==="pending"||j.status==="done"&&j.file&&!j.missing);$("pnSave").classList.remove("show");
+ $("pnSave").textContent=j.status==="done"?"Rename":"Save name";fnShow(false);
  peekButtons();$("peekbar").classList.add("show");$("left").classList.add("peeking");renderChips();renderPills();updPrompt();layoutLeft()}
 /* Two ways out of a browse: the prompt's ✕ (or Esc in the editor) closes only the prompt — your draft comes back, the
    image stays, and the arrows keep the prompt closed (peekOff) until the browse ends; the image's ✕ (or Esc elsewhere)
@@ -61,7 +62,17 @@ function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){if(window.xfad
  if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
  const n=$("pname");n.value=S.pname||"";n.placeholder="Add name";n.readOnly=false;
  $("peekbar").classList.remove("show");$("pnSave").classList.remove("show");$("left").classList.remove("peeking");renderChips();renderPills();updPrompt();layoutLeft()}
-function saveJobName(){const j=peekJob;if(!j||j.status!=="pending")return;const v=$("pname").value.trim();renameJob(j,v);j.name=v;$("pnSave").classList.remove("show")}
+function saveJobName(){const j=peekJob;if(!j)return;const v=$("pname").value.trim();
+ if(j.status==="done"){if(!window.renameFile){toast("Renaming needs the Kiln server");return}$("pnSave").classList.remove("show");renameFile(j,v).then(ok=>{if(!ok)$("pname").value=j.name||""});$("pname").blur();return}
+ if(j.status!=="pending")return;renameJob(j,v);j.name=v;$("pnSave").classList.remove("show")}
+/* hovering a finished picture's title shows its file name in place: the title as it is on disk (lower case, dashes),
+   its number and .png on either side, and the job's #. Editing it renames the file (the series and the next number) */
+function fnShow(on){const j=peekJob,n=$("pname"),l=document.querySelector(".plbl");
+ if(!j||j.status!=="done"||!j.file||document.activeElement===n||$("pnSave").classList.contains("show"))on=false;
+ if(on){const m=j.file.match(/^(.*?)(-\d{3,}(?:_x[\d.]+)?)(\.png)$/i);if(n.dataset.title==null)n.dataset.title=n.value;
+  n.value=m?m[1]:j.file.replace(/\.png$/i,"");$("fnPre").textContent=`#${j.id}`;$("fnSuf").textContent=m?m[2]+m[3]:".png";l.classList.add("fnon");n.dataset.tipSaved=n.dataset.tip||"";n.dataset.tip=""}
+ else{if(n.dataset.title!=null){n.value=n.dataset.title;delete n.dataset.title}if(n.dataset.tipSaved!=null){n.dataset.tip=n.dataset.tipSaved;delete n.dataset.tipSaved}l.classList.remove("fnon")}}   /* the file name is on show: no tooltip repeating it */
+(function(){const l=document.querySelector(".plbl"),n=$("pname");l.addEventListener("mouseenter",()=>fnShow(true));l.addEventListener("mouseleave",()=>fnShow(false));n.addEventListener("focus",()=>fnShow(false))})();
 $("pnSave").onclick=e=>{e.stopPropagation();saveJobName()};
 /* Q5: hover a finished thumbnail for a bigger look */
 (function(){const pop=document.createElement("div");pop.id="qpop";document.body.appendChild(pop);let t=null,cur=null;

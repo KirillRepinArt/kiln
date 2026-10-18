@@ -47,7 +47,10 @@ function status(){const j=current();
  const src=(S.view==="gen"&&gm!=="off"&&!(j&&skin().cover==="camera")&&!$("frame").classList.contains("held")&&(j||(gm==="always"&&shownDone())))?$("cv"):null;   /* Aurora has its frame glow instead */
  if(src&&src.width){ambC.imageSmoothingQuality="high";ambC.drawImage(src,0,0,12,12);amb.classList.add("on")}else amb.classList.remove("on");
  let p=null;
- {const pl=$("play");pl.classList.toggle("gen",!!j);pl.classList.toggle("running",!!j&&(S.view!=="gen"||!!browsed()));   /* the ring: only where the progress bar is out of sight */pl.classList.toggle("stopping",!!(j&&j.stopping));
+ {const gt=document.querySelector('.tab[data-v="gen"]');if(document.body.classList.contains("jobrun")!==!!j){document.body.classList.toggle("jobrun",!!j);requestAnimationFrame(()=>moveThumb(true))}   /* the ring widens the tab: the highlight follows */
+  if(gt){if(j){const q=jobProgress(j);document.documentElement.style.setProperty("--p",Math.max(.02,Math.min(1,q.p||0)));gt.dataset.tip=`Rendering #${j.id} · step ${Math.min(j.step+1,j.steps)}/${j.steps}${q.left!=null?` · ~${fmt(q.left)} left`:""}`}
+   else gt.dataset.tip="The image being made"}}
+ {const pl=$("play");pl.classList.toggle("gen",!!j);pl.classList.toggle("running",false);   /* the ring: only where the progress bar is out of sight */pl.classList.toggle("stopping",!!(j&&j.stopping));
   if(j){const q=jobProgress(j),v=Math.max(.02,Math.min(1,q.p||0)),was=+pl.dataset.pj||0;
    if(was!==j.id){const rg=pl.querySelector(".pring");pl.dataset.pj=j.id;rg.style.transition="none";pl.style.setProperty("--p",v);void rg.offsetWidth;rg.style.transition=""}   /* a new job starts from empty, not by sweeping back */
    else pl.style.setProperty("--p",v)}}

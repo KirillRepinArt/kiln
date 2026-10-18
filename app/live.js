@@ -17,7 +17,7 @@
  function drawTo(cv,im,natural){const dpr=devicePixelRatio||1,iw=im.naturalWidth,ih=im.naturalHeight;
   if(natural){if(cv.width!==iw||cv.height!==ih){cv.width=iw;cv.height=ih}const c=cv.getContext("2d");c.drawImage(im,0,0);return}
   // the canvas takes its box's shape; the image keeps its own (a preview of another shape never gets stretched)
-  const cw=cv.clientWidth||300,ch=cv.clientHeight||Math.round(cw*ih/iw);const W=Math.max(64,Math.round(cw*dpr)),H=Math.max(64,Math.round(ch*dpr));
+  const fr=cv.id==="cv"&&$("frame").style,cw=(fr&&parseFloat(fr.width))||cv.clientWidth||300,ch=(fr&&parseFloat(fr.height))||cv.clientHeight||Math.round(cw*ih/iw);const W=Math.max(64,Math.round(cw*dpr)),H=Math.max(64,Math.round(ch*dpr));
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}const c=cv.getContext("2d");c.imageSmoothingQuality="high";c.clearRect(0,0,W,H);
   const k=cv.id==="cv"?Math.min(W/iw,H/ih):Math.max(W/iw,H/ih);c.drawImage(im,(W-iw*k)/2,(H-ih*k)/2,iw*k,ih*k)}
  /* a canvas only ever shows the image it was last asked for: while that one loads it is blank (never the previous
@@ -41,7 +41,7 @@
   if(e.i.complete&&e.i.naturalWidth){drawTo(cv,e.i,nat);xfadeGo(cv,j.id);return}
   if(cv.id==="cv"){cv.width=1;cv.height=1}
   e.p.then(im=>{if(cv.dataset.want!=String(j.id))return;if(im){drawTo(cv,im,nat);xfadeGo(cv,j.id)}else{delete imgs[u];missing(cv,j);xfadeGo(cv,j.id)}})};
- function missing(cv,j){const dpr=devicePixelRatio||1,W=Math.max(64,Math.round((cv.clientWidth||300)*dpr)),H=Math.max(64,Math.round((cv.clientHeight||300)*dpr));
+ function missing(cv,j){const dpr=devicePixelRatio||1,fr=cv.id==="cv"&&$("frame").style,W=Math.max(64,Math.round(((fr&&parseFloat(fr.width))||cv.clientWidth||300)*dpr)),H=Math.max(64,Math.round(((fr&&parseFloat(fr.height))||cv.clientHeight||300)*dpr));   /* the box's target size (it may be mid-glide) */
   cv.width=W;cv.height=H;const c=cv.getContext("2d");c.fillStyle="#0b0b0e";c.fillRect(0,0,W,H)}   /* the words and the ways back are on the card (#missCard) */
  /* the missing-file card: what can bring it back, best first */
  const inBin={};
@@ -105,6 +105,9 @@
  window.removeJob=async j=>{if(!j)return;await api(`/api/jobs/${j.id}/remove`,{});poll()};
  window.removeMissing=async()=>{await api("/api/remove-missing",{});poll()};
  window.setPaused=async p=>{await api("/api/pause",{paused:p});window.qPaused=p;sig="";poll();toast(p?"Queue paused — the current image finishes, nothing new starts":"Queue resumed")};
+ window.renameFile=async(j,n)=>{let r;try{r=await api(`/api/jobs/${j.id}/rename`,{name:n})}catch(e){r={error:"Kiln server not reachable"}}
+  if(r.error){toast(`Couldn't rename: ${r.error}`);return false}if(r.file===r.old){return true}const back={name:j.name||"",as_file:r.old};
+  toast(`Renamed to ${r.file}`,"Undo",async()=>{await api(`/api/jobs/${j.id}/rename`,back);poll()});poll();return true};
  window.renameJob=async(j,n)=>{await api(`/api/jobs/${j.id}/name`,{name:n});toast(n?`Name saved — it will be saved as ${slugify(n)}-NNN.png`:"Name cleared — it will be named by date and seed");poll()};
  /* Q1: delete = to the Recycle Bin, with Undo (the server waits 12 s before it really goes) */
  window.deleteJob=async j=>{if(!j)return;const L=doneList(),i=L.findIndex(x=>x.id===j.id),nb=L[i-1]||L[i+1]||null;   /* where to land: the one before, else after */
@@ -236,7 +239,7 @@
     else{refreshEst();$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`}
     /* the empty frame says what's next: the shape and size, and how long it takes (or why nothing starts) */
     {const [w,h]=SIZES[S.mp][S.ar],T=!forgeOk?(forgeStarting?"Starting Forge…":"Forge isn't running"):`Next: ${S.ar} · ${w}×${h}`,
-      Ss=!forgeOk?(forgeStarting?"jobs start when it's ready":"the queue waits for it"):`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`;
+      Ss=!forgeOk?(forgeStarting?"jobs start when it's ready":"the queue waits for it"):`Estimated time: ~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))}`;
      if($("idleT").textContent!==T)$("idleT").textContent=T;if($("idleS").textContent!==Ss)$("idleS").textContent=Ss}
    prog.classList.toggle("paused",!!window.qPaused&&jobs.some(x=>x.status==="pending"))}
   if(!j||browsed()){const d=shownDone();

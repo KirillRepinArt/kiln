@@ -96,20 +96,20 @@ export async function columnCap(k, t) {
 columnCap.opts = { width: 2400, height: 1000 };
 
 export async function startRing(k, t) {
-  t.ok(await k.ev(`getComputedStyle(document.querySelector(".play .pring")).opacity`) === "0", "idle: no ring on Start");
+  const ring = `getComputedStyle(document.querySelector('.tab[data-v="gen"] .tring')).display!=="none"`;
+  t.ok(!(await k.ev(ring)), "idle: no ring on the Generating tab");
   await k.job("[fill:224433] ring", { steps: 4 });
   t.ok(await k.until(`$("play").classList.contains("gen")`, 10000, 100), "a job runs: Start's triangle takes the flowing gradient");
   t.ok(/playFlow/.test(await k.ev(`getComputedStyle(document.querySelector(".play svg path")).fill`)), "the bar's gradient");
-  await k.sleep(300);
-  t.ok(!(await k.ev(`$("play").classList.contains("running")`)), "in Generating no ring: the progress bar is right there");
-  await k.ev(`(showView("queue"),1)`);
-  t.ok(await k.until(`$("play").classList.contains("running")`, 3000, 100), "on another tab the ring shows");
+  t.ok(await k.until(ring, 3000, 100), "the Generating tab shows the job's progress ring");
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".play .pring")).display==="none"&&getComputedStyle(document.querySelector(".controls .play .badge")).display==="none"`), "Start carries no ring and no count any more");
+  await k.ev(`(showView("queue"),1)`); t.ok(await k.ev(ring), "on another tab too");
   await k.until(`current()&&current().step>=1`, 15000, 100); await k.sleep(600);
-  const p1 = +(await k.ev(`getComputedStyle($("play")).getPropertyValue("--p")`));
+  const p1 = +(await k.ev(`getComputedStyle(document.documentElement).getPropertyValue("--p")`));
   await k.until(`current()&&current().step>=3`, 15000, 100); await k.sleep(600);
-  const p2 = +(await k.ev(`getComputedStyle($("play")).getPropertyValue("--p")`));
+  const p2 = +(await k.ev(`getComputedStyle(document.documentElement).getPropertyValue("--p")`));
   t.ok(p1 > 0 && p2 > p1, "it fills with the job's progress", { p1, p2 });
-  t.ok(await k.until(`!current()&&!$("play").classList.contains("running")&&!$("play").classList.contains("gen")`, 15000, 100), "done: the ring and the gradient go");
+  t.ok(await k.until(`!current()&&!document.body.classList.contains("jobrun")&&!$("play").classList.contains("gen")`, 15000, 100), "done: the ring and the gradient go");
 }
 startRing.opts = { step: 1 };
 
@@ -147,27 +147,20 @@ heightIsALimit.opts = { width: 2000, height: 1023 };
 
 export async function runningThumb(k, t) {
   await k.job("[fill:446688] first", { steps: 2 }); await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
-  await k.mouse(2, 2); await k.sleep(400);
-  t.ok(await k.ev(`getComputedStyle(document.querySelector(".prog .track")).visibility`) === "hidden" || await k.ev(`getComputedStyle(document.querySelector(".prog .track")).display`) === "none", "idle with the result on show: no empty track");
-  t.ok(new RegExp("^#" + await k.ev(`lastDone().id`) + " · ").test(await k.ev(`$("ptxt").textContent`)), "but its caption", await k.ev(`$("ptxt").textContent`));
-  await k.ev(`(closeShown(),1)`); await k.sleep(600);
+  await k.ev(`(closeShown(),1)`); await k.mouse(2, 2); await k.sleep(600);
   t.ok(await k.ev(`document.body.classList.contains("norow")&&getComputedStyle($("prog")).visibility==="hidden"`), "an empty screen: no status row at all");
-  t.ok(/^Next: /.test(await k.ev(`$("idleT").textContent`)) && /per image/.test(await k.ev(`$("idleS").textContent`)), "the frame says what's next and how long it takes", [await k.ev(`$("idleT").textContent`), await k.ev(`$("idleS").textContent`)]);
-  await k.mouse(2, 2); const fr = await R(k, "#frame"); await k.mouse(fr.left + 40, fr.top + fr.height / 2); await k.sleep(500);
+  t.ok(/^Next: /.test(await k.ev(`$("idleT").textContent`)) && /^Estimated time: ~/.test(await k.ev(`$("idleS").textContent`)), "the frame says what's next and the estimated time, as proper lines", [await k.ev(`$("idleT").textContent`), await k.ev(`$("idleS").textContent`)]);
+  const fr = await R(k, "#frame"); await k.mouse(fr.left + 40, fr.top + fr.height / 2); await k.sleep(500);
   t.ok(await k.ev(`getComputedStyle(document.querySelector(".gnav.prev")).opacity==="1"&&!document.querySelector(".gnav.prev").classList.contains("off")`), "and ← into the Gallery is there");
   await k.mouse(2, 2);
-  await k.job("[fill:884422] second", { steps: 6 }); await k.until(`current()&&current().preview_rev>0`, 20000, 100);
-  t.ok(!(await k.ev(`$("prog").classList.contains("bgjob")`)) && await k.ev(`getComputedStyle(document.querySelector(".prog .track")).visibility`) === "visible", "watching the render: the bar, no chip");
-  await k.ev(`(browseTo(lastDone()),1)`); await k.sleep(1500);
-  const b = await k.ev(`lastDone().id`), txt = await k.ev(`$("ptxt").textContent`);
-  t.ok(new RegExp("^#" + b + " · ").test(txt) && txt.includes(await k.ev(`lastDone().file`)), "browsing: the row is the picture's caption", txt);
-  t.ok(await k.ev(`getComputedStyle(document.querySelector(".prog .track")).visibility`) === "hidden", "no bar under a finished picture");
-  t.ok(await k.ev(`getComputedStyle($("pchip")).display`) !== "none", "the running job is a chip at the row's end");
-  t.ok(await k.until(`$("pthImg").naturalWidth>0`, 8000, 100), "with its live render");
-  t.ok(/^\d\/6/.test(await k.ev(`$("pchipT").textContent`)), "and its step", await k.ev(`$("pchipT").textContent`));
-  t.ok(await k.until(`$("play").classList.contains("running")`, 2000, 100), "the ring on Start shows (the bar is out of sight)");
-  await k.ev(`($("pchip").click(),1)`); await k.sleep(400);
-  t.ok(await k.ev(`browseId===null&&!$("prog").classList.contains("bgjob")`), "clicking the chip goes back to the render");
+  await k.job("[fill:884422] second", { steps: 6 }); await k.until(`current()&&current().preview_rev>0`, 20000, 100); await k.sleep(400);
+  t.ok(await k.ev(`!document.body.classList.contains("norow")&&getComputedStyle(document.querySelector(".prog .track")).visibility==="visible"`), "watching the render: the bar");
+  await k.ev(`(browseTo(lastDone()),1)`); await k.sleep(900);
+  t.ok(await k.ev(`document.body.classList.contains("norow")`), "browsing during a job: no row under the picture (no caption, no chip)");
+  t.ok(await k.ev(`getComputedStyle(document.querySelector('.tab[data-v="gen"] .tring')).display!=="none"`), "the job's progress is on the Generating tab");
+  t.ok(/^Rendering #\d+ · step \d\/6/.test(await k.ev(`document.querySelector('.tab[data-v="gen"]').dataset.tip`)), "its tooltip says which job and how far", await k.ev(`document.querySelector('.tab[data-v="gen"]').dataset.tip`));
+  await k.ev(`(document.querySelector('.tab[data-v="gen"]').click(),1)`); await k.sleep(400);
+  t.ok(await k.ev(`browseId===null`), "clicking it goes back to the render");
 }
 runningThumb.opts = { step: 1.2 };
 
@@ -193,6 +186,7 @@ textFillsBox.opts = { width: 2400, height: 1000 };
 export async function arrowsHold(k, t) {
   await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=1`, 30000);
   await k.job("[fill:884422] tall", { ar: "3:4", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  await k.job("[fill:228844] wide again", { ar: "16:9", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=3`, 30000);
   t.ok(await k.ev(`document.querySelector(".tab").dataset.v==="gallery"&&document.querySelectorAll(".tab")[1].dataset.v==="gen"`), "Gallery is the tab left of Generating (the tabs read like the timeline)");
   const on = () => k.ev(`document.querySelector(".tab.on").dataset.v`);
   t.ok(await on() === "gen" && await k.ev(`browseId===null`), "at the start: Generating, the live view");
@@ -216,8 +210,10 @@ export async function arrowsHold(k, t) {
   t.ok(Math.abs(f1.width / f1.height - f.width / f.height) > .3, "the picture changed shape", { f: [f.width, f.height], f1: [f1.width, f1.height] });
   t.near(p1.left, p0.left, 1, "the arrow under the pointer held still");
   await k.sleep(1500);
+  t.near((await R(k, ".gnav.prev")).left, p0.left, 1, "it stays as long as the pointer is on it — no timer");
+  await k.mouse(x, y + 120); await k.sleep(700);
   const p2 = await R(k, ".gnav.prev"), f2 = await R(k, "#frame");
-  t.near(p2.left, f2.left + 10, 2, "a moment after the last click it moved to the new picture's edge");
+  t.near(p2.left, f2.left + 10, 2, "moving off it, it slides to the new picture's edge");
 }
 arrowsHold.opts = { width: 2000, height: 1023, step: 0.05 };
 
@@ -232,3 +228,24 @@ export async function crossFade(k, t) {
   t.ok(await k.ev(`$("cv").width>2`), "the new one is drawn under it");
 }
 crossFade.opts = { width: 2000, height: 1023, step: 0.05 };
+
+export async function simpleRename(k, t) {
+  const { readFileSync, existsSync } = await import("node:fs"), { join } = await import("node:path");
+  await k.job("[fill:446688] one", { ar: "16:9", steps: 2, name: "Castle" }); await k.until(`!current()&&jobs.some(j=>j.status==="done"&&j.file)`, 30000);
+  const f0 = await k.ev(`lastDone().file`);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.sleep(600);
+  await k.ev(`(document.querySelector(".plbl").dispatchEvent(new MouseEvent("mouseenter")),1)`);
+  t.ok(await k.ev(`$("fnPre").textContent==="#"+lastDone().id&&$("pname").value==="castle"&&$("fnSuf").textContent==="-001.png"`), "hovering the title shows the file name in place", [await k.ev(`$("fnPre").textContent`), await k.ev(`$("pname").value`), await k.ev(`$("fnSuf").textContent`)]);
+  await k.ev(`(document.querySelector(".plbl").dispatchEvent(new MouseEvent("mouseleave")),1)`);
+  t.ok(await k.ev(`$("pname").value`) === "Castle", "and the title again when you leave");
+  await k.ev(`($("pname").focus(),$("pname").value="Rome",$("pname").dispatchEvent(new Event("input")),1)`);
+  t.ok(await k.ev(`$("pnSave").classList.contains("show")&&$("pnSave").textContent==="Rename"`), "editing it offers Rename");
+  await k.ev(`($("pnSave").click(),1)`);
+  t.ok(await k.until(`lastDone().file==="rome-001.png"`, 6000, 100), "the file joins the series you typed, as its next number", await k.ev(`lastDone().file`));
+  t.ok(existsSync(join(k.out, "rome-001.png")) && !existsSync(join(k.out, f0)), "renamed on disk");
+  t.ok(readFileSync(join(k.out, "rome-001.png")).includes("Rome") && !readFileSync(join(k.out, "rome-001.png")).includes("Castle"), "the name inside the PNG follows");
+  await k.ev(`($("toastBtn").click(),1)`);
+  t.ok(await k.until(`lastDone().file===${JSON.stringify(f0)}`, 6000, 100), "Undo puts it back under its old name");
+  t.ok(existsSync(join(k.out, f0)), "on disk too");
+}
+simpleRename.opts = { step: 0.05 };

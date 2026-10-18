@@ -6,7 +6,7 @@
  document.addEventListener("mouseover",e=>{const el=e.target.closest("[title],[data-tip]");if(el===cur)return;hide();if(!el)return;
   if(el.hasAttribute("title")){el.dataset.tip=el.getAttribute("title");el.removeAttribute("title")}
   const text=el.dataset.tip;if(!text)return;cur=el;
-  t=setTimeout(()=>{if(cur!==el||document.querySelector(".pop.show"))return;tip.textContent=text;tip.classList.add("show");
+  t=setTimeout(()=>{if(cur!==el||document.querySelector(".pop.show")&&!el.closest(".pop"))return;tip.textContent=text;tip.classList.add("show");
    const r=el.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight;let x=r.left+r.width/2-w/2,y=r.bottom+8;
    if(y+h>innerHeight-6)y=r.top-h-8;
    if(y<6){y=Math.max(6,Math.min(innerHeight-h-6,my+18));x=mx-w/2} // taller than the window: follow the pointer instead

@@ -268,6 +268,20 @@ def png_add_text(data, key, text):
     return data[:end] + chunk + data[end:]
 
 
+def png_drop_text(data, key):
+    """The PNG without its text chunk(s) named `key` (to replace one)."""
+    out, i = data[:8], 8
+    while i < len(data):
+        n = struct.unpack(">I", data[i:i + 4])[0]
+        tag = data[i + 4:i + 8]
+        if not (tag in (b"tEXt", b"iTXt") and data[i + 8:i + 8 + n].split(b"\0", 1)[0] == key.encode()):
+            out += data[i:i + 12 + n]
+        if tag == b"IEND":
+            break
+        i += 12 + n
+    return out
+
+
 def slugify(name):
     s = re.sub(r"[^\w]+", "-", name.lower(), flags=re.UNICODE).strip("-")
     return s[:60] or "kiln"
@@ -815,6 +829,37 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(409, {"error": f"can't {act} a {j['status']} job"})
                 save_queue()
             return self.reply(200, {"ok": True})
+        m = re.fullmatch(r"/api/jobs/(\d+)/rename", path)
+        if m:  # the simple rename (the full one comes with the Gallery): a finished picture joins the series you type, as
+            # its next number; the name inside the PNG follows; `as_file` puts a file back under an exact name (Undo)
+            jid = int(m.group(1))
+            with lock:
+                j = next((x for x in jobs if x["id"] == jid), None)
+                if not j or j["status"] != "done" or not j.get("file"):
+                    return self.reply(404, {"error": "no such picture"})
+                src = OUT / j["file"]
+                if not src.exists():
+                    return self.reply(409, {"error": "the file is gone"})
+                name = str(b.get("name", "")).strip()[:60]
+                want = Path(str(b.get("as_file") or "")).name
+                new = want if want.endswith(".png") and not (OUT / want).exists() else next_filename(name, j.get("seed_used") or j["spec"].get("seed", 0), take=True)
+                if new == j["file"]:
+                    return self.reply(200, {"file": new, "old": new})
+                data = png_drop_text(src.read_bytes(), "kiln_name")
+                if name:
+                    data = png_add_text(data, "kiln_name", name)
+                (OUT / new).write_bytes(data)
+                try:
+                    src.unlink()
+                except OSError:
+                    (OUT / new).unlink()
+                    return self.reply(409, {"error": "the file is open in another app — close it and try again"})
+                old = j["file"]
+                j["file"] = new
+                j["spec"]["name"] = name
+                j["name"] = name
+                save_queue()
+            return self.reply(200, {"file": new, "old": old})
         m = re.fullmatch(r"/api/jobs/(\d+)/(recycled|restore|saveback)", path)
         if m:  # a file deleted outside Kiln: is it in the Recycle Bin / put it back / write back the copy the page still holds
             jid, act = int(m.group(1)), m.group(2)

@@ -5,12 +5,12 @@ function slider(id,min,max,val,quick,hint){return `<div class="row"><input type=
 function stepsHint(){return `~${fmt(S.steps*SEC_PER_STEP[S.mp])} per image at ${S.mp} MP`}
 function countHint(){return S.n>1?`${S.n} jobs · ~${fmt(S.n*S.steps*SEC_PER_STEP[S.mp])} total · ${S.seedMode==="random"?"random seeds":"seeds count up"}`:"one image"}
 function idleText(){const [w,h]=SIZES[S.mp][S.ar];
- $("idleT").textContent=`Next: ${S.ar} · ${w}×${h}`;$("idleS").textContent=`~${fmt(S.steps*SEC_PER_STEP[S.mp])} per image`}   /* live.js keeps it current */
+ $("idleT").textContent=`Next: ${S.ar} · ${w}×${h}`;$("idleS").textContent=`Estimated time: ~${fmt(S.steps*SEC_PER_STEP[S.mp])}`}   /* live.js keeps it current */
 function renderPills(){idleText();
  const pk=typeof peekJob!=="undefined"&&peekJob; // peeking: the pills show that job's own settings
  const v=pk?{mp:pk.mp,ar:pk.ar,steps:pk.steps,seed:pk.seed!=null?String(pk.seed):"—",n:1}:{mp:S.mp,ar:S.ar,steps:S.steps,seed:S.seedMode==="random"?"Random":String(S.seed),n:S.n};
  $("pSD").dataset.tip=pk?"Click to copy this seed":"Seed — random each job, or fixed";
- $("vMP").textContent=v.mp+" MP";$("vAR").innerHTML=v.ar+'<span class="w"> Ratio</span>';$("vST").innerHTML=v.steps+'<span class="w"> Steps</span>';
+ $("vMP").textContent=v.mp+" MP";{const [pw,ph]=(SIZES[v.mp]||{})[v.ar]||[];$("pMP").dataset.tip=pw?`${v.mp} MP · ${pw}×${ph} px at ${v.ar}`:"Image size (megapixels)"}$("vAR").innerHTML=v.ar+'<span class="w"> Ratio</span>';$("vST").innerHTML=v.steps+'<span class="w"> Steps</span>';
  $("vSD").textContent=v.seed;$("vN").textContent="×"+v.n;
  $("popMP").innerHTML=["0.5","1.0","1.5","2.0"].map(m=>`<div class="opt ${m===S.mp?"on":""}" data-v="${m}">${m} MP <small>~${SEC_PER_STEP[m]}s/step</small></div>`).join("");
  $("popAR").innerHTML=`<div class="rgrid">${RATIOS.map(r=>{const [a,b]=r.split(":").map(Number);const k=34/Math.max(a,b);const [w,h]=SIZES[S.mp][r];

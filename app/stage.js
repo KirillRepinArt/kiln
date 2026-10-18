@@ -18,11 +18,12 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{const v=t.dataset.v;
 /* the picture's arrows live on a fixed layer: while they show they follow the picture's side edges every frame (it
    glides), but while you're clicking through with them they hold their place on SCREEN (Photos / Lightroom: navigation
    never runs away from the pointer); ~1 s after the last click they glide to the new picture's edges */
-(function(){const [pv,nx]=document.querySelectorAll(".gnav");let held=false;
- function tick(){if(document.body.classList.contains("navs")){const hold=lay.overImg&&Date.now()-lay.navAt<1000;
-   if(held&&!hold){document.body.classList.add("navglide");clearTimeout(tick.t);tick.t=setTimeout(()=>document.body.classList.remove("navglide"),460)}held=hold;
-   if(!hold){const r=$("frame").getBoundingClientRect(),y=Math.round(r.top+r.height/2-20)+"px",a=Math.round(r.left+10)+"px",b=Math.round(r.right-50)+"px";
-    if(pv.style.left!==a||pv.style.top!==y){pv.style.left=a;pv.style.top=y}if(nx.style.left!==b||nx.style.top!==y){nx.style.left=b;nx.style.top=y}}}
+(function(){const [pv,nx]=document.querySelectorAll(".gnav");
+ /* the arrow you clicked stays exactly where it is for as long as your pointer is on it (click as fast as you like);
+    move off it and it slides to the picture's edge. The other one follows the picture at once. Keys don't hold anything */
+ for(const el of [pv,nx])el.addEventListener("pointerleave",()=>{if(lay.navHold===el){lay.navHold=null;el.classList.add("glide");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("glide"),460)}});
+ function tick(){if(document.body.classList.contains("navs")){const r=$("frame").getBoundingClientRect(),y=Math.round(r.top+r.height/2-20)+"px";
+   for(const [el,x] of [[pv,Math.round(r.left+10)+"px"],[nx,Math.round(r.right-50)+"px"]])if(el!==lay.navHold&&(el.style.left!==x||el.style.top!==y)){el.style.left=x;el.style.top=y}}
   requestAnimationFrame(tick)}
  requestAnimationFrame(tick)})();
 /* the resize outline: drawn on the page's bottom layer (fixed, under every panel, so nothing clips it), 12 px round
@@ -47,7 +48,7 @@ function fitBox(el,ar,bw,bh){const [a,b]=ar.split(":").map(Number);let w=bw,h=bw
 let BAR=66; // the status block under the picture: 12 + track 10 + 7 + status row 36; a caption: 6 + row 36 + 4; nothing: 24
 const inGallery=()=>S.view==="gen"&&!!browsed();
 /* what the row under the picture is: "bar" (rendering, or a paused queue), "cap" (a finished picture's caption), "none" */
-function rowMode(){if(S.view!=="gen")return"bar";if(browsed())return"cap";if(current()||window.qPaused&&jobs.some(j=>j.status==="pending"))return"bar";return shownDone()?"cap":"none"}
+function rowMode(){if(S.view!=="gen")return"bar";if(browsed())return"none";if(current()||window.qPaused&&jobs.some(j=>j.status==="pending"))return"bar";return"none"}   /* the picture's caption went into the title (hover it) and the job's progress onto the Generating tab */
 /* Wide window = the prompt and the image area as one pair: their own widths (S.lay.pw / S.lay.rw), a fixed 18 px gap,
    the pair centred in the window. A window resize only changes the margins around it. The image area is the same
    rectangle in every tab and for every image shape: Generating fits the picture into it, Queue / LoRAs / PNG Info
@@ -142,7 +143,7 @@ function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.
  const PH=stk?st.height-BAR:picH(),TB=tbW(PH);fitBox(f,ar,SW-(stk?2:1)*TB,PH);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
  /* the picture's canvas is drawn at the box's FINAL size and centred in it: the box may glide to a new shape (its
     edges clip the picture, like a container transform) without the canvas being stretched on the way */
- {const cv=$("cv");cv.style.width=w+"px";cv.style.height=h+"px"}   /* Vertical keeps the column's room on both sides */
+    /* Vertical keeps the column's room on both sides */
  let top=Math.max(0,(st.height-h-BAR)/2);if(lay.vtop!=null)top=lay.vtop;   /* a held top / bottom edge: the other edge stays put */
  /* picture + toolbar as one group, centred in the area; the toolbar on the side away from the prompt */
  const tbLeft=!stk&&document.querySelector(".app").classList.contains("pright"),g0=Math.max(0,Math.floor((SW-w-TB)/2)),left=stk?Math.floor((SW-w)/2):tbLeft?g0+TB:g0;   /* Vertical: the picture itself on the centre line (the prompt box and the tab bar are centred there too); its column hangs in the margin */
@@ -189,7 +190,7 @@ let resultStale=false;function shownDone(){return browsed()||(resultStale?null:l
 let browseId=null;
 function doneList(){return jobs.filter(j=>j.status==="done")}
 function browsed(){if(browseId==null)return null;const b=jobs.find(j=>j.id===browseId&&j.status==="done");if(!b)browseId=null;return b||null}
-function genNav(dir,dry){if(!dry&&lay.overImg){lay.navAt=Date.now();clearTimeout(genNav.t);genNav.t=setTimeout(sizeFrame,1050)}const run=!!current(),b=browsed(),cur=b||(run?null:shownDone()),L=doneList();
+function genNav(dir,dry){const run=!!current(),b=browsed(),cur=b||(run?null:shownDone()),L=doneList();
  let i=cur?L.findIndex(x=>x.id===cur.id):L.length;if(i<0)i=L.length;const n=i+dir;let id;
  if(n<0)return false;if(n>=L.length){if(!b)return false;id=null}else id=L[n].id; // past the newest: back to your working view — clean when idle (the picture lives in the Gallery)
  if(!dry){if(window.xfadeSnap&&(id!=null||run))xfadeSnap();browseId=id;   /* a fade only when something replaces it — into an empty screen the picture just goes */resultStale=id==null&&!run;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else if(!peekOff)loadJob(L[n]);
@@ -197,7 +198,7 @@ function genNav(dir,dry){if(!dry&&lay.overImg){lay.navAt=Date.now();clearTimeout
 function vNav(dir,dry){const L=doneList(),i=L.findIndex(x=>x.id===(V.job&&V.job.id)),t=L[i+dir];if(i<0||!t)return false;if(!dry)openViewer(t);return true}
 function navFn(el){return el.closest("#viewer")?vNav:genNav}
 function updNav(){document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("off",!navFn(b)(+b.dataset.nav,true)))}
-document.addEventListener("click",e=>{const b=e.target.closest(".nav");if(!b)return;e.stopPropagation();navFn(b)(+b.dataset.nav);updNav()},true);
+document.addEventListener("click",e=>{const b=e.target.closest(".nav");if(!b)return;e.stopPropagation();if(b.classList.contains("gnav"))lay.navHold=b;navFn(b)(+b.dataset.nav);updNav()},true);
 document.addEventListener("keydown",e=>{if((e.key!=="ArrowLeft"&&e.key!=="ArrowRight")||e.ctrlKey||e.altKey||e.metaKey||e.shiftKey)return;
  const a=document.activeElement;if(a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))return;if($("modal").classList.contains("show"))return;
  const f=$("viewer").classList.contains("show")?vNav:S.view==="gen"?genNav:null;

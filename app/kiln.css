@@ -890,3 +890,36 @@ body.norow .prog{visibility:hidden}
 body.navglide .gnav{transition:opacity .15s,background .15s,left var(--lay-t) var(--lay-e),top var(--lay-t) var(--lay-e)}
 body.navs .gnav:not(.off){opacity:1}
 body:has(.rpanel.paneled) .gnav,body:has(.frame.missing) .gnav,body:has(.modal.show) .gnav,body:has(.viewer.show) .gnav{display:none}
+
+/* ---- 2026-10-19 round ---- */
+/* the empty frame: what's next and how long, both as proper lines */
+#idleT{font-size:15px;color:#a4a8ad}#idleS{font-size:15px;color:#a4a8ad}
+/* the title and the Reuse bar centred on the box (the bar kept an old 16 px corner offset; the name a -6 px margin) */
+.ltitle .peekbar{right:auto;bottom:auto}.ltitle .pname{margin-left:0}
+/* the file name round the title, on hover */
+.fnpre,.fnsuf{display:none;color:#6f747a;font-size:24px;font-weight:500;white-space:nowrap;letter-spacing:-.01em;font-family:var(--font-title,inherit)}
+.fnpre{margin-right:10px}.plbl.fnon .fnpre,.plbl.fnon .fnsuf{display:inline}
+.plbl.fnon .pname{color:#d6d9dc!important}
+/* the canvas fills the frame's box (cover): while the box glides to another shape, no corner is ever empty */
+.frame #cv,#cvx{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;transform:none!important;object-fit:cover}
+/* no caption row, no job chip (the title has the file name, the Generating tab the progress) */
+.pchip{display:none!important}
+/* Start: no ring, no count (the Queue tab counts, the Generating tab shows the progress) */
+.play .ptrack,.play .pring,.controls .play .badge{display:none!important}
+/* the Generating tab's ring: fills with the running job's progress, in the bar's gradient, wherever you are */
+.tab .tring{display:none;position:relative;width:14px;height:14px;border-radius:50%;flex:none;margin-right:2px;
+ background:conic-gradient(from var(--prot) in oklch,var(--a1),var(--a2),var(--a3),var(--a2),var(--a1));animation:pring 6s linear infinite;
+ -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.6px),#000 calc(100% - 2.2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.18) 0);-webkit-mask-composite:source-in;
+ mask:radial-gradient(farthest-side,transparent calc(100% - 2.6px),#000 calc(100% - 2.2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.18) 0);mask-composite:intersect;transition:--p .45s linear}
+body.jobrun .tab .tring{display:inline-block}
+@media (prefers-reduced-motion:reduce){.tab .tring{animation:none}}
+/* the arrows: only the one you let go of glides */
+.gnav.glide{transition:opacity .15s,background .15s,left var(--lay-t) var(--lay-e),top var(--lay-t) var(--lay-e)}
+/* the layout menu: one row of diagrams */
+.laymenu{min-width:0!important;padding:6px!important}
+.laymenu .lrow{display:flex;align-items:center;gap:2px}
+.laymenu .lrow .opt{width:auto;padding:8px 9px;justify-content:center;border-radius:10px}
+.laymenu .lrow .opt::before{display:none!important}
+.laymenu .lrow .opt.on{background:rgba(255,255,255,.12)}
+.laymenu .lrow .opt .lic{margin-right:0}
+.laymenu .lrow .lsep{width:1px;height:22px;margin:0 4px;background:rgba(255,255,255,.12)}

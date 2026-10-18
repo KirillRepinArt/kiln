@@ -54,20 +54,21 @@ function grow(){} // column widths now come from sizeFrame()
  g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;S.sch=Math.max(200,Math.min(Math.round(innerHeight*.7),Math.round(h0-(e.clientY-y0))));layoutLeft()});
  g.addEventListener("pointerup",()=>{g.classList.remove("drag");document.body.classList.remove("vresizing");save()});
  g.addEventListener("dblclick",()=>{S.sch=0;save();layoutLeft();toast("Image / prompt split back to auto")});})();
-/* the four panel edges (Phase 2a): po/pi = the prompt's outer/inner edge, ri/ro = the right area's inner/outer edge.
-   Drag: only that panel and the free space beside it change. Double-click: that panel back to its default width. */
-(function(){const mk=(parent,e,tip)=>{const h=document.createElement("div");h.className="pedge "+e;h.dataset.e=e;h.dataset.tip=tip;parent.appendChild(h);return h};
- const hs=[mk($("left"),"po","Drag to resize the prompt · double-click for its default width"),mk($("left"),"pi","Drag to resize the prompt · double-click for its default width"),
-  mk($("right"),"ri","Drag to resize the image area · double-click for its default width"),mk($("right"),"ro","Drag to resize the image area · double-click for its default width")];
+/* the panel edges (Phase 2a): po = the prompt's outer edge, dv = the divider between the prompt and the image area
+   (a strip on each side of the gap, both the same boundary), ro = the image area's outer edge. Double-click: that
+   panel back to its default width (the divider: both). */
+(function(){const mk=(parent,e,cls,tip)=>{const h=document.createElement("div");h.className="pedge "+cls;h.dataset.e=e;h.dataset.tip=tip;parent.appendChild(h);return h};
+ const P_TIP="Drag to resize the prompt · double-click for its default width",R_TIP="Drag to resize the image area · double-click for its default width",D_TIP="Drag to share the width between the prompt and the image area · double-click for both defaults";
+ const hs=[mk($("left"),"po","po",P_TIP),mk($("left"),"dv","pi",D_TIP),mk($("right"),"dv","ri",D_TIP),mk($("right"),"ro","ro",R_TIP)];
  let d=null;
  for(const h of hs){
   h.addEventListener("pointerdown",ev=>{if(document.querySelector(".app.stacked")||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);   /* not the card's move gesture */
-   d={e:h.dataset.e,x0:ev.clientX,g0:layGeo()};h.classList.add("drag");document.body.classList.add("resizing","laydrag");if(h.dataset.e[0]==="r")$("right").classList.add("edgehint")});
-  h.addEventListener("pointermove",ev=>{if(!d)return;layDrag(d.e,d.g0,ev.clientX-d.x0);sizeFrame();moveThumb(true)});
-  const up=()=>{if(!d)return;d=null;h.classList.remove("drag");document.body.classList.remove("resizing","laydrag");$("right").classList.remove("edgehint");save();sizeFrame()};
+   d={e:h.dataset.e,x0:ev.clientX,g0:layGeo()};h.classList.add("drag");document.body.classList.add("resizing","laydrag");if(h.dataset.e!=="po")$("right").classList.add("edgehint")});
+  h.addEventListener("pointermove",ev=>{if(!d)return;layDrag(d.e,d.g0,ev.clientX-d.x0);sizeFrame.hold=true;sizeFrame();sizeFrame.hold=false;moveThumb(true)});
+  const up=()=>{if(!d)return;d=null;h.classList.remove("drag");document.body.classList.remove("resizing","laydrag");$("right").classList.remove("edgehint");save();layRelease();sizeFrame();setTimeout(()=>{sizeFrame();moveThumb(true)},430)};
   h.addEventListener("pointerup",up);h.addEventListener("pointercancel",up);
-  h.addEventListener("dblclick",()=>{const df=layDef();if(h.dataset.e[0]==="p")S.lay.pw=df.pw;else S.lay.rw=df.rw;save();sizeFrame();moveThumb(true)});
-  h.addEventListener("pointerenter",()=>{if(h.dataset.e[0]==="r")$("right").classList.add("edgehint")});
+  h.addEventListener("dblclick",()=>{const df=layDef();if(h.dataset.e!=="ro")S.lay.pw=df.pw;if(h.dataset.e!=="po")S.lay.rw=df.rw;save();layRelease();sizeFrame();moveThumb(true)});
+  h.addEventListener("pointerenter",()=>{if(h.dataset.e!=="po")$("right").classList.add("edgehint")});
   h.addEventListener("pointerleave",()=>{if(!d)$("right").classList.remove("edgehint")})}})();
 function resetLayout(){S.lay=null;delete S.lw;S.pph=0;S.sch=0;S.pos="mid";S.hmode="";updHm();applyPH();save();sizeFrame();moveThumb(true);layoutLeft()}
 

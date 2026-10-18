@@ -57,41 +57,50 @@ async function drag(k, sel, dx) {
 }
 const box = async k => { const L = await R(k, "#left"), Rr = await R(k, "#right"); return { pl: Math.round(L.left), pr: Math.round(L.right), rl: Math.round(Rr.left), rr: Math.round(Rr.right) } };
 
-export async function edgesMoveOnlyTheirPanel(k, t) {
+const centred = b => Math.abs((b.pl - 18) - (1700 - 18 - b.rr)) <= 2;
+const b0ok = a => a.rl - a.pr === 18 && centred(a);
+export async function dividerAndEdges(k, t) {
   await viewport(k, 1700, 950); await settle(k);
   let a = await box(k);
-  await drag(k, ".pedge.po", -60); let b = await box(k);
-  t.ok(b.pl < a.pl - 50 && b.pr === a.pr && b.rl === a.rl && b.rr === a.rr, "prompt's outer edge: only the prompt's left side moves", { a, b });
-  a = b; await drag(k, ".pedge.pi", 40); b = await box(k);
-  t.ok(b.pr > a.pr + 30 && b.pl === a.pl && b.rr - b.rl === a.rr - a.rl && b.rl >= b.pr + 18, "prompt's inner edge: the prompt grows; the image area keeps its width (pushed if needed)", { a, b });
-  a = b; await drag(k, ".pedge.ri", 30); b = await box(k);
-  t.ok(b.rl > a.rl + 20 && b.rr === a.rr && b.pl === a.pl && b.pr === a.pr, "image area's inner edge, inward: only its left side", { a, b });
-  a = b; await drag(k, ".pedge.ri", -150); b = await box(k);
-  t.ok(b.rl < a.rl - 100 && b.rr === a.rr && b.pr - b.pl === a.pr - a.pl && b.pr <= b.rl - 18, "outward past the gap: it grows, the prompt slides but keeps its width", { a, b });
-  a = b; await drag(k, ".pedge.ro", 50); b = await box(k);
-  t.ok(b.rr > a.rr + 40 && b.rl === a.rl && b.pl === a.pl && b.pr === a.pr, "image area's outer edge: only its right side", { a, b });
-  a = b; await drag(k, ".pedge.pi", 2000); b = await box(k);
-  t.ok(b.pr < b.rl, "panels never overlap", { a, b });
+  t.ok(b0ok(a), "default: a centred pair with an 18 px gap", a);
+  await drag(k, ".pedge.ri", -100); await k.sleep(500); let b = await box(k);
+  t.ok(b.rr - b.rl === a.rr - a.rl + 100 && b.pr - b.pl === a.pr - a.pl - 100 && b.rl - b.pr === 18 && centred(b),
+    "dragging the image area's left edge: it grows exactly as much as the prompt shrinks; still centred", { a, b });
+  await drag(k, ".pedge.ri", -2000); await k.sleep(500); b = await box(k);
+  t.ok(b.pr - b.pl === 360, "the prompt stops at its minimum (360)", b.pr - b.pl);
+  a = b; await drag(k, ".pedge.pi", 150); await k.sleep(500); b = await box(k);
+  t.ok(b.pr - b.pl === a.pr - a.pl + 150 && b.rl - b.pr === 18, "the prompt's right edge is the same divider", { a, b });
+  a = b;
+  const h = await R(k, ".pedge.ro"), x = h.left + h.width / 2, y = h.top + 200;
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+  await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+  for (let i = 1; i <= 8; i++) await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x + 10 * i, y, button: "left", buttons: 1 });
+  await k.sleep(100); const mid = await box(k);
+  t.ok(mid.rr === a.rr + 80 && mid.pl === a.pl, "an outer edge follows the cursor while you drag (the rest holds still)", { a, mid });
+  await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x + 80, y, button: "left", clickCount: 1 }); await k.sleep(700);
+  b = await box(k);
+  t.ok(b.rr - b.rl === a.rr - a.rl + 80 && centred(b), "…and on release the pair glides back to centre", { a, b });
+  a = b; await drag(k, ".pedge.po", -60); await k.sleep(700); b = await box(k);
+  t.ok(b.pr - b.pl === a.pr - a.pl + 60 && b.rr - b.rl === a.rr - a.rl && centred(b), "the prompt's outer edge: only the prompt changes; centred again", { a, b });
   const w = (await R(k, "#rpanel")).width; await k.ev(`(showView("queue"),1)`); await settle(k);
   t.ok(Math.abs((await R(k, "#rpanel")).width - w) < 1, "the Queue tab has the same width as the image area");
   await k.send("Page.reload", {}); await k.sleep(800); await k.until("!!(window.LIVE&&window._jobsReady)", 15000); await settle(k);
   const c = await box(k); t.ok(Math.abs(c.pl - b.pl) <= 1 && Math.abs(c.rr - b.rr) <= 1, "remembered after a restart", { b, c });
 }
 
-export async function resizeKeepsShape(k, t) {
-  await viewport(k, 1700, 950); await settle(k);
-  await drag(k, ".pedge.ro", -120);   // more room on the right than on the left
-  const a = await box(k), W1 = 1700, f1 = { l: a.pl - 18, r: W1 - 18 - a.rr };
-  await viewport(k, 1500, 950); await settle(k);
-  const b = await box(k), W2 = 1500, f2 = { l: b.pl - 18, r: W2 - 18 - b.rr };
-  t.ok(b.pr - b.pl === a.pr - a.pl && b.rr - b.rl === a.rr - a.rl, "a narrower window: the panels keep their widths", { a, b });
-  t.ok(Math.abs(f1.l / (f1.l + f1.r) - f2.l / (f2.l + f2.r)) < .03, "the free space keeps its proportions", { f1, f2 });
+export async function windowResize(k, t) {
+  await viewport(k, 1700, 950); await settle(k); const a = await box(k);
+  await viewport(k, 1450, 950); await settle(k); const b = await box(k);
+  t.ok(b.pr - b.pl === a.pr - a.pl && b.rr - b.rl === a.rr - a.rl && b.rl - b.pr === 18, "a narrower window: the panels keep their widths and stay attached", { a, b });
+  t.ok(Math.abs((b.pl - 18) - (1450 - 18 - b.rr)) <= 2, "still centred: only the margins shrank", b);
+  await viewport(k, 1150, 950); await settle(k); const c = await box(k);
+  t.ok(c.rr <= 1150 - 18 + 1 && c.rl - c.pr === 18, "too narrow for both: they shrink to fit, still attached", c);
 }
 
 export async function resetAndDoubleClick(k, t) {
   await viewport(k, 1700, 950); await settle(k);
   const d = await box(k);
-  await drag(k, ".pedge.po", -80); await drag(k, ".pedge.ro", 60);
+  await drag(k, ".pedge.po", -80); await drag(k, ".pedge.ro", 60); await k.sleep(500);
   const h = await R(k, ".pedge.po"); await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x: h.left + 6, y: h.top + 100, button: "left", clickCount: 2 });
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: h.left + 6, y: h.top + 100, button: "left", clickCount: 2 }); await k.sleep(500);
   t.ok(await k.ev(`S.lay.pw`) === 680, "double-click the prompt's edge: its default width", await k.ev(`S.lay.pw`));

@@ -22,34 +22,32 @@ function paint(cv,job,progress){const [w,h]=SIZES[job.mp][job.ar];const W=Math.r
   c.imageSmoothingEnabled=true;c.imageSmoothingQuality="high";c.clearRect(0,0,W,H);c.drawImage(t,0,0,W,H)}}
 function fitBox(el,ar,bw,bh){const [a,b]=ar.split(":").map(Number);let w=bw,h=bw*b/a;if(h>bh){h=bh;w=bh*a/b}el.style.width=w+"px";el.style.height=h+"px"}
 const BAR=66; // bar block height incl. gap: 12 + track 10 + 7 + status row 36
-/* Wide window = two panels with their own widths — the prompt (pw) and the right area (rw) — and three free spaces
-   around them: left margin, gap, right margin. Each of the four vertical edges trades width between its own panel and
-   the free space beside it; the other panel never moves. The free spaces are stored as shares (fl, fg, fr) of whatever
-   room is left, so a window resize spreads it proportionally and the layout keeps its shape. The right area is the same
-   rectangle in every tab and for every image shape: Generating fits the picture into it, Queue / LoRAs / PNG Info fill
-   it. S.lay = {pw, rw, fl, fg, fr}; no S.lay = the default (today's centred pair). */
-const LISTMIN=660,GAPMIN=18,PWMIN=360;
-const layDef=()=>({pw:680,rw:Math.max(LISTMIN,tabsW()+2),fl:.5,fg:0,fr:.5});
+/* Wide window = the prompt and the image area as one pair: their own widths (S.lay.pw / S.lay.rw), a fixed 18 px gap,
+   the pair centred in the window. A window resize only changes the margins around it. The image area is the same
+   rectangle in every tab and for every image shape: Generating fits the picture into it, Queue / LoRAs / PNG Info
+   fill it. Edges (composer.js): the divider between them trades width (the prompt stops at its minimum); an outer edge
+   follows the cursor, and on release the pair glides back to centre — the same rule as resizing the window.
+   (Design agreed 2026-10-18 after the first try left a growing gap in the middle.) */
+const LISTMIN=660,GAP=18,PWMIN=360;
+const layDef=()=>({pw:680,rw:Math.max(LISTMIN,tabsW()+2)});
 function layGeo(){const L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw}:{})),W=innerWidth-36,minR=minRight();
- let pw=Math.max(PWMIN,Math.min(L.pw,CARDMAX,W-GAPMIN-minR)),rw=Math.max(minR,Math.min(L.rw,W-GAPMIN-pw));
- const free=Math.max(0,W-GAPMIN-pw-rw),s=(L.fl+L.fg+L.fr)||1;
- return{pw,rw,mL:free*L.fl/s,gap:GAPMIN+free*L.fg/s,mR:free*L.fr/s,W,minR}}
+ let pw=Math.max(PWMIN,Math.min(L.pw,CARDMAX,W-GAP-minR)),rw=Math.max(minR,Math.min(L.rw,W-GAP-pw));   // too narrow: the image area gives way first, then the prompt
+ const m=Math.max(0,(W-GAP-pw-rw)/2);return{pw,rw,mL:m,mR:m,W,minR,off:0}}
 function layApply(g){const app=document.querySelector(".app"),st=app.style,px=v=>Math.round(v*10)/10+"px";
- st.setProperty("--mL",px(g.mL));st.setProperty("--pw",px(g.pw));st.setProperty("--gap",px(g.gap));st.setProperty("--rw",px(g.rw));st.setProperty("--mR",px(g.mR));st.setProperty("--cw",px(g.pw))}
-/* an edge drag, in px: the panel and its neighbouring free space change; then the shares are recomputed */
-function layDrag(edge,g0,dx){const g=Object.assign({},g0),mx=CARDMAX;
- if(edge==="po"){const pw=Math.max(PWMIN,Math.min(mx,g.pw+g.mL,g0.pw-dx));g.mL-=pw-g.pw;g.pw=pw}
- /* inner edges: the gap gives way first; past it the other panel is pushed — it slides, its width never changes */
- if(edge==="pi"){const pw=Math.max(PWMIN,Math.min(mx,g.pw+g.gap-GAPMIN+g.mR,g0.pw+dx)),grow=pw-g.pw;
-  if(grow<0)g.gap-=grow;else{const fromGap=Math.min(grow,g.gap-GAPMIN);g.gap-=fromGap;g.mR-=grow-fromGap}g.pw=pw}
- if(edge==="ri"){const rw=Math.max(g.minR,Math.min(g.rw+g.gap-GAPMIN+g.mL,g0.rw-dx)),grow=rw-g.rw;
-  if(grow<0)g.gap-=grow;else{const fromGap=Math.min(grow,g.gap-GAPMIN);g.gap-=fromGap;g.mL-=grow-fromGap}g.rw=rw}
- if(edge==="ro"){const rw=Math.max(g.minR,Math.min(g.rw+g.mR,g0.rw+dx));g.mR-=rw-g.rw;g.rw=rw}
- const free=g.mL+(g.gap-GAPMIN)+g.mR;S.lay.pw=Math.round(g.pw);S.lay.rw=Math.round(g.rw);
- if(free>.5){S.lay.fl=g.mL/free;S.lay.fg=(g.gap-GAPMIN)/free;S.lay.fr=g.mR/free}
- layApply(g)}
+ const mL=Math.max(0,g.mL+(g.off||0)),mR=Math.max(0,g.W-GAP-g.pw-g.rw-mL);
+ st.setProperty("--mL",px(mL));st.setProperty("--pw",px(g.pw));st.setProperty("--gap",px(GAP));st.setProperty("--rw",px(g.rw));st.setProperty("--mR",px(mR));st.setProperty("--cw",px(g.pw))}
+/* an edge drag, in px from where it started. dv = the divider (the prompt's inner edge and the image area's inner edge
+   are the same boundary): one panel grows exactly as much as the other shrinks. po / ro = the outer edges: that panel
+   changes and the pair is held still (off) so the edge stays under the cursor; layRelease() lets it re-centre. */
+function layDrag(edge,g0,dx){const g=Object.assign({},g0);
+ if(edge==="dv"){const pw=Math.max(PWMIN,Math.min(CARDMAX,g0.pw+g0.rw-g0.minR,g0.pw+dx));g.rw=g0.rw-(pw-g0.pw);g.pw=pw}
+ if(edge==="po"){const pw=Math.max(PWMIN,Math.min(CARDMAX,g0.pw+g0.mL,g0.pw-dx));g.pw=pw;const W2=g.W-GAP-g.pw-g.rw;g.off=(g0.mL-(pw-g0.pw))-W2/2}
+ if(edge==="ro"){const rw=Math.max(g0.minR,Math.min(g0.rw+g0.mR,g0.rw+dx));g.rw=rw;const W2=g.W-GAP-g.pw-g.rw;g.off=g0.mL-W2/2}
+ g.mL=g.mR=Math.max(0,(g.W-GAP-g.pw-g.rw)/2);
+ S.lay.pw=Math.round(g.pw);S.lay.rw=Math.round(g.rw);layApply(g);return g}
+function layRelease(){const app=document.querySelector(".app");app.classList.add("recentre");layApply(layGeo());setTimeout(()=>app.classList.remove("recentre"),420)}
 function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
- if(!stk)layApply(layGeo());
+ if(!stk&&!sizeFrame.hold)layApply(layGeo());
  const st=$("stage").getBoundingClientRect();const f=$("frame");
  fitBox(f,ar,st.width,st.height-BAR);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
  const top=Math.max(0,(st.height-h-BAR)/2),left=stk?0:Math.max(0,Math.floor((st.width-w)/2));f.style.left=left+"px";f.style.top=top+"px";

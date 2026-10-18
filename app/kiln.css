@@ -671,3 +671,6 @@ body.laydrag *{transition:none!important}
 .laywrap{position:relative;display:inline-flex}
 .laymenu{top:52px;bottom:auto;left:auto;right:0;transform-origin:top right;min-width:230px}
 .laymenu{min-width:270px}.laymenu .opt{white-space:nowrap;align-items:baseline}
+
+/* Phase 2a redesign: the pair glides back to centre after an outer edge is released */
+.app.recentre{transition:grid-template-columns .35s cubic-bezier(.4,0,.2,1)}

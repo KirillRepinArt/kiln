@@ -243,7 +243,7 @@ def public(j):
 
 def mp_bucket(w, h):
     mp = w * h / 1e6
-    return min(("1.0", "1.5", "2.0"), key=lambda b: abs(float(b) - mp))
+    return min(("0.5", "1.0", "1.5", "2.0"), key=lambda b: abs(float(b) - mp))
 
 
 # ---------------------------------------------------------------- PNG helpers
@@ -273,11 +273,26 @@ def slugify(name):
     return s[:60] or "kiln"
 
 
-def next_filename(name, seed):
+NAMES_FILE = DATA / "names.json"  # series -> the highest number ever used: a deleted number is never handed out again
+
+
+def next_filename(name, seed, take=False):
+    """Next free file name of a series. Numbers only go up: a gap left by a deleted image stays a gap (reusing it made
+    the queue's old entry and the new image share a name). `take` records the number as used."""
     if name.strip():
         slug = slugify(name)
-        nums = [int(m.group(1)) for p in OUT.glob(f"{slug}-*.png") if (m := re.fullmatch(rf"{re.escape(slug)}-(\d+)\.png", p.name))]
-        return f"{slug}-{max(nums, default=0) + 1:03d}.png"
+        pat = re.compile(rf"{re.escape(slug)}-(\d+)\.png")
+        nums = [int(m.group(1)) for p in OUT.glob(f"{slug}-*.png") if (m := pat.fullmatch(p.name))]
+        nums += [int(m.group(1)) for j in jobs if j.get("file") and (m := pat.fullmatch(j["file"]))]
+        try:
+            used = json.loads(NAMES_FILE.read_text(encoding="utf-8")) if NAMES_FILE.exists() else {}
+        except Exception:
+            used = {}
+        n = max(nums + [used.get(slug, 0)], default=0) + 1
+        if take:
+            used[slug] = n
+            NAMES_FILE.write_text(json.dumps(used), encoding="utf-8")
+        return f"{slug}-{n:03d}.png"
     return f"kiln-{datetime.datetime.now():%Y%m%d-%H%M%S}-{seed}.png"
 
 
@@ -354,7 +369,8 @@ def run_txt2img(job):
     if sp.get("name", "").strip() and img[:8] == b"\x89PNG\r\n\x1a\n":
         img = png_add_text(img, "kiln_name", sp["name"].strip())  # the series name, for PNG Info -> Send to prompt
     again = Path(sp.get("as_file") or "").name  # Render again: back under its own name, if that's free
-    name = again if again.endswith(".png") and not (OUT / again).exists() else next_filename(sp.get("name", ""), seed)
+    with lock:
+        name = again if again.endswith(".png") and not (OUT / again).exists() else next_filename(sp.get("name", ""), seed, take=True)
     (OUT / name).write_bytes(img)
     with lock:
         job.update(file=name, seed_used=seed, infotext=infotext)

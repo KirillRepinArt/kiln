@@ -90,16 +90,17 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
  /* F8: replay the theme's finish over the image on show — to tune it without waiting for a job (Aurora: the cover first) */
  addEventListener("keydown",e=>{if(e.key!=="F8"||current()||S.view!=="gen"||!$("frame").classList.contains("has"))return;e.preventDefault();
   if(skin().cover==="camera"){window._cpv=Date.now()+1600;setTimeout(()=>window.emberBurst&&emberBurst(),1500)}else window.emberBurst&&emberBurst()});
- /* the cover button (top right of the image) and F9. Lift: the cover leaves this job (the next one is covered again).
-    Put on: a full cover over whatever is shown, until you lift it. Privacy hold (Settings → Cover): every job's cover
-    stays full through all steps and after the finish until lifted. A held cover never shows the image: the picture
-    is hidden outright (no blur, no hover peek, no starlight/code drawn from it, no finish, no ambient glow) */
- const CV={lift:false,force:false,job:null,held:false,on:false,t0:0,pr:.55};const cbtn=$("cbtn");
+ /* Privacy: the eye (top right of the image) and F9. On: the picture is covered outright, running or finished (no
+    transparency, no hover peek, no fading with the steps, no starlight/code drawn from it, no finish, no ambient glow,
+    no viewer) and the prompt, name and LoRA chips are hidden. It stays on until pressed again, across jobs and
+    restarts. Off: the cover follows Settings → Cover. The Queue tab isn't touched (decided 2026-10-18). */
+ const CV={held:false,t0:0,pr:.55};const cbtn=$("cbtn");
+ if(S.set&&S.set.privacy!=null){if(S.privacy==null)S.privacy=S.set.privacy==="on";delete S.set.privacy;save()}   /* the old Privacy hold setting */
  const EYE='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
   SHUT='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 10.5c2.2 2.6 5.2 4 9 4s6.8-1.4 9-4"/><path d="M6.2 13.6 4.6 16M12 14.6V17.4M17.8 13.6l1.6 2.4"/></svg>';
- function coverUI(){const st=CV.held||CV.on;cbtn.innerHTML=st?EYE:SHUT;cbtn.dataset.tip=st?"Show the image (F9)":"Cover the image (F9)";cbtn.classList.toggle("lit",CV.held)}
- function toggleCover(){if(CV.held||CV.on){CV.lift=true;CV.force=false}else if(CV.lift&&current()&&!browsed())CV.lift=false;   /* mid-job: back to the normal cover (fades with the steps, peeks on hover) */
- else{CV.force=true;CV.lift=false}coverUI()}
+ function coverUI(){const p=!!S.privacy;cbtn.innerHTML=p?SHUT:EYE;cbtn.dataset.tip=p?"Privacy on — press to show (F9)":"Privacy (F9): cover the picture fully and hide the prompt";
+  cbtn.classList.toggle("lit",p);document.body.classList.toggle("private",p)}
+ function toggleCover(){S.privacy=!S.privacy;save();coverUI()}
  window.toggleCover=toggleCover;window.coverHeld=()=>CV.held;
  cbtn.onclick=e=>{e.stopPropagation();toggleCover()};coverUI();
  addEventListener("keydown",e=>{if(e.key!=="F9"||e.repeat)return;e.preventDefault();toggleCover()},true);   /* works while typing in the prompt */
@@ -107,13 +108,12 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
   if(nw!==W||nh!==H){W=vc.width=ec.width=nw;H=vc.height=ec.height=nh}
   const j=current();const mode=(S.set||{}).veil||"full";const cover0=skin().cover;const fr0=$("frame");
-  {const sh=browsed()?browsed().id:j?j.id:(shownDone()||{}).id;if(sh!==CV.job){CV.job=sh;CV.lift=false;coverUI()}}   // a lift is for the image it was made on: browse to another one (or back to the render) and its cover returns
-  const held=fr0.classList.contains("has")&&S.view==="gen"&&!CV.lift&&(CV.force||(S.set||{}).privacy==="on");
-  if(held!==CV.held){CV.held=held;fr0.classList.toggle("held",held);coverUI();if(held&&!j)CV.t0=Date.now()-20000}
+  const held=fr0.classList.contains("has")&&S.view==="gen"&&!!S.privacy;
+  if(held!==CV.held){CV.held=held;fr0.classList.toggle("held",held);if(held&&!j)CV.t0=Date.now()-20000}
   const fast=(S.set||{}).fastcover==="skip"&&j&&window.LIVE&&j.est>0&&j.est<10;                // Settings → Cover: no cover on quick jobs
   if(cover0==="crt"||cover0==="camera"){const k=j&&!browsed()?j.id:(Date.now()<(window._cpv||0)?"pv"+window._cpv:held?(crtJob??"held"):null);   // held after the finish: the same exposure goes on
    if(k!==crtJob){crtJob=k;if(k!=null){if(cover0==="crt")crt.powerOn(t);else cam.reset()}}} // a new job: the screen powers on / a new exposure starts
-  let target=0,tN=null;if(j&&!browsed()&&S.view==="gen"&&mode!=="off"&&!reduce&&!CV.lift&&!fast){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
+  let target=0,tN=null;if(j&&!browsed()&&S.view==="gen"&&mode!=="off"&&!reduce&&!fast){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
    // full while step 1 renders, most of it gone during step 2, a little left on step 3, clear for the last step
    const K=cover0==="crt"||cover0==="camera"?[[0,1],[.25,1],[.5,.85],[.75,.45],[.92,0]]:[[0,1],[.25,1],[.5,.4],[.75,.12],[.92,0]]; /* the CRT stays longer: the code forms the image on steps 2–3 */let k0=0;for(let i=1;i<K.length;i++)if(pr<=K[i][0]){const [a,va]=K[i-1],[b,vb]=K[i];k0=va+(vb-va)*(pr-a)/(b-a);break}
    target=k0*(mode==="light"?.55:1);if(cover0==="camera")tN=(pr>=.5?Math.max(k0,HOLD):k0)*(mode==="light"?.55:1)*(hover?.12:1);if(hover)target*=.12}
@@ -123,7 +123,6 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
   str+=(target-str)*Math.min(1,dtr/260);if(str<.002||(browsed()&&!held&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
   if(tN==null)tN=target;if(j&&!browsed())fadeT=0;else if(fadeT){const p=Math.max(0,(t-fadeT)/(fadeDur||FADE));if(p>=1){fadeT=0;fadeDur=0}else tN=fadeFrom*(.5+.5*Math.cos(Math.PI*p))*(hover?.12:1)} // after the finish: a slow fade, slow at first
   nstr+=(tN-nstr)*Math.min(1,dtr/260);if(nstr<.002||(browsed()&&!held&&!(Date.now()<(window._cpv||0))))nstr=0;
-  {const on=!held&&!!j&&!browsed()&&S.view==="gen"&&(cover0==="camera"?nstr:str)>.05;if(on!==CV.on){CV.on=on;coverUI()}}
   document.getElementById("frame").style.setProperty("--vf",str?`blur(${(24*str).toFixed(1)}px) brightness(${(1-.45*str).toFixed(3)}) saturate(${(1-.4*str).toFixed(3)})`:"none");
   v.clearRect(0,0,W,H);
   if((cover0==="camera"?nstr:str)>0&&W){const T=t/1000;

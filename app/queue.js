@@ -3,17 +3,17 @@ function renderQueue(){const before={};document.querySelectorAll(".qi").forEach(
  renderQueueInner();const had=Object.keys(before).length;
  document.querySelectorAll(".qi").forEach(q=>{const b=before[q.dataset.id];if(b==null){if(had)q.classList.add("new");return}
   const d=b-q.getBoundingClientRect().top;if(Math.abs(d)<1)return;q.style.transition="none";q.style.transform=`translateY(${d}px)`;
-  requestAnimationFrame(()=>{q.style.transition="transform .3s var(--ease)";q.style.transform=""})})}
+  requestAnimationFrame(()=>{q.style.transition="transform .38s cubic-bezier(.4,0,.2,1)";q.style.transform=""})})}
 function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=jobs.filter(j=>j.status==="pending"),done=jobs.filter(j=>j.status==="done"||j.status==="cancelled").reverse();
  const left=pend.reduce((a,j)=>a+jEst(j),0);
  const item=(j,k)=>`<div class="qi${j.missing?" missing":""}" data-id="${j.id}" draggable="${k==="pend"}">
    ${k==="pend"?'<span class="handle" title="Drag to reorder">⋮⋮</span>':""}
-   <div class="th">${j.missing?"gone":j.status==="done"?`<canvas data-th="${j.id}"></canvas>`:j.status==="cancelled"?"stopped":k==="run"?(window.LIVE&&(S.set||{}).privacy!=="on"?`<img class="lp" data-lp="${j.id}" alt="">`:"…"):"#"+j.id}</div>
+   <div class="th">${j.missing?"gone":j.status==="done"?`<canvas data-th="${j.id}"></canvas>`:j.status==="cancelled"?"stopped":k==="run"?(window.LIVE?`<img class="lp" data-lp="${j.id}" alt="">`:"…"):"#"+j.id}</div>
    <div class="body"><div class="p">${j.file?`<b style="font-weight:600">${esc(j.file)}</b> · `:""}${esc(j.prompt)}</div>
    <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · <span class="seedc" data-seed="${j.seed}" data-tip="Click to copy the seed">seed ${j.seed}</span>${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.missing?' · <span class="gone">file deleted</span>':""}</div>
    ${j.created||j.finished?`<div class="meta times">${j.created?`added ${clock(j.created)}`:""}${j.finished&&j.status==="done"?` · done ${clock(j.finished)}`:""}${j.finished&&j.started?` · took ${fmt((j.finished-j.started)*(window.LIVE?1:S.demo)/1000)}`:""}</div>`:""}
    ${k==="run"?'<div class="mini"><i></i></div>':""}</div>
-   ${k!=="done"?`<button class="x" data-x="${j.id}" title="${k==="run"?"Stop":"Remove"}">${IC.x}</button>`:`<button class="x" data-rm="${j.id}" title="Remove from the list — the file stays">${IC.x}</button>`}</div>`;
+   ${k!=="done"?`<button class="x" data-x="${j.id}" title="${k==="run"?"Stop":"Remove"}">${IC.x}</button>`:`<button class="x" data-rm="${j.id}" title="${j.status==="done"&&!j.missing?"Remove from the list — the file stays":"Remove from the list"}">${IC.x}</button>`}</div>`;
  $("qwrap").innerHTML=(run.length?`<div class="qsec">Running</div>${run.map(j=>item(j,"run")).join("")}`:"")+
   `<div class="qsec"><span>Up next ${pend.length?`· ${pend.length} · ~${fmt(left)}`:""}${window.qPaused?' · <b class="paused">paused</b>':""}</span><button id="pauseQ" data-tip="${window.qPaused?"Start the waiting jobs again":"The current image finishes; nothing new starts until you resume"}">${window.qPaused?"Resume":"Pause after this"}</button></div>`+
   (pend.length?pend.map(j=>item(j,"pend")).join(""):'<div class="empty">Nothing queued</div>')+
@@ -94,7 +94,7 @@ $("qwrap").addEventListener("dragover",e=>{if(!dragEl)return;e.preventDefault();
  const rows=[...$("qwrap").querySelectorAll('.qi[draggable="true"]')],before=new Map(rows.map(x=>[x,x.getBoundingClientRect().top]));
  if(after)q.after(dragEl);else q.before(dragEl);
  for(const x of rows){if(x===dragEl)continue;const d=before.get(x)-x.getBoundingClientRect().top;if(Math.abs(d)<1)continue;
-  x.style.transition="none";x.style.transform=`translateY(${d}px)`;requestAnimationFrame(()=>{x.style.transition="transform .22s var(--ease)";x.style.transform=""})}});
+  x.style.transition="none";x.style.transform=`translateY(${d}px)`;requestAnimationFrame(()=>{x.style.transition="transform .34s cubic-bezier(.4,0,.2,1)";x.style.transform=""})}});
 $("qwrap").addEventListener("drop",e=>{if(dragEl)e.preventDefault()});
 $("qwrap").addEventListener("dragend",()=>{if(!dragEl)return;const ids=[...$("qwrap").querySelectorAll('.qi[draggable="true"]')].map(x=>+x.dataset.id);
  const pend=ids.map(id=>jobs.find(j=>j.id===id)).filter(Boolean);let k=0;jobs=jobs.map(j=>j.status==="pending"&&pend.includes(j)?pend[k++]:j); // the new order, in place of the old

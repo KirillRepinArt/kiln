@@ -13,7 +13,7 @@
  /* ---------- images: real files and live previews, cached ---------- */
  const imgs={};
  function img(url){if(!imgs[url]){const i=new Image();i.decoding="async";imgs[url]={i,p:new Promise(r=>{i.onload=()=>r(i);i.onerror=()=>r(null)})};i.src=url}return imgs[url]}
- function urlFor(j){return j.file?`/files/${encodeURIComponent(j.file)}`:null}
+ function urlFor(j){return j.file?`/files/${encodeURIComponent(j.file)}?j=${j.id}`:null}
  function drawTo(cv,im,natural){const dpr=devicePixelRatio||1,iw=im.naturalWidth,ih=im.naturalHeight;
   if(natural){if(cv.width!==iw||cv.height!==ih){cv.width=iw;cv.height=ih}const c=cv.getContext("2d");c.drawImage(im,0,0);return}
   // the canvas takes its box's shape; the image keeps its own (a preview of another shape never gets stretched)
@@ -93,8 +93,11 @@
  window.setPaused=async p=>{await api("/api/pause",{paused:p});window.qPaused=p;sig="";poll();toast(p?"Queue paused — the current image finishes, nothing new starts":"Queue resumed")};
  window.renameJob=async(j,n)=>{await api(`/api/jobs/${j.id}/name`,{name:n});toast(n?`Name saved — it will be saved as ${slugify(n)}-NNN.png`:"Name cleared — it will be named by date and seed");poll()};
  /* Q1: delete = to the Recycle Bin, with Undo (the server waits 12 s before it really goes) */
- window.deleteJob=async j=>{if(!j)return;const r=await api(`/api/jobs/${j.id}/delete`,{});if(r.error){toast(r.error);return}
-  if($("viewer").classList.contains("show")&&V.job&&V.job.id===j.id)closeViewer();
+ window.deleteJob=async j=>{if(!j)return;const L=doneList(),i=L.findIndex(x=>x.id===j.id),nb=L[i-1]||L[i+1]||null;   /* where to land: the one before, else after */
+  const r=await api(`/api/jobs/${j.id}/delete`,{});if(r.error){toast(r.error);return}
+  jobs=jobs.filter(x=>x.id!==j.id);
+  if($("viewer").classList.contains("show")&&V.job&&V.job.id===j.id){if(nb)openViewer(nb);else closeViewer()}
+  if(browseId===j.id){if(nb)browseTo(nb);else{browseId=null;endPeek()}}
   if(peekJob&&peekJob.id===j.id)endPeek();
   toast("Moved to the Recycle Bin","Undo",async()=>{await api(`/api/jobs/${j.id}/undelete`,{});poll()});poll()};
  $("resumeBtn").onclick=e=>{e.stopPropagation();setPaused(false)};
@@ -185,7 +188,7 @@
    const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;prog.classList.toggle("stopping",!!j.stopping);if(!j.stopping)$("fill").style.width=(p*100).toFixed(2)+"%";
    const rm=remaining(j),left=rm!=null?rm:(j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000));
    const started=j.step||j.preview_rev;
-   if(j.stopping){setTxt("Stopping after this step");$("peta").textContent=`≤ ~${fmt(per/1000)}`}   /* Forge only stops between steps */
+   if(j.stopping){const r=(per-(Date.now()-(j._ss||Date.now())))/1000;setTxt("Stopping after this step");$("peta").textContent=r>3?`stops in ~${fmt(r)}`:"any moment now"}   /* Forge only stops between steps; the next job starts right after */
    else{setTxt(j.kind==="upscale"?"Upscaling…":started?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`:`${WORDS[j.id%WORDS.length]}… <span class="sub">· ${j.warm?"starting":"loading model"}</span>`);
     $("peta").textContent=j.kind==="upscale"?"":(started||rm!=null)?`~${fmt(left)} left`:""}
    if(S.view==="gen"&&!browsed()){const f=$("frame");f.classList.add("has");$("idle").style.display="none";

@@ -12,7 +12,7 @@ function renderLoras(){const q=$("lsearch").value.toLowerCase().trim();
  if(S.lfilter==="fav")L=L.filter(l=>l.fav);else if(S.lfilter==="recent")L=L.filter(l=>l.used).sort((a,b)=>b.used-a.used);else if(S.lfilter!=="all")L=L.filter(l=>l.folder===S.lfilter);
  $("warn").classList.toggle("show",LORAS.filter(l=>l.on&&l.folder==="people").length>1);
  const on=LORAS.filter(l=>l.on).sort((a,b)=>(a.onAt||0)-(b.onAt||0));
- const row=l=>{const [a,b]=l.folder==="people"?[0,2]:[-3,3];return `<div class="li ${l.on?"on":""}" data-ln="${l.name}">
+ const row=(l,act)=>{const [a,b]=l.folder==="people"?[0,2]:[-3,3];return `<div class="li ${l.on?"on":""}" data-ln="${l.name}"${act?" data-act":""}>
    <div class="lth" data-tg data-tip="Click to switch on/off" style="background:${l.thumb?"#000":`linear-gradient(135deg,hsl(${hue(l.name)},35%,30%),hsl(${(hue(l.name)+50)%360},35%,18%))`}">${l.thumb?`<img src="${l.thumb}" alt="">`:initials(l.display)}</div>
    <div class="lbody"><div class="l1"><div class="nm"><span data-rename title="Double-click to rename">${esc(l.display)}</span>${l.recipe?'<span class="tag">recipe</span>':""}<small>${esc(l.tags||l.note||l.folder)}</small></div>
     <span class="sw ${l.on?"on":""}" data-tg title="On/off"></span></div>
@@ -21,17 +21,21 @@ function renderLoras(){const q=$("lsearch").value.toLowerCase().trim();
  const srt=g=>S.lfilter==="recent"?g:g.sort((a,b)=>(b.fav-a.fav)||a.display.localeCompare(b.display));
  const G=[["people","Faces"],["style","Style"],["utility","Utility"]],known=G.map(g=>g[0]);
  // Active on top as full, editable items — a mirror: they stay in their own section too, so nothing jumps when toggled
- let h=S.lfilter!=="all"||q?"":`<div class="lsec">Active · ${on.length}</div>`+(on.length?on.map(row).join(""):'<div class="lnone">Nothing on — switch LoRAs on below</div>');
- if(S.lfilter==="recent")h=L.map(row).join("");
- else{for(const [k,t] of G){const g=L.filter(l=>l.folder===k);if(g.length)h+=`<div class="lsec">${t} · ${g.length}</div>${srt(g).map(row).join("")}`}
-  const o=L.filter(l=>!known.includes(l.folder));if(o.length)h+=`<div class="lsec">Other · ${o.length}</div>${srt(o).map(row).join("")}`}
+ let h=S.lfilter!=="all"||q?"":`<div class="lsec">Active · ${on.length}</div>`+(on.length?on.map(l=>row(l,1)).join(""):'<div class="lnone">Nothing on — switch LoRAs on below</div>');
+ if(S.lfilter==="recent")h=L.map(l=>row(l)).join("");
+ else{for(const [k,t] of G){const g=L.filter(l=>l.folder===k);if(g.length)h+=`<div class="lsec">${t} · ${g.length}</div>${srt(g).map(l=>row(l)).join("")}`}
+  const o=L.filter(l=>!known.includes(l.folder));if(o.length)h+=`<div class="lsec">Other · ${o.length}</div>${srt(o).map(l=>row(l)).join("")}`}
  $("lscroll").innerHTML=`<div class="lgrid">${h}${!L.length?'<div class="empty">Nothing here</div>':""}</div>`}
 $("lsearch").oninput=renderLoras;
 $("csize").value=S.th||48;document.documentElement.style.setProperty("--th",(S.th||48)+"px");
 $("csize").addEventListener("input",e=>{S.th=+e.target.value;document.documentElement.style.setProperty("--th",S.th+"px");save()});
 $("fchips").onclick=e=>{const b=e.target.closest("[data-f]");if(!b)return;S.lfilter=b.dataset.f;save();renderLoras()};
 $("oneFace").onclick=e=>{e.preventDefault();S.oneFace=!S.oneFace;save();renderLoras()};
-function toggleL(l){if(!l.on&&l.folder==="people"&&S.oneFace)LORAS.forEach(o=>{if(o.folder==="people")o.on=false});l.on=!l.on;if(l.on){l.used=Date.now();l.onAt=Date.now()}save();renderLoras();renderChips()}
+/* switching a LoRA on adds it to Active at the top: keep the row you clicked where it was on screen (the list
+   shifts above it, not under your pointer). The anchor is its own-section row, which survives the toggle */
+function keepPlace(name,fn){const sc=$("lscroll"),q=()=>sc.querySelector(`.li[data-ln="${CSS.escape(name)}"]:not([data-act])`),a=q(),t=a&&a.getBoundingClientRect().top;fn();
+ const b=q();if(a&&b)sc.scrollTop+=b.getBoundingClientRect().top-t}
+function toggleL(l){if(!l.on&&l.folder==="people"&&S.oneFace)LORAS.forEach(o=>{if(o.folder==="people")o.on=false});l.on=!l.on;if(l.on){l.used=Date.now();l.onAt=Date.now()}save();keepPlace(l.name,renderLoras);renderChips()}
 let clickT=null;
 $("lscroll").addEventListener("click",e=>{const el=e.target.closest("[data-ln]");if(!el)return;const l=LORAS.find(l=>l.name===el.dataset.ln);
  if(e.target.closest("[data-star]")){l.fav=!l.fav;save();renderLoras();return}

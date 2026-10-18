@@ -70,8 +70,7 @@ export async function previews(k, t) {
   t.ok(await k.ev(`$("qpop").classList.contains("show")&&$("qpop").offsetWidth>=200`), "hovering a finished thumbnail shows it bigger");
   await k.mouse(2, 2); await k.ev(`(stopJob(current()),1)`); await k.until(`!current()`, 15000);
   await k.ev(`(showView("gen"),setTimeout(()=>{},0),1)`);
-  await k.setting("privacy", "on"); await k.job("private", { steps: 6 }); await k.ev(`(showView("queue"),1)`); await k.until(`!!current()`, 5000); await k.sleep(2500);
-  t.ok(await k.ev(`!document.querySelector("img.lp")`), "with Privacy hold on, no live render in the queue");
+
 }
 previews.opts = { step: 0.8 };
 

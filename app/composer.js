@@ -13,7 +13,7 @@ function renderPills(){idleText();
  $("pSD").dataset.tip=pk?"Click to copy this seed":"Seed — random each job, or fixed";
  $("vMP").textContent=v.mp+" MP";$("vAR").innerHTML=v.ar+'<span class="w"> Ratio</span>';$("vST").innerHTML=v.steps+'<span class="w"> Steps</span>';
  $("vSD").textContent=v.seed;$("vN").textContent="×"+v.n;
- $("popMP").innerHTML=["1.0","1.5","2.0"].map(m=>`<div class="opt ${m===S.mp?"on":""}" data-v="${m}">${m} MP <small>~${SEC_PER_STEP[m]}s/step</small></div>`).join("");
+ $("popMP").innerHTML=["0.5","1.0","1.5","2.0"].map(m=>`<div class="opt ${m===S.mp?"on":""}" data-v="${m}">${m} MP <small>~${SEC_PER_STEP[m]}s/step</small></div>`).join("");
  $("popAR").innerHTML=`<div class="rgrid">${RATIOS.map(r=>{const [a,b]=r.split(":").map(Number);const k=34/Math.max(a,b);const [w,h]=SIZES[S.mp][r];
    return `<div class="rt ${r===S.ar?"on":""}" data-v="${r}"><div class="shape" style="width:${Math.round(a*k)}px;height:${Math.round(b*k)}px"></div><div class="t">${r}</div><div class="px">${w}×${h}</div></div>`}).join("")}</div>`;
  if(!$("popST").classList.contains("show"))$("popST").innerHTML=slider("st",1,30,S.steps,[4,6,8,12],stepsHint());

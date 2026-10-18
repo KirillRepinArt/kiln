@@ -60,7 +60,11 @@ if(cm){
   if(cur!==v){syncing=true;view.dispatch({changes:{from:0,to:cur.length,insert:v}});syncing=false}}});
  Object.defineProperty(ta,"readOnly",{get(){return roProto.get.call(ta)},set(v){roProto.set.call(ta,v);view.dispatch({effects:ro.reconfigure(EditorState.readOnly.of(!!v))})}});
  ta.focus=()=>view.focus();
- addEventListener("resize",()=>view.requestMeasure());document.fonts&&document.fonts.ready.then(()=>view.requestMeasure());
+ addEventListener("resize",()=>view.requestMeasure());
+ /* the card animates its size (ratio change, browsing): measure again once it has settled, or a stale height leaves a
+    scrollbar showing until the next keystroke */
+ {let t=null;new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(()=>view.requestMeasure(),120)}).observe(wrap);
+  $("left").addEventListener("transitionend",()=>view.requestMeasure())}document.fonts&&document.fonts.ready.then(()=>view.requestMeasure());
  new MutationObserver(()=>view.dom.classList.toggle("peek",ta.classList.contains("peek"))).observe(ta,{attributes:true,attributeFilter:["class"]});
  Object.defineProperty(ta,"scrollTop",{get(){return view.scrollDOM.scrollTop},set(v){view.scrollDOM.scrollTop=v}});
  window.__cm=view;

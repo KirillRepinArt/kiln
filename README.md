@@ -85,10 +85,10 @@ The queue shows which variant each job got, so a good result can be traced back.
 
 **Image**
 - Live preview under a soft veil that lifts as the steps land; a burst of embers when it's done.
-- **Cover** (Settings → Cover): full, light or off, optionally skipped on jobs under 10 s. The eye at the image's top
-  right (or `F9`, even while typing) lifts it for this job — or puts a full cover on whatever is shown. **Privacy
-  hold** keeps every job's cover on through all steps and after the finish until you lift it; a held cover never
-  shows the picture (no blur, no peek on hover, no full-size viewer).
+- **Cover** (Settings → Cover): full, light or off, optionally skipped on jobs under 10 s; hover the image to peek.
+- **Privacy** — the eye at the image's top right, or `F9` (even while typing): the picture is covered outright,
+  running or finished (no transparency, no peek on hover, no fading, no full-size viewer), and the prompt, name and
+  LoRAs are hidden. It stays on — across jobs and restarts — until you press it again.
 - **Browse** finished images with `←` / `→` or the arrows on the image — while a job renders, too. Each image you
   land on shows its name and prompt (greyed, with Reuse). The prompt's ✕ brings your draft back and keeps the image —
   arrows then change only the image, and the status line offers *Show prompt*; the image's ✕ (or `Esc`) returns to

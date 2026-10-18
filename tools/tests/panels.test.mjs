@@ -91,12 +91,14 @@ export async function dividerAndEdges(k, t) {
 
 export async function windowResize(k, t) {
   await viewport(k, 1700, 950); await k.ev(`(showView("queue"),1)`); await settle(k); const a = await box(k);
-  await viewport(k, 1450, 950); await settle(k); const b = await box(k), f = (1450 - 36) / (1700 - 36);
-  t.ok(Math.abs((b.pr - b.pl) - (a.pr - a.pl) * f) <= 2 && Math.abs((b.rr - b.rl) - (a.rr - a.rl) * f) <= 2 && b.rl - b.pr === 18,
-    "a narrower window: both panels scale with it and stay attached", { a, b, f });
-  t.ok(Math.abs((b.pl - 18) - (1450 - 18 - b.rr)) <= 2, "still centred: only the margins shrank", b);
-  await viewport(k, 1150, 950); await settle(k); const c = await box(k);
-  t.ok(c.rr <= 1150 - 18 + 1 && c.rl - c.pr === 18, "too narrow for both: they shrink to fit, still attached", c);
+  await viewport(k, 2200, 950); await settle(k); const b = await box(k);
+  t.ok(b.pr - b.pl === a.pr - a.pl && b.rr - b.rl === a.rr - a.rl && b.rl - b.pr === 18, "a wider window: the panels keep your widths (the margins grow)", { a, b });
+  await viewport(k, 1500, 950); await settle(k); const c = await box(k);
+  t.ok(c.pr - c.pl === a.pr - a.pl && c.rr - c.rl === a.rr - a.rl, "narrower but still room: nothing shrinks yet", { a, c });
+  await viewport(k, 1250, 950); await settle(k); const d = await box(k);
+  t.ok(d.pl - 18 <= 26 && Math.abs((d.pl - 18) - (1250 - 18 - d.rr)) <= 2 && d.rl - d.pr === 18 && d.pr - d.pl < a.pr - a.pl, "too narrow: the margins go down to ~24 px (less only at the panels' minimums), then both panels shrink", d);
+  await viewport(k, 1700, 950); await settle(k); const e = await box(k);
+  t.ok(e.pr - e.pl === a.pr - a.pl && e.rr - e.rl === a.rr - a.rl, "wide again: back to your widths", { a, e });
 }
 
 export async function resetAndDoubleClick(k, t) {
@@ -128,7 +130,7 @@ export async function hugsThePicture(k, t) {
   const fr = await R(k, "#right"), L = await R(k, "#left");
   t.ok(Math.abs((L.left - 18) - (1700 - 18 - fr.right)) <= 3, "the pair is centred", { l: L.left, r: fr.right });
   await k.ev(`(showView("queue"),1)`); await k.sleep(900);
-  t.ok(Math.abs((await R(k, "#rpanel")).width - await k.ev(`S.lay.rw*(innerWidth-36)`)) <= 1, "Queue keeps its own width", (await R(k, "#rpanel")).width);
+  t.ok(Math.abs((await R(k, "#rpanel")).width - await k.ev(`S.lay.rw`)) <= 1, "Queue keeps its own width", (await R(k, "#rpanel")).width);
 }
 
 export async function holdsWhileYouWork(k, t) {
@@ -162,7 +164,7 @@ export async function capInGenerating(k, t) {
   const w1 = (await R(k, "#frame")).width;
   t.ok(w1 < w0 - 100, "in Generating the outer edge caps how wide the picture may be", { w0, w1 });
   await k.ev(`(showView("queue"),1)`); await k.sleep(900);
-  t.ok(Math.abs((await R(k, "#rpanel")).width - await k.ev(`S.lay.rw*(innerWidth-36)`)) <= 1 && await k.ev(`S.lay.iw`) != null, "…without touching Queue's width");
+  t.ok(Math.abs((await R(k, "#rpanel")).width - await k.ev(`S.lay.rw`)) <= 1 && await k.ev(`S.lay.iw`) != null, "…without touching Queue's width");
 }
 
 /* step 3: the picture's height limit; the arrows at mid-height */

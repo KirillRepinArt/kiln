@@ -605,7 +605,7 @@ def get_models(refresh=False):
 
 
 # ---------------------------------------------------------------- HTTP
-VERSION = "0.2.1"  # bumped when a roadmap phase is tagged (see CHANGELOG.md)
+VERSION = "0.3"  # bumped when a roadmap phase is tagged (see CHANGELOG.md)
 REPO = "KirillRepinArt/kiln"
 
 

@@ -83,6 +83,22 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
 
 The queue shows which variant each job got, so a good result can be traced back.
 
+**Layout**
+- The prompt and the picture are one pair with an 18 px gap, centred in the window. In Generating the image area hugs
+  the picture (portrait or landscape), so the prompt always sits next to the actual picture; Queue, LoRAs and PNG Info
+  keep a width of their own.
+- **Edges:** the divider between them trades width (the prompt stops at its minimum); an outer edge follows the cursor,
+  then the pair glides back to centre. In Generating the image area's edges set the largest the picture may be (side
+  edges: width, top/bottom: height). Double-click an edge for its default.
+- A wider window never stretches the panels past the widths you chose — the margins grow; a narrower one takes the
+  margins first, then shrinks both panels, and they come back when there's room.
+- **Layout menu** (next to the gear): Horizontal (prompt left or right), Vertical (prompt below the picture), Reset
+  sizes. Or drag the prompt by its name line onto a drop zone. A narrow window stacks either way.
+- Nothing moves under the cursor: while a menu in the prompt is open, or you click through pictures with their arrows,
+  the layout holds and catches up when you're done.
+- The picture's actions (img2img, upscale, open, folder, LoRA thumbnail, delete) sit in a column beside it, shown while
+  you hover the picture or the column; the privacy eye stays on the picture.
+
 **Image**
 - Live preview under a soft veil that lifts as the steps land; a burst of embers when it's done.
 - **Cover** (Settings → Cover): full, light or off, optionally skipped on jobs under 10 s; hover the image to peek.

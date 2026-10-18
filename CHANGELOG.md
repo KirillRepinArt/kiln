@@ -2,6 +2,18 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
+## v0.3 — 2026-10-18 (Phase 2a: layout)
+
+- **Layout:** the prompt and the picture as one centred pair; the image area hugs the picture in Generating; edges for
+  the divider, the outer sides and the picture's height; widths you choose are kept (a wider window grows the margins,
+  a narrower one shrinks the margins first, then the panels); Layout menu — Horizontal (prompt left / right), Vertical,
+  Reset sizes — and drag-to-dock by the prompt's name line; holds while you work, glides when you're done.
+- The picture's actions in a column beside it (on hover); the eye on the picture; arrows always at mid-height.
+- **Fix:** the prompt box's empty scrollbar strip flickered on glass themes; the strip is now kept only while the text
+  overflows.
+- **Fix:** the server shut itself down under a Kiln window left in the background (Edge slows hidden pages' timers);
+  a real close still stops it within seconds.
+
 ## v0.2.1 — 2026-10-18
 
 - **Fix:** updating to v0.2 could wipe your LoRA names, stars and weights (a one-time settings conversion saved before

@@ -44,11 +44,14 @@ if(cm){
   view.dispatch({changes:ls.map(l=>{if(allC){const m=l.text.match(/^(\s*)\/\/ ?/);return{from:l.from+m[1].length,to:l.from+m[0].length,insert:""}}
    const ind=l.text.match(/^\s*/)[0].length;return{from:l.from+ind,insert:"// "}})});return true}
 
+ /* the scrollbar's room is kept only while the text overflows: a prompt that fits has no gutter strip at all (on glass
+    it flickered as the backdrop repainted). Sticky until clearly short again, so the edge of fitting doesn't toggle it */
+ const ovf=()=>{const sc=view.scrollDOM,on=wrap.classList.contains("ovf"),o=sc.scrollHeight>sc.clientHeight+1;if(o!==on&&(o||sc.scrollHeight<sc.clientHeight-24))wrap.classList.toggle("ovf",o)};
  const view=new EditorView({parent:wrap,state:EditorState.create({doc:proto.get.call(ta),extensions:[
   history(),EditorView.lineWrapping,EditorView.contentAttributes.of({spellcheck:"true",autocorrect:"off",autocapitalize:"off"}),placeholder("Describe what you want to see…"),deco,ro.of(EditorState.readOnly.of(false)),
   keymap.of([{key:"Mod-/",run:toggleLineComment},{key:"Mod-Enter",run:()=>{window.addJobs&&addJobs();return true}},...historyKeymap,...defaultKeymap.filter(k=>k.key!=="Mod-Enter")]),
   EditorView.updateListener.of(u=>{if(u.docChanged&&!syncing){proto.set.call(ta,u.state.doc.toString());ta.dispatchEvent(new Event("input"))}
-   if(u.heightChanged||u.geometryChanged)refit()}),
+   if(u.heightChanged||u.geometryChanged)refit();if(u.docChanged||u.heightChanged||u.geometryChanged)requestAnimationFrame(ovf)}),
   EditorView.domEventHandlers({keydown:(e)=>{if(!ta.readOnly)return false;
    if(e.key==="Escape"||e.key.length===1||e.key==="Backspace"||e.key==="Enter"){if(e.ctrlKey&&e.key==="Enter")return false;
     ta.dispatchEvent(new KeyboardEvent("keydown",{key:e.key,ctrlKey:e.ctrlKey}));return true}return false}})

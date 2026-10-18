@@ -38,22 +38,26 @@ function tbW(h){const n=document.querySelectorAll("#sideGen button").length||6,p
    always sits 18 px from the actual picture. Changes glide (CSS transition on the grid). Nothing moves under the
    cursor: while the pointer is over the picture the whole layout holds (a new picture fits inside the held area); while
    it is over the prompt the prompt holds its place and only the picture side reshapes. Leaving lets it glide. */
-/* widths are kept as SHARES of the window (pw / rw / iw are fractions of innerWidth-36), so a window resize scales
-   both panels — within their limits — and the leftover still goes to the outer margins */
-const layW=()=>innerWidth-36;
-const layDef=()=>({pw:680/layW(),rw:Math.max(LISTMIN,tabsW()+2)/layW(),iw:null,v:2});
+/* widths are PREFERRED sizes in px (S.lay v:3): a window resize never grows a panel past what you chose — the extra
+   goes to the margins; shrinking takes the margins first (down to MMIN), then both panels in proportion, and they come
+   back when there's room (flex's "shrink, don't grow"). Shares of the window (v:2) shrank them far too early. */
+const layW=()=>innerWidth-36,MMIN=24;
+const layDef=()=>({pw:680,rw:Math.max(LISTMIN,tabsW()+2),iw:null,v:3});
 const lay={overImg:false,navAt:0,pressCard:false,last:null,drag:false};
 /* the picture's height: the stage minus the status row, capped in Generating by S.lay.ih (a share of that height,
    set with the image area's top / bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
 function picH(){const full=$("stage").getBoundingClientRect().height-BAR;if(lay.vh)return Math.min(full,lay.vh);
  const ih=S.lay&&S.lay.ih;return S.view==="gen"&&ih?Math.max(200,Math.min(full,ih*full)):full}
 function hugW(){const j=browsed()||current()||shownDone(),ar=j?j.ar:S.ar,[a,b]=ar.split(":").map(Number),h=picH();return h>0?h*a/b+tbW(h):9999}
-function layGeo(){const W=layW();if(S.lay&&S.lay.v!==2){const o=S.lay;S.lay={pw:(o.pw||680)/W,rw:(o.rw||660)/W,iw:o.iw?o.iw/W:null,v:2}}   /* px → shares, once */
- const L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw/W}:{})),minR=minRight(),gen=S.view==="gen";
- let pw=Math.max(PWMIN,Math.min(L.pw*W,CARDMAX,W-GAP-minR));
- const want=gen?Math.min(L.iw?L.iw*W:1e9,lay.drag?1e9:hugW()):L.rw*W;
- let rw=Math.max(minR,Math.min(want,W-GAP-pw));                  // too narrow: the image area gives way first, then the prompt
- if(gen&&lay.drag)rw=Math.max(minR,Math.min(L.iw?L.iw*W:W-GAP-pw,W-GAP-pw));   // while an edge is held in Generating: the area is the cap itself
+function layGeo(){const W=layW();
+ if(S.lay&&S.lay.v===2){const o=S.lay;S.lay={pw:o.pw*W,rw:o.rw*W,iw:o.iw?o.iw*W:null,ih:o.ih,v:3}}   /* shares → px, once */
+ else if(S.lay&&!S.lay.v){S.lay.v=3}
+ const L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw}:{})),minR=minRight(),gen=S.view==="gen";
+ let pw=Math.max(PWMIN,Math.min(L.pw,CARDMAX));
+ const want=gen?(lay.drag?(L.iw||W):Math.min(L.iw||1e9,hugW())):L.rw;
+ let rw=Math.max(minR,want);
+ const room=W-GAP-2*MMIN;                                            // too narrow: both give way in proportion
+ if(pw+rw>room){const k=Math.max(0,room)/(pw+rw);pw=Math.max(PWMIN,pw*k);rw=Math.max(minR,Math.min(rw*k,W-GAP-pw))}
  const m=Math.max(0,(W-GAP-pw-rw)/2);return{pw,rw,mL:m,mR:m,W,minR,off:0,gen}}
 function layApply(g){const app=document.querySelector(".app"),st=app.style,px=v=>Math.round(v*10)/10+"px";
  const mL=Math.max(0,g.mL+(g.off||0)),mR=Math.max(0,g.W-GAP-g.pw-g.rw-mL);
@@ -65,7 +69,8 @@ function layApply(g){const app=document.querySelector(".app"),st=app.style,px=v=
 function layNow(){const g=layGeo();if(!lay.last||lay.drag)return g;
  if(lay.vh)return lay.last;                                                            // a top / bottom edge held: the width waits for the release
  if(lay.overImg&&Date.now()-lay.navAt<1000)return lay.last;
- if((lay.pressCard||document.querySelector("#left .pop.show"))&&Math.abs(g.pw-lay.last.pw)<1){g.off=lay.last.mL-g.mL;return g}
+ if(lay.pressCard||document.querySelector("#left .pop.show")){g.pw=lay.last.pw;g.rw=Math.max(g.minR,Math.min(g.rw,g.W-GAP-g.pw));   /* the prompt keeps its place and its width */
+  g.mL=g.mR=Math.max(0,(g.W-GAP-g.pw-g.rw)/2);g.off=lay.last.mL-g.mL;return g}
  return g}
 /* an edge drag, in px from where it started. dv = the divider (the prompt's inner edge and the image area's inner edge
    are the same boundary): one panel grows exactly as much as the other shrinks. po / ro = the outer edges: that panel
@@ -77,13 +82,13 @@ function layDrag(edge,g0,dx){const g=Object.assign({},g0),W=layW(),R=document.qu
  if(edge==="po"){const pw=Math.max(PWMIN,Math.min(CARDMAX,g0.pw+g0.mL,g0.pw-dx));g.pw=pw;const W2=g.W-GAP-g.pw-g.rw;g.off=(g0.mL-(pw-g0.pw))-W2/2}
  if(edge==="ro"){const rw=Math.max(g0.minR,Math.min(g0.rw+g0.mR,g0.rw+dx));g.rw=rw;const W2=g.W-GAP-g.pw-g.rw;g.off=g0.mL-W2/2}
  g.mL=g.mR=Math.max(0,(g.W-GAP-g.pw-g.rw)/2);
- S.lay.pw=g.pw/W;if(g0.gen)S.lay.iw=g.rw/W;else S.lay.rw=g.rw/W;layApply(g);return g}
+ S.lay.pw=g.pw;if(g0.gen)S.lay.iw=g.rw;else S.lay.rw=g.rw;layApply(g);return g}
 /* prompt on the right: the left margin sits next to the image area's outer edge */
 function layDragR(edge,g0,dx,W){const g=Object.assign({},g0);
  if(edge==="po"){const pw=Math.max(PWMIN,Math.min(CARDMAX,g0.pw+g0.mR,g0.pw-dx));g.pw=pw;const W2=g.W-GAP-g.pw-g.rw;g.off=g0.mL-W2/2}
  if(edge==="ro"){const rw=Math.max(g0.minR,Math.min(g0.rw+g0.mL,g0.rw+dx));g.rw=rw;const W2=g.W-GAP-g.pw-g.rw;g.off=(g0.mL-(rw-g0.rw))-W2/2}   /* dx arrives mirrored: leftwards grows it */
  g.mL=g.mR=Math.max(0,(g.W-GAP-g.pw-g.rw)/2);
- S.lay.pw=g.pw/W;if(g0.gen)S.lay.iw=g.rw/W;else S.lay.rw=g.rw/W;layApply(g);return g}
+ S.lay.pw=g.pw;if(g0.gen)S.lay.iw=g.rw;else S.lay.rw=g.rw;layApply(g);return g}
 function layRelease(){lay.drag=false;sizeFrame()}
 /* the prompt's place: "left" / "right" beside the picture (horizontal) or "below" it (vertical). Switching slides both
    panels from where they were to where they go. */

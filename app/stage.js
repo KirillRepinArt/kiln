@@ -35,34 +35,40 @@ const LISTMIN=660,GAP=18,PWMIN=360;
    always sits 18 px from the actual picture. Changes glide (CSS transition on the grid). Nothing moves under the
    cursor: while the pointer is over the picture the whole layout holds (a new picture fits inside the held area); while
    it is over the prompt the prompt holds its place and only the picture side reshapes. Leaving lets it glide. */
-const layDef=()=>({pw:680,rw:Math.max(LISTMIN,tabsW()+2),iw:null});
-const lay={holdImg:false,holdCard:false,last:null,drag:false};
+/* widths are kept as SHARES of the window (pw / rw / iw are fractions of innerWidth-36), so a window resize scales
+   both panels — within their limits — and the leftover still goes to the outer margins */
+const layW=()=>innerWidth-36;
+const layDef=()=>({pw:680/layW(),rw:Math.max(LISTMIN,tabsW()+2)/layW(),iw:null,v:2});
+const lay={overImg:false,navAt:0,pressCard:false,last:null,drag:false};
 function hugW(){const j=browsed()||current()||shownDone(),ar=j?j.ar:S.ar,[a,b]=ar.split(":").map(Number),h=$("stage").getBoundingClientRect().height-BAR;return h>0?h*a/b:9999}
-function layGeo(){const L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw}:{})),W=innerWidth-36,minR=minRight(),gen=S.view==="gen";
- let pw=Math.max(PWMIN,Math.min(L.pw,CARDMAX,W-GAP-minR));
- const want=gen?Math.min(L.iw||1e9,lay.drag?1e9:hugW()):L.rw;
+function layGeo(){const W=layW();if(S.lay&&S.lay.v!==2){const o=S.lay;S.lay={pw:(o.pw||680)/W,rw:(o.rw||660)/W,iw:o.iw?o.iw/W:null,v:2}}   /* px → shares, once */
+ const L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw/W}:{})),minR=minRight(),gen=S.view==="gen";
+ let pw=Math.max(PWMIN,Math.min(L.pw*W,CARDMAX,W-GAP-minR));
+ const want=gen?Math.min(L.iw?L.iw*W:1e9,lay.drag?1e9:hugW()):L.rw*W;
  let rw=Math.max(minR,Math.min(want,W-GAP-pw));                  // too narrow: the image area gives way first, then the prompt
- if(gen&&lay.drag)rw=Math.max(minR,Math.min(L.iw||W-GAP-pw,W-GAP-pw));   // while an edge is held in Generating: the area is the cap itself
+ if(gen&&lay.drag)rw=Math.max(minR,Math.min(L.iw?L.iw*W:W-GAP-pw,W-GAP-pw));   // while an edge is held in Generating: the area is the cap itself
  const m=Math.max(0,(W-GAP-pw-rw)/2);return{pw,rw,mL:m,mR:m,W,minR,off:0,gen}}
 function layApply(g){const app=document.querySelector(".app"),st=app.style,px=v=>Math.round(v*10)/10+"px";
  const mL=Math.max(0,g.mL+(g.off||0)),mR=Math.max(0,g.W-GAP-g.pw-g.rw-mL);
  st.setProperty("--mL",px(mL));st.setProperty("--pw",px(g.pw));st.setProperty("--gap",px(GAP));st.setProperty("--rw",px(g.rw));st.setProperty("--mR",px(mR));st.setProperty("--cw",px(g.pw));
  lay.last=Object.assign({},g,{mL,mR,off:0})}
-/* what to apply now, honouring the holds */
+/* what to apply now. Holds last only while you're doing something, and the layout adjusts the moment you finish:
+   flipping with the arrows on the picture holds it (so "next" stays under the cursor) until ~1 s after the last flip;
+   a menu open in the prompt box (ratio, size…) or a press in it holds the prompt in place until you let go. */
 function layNow(){const g=layGeo();if(!lay.last||lay.drag)return g;
- if(lay.holdImg)return lay.last;                                                       // pointer over the picture: everything holds
- if(lay.holdCard&&Math.abs(g.pw-lay.last.pw)<1){g.off=lay.last.mL-g.mL;return g}     // pointer over the prompt: it keeps its place
+ if(lay.overImg&&Date.now()-lay.navAt<1000)return lay.last;
+ if((lay.pressCard||document.querySelector("#left .pop.show"))&&Math.abs(g.pw-lay.last.pw)<1){g.off=lay.last.mL-g.mL;return g}
  return g}
 /* an edge drag, in px from where it started. dv = the divider (the prompt's inner edge and the image area's inner edge
    are the same boundary): one panel grows exactly as much as the other shrinks. po / ro = the outer edges: that panel
    changes and the pair is held still (off) so the edge stays under the cursor; layRelease() lets it re-centre.
    In Generating the right-side width written is the picture's cap (iw), elsewhere the panel width (rw). */
-function layDrag(edge,g0,dx){const g=Object.assign({},g0);
+function layDrag(edge,g0,dx){const g=Object.assign({},g0),W=layW();
  if(edge==="dv"){const pw=Math.max(PWMIN,Math.min(CARDMAX,g0.pw+g0.rw-g0.minR,g0.pw+dx));g.rw=g0.rw-(pw-g0.pw);g.pw=pw}
  if(edge==="po"){const pw=Math.max(PWMIN,Math.min(CARDMAX,g0.pw+g0.mL,g0.pw-dx));g.pw=pw;const W2=g.W-GAP-g.pw-g.rw;g.off=(g0.mL-(pw-g0.pw))-W2/2}
  if(edge==="ro"){const rw=Math.max(g0.minR,Math.min(g0.rw+g0.mR,g0.rw+dx));g.rw=rw;const W2=g.W-GAP-g.pw-g.rw;g.off=g0.mL-W2/2}
  g.mL=g.mR=Math.max(0,(g.W-GAP-g.pw-g.rw)/2);
- S.lay.pw=Math.round(g.pw);if(g0.gen)S.lay.iw=Math.round(g.rw);else S.lay.rw=Math.round(g.rw);layApply(g);return g}
+ S.lay.pw=g.pw/W;if(g0.gen)S.lay.iw=g.rw/W;else S.lay.rw=g.rw/W;layApply(g);return g}
 function layRelease(){lay.drag=false;sizeFrame()}
 function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
  if(!stk&&!sizeFrame.hold)layApply(layNow());
@@ -75,10 +81,12 @@ function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.
  const sx=document.querySelector(".app.stacked")?(st.width-w)/2:0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+12)+"px";pr.style.setProperty("--tw",w+"px");
  if(window.layoutLeft)requestAnimationFrame(layoutLeft)}
 /* the holds: over the picture, over the prompt (card, its name row, its LoRA chips) */
-$("frame").addEventListener("pointerenter",()=>{lay.holdImg=true});
-$("frame").addEventListener("pointerleave",()=>{lay.holdImg=false;sizeFrame()});
-$("lcol").addEventListener("pointerenter",()=>{lay.holdCard=true});
-$("lcol").addEventListener("pointerleave",()=>{lay.holdCard=false;setTimeout(()=>{if(!lay.holdCard)sizeFrame()},350)});
+$("frame").addEventListener("pointerenter",()=>{lay.overImg=true});
+$("frame").addEventListener("pointerleave",()=>{lay.overImg=false;sizeFrame()});
+$("lcol").addEventListener("pointerdown",()=>{lay.pressCard=true});
+/* letting go anywhere (a menu choice, a click, an edge) lets the layout catch up at once */
+addEventListener("pointerup",()=>{lay.pressCard=false;setTimeout(sizeFrame,0)});
+addEventListener("click",()=>setTimeout(sizeFrame,0));
 // live resize: everything follows the window edge directly; animations return ~150 ms after the last resize event
 let lrT=null;
 window.addEventListener("resize",()=>{document.body.classList.add("liveresize");clearTimeout(lrT);lrT=setTimeout(()=>document.body.classList.remove("liveresize"),150);
@@ -97,7 +105,7 @@ let resultStale=false;function shownDone(){return browsed()||(resultStale?null:l
 let browseId=null;
 function doneList(){return jobs.filter(j=>j.status==="done")}
 function browsed(){if(browseId==null)return null;const b=jobs.find(j=>j.id===browseId&&j.status==="done");if(!b)browseId=null;return b||null}
-function genNav(dir,dry){const run=!!current(),b=browsed(),cur=b||(run?null:shownDone()),L=doneList();
+function genNav(dir,dry){if(!dry&&lay.overImg){lay.navAt=Date.now();clearTimeout(genNav.t);genNav.t=setTimeout(sizeFrame,1050)}const run=!!current(),b=browsed(),cur=b||(run?null:shownDone()),L=doneList();
  let i=cur?L.findIndex(x=>x.id===cur.id):L.length;if(i<0)i=L.length;const n=i+dir;let id;
  if(n<0)return false;if(n>=L.length){if(!b)return false;id=null}else id=L[n].id; // past the newest: back to your working view
  if(!dry){browseId=id;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else if(!peekOff)loadJob(L[n])}return true}

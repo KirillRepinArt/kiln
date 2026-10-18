@@ -67,7 +67,7 @@ function grow(){} // column widths now come from sizeFrame()
   h.addEventListener("pointermove",ev=>{if(!d)return;layDrag(d.e,d.g0,ev.clientX-d.x0);sizeFrame.hold=true;sizeFrame();sizeFrame.hold=false;moveThumb(true)});
   const up=()=>{if(!d)return;d=null;h.classList.remove("drag");document.body.classList.remove("resizing","laydrag");$("right").classList.remove("edgehint");save();layRelease();setTimeout(()=>{sizeFrame();moveThumb(true)},430)};
   h.addEventListener("pointerup",up);h.addEventListener("pointercancel",up);
-  h.addEventListener("dblclick",()=>{const df=layDef();if(h.dataset.e!=="ro")S.lay.pw=df.pw;if(h.dataset.e!=="po"){if(S.view==="gen")S.lay.iw=null;else S.lay.rw=df.rw}save();layRelease();moveThumb(true)});
+  h.addEventListener("dblclick",()=>{const df=layDef();if(h.dataset.e!=="ro")S.lay.pw=df.pw;if(h.dataset.e!=="po"){if(S.view==="gen")S.lay.iw=null;else S.lay.rw=df.rw}save();layRelease();moveThumb(true)});   /* defaults as shares of this window */
   h.addEventListener("pointerenter",()=>{if(h.dataset.e!=="po")$("right").classList.add("edgehint")});
   h.addEventListener("pointerleave",()=>{if(!d)$("right").classList.remove("edgehint")})}})();
 function resetLayout(){S.lay=null;delete S.lw;S.pph=0;S.sch=0;S.pos="mid";S.hmode="";updHm();applyPH();save();sizeFrame();moveThumb(true);layoutLeft()}

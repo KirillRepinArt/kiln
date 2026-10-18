@@ -17,6 +17,6 @@ export async function restoreFileOnce(k, t) {
   writeFileSync(join(k.data, "lora_restore.json"), JSON.stringify({ loras: [{ name, display: "Restored Name", fav: true, w: 0.55 }] }));
   await k.send("Page.reload", {}); await k.sleep(800); await k.until("!!(window.LIVE&&LORAS.length>5)", 15000);
   t.ok(await k.until(`LORAS.find(l=>l.name===${JSON.stringify(name)}).display==="Restored Name"`, 6000), "the restore file is applied");
-  t.ok(/Restored names/.test(await k.ev(`$("toastMsg").textContent`)), "and says so");
+  t.ok(await k.until(`/Restored names/.test($("toastMsg").textContent)`, 4000, 100), "and says so", await k.ev(`$("toastMsg").textContent`));
   t.ok(!existsSync(join(k.data, "lora_restore.json")) && existsSync(join(k.data, "lora_restore.done.json")), "only once (kept as .done)");
 }

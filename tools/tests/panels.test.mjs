@@ -70,20 +70,18 @@ export async function dividerAndEdges(k, t) {
   t.ok(b.pr - b.pl === 360, "the prompt stops at its minimum (360)", b.pr - b.pl);
   a = b; await drag(k, ".pedge.pi", 150); await k.sleep(500); b = await box(k);
   t.ok(b.pr - b.pl === a.pr - a.pl + 150 && b.rl - b.pr === 18, "the prompt's right edge is the same divider", { a, b });
-  a = b;
+  a = b; const room = Math.max(10, Math.min(80, 1700 - 18 - a.rr - 4));   // as far as the free space allows
   const h = await R(k, ".pedge.ro"), x = h.left + h.width / 2, y = h.top + 200;
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
-  for (let i = 1; i <= 8; i++) await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x + 10 * i, y, button: "left", buttons: 1 });
+  for (let i = 1; i <= 8; i++) await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x + room * i / 8, y, button: "left", buttons: 1 });
   await k.sleep(100); const mid = await box(k);
-  t.ok(mid.rr === a.rr + 80 && mid.pl === a.pl, "an outer edge follows the cursor while you drag (the rest holds still)", { a, mid });
-  await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x + 80, y, button: "left", clickCount: 1 }); await k.sleep(700);
+  t.ok(Math.abs(mid.rr - (a.rr + room)) <= 1 && mid.pl === a.pl, "an outer edge follows the cursor while you drag (the rest holds still)", { a, mid, room });
+  await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x + room, y, button: "left", clickCount: 1 }); await k.sleep(600);
   b = await box(k);
-  t.ok(b.rr - b.rl === a.rr - a.rl + 80 && centred(b), "…and on release the pair glides back to centre", { a, b });
-  a = b; await drag(k, ".pedge.po", -60); await k.sleep(500); b = await box(k);
-  t.ok(b.pr - b.pl === a.pr - a.pl + 60 && b.rr - b.rl === a.rr - a.rl && b.pr === a.pr, "the prompt's outer edge: only the prompt changes (held while the pointer is on it)", { a, b });
-  await k.mouse(2, 2); await k.sleep(900); b = await box(k);
-  t.ok(centred(b), "moving away: the pair glides back to centre", b);
+  t.ok(Math.abs((b.rr - b.rl) - (a.rr - a.rl + room)) <= 1 && centred(b), "…and on release the pair glides back to centre", { a, b });
+  a = b; const room2 = Math.max(10, Math.min(60, a.pl - 18 - 4)); await drag(k, ".pedge.po", -room2); await k.sleep(500); b = await box(k);
+  t.ok(Math.abs((b.pr - b.pl) - (a.pr - a.pl + room2)) <= 1 && b.rr - b.rl === a.rr - a.rl && centred(b), "the prompt's outer edge: only the prompt changes; centred as soon as you let go", { a, b, room2 });
   const w = (await R(k, "#rpanel")).width; await k.ev(`(showView("loras"),1)`); await settle(k);
   t.ok(Math.abs((await R(k, "#rpanel")).width - w) < 1, "LoRAs has the same width as Queue");
   await k.send("Page.reload", {}); await k.sleep(800); await k.until("!!(window.LIVE&&window._jobsReady)", 15000); await k.ev(`(showView("queue"),1)`); await settle(k);
@@ -92,8 +90,9 @@ export async function dividerAndEdges(k, t) {
 
 export async function windowResize(k, t) {
   await viewport(k, 1700, 950); await k.ev(`(showView("queue"),1)`); await settle(k); const a = await box(k);
-  await viewport(k, 1450, 950); await settle(k); const b = await box(k);
-  t.ok(b.pr - b.pl === a.pr - a.pl && b.rr - b.rl === a.rr - a.rl && b.rl - b.pr === 18, "a narrower window: the panels keep their widths and stay attached", { a, b });
+  await viewport(k, 1450, 950); await settle(k); const b = await box(k), f = (1450 - 36) / (1700 - 36);
+  t.ok(Math.abs((b.pr - b.pl) - (a.pr - a.pl) * f) <= 2 && Math.abs((b.rr - b.rl) - (a.rr - a.rl) * f) <= 2 && b.rl - b.pr === 18,
+    "a narrower window: both panels scale with it and stay attached", { a, b, f });
   t.ok(Math.abs((b.pl - 18) - (1450 - 18 - b.rr)) <= 2, "still centred: only the margins shrank", b);
   await viewport(k, 1150, 950); await settle(k); const c = await box(k);
   t.ok(c.rr <= 1150 - 18 + 1 && c.rl - c.pr === 18, "too narrow for both: they shrink to fit, still attached", c);
@@ -105,9 +104,10 @@ export async function resetAndDoubleClick(k, t) {
   await drag(k, ".pedge.po", -80); await drag(k, ".pedge.ro", 60); await k.sleep(500);
   const h = await R(k, ".pedge.po"); await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x: h.left + 6, y: h.top + 100, button: "left", clickCount: 2 });
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: h.left + 6, y: h.top + 100, button: "left", clickCount: 2 }); await k.sleep(500);
-  t.ok(await k.ev(`S.lay.pw`) === 680, "double-click the prompt's edge: its default width", await k.ev(`S.lay.pw`));
+  t.ok(Math.abs((await R(k, "#left")).width - 680) <= 2, "double-click the prompt's edge: its default width", (await R(k, "#left")).width);
   await k.ev(`($("layBtn").click(),1)`); await k.sleep(200); await k.ev(`(document.querySelector('[data-lay="reset"]').click(),1)`); await settle(k);
-  const r = await box(k); t.ok(JSON.stringify(r) === JSON.stringify(d), "Layout → Reset: back to the default, centred", { d, r });
+  const r = await box(k); t.ok(Math.abs((r.pr - r.pl) - 680) <= 1 && Math.abs((r.rr - r.rl) - 660) <= 1 && r.rl - r.pr === 18 && Math.abs((r.pl - 18) - (1700 - 18 - r.rr)) <= 2,
+    "Layout → Reset: the default sizes for this window, centred", r);
 }
 
 /* Generating: the image area hugs the picture; nothing moves under the cursor */
@@ -127,29 +127,30 @@ export async function hugsThePicture(k, t) {
   const fr = await R(k, "#frame"), L = await R(k, "#left");
   t.ok(Math.abs((L.left - 18) - (1700 - 18 - fr.right)) <= 3, "the pair is centred", { l: L.left, r: fr.right });
   await k.ev(`(showView("queue"),1)`); await k.sleep(900);
-  t.ok(Math.abs((await R(k, "#rpanel")).width - 660) <= 1, "Queue keeps its own width (660)", (await R(k, "#rpanel")).width);
+  t.ok(Math.abs((await R(k, "#rpanel")).width - await k.ev(`S.lay.rw*(innerWidth-36)`)) <= 1, "Queue keeps its own width", (await R(k, "#rpanel")).width);
 }
 
-export async function holdsUnderThePointer(k, t) {
+export async function holdsWhileYouWork(k, t) {
   await viewport(k, 1700, 950);
   await k.job("[fill:dc2828] portrait", { ar: "3:4", steps: 2 }); await done(k, 1);
   await k.job("[fill:2850e6] landscape", { ar: "16:9", steps: 2 }); await done(k, 2); await k.sleep(900);
   const f = await R(k, "#frame"); await k.mouse(f.left + f.width / 2, f.top + f.height / 2); await k.sleep(200);
-  const before = await R(k, "#frame");
-  await k.ev(`(document.activeElement.blur(),genNav(-1),updNav(),1)`); await k.sleep(900);
+  const before = await R(k, "#rpanel");
+  await k.ev(`(document.activeElement.blur(),genNav(-1),updNav(),1)`); await k.sleep(500);
   const during = await R(k, "#rpanel");
-  t.ok(Math.abs(during.left - before.left) < 2 && Math.abs(during.width - before.width) < 2, "pointer over the picture: the area holds while you flip", { before: [before.left, before.width], during: [during.left, during.width] });
-  await k.mouse(2, 2); await k.sleep(900);
-  t.ok((await R(k, "#frame")).width < before.width - 200, "leaving the picture: it glides to fit");
-  // the prompt holds its place while the pointer is in it
-  await k.ev(`(closeShown(),1)`); await k.sleep(900);
-  const L = await R(k, "#left"); await k.mouse(L.left + 40, L.top + 40); await k.sleep(200);
+  t.ok(Math.abs(during.left - before.left) < 2 && Math.abs(during.width - before.width) < 2, "flipping with the pointer on the picture: the area holds", { before: [before.left, before.width], during: [during.left, during.width] });
+  await k.sleep(1100);
+  t.ok((await R(k, "#rpanel")).width < before.width - 200, "~1 s after the last flip it fits the picture, even with the pointer still there");
+  // the prompt holds while a menu in it is open, and adjusts the moment you choose
+  await k.mouse(2, 2); await k.ev(`(closeShown(),1)`); await k.sleep(900);
   const l0 = (await R(k, "#left")).left;
-  await k.ev(`(S.ar=S.ar==="16:9"?"3:4":"16:9",renderPills(),sizeFrame(),1)`); await k.sleep(900);
-  t.ok(Math.abs((await R(k, "#left")).left - l0) < 1, "pointer in the prompt: changing the ratio doesn't move it", { l0, now: (await R(k, "#left")).left });
-  await k.mouse(2, 2); await k.sleep(1300);
+  await k.ev(`($("pAR").click(),1)`); await k.sleep(200);
+  t.ok(await k.ev(`$("popAR").classList.contains("show")`), "the ratio menu is open");
+  await k.ev(`(S.ar=S.ar==="16:9"?"3:4":"16:9",sizeFrame(),1)`); await k.sleep(500);
+  t.ok(Math.abs((await R(k, "#left")).left - l0) < 1, "while the menu is open the prompt doesn't move", { l0, now: (await R(k, "#left")).left });
+  await k.ev(`(closePops(),document.body.click(),1)`); await k.sleep(600);
   const fr = await R(k, "#frame"), L2 = await R(k, "#left");
-  t.ok(Math.abs((L2.left - 18) - (1700 - 18 - fr.right)) <= 3, "after leaving it, the pair re-centres", { l: L2.left, r: fr.right });
+  t.ok(Math.abs((L2.left - 18) - (1700 - 18 - fr.right)) <= 3, "once it closes, the pair re-centres", { l: L2.left, r: fr.right });
 }
 
 export async function capInGenerating(k, t) {
@@ -160,5 +161,5 @@ export async function capInGenerating(k, t) {
   const w1 = (await R(k, "#frame")).width;
   t.ok(w1 < w0 - 100, "in Generating the outer edge caps how wide the picture may be", { w0, w1 });
   await k.ev(`(showView("queue"),1)`); await k.sleep(900);
-  t.ok(Math.abs((await R(k, "#rpanel")).width - 660) <= 1, "…without touching Queue's width");
+  t.ok(Math.abs((await R(k, "#rpanel")).width - await k.ev(`S.lay.rw*(innerWidth-36)`)) <= 1 && await k.ev(`S.lay.iw`) != null, "…without touching Queue's width");
 }

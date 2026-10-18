@@ -674,6 +674,6 @@ body.laydrag *{transition:none!important}
 
 /* Phase 2a: every layout change glides (released edges, picture changes, tab switches); drags and window resizes
    follow directly (body.laydrag / body.liveresize switch transitions off) */
-.app{transition:grid-template-columns .35s cubic-bezier(.4,0,.2,1)}
-.tabs{transition:width .35s cubic-bezier(.4,0,.2,1),transform .4s var(--ease)}
-.right .tabs{transition:width .35s cubic-bezier(.4,0,.2,1),transform .4s var(--ease)}
+.app{transition:grid-template-columns .25s cubic-bezier(.4,0,.2,1)}
+.tabs{transition:width .25s cubic-bezier(.4,0,.2,1),transform .4s var(--ease)}
+.right .tabs{transition:width .25s cubic-bezier(.4,0,.2,1),transform .4s var(--ease)}

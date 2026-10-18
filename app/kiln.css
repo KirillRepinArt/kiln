@@ -845,3 +845,20 @@ body:not(.laydrag) .stage .frame{transition:top var(--lay-t) var(--lay-e),left v
 .pchip:hover{background:var(--raised2)}
 body.glass .pchip{background:color-mix(in oklab,rgba(255,255,255,.08),var(--cool,#9ab) 16%);-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 0 0 1px rgba(255,255,255,.07)}
 #ptxt{overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+/* ---- 2026-10-19 ---- */
+/* the outline follows the picture (and its glide), corners 5 px rounder than the picture's */
+.fithint{border-radius:calc(var(--r-panel) + 5px);transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),height var(--lay-t) var(--lay-e)}
+/* the prompt's text fills the box: you set its width yourself now (edges, Fit width), so the box is the measure — the
+   old ~76-character cap left a wide box half empty */
+.pwrapT .cm-line{padding:0 24px 0 28px}
+textarea#prompt{padding-right:24px}
+/* every layout glide: Material 3's emphasized decelerate — most of the way in the first third, then a long soft
+   settle, so you see the edges arrive. One curve for all the pieces that move together (the picture's box, the status
+   row, the tab bar, the panels, the prompt), or they'd drift apart mid-move. */
+:root{--lay-t:.42s;--lay-e:cubic-bezier(.05,.7,.1,1)}
+/* the queue count on Start: the ring shows through it — clear glass in glass mode, no background in solid (a soft
+   shadow keeps the number readable), set a little further out so it clears the arc's start */
+.controls .play .badge{top:-8px;right:-10px;background:transparent!important;box-shadow:none!important;color:#fff!important;text-shadow:0 0 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.7)}
+body.glass .controls .play .badge{background:rgba(255,255,255,.03)!important;-webkit-backdrop-filter:blur(1.5px) saturate(1.5);backdrop-filter:blur(1.5px) saturate(1.5);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.14)!important;text-shadow:0 0 3px rgba(0,0,0,.6)}

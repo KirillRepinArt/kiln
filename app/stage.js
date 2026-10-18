@@ -126,9 +126,9 @@ function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.
  /* the area's outer handle sits on the picture's outer edge in Generating (the edge you see), not past the button column */
  {const ro=document.querySelector(".pedge.ro");if(ro){const on=!stk&&S.view==="gen",d=tbLeft?left:SW-(left+w);
    ro.style.right=on&&!tbLeft?(d-6)+"px":"";ro.style.left=on&&tbLeft?(d-6)+"px":""}}
- /* while an edge is held or hovered: the box the picture fits into (the button column is outside it) */
- {const fh=$("fithint");if(fh){fh.style.left=(stk||tbLeft?TB:0)+"px";fh.style.width=Math.max(0,SW-(stk?2:1)*TB)+"px";
-   fh.style.top=(lay.vtop!=null?lay.vtop:Math.max(0,(st.height-BAR-PH)/2))+"px";fh.style.height=PH+"px"}}
+ /* while an edge is held or hovered: an outline round the picture itself, an even 5 px out (the edges you drag are
+    the picture's own; the box it may fill showed as a frame floating off the picture) */
+ {const fh=$("fithint");if(fh){fh.style.left=(left-5)+"px";fh.style.top=(top-5)+"px";fh.style.width=(w+10)+"px";fh.style.height=(h+10)+"px"}}
  const he=$("hedges");if(he){he.style.left=left+"px";he.style.width=w+"px";he.style.top=top+"px";he.style.height=h+"px"}
  /* tab bar: centred over the panel in Queue / LoRAs / PNG Info; in Generating it sits right on top of the picture and is
     centred on the picture itself, not on picture + button column — as far as the area allows (it never pokes out) */

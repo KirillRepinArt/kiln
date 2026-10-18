@@ -128,11 +128,9 @@ export async function outlineIsFitBox(k, t) {
   await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 }); await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
   await k.mouse(2, 2); await k.sleep(900);
   await k.ev(`($("right").classList.add("edgehint"),1)`); await k.sleep(100);
-  const h = await R(k, "#fithint"), f = await R(k, "#frame"), gt = await R(k, "#gtools");
+  const h = await R(k, "#fithint"), f = await R(k, "#frame");
   t.ok(h.width > 0, "the outline shows");
-  t.ok(h.left >= gt.right - 1 || h.right <= gt.left + 1, "the button column is outside it", { h: [h.left, h.right], gt: [gt.left, gt.right] });
-  t.ok(f.left >= h.left - 1 && f.right <= h.right + 1 && f.top >= h.top - 1 && f.bottom <= h.bottom + 1, "the picture fits inside it");
-  t.ok(Math.abs(f.left - h.left) < 2 || Math.abs(f.right - h.right) < 2 || Math.abs(f.top - h.top) < 2, "and touches it on the side that limits it");
+  for (const [n, d] of [["left", f.left - h.left], ["right", h.right - f.right], ["top", f.top - h.top], ["bottom", h.bottom - f.bottom]]) t.near(d, 5, 1, `an even 5 px round the picture (${n})`);
   await k.ev(`($("right").classList.remove("edgehint"),1)`);
 }
 outlineIsFitBox.opts = { width: 2000, height: 1023, step: 0.05 };
@@ -177,3 +175,10 @@ export async function slotIsFixed(k, t) {
   t.ok(await k.ev(`getComputedStyle($("hmFull")).display`) === "none", "no Full height in Vertical");
 }
 slotIsFixed.opts = { width: 2000, height: 1023, step: 0.05 };
+
+export async function textFillsBox(k, t) {
+  await k.ev(`(P.value=Array(6).fill("word").join(" ").repeat(30),draft=P.value,1)`); await k.sleep(600);
+  const r = await k.ev(`(()=>{const L=$("left").getBoundingClientRect(),c=document.querySelector(".pwrapT .cm-line").getBoundingClientRect(),rg=document.createRange();rg.selectNodeContents(document.querySelector(".pwrapT .cm-line"));const rs=[...rg.getClientRects()];return{box:L.right,text:Math.max(...rs.map(x=>x.right))}})()`);
+  t.ok(r.box - r.text < 70, "a long prompt's lines run to the box's right side (no ~76-character cap)", r);
+}
+textFillsBox.opts = { width: 2400, height: 1000 };

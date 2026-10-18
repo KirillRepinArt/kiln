@@ -86,7 +86,7 @@ function grow(){} // column widths now come from sizeFrame()
 /* the edit buttons appear while the pointer is over the picture or the column beside it (one zone, so you never chase
    them) and stay ~300 ms after it leaves, so a diagonal path doesn't lose them */
 (function(){let t=null;const on=()=>{clearTimeout(t);$("stage").classList.add("tools")},off=()=>{clearTimeout(t);t=setTimeout(()=>$("stage").classList.remove("tools"),300)};
- for(const el of [$("frame"),$("gtools")]){el.addEventListener("pointerenter",on);el.addEventListener("pointerleave",off)}})();
+ for(const el of [$("frame"),$("gtools"),...document.querySelectorAll(".stage>.gnav")]){el.addEventListener("pointerenter",on);el.addEventListener("pointerleave",off)}})();
 (function(){const L=$("left"),col=$("lcol");let d=null;
  for(const side of ["l","r"]){const h=document.createElement("div");h.className="sedge "+side;h.dataset.tip="Drag to resize the prompt box · double-click for its default width";L.appendChild(h);
   h.addEventListener("pointerdown",ev=>{if(!document.querySelector(".app.stacked")||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);

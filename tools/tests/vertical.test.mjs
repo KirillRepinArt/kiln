@@ -7,7 +7,8 @@ async function moveTo(k, x0, y0, x1, y1) { for (let i = 1; i <= 10; i++) await k
 const release = (k, x, y) => k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
 
 export async function sideEdges(k, t) {
-  await k.ev(`(setDock("below"),1)`); await k.mouse(2, 2); await k.sleep(900);
+  await k.ev(`(setDock("below"),1)`); await k.mouse(2, 2);
+  await k.until(`!document.body.classList.contains("laysnap")`, 4000, 50); await k.sleep(700);   /* the switch and any glide done: the edge is where it stays */
   const L0 = await R(k, "#left"), mid = await k.ev(`innerWidth/2`);
   t.near(L0.width, 760, 2, "Vertical: the box starts at its default width");
   t.ok(await k.ev(`getComputedStyle(document.querySelector(".sedge.r")).display`) === "block", "it has side edges");
@@ -130,7 +131,7 @@ export async function outlineIsFitBox(k, t) {
   await k.ev(`($("right").classList.add("edgehint"),1)`); await k.sleep(100);
   const h = await R(k, "#fithint"), f = await R(k, "#frame");
   t.ok(h.width > 0, "the outline shows");
-  for (const [n, d] of [["left", f.left - h.left], ["right", h.right - f.right], ["top", f.top - h.top], ["bottom", h.bottom - f.bottom]]) t.near(d, 5, 1, `an even 5 px round the picture (${n})`);
+  for (const [n, d] of [["left", f.left - h.left], ["right", h.right - f.right], ["top", f.top - h.top], ["bottom", h.bottom - f.bottom]]) t.near(d, 12, 1, `an even 12 px round the picture (${n})`);
   await k.ev(`($("right").classList.remove("edgehint"),1)`);
 }
 outlineIsFitBox.opts = { width: 2000, height: 1023, step: 0.05 };
@@ -182,3 +183,46 @@ export async function textFillsBox(k, t) {
   t.ok(r.box - r.text < 70, "a long prompt's lines run to the box's right side (no ~76-character cap)", r);
 }
 textFillsBox.opts = { width: 2400, height: 1000 };
+
+export async function arrowsHold(k, t) {
+  await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=1`, 30000);
+  await k.job("[fill:884422] tall", { ar: "3:4", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  t.ok(await k.ev(`document.querySelector(".tab").dataset.v==="gallery"&&document.querySelectorAll(".tab")[1].dataset.v==="gen"`), "Gallery is the tab left of Generating (the tabs read like the timeline)");
+  const on = () => k.ev(`document.querySelector(".tab.on").dataset.v`);
+  t.ok(await on() === "gen" && await k.ev(`browseId===null`), "at the start: Generating, the live view");
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.sleep(400);
+  t.ok(await on() === "gallery" && await k.ev(`browseId===lastDone().id`), "clicking Gallery: the last finished picture, Gallery lit");
+  await k.ev(`(genNav(1),1)`); await k.sleep(500);
+  t.ok(await on() === "gen" && await k.ev(`browseId===null`), "stepping past the newest: back to Generating");
+  await k.ev(`(genNav(-1),1)`); await k.sleep(500);
+  t.ok(await on() === "gallery", "stepping back from the render lights Gallery");
+  await k.ev(`(document.querySelector('.tab[data-v="gen"]').click(),1)`); await k.sleep(400);
+  t.ok(await on() === "gen" && await k.ev(`browseId===null`), "clicking Generating: the live view again");
+  t.ok(await k.ev(`!$("frame").classList.contains("has")`), "idle, it's clean — the picture lives in the Gallery, not shown twice");
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.mouse(2, 2); await k.sleep(900);
+  const f = await R(k, "#frame"); await k.mouse(f.left + 30, f.top + f.height / 2); await k.sleep(500);
+  const p0 = await R(k, ".stage>.gnav.prev");
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".stage>.gnav.prev")).opacity`) === "1", "hovering the picture shows the arrows");
+  t.near(p0.left, f.left + 10, 2, "at the picture's edge");
+  const x = p0.left + p0.width / 2, y = p0.top + p0.height / 2;
+  await k.mouse(x, y); await k.sleep(150); await k.click(x, y); await k.sleep(500);
+  const p1 = await R(k, ".stage>.gnav.prev"), f1 = await R(k, "#frame");
+  t.ok(Math.abs(f1.width / f1.height - f.width / f.height) > .3, "the picture changed shape", { f: [f.width, f.height], f1: [f1.width, f1.height] });
+  t.near(p1.left, p0.left, 1, "the arrow under the pointer held still");
+  await k.sleep(1500);
+  const p2 = await R(k, ".stage>.gnav.prev"), f2 = await R(k, "#frame");
+  t.near(p2.left, f2.left + 10, 2, "a moment after the last click it moved to the new picture's edge");
+}
+arrowsHold.opts = { width: 2000, height: 1023, step: 0.05 };
+
+export async function crossFade(k, t) {
+  await k.job("[fill:446688] one", { ar: "16:9", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=1`, 30000);
+  await k.job("[fill:884422] two", { ar: "3:4", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  await k.sleep(800);
+  await k.ev(`(window._xo=[],genNav(-1),(function f(n){_xo.push(+getComputedStyle($("cvx")).opacity);if(n)requestAnimationFrame(()=>f(n-1))})(30),1)`); await k.sleep(1200);
+  const xo = await k.ev(`_xo`);
+  t.ok(xo.some(v => v > 0.5), "the picture on show stays, as a layer over the next", xo.slice(0, 12));
+  t.ok(xo[xo.length - 1] < 0.05, "and fades out", xo.slice(-4));
+  t.ok(await k.ev(`$("cv").width>2`), "the new one is drawn under it");
+}
+crossFade.opts = { width: 2000, height: 1023, step: 0.05 };

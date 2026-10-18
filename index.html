@@ -16,6 +16,7 @@
 <body>
 <canvas id="stars"></canvas>
 <canvas id="fglow" width="64" height="80" style="display:none"></canvas>
+<div class="fithint" id="fithint"></div>
 <div class="app">
 
   <div class="lcol" id="lcol">
@@ -46,30 +47,31 @@
   <section class="right" id="right">
     <nav class="tabs">
       <div class="seg" id="seg"><span class="thumb" id="thumb"></span>
+      <button class="tab" data-v="gallery">Gallery</button>
       <button class="tab on" data-v="gen">Generating</button>
       <button class="tab" data-v="queue">Queue<span class="n" id="tabN"></span></button>
       <button class="tab" data-v="loras">LoRAs</button>
       <button class="tab" data-v="png">PNG Info</button></div>
-      <a class="flink" href="http://127.0.0.1:7860" target="_blank" rel="noopener" title="Open Forge's own UI in a new tab">Forge ↗</a>
       <span class="laywrap"><button class="gear lay" id="layBtn" title="Layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 4v16"/></svg></button>
-       <div class="pop laymenu" id="layMenu"><div class="opt" data-lay="left">Horizontal <small>prompt on the left</small></div><div class="opt" data-lay="right">Horizontal <small>prompt on the right</small></div><div class="opt" data-lay="below">Vertical <small>prompt below the picture</small></div><div class="lsep"></div><div class="opt" data-lay="reset">Reset sizes <small>default widths, centred</small></div></div></span>
+       <div class="pop laymenu" id="layMenu"><div class="opt" data-lay="left"><svg class="lic" viewBox="0 0 28 18" fill="none" stroke="currentColor" stroke-width="1.3"><rect x=".7" y=".7" width="26.6" height="16.6" rx="3"/><rect x="3.5" y="5" width="8" height="8" rx="1.5" fill="currentColor" stroke="none"/><rect x="13.5" y="3.5" width="11" height="11" rx="1.5"/></svg>Horizontal <small>prompt on the left</small></div><div class="opt" data-lay="right"><svg class="lic" viewBox="0 0 28 18" fill="none" stroke="currentColor" stroke-width="1.3"><rect x=".7" y=".7" width="26.6" height="16.6" rx="3"/><rect x="16.5" y="5" width="8" height="8" rx="1.5" fill="currentColor" stroke="none"/><rect x="3.5" y="3.5" width="11" height="11" rx="1.5"/></svg>Horizontal <small>prompt on the right</small></div><div class="opt" data-lay="below"><svg class="lic" viewBox="0 0 28 18" fill="none" stroke="currentColor" stroke-width="1.3"><rect x=".7" y=".7" width="26.6" height="16.6" rx="3"/><rect x="8.5" y="2.8" width="11" height="7.5" rx="1.5"/><rect x="6.5" y="11.6" width="15" height="3.6" rx="1.2" fill="currentColor" stroke="none"/></svg>Vertical <small>prompt below the picture</small></div><div class="lsep"></div><div class="opt" data-lay="reset"><svg class="lic" viewBox="0 0 28 18" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M18.5 9a4.5 4.5 0 1 1-1.5-3.4"/><path d="M18.5 3.5v3h-3"/></svg>Reset sizes <small>default widths, centred</small></div></div></span>
       <button class="gear" id="gear" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </nav>
 
     <div class="rpanel" id="rpanel">
       <canvas id="amb" width="12" height="12"></canvas>
       <div class="view on" id="v-gen">
-        <div class="stage" id="stage"><div class="fithint" id="fithint"></div><div class="hedges" id="hedges"><div class="hedge t" data-e="t" data-tip="Drag to limit the picture's height · double-click to remove the limit"></div><div class="hedge b" data-e="b" data-tip="Drag to limit the picture's height · double-click to remove the limit"></div></div>
+        <div class="stage" id="stage"><div class="hedges" id="hedges"><div class="hedge t" data-e="t" data-tip="Drag to limit the picture's height · double-click to remove the limit"></div><div class="hedge b" data-e="b" data-tip="Drag to limit the picture's height · double-click to remove the limit"></div></div>
           <div class="frame" id="frame">
             <canvas id="veil"></canvas>
             <canvas id="embers"></canvas>
-            <canvas id="cv"></canvas><button class="cbtn" id="cbtn"></button>
+            <canvas id="cv"></canvas><canvas id="cvx"></canvas><button class="cbtn" id="cbtn"></button>
             <div class="idle" id="idle"><div><span id="idleT">Queue is empty</span><br><small id="idleS">Write a prompt and press ▶ (Ctrl+Enter)</small></div></div>
             <div class="miss" id="missCard"><div class="mt">This file was deleted outside Kiln</div><div class="mf" id="missFile"></div>
               <div class="ma"><button class="btn pri" id="mRestore">Restore from Recycle Bin</button><button class="btn pri" id="mSave">Save back</button><button class="btn" id="mAgain">Render again</button><button class="btn" id="mRemove">Remove from list</button></div>
               <div class="mh" id="missHint"></div></div>
-            <button class="bclose" id="bclose"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button><button class="nav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button>
+            <button class="bclose" id="bclose"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
           </div>
+          <button class="nav gnav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav gnav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button>
           <div class="gtools" id="gtools"><div class="side" id="sideGen"></div></div>
         </div>
         <div class="prog" id="prog">
@@ -125,6 +127,7 @@
       <div class="fgh">Output</div>
       <label>Output folder</label><input data-set="outdir" value="outputs/kiln">
       <label>Forge URL</label><input data-set="forge" value="http://127.0.0.1:7860">
+      <label>Forge's own UI</label><div class="about"><a class="btn flink2" id="forgeLink" href="http://127.0.0.1:7860" target="_blank" rel="noopener">Open Forge ↗</a></div>
       <div class="fgh" id="fghAp">Appearance</div>
       <label>Theme</label><select id="sTheme"><option value="aurora">Aurora · northern lights</option><option value="ember">Ember</option><option value="ice">Ember → Ice</option><option value="emerald">Emerald · Matrix rain</option><option value="sunset">Sunset</option></select>
       <label>Font</label><select data-set="font" id="sFont"><option value="theme">Theme font</option><option value="Geist">Geist</option><option value="Inter">Inter</option><option value="Satoshi">Satoshi</option><option value="Manrope">Manrope</option><option value="IBM Plex Sans">IBM Plex Sans</option></select>

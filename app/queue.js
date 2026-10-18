@@ -57,7 +57,7 @@ function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classLis
    closes both and returns to the live view. */
 let peekOff=false;
 function closePromptPeek(){if(browseId!=null){peekOff=true;endPeek(true)}else endPeek()}
-function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){browseId=null;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}}
+function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){if(window.xfadeSnap)xfadeSnap();browseId=null;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}}
  if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
  const n=$("pname");n.value=S.pname||"";n.placeholder="Add name";n.readOnly=false;
  $("peekbar").classList.remove("show");$("pnSave").classList.remove("show");$("left").classList.remove("peeking");renderChips();renderPills();updPrompt();layoutLeft()}

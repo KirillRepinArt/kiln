@@ -23,10 +23,24 @@
  /* a canvas only ever shows the image it was last asked for: while that one loads it is blank (never the previous
     picture or a cancelled job's preview stretched to the new shape), a load that lands after you moved on is dropped,
     and a file that's gone says so */
- window.paint=function(cv,j,progress){const u=urlFor(j);if(!u)return;if(j.missing){cv.dataset.want=j.id;if(cv.id==="cv")missing(cv,j);return}const e=img(u),nat=cv.id==="vcv";cv.dataset.want=j.id;
-  if(e.i.complete&&e.i.naturalWidth){drawTo(cv,e.i,nat);return}
+ /* switching pictures: the one on show is copied to an overlay (#cvx) at its own size and fades out once the next is
+    drawn — never an empty frame in between (Photos / Lightroom). The neighbours are decoded ahead (preload) */
+ function xfadeFrom(cv,id){const x=$("cvx");if(!x||cv.id!=="cv"||cv.width<2||!cv.dataset.shown||cv.dataset.shown===String(id))return;
+  x.width=cv.width;x.height=cv.height;x.getContext("2d").drawImage(cv,0,0);x.style.width=cv.dataset.cw;x.style.height=cv.dataset.ch;
+  x.style.transition="none";x.style.opacity="1";x.dataset.wait="1"}
+ function xfadeGo(cv,id){if(cv.id!=="cv")return;cv.dataset.shown=id;cv.dataset.cw=cv.style.width;cv.dataset.ch=cv.style.height;const x=$("cvx");
+  if(x&&x.dataset.wait){x.dataset.wait="";void x.offsetWidth;x.style.transition="";x.style.opacity="0"}}
+ /* any other change of what's on show (leaving the Gallery, ✕, the render taking over): the picture fades out the same
+    way — over whatever comes next (a render's first preview), or at once if nothing does (a clean screen) */
+ window.xfadeSnap=()=>{const cv=$("cv"),x=$("cvx");if(!x||cv.width<2)return;x.width=cv.width;x.height=cv.height;x.getContext("2d").drawImage(cv,0,0);
+  x.style.width=cv.style.width;x.style.height=cv.style.height;x.style.transition="none";x.style.opacity="1";x.dataset.wait="1";
+  clearTimeout(x._t);x._t=setTimeout(xfadeEnd,260)};
+ function xfadeEnd(){const x=$("cvx");if(!x||!x.dataset.wait)return;x.dataset.wait="";void x.offsetWidth;x.style.transition="";x.style.opacity="0"}
+ window.preload=j=>{const u=urlFor(j);if(!u||j.missing)return;const e=img(u);try{e.i.decode().catch(()=>{})}catch(_){}};
+ window.paint=function(cv,j,progress){const u=urlFor(j);if(!u)return;xfadeFrom(cv,j.id);if(j.missing){cv.dataset.want=j.id;if(cv.id==="cv")missing(cv,j);return}const e=img(u),nat=cv.id==="vcv";cv.dataset.want=j.id;
+  if(e.i.complete&&e.i.naturalWidth){drawTo(cv,e.i,nat);xfadeGo(cv,j.id);return}
   if(cv.id==="cv"){cv.width=1;cv.height=1}
-  e.p.then(im=>{if(cv.dataset.want!=String(j.id))return;if(im)drawTo(cv,im,nat);else{delete imgs[u];missing(cv,j)}})};
+  e.p.then(im=>{if(cv.dataset.want!=String(j.id))return;if(im){drawTo(cv,im,nat);xfadeGo(cv,j.id)}else{delete imgs[u];missing(cv,j);xfadeGo(cv,j.id)}})};
  function missing(cv,j){const dpr=devicePixelRatio||1,W=Math.max(64,Math.round((cv.clientWidth||300)*dpr)),H=Math.max(64,Math.round((cv.clientHeight||300)*dpr));
   cv.width=W;cv.height=H;const c=cv.getContext("2d");c.fillStyle="#0b0b0e";c.fillRect(0,0,W,H)}   /* the words and the ways back are on the card (#missCard) */
  /* the missing-file card: what can bring it back, best first */
@@ -212,7 +226,7 @@
    if(S.view==="gen"&&!browsed()){const f=$("frame");f.classList.add("has");$("idle").style.display="none";
     if(+$("cv").dataset.j!==j.id){$("cv").dataset.j=j.id;$("cv").dataset.d="";$("cv").dataset.want="";lastPrev=0;const c=$("cv");c.width=1;c.height=1;sizeFrame()}
     if(j.preview_rev&&j.preview_rev!==lastPrev&&!prevLoading){prevLoading=true;const r=j.preview_rev;const i=new Image();
-     const jid=j.id;i.onload=()=>{if(+$("cv").dataset.j===jid&&!browsed())drawTo($("cv"),i,false);lastPrev=r;prevLoading=false};i.onerror=()=>{prevLoading=false;lastPrev=r};i.src=`/api/preview/${j.id}?r=${r}`}}
+     const jid=j.id;i.onload=()=>{if(+$("cv").dataset.j===jid&&!browsed()){drawTo($("cv"),i,false);xfadeEnd()}lastPrev=r;prevLoading=false};i.onerror=()=>{prevLoading=false;lastPrev=r};i.src=`/api/preview/${j.id}?r=${r}`}}
    const mini=document.querySelector(`.qi[data-id="${j.id}"] .mini i`);if(mini)mini.style.width=(p*100)+"%";
    const lp=document.querySelector(`img[data-lp="${j.id}"]`);if(lp&&j.preview_rev&&lp.dataset.r!=j.preview_rev){lp.dataset.r=j.preview_rev;lp.src=`/api/preview/${j.id}?r=${j.preview_rev}`}   /* Q6: the render, small, in its queue row */
   }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run","stopping","bgjob");$("fill").style.width="0%";prog.classList.toggle("cap",S.view==="gen"&&!!browsed());

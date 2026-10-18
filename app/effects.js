@@ -77,7 +77,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
  const aur=makeAurora(),crt=makeCRT(),cam=makeCamera();let crtJob=null,sweepT=0,nstr=0,fadeT=0,fadeFrom=0,fgA=0,finishAt=-1e9,haloT=0,fadeDur=0,finStr=0;const fg=$("fglow"),fgc=fg.getContext("2d"),halo=makeHalo();
  const dith=document.createElement("canvas");dith.width=dith.height=64;{const g=dith.getContext("2d"),d=g.createImageData(64,64);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255|0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}g.putImageData(d,0,0)}const HOLD=.7,FADE=5000; /* Aurora: the night layer holds at 70 % from mid-job, then fades slowly after the finish */
  const smooth=(a,b,x)=>{const q=Math.max(0,Math.min(1,(x-a)/(b-a)));return q*q*(3-2*q)};
- $("frame").addEventListener("pointerenter",()=>hover=true);$("frame").addEventListener("pointerleave",()=>hover=false);
+ for(const el of [$("frame"),...document.querySelectorAll(".stage>.gnav")]){el.addEventListener("pointerenter",()=>hover=true);el.addEventListener("pointerleave",()=>hover=false)}
  function sprite(color,size){const c=document.createElement("canvas");c.width=c.height=size;const g=c.getContext("2d");const r=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
   r.addColorStop(0,color);r.addColorStop(.18,color+"cc");r.addColorStop(.45,color+"33");r.addColorStop(1,color+"00");g.fillStyle=r;g.fillRect(0,0,size,size);return c}
  let spr={};function sprites(){const cs=getComputedStyle(document.documentElement);cols=["--a1","--a2","--a3"].map((k,i)=>cs.getPropertyValue(k).trim()||cols[i]);
@@ -98,7 +98,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
     transparency, no hover peek, no fading with the steps, no starlight/code drawn from it, no finish, no ambient glow,
     no viewer) and the prompt, name and LoRA chips are hidden. It stays on until pressed again, across jobs and
     restarts. Off: the cover follows Settings → Cover. The Queue tab isn't touched (decided 2026-10-18). */
- const CV={held:false,t0:0,pr:.55};const HALO_CUT="#left,.ltitle .peekbar.show,.seg,.flink,#layBtn,#gear,#lcol>.chips .chip";const cbtn=$("cbtn");
+ const CV={held:false,t0:0,pr:.55};const HALO_CUT="#left,.ltitle .peekbar.show,.seg,#layBtn,#gear,#lcol>.chips .chip";const cbtn=$("cbtn");
  if(S.set&&S.set.privacy!=null){if(S.privacy==null)S.privacy=S.set.privacy==="on";delete S.set.privacy;save()}   /* the old Privacy hold setting */
  const EYE='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
   SHUT='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 10.5c2.2 2.6 5.2 4 9 4s6.8-1.4 9-4"/><path d="M6.2 13.6 4.6 16M12 14.6V17.4M17.8 13.6l1.6 2.4"/></svg>';

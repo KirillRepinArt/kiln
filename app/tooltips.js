@@ -16,7 +16,7 @@
   pN:"How many images to queue — scroll to nudge",play:"Add to queue (Ctrl+Enter)",prog:"Click to see this image's prompt · the preview shows the last finished step",
   stopBtn:"Stop this job",csize:"Thumbnail size",lsearch:"Search LoRAs by name",gear:"Settings",vclose:"Close (Esc)"};
  for(const id in TIPS){const el=$(id);if(el&&!el.title)el.dataset.tip=TIPS[id]}
- const TABT={gen:"The image being made, and the last result",queue:"Running, waiting and finished jobs",loras:"Your LoRA library",png:"Read settings from any Forge PNG"};
+ const TABT={gen:"The image being made, and the last result",gallery:"Your finished pictures — ← → to browse",queue:"Running, waiting and finished jobs",loras:"Your LoRA library",png:"Read settings from any Forge PNG"};
  document.querySelectorAll(".tab").forEach(t=>t.dataset.tip=TABT[t.dataset.v]);
  const CHIPT=e=>{const c=e.target.closest(".chip .cn");if(c&&!c.dataset.tip)c.dataset.tip="Open in the LoRA library · drag to reorder";const x=e.target.closest(".chip .cx");if(x&&!x.dataset.tip)x.dataset.tip="Remove";
   const s=e.target.closest(".star");if(s&&!s.dataset.tip)s.dataset.tip="Favourite";const tg=e.target.closest("[data-tg]");if(tg&&!tg.dataset.tip)tg.dataset.tip="On / off";

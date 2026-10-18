@@ -5,9 +5,22 @@ function showView(v){const was=S.view;
  if(was!==v){ // temporary state belongs to the visit: an open preview, a browse, a search, a scroll position
   if(was==="queue")$("qwrap").scrollTop=0; // the prompt box (and its peek) is left as it is
   if(was==="loras"){$("lsearch").value="";$("lscroll").scrollTop=0}}
- S.view=v;$("rpanel").classList.toggle("paneled",v!=="gen");document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));moveThumb();
+ S.view=v;$("rpanel").classList.toggle("paneled",v!=="gen");tabSync(true);
  document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id==="v-"+v));if(v==="queue")renderQueue();if(v==="loras")renderLoras();sizeFrame()}
-document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showView(t.dataset.v));
+/* Gallery isn't a page of its own (yet): it's the name for browsing finished pictures in the picture view — the
+   state ← and the arrows already put you in. Clicking it opens the last finished picture; Generating = the live view */
+function tabSync(force){const v=S.view==="gen"&&browsed()?"gallery":S.view;if(!force&&tabSync.v===v)return;tabSync.v=v;
+ document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));moveThumb()}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{const v=t.dataset.v;
+ if(v==="gallery"){if(S.view!=="gen")showView("gen");if(!browsed()){const d=lastDone();if(d)browseTo(d);else toast("No finished pictures yet")}tabSync();return}
+ if(v==="gen"&&browsed()){endPeek();if(!current())closeShown()}
+ showView(v)});
+/* the resize outline: drawn on the page's bottom layer (fixed, under every panel, so nothing clips it), 12 px round
+   the picture, following it every frame while an edge is hovered or held */
+(function(){const fh=$("fithint"),rt=$("right");let on=false;
+ function tick(){if(!rt.classList.contains("edgehint")||S.view!=="gen"||document.querySelector(".app.stacked")){on=false;fh.classList.remove("show");return}
+  const r=$("frame").getBoundingClientRect(),O=12;fh.style.left=(r.left-O)+"px";fh.style.top=(r.top-O)+"px";fh.style.width=(r.width+2*O)+"px";fh.style.height=(r.height+2*O)+"px";fh.classList.add("show");requestAnimationFrame(tick)}
+ new MutationObserver(()=>{if(!on&&rt.classList.contains("edgehint")){on=true;tick()}}).observe(rt,{attributes:true,attributeFilter:["class"]})})();
 
 /* ======================= mock image ======================= */
 function rng(seed){let s=seed>>>0||1;return()=>((s=Math.imul(s^s>>>15,1|s)+0x6D2B79F5|0,(s>>>0)/4294967296))}
@@ -21,7 +34,8 @@ function paint(cv,job,progress){const [w,h]=SIZES[job.mp][job.ar];const W=Math.r
   const t=document.createElement("canvas");t.width=sw;t.height=sh;const tc=t.getContext("2d");tc.imageSmoothingQuality="high";tc.drawImage(cv,0,0,sw,sh);
   c.imageSmoothingEnabled=true;c.imageSmoothingQuality="high";c.clearRect(0,0,W,H);c.drawImage(t,0,0,W,H)}}
 function fitBox(el,ar,bw,bh){const [a,b]=ar.split(":").map(Number);let w=bw,h=bw*b/a;if(h>bh){h=bh;w=bh*a/b}el.style.width=w+"px";el.style.height=h+"px"}
-const BAR=66; // bar block height incl. gap: 12 + track 10 + 7 + status row 36
+let BAR=66; // the status block under the picture: 12 + track 10 + 7 + status row 36; in the Gallery 6 + row 36 + 4 (no bar)
+const inGallery=()=>S.view==="gen"&&!!browsed();
 /* Wide window = the prompt and the image area as one pair: their own widths (S.lay.pw / S.lay.rw), a fixed 18 px gap,
    the pair centred in the window. A window resize only changes the margins around it. The image area is the same
    rectangle in every tab and for every image shape: Generating fits the picture into it, Queue / LoRAs / PNG Info
@@ -52,7 +66,7 @@ function hugW(){const j=browsed()||current()||shownDone(),ar=j?j.ar:S.ar,[a,b]=a
 function layGeo(){const W=layW();
  if(S.lay&&S.lay.v===2){const o=S.lay;S.lay={pw:o.pw*W,rw:o.rw*W,iw:o.iw?o.iw*W:null,ih:o.ih,v:3}}   /* shares → px, once */
  else if(S.lay&&!S.lay.v){S.lay.v=3}
- const L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw}:{})),minR=minRight(),gen=S.view==="gen";
+ const gen=S.view==="gen",L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw}:{})),minR=gen?420:minRight();   /* Generating: the tab bar may overhang a narrow picture (decided 2026-10-19); the other tabs' panel holds it */
  let pw=Math.max(PWMIN,Math.min(L.pw,CARDMAX));
  const want=gen?(lay.drag?(L.iw||W):Math.min(L.iw||1e9,hugW())):L.rw;
  let rw=Math.max(minR,want);
@@ -103,7 +117,9 @@ function layMorph(fn){const b=document.body,h=document.documentElement;let ended
  b.classList.add("laysnap");
  if(!document.startViewTransition||matchMedia("(prefers-reduced-motion: reduce)").matches){fn();end();return}
  h.classList.add("laymorph");try{document.startViewTransition(fn).finished.finally(end)}catch(e){fn();end()}}
-function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
+function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");
+ /* the Gallery has no progress bar: its caption sits centred just under the picture, and the picture gets that room */
+ {const g=inGallery();BAR=g?46:66;document.body.classList.toggle("gallery",g)}const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
  if(!stk&&!sizeFrame.hold)layApply(layNow());
  /* Vertical: the picture's area (and Queue / LoRAs / PNG Info) is a centred column no wider than a 16:9 picture at the
     height it has (plus its button column each side), never narrower than the tab bar or the prompt box — not edge to edge */
@@ -128,18 +144,21 @@ function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.
    ro.style.right=on&&!tbLeft?(d-6)+"px":"";ro.style.left=on&&tbLeft?(d-6)+"px":""}}
  /* while an edge is held or hovered: an outline round the picture itself, an even 5 px out (the edges you drag are
     the picture's own; the box it may fill showed as a frame floating off the picture) */
- {const fh=$("fithint");if(fh){fh.style.left=(left-5)+"px";fh.style.top=(top-5)+"px";fh.style.width=(w+10)+"px";fh.style.height=(h+10)+"px"}}
+  /* the arrows: at the picture's side edges, mid-height — but while you're clicking through with them they hold still
+    (Photos / Lightroom: navigation never runs away from the pointer); ~1 s after the last click they glide over */
+ if(!(lay.overImg&&Date.now()-lay.navAt<1000)){const [pv,nx]=document.querySelectorAll(".stage>.gnav"),y=top+h/2-20;
+  if(pv){pv.style.left=(left+10)+"px";pv.style.top=y+"px";nx.style.left=(left+w-50)+"px";nx.style.top=y+"px"}}
  const he=$("hedges");if(he){he.style.left=left+"px";he.style.width=w+"px";he.style.top=top+"px";he.style.height=h+"px"}
  /* tab bar: centred over the panel in Queue / LoRAs / PNG Info; in Generating it sits right on top of the picture and is
     centred on the picture itself, not on picture + button column — as far as the area allows (it never pokes out) */
  const tb=document.querySelector(".tabs");if(tb){tb.style.width=stk?"":SW+"px";const gen=S.view==="gen";
   const room=Math.max(0,(SW-tabsW())/2),dx=gen&&!stk?Math.max(-room,Math.min(room,Math.round(left+w/2-SW/2))):0;
   tb.style.transform=gen&&(top>0||dx)?`translate(${dx}px,${Math.round(Math.max(0,top))}px)`:""}
- const sx=0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+12)+"px";pr.style.setProperty("--tw",w+"px");
+ const sx=0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+(BAR===66?12:6))+"px";pr.style.setProperty("--tw",w+"px");
  if(window.layoutLeft)requestAnimationFrame(layoutLeft)}
 /* the holds: over the picture, over the prompt (card, its name row, its LoRA chips) */
-$("frame").addEventListener("pointerenter",()=>{lay.overImg=true});
-$("frame").addEventListener("pointerleave",()=>{lay.overImg=false;sizeFrame()});
+{let t=null;const on=()=>{clearTimeout(t);lay.overImg=true},off=()=>{clearTimeout(t);t=setTimeout(()=>{lay.overImg=false;sizeFrame()},120)};
+ for(const el of [$("frame"),...document.querySelectorAll(".stage>.gnav")]){el.addEventListener("pointerenter",on);el.addEventListener("pointerleave",off)}}
 $("lcol").addEventListener("pointerdown",()=>{lay.pressCard=true});
 /* letting go anywhere (a menu choice, a click, an edge) lets the layout catch up at once */
 addEventListener("pointerup",()=>{lay.pressCard=false;setTimeout(sizeFrame,0)});
@@ -164,8 +183,9 @@ function doneList(){return jobs.filter(j=>j.status==="done")}
 function browsed(){if(browseId==null)return null;const b=jobs.find(j=>j.id===browseId&&j.status==="done");if(!b)browseId=null;return b||null}
 function genNav(dir,dry){if(!dry&&lay.overImg){lay.navAt=Date.now();clearTimeout(genNav.t);genNav.t=setTimeout(sizeFrame,1050)}const run=!!current(),b=browsed(),cur=b||(run?null:shownDone()),L=doneList();
  let i=cur?L.findIndex(x=>x.id===cur.id):L.length;if(i<0)i=L.length;const n=i+dir;let id;
- if(n<0)return false;if(n>=L.length){if(!b)return false;id=null}else id=L[n].id; // past the newest: back to your working view
- if(!dry){browseId=id;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else if(!peekOff)loadJob(L[n])}return true}
+ if(n<0)return false;if(n>=L.length){if(!b)return false;id=null}else id=L[n].id; // past the newest: back to your working view — clean when idle (the picture lives in the Gallery)
+ if(!dry){if(window.xfadeSnap)xfadeSnap();browseId=id;resultStale=id==null&&!run;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else if(!peekOff)loadJob(L[n]);
+  if(window.preload)for(const q of [L[n-1],L[n+1]])if(q)preload(q)}return true}   /* the neighbours decoded before you ask for them */
 function vNav(dir,dry){const L=doneList(),i=L.findIndex(x=>x.id===(V.job&&V.job.id)),t=L[i+dir];if(i<0||!t)return false;if(!dry)openViewer(t);return true}
 function navFn(el){return el.closest("#viewer")?vNav:genNav}
 function updNav(){document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("off",!navFn(b)(+b.dataset.nav,true)))}

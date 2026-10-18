@@ -67,3 +67,14 @@ export async function switchFades(k, t) {
   t.ok(L.left > Rr.right, "and the prompt ended up on the right");
 }
 switchFades.opts = { width: 2000, height: 1023 };
+
+export async function tabsOnPicture(k, t) {
+  await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 }); await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.mouse(2, 2); await k.sleep(900);
+  const seg = await R(k, ".seg"), f = await R(k, "#frame"), tabs = await k.ev(`(()=>{const k=document.querySelector(".tabs").children,a=k[0].getBoundingClientRect(),b=k[k.length-1].getBoundingClientRect();return{l:a.left,r:b.right}})()`);
+  t.near((tabs.l + tabs.r) / 2, f.left + f.width / 2, 2, "side by side: the tab bar is centred on the picture itself", { tabs, f: [f.left, f.width] });
+  await k.ev(`(showView("queue"),1)`); await k.sleep(700);
+  const r = await R(k, "#right"), tabs2 = await k.ev(`(()=>{const k=document.querySelector(".tabs").children,a=k[0].getBoundingClientRect(),b=k[k.length-1].getBoundingClientRect();return{l:a.left,r:b.right}})()`);
+  t.near((tabs2.l + tabs2.r) / 2, r.left + r.width / 2, 2, "Queue: centred over the panel");
+}
+tabsOnPicture.opts = { width: 2000, height: 1023, step: 0.05 };

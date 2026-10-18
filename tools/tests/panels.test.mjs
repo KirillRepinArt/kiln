@@ -9,7 +9,8 @@ export async function wideBasics(k, t) {
   const L = await R(k, "#left"), Rr = await R(k, "#rpanel"), tabs = await R(k, ".tabs"), f = await R(k, "#frame"), p = await R(k, "#prog");
   t.ok(!(await k.ev(`document.querySelector(".app").classList.contains("stacked")`)), "1513×900: side by side");
   t.ok(!overlapX(L, Rr) && L.right < Rr.left, "the prompt is left of the right area, no overlap", { L: [L.left, L.right], R: [Rr.left, Rr.right] });
-  t.ok(Math.abs(tabs.left - Rr.left) < 2 && Math.abs(tabs.width - Rr.width) < 2, "the tab bar spans the right area", { tabs: [tabs.left, tabs.width], R: [Rr.left, Rr.width] });
+  const tk = await k.ev(`(()=>{const k=document.querySelector(".tabs").children,a=k[0].getBoundingClientRect(),b=k[k.length-1].getBoundingClientRect();return{l:a.left,r:b.right}})()`);
+  t.ok(Math.abs(tabs.width - Rr.width) < 2 && tk.l >= Rr.left - 1 && tk.r <= Rr.right + 1, "the tab bar is as wide as the right area, its buttons inside it", { tabs: [tabs.left, tabs.width], tk, R: [Rr.left, Rr.right] });
   t.ok(f.left >= Rr.left - 1 && f.right <= Rr.right + 1, "the image sits inside the right area");
   const tb = await k.ev(`tbW($("frame").offsetHeight)`);   // the room kept for the edit buttons (hidden with no picture)
   t.ok(Math.abs((f.left + f.right + tb) / 2 - (Rr.left + Rr.right) / 2) < 3, "the picture and its toolbar's room are centred in it", { f: [f.left, f.right], tb, R: [Rr.left, Rr.right] });

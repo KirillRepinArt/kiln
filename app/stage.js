@@ -116,8 +116,11 @@ function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.
  /* where the picture is going (not where it is mid-glide): the prompt's vertical anchors use this */
  lay.target={top:st.top+top,h,bottom:st.top+top+h+BAR-1,w};
  const he=$("hedges");if(he){he.style.left=left+"px";he.style.width=w+"px";he.style.top=top+"px";he.style.height=h+"px"}
- // tab bar: centred over the box in every tab; in Generating it also sits right on top of the image
- const tb=document.querySelector(".tabs");if(tb){tb.style.width=stk?"":SW+"px";tb.style.transform=S.view==="gen"&&top>0?`translateY(${Math.round(top)}px)`:""}
+ /* tab bar: centred over the panel in Queue / LoRAs / PNG Info; in Generating it sits right on top of the picture and is
+    centred on the picture itself, not on picture + button column — as far as the area allows (it never pokes out) */
+ const tb=document.querySelector(".tabs");if(tb){tb.style.width=stk?"":SW+"px";const gen=S.view==="gen";
+  const room=Math.max(0,(SW-tabsW())/2),dx=gen&&!stk?Math.max(-room,Math.min(room,Math.round(left+w/2-SW/2))):0;
+  tb.style.transform=gen&&(top>0||dx)?`translate(${dx}px,${Math.round(Math.max(0,top))}px)`:""}
  const sx=0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+12)+"px";pr.style.setProperty("--tw",w+"px");
  if(window.layoutLeft)requestAnimationFrame(layoutLeft)}
 /* the holds: over the picture, over the prompt (card, its name row, its LoRA chips) */

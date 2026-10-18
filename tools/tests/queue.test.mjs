@@ -97,3 +97,10 @@ export async function missingFiles(k, t) {
   await k.ev(`($("rmMissing").click(),1)`); await k.sleep(1200);
   t.ok(await k.ev(`jobs.filter(j=>j.status==="done").length`) === 1, "Remove missing clears all of those at once");
 }
+
+export async function thumbnailsDraw(k, t) {
+  await k.job("[fill:dc2828] red", { steps: 2 }); await k.until(`jobs.some(j=>j.status==="done")`, 20000);
+  await k.ev(`(showView("queue"),1)`); await k.sleep(1500);
+  const px = await k.ev(`(()=>{const c=document.querySelector(".qi canvas[data-th]");if(!c)return "no canvas";const d=c.getContext("2d").getImageData(c.width>>1,c.height>>1,1,1).data;return [d[0],d[1],d[2]]})()`);
+  t.ok(Array.isArray(px) && px[0] > 150 && px[1] < 90, "a finished row's thumbnail shows the picture", px);
+}

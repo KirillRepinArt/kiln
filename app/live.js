@@ -101,6 +101,7 @@
   if(peekJob&&peekJob.id===j.id)endPeek();
   toast("Moved to the Recycle Bin","Undo",async()=>{await api(`/api/jobs/${j.id}/undelete`,{});poll()});poll()};
  $("resumeBtn").onclick=e=>{e.stopPropagation();setPaused(false)};
+ $("pth").onclick=e=>{e.stopPropagation();endPeek()};   /* the thumbnail: back to the render */
  function act(a,j){if(!j)return;
   if(a==="open")return api("/api/open",{id:j.id});
   if(a==="folder")return api("/api/reveal",{id:j.id});
@@ -194,8 +195,13 @@
    const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;prog.classList.toggle("stopping",!!j.stopping);if(!j.stopping)$("fill").style.width=(p*100).toFixed(2)+"%";
    const rm=remaining(j),left=rm!=null?rm:(j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000));
    const started=j.step||j.preview_rev;
+   /* browsing a finished picture while this job renders: the status row says whose progress it is — a small live
+      thumbnail (soft until the last step, like the cover; a lock with privacy on) and the job's number */
+   const bg=S.view==="gen"&&!!browsed(),pre=bg?`#${j.id} · `:"";prog.classList.toggle("bgjob",bg);
+   if(bg){const im=$("pthImg"),key=j.id+":"+(j.preview_rev||0);if(im.dataset.k!==key){im.dataset.k=key;if(j.preview_rev)im.src=`/api/preview/${j.id}?r=${j.preview_rev}`;else im.removeAttribute("src")}
+    $("pth").classList.toggle("soft",j.step<j.steps-1)}
    if(j.stopping){const r=(per-(Date.now()-(j._ss||Date.now())))/1000;setTxt("Stopping after this step");$("peta").textContent=r>3?`stops in ~${fmt(r)}`:"any moment now"}   /* Forge only stops between steps; the next job starts right after */
-   else{setTxt(j.kind==="upscale"?"Upscaling…":started?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`:`${WORDS[j.id%WORDS.length]}… <span class="sub">· ${j.warm?"starting":"loading model"}</span>`);
+   else{setTxt(pre+(j.kind==="upscale"?"Upscaling…":started?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`:`${WORDS[j.id%WORDS.length]}… <span class="sub">· ${j.warm?"starting":"loading model"}</span>`));
     $("peta").textContent=j.kind==="upscale"?"":(started||rm!=null)?`~${fmt(left)} left`:""}
    if(S.view==="gen"&&!browsed()){const f=$("frame");f.classList.add("has");$("idle").style.display="none";
     if(+$("cv").dataset.j!==j.id){$("cv").dataset.j=j.id;$("cv").dataset.d="";$("cv").dataset.want="";lastPrev=0;const c=$("cv");c.width=1;c.height=1;sizeFrame()}
@@ -203,7 +209,7 @@
      const jid=j.id;i.onload=()=>{if(+$("cv").dataset.j===jid&&!browsed())drawTo($("cv"),i,false);lastPrev=r;prevLoading=false};i.onerror=()=>{prevLoading=false;lastPrev=r};i.src=`/api/preview/${j.id}?r=${r}`}}
    const mini=document.querySelector(`.qi[data-id="${j.id}"] .mini i`);if(mini)mini.style.width=(p*100)+"%";
    const lp=document.querySelector(`img[data-lp="${j.id}"]`);if(lp&&j.preview_rev&&lp.dataset.r!=j.preview_rev){lp.dataset.r=j.preview_rev;lp.src=`/api/preview/${j.id}?r=${j.preview_rev}`}   /* Q6: the render, small, in its queue row */
-  }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run","stopping");$("fill").style.width="0%";
+  }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run","stopping","bgjob");$("fill").style.width="0%";
     if(!forgeOk){$("ptxt").textContent=forgeStarting?"Starting Forge…":"Forge not running";$("peta").textContent=forgeStarting?"jobs start when it's ready":"queue waits for it"}
     else if(window.qPaused&&jobs.some(x=>x.status==="pending")){$("ptxt").textContent="Queue paused";$("peta").textContent=`${jobs.filter(x=>x.status==="pending").length} waiting`}
     else{refreshEst();$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`}

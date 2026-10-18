@@ -811,3 +811,21 @@ body.glass .play.gen::before{display:block!important}
 body.glass .play.gen:hover::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--cool,#9ab) 18%)}
 /* the Queue's "Nothing queued": one quiet line after Up next, not a 40 px hole in the list */
 #qwrap .empty{padding:10px 12px 14px;font-size:13px;text-align:left}
+
+/* ---- the resize outline: the box the picture fits into (stage.js #fithint); the whole panel elsewhere ---- */
+.right.edgehint::before{display:none}
+.right.edgehint:has(.rpanel.paneled)::before{display:block}
+.fithint{position:absolute;display:none;border:1px dashed rgba(255,255,255,.2);border-radius:var(--r-panel);pointer-events:none;z-index:7}
+.right.edgehint .rpanel:not(.paneled) .fithint{display:block}
+.app.stacked .fithint{display:none!important}
+
+/* ---- the running job's thumbnail in the status row (only while you browse a finished picture) ---- */
+.pth{display:none;position:relative;width:28px;height:28px;border-radius:8px;overflow:hidden;flex:none;background:#15171a;cursor:pointer;
+ box-shadow:0 0 0 1px rgba(255,255,255,.1);margin-right:-2px}
+.prog.bgjob .pth{display:block}
+.pth img{width:100%;height:100%;object-fit:cover;display:block;transition:filter .6s var(--ease)}
+.pth img:not([src]){visibility:hidden}
+.pth.soft img{filter:blur(2.5px) brightness(.85);transform:scale(1.15)}
+.pth svg{display:none;position:absolute;inset:7px;width:14px;height:14px;color:var(--muted)}
+body.private .pth img{visibility:hidden}body.private .pth svg{display:block}
+.pth:hover{box-shadow:0 0 0 1px rgba(255,255,255,.35)}

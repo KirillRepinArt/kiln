@@ -108,7 +108,7 @@ export async function resetAndDoubleClick(k, t) {
   await drag(k, ".pedge.po", -80); await drag(k, ".pedge.ro", 60); await k.sleep(500);
   const h = await R(k, ".pedge.po"); await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x: h.left + 6, y: h.top + 100, button: "left", clickCount: 2 });
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: h.left + 6, y: h.top + 100, button: "left", clickCount: 2 }); await k.sleep(500);
-  t.ok(Math.abs((await R(k, "#left")).width - 680) <= 2, "double-click the prompt's edge: its default width", (await R(k, "#left")).width);
+  t.ok(await k.until(`Math.abs($("left").getBoundingClientRect().width-680)<=2`, 3000, 100), "double-click the prompt's edge: its default width", (await R(k, "#left")).width);
   await k.ev(`($("layBtn").click(),1)`); await k.sleep(200); await k.ev(`(document.querySelector('[data-lay="reset"]').click(),1)`); await settle(k);
   const r = await box(k); t.ok(Math.abs((r.pr - r.pl) - 680) <= 1 && Math.abs((r.rr - r.rl) - 660) <= 1 && r.rl - r.pr === 18 && Math.abs((r.pl - 18) - (1700 - 18 - r.rr)) <= 2,
     "Layout → Reset: the default sizes for this window, centred", r);

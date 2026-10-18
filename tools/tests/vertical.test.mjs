@@ -56,7 +56,9 @@ export async function fitWidth(k, t) {
 fitWidth.opts = { width: 2000, height: 1023, step: 0.05 };
 
 export async function switchFades(k, t) {
-  // the switch: no slide, and nothing is mid-glide when the new layout is captured
+  // the switch: no slide, and nothing is mid-glide when the new layout is captured (after the page has settled from
+  // loading: its own first glides would be reported a frame late and look like the switch's)
+  await k.mouse(2, 2); await k.sleep(1500);
   await k.ev(`(window._an=[],document.addEventListener("transitionrun",e=>{if(e.target.closest&&e.target.closest(".app"))_an.push(e.target.id||e.target.className)}),1)`);
   await k.ev(`(setDock("right"),1)`); await k.until(`!document.body.classList.contains("laysnap")`, 3000, 50); await k.sleep(500);
   const ran = await k.ev(`_an`);
@@ -120,3 +122,39 @@ export async function edgeOnPicture(k, t) {
   t.near(h2.left + h2.width / 2, r.right, 2, "other tabs: on the panel's edge");
 }
 edgeOnPicture.opts = { width: 2000, height: 1023, step: 0.05 };
+
+export async function outlineIsFitBox(k, t) {
+  await k.ev(`(setDock("right"),1)`); await k.sleep(800);
+  await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 }); await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.mouse(2, 2); await k.sleep(900);
+  await k.ev(`($("right").classList.add("edgehint"),1)`); await k.sleep(100);
+  const h = await R(k, "#fithint"), f = await R(k, "#frame"), gt = await R(k, "#gtools");
+  t.ok(h.width > 0, "the outline shows");
+  t.ok(h.left >= gt.right - 1 || h.right <= gt.left + 1, "the button column is outside it", { h: [h.left, h.right], gt: [gt.left, gt.right] });
+  t.ok(f.left >= h.left - 1 && f.right <= h.right + 1 && f.top >= h.top - 1 && f.bottom <= h.bottom + 1, "the picture fits inside it");
+  t.ok(Math.abs(f.left - h.left) < 2 || Math.abs(f.right - h.right) < 2 || Math.abs(f.top - h.top) < 2, "and touches it on the side that limits it");
+  await k.ev(`($("right").classList.remove("edgehint"),1)`);
+}
+outlineIsFitBox.opts = { width: 2000, height: 1023, step: 0.05 };
+
+export async function heightIsALimit(k, t) {
+  await k.ev(`(setDock("below"),S.sch=420,save(),P.value="a short prompt",draft=P.value,layoutLeft(),1)`); await k.mouse(2, 2); await k.sleep(800);
+  const short = (await R(k, "#left")).height;
+  t.ok(short < 380, "a short prompt under a high limit: the box fits the text", short);
+  await k.ev(`(P.value=Array(40).fill("a long line of prompt text that keeps going").join(String.fromCharCode(10)),draft=P.value,1)`); await k.sleep(900);
+  t.near((await R(k, "#left")).height, 420, 3, "a long prompt: it stops at the limit (and scrolls)");
+}
+heightIsALimit.opts = { width: 2000, height: 1023 };
+
+export async function runningThumb(k, t) {
+  await k.job("[fill:446688] first", { steps: 2 }); await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.job("[fill:884422] second", { steps: 6 }); await k.until(`current()&&current().preview_rev>0`, 20000, 100);
+  t.ok(!(await k.ev(`$("prog").classList.contains("bgjob")`)), "looking at the render: no thumbnail");
+  await k.ev(`(browseTo(lastDone()),1)`); await k.sleep(1500);
+  t.ok(await k.ev(`$("prog").classList.contains("bgjob")`), "browsing a finished picture while a job runs: the thumbnail shows");
+  t.ok(await k.until(`$("pthImg").naturalWidth>0`, 8000, 100), "with the live render");
+  t.ok(new RegExp("^#" + await k.ev(`current().id`) + " · ").test(await k.ev(`$("ptxt").textContent`)), "and the job's number", await k.ev(`$("ptxt").textContent`));
+  await k.ev(`($("pth").click(),1)`); await k.sleep(400);
+  t.ok(await k.ev(`browseId===null&&!$("prog").classList.contains("bgjob")`), "clicking it goes back to the render");
+}
+runningThumb.opts = { step: 1.2 };

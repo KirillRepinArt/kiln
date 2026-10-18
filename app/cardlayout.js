@@ -33,7 +33,8 @@ function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol"),CH=chipsH
  const stk=!!document.querySelector(".app.stacked"),hm=S.hmode==="full"||(S.hmode==="match"&&!stk)?S.hmode:"";L.classList.toggle("hm",!!hm);$("ltitle").classList.toggle("hm",!!hm);
  if(stk){let H;lyTop=0;
   if(hm==="full")H=Math.round(innerHeight*.7);
-  else if(S.sch)H=Math.max(200,Math.min(S.sch,Math.round(innerHeight*.7))); // set with the divider above the name
+  else if(S.sch){const cap=Math.max(200,Math.min(S.sch,Math.round(innerHeight*.7)));   /* set with the line above the name: the box's LARGEST height — */
+   H=$("hsplit").classList.contains("drag")?cap:Math.min(cap,cardNaturalH())}   /* it fits its text below that (shown at the limit while you drag) */
   else{H=Math.min(cardNaturalH(),Math.round(innerHeight*.42));
    const j=browsed()||current()||shownDone(),[a,b]=(j?j.ar:S.ar).split(":").map(Number);
    if(a>b&&!S.vfit){const want=Math.min(stackW(),innerWidth-36)*b/a,room=innerHeight-36-6-(H+TS+2)-64-BAR;if(room<want)H=Math.max(200,Math.round(H-(want-room)))}} // landscape: at least as wide as the card

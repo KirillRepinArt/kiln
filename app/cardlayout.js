@@ -21,7 +21,12 @@ function applyMode(){const a=document.querySelector(".app"),was=a.classList.cont
  if(a.classList.contains("stacked")!==st){a.classList.toggle("stacked",st);
   // switching layouts: place the image first, then the card, without the glide (it would start from stale positions)
   const L=$("left"),T=$("ltitle");L.classList.add("nodur");T.classList.add("nodur");lyFrozen=false;lyTop=null;lyCy=null;
-  sizeFrame();layoutLeft();moveThumb(true);requestAnimationFrame(()=>{sizeFrame();layoutLeft();requestAnimationFrame(()=>{L.classList.remove("nodur");T.classList.remove("nodur")})})}}
+  sizeFrame();layoutLeft();moveThumb(true);requestAnimationFrame(()=>{sizeFrame();layoutLeft();requestAnimationFrame(()=>{L.classList.remove("nodur");T.classList.remove("nodur")})})}
+ if(window.updHm)updHm()}
+/* Vertical: the prompt box's width — yours (S.lay.sw, set with its side edges), or the picture's (Fit width), never
+   narrower than the box's minimum or wider than the window */
+function stackW(){const max=innerWidth-36,pic=typeof lay!=="undefined"&&lay.target&&lay.target.w;
+ const w=S.vfit&&pic?pic:(S.lay&&S.lay.sw)||760;return Math.round(Math.max(Math.min(PWMIN,max),Math.min(max,w)))}
 function cardMinH(){const L=$("left");return L.offsetHeight-L.querySelector(".pwrapT").offsetHeight+84}
 function chipsH(){const c=$("chips");return c.childElementCount?c.offsetHeight+10:0} // the row always shows ("LoRA +") // the chip row under the box, and its gap
 function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol"),CH=chipsH();const TS=$("peekbar").classList.contains("show")?104:64; /* the Reuse bar takes the row above the box; the name moves up */col.style.setProperty("--ts",TS+"px");
@@ -31,7 +36,8 @@ function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol"),CH=chipsH
   else if(S.sch)H=Math.max(200,Math.min(S.sch,Math.round(innerHeight*.7))); // set with the divider above the name
   else{H=Math.min(cardNaturalH(),Math.round(innerHeight*.42));
    const j=browsed()||current()||shownDone(),[a,b]=(j?j.ar:S.ar).split(":").map(Number);
-   if(a>b){const want=Math.min(760,innerWidth-36)*b/a,room=innerHeight-36-6-(H+TS+2)-64-BAR;if(room<want)H=Math.max(200,Math.round(H-(want-room)))}} // landscape: at least as wide as the card
+   if(a>b&&!S.vfit){const want=Math.min(stackW(),innerWidth-36)*b/a,room=innerHeight-36-6-(H+TS+2)-64-BAR;if(room<want)H=Math.max(200,Math.round(H-(want-room)))}} // landscape: at least as wide as the card
+  col.style.setProperty("--sw",stackW()+"px");
   const lch=(H+TS+2+CH)+"px",chg=col.style.getPropertyValue("--lch")!==lch;
   col.style.setProperty("--lch",lch);col.style.setProperty("--ltop",TS+"px");col.style.setProperty("--lh",H+"px");col.style.setProperty("--chtop",(TS+H+10)+"px");if(chg)requestAnimationFrame(sizeFrame);return}
  const colH=col.clientHeight-TS;if(colH<=0)return;
@@ -54,10 +60,16 @@ $("left").addEventListener("pointerleave",()=>{lyHover=false;thaw()});
 $("left").addEventListener("focusin",freeze);
 $("left").addEventListener("focusout",()=>{if(!lyHover)thaw()});
 new ResizeObserver(()=>layoutLeft()).observe($("lcol"));
-function updHm(){const m=S.hmode||"";$("hmodes").classList.toggle("on",!!m);
- $("hmMatch").classList.toggle("on",m==="match");$("hmFull").classList.toggle("on",m==="full");
- $("hmMatch").dataset.tip=m==="match"?"Back to normal height":"Match the image height";$("hmFull").dataset.tip=m==="full"?"Back to normal height":"Full height"}
-$("hmodes").addEventListener("click",e=>{const b=e.target.closest("[data-hm]");if(!b)return;S.hmode=S.hmode===b.dataset.hm?"":b.dataset.hm;save();updHm();lyFrozen=false;layoutLeft()});
+/* the size buttons by the name: side by side, Match = the picture's height; in Vertical, Fit = the picture's width */
+const HM_H='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/></svg>',
+ HM_W='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5v14M20 5v14M8 12h8M11 9l-3 3 3 3M13 9l3 3-3 3"/></svg>';
+function updHm(){const stk=!!document.querySelector(".app.stacked"),m=S.hmode||"",fit=stk?!!S.vfit:m==="match";$("hmodes").classList.toggle("on",fit||m==="full");
+ const b=$("hmMatch");if(b.dataset.ic!==String(stk)){b.dataset.ic=String(stk);b.innerHTML=stk?HM_W:HM_H}
+ b.classList.toggle("on",fit);$("hmFull").classList.toggle("on",m==="full");
+ b.dataset.tip=stk?(fit?"Back to your width":"Fit the box to the picture's width"):(fit?"Back to normal height":"Match the image height");$("hmFull").dataset.tip=m==="full"?"Back to normal height":"Full height"}
+$("hmodes").addEventListener("click",e=>{const b=e.target.closest("[data-hm]");if(!b)return;
+ if(b.dataset.hm==="match"&&document.querySelector(".app.stacked"))S.vfit=!S.vfit;else S.hmode=S.hmode===b.dataset.hm?"":b.dataset.hm;
+ save();updHm();lyFrozen=false;layoutLeft()});
 updHm();
 (function(){const L=$("left"),T=$("ltitle"),col=$("lcol");let d=null;
  const NO="input,textarea,button,a,select,.chip,.pwrapT,.vedge,.pedge,.pop,.cwi";

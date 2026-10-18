@@ -94,7 +94,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
     transparency, no hover peek, no fading with the steps, no starlight/code drawn from it, no finish, no ambient glow,
     no viewer) and the prompt, name and LoRA chips are hidden. It stays on until pressed again, across jobs and
     restarts. Off: the cover follows Settings → Cover. The Queue tab isn't touched (decided 2026-10-18). */
- const CV={held:false,t0:0,pr:.55};const cbtn=$("cbtn");
+ const CV={held:false,t0:0,pr:.55};const HALO_CUT="#left,.ltitle .peekbar.show,.seg,.flink,#layBtn,#gear,#lcol>.chips .chip";const cbtn=$("cbtn");
  if(S.set&&S.set.privacy!=null){if(S.privacy==null)S.privacy=S.set.privacy==="on";delete S.set.privacy;save()}   /* the old Privacy hold setting */
  const EYE='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
   SHUT='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 10.5c2.2 2.6 5.2 4 9 4s6.8-1.4 9-4"/><path d="M6.2 13.6 4.6 16M12 14.6V17.4M17.8 13.6l1.6 2.4"/></svg>';
@@ -164,6 +164,13 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
      halo.edge(fgc,X,Y,FW,FH,hc,{radius:rad,alpha:k,boost,narrow:3*dp,wide:20*dp});
      fgc.globalCompositeOperation="source-atop";fgc.globalAlpha=.05;fgc.fillStyle=fgc.createPattern(dith,"repeat");fgc.fillRect(0,0,cw,ch);   // a whisper of grain: no banding on near-black
      fgc.globalCompositeOperation="destination-out";fgc.globalAlpha=1;fgc.beginPath();fgc.roundRect(X+dp,Y+dp,FW-2*dp,FH-2*dp,Math.max(0,rad-dp));fgc.fill();   // nothing behind the image itself
+     /* nothing under the glass panels either (the prompt box, the tab bar, the LoRA chips): a glass panel blurs what's
+        behind it and Chromium repeats its edge pixels inward, so the pulsing glow showed as a flickering band inside the
+        box (2026-10-19). Soft holes, already dark at the panel's edge: the light fades out in the gap before it. */
+     if(document.body.classList.contains("glass")){const F=10;fgc.filter=`blur(${F*dp/2}px)`;
+      for(const el of document.querySelectorAll(HALO_CUT)){const r=el.getBoundingClientRect();if(!r.width||r.right<a.left-R||r.left>a.right+R||r.bottom<a.top-R||r.top>a.bottom+R)continue;
+       const er=(parseFloat(getComputedStyle(el).borderTopLeftRadius)||0)+F;fgc.beginPath();fgc.roundRect((r.left-a.left+R-F)*dp,(r.top-a.top+R-F)*dp,(r.width+2*F)*dp,(r.height+2*F)*dp,er*dp);fgc.fill()}
+      fgc.filter="none"}
      fgc.globalCompositeOperation="source-over";fr.classList.add("halo")}}
    else if(fg.style.opacity!=="0"||fg.style.display!=="none"){fg.style.opacity="0";fg.style.display="none";fr.classList.remove("halo")}   /* gone, not just transparent: a blended layer left in the page still costs Edge a separate compositing surface */}
   e.clearRect(0,0,W,H);

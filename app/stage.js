@@ -90,27 +90,31 @@ function layDragR(edge,g0,dx,W){const g=Object.assign({},g0);
  g.mL=g.mR=Math.max(0,(g.W-GAP-g.pw-g.rw)/2);
  S.lay.pw=g.pw;if(g0.gen)S.lay.iw=g.rw;else S.lay.rw=g.rw;layApply(g);return g}
 function layRelease(){lay.drag=false;sizeFrame()}
-/* the prompt's place: "left" / "right" beside the picture (horizontal) or "below" it (vertical). Switching slides both
-   panels from where they were to where they go. */
+/* the prompt's place: "left" / "right" beside the picture (horizontal) or "below" it (vertical). Switching is a
+   fade-through (Material's pattern for elements whose paths would cross): the old layout fades out, the new one fades in
+   where it belongs — sliding made the panels pass through each other. */
 function setDock(z){if((S.dock||"left")===z)return;
- const els=[$("lcol"),$("right")],r0=els.map(e=>e.getBoundingClientRect());S.dock=z;save();
- const L=$("left"),T=$("ltitle");L.classList.add("nodur");T.classList.add("nodur");lyFrozen=false;lyTop=null;lyCy=null;
- applyMode();sizeFrame();layoutLeft();moveThumb(true);
- els.forEach((e,i)=>{const r=e.getBoundingClientRect();try{e.animate([{transform:`translate(${r0[i].left-r.left}px,${r0[i].top-r.top}px)`,opacity:.6},{transform:"none",opacity:1}],{duration:380,easing:"cubic-bezier(.4,0,.2,1)"})}catch(_){}});
- requestAnimationFrame(()=>{sizeFrame();layoutLeft();requestAnimationFrame(()=>{L.classList.remove("nodur");T.classList.remove("nodur")})});
- if(window.layMenuUI)layMenuUI()}
+ layMorph(()=>{S.dock=z;save();lyFrozen=false;lyTop=null;lyCy=null;applyMode();sizeFrame();layoutLeft();moveThumb(true);sizeFrame();layoutLeft();if(window.layMenuUI)layMenuUI()})}
+/* a layout switch as a View Transition: the old layout is a snapshot, the new one is applied with every glide off (so it
+   is captured where it ends, not mid-way), then they cross-fade (CSS ::view-transition-*). Without the API: a plain switch */
+function layMorph(fn){const b=document.body,h=document.documentElement;let ended=false;
+ const end=()=>{if(ended)return;ended=true;h.classList.remove("laymorph");requestAnimationFrame(()=>requestAnimationFrame(()=>b.classList.remove("laysnap")));setTimeout(()=>b.classList.remove("laysnap"),200)};
+ setTimeout(end,1500);   /* whatever happens to the transition (skipped, a hidden window pausing frames), the glides come back */
+ b.classList.add("laysnap");
+ if(!document.startViewTransition||matchMedia("(prefers-reduced-motion: reduce)").matches){fn();end();return}
+ h.classList.add("laymorph");try{document.startViewTransition(fn).finished.finally(end)}catch(e){fn();end()}}
 function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
  if(!stk&&!sizeFrame.hold)layApply(layNow());
  /* the target geometry, not a measurement: the grid may be mid-glide */
  const st=$("stage").getBoundingClientRect(),SW=stk?st.width:lay.last.rw;const f=$("frame");
- const PH=stk?st.height-BAR:picH(),TB=tbW(PH);fitBox(f,ar,SW-TB,PH);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
+ const PH=stk?st.height-BAR:picH(),TB=tbW(PH);fitBox(f,ar,SW-(stk?2:1)*TB,PH);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);   /* Vertical keeps the column's room on both sides */
  let top=Math.max(0,(st.height-h-BAR)/2);if(lay.vtop!=null)top=lay.vtop;   /* a held top / bottom edge: the other edge stays put */
  /* picture + toolbar as one group, centred in the area; the toolbar on the side away from the prompt */
- const tbLeft=!stk&&document.querySelector(".app").classList.contains("pright"),g0=Math.max(0,Math.floor((SW-w-TB)/2)),left=tbLeft?g0+TB:g0;
+ const tbLeft=!stk&&document.querySelector(".app").classList.contains("pright"),g0=Math.max(0,Math.floor((SW-w-TB)/2)),left=stk?Math.floor((SW-w)/2):tbLeft?g0+TB:g0;   /* Vertical: the picture itself on the centre line (the prompt box and the tab bar are centred there too); its column hangs in the margin */
  f.style.left=left+"px";f.style.top=top+"px";
  const gt=$("gtools");if(gt){gt.style.top=top+"px";gt.style.left=(tbLeft?left-TB:left+w)+"px";gt.style.width=TB+"px";gt.style.height=Math.max(40,h)+"px";gt.classList.toggle("lefty",tbLeft)}
  /* where the picture is going (not where it is mid-glide): the prompt's vertical anchors use this */
- lay.target={top:st.top+top,h,bottom:st.top+top+h+BAR-1};
+ lay.target={top:st.top+top,h,bottom:st.top+top+h+BAR-1,w};
  const he=$("hedges");if(he){he.style.left=left+"px";he.style.width=w+"px";he.style.top=top+"px";he.style.height=h+"px"}
  // tab bar: centred over the box in every tab; in Generating it also sits right on top of the image
  const tb=document.querySelector(".tabs");if(tb){tb.style.width=stk?"":SW+"px";tb.style.transform=S.view==="gen"&&top>0?`translateY(${Math.round(top)}px)`:""}

@@ -87,7 +87,17 @@ function grow(){} // column widths now come from sizeFrame()
    them) and stay ~300 ms after it leaves, so a diagonal path doesn't lose them */
 (function(){let t=null;const on=()=>{clearTimeout(t);$("stage").classList.add("tools")},off=()=>{clearTimeout(t);t=setTimeout(()=>$("stage").classList.remove("tools"),300)};
  for(const el of [$("frame"),$("gtools")]){el.addEventListener("pointerenter",on);el.addEventListener("pointerleave",off)}})();
-function resetLayout(){S.lay=null;   /* widths, the picture's limits (iw, ih) — all back to the defaults */delete S.lw;S.pph=0;S.sch=0;S.pos="mid";S.hmode="";updHm();applyPH();save();sizeFrame();moveThumb(true);layoutLeft()}
+(function(){const L=$("left"),col=$("lcol");let d=null;
+ for(const side of ["l","r"]){const h=document.createElement("div");h.className="sedge "+side;h.dataset.tip="Drag to resize the prompt box · double-click for its default width";L.appendChild(h);
+  h.addEventListener("pointerdown",ev=>{if(!document.querySelector(".app.stacked")||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);
+   d={side,x0:ev.clientX,w0:stackW()};document.body.classList.add("resizing","laydrag")});
+  h.addEventListener("pointermove",ev=>{if(!d)return;const dx=ev.clientX-d.x0,max=innerWidth-36;
+   const w=Math.max(Math.min(PWMIN,max),Math.min(max,d.w0+(side==="r"?dx:-dx)));S.vfit=false;S.lay=S.lay||layDef();S.lay.sw=w;
+   col.style.setProperty("--sw",w+"px");col.style.setProperty("--soff",((side==="r"?1:-1)*(w-d.w0)/2)+"px")});   /* the other edge stays put */
+  const up=()=>{if(!d)return;d=null;document.body.classList.remove("resizing","laydrag");col.style.setProperty("--soff","0px");save();updHm();layoutLeft()};   /* glides back to centre */
+  h.addEventListener("pointerup",up);h.addEventListener("pointercancel",up);
+  h.addEventListener("dblclick",()=>{if(S.lay)S.lay.sw=null;S.vfit=false;save();updHm();layoutLeft()})}})();
+function resetLayout(){S.lay=null;S.vfit=false;   /* widths, the picture's limits (iw, ih) — all back to the defaults */delete S.lw;S.pph=0;S.sch=0;S.pos="mid";S.hmode="";updHm();applyPH();save();sizeFrame();moveThumb(true);layoutLeft()}
 
 P.addEventListener("input",()=>{grow();requestAnimationFrame(layoutLeft);if(!peekJob){draft=P.value;save()}updPrompt()});
 let chipsOpen=false;

@@ -384,7 +384,6 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .hmodes button{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
 .hmodes button:hover{background:var(--raised2);color:#fff}.hmodes button.on{background:#f2f2f2;color:#111}
 .hmodes svg{width:16px;height:16px}
-.app.stacked #hmMatch{display:none}
 .left.hm .vedge{display:none}
 .app:not(.stacked) .left.hm,.app:not(.stacked) .ltitle.hm{cursor:default}
 /* LoRA library: one row format with the thumbnail in front, Active strip on top */
@@ -733,3 +732,34 @@ body:not(.laydrag) .stage .frame{transition:top .25s cubic-bezier(.4,0,.2,1),lef
 .stage.tools .gtools{opacity:1;pointer-events:auto}
 .gtools .side button{opacity:.85}
 .stage:has(.frame.running) .gtools,.stage:has(.frame.held) .gtools,.stage:has(.frame.missing) .gtools,.stage:has(.frame:not(.has)) .gtools{display:none}
+
+/* ---- motion (2026-10-19): ONE glide for every layout change — the same duration and curve on every piece that moves
+   for the same reason (it was .25 s here, .4 s on another curve there, so parts arrived at different times). Material's
+   standard easing: a quick start, a long soft landing. ---- */
+:root{--lay-t:.3s;--lay-e:cubic-bezier(.2,0,0,1)}
+.app{transition:grid-template-columns var(--lay-t) var(--lay-e)}
+.left,.ltitle{transition:top var(--lay-t) var(--lay-e),height var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
+#lcol>.chips{transition:top var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
+.tabs,.right .tabs{transition:width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
+body:not(.laydrag) .stage .frame{transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e)}
+.prog{transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e)}
+.gtools{transition:opacity .15s,top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e)}
+body.laysnap *,body.laysnap *::before,body.laysnap *::after{transition:none!important}
+/* a layout switch (Left / Right / Vertical): the panels fade through, the sky behind them keeps moving. Out fast with an
+   accelerating curve, in a little slower with a decelerating one and a hint of scale — Material's fade-through. */
+html.laymorph .app{view-transition-name:kiln-app}   /* only during a switch: a named element is a backdrop root, so the glass couldn't see the sky */
+::view-transition-old(root){display:none}::view-transition-new(root){animation:none}
+::view-transition-group(kiln-app){animation:none}
+::view-transition-old(kiln-app){animation:kfadeout 90ms cubic-bezier(.4,0,1,1) both}
+::view-transition-new(kiln-app){animation:kfadein 220ms cubic-bezier(0,0,.2,1) 90ms both}
+@keyframes kfadeout{to{opacity:0}}@keyframes kfadein{from{opacity:0;transform:scale(.985)}}
+/* ---- Vertical: the prompt box's own width (--sw) and its side edges; --soff holds the other edge still while dragging ---- */
+.app.stacked .left,.app.stacked .ltitle{width:min(100%,var(--sw,760px));transform:translateX(calc(-50% + var(--soff,0px)))}
+.app.stacked #lcol>.chips{width:min(100%,var(--sw,760px));transform:translateX(calc(-50% + var(--soff,0px)))}
+.sedge{display:none;position:absolute;top:0;bottom:0;width:12px;z-index:8;cursor:ew-resize;touch-action:none}
+.sedge.l{left:-8px}.sedge.r{right:-8px}
+.sedge::after{content:"";position:absolute;top:50%;left:4px;width:4px;height:46px;margin-top:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
+.sedge:hover::after{opacity:.9}
+.app.stacked .sedge{display:block}
+.app.stacked #hmMatch{display:grid}
+.app.stacked .vedge{display:none}   /* its height is set with the line above the name; the bottom edge has no room to give */

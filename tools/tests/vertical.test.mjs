@@ -58,7 +58,7 @@ fitWidth.opts = { width: 2000, height: 1023, step: 0.05 };
 export async function switchFades(k, t) {
   // the switch: no slide, and nothing is mid-glide when the new layout is captured
   await k.ev(`(window._an=[],document.addEventListener("transitionrun",e=>{if(e.target.closest&&e.target.closest(".app"))_an.push(e.target.id||e.target.className)}),1)`);
-  await k.ev(`(setDock("right"),1)`); await k.sleep(900);
+  await k.ev(`(setDock("right"),1)`); await k.until(`!document.body.classList.contains("laysnap")`, 3000, 50); await k.sleep(500);
   const ran = await k.ev(`_an`);
   t.ok(ran.length === 0, "no layout glide runs during a switch (the fade does it all)", ran.slice(0, 8));
   t.ok(await k.until(`!document.documentElement.classList.contains("laymorph")&&!document.body.classList.contains("laysnap")`, 2500, 100), "the switch cleans up after itself");
@@ -78,3 +78,45 @@ export async function tabsOnPicture(k, t) {
   t.near((tabs2.l + tabs2.r) / 2, r.left + r.width / 2, 2, "Queue: centred over the panel");
 }
 tabsOnPicture.opts = { width: 2000, height: 1023, step: 0.05 };
+
+export async function columnCap(k, t) {
+  await k.ev(`(setDock("below"),1)`); await k.mouse(2, 2); await k.sleep(900);
+  await k.ev(`(showView("queue"),1)`); await k.sleep(800);
+  const r = await R(k, "#right"), st = await R(k, "#stage"), W = await k.ev(`innerWidth`);
+  const cap = (st.height - 66) * 16 / 9 + 2 * 52;
+  t.ok(r.width < W - 36 - 50, "Vertical on a wide window: the panel is not edge to edge", { w: r.width, W });
+  t.near(r.width, cap, 50, "about a 16:9 box at its height", { w: r.width, cap });
+  t.near(r.left + r.width / 2, W / 2, 2, "centred");
+  await k.ev(`(setDock("left"),1)`); await k.sleep(900);
+  t.ok(await k.ev(`$("right").style.width===""`), "side by side: the grid sizes it again");
+}
+columnCap.opts = { width: 2400, height: 1000 };
+
+export async function startRing(k, t) {
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".play .pring")).opacity`) === "0", "idle: no ring on Start");
+  await k.job("[fill:224433] ring", { steps: 4 });
+  t.ok(await k.until(`$("play").classList.contains("gen")`, 10000, 100), "a job runs: Start's triangle takes the flowing gradient");
+  t.ok(/playFlow/.test(await k.ev(`getComputedStyle(document.querySelector(".play svg path")).fill`)), "the bar's gradient");
+  await k.sleep(300);
+  t.ok(!(await k.ev(`$("play").classList.contains("running")`)), "in Generating no ring: the progress bar is right there");
+  await k.ev(`(showView("queue"),1)`);
+  t.ok(await k.until(`$("play").classList.contains("running")`, 3000, 100), "on another tab the ring shows");
+  await k.until(`current()&&current().step>=1`, 15000, 100); await k.sleep(600);
+  const p1 = +(await k.ev(`getComputedStyle($("play")).getPropertyValue("--p")`));
+  await k.until(`current()&&current().step>=3`, 15000, 100); await k.sleep(600);
+  const p2 = +(await k.ev(`getComputedStyle($("play")).getPropertyValue("--p")`));
+  t.ok(p1 > 0 && p2 > p1, "it fills with the job's progress", { p1, p2 });
+  t.ok(await k.until(`!current()&&!$("play").classList.contains("running")&&!$("play").classList.contains("gen")`, 15000, 100), "done: the ring and the gradient go");
+}
+startRing.opts = { step: 1 };
+
+export async function edgeOnPicture(k, t) {
+  await k.job("[fill:446688] tall", { ar: "3:4", steps: 2 }); await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.mouse(2, 2); await k.sleep(900);
+  const f = await R(k, "#frame"), h = await R(k, ".pedge.ro");
+  t.near(h.left + h.width / 2, f.right, 2, "Generating: the outer handle is on the picture's outer edge", { h: h.left + h.width / 2, f: f.right });
+  await k.ev(`(showView("queue"),1)`); await k.sleep(700);
+  const r = await R(k, "#right"), h2 = await R(k, ".pedge.ro");
+  t.near(h2.left + h2.width / 2, r.right, 2, "other tabs: on the panel's edge");
+}
+edgeOnPicture.opts = { width: 2000, height: 1023, step: 0.05 };

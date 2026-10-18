@@ -70,7 +70,10 @@ $("pnSave").onclick=e=>{e.stopPropagation();saveJobName()};
   const j=jobs.find(x=>x.id==+c.dataset.th);if(!j||!j.file)return;
   t=setTimeout(()=>{if(cur!==c)return;const r=c.getBoundingClientRect(),[a,b]=(j.ar||"1:1").split(":").map(Number),w=a>=b?320:Math.round(320*a/b),h=Math.round(w*b/a);
    pop.innerHTML=`<img src="${fileUrl(j)}" alt="">`;pop.style.width=w+"px";pop.style.height=h+"px";
-   const x=r.right+12+w<innerWidth?r.right+12:r.left-12-w,y=Math.max(8,Math.min(innerHeight-h-8,r.top+r.height/2-h/2));pop.style.transform=`translate(${x}px,${y}px)`;pop.classList.add("show")},350)});
+   /* never over the row you're pointing at: above it, lined up with its thumbnail; below it if there's no room above */
+   const row=c.closest(".qi").getBoundingClientRect(),P=$("qwrap").getBoundingClientRect(),x=Math.max(P.left+8,Math.min(P.right-w-8,r.left));
+   let y=row.top-8-h;if(y<P.top+4)y=row.bottom+8;if(y+h>innerHeight-8)y=Math.max(8,row.top-8-h);
+   pop.style.transform=`translate(${x}px,${y}px)`;pop.classList.add("show")},350)});
  $("qwrap").addEventListener("mouseleave",hide);$("qwrap").addEventListener("scroll",hide,{passive:true});$("qwrap").addEventListener("mousedown",hide)})();
 function reuse(all,seedToo){const j=peekJob;const fixed=!!(seedToo||S.keepSeed);if(!j)return;const prev={draft,S:{mp:S.mp,ar:S.ar,steps:S.steps,seedMode:S.seedMode,seed:S.seed,pname:S.pname},loras:LORAS.map(l=>({on:l.on,w:l.w}))};
  draft=j.raw||j.prompt;if((j.name||"").trim())S.pname=j.name.trim();   /* reusing the working file, title included: the next image joins its series */if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps},fixed?{seedMode:"fixed",seed:j.seed}:{seedMode:"random"});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}

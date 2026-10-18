@@ -763,3 +763,51 @@ html.laymorph .app{view-transition-name:kiln-app}   /* only during a switch: a n
 .app.stacked .sedge{display:block}
 .app.stacked #hmMatch{display:grid}
 .app.stacked .vedge{display:none}   /* its height is set with the line above the name; the bottom edge has no room to give */
+
+/* ---- Vertical: the right area as a centred column (stage.js sets its width) ---- */
+.app.stacked>.right{justify-self:center;max-width:100%;transition:width var(--lay-t) var(--lay-e)}
+
+/* ---- the layout switch, "more expensive" (2026-10-19): the picture is the same object, so it MOVES to its new place
+   and size (a shared-element morph, Material's container transform); everything else fades out, then back in a beat
+   after the picture leads, clearing from a slight blur. Emphasized easing: a quick start and a long, soft settle. ---- */
+:root{--sw-t:440ms;--sw-e:cubic-bezier(.3,0,0,1)}
+html.laymorph .view.on #frame{view-transition-name:kiln-pic}
+::view-transition-group(kiln-pic){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e)}
+::view-transition-old(kiln-pic),::view-transition-new(kiln-pic){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);height:100%}
+::view-transition-old(kiln-app){animation:kfadeout 120ms cubic-bezier(.4,0,1,1) both}
+::view-transition-new(kiln-app){animation:kfadein2 300ms cubic-bezier(0,0,.2,1) 170ms both}
+@keyframes kfadein2{from{opacity:0;transform:scale(.985);filter:blur(4px)}}
+::view-transition-group(kiln-pic){z-index:2}
+
+/* ---- Start: while a job runs, a ring round it fills with the job's progress, in the progress bar's flowing gradient ---- */
+@property --p{syntax:"<number>";inherits:true;initial-value:0}
+@property --prot{syntax:"<angle>";inherits:false;initial-value:0deg}
+.play .ptrack,.play .pring{position:absolute;inset:-5px;border-radius:50%;pointer-events:none;opacity:0;transition:opacity .5s var(--ease);
+ -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px))}
+.play .ptrack{background:rgba(255,255,255,.1)}
+.play .pring{background:conic-gradient(from var(--prot) in oklch,var(--a1),var(--a2),var(--a3),var(--a2),var(--a1));transition:opacity .5s var(--ease),--p .45s linear;
+ -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0);-webkit-mask-composite:source-in;
+ mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0);mask-composite:intersect;
+ animation:pring 6s linear infinite}
+@keyframes pring{to{--prot:360deg}}
+.play.running .ptrack,.play.running .pring{opacity:1}
+.play.stopping .pring{filter:grayscale(1) brightness(.7);animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.play .pring{animation:none}}
+
+/* ---- 2026-10-19: the glow travels with the picture in a layout switch (its own snapshot, the picture's path and pace) ---- */
+html.laymorph #fglow{visibility:visible}
+html.laymorph #fglow[style*="display: none"]{view-transition-name:none}
+html.laymorph #fglow{view-transition-name:kiln-glow}
+::view-transition-group(kiln-glow){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);z-index:1;mix-blend-mode:screen}
+::view-transition-old(kiln-glow),::view-transition-new(kiln-glow){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);height:100%}
+
+/* ---- Start while a job runs: plain dark glass, and the triangle in the progress bar's bright flowing gradient (the
+   same colours, direction and pace — one system); the ring only shows on the other tabs ---- */
+.play.gen,.play.gen:not(.off){background:var(--raised)!important;filter:none!important}
+.play.gen svg path,body.glass .play.gen svg path,body.glass .play.gen:not(.off) svg path{fill:url(#playFlow)!important}
+.play.gen svg{filter:drop-shadow(0 0 5px color-mix(in oklab,var(--a2) 45%,transparent))}
+body.glass .play.gen:not(.off){background:transparent!important;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none!important}
+body.glass .play.gen::before{display:block!important}
+body.glass .play.gen:hover::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--cool,#9ab) 18%)}
+/* the Queue's "Nothing queued": one quiet line after Up next, not a 40 px hole in the list */
+#qwrap .empty{padding:10px 12px 14px;font-size:13px;text-align:left}

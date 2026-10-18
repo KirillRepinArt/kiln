@@ -21,5 +21,6 @@ function nextHint(){const n=(S.pname||"").trim();
 function nameUI(){const l=document.querySelector(".plbl");l.classList.toggle("peekname",!!peekJob);
  if(peekJob){$("pname").dataset.tip=peekJob.file?`This image: ${peekJob.file}`:"This image";return}
  nextHint();l.classList.toggle("hasname",!!S.pname.trim());l.classList.toggle("dimname",!!S.pname.trim()&&!P.value.trim())}$("pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();if(peekJob&&$("pnSave").classList.contains("show")){saveJobName();return}P.focus()}});
+if(matchMedia("(prefers-reduced-motion: reduce)").matches)document.querySelector("#playFlow animateTransform")?.remove();
 applyMode();$("left").classList.add("nodur");setTimeout(()=>$("left").classList.remove("nodur"),400);
 applyFont();applyGlass();applyPH();updPrompt();applyTheme();S.view="gen";showView("gen");renderAll();grow();syncH();demoNote();

@@ -68,6 +68,9 @@ export async function previews(k, t) {
   const r = await k.ev(`JSON.parse(JSON.stringify(document.querySelector(".qi canvas[data-th]").getBoundingClientRect()))`);
   await k.mouse(r.x + r.width / 2, r.y + r.height / 2); await k.sleep(700);
   t.ok(await k.ev(`$("qpop").classList.contains("show")&&$("qpop").offsetWidth>=200`), "hovering a finished thumbnail shows it bigger");
+  const pr = await k.ev(`(()=>{const p=$("qpop").getBoundingClientRect(),row=document.querySelector(".qi canvas[data-th]").closest(".qi").getBoundingClientRect(),w=$("qwrap").getBoundingClientRect();return{p:[p.left,p.top,p.right,p.bottom],row:[row.top,row.bottom],w:[w.left,w.right]}})()`);
+  t.ok(pr.p[3] <= pr.row[0] + 1 || pr.p[1] >= pr.row[1] - 1, "it never covers the row you're pointing at (above it, or below)", pr);
+  t.ok(pr.p[0] >= pr.w[0] - 1 && pr.p[2] <= pr.w[1] + 1, "and stays inside the Queue panel", pr);
   await k.mouse(2, 2); await k.ev(`(stopJob(current()),1)`); await k.until(`!current()`, 15000);
   await k.ev(`(showView("gen"),setTimeout(()=>{},0),1)`);
 

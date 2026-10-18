@@ -94,17 +94,22 @@ function layRelease(){lay.drag=false;sizeFrame()}
    fade-through (Material's pattern for elements whose paths would cross): the old layout fades out, the new one fades in
    where it belongs — sliding made the panels pass through each other. */
 function setDock(z){if((S.dock||"left")===z)return;
- layMorph(()=>{S.dock=z;save();lyFrozen=false;lyTop=null;lyCy=null;applyMode();sizeFrame();layoutLeft();moveThumb(true);sizeFrame();layoutLeft();if(window.layMenuUI)layMenuUI()})}
+ layMorph(()=>{S.dock=z;save();lyFrozen=false;lyTop=null;lyCy=null;applyMode();sizeFrame();layoutLeft();moveThumb(true);sizeFrame();layoutLeft();if(window.layMenuUI)layMenuUI();if(window.haloNow)haloNow()})}
 /* a layout switch as a View Transition: the old layout is a snapshot, the new one is applied with every glide off (so it
    is captured where it ends, not mid-way), then they cross-fade (CSS ::view-transition-*). Without the API: a plain switch */
 function layMorph(fn){const b=document.body,h=document.documentElement;let ended=false;
- const end=()=>{if(ended)return;ended=true;h.classList.remove("laymorph");requestAnimationFrame(()=>requestAnimationFrame(()=>b.classList.remove("laysnap")));setTimeout(()=>b.classList.remove("laysnap"),200)};
+ const end=()=>{if(ended)return;ended=true;h.classList.remove("laymorph");setTimeout(()=>b.classList.remove("laysnap"),300)};   /* glides stay off a moment longer: late re-measures (the editor's) must not glide after the switch */
  setTimeout(end,1500);   /* whatever happens to the transition (skipped, a hidden window pausing frames), the glides come back */
  b.classList.add("laysnap");
  if(!document.startViewTransition||matchMedia("(prefers-reduced-motion: reduce)").matches){fn();end();return}
  h.classList.add("laymorph");try{document.startViewTransition(fn).finished.finally(end)}catch(e){fn();end()}}
 function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
  if(!stk&&!sizeFrame.hold)layApply(layNow());
+ /* Vertical: the picture's area (and Queue / LoRAs / PNG Info) is a centred column no wider than a 16:9 picture at the
+    height it has (plus its button column each side), never narrower than the tab bar or the prompt box — not edge to edge */
+ {const rt=$("right");if(stk){const hh=$("stage").getBoundingClientRect().height-BAR,full=app.clientWidth-36;
+   const cap=Math.max(minRight(),typeof stackW==="function"?stackW():0,hh*16/9+2*tbW(hh));rt.style.width=Math.round(Math.min(full,cap))+"px"}
+  else if(rt.style.width)rt.style.width=""}
  /* the target geometry, not a measurement: the grid may be mid-glide */
  const st=$("stage").getBoundingClientRect(),SW=stk?st.width:lay.last.rw;const f=$("frame");
  const PH=stk?st.height-BAR:picH(),TB=tbW(PH);fitBox(f,ar,SW-(stk?2:1)*TB,PH);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);   /* Vertical keeps the column's room on both sides */
@@ -115,6 +120,9 @@ function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.
  const gt=$("gtools");if(gt){gt.style.top=top+"px";gt.style.left=(tbLeft?left-TB:left+w)+"px";gt.style.width=TB+"px";gt.style.height=Math.max(40,h)+"px";gt.classList.toggle("lefty",tbLeft)}
  /* where the picture is going (not where it is mid-glide): the prompt's vertical anchors use this */
  lay.target={top:st.top+top,h,bottom:st.top+top+h+BAR-1,w};
+ /* the area's outer handle sits on the picture's outer edge in Generating (the edge you see), not past the button column */
+ {const ro=document.querySelector(".pedge.ro");if(ro){const on=!stk&&S.view==="gen",d=tbLeft?left:SW-(left+w);
+   ro.style.right=on&&!tbLeft?(d-6)+"px":"";ro.style.left=on&&tbLeft?(d-6)+"px":""}}
  const he=$("hedges");if(he){he.style.left=left+"px";he.style.width=w+"px";he.style.top=top+"px";he.style.height=h+"px"}
  /* tab bar: centred over the panel in Queue / LoRAs / PNG Info; in Generating it sits right on top of the picture and is
     centred on the picture itself, not on picture + button column — as far as the area allows (it never pokes out) */

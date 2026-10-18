@@ -47,6 +47,10 @@ function status(){const j=current();
  const src=(S.view==="gen"&&gm!=="off"&&!(j&&skin().cover==="camera")&&!$("frame").classList.contains("held")&&(j||(gm==="always"&&shownDone())))?$("cv"):null;   /* Aurora has its frame glow instead */
  if(src&&src.width){ambC.imageSmoothingQuality="high";ambC.drawImage(src,0,0,12,12);amb.classList.add("on")}else amb.classList.remove("on");
  let p=null;
+ {const pl=$("play");pl.classList.toggle("gen",!!j);pl.classList.toggle("running",!!j&&S.view!=="gen");   /* the ring: only where the progress bar is out of sight */pl.classList.toggle("stopping",!!(j&&j.stopping));
+  if(j){const q=jobProgress(j),v=Math.max(.02,Math.min(1,q.p||0)),was=+pl.dataset.pj||0;
+   if(was!==j.id){const rg=pl.querySelector(".pring");pl.dataset.pj=j.id;rg.style.transition="none";pl.style.setProperty("--p",v);void rg.offsetWidth;rg.style.transition=""}   /* a new job starts from empty, not by sweeping back */
+   else pl.style.setProperty("--p",v)}}
  if(j){const q=jobProgress(j);p=q.p;
   document.title=`${Math.min(j.step+1,j.steps)}/${j.steps}${q.left!=null?` · ~${fmt(q.left)}`:""}${pend?` · +${pend}`:""} — Kiln`}
  else document.title=pend?`${window.qPaused?"Paused · ":""}${pend} queued — Kiln`:"Kiln";
@@ -104,6 +108,37 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
  window.toggleCover=toggleCover;window.coverHeld=()=>CV.held;
  cbtn.onclick=e=>{e.stopPropagation();toggleCover()};coverUI();
  addEventListener("keydown",e=>{if(e.key!=="F9"||e.repeat)return;e.preventDefault();toggleCover()},true);   /* works while typing in the prompt */
+  function haloFrame(t,dt,cover0,force){
+  /* Aurora's halo: the image box glows (skins.js makeHalo). On while a job runs, fading out with the night layer after
+     the finish. A step's meteor makes it respond, the finish a little more — always with a soft rise (~0.4 s) and fall,
+     never a jump. ~20 fps: it moves slowly. */
+  {const gm=(S.set||{}).glow||"gen",on=cover0==="camera"&&gm!=="off"&&S.view==="gen"&&nstr>0;
+   fgA+=((on?Math.min(1,nstr/HOLD):0)-fgA)*Math.min(1,dt/400);
+   const fr=$("frame");
+   if(fgA>.01){if(force||t-haloT>=(t-finishAt<2200?14:48)){haloT=t;          /* full frame rate while the finish runs */
+     const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.3*env(t-gi.met,1300)+(f=>f<0?0:f<1?.8*f*f*f:f<1.15?.8+.6*(x=>x*x*(3-2*x))((f-1)/.15):1.4*Math.exp(-(f-1.15)*2.2))((t-finishAt)/1400);   /* builds with the crescendo, exhales at the release */
+     const a=fr.getBoundingClientRect(),dp=devicePixelRatio||1,R=95,   /* the bloom's reach (css px): 130 read too wide on screen */cw=Math.round((a.width+2*R)*dp),ch=Math.round((a.height+2*R)*dp);
+     if(fg.width!==cw||fg.height!==ch){fg.width=cw;fg.height=ch}
+     const fs=fg.style;fs.left=(a.left-R)+"px";fs.top=(a.top-R)+"px";fs.width=(a.width+2*R)+"px";fs.height=(a.height+2*R)+"px";fs.opacity="1";fs.display="";
+     const X=R*dp,Y=R*dp,FW=a.width*dp,FH=a.height*dp,rad=(parseFloat(getComputedStyle(fr).borderTopLeftRadius)||24)*dp,hc=cols.map(toHex);
+     const k=fgA*(reduce?.75+.25*Math.sin(t/1800):1);                                                // reduced motion: a still glow that gently breathes
+     fgc.clearRect(0,0,cw,ch);
+     halo.draw(fgc,X,Y,FW,FH,reduce?0:t/1000,hc,{reach:R*dp,radius:rad,alpha:.32*k,boost});   /* ambient: low opacity, the hot edge is the key light */
+     halo.edge(fgc,X,Y,FW,FH,hc,{radius:rad,alpha:k,boost,narrow:3*dp,wide:20*dp});
+     fgc.globalCompositeOperation="source-atop";fgc.globalAlpha=.05;fgc.fillStyle=fgc.createPattern(dith,"repeat");fgc.fillRect(0,0,cw,ch);   // a whisper of grain: no banding on near-black
+     fgc.globalCompositeOperation="destination-out";fgc.globalAlpha=1;fgc.beginPath();fgc.roundRect(X+dp,Y+dp,FW-2*dp,FH-2*dp,Math.max(0,rad-dp));fgc.fill();   // nothing behind the image itself
+     /* nothing under the glass panels either (the prompt box, the tab bar, the LoRA chips): a glass panel blurs what's
+        behind it and Chromium repeats its edge pixels inward, so the pulsing glow showed as a flickering band inside the
+        box (2026-10-19). Soft holes, already dark at the panel's edge: the light fades out in the gap before it. */
+     if(document.body.classList.contains("glass")){const F=10;fgc.filter=`blur(${F*dp/2}px)`;
+      for(const el of document.querySelectorAll(HALO_CUT)){const r=el.getBoundingClientRect();if(!r.width||r.right<a.left-R||r.left>a.right+R||r.bottom<a.top-R||r.top>a.bottom+R)continue;
+       const er=(parseFloat(getComputedStyle(el).borderTopLeftRadius)||0)+F;fgc.beginPath();fgc.roundRect((r.left-a.left+R-F)*dp,(r.top-a.top+R-F)*dp,(r.width+2*F)*dp,(r.height+2*F)*dp,er*dp);fgc.fill()}
+      fgc.filter="none"}
+     fgc.globalCompositeOperation="source-over";fr.classList.add("halo")}}
+   else if(fg.style.opacity!=="0"||fg.style.display!=="none"){fg.style.opacity="0";fg.style.display="none";fr.classList.remove("halo")}   /* gone, not just transparent: a blended layer left in the page still costs Edge a separate compositing surface */}
+  }
+  /* a layout switch captures the new layout at once: the halo has to be there already (stage.js layMorph) */
+  window.haloNow=()=>haloFrame(performance.now(),0,skin().cover,true);
  function draw(t){const dt=Math.min(50,t-last||16),dtr=Math.min(1000,t-last||16);last=t;   /* dtr: real time, so the cover's fades keep their speed when the page runs slow (the GPU busy loading a model) */if(colT!==window._themeV){sprites();colT=window._themeV}
   const b=vc.getBoundingClientRect(),d=devicePixelRatio||1;const nw=Math.round(b.width*d),nh=Math.round(b.height*d);
   if(nw!==W||nh!==H){W=vc.width=ec.width=nw;H=vc.height=ec.height=nh}
@@ -146,33 +181,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
     v.globalAlpha=a*.55;const r=p.s*7;v.drawImage(spr[p.c],p.x-r,p.y-r,r*2,r*2);
     v.globalAlpha=a;v.strokeStyle="#ffffff";v.lineWidth=.7*d;const L=p.s*4*tw;v.beginPath();v.moveTo(p.x-L,p.y);v.lineTo(p.x+L,p.y);v.moveTo(p.x,p.y-L);v.lineTo(p.x,p.y+L);v.stroke()}
    v.globalAlpha=1;v.globalCompositeOperation="source-over"}else sparks.length=0;
-  /* Aurora's halo: the image box glows (skins.js makeHalo). On while a job runs, fading out with the night layer after
-     the finish. A step's meteor makes it respond, the finish a little more — always with a soft rise (~0.4 s) and fall,
-     never a jump. ~20 fps: it moves slowly. */
-  {const gm=(S.set||{}).glow||"gen",on=cover0==="camera"&&gm!=="off"&&S.view==="gen"&&nstr>0;
-   fgA+=((on?Math.min(1,nstr/HOLD):0)-fgA)*Math.min(1,dt/400);
-   const fr=$("frame");
-   if(fgA>.01){if(t-haloT>=(t-finishAt<2200?14:48)){haloT=t;          /* full frame rate while the finish runs */
-     const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.3*env(t-gi.met,1300)+(f=>f<0?0:f<1?.8*f*f*f:f<1.15?.8+.6*(x=>x*x*(3-2*x))((f-1)/.15):1.4*Math.exp(-(f-1.15)*2.2))((t-finishAt)/1400);   /* builds with the crescendo, exhales at the release */
-     const a=fr.getBoundingClientRect(),dp=devicePixelRatio||1,R=95,   /* the bloom's reach (css px): 130 read too wide on screen */cw=Math.round((a.width+2*R)*dp),ch=Math.round((a.height+2*R)*dp);
-     if(fg.width!==cw||fg.height!==ch){fg.width=cw;fg.height=ch}
-     const fs=fg.style;fs.left=(a.left-R)+"px";fs.top=(a.top-R)+"px";fs.width=(a.width+2*R)+"px";fs.height=(a.height+2*R)+"px";fs.opacity="1";fs.display="";
-     const X=R*dp,Y=R*dp,FW=a.width*dp,FH=a.height*dp,rad=(parseFloat(getComputedStyle(fr).borderTopLeftRadius)||24)*dp,hc=cols.map(toHex);
-     const k=fgA*(reduce?.75+.25*Math.sin(t/1800):1);                                                // reduced motion: a still glow that gently breathes
-     fgc.clearRect(0,0,cw,ch);
-     halo.draw(fgc,X,Y,FW,FH,reduce?0:t/1000,hc,{reach:R*dp,radius:rad,alpha:.32*k,boost});   /* ambient: low opacity, the hot edge is the key light */
-     halo.edge(fgc,X,Y,FW,FH,hc,{radius:rad,alpha:k,boost,narrow:3*dp,wide:20*dp});
-     fgc.globalCompositeOperation="source-atop";fgc.globalAlpha=.05;fgc.fillStyle=fgc.createPattern(dith,"repeat");fgc.fillRect(0,0,cw,ch);   // a whisper of grain: no banding on near-black
-     fgc.globalCompositeOperation="destination-out";fgc.globalAlpha=1;fgc.beginPath();fgc.roundRect(X+dp,Y+dp,FW-2*dp,FH-2*dp,Math.max(0,rad-dp));fgc.fill();   // nothing behind the image itself
-     /* nothing under the glass panels either (the prompt box, the tab bar, the LoRA chips): a glass panel blurs what's
-        behind it and Chromium repeats its edge pixels inward, so the pulsing glow showed as a flickering band inside the
-        box (2026-10-19). Soft holes, already dark at the panel's edge: the light fades out in the gap before it. */
-     if(document.body.classList.contains("glass")){const F=10;fgc.filter=`blur(${F*dp/2}px)`;
-      for(const el of document.querySelectorAll(HALO_CUT)){const r=el.getBoundingClientRect();if(!r.width||r.right<a.left-R||r.left>a.right+R||r.bottom<a.top-R||r.top>a.bottom+R)continue;
-       const er=(parseFloat(getComputedStyle(el).borderTopLeftRadius)||0)+F;fgc.beginPath();fgc.roundRect((r.left-a.left+R-F)*dp,(r.top-a.top+R-F)*dp,(r.width+2*F)*dp,(r.height+2*F)*dp,er*dp);fgc.fill()}
-      fgc.filter="none"}
-     fgc.globalCompositeOperation="source-over";fr.classList.add("halo")}}
-   else if(fg.style.opacity!=="0"||fg.style.display!=="none"){fg.style.opacity="0";fg.style.display="none";fr.classList.remove("halo")}   /* gone, not just transparent: a blended layer left in the page still costs Edge a separate compositing surface */}
+  haloFrame(t,dt,cover0);
   e.clearRect(0,0,W,H);
   if(W&&S.view==="gen"&&skin().cover==="camera")cam.drawFlash(e,W,H,t,cols.map(toHex));
   if(sweepT&&W){const p=(t-sweepT)/900;if(p>=1||p<0)sweepT=0;else if(S.view==="gen")crt.sweep(e,W,H,p,d,cols.map(toHex))}

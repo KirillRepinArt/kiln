@@ -4,9 +4,8 @@ function slider(id,min,max,val,quick,hint){return `<div class="row"><input type=
   <div class="row" style="justify-content:space-between">${quick.map(q=>`<button class="qb ${q===val?"on":""}" data-q="${q}">${q}</button>`).join("")}</div><div class="hint" id="${id}H">${hint}</div>`}
 function stepsHint(){return `~${fmt(S.steps*SEC_PER_STEP[S.mp])} per image at ${S.mp} MP`}
 function countHint(){return S.n>1?`${S.n} jobs · ~${fmt(S.n*S.steps*SEC_PER_STEP[S.mp])} total · ${S.seedMode==="random"?"random seeds":"seeds count up"}`:"one image"}
-function idleText(){const [w,h]=SIZES[S.mp][S.ar];const had=jobs.some(j=>j.status==="done");
- $("idleT").textContent=had?`Next: ${S.ar} · ${w}×${h}`:"Queue is empty";
- $("idleS").textContent=had?"Your last image is in Queue → Finished":"Write a prompt and press ▶ (Ctrl+Enter)"}
+function idleText(){const [w,h]=SIZES[S.mp][S.ar];
+ $("idleT").textContent=`Next: ${S.ar} · ${w}×${h}`;$("idleS").textContent=`~${fmt(S.steps*SEC_PER_STEP[S.mp])} per image`}   /* live.js keeps it current */
 function renderPills(){idleText();
  const pk=typeof peekJob!=="undefined"&&peekJob; // peeking: the pills show that job's own settings
  const v=pk?{mp:pk.mp,ar:pk.ar,steps:pk.steps,seed:pk.seed!=null?String(pk.seed):"—",n:1}:{mp:S.mp,ar:S.ar,steps:S.steps,seed:S.seedMode==="random"?"Random":String(S.seed),n:S.n};
@@ -85,8 +84,8 @@ function grow(){} // column widths now come from sizeFrame()
   h.addEventListener("dblclick",()=>{S.lay.ih=null;save();sizeFrame()})})})();
 /* the edit buttons appear while the pointer is over the picture or the column beside it (one zone, so you never chase
    them) and stay ~300 ms after it leaves, so a diagonal path doesn't lose them */
-(function(){let t=null;const on=()=>{clearTimeout(t);$("stage").classList.add("tools")},off=()=>{clearTimeout(t);t=setTimeout(()=>$("stage").classList.remove("tools"),300)};
- for(const el of [$("frame"),$("gtools"),...document.querySelectorAll(".stage>.gnav")]){el.addEventListener("pointerenter",on);el.addEventListener("pointerleave",off)}})();
+(function(){let t=null;const on=()=>{clearTimeout(t);$("stage").classList.add("tools");document.body.classList.add("navs")},off=()=>{clearTimeout(t);t=setTimeout(()=>{$("stage").classList.remove("tools");document.body.classList.remove("navs")},300)};
+ for(const el of [$("frame"),$("gtools"),...document.querySelectorAll(".gnav")]){el.addEventListener("pointerenter",on);el.addEventListener("pointerleave",off)}})();
 (function(){const L=$("left"),col=$("lcol");let d=null;
  for(const side of ["l","r"]){const h=document.createElement("div");h.className="sedge "+side;h.dataset.tip="Drag to resize the prompt box · double-click for its default width";L.appendChild(h);
   h.addEventListener("pointerdown",ev=>{if(!document.querySelector(".app.stacked")||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);

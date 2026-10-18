@@ -142,7 +142,8 @@ export async function holdsWhileYouWork(k, t) {
   const before = await R(k, "#rpanel");
   await k.ev(`(document.activeElement.blur(),genNav(-1),updNav(),1)`); await k.sleep(500);
   const during = await R(k, "#rpanel");
-  t.ok(Math.abs(during.left - before.left) < 2 && Math.abs(during.width - before.width) < 2, "flipping with the pointer on the picture: the area holds", { before: [before.left, before.width], during: [during.left, during.width] });
+  await k.sleep(500); const after = await R(k, "#rpanel");
+  t.ok(Math.abs(during.width - after.width) < 2 && Math.abs(after.width - before.width) > 40, "flipping with the pointer on the picture: the area goes straight to the new picture's size — one glide, no hold (the arrows hold on their own)", { before: [before.left, before.width], during: [during.left, during.width], after: [after.left, after.width] });
   await k.sleep(1100);
   t.ok((await R(k, "#rpanel")).width < before.width - 200, "~1 s after the last flip it fits the picture, even with the pointer still there");
   // the prompt holds while a menu in it is open, and adjusts the moment you choose
@@ -181,10 +182,11 @@ export async function heightLimit(k, t) {
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y: y - 200, button: "left", clickCount: 1 }); await k.mouse(2, 2); await k.sleep(800);
   const f1 = await R(k, "#frame"), st = await R(k, "#stage");
   t.ok(Math.abs(f1.height - (f0.height - 200)) <= 2, "the limit stays after release", f1.height);
-  t.ok(Math.abs((f1.top - st.top) - (st.height - 66 - f1.height) / 2) <= 2, "the picture re-centres vertically", { top: f1.top - st.top, h: f1.height });
+  const bar = await k.ev(`BAR`);
+  t.ok(Math.abs((f1.top - st.top) - (st.height - bar - f1.height) / 2) <= 2, "the picture re-centres vertically", { top: f1.top - st.top, h: f1.height, bar });
   const want = 18 + Math.max(0, (420 - f1.width - 52) / 2);   // in Generating the area only stops at 420 px (the tab bar may overhang a narrow picture)
   t.ok(Math.abs(f1.width / f1.height - 0.75) < .01 && Math.abs(await gapToPic(k) - want) <= 1.5, "its width follows (3:4); the prompt hugs it", { w: f1.width, gap: await gapToPic(k), want });
-  const n = await R(k, ".stage>.gnav.next"); t.ok(Math.abs((n.top + n.height / 2) - (f1.top + f1.height / 2)) <= 2, "the arrows sit at the picture's middle");
+  await k.mouse(f1.left + f1.width / 2, f1.top + f1.height / 2); await k.sleep(300); const n = await R(k, ".gnav.next"); t.ok(Math.abs((n.top + n.height / 2) - (f1.top + f1.height / 2)) <= 2, "the arrows sit at the picture's middle");
   const hb = await R(k, ".hedge.b"); await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x: hb.left + 60, y: hb.top + 6, button: "left", clickCount: 2 });
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: hb.left + 60, y: hb.top + 6, button: "left", clickCount: 2 }); await k.mouse(2, 2); await k.sleep(800);
   t.ok(Math.abs((await R(k, "#frame")).height - f0.height) <= 2, "double-click: no limit again");
@@ -197,7 +199,8 @@ export async function toolbarBesideThePicture(k, t) {
   await viewport(k, 1500, 820); await k.mouse(2, 2);
   await k.job("[fill:2850e6] a", { ar: "21:9", steps: 2 }); await done(k, 1);
   await k.job("[fill:28c83c] b", { ar: "21:9", steps: 2 }); await done(k, 2); await k.sleep(900);
-  const f = await R(k, "#frame"), n = await R(k, ".stage>.gnav.prev"), eye = await R(k, "#cbtn");
+  const f0 = await R(k, "#frame"); await k.mouse(f0.left + f0.width / 2, f0.top + f0.height / 2); await k.sleep(300);
+  const f = await R(k, "#frame"), n = await R(k, ".gnav.prev"), eye = await R(k, "#cbtn"); await k.mouse(2, 2); await k.sleep(500);
   t.ok(Math.abs((n.top + n.height / 2) - (f.top + f.height / 2)) <= 2, "a short (21:9) picture: the arrows sit at its middle");
   t.ok(eye.right <= f.right && eye.top >= f.top && eye.top < f.top + 30, "the eye sits on the picture, top right", { eye: [eye.top, eye.right], f: [f.top, f.right] });
   t.ok(!(await toolsShown(k)), "the edit buttons are hidden until you hover the picture");

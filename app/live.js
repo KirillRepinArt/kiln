@@ -25,8 +25,8 @@
     and a file that's gone says so */
  /* switching pictures: the one on show is copied to an overlay (#cvx) at its own size and fades out once the next is
     drawn — never an empty frame in between (Photos / Lightroom). The neighbours are decoded ahead (preload) */
- function xfadeFrom(cv,id){const x=$("cvx");if(!x||cv.id!=="cv"||cv.width<2||!cv.dataset.shown||cv.dataset.shown===String(id))return;
-  x.width=cv.width;x.height=cv.height;x.getContext("2d").drawImage(cv,0,0);x.style.width=cv.dataset.cw;x.style.height=cv.dataset.ch;
+ function xfadeFrom(cv,id){const x=$("cvx");if(!x||x.dataset.wait||cv.id!=="cv"||cv.width<2||!cv.dataset.shown||cv.dataset.shown===String(id))return;   /* already taken (xfadeSnap, before the box changed) */
+  x.width=cv.width;x.height=cv.height;x.getContext("2d").drawImage(cv,0,0);x.style.width=cv.style.width;x.style.height=cv.style.height;
   x.style.transition="none";x.style.opacity="1";x.dataset.wait="1"}
  function xfadeGo(cv,id){if(cv.id!=="cv")return;cv.dataset.shown=id;cv.dataset.cw=cv.style.width;cv.dataset.ch=cv.style.height;const x=$("cvx");
   if(x&&x.dataset.wait){x.dataset.wait="";void x.offsetWidth;x.style.transition="";x.style.opacity="0"}}
@@ -229,11 +229,15 @@
      const jid=j.id;i.onload=()=>{if(+$("cv").dataset.j===jid&&!browsed()){drawTo($("cv"),i,false);xfadeEnd()}lastPrev=r;prevLoading=false};i.onerror=()=>{prevLoading=false;lastPrev=r};i.src=`/api/preview/${j.id}?r=${r}`}}
    const mini=document.querySelector(`.qi[data-id="${j.id}"] .mini i`);if(mini)mini.style.width=(p*100)+"%";
    const lp=document.querySelector(`img[data-lp="${j.id}"]`);if(lp&&j.preview_rev&&lp.dataset.r!=j.preview_rev){lp.dataset.r=j.preview_rev;lp.src=`/api/preview/${j.id}?r=${j.preview_rev}`}   /* Q6: the render, small, in its queue row */
-  }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run","stopping","bgjob");$("fill").style.width="0%";prog.classList.toggle("cap",S.view==="gen"&&!!browsed());
+  }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run","stopping","bgjob");$("fill").style.width="0%";prog.classList.toggle("cap",S.view==="gen"&&!!shownDone());
     if(!forgeOk){$("ptxt").textContent=forgeStarting?"Starting Forge…":"Forge not running";$("peta").textContent=forgeStarting?"jobs start when it's ready":"queue waits for it"}
     else if(window.qPaused&&jobs.some(x=>x.status==="pending")){$("ptxt").textContent="Queue paused";$("peta").textContent=`${jobs.filter(x=>x.status==="pending").length} waiting`}
-    else if(S.view==="gen"&&browsed())capTxt(browsed());
+    else if(S.view==="gen"&&shownDone())capTxt(shownDone());
     else{refreshEst();$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`}
+    /* the empty frame says what's next: the shape and size, and how long it takes (or why nothing starts) */
+    {const [w,h]=SIZES[S.mp][S.ar],T=!forgeOk?(forgeStarting?"Starting Forge…":"Forge isn't running"):`Next: ${S.ar} · ${w}×${h}`,
+      Ss=!forgeOk?(forgeStarting?"jobs start when it's ready":"the queue waits for it"):`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`;
+     if($("idleT").textContent!==T)$("idleT").textContent=T;if($("idleS").textContent!==Ss)$("idleS").textContent=Ss}
    prog.classList.toggle("paused",!!window.qPaused&&jobs.some(x=>x.status==="pending"))}
   if(!j||browsed()){const d=shownDone();
    if(d&&S.view==="gen"){if($("cv").dataset.d!=d.id||$("cv").dataset.m!==String(!!d.missing)){$("cv").dataset.d=d.id;$("cv").dataset.m=String(!!d.missing);$("cv").dataset.j="";sizeFrame();

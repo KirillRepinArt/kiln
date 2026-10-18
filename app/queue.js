@@ -36,7 +36,7 @@ $("qwrap").addEventListener("click",e=>{
  if(j.status==="running"){showView("gen");loadJob(j);return}
  if(j.status==="done"){showView("gen");browseTo(j);return} // finished: browse to it in Generating
  loadJob(j)});
-function browseTo(j){browseId=j.id;peekOff=false;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();loadJob(j);updNav()}
+function browseTo(j){if(window.xfadeSnap&&S.view==="gen"&&$("frame").classList.contains("has"))xfadeSnap();browseId=j.id;peekOff=false;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();loadJob(j);updNav()}
 let undo=null;var justDone=null;
 let peekJob=null;
 /* the peek bar only offers what would change something: no "Reuse prompt" when the prompt is already your draft;
@@ -57,7 +57,7 @@ function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classLis
    closes both and returns to the live view. */
 let peekOff=false;
 function closePromptPeek(){if(browseId!=null){peekOff=true;endPeek(true)}else endPeek()}
-function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){if(window.xfadeSnap)xfadeSnap();browseId=null;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}}
+function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){if(window.xfadeSnap&&current())xfadeSnap();browseId=null;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}}
  if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
  const n=$("pname");n.value=S.pname||"";n.placeholder="Add name";n.readOnly=false;
  $("peekbar").classList.remove("show");$("pnSave").classList.remove("show");$("left").classList.remove("peeking");renderChips();renderPills();updPrompt();layoutLeft()}

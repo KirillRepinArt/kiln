@@ -25,11 +25,11 @@ function openInApp(j){toast(`Prototype: would open ${j.file||("#"+j.id+".png")} 
  function bind(el,getJob){el.addEventListener("click",e=>{if(e.target.closest(".side,.nav,.bclose,.cbtn,.miss")||el.classList.contains("held"))return;const j=getJob();if(!j||j.status!=="done"||j.missing)return;clearTimeout(t);t=setTimeout(()=>openViewer(j),230)});
   el.addEventListener("dblclick",e=>{if(e.target.closest(".side,.nav,.bclose,.cbtn,.miss")||el.classList.contains("held"))return;const j=getJob();if(!j||j.status!=="done"||j.missing)return;clearTimeout(t);openInApp(j)})}
  bind($("frame"),()=>current()&&!browsed()?null:shownDone())})();
-setInterval(()=>{tabSync();$("frame").classList.toggle("clickable",(!current()||!!browsed())&&!!shownDone());const br=!!browsed(),cl=!br&&!current()&&!!shownDone();$("frame").classList.toggle("browsing",br);$("frame").classList.toggle("clearable",cl);
+setInterval(()=>{tabSync();if(typeof rowMode==="function"&&sizeFrame.mode&&rowMode()!==sizeFrame.mode)sizeFrame();$("frame").classList.toggle("clickable",(!current()||!!browsed())&&!!shownDone());const br=!!browsed(),cl=!br&&!current()&&!!shownDone();$("frame").classList.toggle("browsing",br);$("frame").classList.toggle("clearable",cl);
  $("bclose").dataset.tip=br&&current()?"Back to the render (Esc)":"Close the image (Esc) — ← brings it back";updNav()},300);
 // browsing: back to the live view; otherwise: clear the finished image (same as changing size or ratio does)
 /* ✕ closes the image: idle -> the empty Ready screen (← brings it back); while generating -> back to the render */
-function closeShown(){if(browsed()){endPeek();if(current())return}if(window.xfadeSnap)xfadeSnap();staleIf(true);sizeFrame()}
+function closeShown(){if(browsed()){endPeek();if(current())return}staleIf(true);sizeFrame()}
 $("bclose").onclick=e=>{e.stopPropagation();closeShown()};
 document.addEventListener("keydown",e=>{if(e.key!=="Delete"||e.ctrlKey||e.altKey)return;const a=document.activeElement;
  if(a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))||$("modal").classList.contains("show"))return;

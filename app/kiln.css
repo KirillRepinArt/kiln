@@ -864,10 +864,6 @@ body.glass .controls .play .badge{background:rgba(255,255,255,.03)!important;-we
 /* ---- 2026-10-19: the cross-fade layer; the arrows on the stage; the Gallery tab's page ---- */
 #cvx{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1;pointer-events:none;opacity:0;transition:opacity .2s cubic-bezier(.4,0,.2,1)}
 .frame.held #cvx{visibility:hidden}
-.stage>.gnav{position:absolute;margin-top:0;right:auto;z-index:6;transition:opacity .15s,background .15s,left var(--lay-t) var(--lay-e),top var(--lay-t) var(--lay-e)}
-.stage.tools>.gnav:not(.off){opacity:1}
-.stage:has(.frame:not(.has))>.gnav,.app.stacked .stage:has(.frame.missing)>.gnav{display:none}
-body.laydrag .stage>.gnav{transition:none}
 
 /* ---- 2026-10-19 ---- */
 /* the outline on the bottom layer, above the sky, under the panels */
@@ -883,3 +879,14 @@ body.gallery #ptxt{color:#cfd2d6;font-weight:500}
 .laymenu .opt.on .lic,.laymenu .opt:hover .lic{color:#fff}
 .laymenu .opt[data-lay]{align-items:center}
 body.gallery .prog .eta,body.gallery .prog .resume{display:none!important}
+
+/* ---- 2026-10-19 ---- */
+/* an empty Generating: no status row (the frame says what's next); ← into the Gallery stays */
+body.norow .prog{visibility:hidden}
+.laymenu .opt .lic{width:28px;height:20px}
+
+/* the picture's arrows on a fixed layer (stage.js places them every frame while they show) */
+.gnav{position:fixed;margin-top:0;right:auto;z-index:20;transition:opacity .15s,background .15s}
+body.navglide .gnav{transition:opacity .15s,background .15s,left var(--lay-t) var(--lay-e),top var(--lay-t) var(--lay-e)}
+body.navs .gnav:not(.off){opacity:1}
+body:has(.rpanel.paneled) .gnav,body:has(.frame.missing) .gnav,body:has(.modal.show) .gnav,body:has(.viewer.show) .gnav{display:none}

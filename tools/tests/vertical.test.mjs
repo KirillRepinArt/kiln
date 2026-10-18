@@ -148,8 +148,14 @@ heightIsALimit.opts = { width: 2000, height: 1023 };
 export async function runningThumb(k, t) {
   await k.job("[fill:446688] first", { steps: 2 }); await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
   await k.mouse(2, 2); await k.sleep(400);
-  t.ok(await k.ev(`getComputedStyle(document.querySelector(".prog .track")).visibility`) === "hidden", "idle: no empty track (the row keeps its room)");
-  t.ok(/^Ready/.test(await k.ev(`$("ptxt").textContent`)), "just Ready");
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".prog .track")).visibility`) === "hidden" || await k.ev(`getComputedStyle(document.querySelector(".prog .track")).display`) === "none", "idle with the result on show: no empty track");
+  t.ok(new RegExp("^#" + await k.ev(`lastDone().id`) + " · ").test(await k.ev(`$("ptxt").textContent`)), "but its caption", await k.ev(`$("ptxt").textContent`));
+  await k.ev(`(closeShown(),1)`); await k.sleep(600);
+  t.ok(await k.ev(`document.body.classList.contains("norow")&&getComputedStyle($("prog")).visibility==="hidden"`), "an empty screen: no status row at all");
+  t.ok(/^Next: /.test(await k.ev(`$("idleT").textContent`)) && /per image/.test(await k.ev(`$("idleS").textContent`)), "the frame says what's next and how long it takes", [await k.ev(`$("idleT").textContent`), await k.ev(`$("idleS").textContent`)]);
+  await k.mouse(2, 2); const fr = await R(k, "#frame"); await k.mouse(fr.left + 40, fr.top + fr.height / 2); await k.sleep(500);
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".gnav.prev")).opacity==="1"&&!document.querySelector(".gnav.prev").classList.contains("off")`), "and ← into the Gallery is there");
+  await k.mouse(2, 2);
   await k.job("[fill:884422] second", { steps: 6 }); await k.until(`current()&&current().preview_rev>0`, 20000, 100);
   t.ok(!(await k.ev(`$("prog").classList.contains("bgjob")`)) && await k.ev(`getComputedStyle(document.querySelector(".prog .track")).visibility`) === "visible", "watching the render: the bar, no chip");
   await k.ev(`(browseTo(lastDone()),1)`); await k.sleep(1500);
@@ -201,16 +207,16 @@ export async function arrowsHold(k, t) {
   t.ok(await k.ev(`!$("frame").classList.contains("has")`), "idle, it's clean — the picture lives in the Gallery, not shown twice");
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.mouse(2, 2); await k.sleep(900);
   const f = await R(k, "#frame"); await k.mouse(f.left + 30, f.top + f.height / 2); await k.sleep(500);
-  const p0 = await R(k, ".stage>.gnav.prev");
-  t.ok(await k.ev(`getComputedStyle(document.querySelector(".stage>.gnav.prev")).opacity`) === "1", "hovering the picture shows the arrows");
+  const p0 = await R(k, ".gnav.prev");
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".gnav.prev")).opacity`) === "1", "hovering the picture shows the arrows");
   t.near(p0.left, f.left + 10, 2, "at the picture's edge");
   const x = p0.left + p0.width / 2, y = p0.top + p0.height / 2;
   await k.mouse(x, y); await k.sleep(150); await k.click(x, y); await k.sleep(500);
-  const p1 = await R(k, ".stage>.gnav.prev"), f1 = await R(k, "#frame");
+  const p1 = await R(k, ".gnav.prev"), f1 = await R(k, "#frame");
   t.ok(Math.abs(f1.width / f1.height - f.width / f.height) > .3, "the picture changed shape", { f: [f.width, f.height], f1: [f1.width, f1.height] });
   t.near(p1.left, p0.left, 1, "the arrow under the pointer held still");
   await k.sleep(1500);
-  const p2 = await R(k, ".stage>.gnav.prev"), f2 = await R(k, "#frame");
+  const p2 = await R(k, ".gnav.prev"), f2 = await R(k, "#frame");
   t.near(p2.left, f2.left + 10, 2, "a moment after the last click it moved to the new picture's edge");
 }
 arrowsHold.opts = { width: 2000, height: 1023, step: 0.05 };

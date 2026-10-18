@@ -108,11 +108,14 @@ function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.
  /* Vertical: the picture's area (and Queue / LoRAs / PNG Info) is a centred column no wider than a 16:9 picture at the
     height it has (plus its button column each side), never narrower than the tab bar or the prompt box — not edge to edge */
  {const rt=$("right");if(stk){const hh=$("stage").getBoundingClientRect().height-BAR,full=app.clientWidth-36;
-   const cap=Math.max(minRight(),typeof stackW==="function"?stackW():0,hh*16/9+2*tbW(hh));rt.style.width=Math.round(Math.min(full,cap))+"px"}
-  else if(rt.style.width)rt.style.width=""}
+   const cap=Math.max(minRight(),typeof stackW==="function"?stackW():0,hh*16/9+2*tbW(hh));rt.style.width=Math.round(Math.min(full,cap))+"px";sizeFrame.colW=Math.round(Math.min(full,cap))}
+  else{if(rt.style.width)rt.style.width="";sizeFrame.colW=0}}
  /* the target geometry, not a measurement: the grid may be mid-glide */
- const st=$("stage").getBoundingClientRect(),SW=stk?st.width:lay.last.rw;const f=$("frame");
- const PH=stk?st.height-BAR:picH(),TB=tbW(PH);fitBox(f,ar,SW-(stk?2:1)*TB,PH);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);   /* Vertical keeps the column's room on both sides */
+ const st=$("stage").getBoundingClientRect(),SW=stk?(sizeFrame.colW?sizeFrame.colW-2:st.width):lay.last.rw;const f=$("frame");   /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
+ const PH=stk?st.height-BAR:picH(),TB=tbW(PH);fitBox(f,ar,SW-(stk?2:1)*TB,PH);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
+ /* the picture's canvas is drawn at the box's FINAL size and centred in it: the box may glide to a new shape (its
+    edges clip the picture, like a container transform) without the canvas being stretched on the way */
+ {const cv=$("cv");cv.style.width=w+"px";cv.style.height=h+"px"}   /* Vertical keeps the column's room on both sides */
  let top=Math.max(0,(st.height-h-BAR)/2);if(lay.vtop!=null)top=lay.vtop;   /* a held top / bottom edge: the other edge stays put */
  /* picture + toolbar as one group, centred in the area; the toolbar on the side away from the prompt */
  const tbLeft=!stk&&document.querySelector(".app").classList.contains("pright"),g0=Math.max(0,Math.floor((SW-w-TB)/2)),left=stk?Math.floor((SW-w)/2):tbLeft?g0+TB:g0;   /* Vertical: the picture itself on the centre line (the prompt box and the tab bar are centred there too); its column hangs in the margin */
@@ -194,7 +197,7 @@ function tick(){if(current()||window.qPaused)return;const j=jobs.find(j=>j.statu
 function stopJob(j){if(!j)return;clearTimeout(j.timer);if(j.status==="running"){j.status="cancelled";toast("Stopped")}else if(j.status==="pending")jobs=jobs.filter(x=>x!==j);renderAll();tick()}
 $("stopBtn").onclick=()=>stopJob(current());
 $("prog").addEventListener("click",e=>{if(e.target.closest(".stop"))return;const b=browsed();if(b){peekOff=false;loadJob(b);return}const j=current();if(j)loadJob(j)}); // peek at the shown image's prompt
-function browseStatus(){const b=browsed(),on=!!(b&&peekOff);$("prog").classList.toggle("showp",on);if(on&&!window._dp)$("ptxt").textContent=`#${b.id} · Show prompt`}
+function browseStatus(){const b=browsed(),on=!!(b&&peekOff);$("prog").classList.toggle("showp",on);if(on&&!window._dp&&!window.LIVE)$("ptxt").textContent=`#${b.id} · Show prompt`}   /* live: the caption (live.js) */
 function frame(){const j=current();const prog=$("prog");
  if(j){prog.classList.add("show","run");
   const part=Math.min((Date.now()-j.stepStart)/j.est,.95);const p=(j.step+part)/j.steps;$("fill").style.width=(p*100).toFixed(2)+"%";

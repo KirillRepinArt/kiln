@@ -24,7 +24,7 @@ export async function sideEdges(k, t) {
   t.near((await R(k, "#chips")).width, 880, 2, "the LoRA row follows the box");
   t.near(await k.ev(`S.lay.sw`), 880, 1, "remembered");
   await k.send("Page.reload", {}); await k.sleep(800); await k.until("!!(window.LIVE&&window._jobsReady)", 15000); await k.sleep(800);
-  t.near((await R(k, "#left")).width, 880, 2, "after a restart too");
+  t.ok(await k.until(`Math.abs($("left").getBoundingClientRect().width-880)<=2`, 3000, 100), "after a restart too", (await R(k, "#left")).width);
   // double-click: back to the default
   const h2 = await R(k, ".sedge.l");
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x: h2.left + 6, y: h2.top + 40, button: "left", clickCount: 2 });
@@ -148,13 +148,32 @@ heightIsALimit.opts = { width: 2000, height: 1023 };
 
 export async function runningThumb(k, t) {
   await k.job("[fill:446688] first", { steps: 2 }); await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.mouse(2, 2); await k.sleep(400);
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".prog .track")).visibility`) === "hidden", "idle: no empty track (the row keeps its room)");
+  t.ok(/^Ready/.test(await k.ev(`$("ptxt").textContent`)), "just Ready");
   await k.job("[fill:884422] second", { steps: 6 }); await k.until(`current()&&current().preview_rev>0`, 20000, 100);
-  t.ok(!(await k.ev(`$("prog").classList.contains("bgjob")`)), "looking at the render: no thumbnail");
+  t.ok(!(await k.ev(`$("prog").classList.contains("bgjob")`)) && await k.ev(`getComputedStyle(document.querySelector(".prog .track")).visibility`) === "visible", "watching the render: the bar, no chip");
   await k.ev(`(browseTo(lastDone()),1)`); await k.sleep(1500);
-  t.ok(await k.ev(`$("prog").classList.contains("bgjob")`), "browsing a finished picture while a job runs: the thumbnail shows");
-  t.ok(await k.until(`$("pthImg").naturalWidth>0`, 8000, 100), "with the live render");
-  t.ok(new RegExp("^#" + await k.ev(`current().id`) + " · ").test(await k.ev(`$("ptxt").textContent`)), "and the job's number", await k.ev(`$("ptxt").textContent`));
-  await k.ev(`($("pth").click(),1)`); await k.sleep(400);
-  t.ok(await k.ev(`browseId===null&&!$("prog").classList.contains("bgjob")`), "clicking it goes back to the render");
+  const b = await k.ev(`lastDone().id`), txt = await k.ev(`$("ptxt").textContent`);
+  t.ok(new RegExp("^#" + b + " · ").test(txt) && txt.includes(await k.ev(`lastDone().file`)), "browsing: the row is the picture's caption", txt);
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".prog .track")).visibility`) === "hidden", "no bar under a finished picture");
+  t.ok(await k.ev(`getComputedStyle($("pchip")).display`) !== "none", "the running job is a chip at the row's end");
+  t.ok(await k.until(`$("pthImg").naturalWidth>0`, 8000, 100), "with its live render");
+  t.ok(/^\d\/6/.test(await k.ev(`$("pchipT").textContent`)), "and its step", await k.ev(`$("pchipT").textContent`));
+  t.ok(await k.until(`$("play").classList.contains("running")`, 2000, 100), "the ring on Start shows (the bar is out of sight)");
+  await k.ev(`($("pchip").click(),1)`); await k.sleep(400);
+  t.ok(await k.ev(`browseId===null&&!$("prog").classList.contains("bgjob")`), "clicking the chip goes back to the render");
 }
 runningThumb.opts = { step: 1.2 };
+
+export async function slotIsFixed(k, t) {
+  await k.ev(`(setDock("below"),1)`); await k.mouse(2, 2); await k.sleep(800);
+  const L = String.fromCharCode(10);
+  await k.job("[fill:446688] one line", { ar: "16:9", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=1`, 30000);
+  await k.job("[fill:446688] three" + L + "SCENE:" + L + "lines of prompt text, and more, and more", { ar: "16:9", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  await k.ev(`(browseTo(doneList()[0]),1)`); await k.sleep(900); const a = await R(k, "#frame");
+  await k.ev(`(genNav(1),1)`); await k.sleep(900); const b = await R(k, "#frame");
+  t.ok(Math.abs(a.top - b.top) < 1 && Math.abs(a.height - b.height) < 1 && Math.abs(a.left - b.left) < 1, "Vertical: browsing prompts of different lengths never moves or resizes the picture", { a: [a.left, a.top, a.height], b: [b.left, b.top, b.height] });
+  t.ok(await k.ev(`getComputedStyle($("hmFull")).display`) === "none", "no Full height in Vertical");
+}
+slotIsFixed.opts = { width: 2000, height: 1023, step: 0.05 };

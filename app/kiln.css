@@ -822,10 +822,26 @@ body.glass .play.gen:hover::before{background:color-mix(in oklab,rgba(255,255,25
 /* ---- the running job's thumbnail in the status row (only while you browse a finished picture) ---- */
 .pth{display:none;position:relative;width:28px;height:28px;border-radius:8px;overflow:hidden;flex:none;background:#15171a;cursor:pointer;
  box-shadow:0 0 0 1px rgba(255,255,255,.1);margin-right:-2px}
-.prog.bgjob .pth{display:block}
 .pth img{width:100%;height:100%;object-fit:cover;display:block;transition:filter .6s var(--ease)}
 .pth img:not([src]){visibility:hidden}
 .pth.soft img{filter:blur(2.5px) brightness(.85);transform:scale(1.15)}
 .pth svg{display:none;position:absolute;inset:7px;width:14px;height:14px;color:var(--muted)}
 body.private .pth img{visibility:hidden}body.private .pth svg{display:block}
 .pth:hover{box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+
+/* ---- 2026-10-19: Vertical has no Full height; the picture's box glides in size too ---- */
+.app.stacked #hmFull{display:none}
+body:not(.laydrag) .stage .frame{transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),height var(--lay-t) var(--lay-e)}
+.prog{transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e)}
+.frame #cv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+/* ---- the status row: the track only while you watch the render; browsing = the picture's caption + the running job's
+   chip; idle = Ready (the row keeps its room, so the picture never moves when a job starts or ends) ---- */
+.prog:not(.run) .track,.prog.bgjob .track{visibility:hidden}
+.prog.bgjob .eta,.prog.bgjob .stop{display:none!important}
+.prog .pth{display:block;margin:0}
+.pchip{display:none;align-items:center;gap:8px;margin-left:auto;height:36px;padding:0 12px 0 4px;border-radius:999px;cursor:pointer;background:var(--raised);font-size:13px;color:#e6e6ea;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pchip .pth{width:28px;height:28px;border-radius:999px}
+.prog.bgjob .pchip{display:inline-flex}
+.pchip:hover{background:var(--raised2)}
+body.glass .pchip{background:color-mix(in oklab,rgba(255,255,255,.08),var(--cool,#9ab) 16%);-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 0 0 1px rgba(255,255,255,.07)}
+#ptxt{overflow:hidden;text-overflow:ellipsis;min-width:0}

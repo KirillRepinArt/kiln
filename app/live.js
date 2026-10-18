@@ -101,7 +101,10 @@
   if(peekJob&&peekJob.id===j.id)endPeek();
   toast("Moved to the Recycle Bin","Undo",async()=>{await api(`/api/jobs/${j.id}/undelete`,{});poll()});poll()};
  $("resumeBtn").onclick=e=>{e.stopPropagation();setPaused(false)};
- $("pth").onclick=e=>{e.stopPropagation();endPeek()};   /* the thumbnail: back to the render */
+ $("pchip").onclick=e=>{e.stopPropagation();endPeek()};   /* the running job's chip: back to the render */
+ /* browsing: the status row is the picture's caption — its number, file, shape and size (click: its prompt) */
+ function capTxt(b){if(!b)return;const sp=b.spec||{},w=sp.w||(SIZES[b.mp]||{})[b.ar]?.[0],h=sp.h||(SIZES[b.mp]||{})[b.ar]?.[1];
+  const t=[`#${b.id}`,b.file,b.ar,w&&h?`${w}×${h}`:""].filter(Boolean).join(" · ");if($("ptxt").textContent!==t)$("ptxt").textContent=t;$("peta").textContent=""}
  function act(a,j){if(!j)return;
   if(a==="open")return api("/api/open",{id:j.id});
   if(a==="folder")return api("/api/reveal",{id:j.id});
@@ -194,13 +197,16 @@
    const part=j.steps?Math.min((Date.now()-(j._ss||Date.now()))/per,.95):0;
    const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;prog.classList.toggle("stopping",!!j.stopping);if(!j.stopping)$("fill").style.width=(p*100).toFixed(2)+"%";
    const rm=remaining(j),left=rm!=null?rm:(j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000));
-   const started=j.step||j.preview_rev;
-   /* browsing a finished picture while this job renders: the status row says whose progress it is — a small live
-      thumbnail (soft until the last step, like the cover; a lock with privacy on) and the job's number */
-   const bg=S.view==="gen"&&!!browsed(),pre=bg?`#${j.id} · `:"";prog.classList.toggle("bgjob",bg);
+   const started=j.step||j.preview_rev;prog.classList.remove("cap");
+   /* browsing a finished picture while this job renders: the row is about the picture you're looking at (its caption);
+      the job becomes a chip at the row's end — a live thumbnail (soft until the last step, like the cover; a lock with
+      privacy on) and its step and time left; the ring on Start shows its progress (effects.js) */
+   const bg=S.view==="gen"&&!!browsed(),pre="";prog.classList.toggle("bgjob",bg);
    if(bg){const im=$("pthImg"),key=j.id+":"+(j.preview_rev||0);if(im.dataset.k!==key){im.dataset.k=key;if(j.preview_rev)im.src=`/api/preview/${j.id}?r=${j.preview_rev}`;else im.removeAttribute("src")}
-    $("pth").classList.toggle("soft",j.step<j.steps-1)}
-   if(j.stopping){const r=(per-(Date.now()-(j._ss||Date.now())))/1000;setTxt("Stopping after this step");$("peta").textContent=r>3?`stops in ~${fmt(r)}`:"any moment now"}   /* Forge only stops between steps; the next job starts right after */
+    $("pth").classList.toggle("soft",j.step<j.steps-1);
+    $("pchipT").textContent=j.stopping?"stopping":started?`${Math.min(j.step+1,j.steps)}/${j.steps}${rm!=null||j.eta?` · ${fmt(left)}`:""}`:"starting";
+    capTxt(browsed())}
+   else if(j.stopping){const r=(per-(Date.now()-(j._ss||Date.now())))/1000;setTxt("Stopping after this step");$("peta").textContent=r>3?`stops in ~${fmt(r)}`:"any moment now"}   /* Forge only stops between steps; the next job starts right after */
    else{setTxt(pre+(j.kind==="upscale"?"Upscaling…":started?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`:`${WORDS[j.id%WORDS.length]}… <span class="sub">· ${j.warm?"starting":"loading model"}</span>`));
     $("peta").textContent=j.kind==="upscale"?"":(started||rm!=null)?`~${fmt(left)} left`:""}
    if(S.view==="gen"&&!browsed()){const f=$("frame");f.classList.add("has");$("idle").style.display="none";
@@ -209,9 +215,10 @@
      const jid=j.id;i.onload=()=>{if(+$("cv").dataset.j===jid&&!browsed())drawTo($("cv"),i,false);lastPrev=r;prevLoading=false};i.onerror=()=>{prevLoading=false;lastPrev=r};i.src=`/api/preview/${j.id}?r=${r}`}}
    const mini=document.querySelector(`.qi[data-id="${j.id}"] .mini i`);if(mini)mini.style.width=(p*100)+"%";
    const lp=document.querySelector(`img[data-lp="${j.id}"]`);if(lp&&j.preview_rev&&lp.dataset.r!=j.preview_rev){lp.dataset.r=j.preview_rev;lp.src=`/api/preview/${j.id}?r=${j.preview_rev}`}   /* Q6: the render, small, in its queue row */
-  }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run","stopping","bgjob");$("fill").style.width="0%";
+  }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run","stopping","bgjob");$("fill").style.width="0%";prog.classList.toggle("cap",S.view==="gen"&&!!browsed());
     if(!forgeOk){$("ptxt").textContent=forgeStarting?"Starting Forge…":"Forge not running";$("peta").textContent=forgeStarting?"jobs start when it's ready":"queue waits for it"}
     else if(window.qPaused&&jobs.some(x=>x.status==="pending")){$("ptxt").textContent="Queue paused";$("peta").textContent=`${jobs.filter(x=>x.status==="pending").length} waiting`}
+    else if(S.view==="gen"&&browsed())capTxt(browsed());
     else{refreshEst();$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`}
    prog.classList.toggle("paused",!!window.qPaused&&jobs.some(x=>x.status==="pending"))}
   if(!j||browsed()){const d=shownDone();

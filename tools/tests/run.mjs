@@ -28,7 +28,7 @@ const freePort = () => new Promise(r => { const s = createServer(); s.listen(0, 
 async function waitHttp(url, ms = 15000) { const t = Date.now(); while (Date.now() - t < ms) { try { await fetch(url); return } catch (e) { await sleep(150) } } throw new Error("no answer from " + url) }
 
 /* one Kiln instance + browser page, with the helpers a test uses */
-async function launch(name, { step = 0.6, width = 1513, height = 900, env = {} } = {}) {
+async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, autoExit = false } = {}) {
   const dir = join(tmpdir(), `kiln-test-${name}-${Date.now()}`), out = join(dir, "out"), data = join(dir, "data");
   mkdirSync(out, { recursive: true }); mkdirSync(data, { recursive: true });
   const [fport, kport, dport] = [await freePort(), await freePort(), await freePort()];
@@ -37,7 +37,7 @@ async function launch(name, { step = 0.6, width = 1513, height = 900, env = {} }
     p.stdout.on("data", d => log.push(String(d))); p.stderr.on("data", d => log.push(String(d))); procs.push(p); return p };
   run(PY, ["tools/fake_forge.py", String(fport), String(step)]);
   await waitHttp(`http://127.0.0.1:${fport}/sdapi/v1/options`);
-  run(PY, ["-c", "import server; server.CFG['exit_when_closed']=False; server.CFG['forge_start']=''; server.main()"],
+  run(PY, ["-c", `import server; server.CFG['exit_when_closed']=${autoExit ? "True" : "False"}; server.CFG['forge_start']=''; server.main()`],
     { KILN_PORT: String(kport), KILN_FORGE_URL: `http://127.0.0.1:${fport}`, KILN_OUTPUT_DIR: out, KILN_DATA_DIR: data, PYTHONUNBUFFERED: "1",
       KILN_UPDATE_URL: `http://127.0.0.1:${fport}/tags`, KILN_NO_RECYCLE: "1", ...env });
   await waitHttp(`http://127.0.0.1:${kport}/api/state`);
@@ -63,7 +63,7 @@ async function launch(name, { step = 0.6, width = 1513, height = 900, env = {} }
   const t0 = Date.now(); const ready = await until("!!(window.LIVE&&window._jobsReady&&LORAS.length)", 30000, 100);
   if (!ready) throw new Error("Kiln never became ready");
   const k = {
-    url, out, data, errors, requests, readyMs: Date.now() - t0, ev, until, sleep, send,
+    url, out, data, errors, requests, readyMs: Date.now() - t0, ev, until, sleep, send, kport,
     /* a job; settings as page code, e.g. job("[fill:ff0000] a fox", {ar:"3:4", steps:3, name:"Fox"}) */
     job: (prompt, o = {}) => ev(`(()=>{S.ar=${JSON.stringify(o.ar || "3:4")};S.steps=${o.steps || 3};S.n=1;S.seedMode="random";
       S.pname=${JSON.stringify(o.name || "")};$("pname").value=S.pname;P.value=${JSON.stringify(prompt)};draft=P.value;return addJobs().then(()=>1)})()`),

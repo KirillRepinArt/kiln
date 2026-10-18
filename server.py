@@ -440,18 +440,27 @@ def worker():
 client = {"last": None, "bye": None}
 
 
+def window_gone(now, last, bye):
+    """True when the Kiln window has closed: it said goodbye over 3 s ago and no window polled since — a poll that was
+    already on its way (within 1.5 s of the goodbye) doesn't count; a reload cancels the goodbye by loading the page
+    (see do_GET) — or 10 min of silence (a crash: no goodbye)."""
+    return (bye is not None and last < bye + 1.5 and now - bye > 3) or now - last > 600
+
+
 def watchdog():
     """Exit when no Kiln window is open and nothing is queued or running.
 
-    A closing window says goodbye (/api/bye): stop ~2 s later unless another window (or a reload) polls first.
-    Without a goodbye (crash, killed browser) a window counts as gone after 15 s without a poll."""
+    A closing window says goodbye (/api/bye): stop ~3 s later unless another window (or a reload) polls first.
+    Without a goodbye (crash, killed browser) a window counts as gone after 10 min without a poll — not sooner: Edge
+    slows the timers of a page left in the background to about once a minute, and a 15 s limit shut the server down
+    under a Kiln window that was simply minimized (2026-10-18)."""
     said = None
     while True:
         time.sleep(1)
         if not CFG.get("exit_when_closed", True) or client["last"] is None:
             continue
         now, last, bye = time.time(), client["last"], client["bye"]
-        closed = (bye is not None and bye >= last - 0.5 and now - bye > 2) or now - last > 15
+        closed = window_gone(now, last, bye)
         if not closed:
             said = None
             continue
@@ -679,6 +688,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urllib.parse.unquote(self.path.split("?")[0])
         if path in ("/", "/index.html"):
+            client["bye"] = None  # a reload (or a new window): whoever said goodbye is back
             page = build_page()
             inject = os.environ.get("KILN_TEST_INJECT")  # test hook: append a script (used by automated UI checks)
             if inject and "test" in self.path:

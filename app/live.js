@@ -220,6 +220,8 @@
   return{p,left:rm!=null?rm:started?(j.eta&&j.eta>0?j.eta:Math.max(0,(j.steps-j.step-part)*per/1000)):null}};
  /* ---------- go ---------- */
  addEventListener("pagehide",()=>navigator.sendBeacon("/api/bye"));
+ /* back from the background (where Edge slows timers to ~1 a minute): check in at once */
+ document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")fetch("/api/state").catch(()=>{})});
  jobs=[];await loadModels(false);refreshUp();
  if(!models)toast(st.forge.starting?"Starting Forge — jobs start when it's ready":"Forge isn't running — Kiln picks it up as soon as it starts");
  poll();

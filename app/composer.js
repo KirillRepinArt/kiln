@@ -83,6 +83,10 @@ function grow(){} // column widths now come from sizeFrame()
   const up=()=>{if(!d)return;d=null;lay.vh=null;lay.vtop=null;if(S.lay.ih>.995)S.lay.ih=null;document.body.classList.remove("vresizing","laydrag");$("right").classList.remove("edgehint");save();sizeFrame()};
   h.addEventListener("pointerup",up);h.addEventListener("pointercancel",up);
   h.addEventListener("dblclick",()=>{S.lay.ih=null;save();sizeFrame()})})})();
+/* the edit buttons appear while the pointer is over the picture or the column beside it (one zone, so you never chase
+   them) and stay ~300 ms after it leaves, so a diagonal path doesn't lose them */
+(function(){let t=null;const on=()=>{clearTimeout(t);$("stage").classList.add("tools")},off=()=>{clearTimeout(t);t=setTimeout(()=>$("stage").classList.remove("tools"),300)};
+ for(const el of [$("frame"),$("gtools")]){el.addEventListener("pointerenter",on);el.addEventListener("pointerleave",off)}})();
 function resetLayout(){S.lay=null;   /* widths, the picture's limits (iw, ih) — all back to the defaults */delete S.lw;S.pph=0;S.sch=0;S.pos="mid";S.hmode="";updHm();applyPH();save();sizeFrame();moveThumb(true);layoutLeft()}
 
 P.addEventListener("input",()=>{grow();requestAnimationFrame(layoutLeft);if(!peekJob){draft=P.value;save()}updPrompt()});

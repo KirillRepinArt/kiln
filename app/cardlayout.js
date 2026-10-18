@@ -36,7 +36,8 @@ function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol"),CH=chipsH
   col.style.setProperty("--lch",lch);col.style.setProperty("--ltop",TS+"px");col.style.setProperty("--lh",H+"px");col.style.setProperty("--chtop",(TS+H+10)+"px");if(chg)requestAnimationFrame(sizeFrame);return}
  const colH=col.clientHeight-TS;if(colH<=0)return;
  const f=$("frame").getBoundingClientRect(),c=col.getBoundingClientRect();
- if(S.view==="gen"&&f.height>0){lyCy=f.top+f.height/2-c.top-TS;lyIT=f.top-c.top-TS;const pb=$("prog").getBoundingClientRect();lyIB=(pb.height?pb.bottom:f.bottom)-c.top-TS}
+ const T=typeof lay!=="undefined"&&lay.target;   /* the picture's target (it may be mid-glide): the prompt moves with it, not after it */
+ if(S.view==="gen"&&f.height>0){if(T){lyCy=T.top+T.h/2-c.top-TS;lyIT=T.top-c.top-TS;lyIB=T.bottom-c.top-TS}else{lyCy=f.top+f.height/2-c.top-TS;lyIT=f.top-c.top-TS;const pb=$("prog").getBoundingClientRect();lyIB=(pb.height?pb.bottom:f.bottom)-c.top-TS}}
  if(lyCy==null)lyCy=colH/2;
  if(hm){let top,H;if(hm==="full"){top=0;H=colH}else{top=Math.max(0,lyIT??0);H=Math.min(colH-top,(lyIB??colH)-top)} // match: image top to status line
   H=Math.max(0,H-CH);const mn=cardMinH();if(H<mn){H=Math.min(colH-CH,mn);top=Math.max(0,Math.min(colH-H-CH,lyCy-(H+CH)/2))}

@@ -41,7 +41,7 @@ body.liveresize *,body.liveresize *::before,body.liveresize *::after{transition:
 @media (max-width:900px){.app{grid-template-columns:1fr}}
 
 /* ---------- left ---------- */
-.left{background:var(--panel);border:1px solid #26262a;border-radius:var(--r-panel);display:flex;flex-direction:column;position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--ltop,0px);height:var(--lh,auto);transition:top .4s var(--ease),height .4s var(--ease)}
+.left{background:var(--panel);border:1px solid #26262a;border-radius:var(--r-panel);display:flex;flex-direction:column;position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--ltop,0px);height:var(--lh,auto);transition:top .25s cubic-bezier(.4,0,.2,1),height .25s cubic-bezier(.4,0,.2,1)}
 .vedge{position:absolute;left:30px;right:30px;bottom:-7px;height:14px;cursor:ns-resize;touch-action:none;z-index:6}
 .vedge::after{content:"";position:absolute;left:50%;top:5px;width:46px;height:4px;margin-left:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
 .vedge:hover::after,.vedge.drag::after{opacity:1}
@@ -355,7 +355,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .ghost.show{opacity:1}.ghost.near{border-color:rgba(255,255,255,.5)}
 
 /* ---- composer layout ---- */
-.ltitle{position:absolute;right:0;width:min(100%,var(--cw,680px));top:calc(var(--ltop,0px) - var(--ts,64px) + 4px);height:calc(var(--ts,64px) - 10px);transition:top .4s var(--ease),height .4s var(--ease);
+.ltitle{position:absolute;right:0;width:min(100%,var(--cw,680px));top:calc(var(--ltop,0px) - var(--ts,64px) + 4px);height:calc(var(--ts,64px) - 10px);transition:top .25s cubic-bezier(.4,0,.2,1),height .25s cubic-bezier(.4,0,.2,1);
  padding:0 8px 0 26px;display:flex;flex-direction:column;justify-content:flex-end}
 .ltitle{align-items:center;padding:0 26px!important}
 .ltitle .phead{padding:0;justify-content:center}
@@ -406,7 +406,7 @@ body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
 .chipmore{padding:4px 10px;font-weight:600;color:#d6d6da}
 .left{border-color:#34343a!important}
 /* LoRA chips live under the prompt box, centred, moving with it (layoutLeft sets --chtop); drag one to reorder */
-#lcol>.chips{position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--chtop,0px);justify-content:flex-start!important;align-items:center;padding:0 16px!important;transition:top .4s var(--ease)}
+#lcol>.chips{position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--chtop,0px);justify-content:flex-start!important;align-items:center;padding:0 16px!important;transition:top .25s cubic-bezier(.4,0,.2,1)}
 #lcol>.chips:empty{display:none}
 .app.stacked #lcol>.chips{right:auto;left:50%;transform:translateX(-50%);width:min(100%,760px)}
 body.liveresize #lcol>.chips,body.cardmove #lcol>.chips{transition:none}
@@ -424,7 +424,7 @@ body.liveresize #lcol>.chips,body.cardmove #lcol>.chips{transition:none}
 .app.stacked .right{order:1}
 .app.stacked .lcol{order:2;height:var(--lch,320px);margin-top:6px}
 .app.stacked .left,.app.stacked .ltitle{right:auto;left:50%;width:min(100%,760px);transform:translateX(-50%)}
-.app.stacked .stage .frame{left:50%!important;transform:translateX(-50%)}
+/* stacked: the picture + toolbar group is centred by sizeFrame like everywhere else */
 .app.stacked .right .tabs{align-self:center;width:auto!important}
 
 /* ---- glass: the material the UI is made of (Settings → Material; Solid is the alternative). Three thicknesses:
@@ -709,4 +709,27 @@ body:not(.laydrag) .stage .frame{transition:top .25s cubic-bezier(.4,0,.2,1),lef
 /* the arrows on the picture: always at its vertical middle. On a short picture the hover buttons wrap into a second
    column rather than push the arrow down (it used to be held at >= 276 px from the top) */
 .frame .nav{top:50%!important}
-.side{max-height:calc(50% - 32px);flex-wrap:wrap-reverse;align-content:flex-start}
+
+
+/* ---- the picture's toolbar, beside it (2026-10-18): controls belong to the viewer, not on the picture, so no picture
+   shape can make them collide with the arrows. The eye (privacy) on top, the edit buttons below; a very short picture
+   wraps the column outward, away from the picture. Always there in Generating; what doesn't apply right now is dimmed. */
+.gtools{position:absolute;z-index:6;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:6px;width:40px}
+.gtools.lefty{align-content:flex-end;flex-wrap:wrap-reverse}
+
+.gtools .side{position:static;opacity:1;display:contents}
+
+.gtools .side button{opacity:.75;transition:opacity .15s,background .15s}.gtools .side button:hover{opacity:1}
+.gtools button svg{width:19px;height:19px}
+/* not applicable right now: rendering, privacy on, the file gone, or nothing shown */
+
+.rpanel.paneled .gtools{display:none}
+
+/* ---- toolbar rework (2026-10-18): the eye back on the picture (top right, as before); the edit buttons outside it,
+   shown on hover of the picture or the column, hidden when they can't act (empty, rendering, private, file gone) ---- */
+.frame .cbtn{right:10px!important}
+.gtools{flex-direction:column;flex-wrap:wrap;align-content:flex-start;padding-left:6px;box-sizing:border-box;width:auto;opacity:0;pointer-events:none;transition:opacity .15s}
+.gtools.lefty{align-content:flex-end;flex-wrap:wrap-reverse;padding-left:0;padding-right:6px}
+.stage.tools .gtools{opacity:1;pointer-events:auto}
+.gtools .side button{opacity:.85}
+.stage:has(.frame.running) .gtools,.stage:has(.frame.held) .gtools,.stage:has(.frame.missing) .gtools,.stage:has(.frame:not(.has)) .gtools{display:none}

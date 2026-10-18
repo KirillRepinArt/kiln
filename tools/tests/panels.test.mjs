@@ -11,7 +11,8 @@ export async function wideBasics(k, t) {
   t.ok(!overlapX(L, Rr) && L.right < Rr.left, "the prompt is left of the right area, no overlap", { L: [L.left, L.right], R: [Rr.left, Rr.right] });
   t.ok(Math.abs(tabs.left - Rr.left) < 2 && Math.abs(tabs.width - Rr.width) < 2, "the tab bar spans the right area", { tabs: [tabs.left, tabs.width], R: [Rr.left, Rr.width] });
   t.ok(f.left >= Rr.left - 1 && f.right <= Rr.right + 1, "the image sits inside the right area");
-  t.ok(Math.abs((f.left + f.right) / 2 - (Rr.left + Rr.right) / 2) < 2, "centred in it");
+  const tb = await k.ev(`tbW($("frame").offsetHeight)`);   // the room kept for the edit buttons (hidden with no picture)
+  t.ok(Math.abs((f.left + f.right + tb) / 2 - (Rr.left + Rr.right) / 2) < 3, "the picture and its toolbar's room are centred in it", { f: [f.left, f.right], tb, R: [Rr.left, Rr.right] });
   t.ok(await k.until(`(()=>{const p=$("prog").getBoundingClientRect(),f=$("frame").getBoundingClientRect();return Math.abs(p.left-f.left)<2&&Math.abs(p.width-f.width)<2&&p.top>f.bottom})()`, 2000),
     "the status row sits under the image, as wide", { p: [p.left, p.width, p.top], f: [f.left, f.width, f.bottom] });
   t.ok(L.left >= 0 && Rr.right <= 1513, "everything on screen");
@@ -124,7 +125,7 @@ export async function hugsThePicture(k, t) {
   const narrow = (await R(k, "#frame")).width;
   t.ok(narrow < wide - 200, "flipping to the portrait one: the area narrows to it", { wide, narrow });
   t.ok(Math.abs(await gapToPic(k) - 18) <= 1, "…and the prompt still sits 18 px from the picture (no gap in the middle)", await gapToPic(k));
-  const fr = await R(k, "#frame"), L = await R(k, "#left");
+  const fr = await R(k, "#right"), L = await R(k, "#left");
   t.ok(Math.abs((L.left - 18) - (1700 - 18 - fr.right)) <= 3, "the pair is centred", { l: L.left, r: fr.right });
   await k.ev(`(showView("queue"),1)`); await k.sleep(900);
   t.ok(Math.abs((await R(k, "#rpanel")).width - await k.ev(`S.lay.rw*(innerWidth-36)`)) <= 1, "Queue keeps its own width", (await R(k, "#rpanel")).width);
@@ -149,7 +150,7 @@ export async function holdsWhileYouWork(k, t) {
   await k.ev(`(S.ar=S.ar==="16:9"?"3:4":"16:9",sizeFrame(),1)`); await k.sleep(500);
   t.ok(Math.abs((await R(k, "#left")).left - l0) < 1, "while the menu is open the prompt doesn't move", { l0, now: (await R(k, "#left")).left });
   await k.ev(`(closePops(),document.body.click(),1)`); await k.sleep(600);
-  const fr = await R(k, "#frame"), L2 = await R(k, "#left");
+  const fr = await R(k, "#right"), L2 = await R(k, "#left");
   t.ok(Math.abs((L2.left - 18) - (1700 - 18 - fr.right)) <= 3, "once it closes, the pair re-centres", { l: L2.left, r: fr.right });
 }
 
@@ -178,7 +179,7 @@ export async function heightLimit(k, t) {
   const f1 = await R(k, "#frame"), st = await R(k, "#stage");
   t.ok(Math.abs(f1.height - (f0.height - 200)) <= 2, "the limit stays after release", f1.height);
   t.ok(Math.abs((f1.top - st.top) - (st.height - 66 - f1.height) / 2) <= 2, "the picture re-centres vertically", { top: f1.top - st.top, h: f1.height });
-  const minR = await k.ev(`minRight()`), want = 18 + Math.max(0, (minR - f1.width) / 2);   // the area is never narrower than the tab bar
+  const minR = await k.ev(`minRight()`), want = 18 + Math.max(0, (minR - f1.width - 52) / 2);   // the area (picture + toolbar) is never narrower than the tab bar
   t.ok(Math.abs(f1.width / f1.height - 0.75) < .01 && Math.abs(await gapToPic(k) - want) <= 1, "its width follows (3:4); the prompt hugs it (down to the tab bar's width)", { w: f1.width, gap: await gapToPic(k), want });
   const n = await R(k, "#frame .nav.next"); t.ok(Math.abs((n.top + n.height / 2) - (f1.top + f1.height / 2)) <= 2, "the arrows sit at the picture's middle");
   const hb = await R(k, ".hedge.b"); await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x: hb.left + 60, y: hb.top + 6, button: "left", clickCount: 2 });
@@ -188,13 +189,33 @@ export async function heightLimit(k, t) {
   t.ok(Math.abs((await R(k, "#rpanel")).height - (await R(k, "#right")).height + 64) <= 2, "Queue keeps the full height");
 }
 
-export async function arrowsMidOnShortPictures(k, t) {
+const toolsShown = k => k.ev(`getComputedStyle($("gtools")).display!=="none"&&getComputedStyle($("gtools")).opacity>0.5`);
+export async function toolbarBesideThePicture(k, t) {
   await viewport(k, 1500, 820); await k.mouse(2, 2);
   await k.job("[fill:2850e6] a", { ar: "21:9", steps: 2 }); await done(k, 1);
   await k.job("[fill:28c83c] b", { ar: "21:9", steps: 2 }); await done(k, 2); await k.sleep(900);
-  const f = await R(k, "#frame"), n = await R(k, "#frame .nav.prev");
-  t.ok(Math.abs((n.top + n.height / 2) - (f.top + f.height / 2)) <= 2, "a short (21:9) picture: the arrows still at its middle", { f: [f.top, f.height], n: n.top });
-  await k.mouse(f.left + f.width / 2, f.top + f.height / 2); await k.sleep(400);
-  const nx = await R(k, "#frame .nav.next"), sides = await k.ev(`[...document.querySelectorAll("#sideGen button")].map(b=>{const r=b.getBoundingClientRect();return [r.top,r.bottom,r.left,r.right]})`);
-  t.ok(sides.every(([tp, bt, l, r]) => bt <= nx.top || tp >= nx.bottom || r <= nx.left || l >= nx.right), "the hover buttons don't cover the arrow (they wrap)", { nx: [nx.top, nx.bottom], sides });
+  const f = await R(k, "#frame"), n = await R(k, "#frame .nav.prev"), eye = await R(k, "#cbtn");
+  t.ok(Math.abs((n.top + n.height / 2) - (f.top + f.height / 2)) <= 2, "a short (21:9) picture: the arrows sit at its middle");
+  t.ok(eye.right <= f.right && eye.top >= f.top && eye.top < f.top + 30, "the eye sits on the picture, top right", { eye: [eye.top, eye.right], f: [f.top, f.right] });
+  t.ok(!(await toolsShown(k)), "the edit buttons are hidden until you hover the picture");
+  await k.mouse(f.left + f.width / 2, f.top + f.height / 2); await k.sleep(300);
+  t.ok(await toolsShown(k), "hovering the picture shows them");
+  const g = await R(k, "#gtools"); await k.mouse(g.left + 20, g.top + 20); await k.sleep(450);
+  t.ok(await toolsShown(k), "moving onto them keeps them (one hover zone)");
+  const btns = await k.ev(`[...document.querySelectorAll("#gtools button")].map(b=>{const r=b.getBoundingClientRect();return [r.left,r.top,r.right,r.bottom]})`), rp = await R(k, "#rpanel");
+  t.ok(btns.length === 6 && btns.every(([l, tp, r, b]) => l >= f.right && r <= rp.right + 1 && b <= rp.bottom + 1), "all six outside the picture and none cut off (they wrap into a second column)", { btns, rp: [rp.right, rp.bottom] });
+  await k.mouse(2, 2); await k.sleep(500);
+  t.ok(!(await toolsShown(k)), "leaving hides them after a moment");
+  await k.ev(`(setDock("right"),1)`); await k.mouse(2, 2); await k.sleep(900);
+  const f2 = await R(k, "#frame"), g2 = await R(k, "#gtools");
+  t.ok(g2.right <= f2.left + 1, "prompt on the right: the column moves to the picture's left (outer) side", { f: f2.left, g: g2.right });
+}
+
+export async function promptMovesWithThePicture(k, t) {
+  await viewport(k, 1700, 950); await k.mouse(2, 2);
+  await k.job("[fill:dc2828] portrait", { ar: "3:4", steps: 2 }); await done(k, 1);
+  await k.job("[fill:2850e6] landscape", { ar: "16:9", steps: 2 }); await done(k, 2); await k.sleep(1000);
+  await k.ev(`(document.activeElement.blur(),genNav(-1),updNav(),1)`); await k.sleep(320);   // just past the 0.25 s glide
+  const early = (await R(k, "#left")).top; await k.sleep(1000); const final = (await R(k, "#left")).top;
+  t.ok(Math.abs(early - final) <= 3, "0.3 s after a flip the prompt is already where it ends up (no lag behind the picture)", { early, final });
 }

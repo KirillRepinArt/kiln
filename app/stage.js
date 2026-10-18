@@ -29,6 +29,9 @@ const BAR=66; // bar block height incl. gap: 12 + track 10 + 7 + status row 36
    follows the cursor, and on release the pair glides back to centre — the same rule as resizing the window.
    (Design agreed 2026-10-18 after the first try left a growing gap in the middle.) */
 const LISTMIN=660,GAP=18,PWMIN=360;
+/* the edit buttons' column beside the picture: 40 px buttons, 6 px apart and from the picture. Room is kept for as many
+   columns as the picture's height needs, so none is ever cut off (the panel clips anything outside the area) */
+function tbW(h){const n=document.querySelectorAll("#sideGen button").length||6,per=Math.max(1,Math.floor((Math.max(h,40)+6)/46)),cols=Math.ceil(n/per);return 6+cols*46}
 /* Two remembered widths for the right side: rw = the panel width of Queue / LoRAs / PNG Info (the same for every
    picture); iw = in Generating, the largest the picture may be (null = no cap). In Generating the image area HUGS the
    picture: as wide as the picture shown (or, idle, the next ratio) at the available height, capped by iw — so the prompt
@@ -44,7 +47,7 @@ const lay={overImg:false,navAt:0,pressCard:false,last:null,drag:false};
    set with the image area's top / bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
 function picH(){const full=$("stage").getBoundingClientRect().height-BAR;if(lay.vh)return Math.min(full,lay.vh);
  const ih=S.lay&&S.lay.ih;return S.view==="gen"&&ih?Math.max(200,Math.min(full,ih*full)):full}
-function hugW(){const j=browsed()||current()||shownDone(),ar=j?j.ar:S.ar,[a,b]=ar.split(":").map(Number),h=picH();return h>0?h*a/b:9999}
+function hugW(){const j=browsed()||current()||shownDone(),ar=j?j.ar:S.ar,[a,b]=ar.split(":").map(Number),h=picH();return h>0?h*a/b+tbW(h):9999}
 function layGeo(){const W=layW();if(S.lay&&S.lay.v!==2){const o=S.lay;S.lay={pw:(o.pw||680)/W,rw:(o.rw||660)/W,iw:o.iw?o.iw/W:null,v:2}}   /* px → shares, once */
  const L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw/W}:{})),minR=minRight(),gen=S.view==="gen";
  let pw=Math.max(PWMIN,Math.min(L.pw*W,CARDMAX,W-GAP-minR));
@@ -95,13 +98,18 @@ function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.
  if(!stk&&!sizeFrame.hold)layApply(layNow());
  /* the target geometry, not a measurement: the grid may be mid-glide */
  const st=$("stage").getBoundingClientRect(),SW=stk?st.width:lay.last.rw;const f=$("frame");
- fitBox(f,ar,SW,stk?st.height-BAR:picH());const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
+ const PH=stk?st.height-BAR:picH(),TB=tbW(PH);fitBox(f,ar,SW-TB,PH);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
  let top=Math.max(0,(st.height-h-BAR)/2);if(lay.vtop!=null)top=lay.vtop;   /* a held top / bottom edge: the other edge stays put */
- const left=stk?0:Math.max(0,Math.floor((SW-w)/2));f.style.left=left+"px";f.style.top=top+"px";
+ /* picture + toolbar as one group, centred in the area; the toolbar on the side away from the prompt */
+ const tbLeft=!stk&&document.querySelector(".app").classList.contains("pright"),g0=Math.max(0,Math.floor((SW-w-TB)/2)),left=tbLeft?g0+TB:g0;
+ f.style.left=left+"px";f.style.top=top+"px";
+ const gt=$("gtools");if(gt){gt.style.top=top+"px";gt.style.left=(tbLeft?left-TB:left+w)+"px";gt.style.width=TB+"px";gt.style.height=Math.max(40,h)+"px";gt.classList.toggle("lefty",tbLeft)}
+ /* where the picture is going (not where it is mid-glide): the prompt's vertical anchors use this */
+ lay.target={top:st.top+top,h,bottom:st.top+top+h+BAR-1};
  const he=$("hedges");if(he){he.style.left=left+"px";he.style.width=w+"px";he.style.top=top+"px";he.style.height=h+"px"}
  // tab bar: centred over the box in every tab; in Generating it also sits right on top of the image
  const tb=document.querySelector(".tabs");if(tb){tb.style.width=stk?"":SW+"px";tb.style.transform=S.view==="gen"&&top>0?`translateY(${Math.round(top)}px)`:""}
- const sx=document.querySelector(".app.stacked")?(st.width-w)/2:0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+12)+"px";pr.style.setProperty("--tw",w+"px");
+ const sx=0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+12)+"px";pr.style.setProperty("--tw",w+"px");
  if(window.layoutLeft)requestAnimationFrame(layoutLeft)}
 /* the holds: over the picture, over the prompt (card, its name row, its LoRA chips) */
 $("frame").addEventListener("pointerenter",()=>{lay.overImg=true});

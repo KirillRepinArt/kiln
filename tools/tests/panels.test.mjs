@@ -163,3 +163,38 @@ export async function capInGenerating(k, t) {
   await k.ev(`(showView("queue"),1)`); await k.sleep(900);
   t.ok(Math.abs((await R(k, "#rpanel")).width - await k.ev(`S.lay.rw*(innerWidth-36)`)) <= 1 && await k.ev(`S.lay.iw`) != null, "…without touching Queue's width");
 }
+
+/* step 3: the picture's height limit; the arrows at mid-height */
+export async function heightLimit(k, t) {
+  await viewport(k, 1700, 950); await k.mouse(2, 2);
+  await k.job("[fill:dc2828] portrait", { ar: "3:4", steps: 2 }); await done(k, 1); await k.sleep(900);
+  const f0 = await R(k, "#frame"), h = await R(k, ".hedge.b"), x = h.left + h.width / 2, y = h.top + 6;
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+  await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+  for (let i = 1; i <= 8; i++) await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y: y - 200 * i / 8, button: "left", buttons: 1 });
+  await k.sleep(150); const mid = await R(k, "#frame");
+  t.ok(Math.abs(mid.height - (f0.height - 200)) <= 2 && Math.abs(mid.top - f0.top) <= 1, "the bottom edge follows the cursor; the top holds still", { f0: [f0.top, f0.height], mid: [mid.top, mid.height] });
+  await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y: y - 200, button: "left", clickCount: 1 }); await k.mouse(2, 2); await k.sleep(800);
+  const f1 = await R(k, "#frame"), st = await R(k, "#stage");
+  t.ok(Math.abs(f1.height - (f0.height - 200)) <= 2, "the limit stays after release", f1.height);
+  t.ok(Math.abs((f1.top - st.top) - (st.height - 66 - f1.height) / 2) <= 2, "the picture re-centres vertically", { top: f1.top - st.top, h: f1.height });
+  const minR = await k.ev(`minRight()`), want = 18 + Math.max(0, (minR - f1.width) / 2);   // the area is never narrower than the tab bar
+  t.ok(Math.abs(f1.width / f1.height - 0.75) < .01 && Math.abs(await gapToPic(k) - want) <= 1, "its width follows (3:4); the prompt hugs it (down to the tab bar's width)", { w: f1.width, gap: await gapToPic(k), want });
+  const n = await R(k, "#frame .nav.next"); t.ok(Math.abs((n.top + n.height / 2) - (f1.top + f1.height / 2)) <= 2, "the arrows sit at the picture's middle");
+  const hb = await R(k, ".hedge.b"); await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x: hb.left + 60, y: hb.top + 6, button: "left", clickCount: 2 });
+  await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: hb.left + 60, y: hb.top + 6, button: "left", clickCount: 2 }); await k.mouse(2, 2); await k.sleep(800);
+  t.ok(Math.abs((await R(k, "#frame")).height - f0.height) <= 2, "double-click: no limit again");
+  await k.ev(`(showView("queue"),1)`); await k.sleep(500);
+  t.ok(Math.abs((await R(k, "#rpanel")).height - (await R(k, "#right")).height + 64) <= 2, "Queue keeps the full height");
+}
+
+export async function arrowsMidOnShortPictures(k, t) {
+  await viewport(k, 1500, 820); await k.mouse(2, 2);
+  await k.job("[fill:2850e6] a", { ar: "21:9", steps: 2 }); await done(k, 1);
+  await k.job("[fill:28c83c] b", { ar: "21:9", steps: 2 }); await done(k, 2); await k.sleep(900);
+  const f = await R(k, "#frame"), n = await R(k, "#frame .nav.prev");
+  t.ok(Math.abs((n.top + n.height / 2) - (f.top + f.height / 2)) <= 2, "a short (21:9) picture: the arrows still at its middle", { f: [f.top, f.height], n: n.top });
+  await k.mouse(f.left + f.width / 2, f.top + f.height / 2); await k.sleep(400);
+  const nx = await R(k, "#frame .nav.next"), sides = await k.ev(`[...document.querySelectorAll("#sideGen button")].map(b=>{const r=b.getBoundingClientRect();return [r.top,r.bottom,r.left,r.right]})`);
+  t.ok(sides.every(([tp, bt, l, r]) => bt <= nx.top || tp >= nx.bottom || r <= nx.left || l >= nx.right), "the hover buttons don't cover the arrow (they wrap)", { nx: [nx.top, nx.bottom], sides });
+}

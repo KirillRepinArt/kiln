@@ -697,3 +697,16 @@ body.laydrag *{transition:none!important}
 .app:not(.stacked)>.lcol,.app:not(.stacked)>.split,.app:not(.stacked)>.right{grid-row:1}
 .laymenu .opt[data-lay]::before{content:"";display:inline-block;width:18px;flex:none}.laymenu .opt.on::before{content:"✓";margin-right:0;color:var(--a1)}
 .laymenu .opt[data-lay]{justify-content:flex-start;gap:0}.laymenu .opt small{margin-left:auto;padding-left:16px}
+
+/* ---- Phase 2a step 3: the picture's height limit ---- */
+.hedges{position:absolute;pointer-events:none;z-index:7}
+.hedge{position:absolute;left:30px;right:30px;height:12px;cursor:ns-resize;pointer-events:auto;touch-action:none}
+.hedge.t{top:-8px}.hedge.b{bottom:-8px}
+.hedge::after{content:"";position:absolute;left:50%;top:4px;width:46px;height:4px;margin-left:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
+.hedge:hover::after{opacity:.9}
+body:not(.laydrag) .stage .frame{transition:top .25s cubic-bezier(.4,0,.2,1),left .25s cubic-bezier(.4,0,.2,1)}   /* position only: the canvas is drawn at the box's size, so the size must not animate */
+.app.stacked .hedges,.rpanel.paneled .hedges{display:none}
+/* the arrows on the picture: always at its vertical middle. On a short picture the hover buttons wrap into a second
+   column rather than push the arrow down (it used to be held at >= 276 px from the top) */
+.frame .nav{top:50%!important}
+.side{max-height:calc(50% - 32px);flex-wrap:wrap-reverse;align-content:flex-start}

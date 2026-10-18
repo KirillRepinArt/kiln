@@ -40,7 +40,11 @@ const LISTMIN=660,GAP=18,PWMIN=360;
 const layW=()=>innerWidth-36;
 const layDef=()=>({pw:680/layW(),rw:Math.max(LISTMIN,tabsW()+2)/layW(),iw:null,v:2});
 const lay={overImg:false,navAt:0,pressCard:false,last:null,drag:false};
-function hugW(){const j=browsed()||current()||shownDone(),ar=j?j.ar:S.ar,[a,b]=ar.split(":").map(Number),h=$("stage").getBoundingClientRect().height-BAR;return h>0?h*a/b:9999}
+/* the picture's height: the stage minus the status row, capped in Generating by S.lay.ih (a share of that height,
+   set with the image area's top / bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
+function picH(){const full=$("stage").getBoundingClientRect().height-BAR;if(lay.vh)return Math.min(full,lay.vh);
+ const ih=S.lay&&S.lay.ih;return S.view==="gen"&&ih?Math.max(200,Math.min(full,ih*full)):full}
+function hugW(){const j=browsed()||current()||shownDone(),ar=j?j.ar:S.ar,[a,b]=ar.split(":").map(Number),h=picH();return h>0?h*a/b:9999}
 function layGeo(){const W=layW();if(S.lay&&S.lay.v!==2){const o=S.lay;S.lay={pw:(o.pw||680)/W,rw:(o.rw||660)/W,iw:o.iw?o.iw/W:null,v:2}}   /* px → shares, once */
  const L=S.lay||(S.lay=Object.assign(layDef(),S.lw?{pw:S.lw/W}:{})),minR=minRight(),gen=S.view==="gen";
  let pw=Math.max(PWMIN,Math.min(L.pw*W,CARDMAX,W-GAP-minR));
@@ -56,6 +60,7 @@ function layApply(g){const app=document.querySelector(".app"),st=app.style,px=v=
    flipping with the arrows on the picture holds it (so "next" stays under the cursor) until ~1 s after the last flip;
    a menu open in the prompt box (ratio, size…) or a press in it holds the prompt in place until you let go. */
 function layNow(){const g=layGeo();if(!lay.last||lay.drag)return g;
+ if(lay.vh)return lay.last;                                                            // a top / bottom edge held: the width waits for the release
  if(lay.overImg&&Date.now()-lay.navAt<1000)return lay.last;
  if((lay.pressCard||document.querySelector("#left .pop.show"))&&Math.abs(g.pw-lay.last.pw)<1){g.off=lay.last.mL-g.mL;return g}
  return g}
@@ -90,8 +95,10 @@ function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.
  if(!stk&&!sizeFrame.hold)layApply(layNow());
  /* the target geometry, not a measurement: the grid may be mid-glide */
  const st=$("stage").getBoundingClientRect(),SW=stk?st.width:lay.last.rw;const f=$("frame");
- fitBox(f,ar,SW,st.height-BAR);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
- const top=Math.max(0,(st.height-h-BAR)/2),left=stk?0:Math.max(0,Math.floor((SW-w)/2));f.style.left=left+"px";f.style.top=top+"px";
+ fitBox(f,ar,SW,stk?st.height-BAR:picH());const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
+ let top=Math.max(0,(st.height-h-BAR)/2);if(lay.vtop!=null)top=lay.vtop;   /* a held top / bottom edge: the other edge stays put */
+ const left=stk?0:Math.max(0,Math.floor((SW-w)/2));f.style.left=left+"px";f.style.top=top+"px";
+ const he=$("hedges");if(he){he.style.left=left+"px";he.style.width=w+"px";he.style.top=top+"px";he.style.height=h+"px"}
  // tab bar: centred over the box in every tab; in Generating it also sits right on top of the image
  const tb=document.querySelector(".tabs");if(tb){tb.style.width=stk?"":SW+"px";tb.style.transform=S.view==="gen"&&top>0?`translateY(${Math.round(top)}px)`:""}
  const sx=document.querySelector(".app.stacked")?(st.width-w)/2:0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+12)+"px";pr.style.setProperty("--tw",w+"px");

@@ -17,7 +17,7 @@
  function drawTo(cv,im,natural){const dpr=devicePixelRatio||1,iw=im.naturalWidth,ih=im.naturalHeight;
   if(natural){if(cv.width!==iw||cv.height!==ih){cv.width=iw;cv.height=ih}const c=cv.getContext("2d");c.drawImage(im,0,0);return}
   // the canvas takes its box's shape; the image keeps its own (a preview of another shape never gets stretched)
-  const fr=cv.id==="cv"&&$("frame").style,cw=(fr&&parseFloat(fr.width))||cv.clientWidth||300,ch=(fr&&parseFloat(fr.height))||cv.clientHeight||Math.round(cw*ih/iw);const W=Math.max(64,Math.round(cw*dpr)),H=Math.max(64,Math.round(ch*dpr));
+  const fd=cv.id==="cv"&&$("frame").dataset,cw=(fd&&+fd.tw)||cv.clientWidth||300,ch=(fd&&+fd.th)||cv.clientHeight||Math.round(cw*ih/iw);const W=Math.max(64,Math.round(cw*dpr)),H=Math.max(64,Math.round(ch*dpr));
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}const c=cv.getContext("2d");c.imageSmoothingQuality="high";c.clearRect(0,0,W,H);
   const k=cv.id==="cv"?Math.min(W/iw,H/ih):Math.max(W/iw,H/ih);c.drawImage(im,(W-iw*k)/2,(H-ih*k)/2,iw*k,ih*k)}
  /* a canvas only ever shows the image it was last asked for: while that one loads it is blank (never the previous
@@ -42,7 +42,7 @@
   if(e.i.complete&&e.i.naturalWidth){drawTo(cv,e.i,nat);xfadeGo(cv,j.id);return}
   if(cv.id==="cv"){cv.width=1;cv.height=1}
   e.p.then(im=>{if(cv.dataset.want!=String(j.id))return;if(im){drawTo(cv,im,nat);xfadeGo(cv,j.id)}else{delete imgs[u];missing(cv,j);xfadeGo(cv,j.id)}})};
- function missing(cv,j){const dpr=devicePixelRatio||1,fr=cv.id==="cv"&&$("frame").style,W=Math.max(64,Math.round(((fr&&parseFloat(fr.width))||cv.clientWidth||300)*dpr)),H=Math.max(64,Math.round(((fr&&parseFloat(fr.height))||cv.clientHeight||300)*dpr));   /* the box's target size (it may be mid-glide) */
+ function missing(cv,j){const dpr=devicePixelRatio||1,fd=cv.id==="cv"&&$("frame").dataset,W=Math.max(64,Math.round(((fd&&+fd.tw)||cv.clientWidth||300)*dpr)),H=Math.max(64,Math.round(((fd&&+fd.th)||cv.clientHeight||300)*dpr));   /* the box's target size (it may be mid-glide) */
   cv.width=W;cv.height=H;const c=cv.getContext("2d");c.fillStyle="#0b0b0e";c.fillRect(0,0,W,H)}   /* the words and the ways back are on the card (#missCard) */
  /* the missing-file card: what can bring it back, best first */
  const inBin={};
@@ -94,7 +94,7 @@
    const ex=expandVariants(stripComments(text));
    specs.push({prompt:ex.text,raw:text,picks:ex.picks,name:S.pname.trim(),mp:S.mp,ar:S.ar,w,h,steps:S.steps,seed,loras:L,
     checkpoint:set.ckpt||undefined,modules:mods.length?mods:undefined,shift:+(set.shift||1.15),cfg:+(set.cfg||1),sampler,scheduler})}
-  save();await api("/api/jobs",{jobs:specs});toast(S.n>1?`Added ${S.n} jobs to the queue`:"Added to queue");
+  save();await api("/api/jobs",{jobs:specs});if(browseId!=null)endPeek();   /* you were editing over a picture from the Gallery: it gives way to the render */toast(S.n>1?`Added ${S.n} jobs to the queue`:"Added to queue");
   if(!forgeOk)setTimeout(()=>toast("Queued — Forge isn't running yet, jobs start when it is"),2300);poll()};
  window.stopJob=async function(j){if(!j)return;if(j.status==="running")j.stopping=true;await api(`/api/jobs/${j.id}/cancel`,{});poll()};
  $("qwrap").addEventListener("drop",()=>{},true);

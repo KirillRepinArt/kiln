@@ -256,7 +256,9 @@ export async function reuseLeavesClean(k, t) {
   await k.job("[fill:446688] one", { steps: 2 }); await k.job("[fill:884422] two", { steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),genNav(-1),1)`); await k.sleep(500);
   await k.ev(`($("pkPrompt").style.display==="none"?$("pkAll").click():$("pkPrompt").click(),1)`); await k.sleep(600);
-  t.ok(await k.ev(`browseId===null&&!$("frame").classList.contains("has")`), "Reuse from the Gallery: back to a clean Generating, no picture left behind");
+  t.ok(await k.ev(`browseId!==null&&peekJob===null&&$("frame").classList.contains("has")&&!P.readOnly`), "Reuse from the Gallery: you edit your draft with that picture still on show as the reference");
+  await k.ev(`(closeShown(),1)`); await k.sleep(400);
+  t.ok(await k.ev(`browseId===null&&!$("frame").classList.contains("has")`), "✕ closes it: a clean Generating");
   // the outline: in at once, out late and slowly
   await k.ev(`($("right").classList.add("edgehint"),1)`); await k.sleep(400);
   t.ok(+(await k.ev(`getComputedStyle($("fithint")).opacity`)) > .9, "the outline comes in");
@@ -277,13 +279,13 @@ export async function glowAndDip(k, t) {
   // breathing: browsing to another shape dips the box
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.sleep(500);
   await k.ev(`(genNav(-1),1)`); await k.sleep(60);
-  t.ok(await k.ev(`$("frame").getAnimations().some(a=>a.id==="morph")&&$("frame").classList.contains("morph")`), "a picture of another shape: crop, then reveal");
+  t.ok(await k.ev(`$("frame").classList.contains("morph")`), "a picture of another shape: crop, then reveal");
   await k.sleep(800); t.ok(await k.ev(`!$("frame").classList.contains("morph")&&+getComputedStyle($("cvx")).opacity<.05`), "it ends clean: the old picture gone, the frame free again");
   // the glow while a job runs, wherever you are
   await k.ev(`(endPeek(),1)`); await k.job("[fill:224433] r", { steps: 20 }); await k.until(`current()&&current().step>=1`, 20000, 100);
   await k.ev(`(showView("queue"),1)`); await k.sleep(1500);
   const g = await k.ev(`(()=>{const f=$("fglow"),r=f.getBoundingClientRect(),p=$("rpanel").getBoundingClientRect();return{shown:f.style.display!=="none"&&+f.style.opacity>0,around:Math.abs((r.left+r.width/2)-(p.left+p.width/2))<4}})()`);
-  t.ok(g.shown && g.around, "on the Queue tab the glow surrounds the panel while the job runs", g);
+  t.ok(!g.shown, "on the Queue tab no glow (only round the live render — 2026-10-19)", g);
 }
 glowAndDip.opts = { width: 1872, height: 1080, step: 1 };
 

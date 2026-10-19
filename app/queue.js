@@ -93,7 +93,7 @@ $("pnSave").onclick=e=>{e.stopPropagation();saveJobName()};
  $("qwrap").addEventListener("mouseleave",hide);$("qwrap").addEventListener("scroll",hide,{passive:true});$("qwrap").addEventListener("mousedown",hide)})();
 function reuse(all,seedToo){const j=peekJob;const fixed=!!(seedToo||S.keepSeed);if(!j)return;const prev={draft,S:{mp:S.mp,ar:S.ar,steps:S.steps,seedMode:S.seedMode,seed:S.seed,pname:S.pname},loras:LORAS.map(l=>({on:l.on,w:l.w}))};
  draft=j.raw||j.prompt;if((j.name||"").trim())S.pname=j.name.trim();   /* reusing the working file, title included: the next image joins its series */if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps},fixed?{seedMode:"fixed",seed:j.seed}:{seedMode:"random"});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}
- endPeek();save();renderAll();P.focus();
+ if(browseId!=null){peekOff=true;endPeek(true)}else endPeek();save();renderAll();P.focus();   /* the picture stays as your reference while you edit — until Start or ✕ */
  toast(all?`Reused #${j.id} — prompt, settings and LoRAs${fixed?", its seed":", new seed"}`:`Reused #${j.id}'s prompt`,"Undo",()=>{draft=prev.draft;P.value=draft;Object.assign(S,prev.S);$("pname").value=S.pname||"";LORAS.forEach((l,i)=>Object.assign(l,prev.loras[i]));save();renderAll();updPrompt()})}
 $("pkPrompt").onclick=()=>reuse(false);$("pkAll").onclick=()=>reuse(true,$("pkAll").dataset.m==="seed");
 $("pkSeed").onclick=e=>{e.stopPropagation();S.keepSeed=!S.keepSeed;save();keepSeedUI()};$("pkX").onclick=()=>closePromptPeek();

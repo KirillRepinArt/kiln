@@ -39,7 +39,7 @@ function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol"),CH=chipsH
   H=$("hsplit").classList.contains("drag")?slot:Math.min(slot,cardNaturalH());
   col.style.setProperty("--sw",stackW()+"px");
   const lch=(slot+TS+2+CH)+"px",chg=col.style.getPropertyValue("--lch")!==lch;
-  col.style.setProperty("--lch",lch);col.style.setProperty("--ltop",TS+"px");col.style.setProperty("--lh",H+"px");col.style.setProperty("--chtop",(TS+H+10)+"px");if(chg)requestAnimationFrame(sizeFrame);return}
+  col.style.setProperty("--lch",lch);col.style.setProperty("--ltop",TS+"px");if(window.vAlign)requestAnimationFrame(vAlign);col.style.setProperty("--lh",H+"px");col.style.setProperty("--chtop",(TS+H+10)+"px");if(chg)requestAnimationFrame(sizeFrame);return}
  const colH=col.clientHeight-TS;if(colH<=0)return;
  const f=$("frame").getBoundingClientRect(),c=col.getBoundingClientRect();
  const T=typeof lay!=="undefined"&&lay.target;   /* the picture's target (it may be mid-glide): the prompt moves with it, not after it */

@@ -29,13 +29,14 @@
   x.width=cv.width;x.height=cv.height;x.getContext("2d").drawImage(cv,0,0);x.style.width=cv.style.width;x.style.height=cv.style.height;
   x.style.transition="none";x.style.opacity="1";x.dataset.wait="1"}
  function xfadeGo(cv,id){if(cv.id!=="cv")return;cv.dataset.shown=id;cv.dataset.cw=cv.style.width;cv.dataset.ch=cv.style.height;const x=$("cvx");
+  if(x&&x.dataset.morph){x.dataset.wait="";return}   /* a crop-and-reveal is running: it fades the old picture at its seam */
   if(x&&x.dataset.wait){x.dataset.wait="";void x.offsetWidth;x.style.transition="";x.style.opacity="0"}}
  /* any other change of what's on show (leaving the Gallery, ✕, the render taking over): the picture fades out the same
     way — over whatever comes next (a render's first preview), or at once if nothing does (a clean screen) */
  window.xfadeSnap=()=>{const cv=$("cv"),x=$("cvx");if(!x||cv.width<2)return;x.width=cv.width;x.height=cv.height;x.getContext("2d").drawImage(cv,0,0);
   x.style.width=cv.style.width;x.style.height=cv.style.height;x.style.transition="none";x.style.opacity="1";x.dataset.wait="1";
   clearTimeout(x._t);x._t=setTimeout(xfadeEnd,260)};
- function xfadeEnd(){const x=$("cvx");if(!x||!x.dataset.wait)return;x.dataset.wait="";void x.offsetWidth;x.style.transition="";x.style.opacity="0"}
+ function xfadeEnd(){const x=$("cvx");if(!x||!x.dataset.wait||x.dataset.morph)return;x.dataset.wait="";void x.offsetWidth;x.style.transition="";x.style.opacity="0"}
  window.preload=j=>{const u=urlFor(j);if(!u||j.missing)return;const e=img(u);try{e.i.decode().catch(()=>{})}catch(_){}};
  window.paint=function(cv,j,progress){const u=urlFor(j);if(!u)return;xfadeFrom(cv,j.id);if(j.missing){cv.dataset.want=j.id;if(cv.id==="cv")missing(cv,j);return}const e=img(u),nat=cv.id==="vcv";cv.dataset.want=j.id;
   if(e.i.complete&&e.i.naturalWidth){drawTo(cv,e.i,nat);xfadeGo(cv,j.id);return}

@@ -277,7 +277,8 @@ export async function glowAndDip(k, t) {
   // breathing: browsing to another shape dips the box
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.sleep(500);
   await k.ev(`(genNav(-1),1)`); await k.sleep(60);
-  t.ok(await k.ev(`$("frame").getAnimations().some(a=>a.id==="dip")`), "changing the picture breathes (a short dip of the box)");
+  t.ok(await k.ev(`$("frame").getAnimations().some(a=>a.id==="morph")&&$("frame").classList.contains("morph")`), "a picture of another shape: crop, then reveal");
+  await k.sleep(800); t.ok(await k.ev(`!$("frame").classList.contains("morph")&&+getComputedStyle($("cvx")).opacity<.05`), "it ends clean: the old picture gone, the frame free again");
   // the glow while a job runs, wherever you are
   await k.ev(`(endPeek(),1)`); await k.job("[fill:224433] r", { steps: 20 }); await k.until(`current()&&current().step>=1`, 20000, 100);
   await k.ev(`(showView("queue"),1)`); await k.sleep(1500);
@@ -285,3 +286,30 @@ export async function glowAndDip(k, t) {
   t.ok(g.shown && g.around, "on the Queue tab the glow surrounds the panel while the job runs", g);
 }
 glowAndDip.opts = { width: 1872, height: 1080, step: 1 };
+
+export async function evenGaps(k, t) {
+  await k.theme("aurora"); await k.ev(`(setDock("below"),1)`); await k.sleep(900);
+  await k.job("[fill:335577] one", { ar: "16:9", steps: 2, name: "Hogwarts Castle" }); await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  const m = () => k.ev(`(()=>{const s=document.querySelector(".seg").getBoundingClientRect(),f=$("frame").getBoundingClientRect(),p=$("prog").getBoundingClientRect(),n=$("pname").getBoundingClientRect(),run=!document.body.classList.contains("norow");return{above:Math.round(f.top-s.bottom),below:Math.round(n.top-(run?p.bottom:f.bottom))}})()`);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.mouse(2, 2); await k.sleep(1200);
+  let g = await m(); t.ok(Math.abs(g.above - g.below) <= 2, "Vertical, Gallery: the title is as far under the picture as the picture is under the tab bar", g);
+  await k.ev(`(endPeek(),1)`); await k.job("[fill:224433] r", { steps: 30 }); await k.until(`current()&&current().step>=1`, 30000, 100); await k.sleep(1200);
+  g = await m(); t.ok(Math.abs(g.above - g.below) <= 2, "…and while rendering, under the progress bar", g);
+}
+evenGaps.opts = { width: 1872, height: 1080, step: 0.5 };
+
+export async function verticalHeight(k, t) {
+  await k.ev(`(setDock("below"),1)`); await k.mouse(2, 2); await k.sleep(900);
+  await k.job("[fill:446688] tall", { ar: "3:4", steps: 2 }); await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000); await k.sleep(800);
+  const f0 = await R(k, "#frame"), h = await R(k, ".hedge.b"), x = h.left + h.width / 2, y = h.top + h.height / 2;
+  t.ok(h.width > 0, "Vertical: the picture has its bottom edge");
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y }); await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+  for (let i = 1; i <= 10; i++) await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y: y - 15 * i, button: "left", buttons: 1 });
+  await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y: y - 150, button: "left", clickCount: 1 }); await k.mouse(2, 2); await k.sleep(800);
+  const f1 = await R(k, "#frame");
+  t.near(f1.height, f0.height - 150, 3, "dragging it up makes the picture smaller", { f0: f0.height, f1: f1.height });
+  t.ok(await k.ev(`S.lay.vih>0&&!S.lay.ih`), "Vertical remembers its own limit");
+  await k.ev(`(setDock("left"),1)`); await k.sleep(900);
+  t.ok((await R(k, "#frame")).height > f1.height + 50, "side by side is unaffected");
+}
+verticalHeight.opts = { width: 1872, height: 1080, step: 0.05 };

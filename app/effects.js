@@ -118,7 +118,7 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
   {const gm=(S.set||{}).glow||"gen",run=!!current(),on=cover0==="camera"&&gm!=="off"&&(run||S.view==="gen"&&nstr>0)&&!$("modal").classList.contains("show");
    /* it's a kiln: while a job runs the fire shows wherever you are — round the render, the picture you browse, or the
       Queue / LoRAs / PNG Info panel; after the finish it fades with the night layer as before */
-   fgA+=((on?(run?1:Math.min(1,nstr/HOLD)):0)-fgA)*Math.min(1,dt/400);
+   fgA+=((on?(run?(S.view==="gen"&&!browsed()?1:.45):Math.min(1,nstr/HOLD)):0)-fgA)*Math.min(1,dt/400);   /* round the live render: full; elsewhere it's a status — calmer */
    const fr=S.view==="gen"?$("frame"):$("rpanel");if(fr.id!=="frame")$("frame").classList.remove("halo");
    if(fgA>.01){if(force||t-haloT>=(t-finishAt<2200?14:48)){haloT=t;          /* full frame rate while the finish runs */
      const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.3*env(t-gi.met,1300)+(f=>f<0?0:f<1?.8*f*f*f:f<1.15?.8+.6*(x=>x*x*(3-2*x))((f-1)/.15):1.4*Math.exp(-(f-1.15)*2.2))((t-finishAt)/1400);   /* builds with the crescendo, exhales at the release */

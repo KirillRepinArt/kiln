@@ -704,7 +704,7 @@ body.laydrag *{transition:none!important}
 .hedge::after{content:"";position:absolute;left:50%;top:4px;width:46px;height:4px;margin-left:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
 .hedge:hover::after{opacity:.9}
 body:not(.laydrag) .stage .frame{transition:top .25s cubic-bezier(.4,0,.2,1),left .25s cubic-bezier(.4,0,.2,1)}   /* position only: the canvas is drawn at the box's size, so the size must not animate */
-.app.stacked .hedges,.rpanel.paneled .hedges{display:none}
+.rpanel.paneled .hedges{display:none}   /* Vertical has them too (2026-10-19) */
 /* the arrows on the picture: always at its vertical middle. On a short picture the hover buttons wrap into a second
    column rather than push the arrow down (it used to be held at >= 276 px from the top) */
 .frame .nav{top:50%!important}
@@ -967,3 +967,14 @@ body.skin-emerald .tab .tring{background:var(--a1)!important;opacity:1;
 /* the top / bottom grab strips sit mostly INSIDE the picture: on a full-height picture the panel clips anything above or
    below it, which left only ~4 px to hover */
 .hedge.t{top:-3px!important}.hedge.b{bottom:-3px!important}
+
+/* Aurora (and the starry themes): the Generating ring steps back towards the background — a dark engraved ring on the
+   bright glass pill, so the G stays the brightest thing */
+body:not(.skin-emerald) .tab .tring{background:rgba(0,0,0,.62)!important;opacity:1;
+ -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.6px),#000 calc(100% - 2.2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.35) 0)!important;-webkit-mask-composite:source-in!important;
+ mask:radial-gradient(farthest-side,transparent calc(100% - 2.6px),#000 calc(100% - 2.2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.35) 0)!important;mask-composite:intersect!important}
+
+/* the crop-and-reveal: both pictures at their own final size, centred; the frame is the only thing that moves */
+.frame.morph{transition:none!important}
+.frame.morph #cvx{width:var(--ow)!important;height:var(--oh)!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important}
+.frame.morph #cv{width:var(--nw)!important;height:var(--nh)!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important}

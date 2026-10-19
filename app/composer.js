@@ -74,15 +74,15 @@ function grow(){} // column widths now come from sizeFrame()
 (function(){let d=null;
  document.querySelectorAll(".hedge").forEach(h=>{
   h.addEventListener("pointerenter",()=>$("right").classList.add("edgehint"));h.addEventListener("pointerleave",()=>{if(!d)$("right").classList.remove("edgehint")});
-  h.addEventListener("pointerdown",ev=>{if(document.querySelector(".app.stacked")||S.view!=="gen"||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);
+  h.addEventListener("pointerdown",ev=>{if(S.view!=="gen"||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);   /* Vertical too (its own limit) */
    const f=$("frame");d={e:h.dataset.e,y0:ev.clientY,h0:f.offsetHeight,t0:f.offsetTop,full:$("stage").getBoundingClientRect().height-BAR};
    document.body.classList.add("vresizing","laydrag");$("right").classList.add("edgehint")});
   h.addEventListener("pointermove",ev=>{if(!d)return;const dy=ev.clientY-d.y0;
    const nh=Math.max(200,Math.min(d.full,d.e==="b"?d.h0+dy:d.h0-dy));lay.vh=nh;lay.vtop=d.e==="b"?d.t0:d.t0+(d.h0-nh);
-   S.lay.ih=nh/d.full;sizeFrame()});
-  const up=()=>{if(!d)return;d=null;lay.vh=null;lay.vtop=null;if(S.lay.ih>.995)S.lay.ih=null;document.body.classList.remove("vresizing","laydrag");$("right").classList.remove("edgehint");save();sizeFrame()};
+   S.lay[document.querySelector(".app.stacked")?"vih":"ih"]=nh/d.full;sizeFrame()});
+  const up=()=>{if(!d)return;d=null;lay.vh=null;lay.vtop=null;if(S.lay.ih>.995)S.lay.ih=null;if(S.lay.vih>.995)S.lay.vih=null;document.body.classList.remove("vresizing","laydrag");$("right").classList.remove("edgehint");save();sizeFrame()};
   h.addEventListener("pointerup",up);h.addEventListener("pointercancel",up);
-  h.addEventListener("dblclick",()=>{S.lay.ih=null;save();sizeFrame()})})})();
+  h.addEventListener("dblclick",()=>{S.lay[document.querySelector(".app.stacked")?"vih":"ih"]=null;save();sizeFrame()})})})();
 /* the edit buttons appear while the pointer is over the picture or the column beside it (one zone, so you never chase
    them) and stay ~300 ms after it leaves, so a diagonal path doesn't lose them */
 (function(){let t=null;const on=()=>{clearTimeout(t);$("stage").classList.add("tools");document.body.classList.add("navs")},off=()=>{clearTimeout(t);t=setTimeout(()=>{$("stage").classList.remove("tools");document.body.classList.remove("navs")},300)};

@@ -34,7 +34,7 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>tabGo(()=>{const v=t.
    the picture, following it every frame while an edge is hovered or held */
 (function(){const fh=$("fithint"),rt=$("right");let on=false;
  let offAt=0;
- function tick(){const want=rt.classList.contains("edgehint")&&S.view==="gen"&&!document.querySelector(".app.stacked");
+ function tick(){const want=rt.classList.contains("edgehint")&&S.view==="gen";
   if(want)offAt=0;else if(!offAt){offAt=performance.now();fh.classList.remove("show")}
   if(!want&&performance.now()-offAt>800){on=false;return}   /* it fades out late and slowly (CSS): keep it on the picture meanwhile */
   const r=$("frame").getBoundingClientRect(),O=12;fh.style.left=(r.left-O)+"px";fh.style.top=(r.top-O)+"px";fh.style.width=(r.width+2*O)+"px";fh.style.height=(r.height+2*O)+"px";if(want)fh.classList.add("show");requestAnimationFrame(tick)}
@@ -81,7 +81,7 @@ const lay={overImg:false,navAt:0,pressCard:false,last:null,drag:false};
 /* the picture's height: the stage minus the status row, capped in Generating by S.lay.ih (a share of that height,
    set with the image area's top / bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
 function picH(){const full=$("stage").getBoundingClientRect().height-BAR;if(lay.vh)return Math.min(full,lay.vh);
- const ih=S.lay&&S.lay.ih;return S.view==="gen"&&ih?Math.max(200,Math.min(full,ih*full)):full}
+ const ih=S.lay&&(document.querySelector(".app.stacked")?S.lay.vih:S.lay.ih);return S.view==="gen"&&ih?Math.max(200,Math.min(full,ih*full)):full}   /* Vertical keeps its own limit (vih) */
 function hugW(){const j=browsed()||current()||shownDone(),ar=j?j.ar:S.ar,[a,b]=ar.split(":").map(Number),h=picH();return h>0?h*a/b+tbW(h):9999}
 function layGeo(){const W=layW();
  if(S.lay&&S.lay.v===2){const o=S.lay;S.lay={pw:o.pw*W,rw:o.rw*W,iw:o.iw?o.iw*W:null,ih:o.ih,v:3}}   /* shares → px, once */
@@ -143,12 +143,12 @@ function sizeFrame(){if(sizeFrame.defer){sizeFrame.pending=true;return}   /* ins
  if(!stk&&!sizeFrame.hold)layApply(layNow());
  /* Vertical: the picture's area (and Queue / LoRAs / PNG Info) is a centred column no wider than a 16:9 picture at the
     height it has (plus its button column each side), never narrower than the tab bar or the prompt box — not edge to edge */
- {const rt=$("right");if(stk){const hh=$("stage").getBoundingClientRect().height-BAR,full=app.clientWidth-36;
+ {const rt=$("right");if(stk){const hh=picH(),full=app.clientWidth-36;
    const cap=Math.max(minRight(),typeof stackW==="function"?stackW():0,hh*16/9+2*tbW(hh));rt.style.width=Math.round(Math.min(full,cap))+"px";sizeFrame.colW=Math.round(Math.min(full,cap))}
   else{if(rt.style.width)rt.style.width="";sizeFrame.colW=0}}
  /* the target geometry, not a measurement: the grid may be mid-glide */
  const st=$("stage").getBoundingClientRect(),SW=stk?(sizeFrame.colW?sizeFrame.colW-2:st.width):lay.last.rw;const f=$("frame");   /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
- const PH=stk?st.height-BAR:picH(),TB=tbW(PH);fitBox(f,ar,SW-(stk?2:1)*TB,PH);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
+ const PH=picH(),TB=tbW(PH);fitBox(f,ar,SW-(stk?2:1)*TB,PH);const w=parseFloat(f.style.width),h=parseFloat(f.style.height);
  /* the picture's canvas is drawn at the box's FINAL size and centred in it: the box may glide to a new shape (its
     edges clip the picture, like a container transform) without the canvas being stretched on the way */
     /* Vertical keeps the column's room on both sides */
@@ -165,6 +165,10 @@ function sizeFrame(){if(sizeFrame.defer){sizeFrame.pending=true;return}   /* ins
  /* while an edge is held or hovered: an outline round the picture itself, an even 5 px out (the edges you drag are
     the picture's own; the box it may fill showed as a frame floating off the picture) */
  
+ /* Vertical: the picture block sits between two equal gaps — the title starts as far under it (or under its progress
+    bar) as the picture starts under the tab bar. A shift, not a resize: shrinking the column would hand the picture more
+    height and move the gap again */
+ lay.vB=stk?st.top+top+h+(BAR===66?12+$("prog").offsetHeight:0):null;vAlign();
  const he=$("hedges");if(he){he.style.left=left+"px";he.style.width=w+"px";he.style.top=top+"px";he.style.height=h+"px"}
  /* tab bar: centred over the panel in Queue / LoRAs / PNG Info; in Generating it sits right on top of the picture and is
     centred on the picture itself, not on picture + button column — as far as the area allows (it never pokes out) */
@@ -173,6 +177,16 @@ function sizeFrame(){if(sizeFrame.defer){sizeFrame.pending=true;return}   /* ins
   tb.style.transform=gen&&(top>0||dx)?`translate(${dx}px,${Math.round(Math.max(0,top))}px)`:""}
  const sx=0;const pr=$("prog");pr.style.left=(left+sx)+"px";pr.style.width=w+"px";pr.style.top=(top+h+(BAR===66?12:6))+"px";pr.style.setProperty("--tw",w+"px");
  if(window.layoutLeft)requestAnimationFrame(layoutLeft)}
+/* Vertical: the picture block sits between two equal gaps — the title starts as far under it (or under its progress
+   bar) as the picture starts under the tab bar. A shift of the prompt column, not a resize (shrinking it would hand the
+   picture more height and move the gap again). Worked out from TARGETS: the name row may be mid-glide (the Reuse bar
+   row opening), so the title's place comes from the row's target height, not from where it is right now */
+function vAlign(){const col=$("lcol");
+ if(!document.querySelector(".app.stacked")||lay.vB==null){if(col.dataset.dy){delete col.dataset.dy;col.style.transform=""}return}
+ const seg=document.querySelector(".seg"),tbs=document.querySelector(".tabs"),T=$("ltitle"),A=12+(tbs.getBoundingClientRect().bottom-seg.getBoundingClientRect().bottom);
+ const cur=parseFloat(col.dataset.dy||0),colTop=col.getBoundingClientRect().top-cur,TS=parseFloat(col.style.getPropertyValue("--ts"))||64;
+ const fromBottom=T.getBoundingClientRect().bottom-$("pname").getBoundingClientRect().top,pn=colTop+4+(TS-10)-fromBottom;   /* the name row: top 4, height TS-10, its content at the bottom */
+ const dy=Math.round(Math.min(0,lay.vB+A-pn));if(String(dy)!==col.dataset.dy){col.dataset.dy=dy;col.style.transform=dy?`translateY(${dy}px)`:""}}
 /* the holds: over the picture, over the prompt (card, its name row, its LoRA chips) */
 {let t=null;const on=()=>{clearTimeout(t);lay.overImg=true},off=()=>{clearTimeout(t);t=setTimeout(()=>{lay.overImg=false;sizeFrame()},120)};
  for(const el of [$("frame"),...document.querySelectorAll(".gnav")]){el.addEventListener("pointerenter",on);el.addEventListener("pointerleave",off)}}
@@ -198,16 +212,29 @@ let resultStale=false;function shownDone(){return browsed()||(resultStale?null:l
 let browseId=null;
 function doneList(){return jobs.filter(j=>j.status==="done")}
 function browsed(){if(browseId==null)return null;const b=jobs.find(j=>j.id===browseId&&j.status==="done");if(!b)browseId=null;return b||null}
-/* changing the picture in the Gallery "breathes": the box pulls in a little on the way (~3 % when the shape changes,
-   ~1.5 % between pictures of the same shape) and opens out to the new picture — a refocus, not a stretch. No overshoot */
-function frameDip(shape){if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;const f=$("frame"),d=shape?.97:.985;
- try{f.getAnimations().filter(a=>a.id==="dip").forEach(a=>a.cancel());const a=f.animate([{scale:"1"},{scale:String(d),offset:.42},{scale:"1"}],{duration:shape?460:340,easing:"cubic-bezier(.3,0,.2,1)"});a.id="dip"}catch(e){}}
+/* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design). 1) the frame closes in on the picture
+   on show to the new picture's shape — the largest such box inside it, centred: the old picture is cropped, never
+   squeezed, so nothing is ever empty; 2) at that box the new picture takes over (a short cross-fade: same shape now);
+   3) the frame opens out to the new picture's size, revealing more of it. Both pictures sit at their own final size,
+   centred: only the frame moves. ~180 ms accelerating + 80 ms seam + 280 ms decelerating (sequential motion) */
+const MORPH={a:180,s:80,b:280};
+function frameMorph(o){const f=$("frame"),x=$("cvx");if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+ const nw=parseFloat(f.style.width),nh=parseFloat(f.style.height),nl=parseFloat(f.style.left),nt=parseFloat(f.style.top);
+ if(!(nw>0&&nh>0&&o.w>0&&o.h>0))return;const r=nw/nh;let aw=o.w,ah=o.w/r;if(ah>o.h){ah=o.h;aw=o.h*r}
+ const al=o.l+(o.w-aw)/2,at=o.t+(o.h-ah)/2,T=MORPH.a+MORPH.s+MORPH.b,k1=MORPH.a/T,k2=(MORPH.a+MORPH.s)/T,px=v=>v+"px";
+ f.getAnimations().filter(a=>a.id==="morph").forEach(a=>a.cancel());
+ f.style.setProperty("--ow",px(o.w));f.style.setProperty("--oh",px(o.h));f.style.setProperty("--nw",px(nw));f.style.setProperty("--nh",px(nh));f.classList.add("morph");
+ const a=f.animate([{left:px(o.l),top:px(o.t),width:px(o.w),height:px(o.h),easing:"cubic-bezier(.4,0,1,1)"},
+  {left:px(al),top:px(at),width:px(aw),height:px(ah),offset:k1},{left:px(al),top:px(at),width:px(aw),height:px(ah),offset:k2,easing:"cubic-bezier(0,0,.2,1)"},
+  {left:px(nl),top:px(nt),width:px(nw),height:px(nh)}],{duration:T});a.id="morph";
+ if(x){x.dataset.morph="1";x.getAnimations().forEach(q=>q.cancel());x.animate([{opacity:1},{opacity:1,offset:k1},{opacity:0,offset:k2},{opacity:0}],{duration:T,fill:"forwards"}).onfinish=()=>{x.style.opacity="0";delete x.dataset.morph;x.getAnimations().forEach(q=>q.cancel())}}
+ a.onfinish=a.oncancel=()=>{if(!f.getAnimations().some(q=>q.id==="morph"&&q!==a))f.classList.remove("morph")}}
 function genNav(dir,dry){const run=!!current(),b=browsed(),cur=b||(run?null:shownDone()),L=doneList();
  let i=cur?L.findIndex(x=>x.id===cur.id):L.length;if(i<0)i=L.length;const n=i+dir;let id;
  if(n<0)return false;if(n>=L.length){if(!b)return false;id=null}else id=L[n].id; // past the newest: back to your working view — clean when idle (the picture lives in the Gallery)
- if(!dry){if(window.xfadeSnap&&(id!=null||run))xfadeSnap();const fw=$("frame").style.width,fh=$("frame").style.height;browseId=id;   /* a fade only when something replaces it — into an empty screen the picture just goes */resultStale=id==null&&!run;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else if(!peekOff)loadJob(L[n]);
+ if(!dry){if(window.xfadeSnap&&(id!=null||run))xfadeSnap();const fs=$("frame").style,o={w:parseFloat(fs.width),h:parseFloat(fs.height),l:parseFloat(fs.left),t:parseFloat(fs.top)};browseId=id;   /* a fade only when something replaces it — into an empty screen the picture just goes */resultStale=id==null&&!run;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else if(!peekOff)loadJob(L[n]);
   if(window.preload)for(const q of [L[n-1],L[n+1]])if(q)preload(q);
-  if(id!=null&&S.view==="gen")frameDip(Math.abs(parseFloat($("frame").style.width)/parseFloat($("frame").style.height)-parseFloat(fw)/parseFloat(fh))>.02)}return true}   /* the neighbours decoded before you ask for them */
+  if(id!=null&&S.view==="gen"&&Math.abs(parseFloat(fs.width)/parseFloat(fs.height)-o.w/o.h)>.02)frameMorph(o)}return true}   /* the neighbours decoded before you ask for them */
 function vNav(dir,dry){const L=doneList(),i=L.findIndex(x=>x.id===(V.job&&V.job.id)),t=L[i+dir];if(i<0||!t)return false;if(!dry)openViewer(t);return true}
 function navFn(el){return el.closest("#viewer")?vNav:genNav}
 function updNav(){document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("off",!navFn(b)(+b.dataset.nav,true)))}

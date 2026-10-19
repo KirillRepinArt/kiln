@@ -42,12 +42,14 @@ let peekJob=null;
 /* the peek bar only offers what would change something: no "Reuse prompt" when the prompt is already your draft;
    "Use this seed" when only the seed differs; nothing but ✕ when it all matches */
 function sameLoras(j){const on=LORAS.filter(l=>l.on),jl=j.loras||[];return on.length===jl.length&&jl.every(x=>{const l=on.find(l=>l.name===x.name);return l&&Math.abs(l.w-x.w)<1e-6})}
+/* the same buttons in the same places on every picture (2026-10-19): hiding the ones that "wouldn't change anything"
+   was clever, but a bar whose buttons come and go can't be learned by the hand */
 function peekButtons(){const j=peekJob;if(!j)return;const pSame=(j.raw||j.prompt||"").trim()===(draft||"").trim();
  const sSame=j.mp===S.mp&&j.ar===S.ar&&+j.steps===+S.steps&&sameLoras(j),seedSame=S.seedMode==="fixed"&&+S.seed===+j.seed;
- $("pkPrompt").style.display=pSame?"none":"";const all=$("pkAll");
+ $("pkPrompt").style.display="";const all=$("pkAll");
  const lbl=(lg,sm)=>`<span class="lg">${lg}</span><span class="sm">${sm}</span>`; // the short form shows when the box is narrow
- if(!pSame||!sSame){all.style.display="";all.dataset.m="all";all.innerHTML=lbl("Reuse all","All")}else if(!seedSame){all.style.display="";all.dataset.m="seed";all.innerHTML=lbl("Use this seed","Seed")}else all.style.display="none";
- $("pkSeed").style.display=all.style.display==="none"||all.dataset.m==="seed"?"none":"";
+ all.style.display="";all.dataset.m="all";all.innerHTML=lbl("Reuse all","All");
+ $("pkSeed").style.display="";
  $("peekLbl").textContent=`#${j.id}${j.status==="running"?" · generating":""}${pSame&&sSame&&seedSame?" · same as your draft":""}`}
 function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classList.add("peek");P.scrollTop=0;
  const n=$("pname");delete n.dataset.title;n.value=j.name||"";n.placeholder=j.status==="pending"?"Name this job":"Unnamed";n.readOnly=!(j.status==="pending"||j.status==="done"&&j.file&&!j.missing);$("pnSave").classList.remove("show");

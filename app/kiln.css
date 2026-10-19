@@ -999,3 +999,34 @@ html.tabmorph::view-transition-old(kiln-app){animation:kfadeout 90ms cubic-bezie
 html.tabmorph::view-transition-new(kiln-app){animation:kfadein 170ms cubic-bezier(0,0,.2,1) 60ms both}
 html.tabmorph::view-transition-group(kiln-pic){animation-duration:260ms;animation-timing-function:cubic-bezier(.2,0,0,1)}
 html.tabmorph::view-transition-old(kiln-pic),html.tabmorph::view-transition-new(kiln-pic){animation-duration:200ms}
+
+/* ---- 2026-10-19 (late) ---- */
+/* the Generating ring: ONE solid arc, no track — dark on the white (selected) pill, light grey otherwise */
+body:not(.skin-emerald) .tab .tring{background:#c3c8cc!important;
+ -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0)!important;-webkit-mask-composite:source-in!important;
+ mask:radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0)!important;mask-composite:intersect!important}
+body:not(.skin-emerald) .tab.on .tring{background:rgba(0,0,0,.72)!important}
+/* the edit column is part of the hover zone even while its buttons are hidden — the buttons only take clicks once shown */
+.gtools{pointer-events:auto!important}.gtools .side button{pointer-events:none}.stage.tools .gtools .side button{pointer-events:auto}
+/* the Reuse bar ~9 px above the box (half the prompt–picture gap): part of the prompt block, not squeezed against it */
+.ltitle .peekbar{margin-bottom:3px!important}
+/* Vertical: side edges on the picture */
+.hedge.l,.hedge.r{display:none;top:0!important;bottom:0!important;height:auto!important;width:16px;cursor:ew-resize!important;left:auto!important;right:auto!important}
+.app.stacked .hedge.l,.app.stacked .hedge.r{display:block}
+.hedge.l{left:-12px!important}.hedge.r{right:-12px!important}
+/* the ring: a hairline circle in the same colour shows at once that a job runs (the App Store / Safari download pattern),
+   the solid arc grows over it. One element: the mask is hairline ∪ (thick ring ∩ the progress slice) */
+body:not(.skin-emerald) .tab .tring{
+ -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 1.6px),rgba(0,0,0,.5) calc(100% - 1.2px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0),radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px))!important;
+ -webkit-mask-composite:source-over,source-in!important;
+ mask:radial-gradient(farthest-side,transparent calc(100% - 1.6px),rgba(0,0,0,.5) calc(100% - 1.2px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0),radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px))!important;
+ mask-composite:add,intersect!important}
+/* the ring sits UNDER the G (a positioned element paints over plain text): its own small stacking layer, ring behind */
+.tab .tg{isolation:isolate}.tab .tring{z-index:-1}
+/* …and under the whole word, not just the G: the stacking layer is the word (the G's own layer painted over "enerating") */
+.tab .tg{isolation:auto!important}.tab .tl{isolation:isolate;position:relative}
+/* not selected: the ring a step darker than the label's grey, so the letters read in front of it (the same grey merged) */
+body:not(.skin-emerald) .tab:not(.on) .tring{background:#8e9499!important}
+/* the ring is behind the letters now, so one family of colour in both states: the same grey, a touch brighter on the
+   selected (lighter) pill — the dark ring was only ever a workaround for the ring covering the letters */
+body:not(.skin-emerald) .tab.on .tring{background:#a7adb2!important}

@@ -315,3 +315,30 @@ export async function verticalHeight(k, t) {
   t.ok((await R(k, "#frame")).height > f1.height + 50, "side by side is unaffected");
 }
 verticalHeight.opts = { width: 1872, height: 1080, step: 0.05 };
+
+export async function lateFixes(k, t) {
+  await k.job("[fill:446688] tall", { ar: "3:4", steps: 2 }); await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.mouse(2, 2); await k.sleep(1000);
+  // the curve: one continuous move — the box never stands still before it lands
+  const r = await k.ev(`new Promise(res=>{const out=[];const t0=performance.now();genNav(-1);(function f(t){const b=$("frame").getBoundingClientRect();out.push([t-t0,b.width,b.height]);if(t-t0<600)requestAnimationFrame(f);else res(out)})(performance.now())})`);
+  const mid = r.filter(x => x[0] > 120 && x[0] < 420), still = mid.filter((x, i) => i && Math.abs(x[1] - mid[i - 1][1]) < .05 && Math.abs(x[2] - mid[i - 1][2]) < .05).length;
+  t.ok(mid.length > 8 && still <= 1, "crop-then-reveal is one continuous move (no stop at the middle box)", { frames: mid.length, still });
+  // the edit column reacts to hover even while its buttons are hidden
+  await k.mouse(2, 2); await k.sleep(500);
+  const g = await R(k, "#gtools"); await k.mouse(g.left + g.width / 2, g.top + 30); await k.sleep(400);
+  t.ok(await k.ev(`$("stage").classList.contains("tools")`), "hovering the edit buttons' column shows them");
+  await k.mouse(2, 2);
+  // the Reuse bar sits ~9 px above the box
+  const pb = await R(k, "#peekbar"), L = await R(k, "#left");
+  t.near(L.top - pb.bottom, 9, 2, "the Reuse bar ~9 px above the prompt box", { gap: L.top - pb.bottom });
+  // Vertical: a side edge scales the picture
+  await k.ev(`(endPeek(),setDock("below"),1)`); await k.until(`!document.body.classList.contains("laysnap")`, 4000, 50); await k.sleep(700);
+  const f0 = await R(k, "#frame"), h = await R(k, ".hedge.r"), x = h.left + h.width / 2, y = h.top + h.height / 2;
+  t.ok(h.width > 0, "Vertical: the picture has side edges");
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y }); await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+  for (let i = 1; i <= 10; i++) await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x - 8 * i, y, button: "left", buttons: 1 });
+  await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x - 80, y, button: "left", clickCount: 1 }); await k.mouse(2, 2); await k.sleep(800);
+  const f1 = await R(k, "#frame");
+  t.ok(f1.width < f0.width - 100 && Math.abs(f1.width / f1.height - f0.width / f0.height) < .02, "dragging it in makes the picture smaller, its shape kept", { f0: [f0.width, f0.height], f1: [f1.width, f1.height] });
+}
+lateFixes.opts = { width: 1872, height: 1080, step: 0.05 };

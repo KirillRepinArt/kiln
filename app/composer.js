@@ -75,10 +75,12 @@ function grow(){} // column widths now come from sizeFrame()
  document.querySelectorAll(".hedge").forEach(h=>{
   h.addEventListener("pointerenter",()=>$("right").classList.add("edgehint"));h.addEventListener("pointerleave",()=>{if(!d)$("right").classList.remove("edgehint")});
   h.addEventListener("pointerdown",ev=>{if(S.view!=="gen"||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);   /* Vertical too (its own limit) */
-   const f=$("frame");d={e:h.dataset.e,y0:ev.clientY,h0:f.offsetHeight,t0:f.offsetTop,full:$("stage").getBoundingClientRect().height-BAR};
+   const f=$("frame");d={e:h.dataset.e,x0:ev.clientX,y0:ev.clientY,w0:f.offsetWidth,h0:f.offsetHeight,t0:f.offsetTop,full:$("stage").getBoundingClientRect().height-BAR};
    document.body.classList.add("vresizing","laydrag");$("right").classList.add("edgehint")});
-  h.addEventListener("pointermove",ev=>{if(!d)return;const dy=ev.clientY-d.y0;
-   const nh=Math.max(200,Math.min(d.full,d.e==="b"?d.h0+dy:d.h0-dy));lay.vh=nh;lay.vtop=d.e==="b"?d.t0:d.t0+(d.h0-nh);
+  h.addEventListener("pointermove",ev=>{if(!d)return;const dy=ev.clientY-d.y0,dx=ev.clientX-d.x0,side=d.e==="l"||d.e==="r";
+   /* a side edge (Vertical): the picture scales about its centre, its shape kept — the edge follows the cursor */
+   const want=side?(d.w0+2*(d.e==="r"?dx:-dx))*d.h0/d.w0:d.e==="b"?d.h0+dy:d.h0-dy;
+   const nh=Math.max(200,Math.min(d.full,want));lay.vh=nh;lay.vtop=side?d.t0+(d.h0-nh)/2:d.e==="b"?d.t0:d.t0+(d.h0-nh);
    S.lay[document.querySelector(".app.stacked")?"vih":"ih"]=nh/d.full;sizeFrame()});
   const up=()=>{if(!d)return;d=null;lay.vh=null;lay.vtop=null;if(S.lay.ih>.995)S.lay.ih=null;if(S.lay.vih>.995)S.lay.vih=null;document.body.classList.remove("vresizing","laydrag");$("right").classList.remove("edgehint");save();sizeFrame()};
   h.addEventListener("pointerup",up);h.addEventListener("pointercancel",up);

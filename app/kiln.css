@@ -899,13 +899,13 @@ body:has(.rpanel.paneled) .gnav,body:has(.frame.missing) .gnav,body:has(.modal.s
 /* the file name round the title, on hover */
 .fnpre,.fnsuf{display:none;color:#6f747a;font-size:24px;font-weight:500;white-space:nowrap;letter-spacing:-.01em;font-family:var(--font-title,inherit)}
 .fnpre{margin-right:10px}.plbl.fnon .fnpre,.plbl.fnon .fnsuf{display:inline}
-.plbl.fnon .pname{color:#d6d9dc!important}
+
 /* the canvas fills the frame's box (cover): while the box glides to another shape, no corner is ever empty */
 .frame #cv,#cvx{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;transform:none!important;object-fit:cover}
 /* no caption row, no job chip (the title has the file name, the Generating tab the progress) */
 .pchip{display:none!important}
 /* Start: no ring, no count (the Queue tab counts, the Generating tab shows the progress) */
-.play .ptrack,.play .pring,.controls .play .badge{display:none!important}
+.play .ptrack,.play .pring{display:none!important}
 /* the Generating tab's ring: fills with the running job's progress, in the bar's gradient, wherever you are */
 .tab .tring{display:none;position:relative;width:14px;height:14px;border-radius:50%;flex:none;margin-right:2px;
  background:conic-gradient(from var(--prot) in oklch,var(--a1),var(--a2),var(--a3),var(--a2),var(--a1));animation:pring 6s linear infinite;
@@ -923,3 +923,29 @@ body.jobrun .tab .tring{display:inline-block}
 .laymenu .lrow .opt.on{background:rgba(255,255,255,.12)}
 .laymenu .lrow .opt .lic{margin-right:0}
 .laymenu .lrow .lsep{width:1px;height:22px;margin:0 4px;background:rgba(255,255,255,.12)}
+
+/* ---- 2026-10-19 round ---- */
+/* the outline: hover intent — in quickly, out late and slowly, so sweeping across an edge never makes it blink */
+.fithint{display:block!important;opacity:0;transition:opacity .4s ease .3s!important}
+.fithint.show{opacity:1;transition:opacity .2s ease 0s!important}
+/* the Reuse bar: full labels down to a narrow box; then "Reuse" / "All" */
+@container (max-width:470px){.ltitle .peekbar .lg{display:inline}.ltitle .peekbar .sm{display:none}}
+@container (max-width:340px){.ltitle .peekbar .lg{display:none}.ltitle .peekbar .sm{display:inline}}
+/* the ring round the G of Generating */
+.tab .tg{position:relative;display:inline-block}
+.tab .tring{position:absolute!important;left:50%;top:50%;width:24px!important;height:24px!important;margin:-12px 0 0 -12px!important;
+ -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.4px),#000 calc(100% - 2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.16) 0)!important;
+ mask:radial-gradient(farthest-side,transparent calc(100% - 2.4px),#000 calc(100% - 2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.16) 0)!important}
+/* the queue count back on Start: you add to the queue there, so the number goes up where you click */
+.controls .play .badge{display:none}.controls .play .badge.show{display:grid!important}
+/* a finished picture's title: as it is — no plate at rest or on hover (only while you edit it); its file name around it */
+.plbl.donename .pname:not(:focus),.plbl.donename .pname:not(:focus):hover{background:transparent!important;box-shadow:none!important}
+.nchip{position:relative}
+.plbl.fnon .fnpre,.plbl.fnon .fnsuf{display:inline;position:absolute;top:50%;transform:translateY(-50%);opacity:1}
+.fnpre{right:100%;margin-right:8px}.fnsuf{left:100%;margin-left:0}
+.fnpre,.fnsuf{opacity:0;transition:opacity .15s}
+.plbl.fnon .pname{color:inherit}
+
+body.glass .ltitle .plbl.donename .pname:not(:focus):not([readonly]),body.glass .ltitle .plbl.donename .pname:not(:focus):not([readonly]):hover{background:transparent!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.ltitle .plbl.donename .pname:not(:focus){cursor:text}
+.tab .tring{-webkit-mask-composite:source-in!important;mask-composite:intersect!important}   /* a ring, not a pie: the two masks intersect */

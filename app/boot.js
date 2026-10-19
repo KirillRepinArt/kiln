@@ -19,7 +19,7 @@ function nextHint(){const n=(S.pname||"").trim();
  if(window.LIVE){clearTimeout(nnT);nnT=setTimeout(()=>fetch("/api/nextname?name="+encodeURIComponent(n)).then(r=>r.json()).then(d=>nameTip(d.file)).catch(()=>{}),250)}
  else{const slug=slugify(n);nameTip(`${slug}-${String((S.ncount[slug]||0)+1).padStart(3,"0")}.png`)}}
 function nameUI(){const l=document.querySelector(".plbl");l.classList.toggle("peekname",!!peekJob);
- if(peekJob){$("pname").dataset.tip=peekJob.file?`This image: ${peekJob.file}`:"This image";return}
+ if(peekJob){$("pname").dataset.tip="";return}   /* its file name shows beside it on hover */
  nextHint();l.classList.toggle("hasname",!!S.pname.trim());l.classList.toggle("dimname",!!S.pname.trim()&&!P.value.trim())}$("pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();if(peekJob&&$("pnSave").classList.contains("show")){saveJobName();return}P.focus()}});
 if(matchMedia("(prefers-reduced-motion: reduce)").matches)document.querySelector("#playFlow animateTransform")?.remove();
 applyMode();$("left").classList.add("nodur");setTimeout(()=>$("left").classList.remove("nodur"),400);

@@ -102,7 +102,8 @@ export async function startRing(k, t) {
   t.ok(await k.until(`$("play").classList.contains("gen")`, 10000, 100), "a job runs: Start's triangle takes the flowing gradient");
   t.ok(/playFlow/.test(await k.ev(`getComputedStyle(document.querySelector(".play svg path")).fill`)), "the bar's gradient");
   t.ok(await k.until(ring, 3000, 100), "the Generating tab shows the job's progress ring");
-  t.ok(await k.ev(`getComputedStyle(document.querySelector(".play .pring")).display==="none"&&getComputedStyle(document.querySelector(".controls .play .badge")).display==="none"`), "Start carries no ring and no count any more");
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".play .pring")).display==="none"`), "Start carries no ring (the Generating tab has it)");
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".controls .play .badge")).display!=="none"`), "but the queue count is on Start, where you add to the queue");
   await k.ev(`(showView("queue"),1)`); t.ok(await k.ev(ring), "on another tab too");
   await k.until(`current()&&current().step>=1`, 15000, 100); await k.sleep(600);
   const p1 = +(await k.ev(`getComputedStyle(document.documentElement).getPropertyValue("--p")`));
@@ -235,7 +236,8 @@ export async function simpleRename(k, t) {
   const f0 = await k.ev(`lastDone().file`);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.sleep(600);
   await k.ev(`(document.querySelector(".plbl").dispatchEvent(new MouseEvent("mouseenter")),1)`);
-  t.ok(await k.ev(`$("fnPre").textContent==="#"+lastDone().id&&$("pname").value==="castle"&&$("fnSuf").textContent==="-001.png"`), "hovering the title shows the file name in place", [await k.ev(`$("fnPre").textContent`), await k.ev(`$("pname").value`), await k.ev(`$("fnSuf").textContent`)]);
+  t.ok(await k.ev(`$("fnPre").textContent==="#"+lastDone().id&&$("pname").value==="Castle"&&$("fnSuf").textContent==="-001.png"&&document.querySelector(".plbl").classList.contains("fnon")`), "hovering the title: it stays as it is, its number and .png appear beside it", [await k.ev(`$("fnPre").textContent`), await k.ev(`$("pname").value`), await k.ev(`$("fnSuf").textContent`)]);
+  t.ok(await k.ev(`getComputedStyle($("pname")).backgroundColor`) === "rgba(0, 0, 0, 0)", "no plate on hover (only while editing)", await k.ev(`getComputedStyle($("pname")).backgroundColor`));
   await k.ev(`(document.querySelector(".plbl").dispatchEvent(new MouseEvent("mouseleave")),1)`);
   t.ok(await k.ev(`$("pname").value`) === "Castle", "and the title again when you leave");
   await k.ev(`($("pname").focus(),$("pname").value="Rome",$("pname").dispatchEvent(new Event("input")),1)`);
@@ -249,3 +251,18 @@ export async function simpleRename(k, t) {
   t.ok(existsSync(join(k.out, f0)), "on disk too");
 }
 simpleRename.opts = { step: 0.05 };
+
+export async function reuseLeavesClean(k, t) {
+  await k.job("[fill:446688] one", { steps: 2 }); await k.job("[fill:884422] two", { steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),genNav(-1),1)`); await k.sleep(500);
+  await k.ev(`($("pkPrompt").style.display==="none"?$("pkAll").click():$("pkPrompt").click(),1)`); await k.sleep(600);
+  t.ok(await k.ev(`browseId===null&&!$("frame").classList.contains("has")`), "Reuse from the Gallery: back to a clean Generating, no picture left behind");
+  // the outline: in at once, out late and slowly
+  await k.ev(`($("right").classList.add("edgehint"),1)`); await k.sleep(400);
+  t.ok(+(await k.ev(`getComputedStyle($("fithint")).opacity`)) > .9, "the outline comes in");
+  await k.ev(`($("right").classList.remove("edgehint"),1)`); await k.sleep(150);
+  t.ok(+(await k.ev(`getComputedStyle($("fithint")).opacity`)) > .9, "and is still there a moment after you leave (no blinking as you cross an edge)");
+  await k.sleep(1000);
+  t.ok(+(await k.ev(`getComputedStyle($("fithint")).opacity`)) < .05, "then fades out");
+}
+reuseLeavesClean.opts = { step: 0.05 };

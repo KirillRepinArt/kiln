@@ -11,10 +11,14 @@ function showView(v){const was=S.view;
    state ← and the arrows already put you in. Clicking it opens the last finished picture; Generating = the live view */
 function tabSync(force){const v=S.view==="gen"&&browsed()?"gallery":S.view;if(!force&&tabSync.v===v)return;tabSync.v=v;
  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));moveThumb()}
-document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{const v=t.dataset.v;
+/* a tab switch is navigation, not a layout edit: the new tab is laid out at once (no glide — on a GPU busy with Forge,
+   0.4 s of glass re-blurring the sky per frame was the lag, 2026-10-19), and the layout is measured once per click */
+function tabGo(fn){const b=document.body;b.classList.add("laysnap");sizeFrame.defer=true;try{fn()}finally{sizeFrame.defer=false;if(sizeFrame.pending){sizeFrame.pending=false;sizeFrame()}}
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!document.documentElement.classList.contains("laymorph"))b.classList.remove("laysnap")}))}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>tabGo(()=>{const v=t.dataset.v;
  if(v==="gallery"){if(S.view!=="gen")showView("gen");if(!browsed()){const d=lastDone();if(d)browseTo(d);else toast("No finished pictures yet")}tabSync();return}
  if(v==="gen"&&browsed()){endPeek();if(!current())closeShown()}
- showView(v)});
+ showView(v)}));
 /* the picture's arrows live on a fixed layer: while they show they follow the picture's side edges every frame (it
    glides), but while you're clicking through with them they hold their place on SCREEN (Photos / Lightroom: navigation
    never runs away from the pointer); ~1 s after the last click they glide to the new picture's edges */
@@ -29,8 +33,11 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{const v=t.dataset.v;
 /* the resize outline: drawn on the page's bottom layer (fixed, under every panel, so nothing clips it), 12 px round
    the picture, following it every frame while an edge is hovered or held */
 (function(){const fh=$("fithint"),rt=$("right");let on=false;
- function tick(){if(!rt.classList.contains("edgehint")||S.view!=="gen"||document.querySelector(".app.stacked")){on=false;fh.classList.remove("show");return}
-  const r=$("frame").getBoundingClientRect(),O=12;fh.style.left=(r.left-O)+"px";fh.style.top=(r.top-O)+"px";fh.style.width=(r.width+2*O)+"px";fh.style.height=(r.height+2*O)+"px";fh.classList.add("show");requestAnimationFrame(tick)}
+ let offAt=0;
+ function tick(){const want=rt.classList.contains("edgehint")&&S.view==="gen"&&!document.querySelector(".app.stacked");
+  if(want)offAt=0;else if(!offAt){offAt=performance.now();fh.classList.remove("show")}
+  if(!want&&performance.now()-offAt>800){on=false;return}   /* it fades out late and slowly (CSS): keep it on the picture meanwhile */
+  const r=$("frame").getBoundingClientRect(),O=12;fh.style.left=(r.left-O)+"px";fh.style.top=(r.top-O)+"px";fh.style.width=(r.width+2*O)+"px";fh.style.height=(r.height+2*O)+"px";if(want)fh.classList.add("show");requestAnimationFrame(tick)}
  new MutationObserver(()=>{if(!on&&rt.classList.contains("edgehint")){on=true;tick()}}).observe(rt,{attributes:true,attributeFilter:["class"]})})();
 
 /* ======================= mock image ======================= */
@@ -129,7 +136,8 @@ function layMorph(fn){const b=document.body,h=document.documentElement;let ended
  b.classList.add("laysnap");
  if(!document.startViewTransition||matchMedia("(prefers-reduced-motion: reduce)").matches){fn();end();return}
  h.classList.add("laymorph");try{document.startViewTransition(fn).finished.finally(end)}catch(e){fn();end()}}
-function sizeFrame(){const app=document.querySelector(".app"),stk=app.classList.contains("stacked");
+function sizeFrame(){if(sizeFrame.defer){sizeFrame.pending=true;return}   /* inside one click: once, at the end (it measures the page) */
+ const app=document.querySelector(".app"),stk=app.classList.contains("stacked");
  /* the Gallery has no progress bar: its caption sits centred just under the picture, and the picture gets that room */
  {const m=rowMode();BAR=m==="bar"?66:m==="cap"?46:24;document.body.classList.toggle("gallery",m==="cap");document.body.classList.toggle("norow",m==="none");sizeFrame.mode=m}const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
  if(!stk&&!sizeFrame.hold)layApply(layNow());

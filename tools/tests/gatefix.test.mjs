@@ -61,6 +61,6 @@ export async function badgeAndCount(k, t) {
   await k.job("a", { steps: 2 }); await k.job("b", { steps: 2 }); await k.sleep(1500);
   await k.ev(`(P.value="short",draft=P.value,P.focus(),updPrompt(),1)`); await k.sleep(400);
   const b = await k.rect("#badge"), p = await k.rect("#play"), c = await k.rect("#pcount");
-  t.ok(b.width === 0 && await k.ev(`$("tabN").textContent`) === "2", "the queue count is on the Queue tab, not on Start (2026-10-19)", { b, tab: await k.ev(`$("tabN").textContent`) });
+  t.ok(b.left < p.right && b.bottom > p.top, "the queue count sits on Start's corner", { b, p });
   t.ok(c.right <= b.left || c.bottom <= b.top || c.top >= b.bottom, "the character count doesn't collide with it", { c, b });
 }

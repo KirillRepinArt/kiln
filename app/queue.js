@@ -51,17 +51,17 @@ function peekButtons(){const j=peekJob;if(!j)return;const pSame=(j.raw||j.prompt
  $("peekLbl").textContent=`#${j.id}${j.status==="running"?" · generating":""}${pSame&&sSame&&seedSame?" · same as your draft":""}`}
 function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classList.add("peek");P.scrollTop=0;
  const n=$("pname");delete n.dataset.title;n.value=j.name||"";n.placeholder=j.status==="pending"?"Name this job":"Unnamed";n.readOnly=!(j.status==="pending"||j.status==="done"&&j.file&&!j.missing);$("pnSave").classList.remove("show");
- $("pnSave").textContent=j.status==="done"?"Rename":"Save name";fnShow(false);
+ $("pnSave").textContent=j.status==="done"?"Rename":"Save name";document.querySelector(".plbl").classList.toggle("donename",j.status==="done");fnShow(false);
  peekButtons();$("peekbar").classList.add("show");$("left").classList.add("peeking");renderChips();renderPills();updPrompt();layoutLeft()}
 /* Two ways out of a browse: the prompt's ✕ (or Esc in the editor) closes only the prompt — your draft comes back, the
    image stays, and the arrows keep the prompt closed (peekOff) until the browse ends; the image's ✕ (or Esc elsewhere)
    closes both and returns to the live view. */
 let peekOff=false;
 function closePromptPeek(){if(browseId!=null){peekOff=true;endPeek(true)}else endPeek()}
-function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){if(window.xfadeSnap&&current())xfadeSnap();browseId=null;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}}
+function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){if(window.xfadeSnap&&current())xfadeSnap();browseId=null;resultStale=!current();   /* the picture lives in the Gallery */$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}}
  if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
  const n=$("pname");n.value=S.pname||"";n.placeholder="Add name";n.readOnly=false;
- $("peekbar").classList.remove("show");$("pnSave").classList.remove("show");$("left").classList.remove("peeking");renderChips();renderPills();updPrompt();layoutLeft()}
+ $("peekbar").classList.remove("show");$("pnSave").classList.remove("show");$("left").classList.remove("peeking");document.querySelector(".plbl").classList.remove("donename","fnon");renderChips();renderPills();updPrompt();layoutLeft()}
 function saveJobName(){const j=peekJob;if(!j)return;const v=$("pname").value.trim();
  if(j.status==="done"){if(!window.renameFile){toast("Renaming needs the Kiln server");return}$("pnSave").classList.remove("show");renameFile(j,v).then(ok=>{if(!ok)$("pname").value=j.name||""});$("pname").blur();return}
  if(j.status!=="pending")return;renameJob(j,v);j.name=v;$("pnSave").classList.remove("show")}
@@ -69,9 +69,12 @@ function saveJobName(){const j=peekJob;if(!j)return;const v=$("pname").value.tri
    its number and .png on either side, and the job's #. Editing it renames the file (the series and the next number) */
 function fnShow(on){const j=peekJob,n=$("pname"),l=document.querySelector(".plbl");
  if(!j||j.status!=="done"||!j.file||document.activeElement===n||$("pnSave").classList.contains("show"))on=false;
- if(on){const m=j.file.match(/^(.*?)(-\d{3,}(?:_x[\d.]+)?)(\.png)$/i);if(n.dataset.title==null)n.dataset.title=n.value;
-  n.value=m?m[1]:j.file.replace(/\.png$/i,"");$("fnPre").textContent=`#${j.id}`;$("fnSuf").textContent=m?m[2]+m[3]:".png";l.classList.add("fnon");n.dataset.tipSaved=n.dataset.tip||"";n.dataset.tip=""}
- else{if(n.dataset.title!=null){n.value=n.dataset.title;delete n.dataset.title}if(n.dataset.tipSaved!=null){n.dataset.tip=n.dataset.tipSaved;delete n.dataset.tipSaved}l.classList.remove("fnon")}}   /* the file name is on show: no tooltip repeating it */
+ if(on){const m=j.file.match(/^(.*?)(-\d{3,}(?:_x[\d.]+)?)(\.png)$/i),named=m&&(j.name||"").trim()&&slugify(j.name)===m[1];
+  $("fnPre").textContent=`#${j.id}`;$("fnSuf").textContent=named?m[2]+m[3]:` · ${j.file}`;
+  /* up against the title's TEXT (the field is wider: a minimum width and its edit padding) */
+  const c=fnShow.c||(fnShow.c=document.createElement("canvas").getContext("2d")),cs=getComputedStyle(n);c.font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const tw=c.measureText(n.value||n.placeholder).width,inset=Math.max(0,(n.offsetWidth-tw)/2);$("fnPre").style.marginRight=(8-inset)+"px";$("fnSuf").style.marginLeft=(-inset)+"px"}   /* the title stays exactly as it is; its number and .png appear beside it */
+ l.classList.toggle("fnon",on)}
 (function(){const l=document.querySelector(".plbl"),n=$("pname");l.addEventListener("mouseenter",()=>fnShow(true));l.addEventListener("mouseleave",()=>fnShow(false));n.addEventListener("focus",()=>fnShow(false))})();
 $("pnSave").onclick=e=>{e.stopPropagation();saveJobName()};
 /* Q5: hover a finished thumbnail for a bigger look */

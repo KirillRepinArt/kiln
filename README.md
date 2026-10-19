@@ -2,11 +2,13 @@
 
 **English** · [Русский](README.ru.md)
 
-**A calm, queue-first front end for [Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo) — built for Krea 2 on modest GPUs.**
+**A calm, queue-first front end for [Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo), built around Krea 2.**
 
-Load the queue, close the door, come back to finished images. Kiln is a single-window app for people who
-want Krea 2's quality without Gradio's wall of controls or a node graph — and who generate on hardware where
-one image takes minutes, not seconds.
+Load the queue, close the door, come back to finished images. Kiln is a single-window app for people who want
+Krea 2's quality without Gradio's wall of controls or a node graph. Whether one image takes minutes on a modest GPU
+or a long queue runs on a fast one, there's something worth watching while it works — and every finished picture
+comes back with its prompt and settings beside it, so looking through your results means reading what made them,
+not hunting through files.
 
 ![Kiln — writing the next prompt while the current image renders](docs/screenshot.png)
 
@@ -56,8 +58,8 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
   stop mid-step — and says so). **×N** queues a batch — random seeds, or counting up from a fixed seed.
 - **Pause after this** (Queue tab): the current image finishes, nothing new starts until you resume.
 - Rows show when a job was added, finished and how long it took; the running row shows the live render (not with
-  Privacy hold on); hover a finished thumbnail for a bigger look. A waiting job's name can be changed in its peek.
-- **Delete** an image (`Del`, or the trash button on the image): it goes to the Recycle Bin, with Undo. ✕ on a
+  privacy on); hover a finished thumbnail for a bigger look. A waiting job's name can be changed in its peek.
+- **Delete** an image (`Del`, or the trash button beside it): it goes to the Recycle Bin, with Undo. ✕ on a
   finished row only takes it off the list. Images deleted outside Kiln show as *file deleted* (**Remove missing**);
   browsing to one shows a card instead of the picture, with the ways back that apply: **Restore from Recycle Bin**
   (the original file), **Save back** (if Kiln still holds it from this session), **Render again** (same seed, same
@@ -65,8 +67,8 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
 - An **upscale** goes to the front of the line: seconds, right after the current image.
 - Click a finished job to open it in the Generating view. Click a waiting or running job — or the status line under
   the image — to **peek** at its prompt without touching your draft, then **Reuse prompt** or **Reuse all**
-  (settings and LoRAs; its seed too if the 🔒 next to it is on — off gives a variation). Reusing a named image also takes its name, so the next one joins the series. The buttons only appear when they'd change something: *“Use this seed”* when
-  only the seed differs.
+  (settings and LoRAs; its seed too if the 🔒 next to it is on — off gives a variation). Reusing a named image also
+  takes its name, so the next one joins the series. The same buttons, in the same places, on every picture.
 - **Honest time estimates** from your own history: the median of your last five runs at the same image size and
   steps, counted down while the job runs (on real history this halved the error of a per-megapixel average).
   The queue total uses the same numbers.
@@ -86,36 +88,49 @@ The queue shows which variant each job got, so a good result can be traced back.
 **Layout**
 - The prompt and the picture are one pair with an 18 px gap, centred in the window. In Generating the image area hugs
   the picture (portrait or landscape), so the prompt always sits next to the actual picture; Queue, LoRAs and PNG Info
-  keep a width of their own.
+  keep a width of their own. A picture of the same shape keeps exactly its place between Generating and the Gallery.
 - **Edges:** the divider between them trades width (the prompt stops at its minimum); an outer edge follows the cursor,
-  then the pair glides back to centre. In Generating the image area's edges set the largest the picture may be (side
-  edges: width, top/bottom: height). Double-click an edge for its default.
+  then the pair glides back to centre. The picture's own edges set the largest it may be. Hover an edge and a dashed
+  outline frames the picture; the whole band between the picture and that outline is the handle. Double-click an edge
+  for its default.
 - A wider window never stretches the panels past the widths you chose — the margins grow; a narrower one takes the
   margins first, then shrinks both panels, and they come back when there's room.
-- **Layout menu** (next to the gear): Horizontal (prompt left or right), Vertical (prompt below the picture), Reset
-  sizes. Or drag the prompt by its name line onto a drop zone. A narrow window stacks either way.
-- Nothing moves under the cursor: while a menu in the prompt is open, or you click through pictures with their arrows,
-  the layout holds and catches up when you're done.
-- The picture's actions (img2img, upscale, open, folder, LoRA thumbnail, delete) sit in a column beside it, shown while
-  you hover the picture or the column; the privacy eye stays on the picture.
+- **Layout menu** (the icon next to the gear): prompt on the left, on the right, or below the picture, and Reset sizes.
+  Or drag the prompt by its name line onto a drop zone. Switching cross-fades while the picture glides to its new place.
+  A narrow window stacks either way.
+- **Vertical** (prompt below): the picture sits in a centred column (up to a 16:9 box at its height), with equal gaps
+  above and below; its top, bottom and side edges size it. The prompt box has its own side edges and a **Fit width**
+  button (as wide as the picture); the line above its name sets its largest height — it fits its text below that, so
+  the picture never moves with what the prompt says.
+- Side by side: drag the prompt by any empty spot to snap it to the top, middle or bottom of the picture, or make it
+  **match the image height** / **full height**.
+- Nothing moves under the cursor: while a menu in the prompt is open the layout holds; the picture's arrow you click
+  stays where it is for as long as your pointer is on it. Every layout change glides on one curve.
 
-**Image**
-- Live preview under a soft veil that lifts as the steps land; a burst of embers when it's done.
+**Picture**
+- Live preview under a soft cover that lifts as the steps land; a burst of embers when it's done.
 - **Cover** (Settings → Cover): full, light or off, optionally skipped on jobs under 10 s; hover the image to peek.
-- **Privacy** — the eye at the image's top right, or `F9` (even while typing): the picture is covered outright,
+- **Privacy** — the eye at the picture's top right, or `F9` (even while typing): the picture is covered outright,
   running or finished (no transparency, no peek on hover, no fading, no full-size viewer), and the prompt, name and
   LoRAs are hidden. It stays on — across jobs and restarts — until you press it again.
-- **Browse** finished images with `←` / `→` or the arrows on the image — while a job renders, too. Each image you
-  land on shows its name and prompt (greyed, with Reuse). The prompt's ✕ brings your draft back and keeps the image —
-  arrows then change only the image, and the status line offers *Show prompt*; the image's ✕ (or `Esc`) returns to
-  your draft and the live render.
-  On the latest result, the ✕ clears the canvas (`←` brings it back).
+- The picture's actions (img2img, upscale, open, folder, LoRA thumbnail, delete) sit in a column beside it, shown while
+  you hover the picture or the column.
+- **Gallery** (the tab left of Generating): your finished pictures, browsed with `←` / `→` or the arrows on the picture
+  — while a job renders, too. `←` from Generating steps into it; `→` past the newest brings you back. Each picture
+  shows its name and prompt (greyed, with **Reuse prompt** / **Reuse all**). Pictures cross-fade; when the shape
+  changes, the frame crops in on the picture you leave and opens out over the next. Reusing a prompt keeps that
+  picture on show as a reference while you edit, until you press ▶ or ✕.
+- **File names:** hover a finished picture's title to see its file name around it (`#27 Rome-003.png`). Edit the title
+  and press Enter to **rename** the file — it joins the series you typed with its next number, the name stored in the
+  PNG follows, and Undo puts it back. Without a series name files are named by date and seed.
+- **Status:** while a job renders the bar under the picture shows its steps, time left and Stop; the ring round the
+  **G** of Generating fills with its progress wherever you are, and ▶ shows how many are queued. An empty Generating
+  says what's next and the estimated time. Hover the MP pill for the exact pixel size.
 - **Notifications** say only that an image is ready — never the prompt or the name. Reopening Kiln tells you how
   many images finished while it was closed.
 - `?` lists every keyboard shortcut.
 - Click for a **full-size viewer** (fit ↔ 100%, wheel zoom, drag to pan, arrows to browse); double-click opens the
-  file in your default app. Hover actions: upscale, open, show in folder, use as a LoRA thumbnail.
-- Optional **series name** → files are numbered `rainy-library-001.png`, `-002`, … Without one: date and seed.
+  file in your default app.
 
 **LoRA library**
 - Faces, Style and Utility as compact items — thumbnail, name, switch, weight — in as many centred columns as fit.
@@ -125,17 +140,12 @@ The queue shows which variant each job got, so a good result can be traced back.
 - **One face at a time** — LoRAs are global weight changes, so two face LoRAs blend into one face; Kiln swaps
   instead of stacking (switchable).
 
-**Layout**
-- The prompt box keeps the width you give it (drag the divider; up to 900 px). Drag it by any empty spot to snap it
-  to the top, middle or bottom of the image, or make it **match the image height** / **full height**.
-- The right-hand box — image, Queue, LoRAs, PNG Info — is the same rectangle in every tab and takes up window
-  changes; the two are centred together. Narrow windows stack the image above the prompt, with a draggable split.
-
 **Also**
 - PNG Info: drop any Forge PNG to read its settings and send them to the prompt.
 - Ratio picker with shape previews · ~1 / 1.5 / 2 MP presets (all sides multiples of 16).
 - Window title and favicon show progress; a desktop notification when the queue empties (on, silent or off).
 - Closing the Kiln window stops the server once the queue is done.
+- Forge's own UI: Settings → Output → Open Forge.
 - Themes for the play button and progress bar; fonts: Geist, Inter, Manrope, IBM Plex Sans, Satoshi (optional, see Offline).
 
 ## How it works

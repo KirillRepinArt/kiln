@@ -2,6 +2,29 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
+## v0.4 — 2026-10-19 (motion, Vertical, Gallery)
+
+- **Motion:** one glide for every layout change (Material 3 emphasized easing); layout switches cross-fade while the
+  picture glides to its new place; tab switches are a short fade.
+- **Gallery** — the tab left of Generating: browsing finished pictures (`←` steps in, `→` past the newest steps back).
+  Pictures cross-fade (the neighbours preloaded); a new shape crops in on the old picture and opens out over the next,
+  in one continuous move. A picture of the same shape keeps its place between Generating and the Gallery. Reusing a
+  prompt keeps its picture on show as a reference.
+- **Arrows** on the picture: the one you click stays where it is while your pointer is on it.
+- **Vertical** layout: a centred column (up to 16:9 at its height) with equal gaps around the picture; the picture's
+  edges size it; the prompt box gets side edges, **Fit width** and a fixed slot (the picture never moves with the text).
+- **Edges:** a dashed outline 12 px round the picture on hover (fades in and out softly); the band up to it is the
+  handle; no grip bars.
+- **File names:** hover a finished picture's title for its file name; edit it to **rename** the file (series + next
+  number, the PNG's name chunk follows, Undo).
+- **Status:** the bar only while rendering; an empty Generating says what's next and the estimated time; the running
+  job's progress as a ring round the G of Generating; the queue count on ▶; the pixel size on the MP pill's tooltip.
+- Layout menu as icons; the same Reuse buttons on every picture; the prompt's text fills the box (no character cap);
+  Forge's own UI moved to Settings; Aurora's glow only round the live render, cut out under glass panels (a
+  flickering band in the prompt box).
+- **Fixes:** the prompt box's empty scrollbar strip flickered on glass; prompts of different lengths moved the picture
+  in Vertical; the progress bar crossed the picture during shape changes; the Queue → Generating switch lagged.
+
 ## v0.3 — 2026-10-18 (Phase 2a: layout)
 
 - **Layout:** the prompt and the picture as one centred pair; the image area hugs the picture in Generating; edges for

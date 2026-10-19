@@ -73,6 +73,7 @@ function grow(){} // column widths now come from sizeFrame()
    follows the cursor and the other one holds still; on release it all glides into place (height → width → centring). */
 (function(){let d=null;
  document.querySelectorAll(".hedge").forEach(h=>{
+  h.addEventListener("pointerenter",()=>$("right").classList.add("edgehint"));h.addEventListener("pointerleave",()=>{if(!d)$("right").classList.remove("edgehint")});
   h.addEventListener("pointerdown",ev=>{if(document.querySelector(".app.stacked")||S.view!=="gen"||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);
    const f=$("frame");d={e:h.dataset.e,y0:ev.clientY,h0:f.offsetHeight,t0:f.offsetTop,full:$("stage").getBoundingClientRect().height-BAR};
    document.body.classList.add("vresizing","laydrag");$("right").classList.add("edgehint")});

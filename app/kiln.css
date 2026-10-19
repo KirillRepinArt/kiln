@@ -949,3 +949,21 @@ body.jobrun .tab .tring{display:inline-block}
 body.glass .ltitle .plbl.donename .pname:not(:focus):not([readonly]),body.glass .ltitle .plbl.donename .pname:not(:focus):not([readonly]):hover{background:transparent!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 .ltitle .plbl.donename .pname:not(:focus){cursor:text}
 .tab .tring{-webkit-mask-composite:source-in!important;mask-composite:intersect!important}   /* a ring, not a pie: the two masks intersect */
+
+/* ---- 2026-10-19 ---- */
+/* the Generating ring takes the label's colour (a progress mark inside a word follows the text, like the system's own
+   small rings): a faint track, the done part in the tab's grey. No gradient competing with the letters */
+.tab .tring{background:currentColor!important;animation:none!important;opacity:.85}
+/* Emerald: twelve 30° segments light up one by one in the theme's green — a terminal readout that ticks, not sweeps */
+body.skin-emerald .tab .tring{background:var(--a1)!important;opacity:1;
+ -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.6px)),conic-gradient(#000 calc(round(down,var(--p)*12,1)*30deg),rgba(0,0,0,.2) 0),repeating-conic-gradient(#000 0 25deg,transparent 25deg 30deg)!important;
+ -webkit-mask-composite:source-in,source-in!important;
+ mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.6px)),conic-gradient(#000 calc(round(down,var(--p)*12,1)*30deg),rgba(0,0,0,.2) 0),repeating-conic-gradient(#000 0 25deg,transparent 25deg 30deg)!important;
+ mask-composite:intersect,intersect!important;transition:none!important}
+/* the file name round the title: a soft entrance — it fades in and drifts out of the title over ~0.45 s, leaves quicker */
+.fnpre,.fnsuf{display:inline!important;position:absolute;top:50%;pointer-events:none;opacity:0;transition:opacity .2s ease,transform .2s ease}
+.fnpre{transform:translate(8px,-50%)}.fnsuf{transform:translate(-8px,-50%)}
+.plbl.fnon .fnpre,.plbl.fnon .fnsuf{opacity:1;transform:translate(0,-50%);transition:opacity .45s cubic-bezier(.2,.7,.2,1),transform .55s cubic-bezier(.2,.7,.2,1)}
+/* the top / bottom grab strips sit mostly INSIDE the picture: on a full-height picture the panel clips anything above or
+   below it, which left only ~4 px to hover */
+.hedge.t{top:-3px!important}.hedge.b{bottom:-3px!important}

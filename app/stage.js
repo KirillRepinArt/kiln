@@ -198,11 +198,16 @@ let resultStale=false;function shownDone(){return browsed()||(resultStale?null:l
 let browseId=null;
 function doneList(){return jobs.filter(j=>j.status==="done")}
 function browsed(){if(browseId==null)return null;const b=jobs.find(j=>j.id===browseId&&j.status==="done");if(!b)browseId=null;return b||null}
+/* changing the picture in the Gallery "breathes": the box pulls in a little on the way (~3 % when the shape changes,
+   ~1.5 % between pictures of the same shape) and opens out to the new picture — a refocus, not a stretch. No overshoot */
+function frameDip(shape){if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;const f=$("frame"),d=shape?.97:.985;
+ try{f.getAnimations().filter(a=>a.id==="dip").forEach(a=>a.cancel());const a=f.animate([{scale:"1"},{scale:String(d),offset:.42},{scale:"1"}],{duration:shape?460:340,easing:"cubic-bezier(.3,0,.2,1)"});a.id="dip"}catch(e){}}
 function genNav(dir,dry){const run=!!current(),b=browsed(),cur=b||(run?null:shownDone()),L=doneList();
  let i=cur?L.findIndex(x=>x.id===cur.id):L.length;if(i<0)i=L.length;const n=i+dir;let id;
  if(n<0)return false;if(n>=L.length){if(!b)return false;id=null}else id=L[n].id; // past the newest: back to your working view — clean when idle (the picture lives in the Gallery)
- if(!dry){if(window.xfadeSnap&&(id!=null||run))xfadeSnap();browseId=id;   /* a fade only when something replaces it — into an empty screen the picture just goes */resultStale=id==null&&!run;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else if(!peekOff)loadJob(L[n]);
-  if(window.preload)for(const q of [L[n-1],L[n+1]])if(q)preload(q)}return true}   /* the neighbours decoded before you ask for them */
+ if(!dry){if(window.xfadeSnap&&(id!=null||run))xfadeSnap();const fw=$("frame").style.width,fh=$("frame").style.height;browseId=id;   /* a fade only when something replaces it — into an empty screen the picture just goes */resultStale=id==null&&!run;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else if(!peekOff)loadJob(L[n]);
+  if(window.preload)for(const q of [L[n-1],L[n+1]])if(q)preload(q);
+  if(id!=null&&S.view==="gen")frameDip(Math.abs(parseFloat($("frame").style.width)/parseFloat($("frame").style.height)-parseFloat(fw)/parseFloat(fh))>.02)}return true}   /* the neighbours decoded before you ask for them */
 function vNav(dir,dry){const L=doneList(),i=L.findIndex(x=>x.id===(V.job&&V.job.id)),t=L[i+dir];if(i<0||!t)return false;if(!dry)openViewer(t);return true}
 function navFn(el){return el.closest("#viewer")?vNav:genNav}
 function updNav(){document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("off",!navFn(b)(+b.dataset.nav,true)))}

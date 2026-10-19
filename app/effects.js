@@ -115,9 +115,11 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
   /* Aurora's halo: the image box glows (skins.js makeHalo). On while a job runs, fading out with the night layer after
      the finish. A step's meteor makes it respond, the finish a little more — always with a soft rise (~0.4 s) and fall,
      never a jump. ~20 fps: it moves slowly. */
-  {const gm=(S.set||{}).glow||"gen",on=cover0==="camera"&&gm!=="off"&&S.view==="gen"&&nstr>0;
-   fgA+=((on?Math.min(1,nstr/HOLD):0)-fgA)*Math.min(1,dt/400);
-   const fr=$("frame");
+  {const gm=(S.set||{}).glow||"gen",run=!!current(),on=cover0==="camera"&&gm!=="off"&&(run||S.view==="gen"&&nstr>0)&&!$("modal").classList.contains("show");
+   /* it's a kiln: while a job runs the fire shows wherever you are — round the render, the picture you browse, or the
+      Queue / LoRAs / PNG Info panel; after the finish it fades with the night layer as before */
+   fgA+=((on?(run?1:Math.min(1,nstr/HOLD)):0)-fgA)*Math.min(1,dt/400);
+   const fr=S.view==="gen"?$("frame"):$("rpanel");if(fr.id!=="frame")$("frame").classList.remove("halo");
    if(fgA>.01){if(force||t-haloT>=(t-finishAt<2200?14:48)){haloT=t;          /* full frame rate while the finish runs */
      const gi=cam.glowInfo(),env=(ms,dec)=>ms<0?0:ms<400?(x=>x*x*(3-2*x))(ms/400):Math.exp(-(ms-400)/dec),boost=.3*env(t-gi.met,1300)+(f=>f<0?0:f<1?.8*f*f*f:f<1.15?.8+.6*(x=>x*x*(3-2*x))((f-1)/.15):1.4*Math.exp(-(f-1.15)*2.2))((t-finishAt)/1400);   /* builds with the crescendo, exhales at the release */
      const a=fr.getBoundingClientRect(),dp=devicePixelRatio||1,R=95,   /* the bloom's reach (css px): 130 read too wide on screen */cw=Math.round((a.width+2*R)*dp),ch=Math.round((a.height+2*R)*dp);

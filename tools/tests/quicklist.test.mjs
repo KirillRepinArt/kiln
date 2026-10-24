@@ -78,16 +78,20 @@ export async function startWhileRunning(k, t) {
   await k.job("a slow one", { steps: 20 }); await k.until(`!!current()`, 20000, 100); await k.sleep(800);
   const s = await k.ev(`(()=>{const p=getComputedStyle($("play")),b=getComputedStyle($("badge"),"::before");return{anim:p.animationName,bg:p.backgroundImage.slice(0,40),fill:getComputedStyle(document.querySelector("#play svg path")).fill,ring:b.content!=="none"&&b.display!=="none"}})()`);
   t.ok(s.anim === "flow" && /gradient/.test(s.bg), "the whole button flows with the progress bar's gradient", s);
-  t.ok(!/255, 255, 255/.test(s.fill) && /color-mix|oklab|rgba/.test(s.fill), "the triangle: smoked glass (dark, see-through), not a white fill", s);
+  t.ok(/255, 255, 255/.test(s.fill), "the triangle: bright while working (dark when idle)", s);
   t.ok(s.ring, "a ring round the queue count", s);
 }
 startWhileRunning.opts = { step: 1 };
 
 export async function dockZonesGlass(k, t) {
   await k.mouse(2, 2); await k.sleep(1000);
-  await k.ev(`(document.querySelectorAll(".dockzone").forEach(z=>z.classList.add("show")),1)`); await k.sleep(300);
-  const z = await k.ev(`[...document.querySelectorAll(".dockzone")].map(z=>{const b=getComputedStyle(z,"::before");return{c:z.className,glass:b.content!=="none"&&/blur/.test(b.backdropFilter),pad:getComputedStyle(z).paddingTop}})`);
-  t.ok(z.length === 3 && z.every(x => x.glass), "all three drop zones are glass", z);
-  t.ok(z.every(x => x.pad === "0px"), "none picks up the prompt box's styles through a class name", z);
-  await k.shot("dockzones");
+  const blur = () => k.ev(`[...document.querySelectorAll(".dockzone")].map(z=>parseFloat(getComputedStyle(z).backdropFilter.split("blur(")[1]||"0"))`);
+  await k.ev(`(document.querySelectorAll(".dockzone").forEach(z=>z.classList.add("show")),1)`); await k.sleep(40);
+  const early = await blur(); await k.sleep(600); const late = await blur();
+  t.ok(early.every(b => b < 14) && late.every(b => b > 15.5), "all three condense in: the glass blur grows from nothing", { early, late });
+  t.ok(await k.ev(`[...document.querySelectorAll(".dockzone")].every(z=>getComputedStyle(z).opacity==="1")`), "never by opacity (it would switch the glass off)");
+  t.ok(await k.ev(`[...document.querySelectorAll(".dockzone")].every(z=>getComputedStyle(z).paddingTop==="0px")`), "none picks up the prompt box's styles through a class name");
+  await k.ev(`(document.querySelectorAll(".dockzone").forEach(z=>z.classList.remove("show")),1)`); await k.sleep(40);
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".dockzone")).display!=="none"`), "letting go: they fade back out rather than vanish");
+  await k.sleep(600); t.ok(await k.ev(`getComputedStyle(document.querySelector(".dockzone")).display==="none"`), "…and are gone after");
 }

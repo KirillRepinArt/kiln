@@ -2,6 +2,28 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
+## v0.5 — 2026-10-24 (consolidation)
+
+- **The picture area, one set of rules:** Generating is the live view. A finished picture stays there at full quality
+  until the next render has a picture of its own (✕ clears it; a stopped render brings back the picture before it). The
+  Gallery tab opens on the picture you're looking at; the Generating tab always shows what's being made.
+- **Vary:** ▶ in the Gallery (a die) queues that picture again with a new seed — same prompt, settings, LoRAs and
+  series; your draft stays. **Reuse** takes you to Generating with the picture as a reference, which a running render
+  doesn't push away.
+- Click the render to see its prompt; the status line says when the render isn't your draft. A picture that finishes
+  while you're elsewhere shows as a card under the Generating tab.
+- Deleting in the Gallery lands on the next picture in the way you were stepping.
+- ✕ Clear on the prompt (Undo / Ctrl+Z) and on the LoRA search; the privacy eye on the empty frame too.
+- Start while a job runs: the bar's flowing gradient over the whole button, a ring round its queue count. The
+  Generating ring is cut clear of the letters.
+- Vertical: the prompt box fills its slot; its bottom edge sizes it. Glass drop zones that condense in; pressing the
+  prompt outlines the whole block. Kiln's messages appear by the prompt, not over the controls. Clearer Settings
+  section names.
+- **Fixes:** the title in Vertical couldn't be clicked (the picture area's empty space covered it); a drag could stay
+  stuck after a lost mouse release; job numbers were reused after removals.
+- Under the hood: the stylesheet rewritten (verified to change nothing visible: every element's style compared in 115
+  states), and the picture area driven by one state machine.
+
 ## v0.4 — 2026-10-19 (motion, Vertical, Gallery)
 
 - **Motion:** one glide for every layout change (Material 3 emphasized easing); layout switches cross-fade while the

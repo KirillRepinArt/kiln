@@ -65,7 +65,7 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
   (the original file), **Save back** (if Kiln still holds it from this session), **Render again** (same seed, same
   file name) or **Remove from list**.
 - An **upscale** goes to the front of the line: seconds, right after the current image.
-- Click a finished job to open it in the Generating view. Click a waiting or running job — or the status line under
+- Click a finished job to open it in the Gallery. Click a waiting or running job — or the status line under
   the image — to **peek** at its prompt without touching your draft, then **Reuse prompt** or **Reuse all**
   (settings and LoRAs; its seed too if the 🔒 next to it is on — off gives a variation). Reusing a named image also
   takes its name, so the next one joins the series. The same buttons, in the same places, on every picture.
@@ -73,7 +73,7 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
   steps, counted down while the job runs (on real history this halved the error of a per-megapixel average).
   The queue total uses the same numbers.
 
-**Prompt editor** (CodeMirror 6, with spell check)
+**Prompt editor** (CodeMirror 6, with spell check) — ✕ at its top right clears it in one click (Undo, or `Ctrl+Z`)
 
 | Write | Shows as | Sent to the model |
 |---|---|---|
@@ -96,12 +96,14 @@ The queue shows which variant each job got, so a good result can be traced back.
 - A wider window never stretches the panels past the widths you chose — the margins grow; a narrower one takes the
   margins first, then shrinks both panels, and they come back when there's room.
 - **Layout menu** (the icon next to the gear): prompt on the left, on the right, or below the picture, and Reset sizes.
-  Or drag the prompt by its name line onto a drop zone. Switching cross-fades while the picture glides to its new place.
+  Or drag the prompt by its name line onto one of the glass drop zones (pressing it outlines the whole block that
+  moves). Switching cross-fades while the picture glides to its new place.
   A narrow window stacks either way.
 - **Vertical** (prompt below): the picture sits in a centred column (up to a 16:9 box at its height), with equal gaps
   above and below; its top, bottom and side edges size it. The prompt box has its own side edges and a **Fit width**
-  button (as wide as the picture); the line above its name sets its largest height — it fits its text below that, so
-  the picture never moves with what the prompt says.
+  button (as wide as the picture). The box fills a slot of its own height — set it with the line above its name or its
+  bottom edge (which follows the pointer; the picture gives up the room when you let go) — so the picture never moves
+  with what the prompt says.
 - Side by side: drag the prompt by any empty spot to snap it to the top, middle or bottom of the picture, or make it
   **match the image height** / **full height**.
 - Nothing moves under the cursor: while a menu in the prompt is open the layout holds; the picture's arrow you click
@@ -109,8 +111,16 @@ The queue shows which variant each job got, so a good result can be traced back.
 
 **Picture**
 - Live preview under a soft cover that lifts as the steps land; a burst of embers when it's done.
+- **What the picture area shows**, in one rule set: **Generating** is the live view — the render, or, when a job
+  finishes, the finished picture at full quality, which stays until the next render has a picture of its own (✕ clears
+  it; a stopped render brings back the picture before it). The **Gallery** tab opens on the picture you're looking at;
+  the **Generating** tab always takes you back to what's being made. Arrows always change the picture.
+- Click the render to see its prompt in the box (✕ / `Esc` gives your draft back); while you edit something else, the
+  status line says the render is *another prompt*.
+- A picture that finishes while you're on another tab, or browsing the Gallery, shows as a small card under the
+  Generating tab — click it to open the picture.
 - **Cover** (Settings → Cover): full, light or off, optionally skipped on jobs under 10 s; hover the image to peek.
-- **Privacy** — the eye at the picture's top right, or `F9` (even while typing): the picture is covered outright,
+- **Privacy** — the eye at the picture's top right (there even with no picture), or `F9` (even while typing): the picture is covered outright,
   running or finished (no transparency, no peek on hover, no fading, no full-size viewer), and the prompt, name and
   LoRAs are hidden. It stays on — across jobs and restarts — until you press it again.
 - The picture's actions (img2img, upscale, open, folder, LoRA thumbnail, delete) sit in a column beside it, shown while
@@ -118,15 +128,20 @@ The queue shows which variant each job got, so a good result can be traced back.
 - **Gallery** (the tab left of Generating): your finished pictures, browsed with `←` / `→` or the arrows on the picture
   — while a job renders, too. `←` from Generating steps into it; `→` past the newest brings you back. Each picture
   shows its name and prompt (greyed, with **Reuse prompt** / **Reuse all**). Pictures cross-fade; when the shape
-  changes, the frame crops in on the picture you leave and opens out over the next. Reusing a prompt keeps that
-  picture on show as a reference while you edit, until you press ▶ or ✕.
+  changes, the frame crops in on the picture you leave and opens out over the next. **▶ in the Gallery is Vary** (a die
+  instead of the triangle): the picture again with a new seed — same prompt, settings, LoRAs and series — your draft
+  untouched. **Reuse** takes you to Generating with the picture kept as a reference while you edit (a running render
+  doesn't push it away; a result that lands behind it is announced in the status line), until ▶ or ✕. Deleting lands on
+  the next picture in the way you were stepping.
 - **File names:** hover a finished picture's title to see its file name around it (`#27 Rome-003.png`). Edit the title
   and press Enter to **rename** the file — it joins the series you typed with its next number, the name stored in the
   PNG follows, and Undo puts it back. Without a series name files are named by date and seed.
 - **Status:** while a job renders the bar under the picture shows its steps, time left and Stop; the ring round the
-  **G** of Generating fills with its progress wherever you are, and ▶ shows how many are queued. An empty Generating
+  **G** of Generating (cut clear of the letters) fills with its progress wherever you are; ▶ flows with the bar's colours
+  and its queue count gets a ring of its own. An empty Generating
   says what's next and the estimated time. Hover the MP pill for the exact pixel size.
-- **Notifications** say only that an image is ready — never the prompt or the name. Reopening Kiln tells you how
+- Kiln's own messages appear by the prompt, never over the controls. **Notifications** say only that an image is
+  ready — never the prompt or the name. Reopening Kiln tells you how
   many images finished while it was closed.
 - `?` lists every keyboard shortcut.
 - Click for a **full-size viewer** (fit ↔ 100%, wheel zoom, drag to pan, arrows to browse); double-click opens the
@@ -136,7 +151,7 @@ The queue shows which variant each job got, so a good result can be traced back.
 - Faces, Style and Utility as compact items — thumbnail, name, switch, weight — in as many centred columns as fit.
   The thumbnail slider sizes the items. **Active** LoRAs sit on top, editable right there.
 - Readable names from common file naming (`krea2_<name>_v2_large_onetrainer` → *Name · v2 · large*),
-  double-click to rename, favourites, recent, search.
+  double-click to rename, favourites, recent, search (✕ clears it).
 - **One face at a time** — LoRAs are global weight changes, so two face LoRAs blend into one face; Kiln swaps
   instead of stacking (switchable).
 

@@ -21,7 +21,7 @@ function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=
  $("qwrap").innerHTML=(run.length?`<div class="qsec">Generating now</div>${run.map(j=>item(j,"run")).join("")}`:"")+
   `<div class="qsec"><span>Up next ${pend.length?`· ${pend.length} · ~${fmt(left)}`:""}${window.qPaused?' · <b class="paused">paused</b>':""}</span><button id="pauseQ" data-tip="${window.qPaused?"Start the waiting jobs again":"The current image finishes; nothing new starts until you resume"}">${window.qPaused?"Resume":"Pause after this"}</button></div>`+
   (pend.length?pend.map(j=>item(j,"pend")).join(""):'<div class="empty">Nothing queued</div>')+
-  (done.length?(QS.size?qsBar(done):"")+(QS.size?"":`<div class="qsec"><span>Finished · ${done.length}</span><span>${done.some(j=>j.missing)?`<button id="rmMissing">Remove missing (${done.filter(j=>j.missing).length})</button> `:""}<button id="clearDone">Clear list</button></span></div>`)+done.map(j=>item(j,"done")).join(""):"");
+  (done.length?`<div class="qsec qfin${QS.size?" qbar":""}" id="qfin">${finHead(done)}</div>`+done.map(j=>item(j,"done")).join(""):"");
  done.forEach(j=>{const c=document.querySelector(`canvas[data-th="${j.id}"]`);if(c&&j.status==="done"&&!j.missing)paint(c,j,1)});
  if(window.LIVE){const have=new Set(done.map(j=>j.id));for(const id of QT.keys())if(!have.has(id))QT.delete(id);
   $("qwrap").querySelectorAll("[data-tth]").forEach(ph=>{const id=+ph.dataset.tth;let im=QT.get(id);
@@ -35,26 +35,32 @@ function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=
 const QT=new Map();
 /* what the list shows: unchanged → opening the tab rebuilds nothing */
 function queueSig(){return jobs.map(j=>`${j.id}:${j.status}:${j.file||""}:${j.missing?1:0}:${j.name||""}:${j.est||""}`).join("|")+"|"+[...QS].join(",")+"|"+!!window.qPaused}
+function finHead(done){if(QS.size)return qsBar(done);
+ return `<span>Finished · ${done.length}</span><span>${done.some(j=>j.missing)?`<button id="rmMissing">Remove missing (${done.filter(j=>j.missing).length})</button> `:""}<button id="clearDone">Clear list</button></span>`}
+/* selecting changes nothing but the highlight and the header's contents (it rebuilt the whole list, and the header grew) */
+function qsUpdate(){const done=qsFinished(),W=$("qwrap");for(const id of [...QS])if(!done.some(j=>j.id===id))QS.delete(id);
+ W.classList.toggle("selecting",QS.size>0);W.querySelectorAll(".qi").forEach(q=>q.classList.toggle("sel",QS.has(+q.dataset.id)));
+ const h=$("qfin");if(h){h.classList.toggle("qbar",QS.size>0);h.innerHTML=finHead(done)}renderQueueInner.sig=queueSig()}
 function qsBar(done){if(!QS.size)return"";const sel=done.filter(j=>QS.has(j.id)),names=[...new Set(sel.map(j=>(j.name||"").trim()))];
  let series="";if(names.length===1&&names[0]){const all=done.filter(j=>(j.name||"").trim()===names[0]).length;if(all>sel.length)series=`<button id="qsSeries" data-tip="Select every “${esc(names[0])}” picture">All “${esc(names[0])}” · ${all}</button>`}
- return `<div class="qsec qbar"><span class="qn"><b>${QS.size}</b> of ${done.length} selected</span>${series}${sel.length<done.length?'<button id="qsAll">Select all</button>':""}<span class="qgap"></span>
-  <button id="qsRemove" data-tip="Take them off the list — the files stay">Remove from list</button><button id="qsDel" class="qdel" data-tip="To the Recycle Bin, with Undo (Del)">Delete</button><button id="qsX" class="qx" data-tip="Clear the selection (Esc)">${IC.x}</button></div>`}
+ return `<span class="qn"><b>${QS.size}</b> of ${done.length} selected</span>${series}${sel.length<done.length?'<button id="qsAll">Select all</button>':""}<span class="qgap"></span>
+  <button id="qsRemove" data-tip="Take them off the list — the files stay">Remove from list</button><button id="qsDel" class="qdel" data-tip="To the Recycle Bin, with Undo (Del)">Delete</button><button id="qsX" class="qx" data-tip="Clear the selection (Esc)">${IC.x}</button>`}
 function qsFinished(){return jobs.filter(j=>j.status==="done"||j.status==="cancelled").reverse()}
 function qsClick(j,range){const L=qsFinished();
- if(range&&qsAnchor!=null){const a=L.findIndex(x=>x.id===qsAnchor),b=L.findIndex(x=>x.id===j.id);if(a>=0&&b>=0){for(let i=Math.min(a,b);i<=Math.max(a,b);i++)QS.add(L[i].id);renderQueue();return}}
- if(QS.has(j.id))QS.delete(j.id);else QS.add(j.id);qsAnchor=j.id;renderQueue()}
-function qsClear(){if(!QS.size)return false;QS.clear();qsAnchor=null;renderQueue();return true}
+ if(range&&qsAnchor!=null){const a=L.findIndex(x=>x.id===qsAnchor),b=L.findIndex(x=>x.id===j.id);if(a>=0&&b>=0){for(let i=Math.min(a,b);i<=Math.max(a,b);i++)QS.add(L[i].id);qsUpdate();return}}
+ if(QS.has(j.id))QS.delete(j.id);else QS.add(j.id);qsAnchor=j.id;qsUpdate()}
+function qsClear(){if(!QS.size)return false;QS.clear();qsAnchor=null;qsUpdate();return true}
 function qsDelete(){if(!QS.size)return;const ids=[...QS];QS.clear();qsAnchor=null;if(window.deleteMany)deleteMany(ids);else toast("Prototype: would delete "+ids.length);renderQueue()}
 $("qwrap").addEventListener("click",e=>{
  if(e.target.closest("#qsX")){qsClear();return}
- if(e.target.closest("#qsAll")){qsFinished().forEach(j=>QS.add(j.id));renderQueue();return}
- if(e.target.closest("#qsSeries")){const n=jobs.find(j=>QS.has(j.id)),nm=(n&&n.name||"").trim();qsFinished().forEach(j=>{if((j.name||"").trim()===nm)QS.add(j.id)});renderQueue();return}
+ if(e.target.closest("#qsAll")){qsFinished().forEach(j=>QS.add(j.id));qsUpdate();return}
+ if(e.target.closest("#qsSeries")){const n=jobs.find(j=>QS.has(j.id)),nm=(n&&n.name||"").trim();qsFinished().forEach(j=>{if((j.name||"").trim()===nm)QS.add(j.id)});qsUpdate();return}
  if(e.target.closest("#qsDel")){qsDelete();return}
  if(e.target.closest("#qsRemove")){const ids=[...QS];QS.clear();if(window.removeMany)removeMany(ids);renderQueue();return}
  const row=e.target.closest(".qi");if(!row||e.target.closest("[data-rm],[data-x],.seedc"))return;const j=jobs.find(x=>x.id==+row.dataset.id);
  if(j&&(j.status==="done"||j.status==="cancelled")&&(e.target.closest("[data-ck]")||e.ctrlKey||e.metaKey||e.shiftKey||QS.size)){e.stopImmediatePropagation();qsClick(j,e.shiftKey);return}},true);
 document.addEventListener("keydown",e=>{if(S.view!=="queue"||$("modal").classList.contains("show"))return;const a=document.activeElement;if(a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))return;
- if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="a"){e.preventDefault();qsFinished().forEach(j=>QS.add(j.id));renderQueue();return}
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="a"){e.preventDefault();qsFinished().forEach(j=>QS.add(j.id));qsUpdate();return}
  if(e.key==="Escape"&&qsClear()){e.stopImmediatePropagation();return}
  if(e.key==="Delete"&&QS.size){e.preventDefault();e.stopImmediatePropagation();qsDelete()}},true);
 /* a row's picture the server doesn't have yet: made once from the file (live.js), then it's a small file for good */

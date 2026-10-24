@@ -13,7 +13,10 @@ export async function selecting(k, t) {
   await click(k, ids[0]); await k.sleep(300);
   t.ok(await k.ev(`document.body.dataset.pic==="browse"`), "no selection: a click opens the picture, as before");
   await k.ev(`(showView("queue"),1)`); await k.sleep(300);
+  const before = await k.ev(`(window.__rows=[...document.querySelectorAll(".qi")],document.querySelector(".qi").getBoundingClientRect().top)`);
   await click(k, ids[0], { ctrl: true }); await k.sleep(200);
+  t.ok(await k.ev(`[...document.querySelectorAll(".qi")].every((q,i)=>q===window.__rows[i])`), "selecting doesn't rebuild the list (the same rows, nothing reloads)");
+  t.near(await k.ev(`document.querySelector(".qi").getBoundingClientRect().top`), before, 0.5, "…and nothing moves (the header keeps its height)");
   t.ok(JSON.stringify(await sel(k)) === JSON.stringify([ids[0]]) && await k.ev(`!!document.querySelector(".qbar")&&/1 of 6 selected/.test(document.querySelector(".qbar").textContent)`), "Ctrl-click selects; the bar says 1 selected", await sel(k));
   t.ok(await k.ev(`/All “Fox” · 3/.test(document.querySelector(".qbar").textContent)`), "it offers the whole series");
   await k.ev(`($("qsSeries").click(),1)`); await k.sleep(200);

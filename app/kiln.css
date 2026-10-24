@@ -187,7 +187,7 @@ textarea#prompt.peek{color:#b6bcc0}
 .pwrapT::after{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000);mask-image:linear-gradient(transparent,#000)}
 .pwrapT.scrolled::before,.pwrapT.more::after{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .pwrapT.ovf .cm-scroller{scrollbar-gutter:stable}
-.pwrapT .cm-scroller::-webkit-scrollbar-track{margin:44px 0 10px}
+.pwrapT .cm-scroller::-webkit-scrollbar-track{margin:32px 0 10px}   /* starts just under the ✕ (which ends where the text starts, 28 px) */
 body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track{margin-bottom:calc(var(--ctrlh,64px) + 4px)}   /* the scrollbar keeps its room only while the text overflows (editor.js) */
 .pwrapT .cm-content{padding:28px 0 10px 0;caret-color:#fff;font-size:15px}
 .pwrapT .cm-line{padding:0 16px 0 28px}   /* with the editor's 12 px margin: 28 px on the right too */   /* the text fills the box: you set its width yourself */

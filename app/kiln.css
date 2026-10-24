@@ -1,264 +1,517 @@
+/* Kiln · the stylesheet (rewritten 2026-10-24 for v0.5: one rule per thing, grouped by part of the screen).
+   Order: tokens · base · app layout · edges · prompt column · prompt box · controls · chips · tabs · picture ·
+   status row · panels (Queue, LoRAs, PNG Info) · dialogs · overlays · glass · skins · motion.
+   States are classes JS sets (body.glass / .private / .jobrun…, .app.stacked / .pright, .frame.has / .held…).
+   !important is kept only where a rule must beat an inline style or every other rule (cursor and transition
+   switches while you drag, the morph); each one says why. */
+
+/* ======================= tokens ======================= */
 :root{
-  --bg:#000000; --panel:#1C1C1E; --raised:#2A2A2D; --raised2:#343438; --line:#333338;
-  --text:#EDEDED; --muted:#9A9A9F; --faint:#5E5E64;
+  --bg:#000000; --text:#EDEDED; --muted:#9A9A9F; --faint:#5E5E64; --sel:#FFFFFF;
+  /* the greys lean a few percent toward the theme, so a skin feels whole (--tw = strength) */
+  --tw:6%;
+  --panel:color-mix(in oklab,#1C1C1E,var(--a1) var(--tw)); --raised:color-mix(in oklab,#2A2A2D,var(--a1) var(--tw));
+  --raised2:color-mix(in oklab,#343438,var(--a1) var(--tw)); --line:color-mix(in oklab,#333338,var(--a1) var(--tw));
   --a1:#FF8A00; --a2:#FF5E8A; --a3:#3FE0F0; --ink:#140b00;
   --grad:linear-gradient(135deg in oklch,var(--a1),var(--a2) 55%,var(--a3));
   --flow:linear-gradient(90deg in oklch,var(--a1),var(--a2),var(--a3),var(--a2),var(--a1));
   --r-panel:24px; --r-pill:999px;
   --ease:cubic-bezier(.2,.8,.2,1); --dur:.2s;
+  /* every layout glide: Material 3's emphasized decelerate — most of the way in the first third, then a long soft
+     settle. One curve for all the pieces that move together, or they'd drift apart mid-move */
+  --lay-t:.42s; --lay-e:cubic-bezier(.05,.7,.1,1);
+  /* the layout switch (Left / Right / Vertical): the picture morphs on this */
+  --sw-t:440ms; --sw-e:cubic-bezier(.3,0,0,1);
+  --liw:calc(var(--th,48px) + 250px);   /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
 }
+@property --p{syntax:"<number>";inherits:true;initial-value:0}
+
+/* ======================= base ======================= */
 *{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:15px/1.45 var(--font,Inter),"Geist","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:15px;height:15px}::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:#3c3c42;border-radius:10px;border:4px solid transparent;background-clip:padding-box;min-height:40px}
 ::-webkit-scrollbar-thumb:hover{background:#5a5a62;border-width:2px;background-clip:padding-box}
 ::-webkit-scrollbar-thumb:active{background:#74747c;border-width:2px;background-clip:padding-box}
 svg *{stroke-linecap:round;stroke-linejoin:round}
-.app{position:relative;z-index:1}
-/* Aurora's halo round the image box (skins.js makeHalo), behind the panels, drawn at device pixels */
-#fglow{position:fixed;left:0;top:0;width:0;height:0;z-index:0;pointer-events:none;opacity:0;mix-blend-mode:screen}
-.frame.halo{outline-color:transparent}
-#amb{position:absolute;inset:0;width:100%;height:100%;z-index:0;-webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent 100%);mask-image:radial-gradient(closest-side,#000 55%,transparent 100%);opacity:0;transition:opacity 1.2s var(--ease);pointer-events:none;image-rendering:auto;filter:saturate(1.25) brightness(.85)}
-#amb.on{opacity:.32}
-.stage,.prog{z-index:1}
-html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font,Inter),"Geist","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-.prog .txt,.qi .meta,.pill .val,.chip b,.card .st span,.rt .px,.pop .hint{font-variant-numeric:tabular-nums}
-.tab,.ptitle,.mcard h2{letter-spacing:-.01em}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 input,select,textarea{font:inherit;color:var(--text)}
 input[type=range]{accent-color:#E6E6EA}
-:root{--sel:#FFFFFF}
-/* the greys lean a few percent toward the theme, so a skin feels whole (--tw = strength) */
-:root{--tw:6%;--panel:color-mix(in oklab,#1C1C1E,var(--a1) var(--tw));--raised:color-mix(in oklab,#2A2A2D,var(--a1) var(--tw));--raised2:color-mix(in oklab,#343438,var(--a1) var(--tw));--line:color-mix(in oklab,#333338,var(--a1) var(--tw))}
-html,body{height:100%;overflow:hidden}
-.app{display:grid;grid-template-rows:minmax(0,1fr);grid-template-columns:var(--lc,minmax(360px,1fr)) 18px var(--rc,minmax(420px,1fr));padding:18px;height:100vh;margin:0 auto;align-items:stretch}
-.split{cursor:ew-resize;position:relative;touch-action:none}
-.split::after{content:"";position:absolute;top:50%;left:7px;width:4px;height:46px;margin-top:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
-.split:hover::after,.split.drag::after{opacity:1}
-body.resizing,body.resizing *{cursor:ew-resize!important;user-select:none}
-body.liveresize *,body.liveresize *::before,body.liveresize *::after{transition:none!important}
-/* expanded prompt: takes the whole window */
+button,.tab,.pill,.chip,.qi,.li,.fchips button{user-select:none;-webkit-user-select:none}
+.qi .meta,.pill .val,.rt .px,.pop .hint{font-variant-numeric:tabular-nums}
 
-@media (max-width:900px){.app{grid-template-columns:1fr}}
+/* ======================= app layout =======================
+   Side by side: the prompt and the picture area are one centred pair (stage.js layGeo sets the widths and margins);
+   Vertical (.stacked): the picture on top, the prompt under it; .pright mirrors the pair. */
+.app{position:relative;z-index:1;display:grid;grid-template-rows:minmax(0,1fr);height:100vh;margin:0 auto;padding:18px;align-items:stretch;
+ grid-template-columns:var(--mL,1fr) var(--pw,680px) var(--gap,18px) var(--rw,660px) var(--mR,1fr);transition:grid-template-columns var(--lay-t) var(--lay-e)}
+.app.pright{grid-template-columns:var(--mL,1fr) var(--rw,660px) var(--gap,18px) var(--pw,680px) var(--mR,1fr)}
+.app.stacked{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
+.app>.lcol,.app>.right{position:relative}
+.app>.lcol{grid-column:2}.app>.split{grid-column:3}.app>.right{grid-column:4}
+.app.pright>.lcol{grid-column:4}.app.pright>.right{grid-column:2}
+.app.stacked>*{grid-column:1/-1}
+/* side by side everything sits in row 1: auto-placement can't go back left, so with the prompt on the right the
+   picture area would wrap onto a second row */
+.app:not(.stacked)>.lcol,.app:not(.stacked)>.split,.app:not(.stacked)>.right{grid-row:1}
+.split{position:relative;touch-action:none;pointer-events:none;cursor:default}   /* the gap between the panels (its edges are .pedge) */
+.app.stacked .split{display:none}
+.lcol{min-height:0;min-width:0}
+.app.stacked .lcol{order:2;height:var(--lch,320px);margin-top:6px}
+.app.stacked #lcol{pointer-events:none}.app.stacked #lcol>*{pointer-events:auto}   /* its empty parts let the pointer through to the picture's edges */
+.right{display:flex;flex-direction:column;min-height:0;min-width:0}
+.app.stacked .right{order:1}
+.app.stacked>.right{justify-self:center;max-width:100%;transition:width var(--lay-t) var(--lay-e)}   /* Vertical: a centred column (stage.js sets its width) */
 
-/* ---------- left ---------- */
-.left{background:var(--panel);border:1px solid #26262a;border-radius:var(--r-panel);display:flex;flex-direction:column;position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--ltop,0px);height:var(--lh,auto);transition:top .25s cubic-bezier(.4,0,.2,1),height .25s cubic-bezier(.4,0,.2,1)}
+/* ======================= edges (drag to resize) =======================
+   .pedge: the panels' vertical edges (po = the prompt's outer edge, pi/ri = the divider, ro = the picture area's outer
+   edge); .sedge: the prompt box's sides in Vertical; .hedge: the picture's own edges; .vedge / .hsplit: the prompt's
+   height. No grip bars: the outline (.fithint) and the cursor are the signal. */
+.pedge{position:absolute;top:0;bottom:0;width:12px;z-index:8;cursor:ew-resize;touch-action:none}
+.pedge.po{left:-8px}.pedge.pi{right:-8px}.pedge.ro{right:-8px}
+.pedge.ri{left:-12px;width:16px}   /* the band reaches the picture's outline */
+.app.pright .pedge.po{left:auto;right:-8px}.app.pright .pedge.pi{right:auto;left:-8px}
+.app.pright .pedge.ri{left:auto;right:-12px}.app.pright .pedge.ro{right:auto;left:-8px}
+.app.stacked .pedge{display:none}
+.sedge{display:none;position:absolute;top:0;bottom:0;width:12px;z-index:8;cursor:ew-resize;touch-action:none}
+.sedge.l{left:-8px}.sedge.r{right:-8px}
+.app.stacked .sedge{display:block}
+.hedges{position:absolute;pointer-events:none;z-index:7}
+.rpanel.paneled .hedges{display:none}
+/* the grab strips cover the space between the picture and its outline (Fitts: the target you're shown is the target) */
+.hedge{position:absolute;left:0;right:0;height:16px;cursor:ns-resize;pointer-events:auto;touch-action:none}
+.hedge.t{top:-12px}.hedge.b{bottom:-8px}
+.hedge.l,.hedge.r{display:none;top:0;bottom:0;height:auto;width:16px;cursor:ew-resize}
+.hedge.l{left:-12px;right:auto}.hedge.r{right:-12px;left:auto}
+.app.stacked .hedge.l,.app.stacked .hedge.r{display:block}   /* Vertical: side edges on the picture */
 .vedge{position:absolute;left:30px;right:30px;bottom:-7px;height:14px;cursor:ns-resize;touch-action:none;z-index:6}
-.vedge::after{content:"";position:absolute;left:50%;top:5px;width:46px;height:4px;margin-left:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
-.vedge:hover::after,.vedge.drag::after{opacity:1}
-body.vresizing,body.vresizing *{cursor:ns-resize!important;user-select:none}
-.phead{display:flex;justify-content:center;align-items:center;padding:16px 24px 0 24px;font-size:12.5px;color:var(--muted);flex:none}
-.phead span:first-child{font-weight:500;letter-spacing:.02em}
-.plbl{display:flex;align-items:center;justify-content:center;min-width:0;flex:1}
-.plbl .dot{margin:0 7px;color:var(--faint)}
-.pname{flex:0 1 auto;field-sizing:content;min-width:72px;max-width:100%;background:transparent;border:0;outline:0;font:inherit;font-size:13px;color:#e6e6ea;padding:2px 6px;margin-left:-6px;border-radius:6px}
-.pname::placeholder{color:var(--faint)}
+.vedge::after,.hsplit::after{content:"";position:absolute;left:50%;width:46px;height:4px;margin-left:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
+.vedge::after{top:5px}.hsplit::after{top:6px}
+.vedge:hover::after,.vedge.drag::after,.hsplit:hover::after,.hsplit.drag::after{opacity:1}
+.left.hm .vedge,.app.stacked .vedge{display:none}
+.hsplit{display:none}
+.app.stacked .hsplit{display:block;position:absolute;left:0;right:0;top:-10px;height:8px;cursor:ns-resize;z-index:6;touch-action:none}   /* stage.js places it above the title */
+/* the resize outline: on the page's bottom layer (above the sky, under the panels), 12 px round the picture
+   (stage.js places it every frame). Hover intent: in quickly, out late and slowly, so sweeping across an edge never
+   makes it blink. !important: these two transitions outrank the motion switches below on purpose */
+.fithint{position:fixed;display:block;z-index:0;pointer-events:none;opacity:0;border:1px dashed rgba(255,255,255,.28);border-radius:calc(var(--r-panel) + 12px);transition:opacity .4s ease .3s!important}
+.fithint.show{opacity:1;transition:opacity .2s ease 0s!important}
+/* Queue / LoRAs / PNG Info: the whole panel is what an edge sizes */
+.right.edgehint:has(.rpanel.paneled)::before{content:"";position:absolute;inset:64px 0 0 0;border:1px dashed rgba(255,255,255,.18);border-radius:var(--r-panel);pointer-events:none;z-index:7}
+
+/* ======================= prompt column: the name row =======================
+   The title over the box (theme title font), the file name round it on hover, the Reuse bar when you look at an old
+   picture. layoutLeft() sets --ltop / --ts / --lh / --chtop. */
+.ltitle{position:absolute;right:0;width:min(100%,var(--cw,680px));top:calc(var(--ltop,0px) - var(--ts,64px) + 4px);height:calc(var(--ts,64px) - 10px);
+ padding:0 26px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;container-type:inline-size;
+ transition:top var(--lay-t) var(--lay-e),height var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
+.phead{display:flex;justify-content:center;align-items:center;padding:0;font-size:12.5px;color:var(--muted);flex:none}
+.plbl{display:flex;align-items:center;justify-content:center;min-width:0;flex:1;font-weight:500;letter-spacing:.02em}
+.nchip{position:relative;display:inline-flex;align-items:center;border-radius:999px;transition:background .15s;min-width:0}
+.pname{flex:0 1 auto;field-sizing:content;min-width:9ch;max-width:100%;background:transparent;border:0;outline:0;font:inherit;font-family:var(--font-title,inherit);
+ font-size:24px;font-weight:600;letter-spacing:-.01em;color:#f2f2f2;text-align:center;padding:2px 6px;margin-left:0;border-radius:6px}
+.pname::placeholder{color:#55555c;font-weight:500}
 .pname:hover{background:#26262a}
 .pname:focus{background:#26262a;box-shadow:inset 0 0 0 1px #3a3a40}
-.pnx{width:18px;height:18px;border-radius:50%;display:none;place-items:center;color:var(--muted);flex:none;margin-left:2px}
-.pnx:hover{background:#3a3a40;color:#fff} .pnx svg{width:9px;height:9px}
-.plbl.hasname .pnx{display:grid}
-.plbl.dimname .pname{color:#77777e}
-.pcount{position:absolute;right:26px;bottom:6px;z-index:3;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--faint);opacity:0;transition:opacity .2s;pointer-events:none}
-.pwrapT:focus-within .pcount{opacity:1}
-.pname{text-align:center}
-.pwrapT{position:relative;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden}
-textarea#prompt.peek{color:#b6bcc0}
-.pwrapT.cm-on textarea#prompt{display:none}
-.pwrapT .cm-editor{flex:0 1 auto;min-height:84px;max-height:100%;margin:8px 12px 8px 0;outline:0!important;background:transparent;font:inherit}
-.pwrapT .cm-scroller{overflow:auto;font-family:inherit;line-height:1.62}
-.pwrapT .cm-content{padding:4px 0 10px 0;caret-color:#fff;font-size:15px}
-.pwrapT .cm-line{padding:0 max(16px,calc(100% - 28px - 76ch)) 0 28px}
-.pwrapT .cm-cursor{border-left:2px solid #fff}
-.pwrapT .cm-selectionBackground,.pwrapT .cm-focused .cm-selectionBackground{background:color-mix(in oklab,var(--an,#7890ff) 36%,transparent)!important}
-.pwrapT .cm-placeholder{color:var(--faint)}
-.pwrapT .cm-editor.peek .cm-content{color:#b6bcc0}
-/* structure styling */
-.cm-ln-comment{color:#6c6c74;font-style:italic}
-.cm-ln-list{text-indent:-2.4em}
-.cm-marker{display:inline-block;width:2em;margin-right:.4em;text-align:right;color:#6f6f78;text-indent:0;font-variant-numeric:tabular-nums}
-.cm-ln-label{font-size:11.5px!important;text-transform:uppercase;letter-spacing:.09em;color:#8a8a92;padding-top:6px!important}
-.cm-variant{background:#2c2c33;border-radius:6px;box-shadow:0 0 0 1px #3c3c44;padding:0 2px}
-.cm-vbar{color:#6f6f78}
-.cm-lora{background:#2a2a30;border-radius:6px;color:#bdbdc6;padding:0 3px;box-shadow:0 0 0 1px #3a3a42}
-.peekbar{position:absolute;right:16px;bottom:10px;display:none;align-items:center;gap:6px;padding:5px 5px 5px 12px;border-radius:999px;background:#2c2c31;border:1px solid #3a3a40;box-shadow:0 8px 24px rgba(0,0,0,.5);font-size:12.5px;z-index:3}
+.plbl.hasname .pname:hover,.plbl.hasname .pname:focus{background:transparent;box-shadow:none}
+.ltitle .plbl .pname:not([readonly]){padding:2px 12px;transition:background .15s,box-shadow .15s}
+.plbl.dimname .pname{color:#9a9aa2}
+.ltitle .plbl.peekname .pname{color:#77777e}   /* an old picture's name: greyed */
+.ltitle .plbl.peekname .pname:not([readonly]):focus{color:#f2f2f2}
+/* a finished picture's title: as it is — no plate at rest or on hover, only while you edit it */
+.ltitle .plbl.donename .pname:not(:focus),.ltitle .plbl.donename .pname:not(:focus):hover{background:transparent;box-shadow:none;cursor:text}
+.pnx{width:18px;height:18px;border-radius:50%;display:none;place-items:center;color:var(--muted);flex:none;margin-left:0;opacity:0;transition:opacity .15s}
+.pnx:hover{background:#3a3a40;color:#fff}.pnx svg{width:9px;height:9px}
+.plbl.hasname .pnx{display:grid}.plbl.peekname .pnx{display:none}
+.ltitle:hover .plbl.hasname .pnx{opacity:1}
+/* the file name round the title (hover a finished picture's title): its number and .png appear beside it, fading in
+   and drifting out of the title (queue.js fnShow sets their margins) */
+.fnpre,.fnsuf{display:inline;position:absolute;top:50%;pointer-events:none;opacity:0;color:#6f747a;font-size:24px;font-weight:500;white-space:nowrap;letter-spacing:-.01em;
+ font-family:var(--font-title,inherit);transition:opacity .2s ease,transform .2s ease}
+.fnpre{right:100%;margin-right:8px;transform:translate(8px,-50%);letter-spacing:.02em}.fnsuf{left:100%;margin-left:0;transform:translate(-8px,-50%)}
+.plbl.fnon .fnpre,.plbl.fnon .fnsuf{opacity:1;transform:translate(0,-50%);transition:opacity .45s cubic-bezier(.2,.7,.2,1),transform .55s cubic-bezier(.2,.7,.2,1)}
+.pnsave{display:none;margin-left:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--grad);color:var(--ink);white-space:nowrap}
+.pnsave.show{display:inline-block}
+/* the Reuse bar: the row above the box, centred, its ends clear of the size buttons; ~9 px over the box */
+.peekbar{display:none;align-items:center;gap:6px;padding:5px 5px 5px 12px;margin-top:12px;margin-bottom:3px;max-width:calc(100% - 136px);border-radius:999px;
+ background:#2c2c31;border:1px solid #3a3a40;font-size:12.5px;white-space:nowrap;z-index:3}
 .peekbar.show{display:flex}
-.peekbar>span{color:var(--muted);margin-right:4px}
+.peekbar>span{color:var(--muted);margin-right:4px;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .peekbar button{padding:5px 11px;border-radius:999px;background:#3a3a40;font-size:12.5px}
 .peekbar button:hover{background:#4a4a52}
 .peekbar #pkAll{background:#fff;color:#111;font-weight:600}
-textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;background:transparent;border:0;outline:0;padding:4px max(14px,calc(100% - 26px - 76ch)) 10px 26px;margin:8px 12px 8px 0;line-height:1.62;overflow:auto}
+.peekbar .pkseed{min-width:32px;padding:5px 9px;display:grid;place-items:center;color:var(--muted)}.peekbar .pkseed svg{width:15px;height:15px}
+.peekbar .pkseed.on{color:var(--a1)}
+.peekbar .sm{display:none}
+@container (max-width:470px){.ltitle #peekLbl{display:none}}
+@container (max-width:340px){.ltitle .peekbar .lg{display:none}.ltitle .peekbar .sm{display:inline}}
+/* the size buttons at the name row's right: Match the picture's height · Full height (Vertical: Fit the width) */
+.hmodes{position:absolute;right:22px;bottom:6px;display:flex;gap:4px;z-index:4;opacity:0;transition:opacity .15s}
+#lcol:hover .hmodes,.hmodes.on{opacity:1}
+.hmodes button{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+.hmodes button:hover{background:var(--raised2);color:#fff}.hmodes button.on{background:#f2f2f2;color:#111}
+.hmodes svg{width:16px;height:16px}
+.app.stacked #hmFull{display:none}
 
-.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:0 22px 10px}
-.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 6px 4px 10px;border-radius:var(--r-pill);background:var(--raised);font-size:12.5px;color:#d6d6da}
-.chip b{color:#fff;font-weight:600}
-.chip .cn{cursor:pointer}
-.chip .cw{font-weight:600;color:#fff;cursor:ew-resize;padding:0 3px;border-radius:5px;font-variant-numeric:tabular-nums}
-.chip .cw:hover{background:#3a3a40}
-.chip .cwi{width:46px;background:#1c1c1e;border:1px solid #4a4a52;border-radius:5px;color:#fff;font:inherit;font-weight:600;padding:0 3px;outline:0} .chip:hover{background:var(--raised2)}
-.chip .cx{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
-.chip .cx:hover{background:#4a4a50;color:#fff} .chip .cx svg{width:10px;height:10px}
-.chip.face{background:#34343a}
-.controls{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px 18px}
-.play{position:relative;width:62px;height:62px;border-radius:50%;background:var(--grad);display:grid;place-items:center;flex:none;transition:transform .12s,filter .12s}
-.play:hover{transform:scale(1.05);filter:brightness(1.08)}
-.play.off{filter:grayscale(1) brightness(.55);cursor:not-allowed}
-.play.off:hover{transform:none;filter:grayscale(1) brightness(.6)} .play:active{transform:scale(.96)}
-.play svg{width:26px;height:26px;margin-left:4px}
-.badge{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#f2f2f2;color:#111;font-size:12px;font-weight:700;display:none;place-items:center}
-.badge.show{display:grid}
-.pills{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-left:4px;flex:0 1 auto;min-width:0}
-.pills .pill{flex:0 0 auto}
-.pill{position:relative;height:38px;padding:0 12px;border-radius:var(--r-pill);background:transparent;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#CDCDCD;font-weight:500;transition:color var(--dur),background var(--dur)}
+/* ======================= prompt box ======================= */
+.left{position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--ltop,0px);height:var(--lh,auto);display:flex;flex-direction:column;padding-top:12px;
+ background:var(--panel);border:1px solid #34343a;border-radius:var(--r-panel);container-type:inline-size;
+ transition:top var(--lay-t) var(--lay-e),height var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
+.left.nodur,.ltitle.nodur{transition:none}
+.app.stacked .left,.app.stacked .ltitle{right:auto;left:50%;width:min(100%,var(--sw,760px));transform:translateX(calc(-50% + var(--soff,0px)))}
+.app.pright .left,.app.pright .ltitle,.app.pright .ghost,.app.pright #lcol>.chips{right:auto;left:0}
+/* side by side: grab the empty parts of the box (or the name row) to move it — top / middle / bottom */
+.app:not(.stacked) .left,.app:not(.stacked) .ltitle{cursor:grab}
+.app:not(.stacked) .left.hm,.app:not(.stacked) .ltitle.hm{cursor:default}
+.pwrapT{position:relative;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden;cursor:text}
+textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;background:transparent;border:0;outline:0;padding:4px 24px 10px 26px;margin:8px 12px 8px 0;line-height:1.62;overflow:auto}
+textarea#prompt.peek{color:#b6bcc0}
+.pwrapT.cm-on textarea#prompt{display:none}
+/* CodeMirror (editor.js) — these sit beside CodeMirror's own injected styles, so they keep their specificity */
+.pwrapT .cm-editor{flex:0 1 auto;min-height:84px;max-height:100%;margin:8px 12px 8px 0;outline:0!important;background:transparent;font:inherit}   /* !important: CodeMirror's focus outline */
+.pwrapT .cm-scroller{overflow:auto;font-family:inherit;line-height:1.62}
+.pwrapT.ovf .cm-scroller{scrollbar-gutter:stable}   /* the scrollbar keeps its room only while the text overflows (editor.js) */
+.pwrapT .cm-content{padding:4px 0 10px 0;caret-color:#fff;font-size:15px}
+.pwrapT .cm-line{padding:0 24px 0 28px}   /* the text fills the box: you set its width yourself */
+.pwrapT .cm-cursor{border-left:2px solid #fff}
+.pwrapT .cm-selectionBackground,.pwrapT .cm-focused .cm-selectionBackground{background:color-mix(in oklab,var(--an,#7890ff) 36%,transparent)!important}   /* !important: CodeMirror's own selection colour */
+.pwrapT .cm-placeholder{color:var(--faint)}
+.pwrapT .cm-editor.peek .cm-content{color:#b6bcc0}
+/* prompt structure (editor.js marks it; PNG Info reuses the classes) */
+.cm-ln-comment{color:#6c6c74;font-style:italic}
+.cm-ln-list{text-indent:-2.4em}
+.cm-marker{display:inline-block;width:2em;margin-right:.4em;text-align:right;color:#6f6f78;text-indent:0;font-variant-numeric:tabular-nums}
+.cm-ln-label{font-size:11.5px!important;text-transform:uppercase;letter-spacing:.09em;color:#8a8a92;padding-top:6px!important}   /* !important: over .cm-line's size and padding */
+.cm-variant{background:#2c2c33;border-radius:6px;box-shadow:0 0 0 1px #3c3c44;padding:0 2px}
+.cm-vbar{color:#6f6f78}
+.cm-lora{background:#2a2a30;border-radius:6px;color:#bdbdc6;padding:0 3px;box-shadow:0 0 0 1px #3a3a42}
+/* the character count, while you type */
+.pcount{position:absolute;right:26px;bottom:6px;z-index:3;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--faint);opacity:0;transition:opacity .2s;pointer-events:none}
+.pwrapT:focus-within .pcount{opacity:1}
+/* privacy on: the prompt, the name and the LoRA chips are hidden; the box stays, with a lock */
+.privov{display:none;position:absolute;inset:0;z-index:5;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:13.5px;border-radius:inherit;cursor:default}
+.privov svg{width:18px;height:18px}
+body.private .privov{display:flex}
+body.private .pwrapT .cm-editor,body.private .pwrapT textarea,body.private .ltitle .nchip,body.private .chips,body.private .peekbar,body.private .pcount{visibility:hidden}
+
+/* ======================= controls: the pills and Start ======================= */
+/* one inset (16 px) left, bottom and right; pills and Start share their bottom edge; pill text lines up with the prompt */
+.controls{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:8px 16px 16px 16px}
+.pills{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-start;flex:0 1 auto;min-width:0}
+.pill{position:relative;flex:0 0 auto;height:38px;padding:0 12px;border-radius:var(--r-pill);background:transparent;display:flex;flex-direction:column;justify-content:center;align-items:center;
+ color:#CDCDCD;font-weight:500;transition:color var(--dur),background var(--dur)}
 .pill:hover,.pill.open{color:var(--text);background:var(--raised)}
-.pill .lbl{font-size:10.5px;line-height:1;margin-bottom:3px;color:var(--muted);font-weight:400}
 .pill .val{font-size:15px;line-height:1.1;white-space:nowrap}
 .pill .il{color:var(--muted);font-weight:400;margin-right:6px}
-
-/* popovers */
-.pop{position:absolute;bottom:58px;left:0;transform-origin:bottom left;visibility:hidden;opacity:0;transform:translateY(6px) scale(.97);transition:opacity var(--dur) var(--ease),transform var(--dur) var(--ease),visibility 0s linear var(--dur);background:#232326;border:1px solid #3a3a3f;border-radius:16px;padding:8px;min-width:160px;box-shadow:0 12px 40px rgba(0,0,0,.55);z-index:40;text-align:left;color:var(--text);cursor:default}
+@container (max-width:560px){.pill .w{display:none}.pill{padding:0 11px}}
+@container (max-width:470px){.pill .il{display:none}}
+.left.peeking .pills{opacity:.66;pointer-events:none}.left.peeking #pN{display:none}
+.left.peeking #pSD{pointer-events:auto;cursor:copy}   /* an old picture's seed pill copies its seed */
+/* Start: the theme gradient with a dark triangle; nothing to queue — plain, a grey triangle; while a job runs — plain,
+   the triangle in the progress bar's flowing gradient (the same colours and pace) */
+.play{position:relative;order:2;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--raised);--play-fill:url(#playGrad);transition:transform .12s,filter .12s}
+.play:not(.off){background:var(--grad)}
+.play:not(.off):hover{filter:brightness(1.1) saturate(1.05)}
+.play.off{cursor:not-allowed}
+.play svg{width:20px;height:20px;margin-left:2px}
+.play svg path{fill:var(--play-fill);transition:fill .2s}
+.play.off svg path{fill:var(--muted)}
+.play:not(.off) svg path{fill:var(--ink)}
+.play.gen,.play.gen:not(.off):hover{background:var(--raised);filter:none}
+.play.gen svg path,body.glass .play.gen svg path{fill:url(#playFlow)}
+.play.gen svg{filter:drop-shadow(0 0 5px color-mix(in oklab,var(--a2) 45%,transparent))}
+/* the queue count on Start's corner: you add to the queue there, so the number goes up where you click */
+.badge{position:absolute;top:-8px;right:-10px;min-width:22px;height:20px;padding:0 6px;border-radius:999px;display:none;place-items:center;
+ font-size:11.5px;font-weight:600;color:#fff;background:transparent;text-shadow:0 0 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.7)}
+.badge.show{display:grid}
+.play .ptrack,.play .pring{display:none}   /* the old progress ring on Start (retired 2026-10-19) */
+/* pop-ups over the pills */
+.pop{position:absolute;bottom:58px;left:0;transform-origin:bottom left;visibility:hidden;opacity:0;transform:translateY(6px) scale(.97);
+ transition:opacity var(--dur) var(--ease),transform var(--dur) var(--ease),visibility 0s linear var(--dur);background:#232326;border:1px solid #3a3a3f;border-radius:16px;
+ padding:8px;min-width:160px;box-shadow:0 12px 40px rgba(0,0,0,.55);z-index:40;text-align:left;color:var(--text);cursor:default}
 .pop.show{visibility:visible;opacity:1;transform:none;transition:opacity var(--dur) var(--ease),transform var(--dur) var(--ease),visibility 0s}
 .pop .opt{display:flex;justify-content:space-between;gap:14px;width:100%;padding:7px 10px;border-radius:10px;font-size:14px;cursor:pointer}
-.pop .opt:hover{background:var(--raised2)} .pop .opt.on{color:#fff;font-weight:600}
+.pop .opt:hover{background:var(--raised2)}.pop .opt.on{color:#fff;font-weight:600}
 .pop .opt small{color:var(--muted)}
 .pop .row{display:flex;align-items:center;gap:8px;padding:6px}
 .pop input[type=number]{width:64px;background:var(--raised);border:1px solid #3a3a3f;border-radius:10px;padding:6px 8px}
 .pop .hint{padding:2px 8px 4px;color:var(--muted);font-size:12px}
 .qb{padding:5px 11px;border-radius:999px;background:var(--raised);font-size:13px}
-.qb:hover{background:var(--raised2)} .qb.on{background:#fff;color:#111;font-weight:600}
-.iconbtn{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--raised)}
-.iconbtn:hover{background:var(--raised2)} .iconbtn svg{width:18px;height:18px}
+.qb:hover{background:var(--raised2)}.qb.on{background:#fff;color:#111;font-weight:600}
 .rgrid{display:grid;grid-template-columns:repeat(4,72px);gap:6px}
 .rt{height:84px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;padding:8px 4px 6px;cursor:pointer;border:1px solid transparent}
-.rt:hover{background:var(--raised2)} .rt.on{border-color:rgba(255,255,255,.85)}
+.rt:hover{background:var(--raised2)}.rt.on{border-color:rgba(255,255,255,.85)}
 .rt .shape{border:2px solid #8a8a90;border-radius:4px}
 .rt.on .shape{border-color:#fff}
-.rt .t{font-size:12.5px;line-height:1} .rt .px{font-size:10px;color:var(--muted);line-height:1}
+.rt .t{font-size:12.5px;line-height:1}.rt .px{font-size:10px;color:var(--muted);line-height:1}
+.iconbtn{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--raised)}
+.iconbtn:hover{background:var(--raised2)}.iconbtn svg{width:18px;height:18px}
+.iconbtn.spin svg{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.seedc{cursor:copy;border-bottom:1px dotted rgba(255,255,255,.22)}.seedc:hover{color:var(--text)}   /* seeds you can copy */
 
-/* ---------- right ---------- */
-.right{display:flex;flex-direction:column;min-height:0;min-width:0}
-.right .tabs{align-self:flex-start;max-width:none;position:relative;z-index:4;transition:transform .4s var(--ease)}
-.tabs{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;height:52px}
+/* ======================= LoRA chips under the box ======================= */
+/* centred under the box, moving with it (layoutLeft sets --chtop); drag one to reorder */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+#lcol>.chips{position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--chtop,0px);justify-content:flex-start;align-items:center;padding:0 16px;
+ transition:top var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
+#lcol>.chips:empty{display:none}
+.app.stacked #lcol>.chips{right:auto;left:50%;width:min(100%,var(--sw,760px));transform:translateX(calc(-50% + var(--soff,0px)))}
+body.liveresize #lcol>.chips,body.cardmove #lcol>.chips{transition:none}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 6px 4px 10px;border-radius:var(--r-pill);background:var(--raised);font-size:12.5px;color:#d6d6da;cursor:default}
+.chip:hover{background:var(--raised2)}
+.chip.face{background:#34343a}
+.chip[draggable=true]{cursor:grab}.chip.dragging{opacity:.35}
+.chip[hidden]{display:none}
+.chip .cn{cursor:pointer}
+.chip .cw{font-weight:600;color:#fff;cursor:ew-resize;padding:0 3px;border-radius:5px;font-variant-numeric:tabular-nums}
+.chip .cw:hover{background:#3a3a40}
+.chip .cwi{width:46px;background:#1c1c1e;border:1px solid #4a4a52;border-radius:5px;color:#fff;font:inherit;font-weight:600;padding:0 3px;outline:0}
+.chip .cx{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.chip .cx:hover{background:#4a4a50;color:#fff}.chip .cx svg{width:10px;height:10px}
+.chiplbl{font-size:12px;letter-spacing:.02em;color:#8f959a;margin:0 6px 0 12px;user-select:none}   /* LoRA / LoRAs, spelled as written */
+.chipadd{padding:4px 11px;color:#cfd3d6;font-weight:600}.chipadd:hover{color:#fff}
+.chipmore{padding:4px 10px;font-weight:600;color:#d6d6da}
+.chips.peek .chip{opacity:.68;pointer-events:none}.chips.peek .chipmore{pointer-events:auto;opacity:1}
+
+/* ======================= tabs ======================= */
+.tabs{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;height:52px;transition:width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
+.right .tabs{align-self:flex-start;max-width:none;position:relative;z-index:4}
+.app.stacked .right .tabs{align-self:center;width:auto!important}   /* !important: over the inline width sizeFrame gives it side by side */
 .seg{position:relative;display:flex;gap:2px;padding:4px;border-radius:var(--r-pill);background:var(--panel);border:1px solid #26262a}
 .seg .thumb{position:absolute;top:4px;bottom:4px;left:0;width:0;border-radius:var(--r-pill);background:#3A3A3F;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 3px rgba(0,0,0,.4);transition:left .28s var(--ease),width .28s var(--ease)}
-.tab{white-space:nowrap;flex:none;position:relative;z-index:1;transition:color var(--dur) var(--ease);height:40px;padding:0 18px;border-radius:var(--r-pill);font-size:15px;font-weight:500;color:#CDCDCD}
-.tab:hover{color:#fff} .tab.on{color:#fff}
-.tab{display:inline-flex;align-items:center;gap:5px}
+.tab{position:relative;z-index:1;display:inline-flex;align-items:center;gap:5px;flex:none;height:40px;padding:0 18px;border-radius:var(--r-pill);white-space:nowrap;
+ font-size:15px;font-weight:500;letter-spacing:-.01em;color:#CDCDCD;transition:color var(--dur) var(--ease)}
+.tab:hover,.tab.on{color:#fff}
 .tab .n{font-size:11px;font-weight:600;color:var(--muted);position:relative;top:-5px;line-height:1}
 .tab .n:empty{display:none}
-.flink{white-space:nowrap;flex:none;margin-left:4px;color:var(--muted);text-decoration:none;font-size:13px;padding:7px 12px;border-radius:999px;background:var(--raised)}
-.flink:hover{color:var(--text)}
+/* the running job's progress as a ring round the G of Generating, behind the letters (the word is its stacking layer):
+   a hairline circle shows at once that a job runs (the App Store / Safari download pattern), the solid arc grows over
+   it. One element: the mask is hairline ∪ (thick ring ∩ the progress slice) */
+.tab .tl{position:relative;isolation:isolate}
+.tab .tg{position:relative;display:inline-block}
+.tab .tring{display:none;position:absolute;left:50%;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;flex:none;z-index:-1;transition:--p .45s linear;
+ -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 1.6px),rgba(0,0,0,.5) calc(100% - 1.2px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0),radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px));
+ -webkit-mask-composite:source-over,source-in;
+ mask:radial-gradient(farthest-side,transparent calc(100% - 1.6px),rgba(0,0,0,.5) calc(100% - 1.2px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0),radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px));
+ mask-composite:add,intersect}
+body.jobrun .tab .tring{display:inline-block}
+.tab:not(.on) .tring{background:#8e9499}.tab.on .tring{background:#a7adb2}   /* a step darker than the label, a touch brighter on the selected pill */
 .gear{margin-left:4px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
-.gear:hover{background:var(--raised);color:var(--text)} .gear svg{width:22px;height:22px}
-.rpanel{background:transparent;border:1px solid transparent;transition:background .25s var(--ease),border-color .25s var(--ease),box-shadow .25s var(--ease);border-radius:var(--r-panel);flex:1;min-height:0;position:relative;overflow:hidden}
-.rpanel.paneled{background:var(--panel);border-color:#26262a}
-.rpanel.paneled .qwrap,.rpanel.paneled .pwrap{padding:18px}
-.rpanel.paneled .qwrap{inset:12px;padding:6px;border-radius:12px}
-.rpanel.paneled .lwrap{padding:16px 18px}
+.gear:hover{background:var(--raised);color:var(--text)}.gear svg{width:22px;height:22px}
+/* the Layout button and its menu: one row of diagrams */
+.laywrap{position:relative;display:inline-flex}
+.laymenu{top:52px;bottom:auto;left:auto;right:0;transform-origin:top right;min-width:0;padding:6px}
+.laymenu .lrow{display:flex;align-items:center;gap:2px}
+.laymenu .lrow .opt{width:auto;gap:0;padding:8px 9px;justify-content:center;align-items:center;border-radius:10px;white-space:nowrap}
+.laymenu .lrow .opt.on{background:rgba(255,255,255,.12)}
+.laymenu .opt .lic{width:28px;height:20px;flex:none;margin-right:0;color:#9aa0a6;align-self:center}
+.laymenu .opt.on .lic,.laymenu .opt:hover .lic{color:#fff}
+.laymenu .lrow .lsep{width:1px;height:22px;margin:0 4px;background:rgba(255,255,255,.12)}
+
+/* ======================= the panel under the tabs ======================= */
+.rpanel{position:relative;flex:1;min-height:0;overflow:visible;background:transparent;border:1px solid transparent;border-radius:0;
+ transition:background .25s var(--ease),border-color .25s var(--ease),box-shadow .25s var(--ease)}   /* Generating: no panel, nothing clips the edge handles */
+.rpanel.paneled{overflow:hidden;background:var(--panel);border-color:#26262a;border-radius:var(--r-panel)}
 .view{position:absolute;inset:0;visibility:hidden;opacity:0;transform:translateY(4px);transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s linear .22s}
 .view.on{visibility:visible;opacity:1;transform:none;transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s}
+#amb{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0;image-rendering:auto;filter:saturate(1.25) brightness(.85);
+ -webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent 100%);mask-image:radial-gradient(closest-side,#000 55%,transparent 100%);transition:opacity 1.2s var(--ease)}
+#amb.on{opacity:.32}   /* the panel's wash of the picture's colours */
 
-.stage{position:absolute;inset:0}
-.stage .frame{position:absolute}
-@keyframes develop{0%{filter:brightness(1.35) saturate(1.2)}100%{filter:none}}
-.frame.reveal{animation:develop 1.1s var(--ease)}
-.frame{position:relative;border-radius:var(--r-panel);overflow:hidden;background:transparent;outline:1px solid #1d1d22;outline-offset:-1px}
-.frame canvas{width:100%;height:100%;display:block}
-#cv{position:relative;z-index:1;filter:var(--vf,none)}
+/* ======================= the picture (Generating) ======================= */
+.stage{position:absolute;inset:0;z-index:1}
+.frame{position:absolute;border-radius:var(--r-panel);overflow:hidden;background:transparent;outline:1px solid #1d1d22;outline-offset:-1px}
 .frame.has{background:#07070a;outline:1px solid rgba(255,255,255,.07);outline-offset:-1px}
-#stars{position:fixed;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1.2s var(--ease);pointer-events:none;z-index:0}
-#stars.on{opacity:1}
+/* position and size glide (stage.js sizeFrame); the canvas is drawn at the box's final size, so it never stretches.
+   A crop-and-reveal (.morph) moves the box itself, frame by frame */
+body:not(.laydrag) .stage .frame:not(.morph){transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),height var(--lay-t) var(--lay-e)}
+.frame.reveal{animation:develop 1.1s var(--ease)}
+@keyframes develop{0%{filter:brightness(1.35) saturate(1.2)}100%{filter:none}}
+.frame.clickable{cursor:zoom-in}
+.frame.held,.frame.missing{cursor:default}
+.frame canvas{display:block}
+/* the picture's canvas fills the box (cover): while the box glides to another shape, no corner is ever empty. #cvx is
+   the picture on show, copied, fading out over the next one (live.js) */
+#cv,#cvx{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
+#cv{z-index:1;filter:var(--vf,none)}
+#cvx{z-index:1;pointer-events:none;opacity:0;transition:opacity .2s cubic-bezier(.4,0,.2,1)}
+/* the crop-and-reveal: both pictures at their own final size, centred; the frame is the only thing that moves */
+.frame.morph #cvx{width:var(--ow);height:var(--oh);left:50%;top:50%;transform:translate(-50%,-50%)}
+.frame.morph #cv{width:var(--nw);height:var(--nh);left:50%;top:50%;transform:translate(-50%,-50%)}
+/* privacy: the picture is hidden outright (never a blur: a blur still shows shapes and skin tones) */
+.frame.held #cv,.frame.held #cvx{visibility:hidden}
+#veil,#embers{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#veil{z-index:2}#embers{z-index:3}
+/* the empty frame: what's next and how long */
 .idle{position:absolute;inset:0;z-index:1;display:grid;place-items:center;color:#7a7a82;font-size:14px;text-align:center;pointer-events:none}
-.side{position:absolute;right:10px;top:10px;z-index:5;display:flex;flex-direction:column;gap:6px;opacity:0;transition:opacity .15s}
-.frame.has:hover .side{opacity:1}
-.frame.running .side{display:none}
-.side button{width:40px;height:40px;border-radius:14px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;position:relative}
-.side button:hover{background:rgba(40,40,44,.9)} .side svg{width:20px;height:20px}
-.side button::after{content:attr(data-tip);position:absolute;right:48px;white-space:nowrap;background:#111;padding:4px 8px;border-radius:8px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .12s}
-.side button:hover::after{opacity:1}
+#idleT,#idleS{font-size:15px;color:#a4a8ad}
+/* the missing-file card (a file deleted outside Kiln): no picture, just the ways back */
+.miss{display:none;position:absolute;inset:0;z-index:4;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center}
+.frame.missing .miss{display:flex}
+.miss .mt{font-size:16px;font-weight:600;color:var(--text)}.miss .mf{font-size:12.5px;color:var(--muted);word-break:break-all}
+.miss .ma{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}.miss .mh{font-size:12.5px;color:var(--faint);max-width:340px}
+/* buttons on the picture: the eye (privacy) top right, ✕ top left */
+.cbtn,.bclose{position:absolute;top:10px;width:40px;height:40px;border-radius:14px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:6}
+.cbtn{right:10px;opacity:0;transition:opacity .15s,background .15s}
+.bclose{left:10px;transition:background .15s}
+.cbtn svg{width:20px;height:20px}.bclose svg{width:16px;height:16px}
+.cbtn:hover,.bclose:hover{background:rgba(40,40,44,.9)}
+.frame.has .cbtn,body.private .cbtn{display:grid}
+.frame.has:hover .cbtn{opacity:1}
+.frame.held .cbtn{opacity:.55}.frame.held:hover .cbtn{opacity:1}
+.frame.has .cbtn.lit{opacity:.7}.frame.has:hover .cbtn.lit{opacity:1}
+body.private .cbtn{opacity:.7}body.private .frame:hover .cbtn{opacity:1}
+.frame.missing .cbtn{display:none}
+.frame.browsing .bclose,.frame.clearable:hover .bclose{display:grid}
+/* the edit buttons: a column OUTSIDE the picture, on the side away from the prompt; shown on hover of the picture or the
+   column (one zone, composer.js), hidden when they can't act (empty, rendering, private, file gone). A short picture
+   wraps the column outward. The column itself is part of the hover zone; its buttons take clicks once shown */
+.gtools{position:absolute;z-index:6;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:6px;padding-left:6px;opacity:0;pointer-events:auto;
+ transition:opacity .15s,top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e)}
+.gtools.lefty{align-content:flex-end;flex-wrap:wrap-reverse;padding-left:0;padding-right:6px}
+.stage.tools .gtools{opacity:1}
+.rpanel.paneled .gtools,.stage:has(.frame.running) .gtools,.stage:has(.frame.held) .gtools,.stage:has(.frame.missing) .gtools,.stage:has(.frame:not(.has)) .gtools{display:none}
+.gtools .side{display:contents}
+.side button{position:relative;width:40px;height:40px;border-radius:14px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;
+ opacity:.85;pointer-events:none;transition:opacity .15s,background .15s}
+.side button:hover{background:rgba(40,40,44,.9);opacity:1}
+.stage.tools .gtools .side button{pointer-events:auto}
+.gtools button svg{width:19px;height:19px}
+/* the arrows: on the picture (a fixed layer stage.js places every frame; the one you click holds while you're on it),
+   and in the full-size viewer */
+.nav{position:absolute;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;
+ z-index:6;opacity:0;transition:opacity .15s,background .15s}
+.nav.prev{left:10px}.nav.next{right:10px}
+.nav svg{width:18px;height:18px}.nav:hover{background:rgba(40,40,44,.9)}
+.nav.off{pointer-events:none}
+.viewer:hover .nav:not(.off){opacity:1}
+.gnav{position:fixed;margin-top:0;z-index:20}
+.gnav.glide{transition:opacity .15s,background .15s,left var(--lay-t) var(--lay-e),top var(--lay-t) var(--lay-e)}   /* only the one you let go of glides */
+body.navs .gnav:not(.off){opacity:1}
+body:has(.rpanel.paneled) .gnav,body:has(.frame.missing) .gnav,body:has(.modal.show) .gnav,body:has(.viewer.show) .gnav{display:none}
 
-.prog{position:absolute;left:0;top:0;width:300px;display:none;flex-direction:column;gap:7px}
+/* ======================= the status row under the picture =======================
+   The bar only while you watch the render; an empty Generating has no row (body.norow), the frame says what's next */
+.prog{position:absolute;left:0;top:0;width:300px;display:none;flex-direction:column;gap:7px;z-index:1;transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e)}
 .prog.show{display:flex}
+body.norow .prog{visibility:hidden}
 .prog .track{position:relative;height:10px;border-radius:999px;background:#1c1c1e;overflow:hidden}
+.prog:not(.run) .track,.prog.bgjob .track{visibility:hidden}
 .prog .fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:var(--r-pill);overflow:hidden}
 .prog .fill::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--tw,600px);background:var(--flow);background-size:200% 100%;animation:flow 6s linear infinite}
 @keyframes flow{from{background-position:0 0}to{background-position:-200% 0}}
-.prog .meta{position:relative;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;color:#CDCDCD;white-space:nowrap;height:26px}
+.prog .meta{position:relative;display:flex;align-items:center;gap:10px;height:36px;font-size:13px;font-weight:500;color:#CDCDCD;white-space:nowrap}
+.prog.run .meta,.prog.showp .meta{cursor:pointer}   /* click: the shown picture's prompt */
 .prog .meta .eta{margin-left:auto;color:var(--muted)}
-.prog .stop{display:none;align-items:center;gap:6px;height:26px;padding:0 11px 0 9px;border-radius:999px;background:var(--raised);font-size:12.5px;font-weight:500;color:#e6e6ea;transition:background .15s}
-.prog.run .stop{display:inline-flex}
-.prog.run .meta,.prog.showp .meta{cursor:pointer}
+#ptxt{overflow:hidden;text-overflow:ellipsis;min-width:0}
+#ptxt .sub{color:var(--muted);font-weight:400}
+.prog .stop,.prog .resume{height:36px;border-radius:999px;background:var(--raised);font-size:13.5px;font-weight:500;color:#e6e6ea}
+.prog .stop{display:none;align-items:center;gap:7px;padding:0 15px 0 12px;transition:background .15s}
+.prog .stop svg{width:11px;height:11px}
 .prog .stop:hover{background:#45454a}
-.prog .stop svg{width:9px;height:9px}
+.prog.run .stop{display:inline-flex}
+.prog .resume{display:none;padding:0 15px}
+.prog.paused:not(.run) .resume{display:inline-flex;align-items:center}
+.prog.bgjob .eta,.prog.bgjob .stop{display:none}
+/* stopping: the bar freezes and greys; Forge stops between steps */
+.prog.stopping .fill{filter:grayscale(1) brightness(.7)}.prog.stopping .fill::before{animation-play-state:paused}
+.prog.stopping .stop{opacity:.45;pointer-events:none}
+.pchip{display:none}   /* the running job's chip (live.js still fills it): retired 2026-10-19 — the Generating tab has the progress */
+/* the Gallery: no bar; the caption centred under the picture */
+body.gallery .prog .track{display:none}
+body.gallery .prog .meta{justify-content:center}
+body.gallery #ptxt{color:#cfd2d6;font-weight:500}
+body.gallery .prog .eta,body.gallery .prog .resume,body.gallery .prog.paused:not(.run) .resume{display:none}
 
+/* ======================= Queue ======================= */
 .qwrap{position:absolute;inset:0;overflow:auto;padding:4px 2px 18px}
+.rpanel.paneled .qwrap{inset:12px;padding:6px;border-radius:12px}
 .qsec{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin:14px 8px 8px;display:flex;justify-content:space-between;align-items:center}
 .qsec:first-child{margin-top:4px}
+.qsec>span:last-child:not(:first-child){display:flex;gap:6px}
 .qsec button{font-size:11.5px;letter-spacing:0;text-transform:none;color:var(--muted);padding:3px 9px;border-radius:999px;background:var(--raised)}
 .qsec button:hover{color:var(--text)}
-@keyframes qin{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
-.qi.new{animation:qin .35s var(--ease)}
+.qsec .paused{color:var(--a1);font-weight:600}
 .qi{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--raised);margin-bottom:8px;cursor:pointer}
-.qi:hover{background:var(--raised2)} .qi.drag{opacity:.4}
+.qi:hover{background:var(--raised2)}.qi.drag{opacity:.4}
+.qi.new{animation:qin .35s var(--ease)}
+@keyframes qin{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
 .qi .handle{color:var(--faint);cursor:grab;width:14px}
 .qi .th{width:46px;height:46px;border-radius:10px;background:#222;flex:none;overflow:hidden;display:grid;place-items:center;color:var(--faint);font-size:11px}
-.qi .th canvas{width:100%;height:100%}
+.qi .th canvas,.qi .th img.lp{width:100%;height:100%}
+.qi .th img.lp{object-fit:cover}
 .qi .body{flex:1;min-width:0}
 .qi .p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
 .qi .meta{font-size:12px;color:var(--muted)}
+.qi .meta.times{font-size:11.5px;color:var(--faint)}
 .qi .mini{height:4px;border-radius:2px;background:#1a1a1c;margin-top:6px;overflow:hidden}
 .qi .mini i{display:block;height:100%;width:0;background:linear-gradient(90deg in oklch,var(--a1),var(--a3))}
 .qi .x{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:var(--muted)}
-.qi .x:hover{background:#45454a;color:var(--text)} .qi .x svg{width:14px;height:14px}
+.qi .x:hover{background:#45454a;color:var(--text)}.qi .x svg{width:14px;height:14px}
+.qi.missing>:not(.x){opacity:.5}   /* the row fades, its ✕ (remove from the list) stays clear */
+.qi.missing .th{font-size:10.5px}.qi .gone{color:#e0a060}
 .empty{color:var(--faint);text-align:center;padding:40px 10px;font-size:14px}
+#qwrap .empty{padding:10px 12px 14px;font-size:13px;text-align:left}   /* "Nothing queued": one quiet line after Up next */
+/* the bigger look on hovering a finished thumbnail: above its row (below if there's no room), never over it */
+#qpop{position:fixed;left:0;top:0;z-index:60;border-radius:14px;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .15s;
+ box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.1);background:#0b0b0e}
+#qpop.show{opacity:1}#qpop img{width:100%;height:100%;object-fit:contain;display:block}
 
+/* ======================= LoRAs ======================= */
 .lwrap{position:absolute;inset:0;display:flex;flex-direction:column;padding:4px 2px 16px}
+.rpanel.paneled .lwrap{padding:16px 18px}
 .ltop{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.ltop #lRefresh{flex:none}
 .search{flex:1;background:var(--raised);border:1px solid #3a3a40;border-radius:999px;padding:9px 16px;outline:0}
+.csz{display:flex;align-items:center;gap:6px;color:var(--muted);flex:none}
+.csz svg{width:14px;height:14px}
+.csize{width:90px;flex:none}
 .oneface{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;white-space:nowrap}
 .sw{width:34px;height:20px;border-radius:10px;background:#45454a;position:relative;transition:background .15s;flex:none;cursor:pointer}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#ddd;transition:left .15s}
-.sw.on{background:#0A84FF} .sw.on::after{left:17px;background:#fff}
+.sw.on{background:#0A84FF}.sw.on::after{left:17px;background:#fff}
 .fchips{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
 .fchips button{padding:5px 12px;border-radius:999px;background:var(--raised);font-size:13px;color:var(--muted)}
 .fchips button.on{background:#36363b;color:#fff}
-.lscroll{overflow:auto;flex:1;padding-right:2px}
 .warn{font-size:12.5px;color:#ffcf8a;background:#2e2618;border-radius:12px;padding:7px 12px;margin-bottom:10px;display:none}
 .warn.show{display:block}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--card,104px),1fr));gap:10px;margin-bottom:14px}
-.card .img{font-size:calc(var(--card,104px)*.24)!important}
-.card{transition:background var(--dur),border-color var(--dur),transform var(--dur) var(--ease);background:var(--raised);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;border:1px solid transparent}
-.card:hover{background:var(--raised2);transform:translateY(-2px)} .card.on{border-color:rgba(255,255,255,.85)}
-.card .img{aspect-ratio:1/1;display:grid;place-items:center;font-size:28px;font-weight:600;color:rgba(255,255,255,.75)}
-.card .cap{padding:7px 9px 8px}
-.card .nm{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card .tags{font-size:10.5px;color:var(--muted)}
-.star{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:14px;color:#777}
-.card .star{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.45);color:#bbb}
-.star.on{color:#ffd166!important}
-.card .st{display:none;padding:0 9px 9px;align-items:center;gap:6px}
-.card.on .st{display:flex}
-.card .st input[type=range]{flex:1;min-width:0}
-.card .st span{font-size:12px;color:#fff;font-weight:600;width:30px;text-align:right}
-.nmedit{width:100%;background:#1c1c1e;border:1px solid rgba(255,255,255,.6);border-radius:6px;padding:1px 5px;font-size:13px}
+.lscroll{overflow:auto;flex:1;padding-right:2px}
+/* one row format with the thumbnail in front: name (+ tags) and the switch on top, the weight under the name */
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,min(100%,var(--liw)));justify-content:center;column-gap:16px}
+.lgrid .lsec,.lgrid .empty,.lgrid .lnone{grid-column:1/-1}
 .lsec{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin:4px 4px 8px}
-.li{display:grid;grid-template-columns:auto 1fr 140px 56px auto;gap:12px;align-items:center;padding:10px 12px;border-radius:14px;margin-bottom:2px;background:transparent;transition:background var(--dur)}
+.lgrid .lnone{font-size:12.5px;color:var(--faint);padding:2px 4px 10px}
+.li{display:flex;align-items:center;gap:12px;min-width:0;padding:8px 10px;border-radius:14px;margin-bottom:2px;background:transparent;transition:background var(--dur)}
 .li:hover{background:#26262a}
 .li.on{background:#232327}
 .li.on:hover{background:#2a2a2f}
 .li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
-.li .nm small{display:block;color:var(--muted);font-size:11.5px}
+.li .nm small{display:inline;margin-left:6px;color:var(--muted);font-size:11.5px}
 .li .tag{font-size:10px;color:var(--muted);margin-left:8px;padding:1px 6px;border:1px solid #45454b;border-radius:999px;vertical-align:1px}
 .li input[type=number]{width:56px;background:var(--raised);border:1px solid #3a3a40;border-radius:8px;padding:3px 6px;font-size:13px;font-variant-numeric:tabular-nums}
+.lbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.l1,.l2{display:flex;align-items:center;gap:8px;min-width:0}
+.l1 .nm{flex:1;min-width:0}
+.l2 input[type=range]{flex:1;min-width:0}
+.l2 input[type=number]{width:62px;flex:none}
+.lth{width:var(--th,48px);height:var(--th,48px);border-radius:10px;overflow:hidden;display:grid;place-items:center;font-weight:600;color:rgba(255,255,255,.75);font-size:calc(var(--th,48px)*.3);cursor:pointer;flex:none}
+.lth img{width:100%;height:100%;object-fit:cover;display:block}
+.star{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:14px;color:#777}
+.l2 .star{width:22px;height:22px;flex:none}
+.star.on{color:#ffd166}
+.nmedit{width:100%;background:#1c1c1e;border:1px solid rgba(255,255,255,.6);border-radius:6px;padding:1px 5px;font-size:13px}
 .flash{animation:flash 1s}
 @keyframes flash{0%{box-shadow:0 0 0 2px #fff}100%{box-shadow:0 0 0 0 transparent}}
 
+/* ======================= PNG Info ======================= */
 .pwrap{position:absolute;inset:0;padding:4px 2px 18px;display:flex;flex-direction:column;gap:12px}
+.rpanel.paneled .pwrap{padding:18px}
 .drop{border:2px dashed #3d3d42;border-radius:16px;padding:26px;text-align:center;color:var(--muted);cursor:pointer}
 .drop.over{border-color:rgba(255,255,255,.7);color:var(--text)}
+.pwrap:has(.pout:empty) .drop{flex:1;display:flex;flex-direction:column;justify-content:center}   /* nothing loaded: the whole panel is the drop target */
 .pout{flex:1;overflow:auto;background:#161618;border-radius:14px;padding:18px 20px;font-size:14px;color:#cfcfd4}
 .pout.raw{white-space:pre-wrap;font-size:13px}
 .pout:empty{display:none}
-.pwrap:has(.pout:empty) .drop{flex:1;display:flex;flex-direction:column;justify-content:center} /* nothing loaded: the whole panel is the drop target */
 .pi-h{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8a8a92;margin:2px 0 8px}
 .pi-p{line-height:1.62;color:#e6e6ea;margin-bottom:18px}
 .pi-p .ln{min-height:1.62em}
@@ -272,19 +525,27 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .pimg{display:none;justify-content:center;flex:none;max-height:38%;min-height:0}
 .pimg.show{display:flex}
 .pimg img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain;outline:1px solid rgba(255,255,255,.07);outline-offset:-1px}
+.pact{display:flex;gap:8px;justify-content:flex-end}
 #pClear{margin-left:0;margin-right:auto}
 .pi-raw{font-size:12px;color:var(--muted);background:var(--raised);padding:4px 10px;border-radius:999px}
-.pact{display:flex;gap:8px;justify-content:flex-end}
+.pact .keepseed{margin-right:auto;margin-left:10px}
 .btn{padding:9px 16px;border-radius:999px;background:var(--raised);font-size:14px}
-.btn:hover{background:var(--raised2)} .btn.pri{background:var(--grad);color:var(--ink);font-weight:600}
+.btn:hover{background:var(--raised2)}.btn.pri{background:var(--grad);color:var(--ink);font-weight:600}
 .btn[disabled]{opacity:.4;pointer-events:none}
 
+/* ======================= dialogs: Settings, the shortcut sheet ======================= */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:100;visibility:hidden;opacity:0;transition:opacity .22s var(--ease),visibility 0s linear .22s}
 .modal.show{visibility:visible;opacity:1;transition:opacity .22s var(--ease),visibility 0s}
-.modal .mcard{transform:scale(.97);transition:transform .22s var(--ease)} .modal.show .mcard{transform:none}
-.mcard{width:min(560px,92vw);background:var(--panel);border:1px solid var(--line);border-radius:var(--r-panel);padding:22px 24px}
-.mcard h2{margin:0 0 14px;font-size:18px;font-weight:600}
-.fg{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;align-items:center;font-size:14px}
+/* a fixed header (✕ where it sits elsewhere in Kiln, the title, icon actions); only the content scrolls */
+.mcard{width:min(560px,92vw);max-height:88vh;display:flex;flex-direction:column;padding:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-panel)}
+.modal .mcard{transform:scale(.97);transition:transform .22s var(--ease)}.modal.show .mcard{transform:none}
+.modal:not(.show) .mcard{transition:none}   /* closing is instant (re-blurring glass on every frame of a shrink lagged) */
+.mhead{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:1px solid rgba(255,255,255,.06);flex:none}
+.mhead h2{margin:0;flex:1;font-size:18px;font-weight:600;letter-spacing:-.01em}
+.mhead .mact{display:flex;gap:6px}
+.mhead .iconbtn svg{width:17px;height:17px}
+.mbody{overflow:auto;padding:16px 24px 22px}
+.fg{display:grid;grid-template-columns:150px 1fr;gap:4px 14px;align-items:center;font-size:14px}
 .fg label{color:var(--muted)}
 .fg select,.fg input{background:transparent;border:1px solid transparent;border-radius:8px;padding:6px 8px;width:100%;color:#f2f2f2;transition:background .15s,border-color .15s}
 .fg select{appearance:none;-webkit-appearance:none;padding-right:26px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8a92' fill='none' stroke-width='1.4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
@@ -294,10 +555,16 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .fg input[readonly]{color:var(--muted)}
 .fgh{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8a8a92;border-top:1px solid #2c2c31;padding-top:14px;margin-top:8px}
 .fgh.first{border-top:0;padding-top:0;margin-top:0}
-.fg{gap:4px 14px!important}
-.mcard{max-height:88vh;overflow:auto}
-.mcard .pact{margin-top:18px}
-.demo{position:fixed;left:18px;bottom:12px;font-size:11.5px;color:var(--faint)}
+.about{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.about span{color:var(--muted);margin-right:4px}
+.updres{grid-column:1/-1;font-size:13px;color:var(--muted);line-height:1.5}.updres:empty{display:none}
+.updres code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:5px}.updres a{color:var(--a3)}
+.keys .mcard{width:min(520px,92vw)}.keys .fgh{margin:16px 0 10px}
+.kgrid{display:grid;grid-template-columns:auto 1fr;gap:9px 18px;align-items:center;font-size:14px}
+.kgrid .kt{color:var(--muted)}.kgrid.mouse .kk{color:var(--text);font-size:13px}
+kbd{display:inline-block;min-width:24px;padding:2px 7px;border-radius:7px;background:rgba(255,255,255,.08);box-shadow:inset 0 -1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(255,255,255,.08);
+ font:500 12.5px var(--font,Inter),system-ui;text-align:center;color:var(--text)}
+
+/* ======================= overlays: the viewer, toasts, tooltips, docking ======================= */
 .viewer{position:fixed;inset:0;background:#000;z-index:150;visibility:hidden;opacity:0;transition:opacity .2s var(--ease),visibility 0s linear .2s;overflow:hidden;cursor:zoom-in}
 .viewer.show{visibility:visible;opacity:1;transition:opacity .2s var(--ease),visibility 0s}
 .viewer.zoomed{cursor:grab}.viewer.panning{cursor:grabbing}
@@ -306,727 +573,166 @@ textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;
 .vclose svg{width:16px;height:16px}
 .vzoom{position:absolute;top:22px;right:20px;font-size:13px;color:#cdcdcd;font-variant-numeric:tabular-nums;background:rgba(40,40,44,.8);padding:5px 10px;border-radius:999px}
 .vhint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-size:12px;color:#77777e;white-space:nowrap}
-.frame.clickable{cursor:zoom-in}
-.nav{position:absolute;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;z-index:6;opacity:0;transition:opacity .15s,background .15s}
-.nav.prev{left:10px}.nav.next{right:10px}
-.frame .nav{top:max(50%,276px)}
-.bclose{position:absolute;top:10px;left:10px;width:40px;height:40px;border-radius:14px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:6;transition:background .15s}
-.bclose:hover{background:rgba(40,40,44,.9)}.bclose svg{width:16px;height:16px}
-.frame.browsing .bclose,.frame.clearable:hover .bclose{display:grid} /* below the 5 hover buttons when the frame is short */
-.nav svg{width:18px;height:18px}.nav:hover{background:rgba(40,40,44,.9)}
-.frame:hover .nav:not(.off),.viewer:hover .nav:not(.off){opacity:1}
-.nav.off{pointer-events:none}
-.hsplit{display:none}
-.app.stacked .hsplit{display:block;position:absolute;left:0;right:0;top:-10px;height:16px;cursor:ns-resize;z-index:6;touch-action:none}
-.hsplit::after{content:"";position:absolute;left:50%;top:6px;width:46px;height:4px;margin-left:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
-.hsplit:hover::after,.hsplit.drag::after{opacity:1}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#232326;border:1px solid #3a3a3f;padding:8px 10px 8px 16px;border-radius:999px;font-size:13.5px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:200;display:flex;gap:10px;align-items:center}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#232326;border:1px solid #3a3a3f;padding:8px 10px 8px 16px;border-radius:999px;font-size:13.5px;
+ opacity:0;transition:opacity .2s;pointer-events:none;z-index:200;display:flex;gap:10px;align-items:center}
 .toast.show{opacity:1;pointer-events:auto}
 .toast button{padding:4px 12px;border-radius:999px;background:var(--raised2);font-size:13px}
 .toast button:empty{display:none}
-
-/* ---- batch: buttons not selectable, square image area, tooltips, name chip, card size, compact pills, embers ---- */
-button,.tab,.pill,.chip,.qi,.card,.li,.fchips button{user-select:none;-webkit-user-select:none}
-.rpanel:not(.paneled){border-radius:0}
-.side button::after{display:none}
-#tip{position:fixed;left:0;top:0;z-index:400;background:#2c2c31;border:1px solid #3a3a40;color:#e6e6ea;font-size:12px;line-height:1.35;padding:5px 9px;border-radius:8px;max-width:280px;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#tip{position:fixed;left:0;top:0;z-index:400;background:#2c2c31;border:1px solid #3a3a40;color:#e6e6ea;font-size:12px;line-height:1.35;padding:5px 9px;border-radius:8px;max-width:280px;
+ pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #tip.show{opacity:1}
-.nchip{display:inline-flex;align-items:center;border-radius:999px;transition:background .15s;min-width:0}
-.plbl.hasname .nchip{background:var(--raised);padding-right:3px}
-.plbl.hasname .pname{padding:2px 4px 2px 10px;margin-left:0}
-.plbl.hasname .pname:hover,.plbl.hasname .pname:focus{background:transparent;box-shadow:none}
-.plbl.hasname .pnx{margin-left:0}
-.csize{width:90px;flex:none}
-.csz{display:flex;align-items:center;gap:6px;color:var(--muted);flex:none}
-.csz svg{width:14px;height:14px}
-.left{container-type:inline-size}
-@container (max-width:560px){.pill .w{display:none}.pill{padding:0 11px}}
-@container (max-width:470px){.pill .il{display:none}}
-#veil{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
-#embers{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
-/* prompt card: positioned by layoutLeft() — centred on the image, frozen while you work in it */
-.lcol{position:relative;min-height:0;min-width:0}
-.left.nodur,.ltitle.nodur{transition:none!important}
-/* wide window: grab the empty parts of the prompt card (or the name row) to move it — snaps top / middle / bottom */
-.app:not(.stacked) .left,.app:not(.stacked) .ltitle{cursor:grab}
-.pwrapT{cursor:text}.chip{cursor:default}
-body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
+.demo{position:fixed;left:18px;bottom:12px;font-size:11.5px;color:var(--faint)}
+/* moving the prompt box: the three places it snaps to, and the dock zones */
 .ghost{position:absolute;right:0;width:min(100%,var(--cw,680px));border-radius:var(--r-panel);border:1px dashed rgba(255,255,255,.14);pointer-events:none;opacity:0;transition:opacity .15s,border-color .15s}
 .ghost.show{opacity:1}.ghost.near{border-color:rgba(255,255,255,.5)}
+.dockzone{position:fixed;z-index:90;display:none;align-items:center;justify-content:center;pointer-events:none;border:2px dashed rgba(255,255,255,.22);border-radius:24px;
+ background:rgba(255,255,255,.03);color:rgba(255,255,255,.55);font-size:14px;font-weight:500;transition:background .15s,border-color .15s,color .15s}
+.dockzone.show{display:flex}.dockzone.near{background:color-mix(in oklab,var(--a1) 14%,transparent);border-color:color-mix(in oklab,var(--a1) 70%,transparent);color:#fff}
+.dockzone.left{left:12px;top:12px;bottom:22%;width:28%}.dockzone.right{right:12px;top:12px;bottom:22%;width:28%}.dockzone.below{left:12px;right:12px;bottom:12px;height:18%}
 
-/* ---- composer layout ---- */
-.ltitle{position:absolute;right:0;width:min(100%,var(--cw,680px));top:calc(var(--ltop,0px) - var(--ts,64px) + 4px);height:calc(var(--ts,64px) - 10px);transition:top .25s cubic-bezier(.4,0,.2,1),height .25s cubic-bezier(.4,0,.2,1);
- padding:0 8px 0 26px;display:flex;flex-direction:column;justify-content:flex-end}
-.ltitle{align-items:center;padding:0 26px!important}
-.ltitle .phead{padding:0;justify-content:center}
-.ltitle .plbl{justify-content:center}
-.ltitle .pname{text-align:center;min-width:9ch;font-size:24px;font-weight:600;letter-spacing:-.01em;color:#f2f2f2;padding:2px 6px;margin-left:-6px}
-.ltitle .pname::placeholder{color:#55555c;font-weight:500}
-.ltitle .plbl.hasname .nchip{background:transparent;padding-right:0}
-.ltitle .plbl.hasname .pname{padding:2px 6px;margin-left:0}
-.ltitle .pnx{opacity:0;transition:opacity .15s}.ltitle:hover .plbl.hasname .pnx{opacity:1}
-.ltitle .plbl.dimname .pname{color:#9a9aa2}
-/* looking at an old prompt: the Reuse bar stands where Play is, the pills show that job's settings, greyed */
-/* the Reuse bar floats just above the name: it is replacing the working file, title included; the name row never moves */
-/* the Reuse bar: under the name, in the row of the height buttons — centred, with their room reserved on both sides */
-.ltitle{container-type:inline-size}
-.ltitle .peekbar{position:static;margin-top:12px;margin-bottom:-8px;box-shadow:none;max-width:calc(100% - 136px);white-space:nowrap}
-.ltitle .peekbar>span{overflow:hidden;text-overflow:ellipsis;min-width:0}.peekbar .sm{display:none}
-@container (max-width:470px){.ltitle .peekbar .lg{display:none}.ltitle .peekbar .sm{display:inline}.ltitle #peekLbl{display:none}}
-.left.peeking .pills{opacity:.66;pointer-events:none}.left.peeking #pN{display:none}
-.chip[hidden]{display:none}
-.chips.peek .chip{opacity:.68;pointer-events:none}.chips.peek .chipmore{pointer-events:auto;opacity:1}
-/* peeking: the name field shows the peeked image's name, greyed and read-only */
-.ltitle .plbl.peekname .pname{color:#77777e!important}.plbl.peekname .pnx{display:none!important}
-/* height modes: match the image block / full column (icons at the right of the name row) */
-.hmodes{position:absolute;right:22px;bottom:6px;display:flex;gap:4px;z-index:4;opacity:0;transition:opacity .15s}
-#lcol:hover .hmodes,.hmodes.on{opacity:1}
-.hmodes button{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
-.hmodes button:hover{background:var(--raised2);color:#fff}.hmodes button.on{background:#f2f2f2;color:#111}
-.hmodes svg{width:16px;height:16px}
-.left.hm .vedge{display:none}
-.app:not(.stacked) .left.hm,.app:not(.stacked) .ltitle.hm{cursor:default}
-/* LoRA library: one row format with the thumbnail in front, Active strip on top */
-:root{--liw:calc(var(--th,48px) + 250px)} /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
-.lgrid{display:grid;grid-template-columns:repeat(auto-fill,min(100%,var(--liw)));justify-content:center;column-gap:16px}
-.lgrid .lsec,.lgrid .empty{grid-column:1/-1}
-/* two lines: name (+ tags) and the switch on top, weight under the name — nothing has to line up across rows */
-.lgrid .li{display:flex;align-items:center;gap:12px;min-width:0;padding:8px 10px}
-.lbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
-.l1,.l2{display:flex;align-items:center;gap:8px;min-width:0}
-.l1 .nm{flex:1;min-width:0}
-.lgrid .li .nm small{display:inline;margin-left:6px;font-size:11.5px}
-.l2 input[type=range]{flex:1;min-width:0}
-.l2 input[type=number]{width:62px;flex:none}
-.l2 .star{width:22px;height:22px;flex:none}
-.lth{width:var(--th,48px);height:var(--th,48px);border-radius:10px;overflow:hidden;display:grid;place-items:center;font-weight:600;color:rgba(255,255,255,.75);font-size:calc(var(--th,48px)*.3);cursor:pointer;flex:none}
-.lth img{width:100%;height:100%;object-fit:cover;display:block}
-.lgrid .lnone{grid-column:1/-1;font-size:12.5px;color:var(--faint);padding:2px 4px 10px}
-.chipmore{padding:4px 10px;font-weight:600;color:#d6d6da}
-.left{border-color:#34343a!important}
-/* LoRA chips live under the prompt box, centred, moving with it (layoutLeft sets --chtop); drag one to reorder */
-#lcol>.chips{position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--chtop,0px);justify-content:flex-start!important;align-items:center;padding:0 16px!important;transition:top .25s cubic-bezier(.4,0,.2,1)}
-#lcol>.chips:empty{display:none}
-.app.stacked #lcol>.chips{right:auto;left:50%;transform:translateX(-50%);width:min(100%,760px)}
-body.liveresize #lcol>.chips,body.cardmove #lcol>.chips{transition:none}
-.chip[draggable=true]{cursor:grab}.chip.dragging{opacity:.35}
-.left{padding-top:12px}
-/* one inset (16 px) left, bottom and right; pills and Play share their bottom edge; pill text lines up with the prompt (28 px) */
-.controls{justify-content:space-between!important;align-items:flex-end!important;padding:8px 16px 16px 16px!important}
-.controls .play{order:2;width:44px;height:44px}
-.controls .play svg{width:19px;height:19px}
-.pills{justify-content:flex-start!important;margin-left:0!important}
+/* ======================= backgrounds ======================= */
+#stars{position:fixed;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1.2s var(--ease);pointer-events:none;z-index:0}
+#stars.on{opacity:1}
+#fglow{position:fixed;left:0;top:0;width:0;height:0;z-index:0;pointer-events:none;opacity:0;mix-blend-mode:screen}   /* Aurora's halo round the picture (skins.js makeHalo) */
 
-/* ---- stacked layout (narrow or tall window): image on top, prompt card below ---- */
-.app.stacked{grid-template-columns:1fr!important;grid-template-rows:minmax(0,1fr) auto}
-.app.stacked .split{display:none}
-.app.stacked .right{order:1}
-.app.stacked .lcol{order:2;height:var(--lch,320px);margin-top:6px}
-.app.stacked .left,.app.stacked .ltitle{right:auto;left:50%;width:min(100%,760px);transform:translateX(-50%)}
-/* stacked: the picture + toolbar group is centred by sizeFrame like everywhere else */
-.app.stacked .right .tabs{align-self:center;width:auto!important}
-
-/* ---- glass: the material the UI is made of (Settings → Material; Solid is the alternative). Three thicknesses:
-   regular (prompt box, tab bar, Reuse bar, pop-ups, toasts, tooltips) gathers the background's light; thick (panels full
-   of text) frosts more; thin (every control and row) is a light capsule.
-   Glass that holds glass of its own carries it on a ::before layer, not on itself: in Chromium an element with a
-   backdrop-filter becomes the backdrop of its children, so glass inside glass could not blur what is really under it
-   (the prompt under a pop-up, the text under the pills). ---- */
-body.glass .ltitle .peekbar{position:relative}
-body.glass .left,body.glass .rpanel.paneled,body.glass .mcard,body.glass .seg,body.glass .peekbar{background:transparent!important;isolation:isolate;border-color:rgba(255,255,255,.12)!important}
-body.glass .left::before,body.glass .rpanel.paneled::before,body.glass .mcard::before,body.glass .seg::before,body.glass .peekbar::before,body.glass .pill::before{
+/* ======================= glass: the material the UI is made of =======================
+   Settings → Material (Solid is the alternative). Three thicknesses: regular (prompt box, tab bar, Reuse bar, pop-ups,
+   toasts, tooltips) gathers the background's light; thick (panels full of text) frosts more; thin (every control and
+   row) is a light capsule. Glass that holds glass of its own carries it on a ::before layer, not on itself: in
+   Chromium an element with a backdrop-filter becomes the backdrop of its children, so glass inside glass could not blur
+   what is really under it (the prompt under a pop-up, the text under the pills). */
+body.glass .left,body.glass .rpanel.paneled,body.glass .mcard,body.glass .seg,body.glass .peekbar{background:transparent;isolation:isolate;border-color:rgba(255,255,255,.12)}
+body.glass .ltitle .peekbar,body.glass .mcard{position:relative}
+body.glass .left::before,body.glass .rpanel.paneled::before,body.glass .mcard::before,body.glass .seg::before,body.glass .peekbar::before,body.glass .pill::before,body.glass .play::before{
  content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none}
 /* regular */
-body.glass .left::before,body.glass .seg::before,body.glass .peekbar::before{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);
+body.glass .left::before,body.glass .seg::before,body.glass .peekbar::before,body.glass .frame:not(.has)::before{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);
  -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03)}
-body.glass .pop,body.glass .toast,body.glass #tip{background:color-mix(in oklab,rgba(26,28,32,.42),var(--a1) 6%)!important;
- -webkit-backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);border-color:rgba(255,255,255,.14)!important;
- box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 36px rgba(0,0,0,.4)}
+body.glass .pop,body.glass .toast,body.glass #tip{background:color-mix(in oklab,rgba(26,28,32,.42),var(--a1) 6%);border-color:rgba(255,255,255,.14);
+ -webkit-backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 36px rgba(0,0,0,.4)}
+/* the gear and the Layout button sit in the tab bar's row over the bright sky: the tab bar's regular glass */
+body.glass .gear{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);
+ -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03),0 0 0 1px rgba(255,255,255,.1)}
+body.glass .gear:hover{background:color-mix(in oklab,rgba(44,48,50,var(--gta,.28)),var(--a1) 8%);color:var(--text)}
+/* nothing to show: the picture area is regular glass, the background's light blurred behind it */
+body.glass .frame:not(.has){outline-color:rgba(255,255,255,.12)}
+body.glass .frame:not(.has)::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
 /* thick */
 body.glass .rpanel.paneled::before,body.glass .mcard::before{background:color-mix(in oklab,rgba(16,18,20,var(--gtk,.3)),var(--a1) 5%);
  -webkit-backdrop-filter:blur(16px) saturate(2.2) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.2) brightness(var(--gtb,2.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
 body.glass .left,body.glass .rpanel.paneled,body.glass .mcard{box-shadow:0 18px 50px rgba(0,0,0,.35)}
 body.glass .seg .thumb{background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
-/* thin: controls (the pills carry theirs on ::before, so their pop-ups can blur the prompt too) */
-body.glass .pill::before{background:color-mix(in oklab,rgba(255,255,255,.045),var(--cool,#9ab) 14%);-webkit-backdrop-filter:blur(10px) saturate(1.7);backdrop-filter:blur(10px) saturate(1.7);
+/* thin: controls (the pills and Start carry theirs on ::before, so their pop-ups can blur the prompt too) */
+body.glass .pill,body.glass .play{isolation:isolate}
+body.glass .pill::before,body.glass .play::before{background:color-mix(in oklab,rgba(255,255,255,.045),var(--cool,#9ab) 14%);-webkit-backdrop-filter:blur(10px) saturate(1.7);backdrop-filter:blur(10px) saturate(1.7);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(255,255,255,.04),0 0 0 1px rgba(255,255,255,.1)}
-body.glass .pill{isolation:isolate}body.glass .mcard{position:relative}
-body.glass .pill:hover::before,body.glass .pill.open::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--cool,#9ab) 18%)}
 body.glass .pill:hover,body.glass .pill.open{background:transparent}
-body.glass .flink,body.glass .gear,body.glass .qb:not(.on),body.glass .btn:not(.pri),body.glass .peekbar button:not(#pkAll),body.glass .qsec button,body.glass .stop,
+body.glass .pill:hover::before,body.glass .pill.open::before,body.glass .play.gen:hover::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--cool,#9ab) 18%)}
+body.glass .qb:not(.on),body.glass .btn:not(.pri),body.glass .peekbar button:not(#pkAll),body.glass .qsec button,body.glass .prog .stop,body.glass .prog .resume,body.glass .pchip,
 body.glass .chip,body.glass .fchips button:not(.on),body.glass .iconbtn,body.glass .pi-raw,body.glass .hmodes button:not(.on),body.glass .qi .x,body.glass .search{
- background:color-mix(in oklab,rgba(255,255,255,.08),var(--cool,#9ab) 16%)!important;-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);
+ background:color-mix(in oklab,rgba(255,255,255,.08),var(--cool,#9ab) 16%);-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 0 0 1px rgba(255,255,255,.07)}
-body.glass .flink:hover,body.glass .gear:hover,body.glass .btn:not(.pri):hover,body.glass .chip:hover,body.glass .stop:hover,body.glass .qb:not(.on):hover,
-body.glass .fchips button:not(.on):hover,body.glass .hmodes button:not(.on):hover,body.glass .qi .x:hover,body.glass .peekbar button:not(#pkAll):hover{background:color-mix(in oklab,rgba(255,255,255,.16),var(--cool,#9ab) 18%)!important}
-body.glass .hmodes button:not(.on){background:transparent!important;box-shadow:none}body.glass .hmodes button:not(.on):hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.17)}
-body.glass .qi .x{background:transparent!important;box-shadow:none}
-body.glass .side button,body.glass .nav,body.glass .bclose,body.glass .vclose{background:rgba(20,22,24,.38)!important;-webkit-backdrop-filter:blur(18px) saturate(1.7);backdrop-filter:blur(18px) saturate(1.7);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.10)}
+body.glass .btn:not(.pri):hover,body.glass .chip:hover,body.glass .prog .stop:hover,body.glass .qb:not(.on):hover,body.glass .iconbtn:hover,
+body.glass .fchips button:not(.on):hover,body.glass .hmodes button:not(.on):hover,body.glass .qi .x:hover,body.glass .peekbar button:not(#pkAll):hover{background:color-mix(in oklab,rgba(255,255,255,.16),var(--cool,#9ab) 18%)}
+body.glass .hmodes button:not(.on),body.glass .qi .x{background:transparent;box-shadow:none}   /* icon-only: no capsule at rest */
+body.glass .hmodes button:not(.on):hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.17)}
+/* the buttons on the picture (no hover change in glass: the glass is the button) */
+body.glass .side button,body.glass .side button:hover,body.glass .nav,body.glass .nav:hover,body.glass .bclose,body.glass .bclose:hover,body.glass .vclose,body.glass .cbtn{
+ background:rgba(20,22,24,.38);-webkit-backdrop-filter:blur(18px) saturate(1.7);backdrop-filter:blur(18px) saturate(1.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.10)}
+body.glass .cbtn:hover{background:rgba(44,48,50,.5)}
 /* thin rows inside thick panels */
 body.glass .qi{background:color-mix(in oklab,rgba(12,14,14,.5),var(--a1) 4%);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
 body.glass .qi:hover{background:color-mix(in oklab,rgba(40,44,44,.5),var(--a1) 6%)}
 body.glass .li{background:color-mix(in oklab,rgba(12,14,14,.3),var(--a1) 3%)}
 body.glass .li:hover{background:rgba(255,255,255,.06)}body.glass .li.on{background:rgba(255,255,255,.05)}
 body.glass .pout{background:rgba(0,0,0,.22)}body.glass .drop{border-color:rgba(255,255,255,.18)}
-body.glass .fg select option{background:#1d2120}
-/* Play: tinted glass — the theme gradient under a glossy sheen */
-body.glass .play{box-shadow:inset 0 1px 1px rgba(255,255,255,.55),inset 0 -6px 14px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.22)}
-body.glass .play::after{content:"";position:absolute;inset:2px 7px auto 7px;height:46%;border-radius:999px;background:linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,0));pointer-events:none}
-
-/* the pill row floats over the bottom of the glass box: the prompt scrolls under it, fading and blurring (Liquid Glass's
-   scroll-edge effect); the last line can always scroll clear of it */
-body.glass .left .controls{position:absolute;left:0;right:0;bottom:0;z-index:2}
-body.glass .left .pwrapT .cm-scroller{padding-bottom:calc(var(--ctrlh,64px) - 6px);-webkit-mask-image:linear-gradient(#000 calc(100% - var(--ctrlh,64px) - 14px),rgba(0,0,0,.35) calc(100% - 22px));mask-image:linear-gradient(#000 calc(100% - var(--ctrlh,64px) - 14px),rgba(0,0,0,.35) calc(100% - 22px))}
-body.glass .left .pwrapT .cm-editor{margin-bottom:0}
-body.glass .play{background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 58%,#0c100e),color-mix(in oklab,var(--a2) 48%,#0c100e) 55%,color-mix(in oklab,var(--a3) 42%,#0c100e))}
-body.glass .play svg path{fill:#effff4}
-body.glass .play:hover{filter:brightness(1.18) saturate(1.1);box-shadow:inset 0 1px 1px rgba(255,255,255,.55),inset 0 -6px 14px rgba(0,0,0,.18),0 0 0 3px color-mix(in oklab,var(--an) 45%,transparent)}
-/* nothing to show: the image area is regular glass, the code's light blurred behind it */
-body.glass .frame:not(.has){outline-color:rgba(255,255,255,.12)}
-body.glass .frame:not(.has)::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);
- -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
-/* the theme's title font (Emerald: Courier Prime, glowing faintly, spaced like a title card) */
-.ltitle .pname{font-family:var(--font-title,inherit)}
-body.skin-emerald .ltitle .pname{font-weight:700;letter-spacing:.06em;text-shadow:0 0 14px color-mix(in oklab,var(--a1) 45%,transparent)}
-/* seeds you can copy */
-.seedc{cursor:copy;border-bottom:1px dotted rgba(255,255,255,.22)}.seedc:hover{color:var(--text)}
-.left.peeking #pSD{pointer-events:auto;cursor:copy}
-/* glass: tabs switch at once — a fading view is partly transparent, and Chromium turns off the glass inside anything partly
-   transparent, so the blur popped in only after the fade (seen going Queue -> Generating) */
+/* tabs switch at once: a fading view is partly transparent, and Chromium turns off the glass inside anything partly
+   transparent, so the blur popped in only after the fade */
 body.glass .view{opacity:1;transform:none;transition:visibility 0s}
-/* the chip row's label (the same small caps as STYLE: in the prompt) and its + */
-.chiplbl{font-size:12px;letter-spacing:.02em;color:#8f959a;margin:0 6px 0 12px;user-select:none} /* LoRA / LoRAs, spelled as written */
-.chipadd{padding:4px 11px!important;color:#cfd3d6;font-weight:600}.chipadd:hover{color:#fff}
-.chips.peek .chiplbl{opacity:1}
-/* glass thickness per theme: Aurora's sky is bright, so its glass is thicker and gathers less light than Emerald's */
-body.skin-aurora{--gta:.48;--gtk:.52;--gtb:1.35}
-/* Settings: in glass mode it appears at once (a fading dialog would switch its glass off until the fade ends);
-   only the dark overlay eases in */
+/* Settings: appears at once (a fading dialog would switch its glass off until the fade ends); only the dark overlay eases in */
 body.glass .modal{opacity:1;background:rgba(0,0,0,0);transition:background-color .22s var(--ease),visibility 0s linear .22s}
 body.glass .modal.show{background:rgba(0,0,0,.55);transition:background-color .22s var(--ease),visibility 0s}
-/* Settings: a fixed header (✕ where it sits elsewhere in Kiln, the title, icon actions); only the content scrolls */
-.mcard{display:flex;flex-direction:column;padding:0!important;overflow:hidden!important}
-.mhead{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:1px solid rgba(255,255,255,.06);flex:none}
-.mhead h2{margin:0!important;flex:1;font-size:18px}
-.mhead .mact{display:flex;gap:6px}
-.mhead .iconbtn svg{width:17px;height:17px}
-.mbody{overflow:auto;padding:16px 24px 22px}
-.iconbtn.spin svg{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-/* closing Settings is instant (re-blurring the glass on every frame of a shrink was the lag) */
-body.glass .modal:not(.show),.modal:not(.show) .mcard{transition:none}
-/* ---- notes of 2026-10-08 ---- */
-/* the cover button: top right of the image (left of the hover buttons when they show); on hover, and always while the
-   cover is held so you can see how to lift it */
-.cbtn{position:absolute;top:10px;right:10px;z-index:6;width:40px;height:40px;border-radius:14px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:none;place-items:center;opacity:0;transition:opacity .15s,background .15s}
-.cbtn svg{width:20px;height:20px}.cbtn:hover{background:rgba(40,40,44,.9)}
-.frame.has .cbtn{display:grid}.frame.has:hover .cbtn{opacity:1}.frame.held .cbtn{opacity:.55}.frame.held:hover .cbtn{opacity:1}
-.frame.has:not(.running):not(.held) .cbtn{right:58px}
-body.glass .cbtn{background:rgba(20,22,24,.38)!important;-webkit-backdrop-filter:blur(18px) saturate(1.7);backdrop-filter:blur(18px) saturate(1.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.10)}
-body.glass .cbtn:hover{background:rgba(44,48,50,.5)!important}
-/* held: the picture is hidden outright (never a blur: a blur still shows shapes and skin tones) */
-.frame.held #cv{visibility:hidden}.frame.held .side{display:none}.frame.held{cursor:default}
-/* Settings: hovering a field is a thin glass capsule, like every other control */
+body.glass .modal:not(.show){transition:none}
+body.glass .fg select option{background:#1d2120}
 body.glass .fg select:hover,body.glass .fg input:not([readonly]):hover{background-color:color-mix(in oklab,rgba(255,255,255,.08),var(--cool,#9ab) 16%);box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 0 0 1px rgba(255,255,255,.06)}
 body.glass .fg select:focus,body.glass .fg input:not([readonly]):focus{background-color:color-mix(in oklab,rgba(255,255,255,.11),var(--cool,#9ab) 18%);border-color:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
 body.glass .fg input[readonly]:hover{background-color:transparent}
-body.glass .iconbtn:hover{background:color-mix(in oklab,rgba(255,255,255,.16),var(--cool,#9ab) 18%)!important}
-/* the queue count on Start: a small glass capsule instead of a flat white disc */
-body.glass .badge{background:color-mix(in oklab,rgba(255,255,255,.2),var(--cool,#9ab) 16%);color:#fff;-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 0 0 1px rgba(255,255,255,.14),0 1px 4px rgba(0,0,0,.3)}
-/* Forge ↗ and the gear sit in the tab bar's row over the bright sky: the same regular glass as the tab bar (a tinted base
-   that gathers the light), not the thin clear capsule that let the aurora read as if it were on top of them */
-body.glass .flink,body.glass .gear{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%)!important;
- -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));
- box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03),0 0 0 1px rgba(255,255,255,.1)}
-body.glass .flink:hover,body.glass .gear:hover{background:color-mix(in oklab,rgba(44,48,50,var(--gta,.28)),var(--a1) 8%)!important;color:var(--text)}
-/* the character count: in glass the controls float over the prompt's bottom, so it sits just above them, under Start */
-body.glass .left .pcount{right:18px;bottom:calc(var(--ctrlh,64px) - 2px)}
-/* LoRA tab: rescan */
-.ltop #lRefresh{flex:none}
-/* ---- 2026-10-17: Start like every other control — a plain capsule (thin glass in glass mode), the theme's colours in the
-   triangle; nothing to queue: the triangle goes the grey of the "Seed" label ---- */
-.play,.controls .play{background:var(--raised);filter:none!important;box-shadow:none;--play-fill:url(#playGrad)}
-.play:hover{background:var(--raised2);transform:none}
-.play svg path{fill:var(--play-fill);transition:fill .2s}
-.play.off svg path{fill:var(--muted)}
-.play.off,.play.off:hover{background:var(--raised)}
-.controls .play svg{width:20px;height:20px;margin-left:2px}
-body.glass .play{background:transparent!important;isolation:isolate;box-shadow:none!important}
-body.glass .play::after{display:none}
-body.glass .play::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;
- background:color-mix(in oklab,rgba(255,255,255,.045),var(--cool,#9ab) 14%);-webkit-backdrop-filter:blur(10px) saturate(1.7);backdrop-filter:blur(10px) saturate(1.7);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(255,255,255,.04),0 0 0 1px rgba(255,255,255,.1)}
-body.glass .play:not(.off):hover::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--cool,#9ab) 18%)}
-body.glass .play svg path{fill:var(--play-fill)}body.glass .play.off svg path{fill:var(--muted)}
-/* main actions (Send to prompt, Reuse all / Use this seed): tinted glass — the theme gradient, see-through, with the
-   glass's light edge, instead of a flat fill */
-body.glass .btn.pri,body.glass .peekbar #pkAll{position:relative;color:var(--ink);font-weight:600;
- background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 80%,transparent),color-mix(in oklab,var(--a2) 72%,transparent) 55%,color-mix(in oklab,var(--a3) 66%,transparent))!important;
+/* the pill row floats over the bottom of the glass box: the prompt scrolls under it, fading and blurring (Liquid
+   Glass's scroll-edge effect); the last line can always scroll clear of it */
+body.glass .left .controls{position:absolute;left:0;right:0;bottom:0;z-index:2}
+body.glass .left .pwrapT .cm-scroller{padding-bottom:calc(var(--ctrlh,64px) - 6px);
+ -webkit-mask-image:linear-gradient(#000 calc(100% - var(--ctrlh,64px) - 14px),rgba(0,0,0,.35) calc(100% - 22px));mask-image:linear-gradient(#000 calc(100% - var(--ctrlh,64px) - 14px),rgba(0,0,0,.35) calc(100% - 22px))}
+body.glass .left .pwrapT .cm-editor{margin-bottom:0}
+body.glass .left .pcount{right:72px;bottom:calc(var(--ctrlh,64px) - 2px)}   /* just above the controls, left of Start */
+body.glass .left .privov{bottom:var(--ctrlh,64px)}
+/* main actions (Start, Send to prompt, Reuse all, Save name): tinted glass — the theme gradient, see-through, with
+   the glass's light edge. Nothing to queue / a job running: Start is plain thin glass */
+body.glass .btn.pri,body.glass .peekbar #pkAll,body.glass .play:not(.off),body.glass .pnsave{
+ background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 80%,transparent),color-mix(in oklab,var(--a2) 72%,transparent) 55%,color-mix(in oklab,var(--a3) 66%,transparent));
  -webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -4px 10px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25)}
+body.glass .btn.pri,body.glass .peekbar #pkAll{position:relative;color:var(--ink);font-weight:600}
+body.glass .pnsave{box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25);padding:4px 12px}
 body.glass .btn.pri:hover,body.glass .peekbar #pkAll:hover{filter:brightness(1.1) saturate(1.05)}
-/* Start = the main action: the same tinted glass as Send to prompt (the theme gradient, see-through, glass edge) with a
-   dark triangle; nothing to queue: plain thin glass and a grey triangle */
-.play:not(.off){background:var(--grad)}.play:not(.off) svg path{fill:var(--ink)}
-.play:not(.off):hover{filter:brightness(1.1) saturate(1.05)!important}
-body.glass .play:not(.off){background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 80%,transparent),color-mix(in oklab,var(--a2) 72%,transparent) 55%,color-mix(in oklab,var(--a3) 66%,transparent))!important;
- -webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -4px 10px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25)!important}
+body.glass .play{background:transparent}
 body.glass .play:not(.off)::before{display:none}
-body.glass .play:not(.off) svg path{fill:var(--ink)}
-
-/* ---- Phase 1 batch A ---- */
-/* Stop: a proper button at the end of the status row (V3); while stopping the bar freezes and greys (V5) */
-.prog .meta{height:36px}
-.prog .stop{height:36px;padding:0 15px 0 12px;font-size:13.5px;gap:7px}.prog .stop svg{width:11px;height:11px}
-.prog.stopping .fill{filter:grayscale(1) brightness(.7)}.prog.stopping .fill::before{animation-play-state:paused}
-.prog.stopping .stop{opacity:.45;pointer-events:none}
-#ptxt .sub{color:var(--muted);font-weight:400}
-/* Keep seed: next to Send to prompt, and as a lock in the peek bar */
-.pact .keepseed{margin-right:auto;margin-left:10px}
-.peekbar .pkseed{width:30px;padding:0!important;display:grid;place-items:center;color:var(--muted)}.peekbar .pkseed svg{width:14px;height:14px}
-.peekbar .pkseed.on{color:var(--a1)}
-/* About */
-.about{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.about span{color:var(--muted);margin-right:4px}
-.updres{grid-column:1/-1;font-size:13px;color:var(--muted);line-height:1.5}.updres:empty{display:none}
-.updres code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:5px}.updres a{color:var(--a3)}
-/* the shortcut sheet */
-.kgrid{display:grid;grid-template-columns:auto 1fr;gap:9px 18px;align-items:center;font-size:14px}
-.kgrid .kt{color:var(--muted)}.kgrid.mouse .kk{color:var(--text);font-size:13px}
-kbd{display:inline-block;min-width:24px;padding:2px 7px;border-radius:7px;background:rgba(255,255,255,.08);box-shadow:inset 0 -1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(255,255,255,.08);
- font:500 12.5px var(--font,Inter),system-ui;text-align:center;color:var(--text)}
-.keys .mcard{width:min(520px,92vw)}.keys .fgh{margin:16px 0 10px}
-
-/* ---- Phase 1 batch B ---- */
-.qi.missing>:not(.x){opacity:.5}   /* the row fades, its ✕ (remove from the list) stays clear */.qi.missing .th{font-size:10.5px}.qi .gone{color:#e0a060}
-.qi .meta.times{font-size:11.5px;color:var(--faint)}
-.qi .th img.lp{width:100%;height:100%;object-fit:cover}
-.qsec .paused{color:var(--a1);font-weight:600}
-.qsec>span:last-child:not(:first-child){display:flex;gap:6px}
-#qpop{position:fixed;left:0;top:0;z-index:60;border-radius:14px;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .15s;
- box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.1);background:#0b0b0e}
-#qpop.show{opacity:1}#qpop img{width:100%;height:100%;object-fit:contain;display:block}
-.prog .resume{display:none;height:36px;padding:0 15px;border-radius:999px;background:var(--raised);font-size:13.5px;font-weight:500;color:#e6e6ea}
-.prog.paused:not(.run) .resume{display:inline-flex;align-items:center}
-body.glass .prog .resume{background:color-mix(in oklab,rgba(255,255,255,.08),var(--cool,#9ab) 16%)!important;-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 0 0 1px rgba(255,255,255,.07)}
-.pnsave{display:none;margin-left:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--grad);color:var(--ink);white-space:nowrap}
-.pnsave.show{display:inline-block}
+body.glass .play.gen,body.glass .play.gen:not(.off):hover{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
+body.glass .play.gen::before{display:block}
+/* the queue count on Start: clear glass, so the number reads over the button's edge */
+body.glass .badge{background:rgba(255,255,255,.03);-webkit-backdrop-filter:blur(1.5px) saturate(1.5);backdrop-filter:blur(1.5px) saturate(1.5);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.14);text-shadow:0 0 3px rgba(0,0,0,.6)}
 /* the name plate: editing a name (your draft's, or a waiting job's in its peek) sits on a thin glass plate like the
    pills; a waiting job's name shows a faint plate at rest, so you can tell it's editable */
-body.glass .ltitle .plbl .pname:not([readonly]):hover,body.glass .ltitle .plbl .pname:not([readonly]):focus{
- background:color-mix(in oklab,rgba(255,255,255,.07),var(--cool,#9ab) 14%)!important;-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px rgba(255,255,255,.09)!important;border-radius:14px}
-body.glass .ltitle .plbl .pname:not([readonly]):focus{background:color-mix(in oklab,rgba(255,255,255,.1),var(--cool,#9ab) 16%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.14),0 6px 18px rgba(0,0,0,.25)!important}
 body.glass .ltitle .plbl.peekname .pname:not([readonly]){background:color-mix(in oklab,rgba(255,255,255,.04),var(--cool,#9ab) 10%);box-shadow:0 0 0 1px rgba(255,255,255,.06);border-radius:14px}
-.ltitle .plbl.peekname .pname:not([readonly]):focus{color:#f2f2f2!important}
-.ltitle .plbl .pname:not([readonly]){padding:2px 12px!important;transition:background .15s,box-shadow .15s}
-body.glass .pnsave{background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 80%,transparent),color-mix(in oklab,var(--a2) 72%,transparent) 55%,color-mix(in oklab,var(--a3) 66%,transparent));
- -webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25);padding:4px 12px}
+body.glass .ltitle .plbl .pname:not([readonly]):hover,body.glass .ltitle .plbl .pname:not([readonly]):focus{border-radius:14px;
+ background:color-mix(in oklab,rgba(255,255,255,.07),var(--cool,#9ab) 14%);-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px rgba(255,255,255,.09)}
+body.glass .ltitle .plbl .pname:not([readonly]):focus{background:color-mix(in oklab,rgba(255,255,255,.1),var(--cool,#9ab) 16%);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.14),0 6px 18px rgba(0,0,0,.25)}
+body.glass .ltitle .plbl.donename .pname:not(:focus),body.glass .ltitle .plbl.donename .pname:not(:focus):hover{background:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 
-/* the missing-file card (a file deleted outside Kiln): no picture, just the ways back */
-.miss{display:none;position:absolute;inset:0;z-index:4;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center}
-.frame.missing .miss{display:flex}.frame.missing .side,.frame.missing .cbtn{display:none!important}.frame.missing{cursor:default}
-.miss .mt{font-size:16px;font-weight:600;color:var(--text)}.miss .mf{font-size:12.5px;color:var(--muted);word-break:break-all}
-.miss .ma{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}.miss .mh{font-size:12.5px;color:var(--faint);max-width:340px}
+/* ======================= skins ======================= */
+/* glass thickness per theme: Aurora's sky is bright, so its glass is thicker and gathers less light than Emerald's */
+body.skin-aurora{--gta:.48;--gtk:.52;--gtb:1.35}
+/* Emerald: the title in Courier Prime, glowing faintly, spaced like a title card; the Generating ring as twelve 30°
+   segments that light up one by one in the theme's green — a terminal readout that ticks, not sweeps */
+body.skin-emerald .ltitle .pname{font-weight:700;letter-spacing:.06em;text-shadow:0 0 14px color-mix(in oklab,var(--a1) 45%,transparent)}
+body.skin-emerald .tab .tring{background:var(--a1);transition:none;
+ -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.6px)),conic-gradient(#000 calc(round(down,var(--p)*12,1)*30deg),rgba(0,0,0,.2) 0),repeating-conic-gradient(#000 0 25deg,transparent 25deg 30deg);
+ -webkit-mask-composite:source-in,source-in;
+ mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.6px)),conic-gradient(#000 calc(round(down,var(--p)*12,1)*30deg),rgba(0,0,0,.2) 0),repeating-conic-gradient(#000 0 25deg,transparent 25deg 30deg);
+ mask-composite:intersect,intersect}
 
-/* ---- Phase 1b ---- */
-/* privacy on: the prompt, the name and the LoRA chips are hidden; the box stays, with a lock */
-.privov{display:none;position:absolute;inset:0;z-index:5;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:13.5px;border-radius:inherit;cursor:default}
-.privov svg{width:18px;height:18px}
-body.private .privov{display:flex}
-body.private .pwrapT .cm-editor,body.private .pwrapT textarea,body.private .ltitle .nchip,body.private .chips,body.private .peekbar,body.private .pcount{visibility:hidden}
-.frame.has .cbtn.lit{opacity:.7}.frame.has:hover .cbtn.lit{opacity:1}
-/* the peek bar's seed lock: the same circle as its neighbours */
-.peekbar .pkseed{width:auto!important;min-width:32px;height:auto;padding:5px 9px!important}.peekbar .pkseed svg{width:15px;height:15px}
-/* the queue count: a dark pill like Seed / Steps, set outside the Start circle */
-.badge{top:-9px;right:-12px;min-width:22px;height:20px;padding:0 6px;border-radius:999px;font-size:11.5px;font-weight:600;background:var(--raised);color:#e6e6ea;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
-body.glass .badge{background:color-mix(in oklab,rgba(22,24,26,.75),var(--cool,#9ab) 10%)!important;color:#e6e6ea!important;
- box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(255,255,255,.1),0 2px 6px rgba(0,0,0,.35)!important}
-/* the prompt's scrollbar keeps its room while the text overflows (editor.js sets .ovf): no reflow as it comes and goes */
-.pwrapT.ovf .cm-scroller{scrollbar-gutter:stable}
-body.private .cbtn{display:grid!important;opacity:.7}body.private .frame:hover .cbtn{opacity:1}
-body.glass .left .privov{bottom:var(--ctrlh,64px)}
-/* the queue count back on Start's corner (the dark pill reads well there); the character count moves left of Start */
-.controls .play .badge{top:-5px;right:-6px}
-body.glass .left .pcount{right:72px}
-
-/* ---- Phase 2a: two panels with their own widths (stage.js layGeo) ---- */
-.app{grid-template-columns:var(--mL,1fr) var(--pw,680px) var(--gap,18px) var(--rw,660px) var(--mR,1fr)!important}
-.app>.lcol{grid-column:2}.app>.split{grid-column:3;cursor:default;pointer-events:none}.app>.right{grid-column:4}
-.app>.split::after{display:none}
-.app.stacked{grid-template-columns:1fr!important}.app.stacked>*{grid-column:1/-1!important}
-.app>.lcol,.app>.right{position:relative}
-/* the four edges: a 12 px grab strip on each vertical edge, a grip line on hover */
-.pedge{position:absolute;top:0;bottom:0;width:12px;z-index:8;cursor:ew-resize;touch-action:none}
-.pedge.po{left:-8px}.pedge.pi{right:-8px}.pedge.ri{left:-8px}.pedge.ro{right:-8px}
-.pedge::after{content:"";position:absolute;top:50%;left:4px;width:4px;height:46px;margin-top:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
-.pedge:hover::after,.pedge.drag::after{opacity:.9}
-.app.stacked .pedge{display:none}
-/* while sizing the right area, show the region the picture fits into (in Generating it is otherwise invisible) */
-.right.edgehint::before{content:"";position:absolute;inset:64px 0 0 0;border:1px dashed rgba(255,255,255,.18);border-radius:var(--r-panel);pointer-events:none;z-index:7}
+/* ======================= motion =======================
+   Drags and window resizes follow the pointer directly: these switches turn every transition off (and set the
+   cursor) while they last — !important, they must win over everything */
+body.resizing,body.resizing *{cursor:ew-resize!important;user-select:none}
+body.vresizing,body.vresizing *{cursor:ns-resize!important;user-select:none}
+body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
+body.liveresize *,body.liveresize *::before,body.liveresize *::after{transition:none!important}
 body.laydrag *{transition:none!important}
-/* the Layout button and its menu */
-.laywrap{position:relative;display:inline-flex}
-.laymenu{top:52px;bottom:auto;left:auto;right:0;transform-origin:top right;min-width:230px}
-.laymenu{min-width:270px}.laymenu .opt{white-space:nowrap;align-items:baseline}
-
-/* Phase 2a: every layout change glides (released edges, picture changes, tab switches); drags and window resizes
-   follow directly (body.laydrag / body.liveresize switch transitions off) */
-.app{transition:grid-template-columns .25s cubic-bezier(.4,0,.2,1)}
-.tabs{transition:width .25s cubic-bezier(.4,0,.2,1),transform .4s var(--ease)}
-.right .tabs{transition:width .25s cubic-bezier(.4,0,.2,1),transform .4s var(--ease)}
-
-/* ---- Phase 2a step 2: docking ---- */
-/* the prompt on the right: the grid mirrored, the edges on the other sides */
-.app.pright{grid-template-columns:var(--mL,1fr) var(--rw,660px) var(--gap,18px) var(--pw,680px) var(--mR,1fr)!important}
-.app.pright>.lcol{grid-column:4}.app.pright>.right{grid-column:2}
-.app.pright .pedge.po{left:auto;right:-8px}.app.pright .pedge.pi{right:auto;left:-8px}
-.app.pright .pedge.ri{left:auto;right:-8px}.app.pright .pedge.ro{right:auto;left:-8px}
-.app.pright .left,.app.pright .ltitle,.app.pright .ghost,.app.pright #lcol>.chips{right:auto;left:0}
-/* the drop zones while you drag the prompt by its name line */
-.dockzone{position:fixed;z-index:90;display:none;align-items:center;justify-content:center;pointer-events:none;border:2px dashed rgba(255,255,255,.22);border-radius:24px;
- background:rgba(255,255,255,.03);color:rgba(255,255,255,.55);font-size:14px;font-weight:500;transition:background .15s,border-color .15s,color .15s}
-.dockzone.show{display:flex}.dockzone.near{background:color-mix(in oklab,var(--a1) 14%,transparent);border-color:color-mix(in oklab,var(--a1) 70%,transparent);color:#fff}
-.dockzone.left{left:12px;top:12px;bottom:22%;width:28%}.dockzone.right{right:12px;top:12px;bottom:22%;width:28%}.dockzone.below{left:12px;right:12px;bottom:12px;height:18%}
-.laymenu .lsep{height:1px;margin:6px 4px;background:rgba(255,255,255,.08)}
-.laymenu .opt.on{font-weight:600;color:#fff}.laymenu .opt.on::before{content:"✓";margin-right:6px;color:var(--a1)}
-/* side by side, everything sits in row 1: auto-placement can't go back left, so with the prompt on the right the image
-   area would wrap onto a second row */
-.app:not(.stacked)>.lcol,.app:not(.stacked)>.split,.app:not(.stacked)>.right{grid-row:1}
-.laymenu .opt[data-lay]::before{content:"";display:inline-block;width:18px;flex:none}.laymenu .opt.on::before{content:"✓";margin-right:0;color:var(--a1)}
-.laymenu .opt[data-lay]{justify-content:flex-start;gap:0}.laymenu .opt small{margin-left:auto;padding-left:16px}
-
-/* ---- Phase 2a step 3: the picture's height limit ---- */
-.hedges{position:absolute;pointer-events:none;z-index:7}
-.hedge{position:absolute;left:30px;right:30px;height:12px;cursor:ns-resize;pointer-events:auto;touch-action:none}
-.hedge.t{top:-8px}.hedge.b{bottom:-8px}
-.hedge::after{content:"";position:absolute;left:50%;top:4px;width:46px;height:4px;margin-left:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
-.hedge:hover::after{opacity:.9}
-body:not(.laydrag) .stage .frame{transition:top .25s cubic-bezier(.4,0,.2,1),left .25s cubic-bezier(.4,0,.2,1)}   /* position only: the canvas is drawn at the box's size, so the size must not animate */
-.rpanel.paneled .hedges{display:none}   /* Vertical has them too (2026-10-19) */
-/* the arrows on the picture: always at its vertical middle. On a short picture the hover buttons wrap into a second
-   column rather than push the arrow down (it used to be held at >= 276 px from the top) */
-.frame .nav{top:50%!important}
-
-
-/* ---- the picture's toolbar, beside it (2026-10-18): controls belong to the viewer, not on the picture, so no picture
-   shape can make them collide with the arrows. The eye (privacy) on top, the edit buttons below; a very short picture
-   wraps the column outward, away from the picture. Always there in Generating; what doesn't apply right now is dimmed. */
-.gtools{position:absolute;z-index:6;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:6px;width:40px}
-.gtools.lefty{align-content:flex-end;flex-wrap:wrap-reverse}
-
-.gtools .side{position:static;opacity:1;display:contents}
-
-.gtools .side button{opacity:.75;transition:opacity .15s,background .15s}.gtools .side button:hover{opacity:1}
-.gtools button svg{width:19px;height:19px}
-/* not applicable right now: rendering, privacy on, the file gone, or nothing shown */
-
-.rpanel.paneled .gtools{display:none}
-
-/* ---- toolbar rework (2026-10-18): the eye back on the picture (top right, as before); the edit buttons outside it,
-   shown on hover of the picture or the column, hidden when they can't act (empty, rendering, private, file gone) ---- */
-.frame .cbtn{right:10px!important}
-.gtools{flex-direction:column;flex-wrap:wrap;align-content:flex-start;padding-left:6px;box-sizing:border-box;width:auto;opacity:0;pointer-events:none;transition:opacity .15s}
-.gtools.lefty{align-content:flex-end;flex-wrap:wrap-reverse;padding-left:0;padding-right:6px}
-.stage.tools .gtools{opacity:1;pointer-events:auto}
-.gtools .side button{opacity:.85}
-.stage:has(.frame.running) .gtools,.stage:has(.frame.held) .gtools,.stage:has(.frame.missing) .gtools,.stage:has(.frame:not(.has)) .gtools{display:none}
-
-/* ---- motion (2026-10-19): ONE glide for every layout change — the same duration and curve on every piece that moves
-   for the same reason (it was .25 s here, .4 s on another curve there, so parts arrived at different times). Material's
-   standard easing: a quick start, a long soft landing. ---- */
-:root{--lay-t:.3s;--lay-e:cubic-bezier(.2,0,0,1)}
-.app{transition:grid-template-columns var(--lay-t) var(--lay-e)}
-.left,.ltitle{transition:top var(--lay-t) var(--lay-e),height var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
-#lcol>.chips{transition:top var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
-.tabs,.right .tabs{transition:width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
-body:not(.laydrag) .stage .frame{transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e)}
-.prog{transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e)}
-.gtools{transition:opacity .15s,top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e)}
-body.laysnap *,body.laysnap *::before,body.laysnap *::after{transition:none!important}
-/* a layout switch (Left / Right / Vertical): the panels fade through, the sky behind them keeps moving. Out fast with an
-   accelerating curve, in a little slower with a decelerating one and a hint of scale — Material's fade-through. */
-html.laymorph .app{view-transition-name:kiln-app}   /* only during a switch: a named element is a backdrop root, so the glass couldn't see the sky */
+body.laysnap *,body.laysnap *::before,body.laysnap *::after{transition:none!important}   /* a layout switch is captured where it ends */
+/* a layout switch (Left / Right / Vertical) is a View Transition: the picture is the same object, so it MOVES to its
+   new place and size (a shared-element morph, Material's container transform); everything else fades out, then back
+   in a beat after the picture leads, clearing from a slight blur. The names exist only during a switch: a named
+   element is a backdrop root, so the glass couldn't see the sky */
+html.laymorph .app{view-transition-name:kiln-app}
+html.laymorph .view.on #frame{view-transition-name:kiln-pic}
+html.laymorph #fglow{visibility:visible;view-transition-name:kiln-glow}   /* the glow travels with the picture */
+html.laymorph #fglow[style*="display: none"]{view-transition-name:none}
 ::view-transition-old(root){display:none}::view-transition-new(root){animation:none}
 ::view-transition-group(kiln-app){animation:none}
-::view-transition-old(kiln-app){animation:kfadeout 90ms cubic-bezier(.4,0,1,1) both}
-::view-transition-new(kiln-app){animation:kfadein 220ms cubic-bezier(0,0,.2,1) 90ms both}
-@keyframes kfadeout{to{opacity:0}}@keyframes kfadein{from{opacity:0;transform:scale(.985)}}
-/* ---- Vertical: the prompt box's own width (--sw) and its side edges; --soff holds the other edge still while dragging ---- */
-.app.stacked .left,.app.stacked .ltitle{width:min(100%,var(--sw,760px));transform:translateX(calc(-50% + var(--soff,0px)))}
-.app.stacked #lcol>.chips{width:min(100%,var(--sw,760px));transform:translateX(calc(-50% + var(--soff,0px)))}
-.sedge{display:none;position:absolute;top:0;bottom:0;width:12px;z-index:8;cursor:ew-resize;touch-action:none}
-.sedge.l{left:-8px}.sedge.r{right:-8px}
-.sedge::after{content:"";position:absolute;top:50%;left:4px;width:4px;height:46px;margin-top:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
-.sedge:hover::after{opacity:.9}
-.app.stacked .sedge{display:block}
-.app.stacked #hmMatch{display:grid}
-.app.stacked .vedge{display:none}   /* its height is set with the line above the name; the bottom edge has no room to give */
-
-/* ---- Vertical: the right area as a centred column (stage.js sets its width) ---- */
-.app.stacked>.right{justify-self:center;max-width:100%;transition:width var(--lay-t) var(--lay-e)}
-
-/* ---- the layout switch, "more expensive" (2026-10-19): the picture is the same object, so it MOVES to its new place
-   and size (a shared-element morph, Material's container transform); everything else fades out, then back in a beat
-   after the picture leads, clearing from a slight blur. Emphasized easing: a quick start and a long, soft settle. ---- */
-:root{--sw-t:440ms;--sw-e:cubic-bezier(.3,0,0,1)}
-html.laymorph .view.on #frame{view-transition-name:kiln-pic}
-::view-transition-group(kiln-pic){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e)}
-::view-transition-old(kiln-pic),::view-transition-new(kiln-pic){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);height:100%}
 ::view-transition-old(kiln-app){animation:kfadeout 120ms cubic-bezier(.4,0,1,1) both}
 ::view-transition-new(kiln-app){animation:kfadein2 300ms cubic-bezier(0,0,.2,1) 170ms both}
-@keyframes kfadein2{from{opacity:0;transform:scale(.985);filter:blur(4px)}}
-::view-transition-group(kiln-pic){z-index:2}
-
-/* ---- Start: while a job runs, a ring round it fills with the job's progress, in the progress bar's flowing gradient ---- */
-@property --p{syntax:"<number>";inherits:true;initial-value:0}
-@property --prot{syntax:"<angle>";inherits:false;initial-value:0deg}
-.play .ptrack,.play .pring{position:absolute;inset:-5px;border-radius:50%;pointer-events:none;opacity:0;transition:opacity .5s var(--ease);
- -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px))}
-.play .ptrack{background:rgba(255,255,255,.1)}
-.play .pring{background:conic-gradient(from var(--prot) in oklch,var(--a1),var(--a2),var(--a3),var(--a2),var(--a1));transition:opacity .5s var(--ease),--p .45s linear;
- -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0);-webkit-mask-composite:source-in;
- mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0);mask-composite:intersect;
- animation:pring 6s linear infinite}
-@keyframes pring{to{--prot:360deg}}
-.play.running .ptrack,.play.running .pring{opacity:1}
-.play.stopping .pring{filter:grayscale(1) brightness(.7);animation-play-state:paused}
-@media (prefers-reduced-motion:reduce){.play .pring{animation:none}}
-
-/* ---- 2026-10-19: the glow travels with the picture in a layout switch (its own snapshot, the picture's path and pace) ---- */
-html.laymorph #fglow{visibility:visible}
-html.laymorph #fglow[style*="display: none"]{view-transition-name:none}
-html.laymorph #fglow{view-transition-name:kiln-glow}
+::view-transition-group(kiln-pic){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);z-index:2}
+::view-transition-old(kiln-pic),::view-transition-new(kiln-pic){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);height:100%}
 ::view-transition-group(kiln-glow){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);z-index:1;mix-blend-mode:screen}
 ::view-transition-old(kiln-glow),::view-transition-new(kiln-glow){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);height:100%}
-
-/* ---- Start while a job runs: plain dark glass, and the triangle in the progress bar's bright flowing gradient (the
-   same colours, direction and pace — one system); the ring only shows on the other tabs ---- */
-.play.gen,.play.gen:not(.off){background:var(--raised)!important;filter:none!important}
-.play.gen svg path,body.glass .play.gen svg path,body.glass .play.gen:not(.off) svg path{fill:url(#playFlow)!important}
-.play.gen svg{filter:drop-shadow(0 0 5px color-mix(in oklab,var(--a2) 45%,transparent))}
-body.glass .play.gen:not(.off){background:transparent!important;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none!important}
-body.glass .play.gen::before{display:block!important}
-body.glass .play.gen:hover::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--cool,#9ab) 18%)}
-/* the Queue's "Nothing queued": one quiet line after Up next, not a 40 px hole in the list */
-#qwrap .empty{padding:10px 12px 14px;font-size:13px;text-align:left}
-
-/* ---- the resize outline: the box the picture fits into (stage.js #fithint); the whole panel elsewhere ---- */
-.right.edgehint::before{display:none}
-.right.edgehint:has(.rpanel.paneled)::before{display:block}
-.fithint{pointer-events:none}
-
-/* ---- the running job's thumbnail in the status row (only while you browse a finished picture) ---- */
-.pth{display:none;position:relative;width:28px;height:28px;border-radius:8px;overflow:hidden;flex:none;background:#15171a;cursor:pointer;
- box-shadow:0 0 0 1px rgba(255,255,255,.1);margin-right:-2px}
-.pth img{width:100%;height:100%;object-fit:cover;display:block;transition:filter .6s var(--ease)}
-.pth img:not([src]){visibility:hidden}
-.pth.soft img{filter:blur(2.5px) brightness(.85);transform:scale(1.15)}
-.pth svg{display:none;position:absolute;inset:7px;width:14px;height:14px;color:var(--muted)}
-body.private .pth img{visibility:hidden}body.private .pth svg{display:block}
-.pth:hover{box-shadow:0 0 0 1px rgba(255,255,255,.35)}
-
-/* ---- 2026-10-19: Vertical has no Full height; the picture's box glides in size too ---- */
-.app.stacked #hmFull{display:none}
-body:not(.laydrag) .stage .frame{transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),height var(--lay-t) var(--lay-e)}
-.prog{transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e)}
-.frame #cv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
-/* ---- the status row: the track only while you watch the render; browsing = the picture's caption + the running job's
-   chip; idle = Ready (the row keeps its room, so the picture never moves when a job starts or ends) ---- */
-.prog:not(.run) .track,.prog.bgjob .track{visibility:hidden}
-.prog.bgjob .eta,.prog.bgjob .stop{display:none!important}
-.prog .pth{display:block;margin:0}
-.pchip{display:none;align-items:center;gap:8px;margin-left:auto;height:36px;padding:0 12px 0 4px;border-radius:999px;cursor:pointer;background:var(--raised);font-size:13px;color:#e6e6ea;white-space:nowrap;font-variant-numeric:tabular-nums}
-.pchip .pth{width:28px;height:28px;border-radius:999px}
-.prog.bgjob .pchip{display:inline-flex}
-.pchip:hover{background:var(--raised2)}
-body.glass .pchip{background:color-mix(in oklab,rgba(255,255,255,.08),var(--cool,#9ab) 16%);-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 0 0 1px rgba(255,255,255,.07)}
-#ptxt{overflow:hidden;text-overflow:ellipsis;min-width:0}
-
-/* ---- 2026-10-19 ---- */
-/* the outline follows the picture (and its glide), corners 5 px rounder than the picture's */
-.fithint{border-radius:calc(var(--r-panel) + 12px)}
-/* the prompt's text fills the box: you set its width yourself now (edges, Fit width), so the box is the measure — the
-   old ~76-character cap left a wide box half empty */
-.pwrapT .cm-line{padding:0 24px 0 28px}
-textarea#prompt{padding-right:24px}
-/* every layout glide: Material 3's emphasized decelerate — most of the way in the first third, then a long soft
-   settle, so you see the edges arrive. One curve for all the pieces that move together (the picture's box, the status
-   row, the tab bar, the panels, the prompt), or they'd drift apart mid-move. */
-:root{--lay-t:.42s;--lay-e:cubic-bezier(.05,.7,.1,1)}
-/* the queue count on Start: the ring shows through it — clear glass in glass mode, no background in solid (a soft
-   shadow keeps the number readable), set a little further out so it clears the arc's start */
-.controls .play .badge{top:-8px;right:-10px;background:transparent!important;box-shadow:none!important;color:#fff!important;text-shadow:0 0 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.7)}
-body.glass .controls .play .badge{background:rgba(255,255,255,.03)!important;-webkit-backdrop-filter:blur(1.5px) saturate(1.5);backdrop-filter:blur(1.5px) saturate(1.5);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.14)!important;text-shadow:0 0 3px rgba(0,0,0,.6)}
-
-/* ---- 2026-10-19: the cross-fade layer; the arrows on the stage; the Gallery tab's page ---- */
-#cvx{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1;pointer-events:none;opacity:0;transition:opacity .2s cubic-bezier(.4,0,.2,1)}
-.frame.held #cvx{visibility:hidden}
-
-/* ---- 2026-10-19 ---- */
-/* the outline on the bottom layer, above the sky, under the panels */
-.fithint{position:fixed;display:none;z-index:0;transition:none!important;border:1px dashed rgba(255,255,255,.28)}
-.fithint.show{display:block}
-/* the Gallery: no bar; the caption centred under the picture, the running job's chip at the row's end */
-body.gallery .prog .track{display:none}
-body.gallery .prog .meta{justify-content:center}
-body.gallery .prog .pchip{position:absolute;right:0;margin-left:0}
-body.gallery #ptxt{color:#cfd2d6;font-weight:500}
-/* the layout menu's diagrams */
-.laymenu .opt .lic{width:28px;height:18px;flex:none;margin-right:10px;color:#9aa0a6;align-self:center}
-.laymenu .opt.on .lic,.laymenu .opt:hover .lic{color:#fff}
-.laymenu .opt[data-lay]{align-items:center}
-body.gallery .prog .eta,body.gallery .prog .resume{display:none!important}
-
-/* ---- 2026-10-19 ---- */
-/* an empty Generating: no status row (the frame says what's next); ← into the Gallery stays */
-body.norow .prog{visibility:hidden}
-.laymenu .opt .lic{width:28px;height:20px}
-
-/* the picture's arrows on a fixed layer (stage.js places them every frame while they show) */
-.gnav{position:fixed;margin-top:0;right:auto;z-index:20;transition:opacity .15s,background .15s}
-body.navglide .gnav{transition:opacity .15s,background .15s,left var(--lay-t) var(--lay-e),top var(--lay-t) var(--lay-e)}
-body.navs .gnav:not(.off){opacity:1}
-body:has(.rpanel.paneled) .gnav,body:has(.frame.missing) .gnav,body:has(.modal.show) .gnav,body:has(.viewer.show) .gnav{display:none}
-
-/* ---- 2026-10-19 round ---- */
-/* the empty frame: what's next and how long, both as proper lines */
-#idleT{font-size:15px;color:#a4a8ad}#idleS{font-size:15px;color:#a4a8ad}
-/* the title and the Reuse bar centred on the box (the bar kept an old 16 px corner offset; the name a -6 px margin) */
-.ltitle .peekbar{right:auto;bottom:auto}.ltitle .pname{margin-left:0}
-/* the file name round the title, on hover */
-.fnpre,.fnsuf{display:none;color:#6f747a;font-size:24px;font-weight:500;white-space:nowrap;letter-spacing:-.01em;font-family:var(--font-title,inherit)}
-.fnpre{margin-right:10px}.plbl.fnon .fnpre,.plbl.fnon .fnsuf{display:inline}
-
-/* the canvas fills the frame's box (cover): while the box glides to another shape, no corner is ever empty */
-.frame #cv,#cvx{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;transform:none!important;object-fit:cover}
-/* no caption row, no job chip (the title has the file name, the Generating tab the progress) */
-.pchip{display:none!important}
-/* Start: no ring, no count (the Queue tab counts, the Generating tab shows the progress) */
-.play .ptrack,.play .pring{display:none!important}
-/* the Generating tab's ring: fills with the running job's progress, in the bar's gradient, wherever you are */
-.tab .tring{display:none;position:relative;width:14px;height:14px;border-radius:50%;flex:none;margin-right:2px;
- background:conic-gradient(from var(--prot) in oklch,var(--a1),var(--a2),var(--a3),var(--a2),var(--a1));animation:pring 6s linear infinite;
- -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.6px),#000 calc(100% - 2.2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.18) 0);-webkit-mask-composite:source-in;
- mask:radial-gradient(farthest-side,transparent calc(100% - 2.6px),#000 calc(100% - 2.2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.18) 0);mask-composite:intersect;transition:--p .45s linear}
-body.jobrun .tab .tring{display:inline-block}
-@media (prefers-reduced-motion:reduce){.tab .tring{animation:none}}
-/* the arrows: only the one you let go of glides */
-.gnav.glide{transition:opacity .15s,background .15s,left var(--lay-t) var(--lay-e),top var(--lay-t) var(--lay-e)}
-/* the layout menu: one row of diagrams */
-.laymenu{min-width:0!important;padding:6px!important}
-.laymenu .lrow{display:flex;align-items:center;gap:2px}
-.laymenu .lrow .opt{width:auto;padding:8px 9px;justify-content:center;border-radius:10px}
-.laymenu .lrow .opt::before{display:none!important}
-.laymenu .lrow .opt.on{background:rgba(255,255,255,.12)}
-.laymenu .lrow .opt .lic{margin-right:0}
-.laymenu .lrow .lsep{width:1px;height:22px;margin:0 4px;background:rgba(255,255,255,.12)}
-
-/* ---- 2026-10-19 round ---- */
-/* the outline: hover intent — in quickly, out late and slowly, so sweeping across an edge never makes it blink */
-.fithint{display:block!important;opacity:0;transition:opacity .4s ease .3s!important}
-.fithint.show{opacity:1;transition:opacity .2s ease 0s!important}
-/* the Reuse bar: full labels down to a narrow box; then "Reuse" / "All" */
-@container (max-width:470px){.ltitle .peekbar .lg{display:inline}.ltitle .peekbar .sm{display:none}}
-@container (max-width:340px){.ltitle .peekbar .lg{display:none}.ltitle .peekbar .sm{display:inline}}
-/* the ring round the G of Generating */
-.tab .tg{position:relative;display:inline-block}
-.tab .tring{position:absolute!important;left:50%;top:50%;width:24px!important;height:24px!important;margin:-12px 0 0 -12px!important;
- -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.4px),#000 calc(100% - 2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.16) 0)!important;
- mask:radial-gradient(farthest-side,transparent calc(100% - 2.4px),#000 calc(100% - 2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.16) 0)!important}
-/* the queue count back on Start: you add to the queue there, so the number goes up where you click */
-.controls .play .badge{display:none}.controls .play .badge.show{display:grid!important}
-/* a finished picture's title: as it is — no plate at rest or on hover (only while you edit it); its file name around it */
-.plbl.donename .pname:not(:focus),.plbl.donename .pname:not(:focus):hover{background:transparent!important;box-shadow:none!important}
-.nchip{position:relative}
-.plbl.fnon .fnpre,.plbl.fnon .fnsuf{display:inline;position:absolute;top:50%;transform:translateY(-50%);opacity:1}
-.fnpre{right:100%;margin-right:8px}.fnsuf{left:100%;margin-left:0}
-.fnpre,.fnsuf{opacity:0;transition:opacity .15s}
-.plbl.fnon .pname{color:inherit}
-
-body.glass .ltitle .plbl.donename .pname:not(:focus):not([readonly]),body.glass .ltitle .plbl.donename .pname:not(:focus):not([readonly]):hover{background:transparent!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
-.ltitle .plbl.donename .pname:not(:focus){cursor:text}
-.tab .tring{-webkit-mask-composite:source-in!important;mask-composite:intersect!important}   /* a ring, not a pie: the two masks intersect */
-
-/* ---- 2026-10-19 ---- */
-/* the Generating ring takes the label's colour (a progress mark inside a word follows the text, like the system's own
-   small rings): a faint track, the done part in the tab's grey. No gradient competing with the letters */
-.tab .tring{background:currentColor!important;animation:none!important;opacity:.85}
-/* Emerald: twelve 30° segments light up one by one in the theme's green — a terminal readout that ticks, not sweeps */
-body.skin-emerald .tab .tring{background:var(--a1)!important;opacity:1;
- -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.6px)),conic-gradient(#000 calc(round(down,var(--p)*12,1)*30deg),rgba(0,0,0,.2) 0),repeating-conic-gradient(#000 0 25deg,transparent 25deg 30deg)!important;
- -webkit-mask-composite:source-in,source-in!important;
- mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.6px)),conic-gradient(#000 calc(round(down,var(--p)*12,1)*30deg),rgba(0,0,0,.2) 0),repeating-conic-gradient(#000 0 25deg,transparent 25deg 30deg)!important;
- mask-composite:intersect,intersect!important;transition:none!important}
-/* the file name round the title: a soft entrance — it fades in and drifts out of the title over ~0.45 s, leaves quicker */
-.fnpre,.fnsuf{display:inline!important;position:absolute;top:50%;pointer-events:none;opacity:0;transition:opacity .2s ease,transform .2s ease}
-.fnpre{transform:translate(8px,-50%)}.fnsuf{transform:translate(-8px,-50%)}
-.plbl.fnon .fnpre,.plbl.fnon .fnsuf{opacity:1;transform:translate(0,-50%);transition:opacity .45s cubic-bezier(.2,.7,.2,1),transform .55s cubic-bezier(.2,.7,.2,1)}
-/* the top / bottom grab strips sit mostly INSIDE the picture: on a full-height picture the panel clips anything above or
-   below it, which left only ~4 px to hover */
-
-
-/* Aurora (and the starry themes): the Generating ring steps back towards the background — a dark engraved ring on the
-   bright glass pill, so the G stays the brightest thing */
-body:not(.skin-emerald) .tab .tring{background:rgba(0,0,0,.62)!important;opacity:1;
- -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.6px),#000 calc(100% - 2.2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.35) 0)!important;-webkit-mask-composite:source-in!important;
- mask:radial-gradient(farthest-side,transparent calc(100% - 2.6px),#000 calc(100% - 2.2px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.35) 0)!important;mask-composite:intersect!important}
-
-/* the crop-and-reveal: both pictures at their own final size, centred; the frame is the only thing that moves */
-.frame.morph{transition:none!important}
-.frame.morph #cvx{width:var(--ow)!important;height:var(--oh)!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important}
-.frame.morph #cv{width:var(--nw)!important;height:var(--nh)!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important}
-
-/* ---- 2026-10-19 round ---- */
-/* no grip bars: the outline is the signal; the resize cursor and the outline are enough */
-.pedge::after,.hedge::after,.sedge::after{display:none!important}
-/* the drag bands cover the space between the picture and its outline (Fitts: the target you're shown is the target) */
-.rpanel:not(.paneled){overflow:visible}
-.hedges .hedge{left:0!important;right:0!important;height:16px!important}
-.hedge.t{top:-12px!important}.hedge.b{bottom:-8px!important}
-.app:not(.pright) .pedge.ri{left:-12px!important;width:16px!important}.app.pright .pedge.ri{right:-12px!important;width:16px!important}
-/* Vertical: the prompt column's empty parts let the pointer through to the picture's edges */
-.app.stacked #lcol{pointer-events:none}.app.stacked #lcol>*{pointer-events:auto}
-.app.stacked .hsplit{height:8px!important}
-/* the Generating ring on the starry themes: a mid grey, darker than the label but visible without the bright pill */
-body:not(.skin-emerald) .tab .tring{background:#868c92!important;
- -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.3) 0)!important;-webkit-mask-composite:source-in!important;
- mask:radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px)),conic-gradient(#000 calc(var(--p)*360deg),rgba(0,0,0,.3) 0)!important;mask-composite:intersect!important}
-/* tab switches: a quick fade-through (the layout switch's slower one stays for docking) */
+/* tab switches: a quicker fade-through */
 html.tabmorph::view-transition-old(kiln-app){animation:kfadeout 90ms cubic-bezier(.4,0,1,1) both}
 html.tabmorph::view-transition-new(kiln-app){animation:kfadein 170ms cubic-bezier(0,0,.2,1) 60ms both}
 html.tabmorph::view-transition-group(kiln-pic){animation-duration:260ms;animation-timing-function:cubic-bezier(.2,0,0,1)}
 html.tabmorph::view-transition-old(kiln-pic),html.tabmorph::view-transition-new(kiln-pic){animation-duration:200ms}
+@keyframes kfadeout{to{opacity:0}}
+@keyframes kfadein{from{opacity:0;transform:scale(.985)}}
+@keyframes kfadein2{from{opacity:0;transform:scale(.985);filter:blur(4px)}}
 
-/* ---- 2026-10-19 (late) ---- */
-/* the Generating ring: ONE solid arc, no track — dark on the white (selected) pill, light grey otherwise */
-body:not(.skin-emerald) .tab .tring{background:#c3c8cc!important;
- -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0)!important;-webkit-mask-composite:source-in!important;
- mask:radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0)!important;mask-composite:intersect!important}
-body:not(.skin-emerald) .tab.on .tring{background:rgba(0,0,0,.72)!important}
-/* the edit column is part of the hover zone even while its buttons are hidden — the buttons only take clicks once shown */
-.gtools{pointer-events:auto!important}.gtools .side button{pointer-events:none}.stage.tools .gtools .side button{pointer-events:auto}
-/* the Reuse bar ~9 px above the box (half the prompt–picture gap): part of the prompt block, not squeezed against it */
-.ltitle .peekbar{margin-bottom:3px!important}
-/* Vertical: side edges on the picture */
-.hedge.l,.hedge.r{display:none;top:0!important;bottom:0!important;height:auto!important;width:16px;cursor:ew-resize!important;left:auto!important;right:auto!important}
-.app.stacked .hedge.l,.app.stacked .hedge.r{display:block}
-.hedge.l{left:-12px!important}.hedge.r{right:-12px!important}
-/* the ring: a hairline circle in the same colour shows at once that a job runs (the App Store / Safari download pattern),
-   the solid arc grows over it. One element: the mask is hairline ∪ (thick ring ∩ the progress slice) */
-body:not(.skin-emerald) .tab .tring{
- -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 1.6px),rgba(0,0,0,.5) calc(100% - 1.2px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0),radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px))!important;
- -webkit-mask-composite:source-over,source-in!important;
- mask:radial-gradient(farthest-side,transparent calc(100% - 1.6px),rgba(0,0,0,.5) calc(100% - 1.2px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0),radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px))!important;
- mask-composite:add,intersect!important}
-/* the ring sits UNDER the G (a positioned element paints over plain text): its own small stacking layer, ring behind */
-.tab .tg{isolation:isolate}.tab .tring{z-index:-1}
-/* …and under the whole word, not just the G: the stacking layer is the word (the G's own layer painted over "enerating") */
-.tab .tg{isolation:auto!important}.tab .tl{isolation:isolate;position:relative}
-/* not selected: the ring a step darker than the label's grey, so the letters read in front of it (the same grey merged) */
-body:not(.skin-emerald) .tab:not(.on) .tring{background:#8e9499!important}
-/* the ring is behind the letters now, so one family of colour in both states: the same grey, a touch brighter on the
-   selected (lighter) pill — the dark ring was only ever a workaround for the ring covering the letters */
-body:not(.skin-emerald) .tab.on .tring{background:#a7adb2!important}

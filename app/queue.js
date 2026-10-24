@@ -1,8 +1,8 @@
 /* Kiln · Queue tab, peek / reuse */
-function renderQueue(){const before={},W=$("qwrap"),y0=W.scrollTop-200,y1=W.scrollTop+W.clientHeight+200;   /* only rows on screen slide (hundreds below don't need measuring) */
- W.querySelectorAll(".qi").forEach(q=>{if(q.offsetTop>y0&&q.offsetTop<y1)before[q.dataset.id]=q.getBoundingClientRect().top});
+function renderQueue(){const before={},W=$("qwrap"),y0=W.scrollTop-200,y1=W.scrollTop+W.clientHeight+200,R="#qsRun .qi,#qsPend .qi";   /* only waiting / running rows slide, only on screen — finished ones never reorder (they jiggled) */
+ W.querySelectorAll(R).forEach(q=>{if(q.offsetTop>y0&&q.offsetTop<y1)before[q.dataset.id]=q.getBoundingClientRect().top});
  renderQueueInner();const had=Object.keys(before).length;
- W.querySelectorAll(".qi").forEach(q=>{if(!(q.offsetTop>y0&&q.offsetTop<y1))return;const b=before[q.dataset.id];if(b==null){if(had)q.classList.add("new");return}
+ W.querySelectorAll(R).forEach(q=>{if(!(q.offsetTop>y0&&q.offsetTop<y1))return;const b=before[q.dataset.id];if(b==null){if(had)q.classList.add("new");return}
   const d=b-q.getBoundingClientRect().top;if(Math.abs(d)<1)return;q.style.transition="none";q.style.transform=`translateY(${d}px)`;
   requestAnimationFrame(()=>{q.style.transition="transform .38s cubic-bezier(.4,0,.2,1)";q.style.transform=""})})}
 /* selection (finished rows): the round box, Ctrl-click, Shift-click a range; once something is selected a plain click

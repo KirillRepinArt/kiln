@@ -204,7 +204,7 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track{margin-bottom:cal
 .cm-vbar{color:#6f6f78}
 .cm-lora{background:#2a2a30;border-radius:6px;color:#bdbdc6;padding:0 3px;box-shadow:0 0 0 1px #3a3a42}
 /* the character count, while you type */
-.pcount{position:absolute;right:34px;top:8px;height:20px;line-height:20px;z-index:3;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--faint);opacity:0;transition:opacity .2s;pointer-events:none}
+.pcount{position:absolute;right:50px;top:8px;height:20px;line-height:20px;z-index:3;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--faint);opacity:0;transition:opacity .2s;pointer-events:none}
 .pwrapT:focus-within .pcount{opacity:1}
 /* privacy on: the prompt, the name and the LoRA chips are hidden; the box stays, with a lock */
 .privov{display:none;position:absolute;inset:0;z-index:5;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:13.5px;border-radius:inherit;cursor:default}
@@ -479,7 +479,7 @@ body.gallery .prog .eta,body.gallery .prog .resume,body.gallery .prog.paused:not
 @keyframes hgbot{0%{transform:scaleY(0)}75%,100%{transform:scaleY(1)}}
 @media (prefers-reduced-motion:reduce){.hg .hgg,.hg .st,.hg .sb{animation:none}}
 /* only the rows on screen are laid out and painted (hundreds of finished pictures) */
-.qi{content-visibility:auto;contain-intrinsic-size:auto 68px}
+#qsFin .qi{content-visibility:auto;contain-intrinsic-size:auto 68px}   /* the finished rows only: a rebuilt waiting row measured at the estimate made the rows below it jump */
 /* selection: a round box at the row's start — on hover, or always while something is selected */
 .qck{position:relative;width:20px;height:20px;border-radius:50%;flex:none;border:1.5px solid rgba(255,255,255,.38);opacity:0;transition:opacity .15s,background .15s,border-color .15s;cursor:pointer}
 .qi:hover .qck,.qwrap.selecting .qck{opacity:1}
@@ -808,14 +808,14 @@ html.laymorph #fglow[style*="display: none"]{view-transition-name:none}
    the selected tab's pill slides to its new place — a fade of the whole app read as the page reloading (2026-10-25) */
 html.tabmorph .app{view-transition-name:none}
 html.tabmorph .rpanel{view-transition-name:kiln-panel}
-::view-transition-group(kiln-panel){animation-duration:var(--lay-t);animation-timing-function:var(--lay-e);overflow:clip;border-radius:var(--r-panel)}   /* the box morphs to the new size, like the Gallery's frame */
+::view-transition-group(kiln-panel){animation-duration:.65s;animation-timing-function:var(--lay-e);overflow:clip;border-radius:var(--r-panel)}   /* the box morphs to the new size, like the Gallery's frame */
 ::view-transition-old(kiln-panel),::view-transition-new(kiln-panel){object-fit:none;object-position:50% 0;height:100%}   /* the panel changes width: its snapshot must not stretch (it read as a zoom) */
 html.tabmorph #lcol{view-transition-name:kiln-prompt}   /* the prompt box slides to its new place as a snapshot: no glass re-blurred per frame (that lagged with Forge on the GPU) */
-::view-transition-group(kiln-prompt){animation-duration:var(--lay-t);animation-timing-function:var(--lay-e)}
+::view-transition-group(kiln-prompt){animation-duration:.65s;animation-timing-function:var(--lay-e)}
 ::view-transition-old(kiln-prompt),::view-transition-new(kiln-prompt){height:100%}
 html.tabmorph body.laysnap .tabs{transition:width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)!important}   /* the tab bar glides live (small) */
-html.tabmorph::view-transition-old(kiln-panel){animation:kfadeout 90ms cubic-bezier(.4,0,1,1) both}
-html.tabmorph::view-transition-new(kiln-panel){animation:kfadein 170ms cubic-bezier(0,0,.2,1) 60ms both}
+html.tabmorph::view-transition-old(kiln-panel){animation:kfadeout 180ms cubic-bezier(.4,0,1,1) both}
+html.tabmorph::view-transition-new(kiln-panel){animation:kfadein 320ms cubic-bezier(0,0,.2,1) 100ms both}
 html.tabmorph body.laysnap .seg .thumb{transition:left .28s var(--ease),width .28s var(--ease)!important}   /* !important: over the switch's glide stop */
 html.tabmorph::view-transition-group(kiln-pic){animation-duration:260ms;animation-timing-function:cubic-bezier(.2,0,0,1)}
 html.tabmorph::view-transition-old(kiln-pic),html.tabmorph::view-transition-new(kiln-pic){animation-duration:200ms}
@@ -833,7 +833,7 @@ html.tabmorph::view-transition-old(kiln-pic),html.tabmorph::view-transition-new(
 .frame:hover .cbtn{opacity:1}
 .frame.missing .cbtn{display:none}
 /* the prompt's ✕ Clear: top right of the box while it has text and you're over it */
-.pclear{position:absolute;top:8px;right:8px;z-index:3;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:var(--muted);
+.pclear{position:absolute;top:8px;right:24px;z-index:3;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:var(--muted);
  opacity:0;pointer-events:none;transition:opacity .15s,background .15s}
 .pclear svg{width:11px;height:11px}
 .left.hastext:hover .pclear{opacity:1;pointer-events:auto}

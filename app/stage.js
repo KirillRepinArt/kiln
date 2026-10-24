@@ -14,7 +14,7 @@ function tabSync(force){const v=S.view==="gen"&&browsed()?"gallery":S.view;if(!f
 /* a tab switch is navigation, not a layout edit: the new tab is laid out at once (no glide — on a GPU busy with Forge,
    0.4 s of glass re-blurring the sky per frame was the lag, 2026-10-19), and the layout is measured once per click */
 function tabGo(fn){const run=()=>{sizeFrame.defer=true;try{fn()}finally{sizeFrame.defer=false;if(sizeFrame.pending){sizeFrame.pending=false;sizeFrame()}}};
- document.documentElement.classList.add("tabmorph");layMorph(run);setTimeout(()=>document.documentElement.classList.remove("tabmorph"),600)}   /* a quick fade-through; the picture morphs if it's on both sides */
+ document.documentElement.classList.add("tabmorph");layMorph(run);setTimeout(()=>document.documentElement.classList.remove("tabmorph"),900)}   /* a quick fade-through; the picture morphs if it's on both sides */
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>tabGo(()=>{const v=t.dataset.v;PV.from=null;
  if(v==="gallery"){if(S.view!=="gen")showView("gen");if(!browsed())pv("gallery");tabSync();return}
  if(v==="gen")pv("generating");   /* the live view: the render, or the clean frame */

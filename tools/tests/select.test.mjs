@@ -50,9 +50,16 @@ export async function sectionsStay(k, t) {
   await k.job("w1", { steps: 2 }); await k.job("w2", { steps: 2 });
   await k.ev(`(showView("queue"),1)`); await k.sleep(400);
   t.ok(await k.ev(`!current().preview_rev?getComputedStyle(document.querySelector(".qi .th .hg")).display!=="none":true`), "before its first preview the running row shows an hourglass (no empty square)");
-  await k.ev(`(window.__fin=[...document.querySelectorAll("#qsFin .qi")],1)`);
-  await k.ev(`(()=>{const p=jobs.filter(j=>j.status==="pending"),a=jobs.indexOf(p[0]),b=jobs.indexOf(p[1]);[jobs[a],jobs[b]]=[jobs[b],jobs[a]];renderQueue();return 1})()`); await k.sleep(200);
+  await k.sleep(1000);
+  await k.ev(`(window.__fin=[...document.querySelectorAll("#qsFin .qi")],window.__mut=0,new MutationObserver(m=>{for(const x of m)if(x.target.closest&&x.target.closest("#qsFin .qi"))window.__mut++}).observe($("qwrap"),{childList:true,subtree:true,attributes:true}),1)`);
+  // a real drag (the events the browser sends), then the server's round trip
+  await k.ev(`(()=>{const rows=[...document.querySelectorAll('#qsPend .qi[draggable="true"]')],a=rows[0],c=rows[1],dt=new DataTransfer();
+    a.dispatchEvent(new DragEvent("dragstart",{bubbles:true,dataTransfer:dt}));const r=c.getBoundingClientRect();
+    c.dispatchEvent(new DragEvent("dragover",{bubbles:true,cancelable:true,dataTransfer:dt,clientX:r.left+20,clientY:r.bottom-4}));
+    c.dispatchEvent(new DragEvent("drop",{bubbles:true,cancelable:true,dataTransfer:dt}));a.dispatchEvent(new DragEvent("dragend",{bubbles:true,dataTransfer:dt}));return 1})()`);
+  await k.sleep(2500);
   t.ok(await k.ev(`[...document.querySelectorAll("#qsFin .qi")].every((q,i)=>q===window.__fin[i])&&window.__fin.length>0`), "reordering the waiting jobs doesn't rebuild the finished ones");
+  t.ok(await k.ev(`window.__mut`) === 0, "…nor touch them at all (no slide, nothing redrawn)", await k.ev(`window.__mut`));
   t.ok(await k.ev(`[...document.querySelectorAll("#qsPend .qi")].map(q=>q.querySelector(".p").textContent).join("|")`).then(x => /w2.*w1/.test(x)), "…while the waiting ones show the new order");
 }
 sectionsStay.opts = { step: 1 };

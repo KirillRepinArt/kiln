@@ -245,7 +245,7 @@ function genNav(dir,dry){const m=picMode(),cur=onShow(),L=doneList();
  let i=cur?L.findIndex(x=>x.id===cur.id):L.length;if(i<0)i=L.length;const n=i+dir;   /* the render / the empty frame sit after the newest */
  if(n<0)return false;if(n>=L.length&&m!=="browse")return false;   /* past the newest: only the Gallery steps out (to Generating) */
  if(!dry){const fs=$("frame").style,o={w:parseFloat(fs.width),h:parseFloat(fs.height),l:parseFloat(fs.left),t:parseFloat(fs.top)};
-  if(n>=L.length)pv("close");else pv("browse",L[n]);
+  PV.dir=dir;if(n>=L.length)pv("close");else pv("browse",L[n]);
   if(n<L.length&&S.view==="gen"&&Math.abs(parseFloat(fs.width)/parseFloat(fs.height)-o.w/o.h)>.02)frameMorph(o)}return true}
 function vNav(dir,dry){const L=doneList(),i=L.findIndex(x=>x.id===(V.job&&V.job.id)),t=L[i+dir];if(i<0||!t)return false;if(!dry)openViewer(t);return true}
 function navFn(el){return el.closest("#viewer")?vNav:genNav}

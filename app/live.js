@@ -73,7 +73,7 @@
   const prev=new Map(jobs.map(j=>[j.id,j]));
   jobs=s.jobs.map(x=>{const u=toUI(x),o=prev.get(u.id);if(o&&o.status==="running"&&u.status==="running"){u._ss=o._ss;u._lastStep=o._lastStep}return u});
   for(const j of jobs){const jk=j.id+":"+(j.created||0);   /* the server can hand an id out again after its job left the list */
-   if(j.status==="done"&&!seen.has(jk)){seen.add(jk);neKey="";if(!firstPoll){pv("done",j);onJobDone(j)}}
+   if(j.status==="done"&&!seen.has(jk)){seen.add(jk);neKey="";if(!firstPoll){pv("done",j);onJobDone(j);if(S.view!=="gen"||PV.browse!=null)doneNote(j)}}
    if(j.status==="error"&&!seen.has("e"+jk)){seen.add("e"+jk);if(!firstPoll)toast(`Job #${j.id} failed: ${j.error||"error"}`)}}
   if(firstPoll){const d=lastDone();window._jobsReady=true;if(d&&S.clearedId!==d.id)PV.still={id:d.id,kind:"result"}; // the last result, unless you had closed it
    if(S.seenDone!=null){const n=jobs.filter(x=>x.status==="done"&&x.id>S.seenDone).length;if(n)setTimeout(()=>toast(`${n} image${n>1?"s":""} finished while Kiln was closed`),1200)}}
@@ -113,6 +113,17 @@
  $("qwrap").addEventListener("click",e=>{if(e.target.id==="clearDone"){e.stopImmediatePropagation();api("/api/clear",{}).then(poll)}},true);
  window.openInApp=j=>api("/api/open",{id:j.id});
  window.fileUrl=urlFor;
+ /* a picture finished while you weren't watching Generating: a small card slides out under the Generating tab (where
+    its ring was); click = the picture in the Gallery. ~6 s, held while you're on it; several in a row = one card */
+ let dnT=null,dnN=0,dnId=null;const dn=$("donenote");
+ function dnHide(){clearTimeout(dnT);dn.classList.remove("show");dnN=0}
+ window.doneNote=j=>{dnN=dn.classList.contains("show")?dnN+1:1;dnId=j.id;
+  $("dnTxt").textContent=dnN>1?`${dnN} finished · the last #${j.id}`:`#${j.id} finished`;
+  const im=$("dnImg");if(S.privacy)im.removeAttribute("src");else im.src=urlFor(j);dn.classList.toggle("priv",!!S.privacy);
+  const r=document.querySelector('.tab[data-v="gen"]').getBoundingClientRect();dn.style.left=Math.round(r.left+r.width/2)+"px";dn.style.top=Math.round(r.bottom+10)+"px";
+  dn.classList.add("show");clearTimeout(dnT);dnT=setTimeout(dnHide,6000)};
+ dn.addEventListener("mouseenter",()=>clearTimeout(dnT));dn.addEventListener("mouseleave",()=>{clearTimeout(dnT);dnT=setTimeout(dnHide,2500)});
+ dn.onclick=()=>{const j=doneById(dnId);dnHide();if(!j)return;tabGo(()=>{showView("gen");pv("browse",j)})};
  window.removeJob=async j=>{if(!j)return;await api(`/api/jobs/${j.id}/remove`,{});poll()};
  window.removeMissing=async()=>{await api("/api/remove-missing",{});poll()};
  window.setPaused=async p=>{await api("/api/pause",{paused:p});window.qPaused=p;sig="";poll();toast(p?"Queue paused — the current image finishes, nothing new starts":"Queue resumed")};
@@ -121,7 +132,7 @@
   toast(`Renamed to ${r.file}`,"Undo",async()=>{await api(`/api/jobs/${j.id}/rename`,back);poll()});poll();return true};
  window.renameJob=async(j,n)=>{await api(`/api/jobs/${j.id}/name`,{name:n});toast(n?`Name saved — it will be saved as ${slugify(n)}-NNN.png`:"Name cleared — it will be named by date and seed");poll()};
  /* Q1: delete = to the Recycle Bin, with Undo (the server waits 12 s before it really goes) */
- window.deleteJob=async j=>{if(!j)return;const L=doneList(),i=L.findIndex(x=>x.id===j.id),nb=L[i-1]||L[i+1]||null;   /* where to land: the one before, else after */
+ window.deleteJob=async j=>{if(!j)return;const L=doneList(),i=L.findIndex(x=>x.id===j.id),d=PV.dir||1,nb=L[i+d]||L[i-d]||null;   /* where to land: onward in the way you were stepping (the ones behind you, you kept), else back */
   const r=await api(`/api/jobs/${j.id}/delete`,{});if(r.error){toast(r.error);return}
   jobs=jobs.filter(x=>x.id!==j.id);
   if($("viewer").classList.contains("show")&&V.job&&V.job.id===j.id){if(nb)openViewer(nb);else closeViewer()}

@@ -179,3 +179,19 @@ export async function startVaries(k, t) {
   t.ok(/^Variation of #\d+ queued/.test(await k.ev(`$("toastMsg").textContent`)), "it says so, with Undo");
 }
 startVaries.opts = { step: 0.5 };
+
+/* delete in the Gallery lands onward, in the way you were stepping; a finished picture while you're elsewhere: a card */
+export async function deleteOnwardAndNote(k, t) {
+  for (const c of ["dc2828", "28dc28", "2828dc"]) { await k.job(`[fill:${c}] x`, { steps: 2 }); await done(k, ["dc2828", "28dc28", "2828dc"].indexOf(c) + 1) }
+  const ids = await k.ev(`doneList().map(j=>j.id)`);
+  await tab(k, "gallery"); await k.sleep(300); await k.ev(`(genNav(-1),genNav(-1),genNav(1),1)`); await k.sleep(400);   // stepping → onto the middle one
+  await k.ev(`(deleteJob(browsed()),1)`); await k.sleep(1200);
+  t.ok((await st(k)).browse === ids[2], "stepping →, delete: the newer one (onward)", await st(k));
+  await k.ev(`(genNav(-1),1)`); await k.sleep(300); await k.ev(`(deleteJob(browsed()),1)`); await k.sleep(1200);
+  t.ok((await st(k)).browse === ids[2], "stepping ←, nothing older left: the other way", await st(k));
+  await k.ev(`(showView("queue"),1)`); await k.job("[fill:dcdc28] while away", { steps: 2 }); await done(k, 2); await k.sleep(400);
+  t.ok(await k.ev(`$("donenote").classList.contains("show")&&/finished/.test($("dnTxt").textContent)`), "finished while on the Queue tab: a card under the Generating tab");
+  await k.ev(`($("donenote").click(),1)`); await k.sleep(800);
+  const s = await st(k); t.ok(s.pic === "browse" && s.browse === (await k.ev(`lastDone().id`)) && s.tab === "gallery", "click: that picture, in the Gallery", s);
+}
+deleteOnwardAndNote.opts = { step: 0.05 };

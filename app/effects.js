@@ -49,7 +49,7 @@ function ringKnockout(){const w=document.querySelector('.tab[data-v="gen"] .trw'
  const c=document.createElement("canvas");c.width=Math.ceil(r.width*dpr);c.height=Math.ceil(r.height*dpr);const g=c.getContext("2d");g.scale(dpr,dpr);
  g.fillStyle="#000";g.fillRect(0,0,r.width,r.height);g.globalCompositeOperation="destination-out";g.font=font;try{g.letterSpacing=cs.letterSpacing}catch(e){}
  const m=g.measureText("G"),y=gr.top-r.top+m.fontBoundingBoxAscent,x=gr.left-r.left;
- g.lineWidth=2.5;g.lineJoin="round";g.strokeText(tl.textContent,x,y);g.fillText(tl.textContent,x,y);
+ g.lineWidth=4;g.lineJoin="round";g.strokeText(tl.textContent,x,y);g.fillText(tl.textContent,x,y);
  w.style.setProperty("--ko",`url(${c.toDataURL()})`)}
 document.fonts&&document.fonts.ready.then(()=>{const w=document.querySelector(".trw");if(w)delete w.dataset.ko});
 function status(){const j=current();ringKnockout();

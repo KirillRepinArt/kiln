@@ -53,9 +53,19 @@ if(cm){
   keymap.of([{key:"Mod-/",run:toggleLineComment},{key:"Mod-Enter",run:()=>{window.addJobs&&addJobs();return true}},...historyKeymap,...defaultKeymap.filter(k=>k.key!=="Mod-Enter")]),
   EditorView.updateListener.of(u=>{if(u.docChanged&&!syncing){proto.set.call(ta,u.state.doc.toString());ta.dispatchEvent(new Event("input"))}
    if(u.heightChanged||u.geometryChanged)refit();if(u.docChanged||u.heightChanged||u.geometryChanged)requestAnimationFrame(ovf)}),
-  EditorView.domEventHandlers({keydown:(e)=>{if(!ta.readOnly)return false;
-   if(e.key==="Escape"||e.key.length===1||e.key==="Backspace"||e.key==="Enter"){if(e.ctrlKey&&e.key==="Enter")return false;
-    ta.dispatchEvent(new KeyboardEvent("keydown",{key:e.key,ctrlKey:e.ctrlKey}));return true}return false}})
+  EditorView.domEventHandlers({keydown:(e,v)=>{if(!ta.readOnly)return false;
+   if(e.key==="Escape"){ta.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape"}));return true}
+   const mod=e.ctrlKey||e.metaKey,edit=e.key.length===1&&!mod&&!e.altKey||e.key==="Backspace"||e.key==="Delete"||e.key==="Enter"&&!mod||mod&&/^[vx]$/i.test(e.key);
+   if(!edit)return false;   /* copying, moving the cursor, selecting: not an edit */
+   ta.dispatchEvent(new KeyboardEvent("keydown",{key:e.key,ctrlKey:e.ctrlKey}));   /* Kiln makes this prompt your draft (Reuse prompt) */
+   if(ta.readOnly)return true;
+   /* now editable: the key does what it would have done. Typed text and paste go on to the editor as usual; the keys the
+      keymap had already turned away (read-only then) are applied here */
+   const sel=v.state.selection.main;
+   if(e.key==="Enter"){v.dispatch(v.state.replaceSelection("\n"));return true}
+   if(e.key==="Backspace"||e.key==="Delete"){if(!sel.empty)v.dispatch(v.state.replaceSelection(""));
+    else if(e.key==="Backspace"&&sel.head>0)v.dispatch({changes:{from:sel.head-1,to:sel.head}});else if(e.key==="Delete"&&sel.head<v.state.doc.length)v.dispatch({changes:{from:sel.head,to:sel.head+1}});return true}
+   return false}})
  ]})});
  wrap.insertBefore(view.dom,ta);wrap.classList.add("cm-on");requestAnimationFrame(()=>window.layoutLeft&&layoutLeft()); // the card was sized for the plain textarea
 

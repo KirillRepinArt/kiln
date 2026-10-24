@@ -18,10 +18,10 @@ function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=
    ${j.created||j.finished?`<div class="meta times">${j.created?`added ${clock(j.created)}`:""}${j.finished&&j.status==="done"?` · done ${clock(j.finished)}`:""}${j.finished&&j.started?` · took ${fmt((j.finished-j.started)*(window.LIVE?1:S.demo)/1000)}`:""}</div>`:""}
    ${k==="run"?'<div class="mini"><i></i></div>':""}</div>
    ${k!=="done"?`<button class="x" data-x="${j.id}" title="${k==="run"?"Stop":"Remove"}">${IC.x}</button>`:`<button class="x" data-rm="${j.id}" title="${j.status==="done"&&!j.missing?"Remove from the list — the file stays":"Remove from the list"}">${IC.x}</button>`}</div>`;
- $("qwrap").innerHTML=qsBar(done)+(run.length?`<div class="qsec">Running</div>${run.map(j=>item(j,"run")).join("")}`:"")+
+ $("qwrap").innerHTML=(run.length?`<div class="qsec">Generating now</div>${run.map(j=>item(j,"run")).join("")}`:"")+
   `<div class="qsec"><span>Up next ${pend.length?`· ${pend.length} · ~${fmt(left)}`:""}${window.qPaused?' · <b class="paused">paused</b>':""}</span><button id="pauseQ" data-tip="${window.qPaused?"Start the waiting jobs again":"The current image finishes; nothing new starts until you resume"}">${window.qPaused?"Resume":"Pause after this"}</button></div>`+
   (pend.length?pend.map(j=>item(j,"pend")).join(""):'<div class="empty">Nothing queued</div>')+
-  (done.length?`<div class="qsec"><span>Finished · ${done.length}</span><span>${done.some(j=>j.missing)?`<button id="rmMissing">Remove missing (${done.filter(j=>j.missing).length})</button> `:""}<button id="clearDone">Clear list</button></span></div>${done.map(j=>item(j,"done")).join("")}`:"");
+  (done.length?(QS.size?qsBar(done):"")+(QS.size?"":`<div class="qsec"><span>Finished · ${done.length}</span><span>${done.some(j=>j.missing)?`<button id="rmMissing">Remove missing (${done.filter(j=>j.missing).length})</button> `:""}<button id="clearDone">Clear list</button></span></div>`)+done.map(j=>item(j,"done")).join(""):"");
  done.forEach(j=>{const c=document.querySelector(`canvas[data-th="${j.id}"]`);if(c&&j.status==="done"&&!j.missing)paint(c,j,1)});
  if(window.LIVE){const have=new Set(done.map(j=>j.id));for(const id of QT.keys())if(!have.has(id))QT.delete(id);
   $("qwrap").querySelectorAll("[data-tth]").forEach(ph=>{const id=+ph.dataset.tth;let im=QT.get(id);
@@ -36,8 +36,8 @@ const QT=new Map();
 /* what the list shows: unchanged → opening the tab rebuilds nothing */
 function queueSig(){return jobs.map(j=>`${j.id}:${j.status}:${j.file||""}:${j.missing?1:0}:${j.name||""}:${j.est||""}`).join("|")+"|"+[...QS].join(",")+"|"+!!window.qPaused}
 function qsBar(done){if(!QS.size)return"";const sel=done.filter(j=>QS.has(j.id)),names=[...new Set(sel.map(j=>(j.name||"").trim()))];
- let series="";if(names.length===1&&names[0]){const all=done.filter(j=>(j.name||"").trim()===names[0]).length;if(all>sel.length)series=`<button id="qsSeries">Select all “${esc(names[0])}” · ${all}</button>`}
- return `<div class="qbar"><span class="qn">${QS.size} selected</span>${series}${sel.length<done.length?'<button id="qsAll">Select all</button>':""}<span class="qgap"></span>
+ let series="";if(names.length===1&&names[0]){const all=done.filter(j=>(j.name||"").trim()===names[0]).length;if(all>sel.length)series=`<button id="qsSeries" data-tip="Select every “${esc(names[0])}” picture">All “${esc(names[0])}” · ${all}</button>`}
+ return `<div class="qsec qbar"><span class="qn"><b>${QS.size}</b> of ${done.length} selected</span>${series}${sel.length<done.length?'<button id="qsAll">Select all</button>':""}<span class="qgap"></span>
   <button id="qsRemove" data-tip="Take them off the list — the files stay">Remove from list</button><button id="qsDel" class="qdel" data-tip="To the Recycle Bin, with Undo (Del)">Delete</button><button id="qsX" class="qx" data-tip="Clear the selection (Esc)">${IC.x}</button></div>`}
 function qsFinished(){return jobs.filter(j=>j.status==="done"||j.status==="cancelled").reverse()}
 function qsClick(j,range){const L=qsFinished();
@@ -141,7 +141,7 @@ function reuse(all,seedToo){const j=peekJob;const fixed=!!(seedToo||S.keepSeed);
 $("pkPrompt").onclick=()=>reuse(false);$("pkAll").onclick=()=>reuse(true,$("pkAll").dataset.m==="seed");
 $("pkSeed").onclick=e=>{e.stopPropagation();S.keepSeed=!S.keepSeed;save();keepSeedUI()};$("pkX").onclick=()=>closePromptPeek();
 P.addEventListener("keydown",e=>{if(!peekJob)return;if(e.key==="Escape"){closePromptPeek();return}
- if(e.key.length===1||e.key==="Backspace"||e.key==="Enter"){if(e.ctrlKey&&e.key==="Enter")return;reuse(false)}});
+ const mod=e.ctrlKey||e.metaKey;if(e.key.length===1&&!mod&&!e.altKey||e.key==="Backspace"||e.key==="Delete"||e.key==="Enter"&&!mod||mod&&/^[vx]$/i.test(e.key))reuse(false)});
 function updPrompt(){if(window.nameUI)nameUI();const n=P.value.length;$("left").classList.toggle("hastext",!!n&&!peekJob);$("pcount").textContent=n?n.toLocaleString()+" chars":"";$("play").removeAttribute("title");const vary=!!(peekJob&&peekJob.kind!=="upscale");
  $("play").classList.toggle("off",vary?false:!P.value.trim()||!!peekJob);$("play").classList.toggle("vary",vary);
  $("play").dataset.tip=vary?`Vary: #${peekJob.id} again with a new seed — same prompt, settings and LoRAs; your draft stays (Ctrl+Enter)`:peekJob?"Choose Reuse first":(!P.value.trim()?"Write a prompt first":"Add to queue (Ctrl+Enter)")}

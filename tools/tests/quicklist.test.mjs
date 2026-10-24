@@ -65,7 +65,7 @@ export async function dragsAlwaysEnd(k, t) {
 
 export async function pressOutline(k, t) {
   await k.mouse(2, 2); await k.sleep(1200);
-  const l = await k.rect("#left"); const x = l.left + l.width / 2, y = l.top + 6;   // the box's top padding: an empty part
+  const l = await k.rect("#left"), tt = await k.rect("#ltitle"); const x = tt.left + 30, y = tt.top + tt.height - 14;   // the name line, off the name itself
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 }); await k.sleep(250);
   const h = await k.rect("#cardhint"), tr = await k.rect("#ltitle"), L = await k.rect("#left");
@@ -112,4 +112,17 @@ export async function narrowReuseRow(k, t) {
   const r = await k.ev(`(()=>{const a=$("peekbar").getBoundingClientRect(),b=$("hmodes").getBoundingClientRect();return{narrow:$("ltitle").classList.contains("tnarrow"),overlap:!(a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top),sameRow:Math.abs((a.top+a.bottom)/2-(b.top+b.bottom)/2)<6}})()`);
   t.ok(r.narrow && !r.overlap && r.sameRow, "a narrow box: the Reuse bar and the size buttons share one row, no overlap", r);
   await k.shot("narrow-row");
+}
+
+export async function tabSwitchKeepsTabs(k, t) {
+  await k.mouse(2, 2); await k.sleep(1000);
+  const r = await k.ev(`(()=>{const h=document.documentElement,b=document.body;h.classList.add("tabmorph","laymorph");b.classList.add("laysnap");
+   const o={app:getComputedStyle(document.querySelector(".app")).viewTransitionName,panel:getComputedStyle($("rpanel")).viewTransitionName,thumb:getComputedStyle(document.querySelector(".seg .thumb")).transitionDuration};
+   h.classList.remove("tabmorph","laymorph");b.classList.remove("laysnap");return o})()`);
+  t.ok(r.app === "none" && r.panel === "kiln-panel", "a tab switch fades only the content under the tabs (the tab bar and the prompt stay live)", r);
+  t.ok(/0\.28s/.test(r.thumb), "…and the selected tab's pill slides", r);
+  const x0 = await k.ev(`$("thumb").getBoundingClientRect().left`);
+  await k.ev(`(document.querySelector('.tab[data-v="queue"]').click(),1)`); await k.sleep(120);
+  const x1 = await k.ev(`$("thumb").getBoundingClientRect().left`), x2 = await k.ev(`document.querySelector('.tab[data-v="queue"]').getBoundingClientRect().left`);
+  t.ok(x1 > x0 + 2 && x1 < x2 - 2, "mid-switch the pill is on its way (not jumped)", { x0, x1, x2 });
 }

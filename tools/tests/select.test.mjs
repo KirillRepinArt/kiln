@@ -14,8 +14,8 @@ export async function selecting(k, t) {
   t.ok(await k.ev(`document.body.dataset.pic==="browse"`), "no selection: a click opens the picture, as before");
   await k.ev(`(showView("queue"),1)`); await k.sleep(300);
   await click(k, ids[0], { ctrl: true }); await k.sleep(200);
-  t.ok(JSON.stringify(await sel(k)) === JSON.stringify([ids[0]]) && await k.ev(`!!document.querySelector(".qbar")&&/1 selected/.test(document.querySelector(".qbar").textContent)`), "Ctrl-click selects; the bar says 1 selected", await sel(k));
-  t.ok(await k.ev(`/Select all “Fox” · 3/.test(document.querySelector(".qbar").textContent)`), "it offers the whole series");
+  t.ok(JSON.stringify(await sel(k)) === JSON.stringify([ids[0]]) && await k.ev(`!!document.querySelector(".qbar")&&/1 of 6 selected/.test(document.querySelector(".qbar").textContent)`), "Ctrl-click selects; the bar says 1 selected", await sel(k));
+  t.ok(await k.ev(`/All “Fox” · 3/.test(document.querySelector(".qbar").textContent)`), "it offers the whole series");
   await k.ev(`($("qsSeries").click(),1)`); await k.sleep(200);
   t.ok(JSON.stringify(await sel(k)) === JSON.stringify([ids[0], ids[1], ids[3]]), "Select all “Fox”: the three Foxes", await sel(k));
   await click(k, ids[1]); await k.sleep(200);

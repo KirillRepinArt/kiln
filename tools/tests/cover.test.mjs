@@ -20,7 +20,7 @@ export async function privacyButton(k, t) {
   await done(k); await k.sleep(1500);
   t.ok(await held(k) && await cvHidden(k), "still covered after the finish");
   await k.ev(`(showView("queue"),1)`); await k.sleep(300);
-  t.ok(await k.ev(`!!document.querySelector(".qi canvas[data-th]")`), "the Queue tab is untouched");
+  t.ok(await k.ev(`!!document.querySelector(".qi img.qt")`), "the Queue tab is untouched");
   await k.ev(`(showView("gen"),1)`);
   await k.job("a wolf", { steps: 3 }); await running(k);
   t.ok(await held(k), "it stays on for the next job");

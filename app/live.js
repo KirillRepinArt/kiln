@@ -11,8 +11,11 @@
  $("sDemo").closest(".fg")&&($("sDemo").previousElementSibling.style.display="none",$("sDemo").style.display="none");
 
  /* ---------- images: real files and live previews, cached ---------- */
- const imgs={};
- function img(url){if(!imgs[url]){const i=new Image();i.decoding="async";imgs[url]={i,p:new Promise(r=>{i.onload=()=>r(i);i.onerror=()=>r(null)})};i.src=url}return imgs[url]}
+ const imgs=new Map(),IMAX=16;   /* the pictures used last (the cache used to keep every picture you'd seen, decoded) */
+ function img(url){let e=imgs.get(url);if(e){imgs.delete(url);imgs.set(url,e);return e}
+  const i=new Image();i.decoding="async";e={i,p:new Promise(r=>{i.onload=()=>r(i);i.onerror=()=>r(null)})};i.src=url;imgs.set(url,e);
+  while(imgs.size>IMAX)imgs.delete(imgs.keys().next().value);return e}
+ window.__imgsN=()=>imgs.size;
  function urlFor(j){return j.file?`/files/${encodeURIComponent(j.file)}?j=${j.id}`:null}
  function drawTo(cv,im,natural){const dpr=devicePixelRatio||1,iw=im.naturalWidth,ih=im.naturalHeight;
   if(natural){if(cv.width!==iw||cv.height!==ih){cv.width=iw;cv.height=ih}const c=cv.getContext("2d");c.drawImage(im,0,0);return}
@@ -41,21 +44,21 @@
  window.paint=function(cv,j,progress){const u=urlFor(j);if(!u)return;xfadeFrom(cv,j.id);if(j.missing){cv.dataset.want=j.id;if(cv.id==="cv")missing(cv,j);return}const e=img(u),nat=cv.id==="vcv";cv.dataset.want=j.id;
   if(e.i.complete&&e.i.naturalWidth){drawTo(cv,e.i,nat);xfadeGo(cv,j.id);return}
   if(cv.id==="cv"){cv.width=1;cv.height=1}
-  e.p.then(im=>{if(cv.dataset.want!=String(j.id))return;if(im){drawTo(cv,im,nat);xfadeGo(cv,j.id)}else{delete imgs[u];missing(cv,j);xfadeGo(cv,j.id)}})};
+  e.p.then(im=>{if(cv.dataset.want!=String(j.id))return;if(im){drawTo(cv,im,nat);xfadeGo(cv,j.id)}else{imgs.delete(u);missing(cv,j);xfadeGo(cv,j.id)}})};
  function missing(cv,j){const dpr=devicePixelRatio||1,fd=cv.id==="cv"&&$("frame").dataset,W=Math.max(64,Math.round(((fd&&+fd.tw)||cv.clientWidth||300)*dpr)),H=Math.max(64,Math.round(((fd&&+fd.th)||cv.clientHeight||300)*dpr));   /* the box's target size (it may be mid-glide) */
   cv.width=W;cv.height=H;const c=cv.getContext("2d");c.fillStyle="#0b0b0e";c.fillRect(0,0,W,H)}   /* the words and the ways back are on the card (#missCard) */
  /* the missing-file card: what can bring it back, best first */
  const inBin={};
  function missUI(d){const on=!!(d&&d.missing&&S.view==="gen");$("frame").classList.toggle("missing",on);if(!on)return;
   $("missFile").textContent=d.file;if(inBin[d.id]===undefined){inBin[d.id]=null;api(`/api/jobs/${d.id}/recycled`,{}).then(r=>inBin[d.id]=!!r.found).catch(()=>{})}
-  const held=imgs[urlFor(d)],copy=!!(held&&held.i.complete&&held.i.naturalWidth);
+  const held=imgs.get(urlFor(d)),copy=!!(held&&held.i.complete&&held.i.naturalWidth);
   $("mRestore").style.display=inBin[d.id]?"":"none";$("mSave").style.display=copy&&!inBin[d.id]?"":"none";
   $("missHint").textContent=inBin[d.id]?"It's in the Recycle Bin — Restore puts the original file back.":copy?"Kiln still has it from this session — Save back writes it to the output folder again.":"Render again makes it anew from the same prompt, seed and settings."}
  const shownMissing=()=>{const d=shownDone();return d&&d.missing?d:null};
  $("mRestore").onclick=async()=>{const d=shownMissing();if(!d)return;const r=await api(`/api/jobs/${d.id}/restore`,{});toast(r.error||"Restored from the Recycle Bin");delete inBin[d.id];poll()};
- $("mSave").onclick=async()=>{const d=shownMissing();if(!d)return;const e=imgs[urlFor(d)];if(!e||!e.i.naturalWidth)return toast("Kiln no longer has a copy");
+ $("mSave").onclick=async()=>{const d=shownMissing();if(!d)return;const e=imgs.get(urlFor(d));if(!e||!e.i.naturalWidth)return toast("Kiln no longer has a copy");
   const c=document.createElement("canvas");c.width=e.i.naturalWidth;c.height=e.i.naturalHeight;c.getContext("2d").drawImage(e.i,0,0);
-  const r=await api(`/api/jobs/${d.id}/saveback`,{data:c.toDataURL("image/png")});toast(r.error||`Saved back as ${d.file}`);delete imgs[urlFor(d)];poll()};
+  const r=await api(`/api/jobs/${d.id}/saveback`,{data:c.toDataURL("image/png")});toast(r.error||`Saved back as ${d.file}`);imgs.delete(urlFor(d));poll()};
  $("mAgain").onclick=async()=>{const d=shownMissing();if(!d)return;const sp=Object.assign({},d.spec,{seed:d.seed,as_file:d.file});
   await api("/api/jobs",{jobs:[sp]});await api(`/api/jobs/${d.id}/remove`,{});toast(`Rendering it again — same seed, saved as ${d.file}`);poll()};
  $("mRemove").onclick=()=>{const d=shownMissing();if(d)removeJob(d)};
@@ -65,15 +68,22 @@
   seed:s.seed_used??sp.seed,est:s.est,est_first:s.est_first,t_first:s.t_first&&s.t_first*1000,step:s.step||0,steps:s.steps||sp.steps||0,progress:s.progress||0,eta:s.eta,preview_rev:s.preview_rev||0,
   error:s.error,started:s.started&&s.started*1000,finished:s.finished&&s.finished*1000,loras:sp.loras||[],mp:sp.mp||"1.0",ar:sp.ar||"1:1",spec:sp,warm:!!s.warm,stopping:!!s.stopping,missing:!!s.missing,created:s.created&&s.created*1000})}
  let sig="",forgeOk=true,forgeStarting=false,firstPoll=true,loadingM=false;const seen=new Set();
- async function poll(){let s;try{s=await (await fetch("/api/state")).json()}catch(e){forgeMsg("Kiln server not reachable");return}
+ let since="";
+ async function poll(){let s;try{s=await (await fetch("/api/state"+(since?"?since="+since:""))).json()}catch(e){forgeMsg("Kiln server not reachable");return}
   forgeOk=s.forge.ok;forgeStarting=!!s.forge.starting;if(window.qPaused!==!!s.paused){window.qPaused=!!s.paused;sig=""}
   if(forgeOk&&!models&&!loadingM){loadingM=true;loadModels(false).then(ok=>{loadingM=false;if(ok){refreshUp();toast("Forge is ready — models and LoRAs loaded")}})}
   for(const b in s.stats.sec_per_step||{})SEC_PER_STEP[b]=Math.max(1,s.stats.sec_per_step[b]);
   if((typeof dragId!=="undefined"&&dragId!=null)||window._rp){setTimeout(poll,700);return} // dragging, or the new order not saved yet: keep the local order
+  if(s.same){const r=s.run,cur=current();   /* nothing changed but the running job's progress */
+   if(r&&cur&&cur.id===r.id){const u=toUI(r);u._ss=cur._ss;u._lastStep=cur._lastStep;Object.assign(cur,u)}
+   else if(r||cur){since="";setTimeout(poll,0);return}   /* out of step: the full list next */
+   const n=jobs.filter(j=>j.status==="pending"||j.status==="running").length;$("badge").textContent=n;$("badge").classList.toggle("show",n>0);$("tabN").textContent=n||"";
+   setTimeout(poll,current()?700:1800);return}
+  since=s.sig||"";
   const prev=new Map(jobs.map(j=>[j.id,j]));
   jobs=s.jobs.map(x=>{const u=toUI(x),o=prev.get(u.id);if(o&&o.status==="running"&&u.status==="running"){u._ss=o._ss;u._lastStep=o._lastStep}return u});
   for(const j of jobs){const jk=j.id+":"+(j.created||0);   /* the server can hand an id out again after its job left the list */
-   if(j.status==="done"&&!seen.has(jk)){seen.add(jk);neKey="";if(!firstPoll){pv("done",j);onJobDone(j);if(S.view!=="gen"||PV.browse!=null)doneNote(j)}}
+   if(j.status==="done"&&!seen.has(jk)){seen.add(jk);neKey="";if(!firstPoll){pv("done",j);onJobDone(j);if(S.view!=="gen"||PV.browse!=null)doneNote(j);setTimeout(()=>makeQThumb(j),1500)}}
    if(j.status==="error"&&!seen.has("e"+jk)){seen.add("e"+jk);if(!firstPoll)toast(`Job #${j.id} failed: ${j.error||"error"}`)}}
   if(firstPoll){const d=lastDone();window._jobsReady=true;if(d&&S.clearedId!==d.id)PV.still={id:d.id,kind:"result"}; // the last result, unless you had closed it
    if(S.seenDone!=null){const n=jobs.filter(x=>x.status==="done"&&x.id>S.seenDone).length;if(n)setTimeout(()=>toast(`${n} image${n>1?"s":""} finished while Kiln was closed`),1200)}}
@@ -113,6 +123,23 @@
  $("qwrap").addEventListener("click",e=>{if(e.target.id==="clearDone"){e.stopImmediatePropagation();api("/api/clear",{}).then(poll)}},true);
  window.openInApp=j=>api("/api/open",{id:j.id});
  window.fileUrl=urlFor;
+ const qtq=[];let qtBusy=false;
+ window.makeQThumb=(j,el)=>{if(!j||j.missing||!j.file||j.status!=="done"||qtq.some(x=>x[0].id===j.id))return;qtq.push([j,el]);if(!qtBusy)qtNext()};
+ async function qtNext(){const n=qtq.shift();if(!n){qtBusy=false;return}qtBusy=true;const [j,el]=n;
+  try{const held=imgs.get(urlFor(j));   /* a picture already decoded (the one just finished, the one on show): no second load */
+   const im=held&&held.i.complete&&held.i.naturalWidth?held.i:await new Promise(r=>{const i=new Image();i.decoding="async";i.onload=()=>r(i);i.onerror=()=>r(null);i.src=urlFor(j)});   /* not via the cache: hundreds of thumbnails mustn't push the pictures you browse out of it */
+   if(im){const Z=120,c=document.createElement("canvas");c.width=c.height=Z;const s=Math.min(im.naturalWidth,im.naturalHeight);
+    c.getContext("2d").drawImage(im,(im.naturalWidth-s)/2,(im.naturalHeight-s)/2,s,s,0,0,Z,Z);const data=c.toDataURL("image/jpeg",.82);
+    const t=el&&el.isConnected?el:document.querySelector(`img.qt[data-qt="${j.id}"]`);if(t)t.src=data;
+    await api("/api/qthumb",{id:j.id,data})}}catch(e){}
+  setTimeout(qtNext,0)}
+ /* several at once: one Undo for all (Delete), or off the list (cancelled rows, missing files) */
+ window.deleteMany=async ids=>{const L=[...ids].map(id=>jobs.find(j=>j.id===id)).filter(Boolean),del=L.filter(j=>j.status==="done"&&j.file&&!j.missing),rm=L.filter(j=>!del.includes(j));
+  await Promise.all(del.map(j=>api(`/api/jobs/${j.id}/delete`,{})).concat(rm.map(j=>api(`/api/jobs/${j.id}/remove`,{}))));
+  const gone=new Set(L.map(j=>j.id));jobs=jobs.filter(j=>!gone.has(j.id));pvPrune();renderAll();
+  const msg=[del.length&&`${del.length} moved to the Recycle Bin`,rm.length&&`${rm.length} taken off the list`].filter(Boolean).join(" · ");
+  toast(msg,del.length?"Undo":"",async()=>{await Promise.all(del.map(j=>api(`/api/jobs/${j.id}/undelete`,{})));poll()});poll()};
+ window.removeMany=async ids=>{await Promise.all([...ids].map(id=>api(`/api/jobs/${id}/remove`,{})));const g=new Set(ids);jobs=jobs.filter(j=>!g.has(j.id));pvPrune();renderAll();poll()};
  /* a picture finished while you weren't watching Generating: a small card slides out under the Generating tab (where
     its ring was); click = the picture in the Gallery. ~6 s, held while you're on it; several in a row = one card */
  let dnT=null,dnN=0,dnId=null;const dn=$("donenote");

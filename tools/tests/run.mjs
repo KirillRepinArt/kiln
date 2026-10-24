@@ -28,9 +28,10 @@ const freePort = () => new Promise(r => { const s = createServer(); s.listen(0, 
 async function waitHttp(url, ms = 15000) { const t = Date.now(); while (Date.now() - t < ms) { try { await fetch(url); return } catch (e) { await sleep(150) } } throw new Error("no answer from " + url) }
 
 /* one Kiln instance + browser page, with the helpers a test uses */
-async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, autoExit = false } = {}) {
+async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, autoExit = false, before = null } = {}) {
   const dir = join(tmpdir(), `kiln-test-${name}-${Date.now()}`), out = join(dir, "out"), data = join(dir, "data");
   mkdirSync(out, { recursive: true }); mkdirSync(data, { recursive: true });
+  if (before) await before({ out, data });   // a test can fill the queue and the output folder before Kiln starts
   const [fport, kport, dport] = [await freePort(), await freePort(), await freePort()];
   const procs = [], log = [];
   const run = (cmd, args, env) => { const p = spawn(cmd, args, { cwd: ROOT, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });

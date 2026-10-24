@@ -3,10 +3,10 @@
 function moveThumb(instant){const t=document.querySelector(".tab.on"),th=$("thumb");if(!t)return;if(instant)th.style.transition="none";th.style.left=t.offsetLeft+"px";th.style.width=t.offsetWidth+"px";if(instant){void th.offsetWidth;th.style.transition=""}}
 function showView(v){const was=S.view;
  if(was!==v){ // temporary state belongs to the visit: an open preview, a browse, a search, a scroll position
-  if(was==="queue")$("qwrap").scrollTop=0; // the prompt box (and its peek) is left as it is
+  if(was==="queue"){$("qwrap").scrollTop=0;if(typeof QS!=="undefined"){QS.clear();qsAnchor=null}} // the prompt box (and its peek) is left as it is
   if(was==="loras"){$("lsearch").value="";$("lsearch").parentElement.classList.remove("has");$("lscroll").scrollTop=0}}
  S.view=v;$("rpanel").classList.toggle("paneled",v!=="gen");tabSync(true);
- document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id==="v-"+v));if(v==="queue")renderQueue();if(v==="loras")renderLoras();sizeFrame()}
+ document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id==="v-"+v));if(v==="queue")(was==="queue"?renderQueue:renderQueueInner)();   /* opening it: no slide animation to measure for */if(v==="loras")renderLoras();sizeFrame()}
 /* Gallery isn't a page of its own (yet): it's the name for browsing finished pictures in the picture view — the
    state ← and the arrows already put you in. Clicking it opens the last finished picture; Generating = the live view */
 function tabSync(force){const v=S.view==="gen"&&browsed()?"gallery":S.view;if(!force&&tabSync.v===v)return;tabSync.v=v;

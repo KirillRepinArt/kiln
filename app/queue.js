@@ -1,25 +1,55 @@
 /* Kiln · Queue tab, peek / reuse */
-function renderQueue(){const before={};document.querySelectorAll(".qi").forEach(q=>before[q.dataset.id]=q.getBoundingClientRect().top);
+function renderQueue(){const before={},W=$("qwrap"),y0=W.scrollTop-200,y1=W.scrollTop+W.clientHeight+200;   /* only rows on screen slide (hundreds below don't need measuring) */
+ W.querySelectorAll(".qi").forEach(q=>{if(q.offsetTop>y0&&q.offsetTop<y1)before[q.dataset.id]=q.getBoundingClientRect().top});
  renderQueueInner();const had=Object.keys(before).length;
- document.querySelectorAll(".qi").forEach(q=>{const b=before[q.dataset.id];if(b==null){if(had)q.classList.add("new");return}
+ W.querySelectorAll(".qi").forEach(q=>{if(!(q.offsetTop>y0&&q.offsetTop<y1))return;const b=before[q.dataset.id];if(b==null){if(had)q.classList.add("new");return}
   const d=b-q.getBoundingClientRect().top;if(Math.abs(d)<1)return;q.style.transition="none";q.style.transform=`translateY(${d}px)`;
   requestAnimationFrame(()=>{q.style.transition="transform .38s cubic-bezier(.4,0,.2,1)";q.style.transform=""})})}
+/* selection (finished rows): the round box, Ctrl-click, Shift-click a range; once something is selected a plain click
+   adds or removes (Google Photos / Lightroom); Ctrl+A all, Esc none, Del deletes them. A bar on top acts on them */
+const QS=new Set();let qsAnchor=null;
 function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=jobs.filter(j=>j.status==="pending"),done=jobs.filter(j=>j.status==="done"||j.status==="cancelled").reverse();
- const left=pend.reduce((a,j)=>a+jEst(j),0);
- const item=(j,k)=>`<div class="qi${j.missing?" missing":""}" data-id="${j.id}" draggable="${k==="pend"}">
-   ${k==="pend"?'<span class="handle" title="Drag to reorder">⋮⋮</span>':""}
-   <div class="th">${j.missing?"gone":j.status==="done"?`<canvas data-th="${j.id}"></canvas>`:j.status==="cancelled"?"stopped":k==="run"?(window.LIVE?`<img class="lp" data-lp="${j.id}" alt="">`:"…"):"#"+j.id}</div>
-   <div class="body"><div class="p">${j.file?`<b style="font-weight:600">${esc(j.file)}</b> · `:""}${esc(j.prompt)}</div>
+ const left=pend.reduce((a,j)=>a+jEst(j),0);for(const id of [...QS])if(!done.some(j=>j.id===id))QS.delete(id);$("qwrap").classList.toggle("selecting",QS.size>0);
+ const item=(j,k)=>`<div class="qi${j.missing?" missing":""}${QS.has(j.id)?" sel":""}" data-id="${j.id}" draggable="${k==="pend"}">
+   ${k==="pend"?'<span class="handle" title="Drag to reorder">⋮⋮</span>':""}${k==="done"?`<span class="qck" data-ck="${j.id}" data-tip="Select (Ctrl-click · Shift-click a range)"></span>`:""}
+   <div class="th">${j.missing?"gone":j.status==="done"?(window.LIVE?`<img class="qt" data-qt="${j.id}" loading="lazy" decoding="async" alt="" src="/qthumbs/${j.id}.jpg">`:`<canvas data-th="${j.id}"></canvas>`):j.status==="cancelled"?"stopped":k==="run"?(window.LIVE?`<img class="lp" data-lp="${j.id}" alt="">`:"…"):"#"+j.id}</div>
+   <div class="body"><div class="p">${j.file?`<b style="font-weight:600">${esc(j.file)}</b> · `:""}${esc((j.prompt||"").slice(0,240))}</div>
    <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · <span class="seedc" data-seed="${j.seed}" data-tip="Click to copy the seed">seed ${j.seed}</span>${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.missing?' · <span class="gone">file deleted</span>':""}</div>
    ${j.created||j.finished?`<div class="meta times">${j.created?`added ${clock(j.created)}`:""}${j.finished&&j.status==="done"?` · done ${clock(j.finished)}`:""}${j.finished&&j.started?` · took ${fmt((j.finished-j.started)*(window.LIVE?1:S.demo)/1000)}`:""}</div>`:""}
    ${k==="run"?'<div class="mini"><i></i></div>':""}</div>
    ${k!=="done"?`<button class="x" data-x="${j.id}" title="${k==="run"?"Stop":"Remove"}">${IC.x}</button>`:`<button class="x" data-rm="${j.id}" title="${j.status==="done"&&!j.missing?"Remove from the list — the file stays":"Remove from the list"}">${IC.x}</button>`}</div>`;
- $("qwrap").innerHTML=(run.length?`<div class="qsec">Running</div>${run.map(j=>item(j,"run")).join("")}`:"")+
+ $("qwrap").innerHTML=qsBar(done)+(run.length?`<div class="qsec">Running</div>${run.map(j=>item(j,"run")).join("")}`:"")+
   `<div class="qsec"><span>Up next ${pend.length?`· ${pend.length} · ~${fmt(left)}`:""}${window.qPaused?' · <b class="paused">paused</b>':""}</span><button id="pauseQ" data-tip="${window.qPaused?"Start the waiting jobs again":"The current image finishes; nothing new starts until you resume"}">${window.qPaused?"Resume":"Pause after this"}</button></div>`+
   (pend.length?pend.map(j=>item(j,"pend")).join(""):'<div class="empty">Nothing queued</div>')+
-  (done.length?`<div class="qsec"><span>Finished</span><span>${done.some(j=>j.missing)?`<button id="rmMissing">Remove missing (${done.filter(j=>j.missing).length})</button> `:""}<button id="clearDone">Clear list</button></span></div>${done.map(j=>item(j,"done")).join("")}`:"");
+  (done.length?`<div class="qsec"><span>Finished · ${done.length}</span><span>${done.some(j=>j.missing)?`<button id="rmMissing">Remove missing (${done.filter(j=>j.missing).length})</button> `:""}<button id="clearDone">Clear list</button></span></div>${done.map(j=>item(j,"done")).join("")}`:"");
  done.forEach(j=>{const c=document.querySelector(`canvas[data-th="${j.id}"]`);if(c&&j.status==="done"&&!j.missing)paint(c,j,1)})}
-function clock(ms){const d=new Date(ms),t=d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});return d.toDateString()===new Date().toDateString()?t:d.toLocaleDateString([],{month:"short",day:"numeric"})+" "+t}
+function qsBar(done){if(!QS.size)return"";const sel=done.filter(j=>QS.has(j.id)),names=[...new Set(sel.map(j=>(j.name||"").trim()))];
+ let series="";if(names.length===1&&names[0]){const all=done.filter(j=>(j.name||"").trim()===names[0]).length;if(all>sel.length)series=`<button id="qsSeries">Select all “${esc(names[0])}” · ${all}</button>`}
+ return `<div class="qbar"><span class="qn">${QS.size} selected</span>${series}${sel.length<done.length?'<button id="qsAll">Select all</button>':""}<span class="qgap"></span>
+  <button id="qsRemove" data-tip="Take them off the list — the files stay">Remove from list</button><button id="qsDel" class="qdel" data-tip="To the Recycle Bin, with Undo (Del)">Delete</button><button id="qsX" class="qx" data-tip="Clear the selection (Esc)">${IC.x}</button></div>`}
+function qsFinished(){return jobs.filter(j=>j.status==="done"||j.status==="cancelled").reverse()}
+function qsClick(j,range){const L=qsFinished();
+ if(range&&qsAnchor!=null){const a=L.findIndex(x=>x.id===qsAnchor),b=L.findIndex(x=>x.id===j.id);if(a>=0&&b>=0){for(let i=Math.min(a,b);i<=Math.max(a,b);i++)QS.add(L[i].id);renderQueue();return}}
+ if(QS.has(j.id))QS.delete(j.id);else QS.add(j.id);qsAnchor=j.id;renderQueue()}
+function qsClear(){if(!QS.size)return false;QS.clear();qsAnchor=null;renderQueue();return true}
+function qsDelete(){if(!QS.size)return;const ids=[...QS];QS.clear();qsAnchor=null;if(window.deleteMany)deleteMany(ids);else toast("Prototype: would delete "+ids.length);renderQueue()}
+$("qwrap").addEventListener("click",e=>{
+ if(e.target.closest("#qsX")){qsClear();return}
+ if(e.target.closest("#qsAll")){qsFinished().forEach(j=>QS.add(j.id));renderQueue();return}
+ if(e.target.closest("#qsSeries")){const n=jobs.find(j=>QS.has(j.id)),nm=(n&&n.name||"").trim();qsFinished().forEach(j=>{if((j.name||"").trim()===nm)QS.add(j.id)});renderQueue();return}
+ if(e.target.closest("#qsDel")){qsDelete();return}
+ if(e.target.closest("#qsRemove")){const ids=[...QS];QS.clear();if(window.removeMany)removeMany(ids);renderQueue();return}
+ const row=e.target.closest(".qi");if(!row||e.target.closest("[data-rm],[data-x],.seedc"))return;const j=jobs.find(x=>x.id==+row.dataset.id);
+ if(j&&(j.status==="done"||j.status==="cancelled")&&(e.target.closest("[data-ck]")||e.ctrlKey||e.metaKey||e.shiftKey||QS.size)){e.stopImmediatePropagation();qsClick(j,e.shiftKey);return}},true);
+document.addEventListener("keydown",e=>{if(S.view!=="queue"||$("modal").classList.contains("show"))return;const a=document.activeElement;if(a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))return;
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="a"){e.preventDefault();qsFinished().forEach(j=>QS.add(j.id));renderQueue();return}
+ if(e.key==="Escape"&&qsClear()){e.stopImmediatePropagation();return}
+ if(e.key==="Delete"&&QS.size){e.preventDefault();e.stopImmediatePropagation();qsDelete()}},true);
+/* a row's picture the server doesn't have yet: made once from the file (live.js), then it's a small file for good */
+$("qwrap").addEventListener("error",e=>{const im=e.target;if(!im.matches||!im.matches("img.qt")||im.dataset.tried)return;im.dataset.tried="1";const j=jobs.find(x=>x.id===+im.dataset.qt);if(j&&window.makeQThumb)makeQThumb(j,im)},true);
+/* the formatters made once: creating them per row (hundreds) was most of the Queue tab's build time */
+const CLK={t:new Intl.DateTimeFormat([],{hour:"2-digit",minute:"2-digit"}),d:new Intl.DateTimeFormat([],{month:"short",day:"numeric"})};
+function clock(ms){const d=new Date(ms),now=new Date(),t=CLK.t.format(d);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate()?t:CLK.d.format(d)+" "+t}
 /* demo versions; live.js replaces them with server calls */
 window.removeJob=j=>{jobs=jobs.filter(x=>x!==j);renderAll()};
 window.deleteJob=j=>{if(!j)return;toast("Prototype: would move the file to the Recycle Bin")};
@@ -83,8 +113,8 @@ $("pnSave").onclick=e=>{e.stopPropagation();saveJobName()};
 /* Q5: hover a finished thumbnail for a bigger look */
 (function(){const pop=document.createElement("div");pop.id="qpop";document.body.appendChild(pop);let t=null,cur=null;
  const hide=()=>{clearTimeout(t);cur=null;pop.classList.remove("show")};
- $("qwrap").addEventListener("mouseover",e=>{const c=e.target.closest(".qi .th canvas");if(c===cur)return;hide();if(!c||!window.fileUrl)return;cur=c;
-  const j=jobs.find(x=>x.id==+c.dataset.th);if(!j||!j.file)return;
+ $("qwrap").addEventListener("mouseover",e=>{const c=e.target.closest(".qi .th canvas,.qi .th img.qt");if(c===cur)return;hide();if(!c||!window.fileUrl)return;cur=c;
+  const j=jobs.find(x=>x.id==+(c.dataset.th||c.dataset.qt));if(!j||!j.file)return;
   t=setTimeout(()=>{if(cur!==c)return;const r=c.getBoundingClientRect(),[a,b]=(j.ar||"1:1").split(":").map(Number),w=a>=b?320:Math.round(320*a/b),h=Math.round(w*b/a);
    pop.innerHTML=`<img src="${fileUrl(j)}" alt="">`;pop.style.width=w+"px";pop.style.height=h+"px";
    /* never over the row you're pointing at: above it, lined up with its thumbnail; below it if there's no room above */

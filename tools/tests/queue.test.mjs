@@ -7,7 +7,7 @@ const state = k => k.ev(`fetch("/api/state").then(r=>r.json())`);
 
 export async function pauseAfterCurrent(k, t) {
   await k.job("one", { steps: 3 }); await k.job("two", { steps: 2 }); await k.until(`!!current()`, 8000);
-  await k.ev(`(setPaused(true),1)`); await k.sleep(400);
+  await k.ev(`(setPaused(true),1)`); await k.until(`fetch("/api/state").then(r=>r.json()).then(s=>s.paused===true)`, 5000, 150);
   t.ok((await state(k)).paused === true, "the server is paused");
   await k.until(`!current()`, 20000); await k.sleep(3000);
   t.ok(await k.ev(`jobs.filter(j=>j.status==="pending").length`) === 1, "the current image finished, the next didn't start");
@@ -65,10 +65,10 @@ export async function previews(k, t) {
   await k.job("a fox", { steps: 2 }); await done(k);
   await k.job("an owl", { steps: 6 }); await k.ev(`(showView("queue"),1)`);
   t.ok(await k.until(`(()=>{const i=document.querySelector("img.lp");return i&&i.naturalWidth>0})()`, 12000), "the running row shows the live render");
-  const r = await k.ev(`JSON.parse(JSON.stringify(document.querySelector(".qi canvas[data-th]").getBoundingClientRect()))`);
+  const r = await k.ev(`JSON.parse(JSON.stringify(document.querySelector(".qi img.qt").getBoundingClientRect()))`);
   await k.mouse(r.x + r.width / 2, r.y + r.height / 2); await k.sleep(700);
   t.ok(await k.ev(`$("qpop").classList.contains("show")&&$("qpop").offsetWidth>=200`), "hovering a finished thumbnail shows it bigger");
-  const pr = await k.ev(`(()=>{const p=$("qpop").getBoundingClientRect(),row=document.querySelector(".qi canvas[data-th]").closest(".qi").getBoundingClientRect(),w=$("qwrap").getBoundingClientRect();return{p:[p.left,p.top,p.right,p.bottom],row:[row.top,row.bottom],w:[w.left,w.right]}})()`);
+  const pr = await k.ev(`(()=>{const p=$("qpop").getBoundingClientRect(),row=document.querySelector(".qi img.qt").closest(".qi").getBoundingClientRect(),w=$("qwrap").getBoundingClientRect();return{p:[p.left,p.top,p.right,p.bottom],row:[row.top,row.bottom],w:[w.left,w.right]}})()`);
   t.ok(pr.p[3] <= pr.row[0] + 1 || pr.p[1] >= pr.row[1] - 1, "it never covers the row you're pointing at (above it, or below)", pr);
   t.ok(pr.p[0] >= pr.w[0] - 1 && pr.p[2] <= pr.w[1] + 1, "and stays inside the Queue panel", pr);
   await k.mouse(2, 2); await k.ev(`(stopJob(current()),1)`); await k.until(`!current()`, 15000);
@@ -104,6 +104,9 @@ export async function missingFiles(k, t) {
 export async function thumbnailsDraw(k, t) {
   await k.job("[fill:dc2828] red", { steps: 2 }); await k.until(`jobs.some(j=>j.status==="done")`, 20000);
   await k.ev(`(showView("queue"),1)`); await k.sleep(1500);
-  const px = await k.ev(`(()=>{const c=document.querySelector(".qi canvas[data-th]");if(!c)return "no canvas";const d=c.getContext("2d").getImageData(c.width>>1,c.height>>1,1,1).data;return [d[0],d[1],d[2]]})()`);
+  await k.until(`(()=>{const i=document.querySelector(".qi img.qt");return i&&i.complete&&i.naturalWidth>0})()`, 8000, 100);
+  const px = await k.ev(`(()=>{const i=document.querySelector(".qi img.qt");if(!i||!i.naturalWidth)return "no thumbnail";const c=document.createElement("canvas");c.width=c.height=8;const g=c.getContext("2d");g.drawImage(i,0,0,8,8);const d=g.getImageData(4,4,1,1).data;return [d[0],d[1],d[2]]})()`);
   t.ok(Array.isArray(px) && px[0] > 150 && px[1] < 90, "a finished row's thumbnail shows the picture", px);
+  t.ok(await k.until(`fetch("/qthumbs/"+lastDone().id+".jpg").then(r=>r.ok)`, 6000, 300), "…a small file the server keeps (made once)");
+  t.ok(await k.ev(`performance.getEntriesByType("resource").filter(e=>e.name.includes("/qthumbs/")).length>0`), "the row loads that file, not the full picture");
 }

@@ -449,8 +449,23 @@ body.gallery .prog .eta,body.gallery .prog .resume,body.gallery .prog.paused:not
 @keyframes qin{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
 .qi .handle{color:var(--faint);cursor:grab;width:14px}
 .qi .th{width:46px;height:46px;border-radius:10px;background:#222;flex:none;overflow:hidden;display:grid;place-items:center;color:var(--faint);font-size:11px}
-.qi .th canvas,.qi .th img.lp{width:100%;height:100%}
-.qi .th img.lp{object-fit:cover}
+.qi .th canvas,.qi .th img.lp,.qi .th img.qt{width:100%;height:100%}
+.qi .th img.lp,.qi .th img.qt{object-fit:cover;display:block}
+.qi .th img.qt:not([src]){visibility:hidden}
+/* only the rows on screen are laid out and painted (hundreds of finished pictures) */
+.qi{content-visibility:auto;contain-intrinsic-size:auto 68px}
+/* selection: a round box at the row's start — on hover, or always while something is selected */
+.qck{position:relative;width:20px;height:20px;border-radius:50%;flex:none;margin-right:-4px;border:1.5px solid rgba(255,255,255,.38);opacity:0;transition:opacity .15s,background .15s,border-color .15s;cursor:pointer}
+.qi:hover .qck,.qwrap.selecting .qck{opacity:1}
+.qi.sel .qck{background:var(--a1);border-color:var(--a1)}
+.qi.sel .qck::after{content:"";position:absolute;left:5.5px;top:2.5px;width:5px;height:9px;border:solid var(--ink);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.qi.sel{box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--a1) 75%,transparent)}
+.qbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;padding:7px 7px 7px 14px;margin:0 0 10px;border-radius:14px;background:var(--raised2);font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.qbar .qn{font-weight:600;margin-right:6px}.qbar .qgap{flex:1}
+.qbar button{padding:5px 12px;border-radius:999px;background:var(--raised);font-size:12.5px;color:#e6e6ea}
+.qbar button:hover{background:#45454a}
+.qbar .qdel{background:color-mix(in oklab,#e0605a 32%,var(--raised));color:#fff}.qbar .qdel:hover{background:color-mix(in oklab,#e0605a 48%,var(--raised))}
+.qbar .qx{width:30px;height:30px;padding:0;display:grid;place-items:center}.qbar .qx svg{width:12px;height:12px}
 .qi .body{flex:1;min-width:0}
 .qi .p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
 .qi .meta{font-size:12px;color:var(--muted)}
@@ -637,7 +652,7 @@ body.glass .left::before,body.glass .rpanel.paneled::before,body.glass .mcard::b
 /* regular */
 body.glass .left::before,body.glass .seg::before,body.glass .peekbar::before,body.glass .frame:not(.has)::before{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);
  -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03)}
-body.glass .pop,body.glass .toast,body.glass #tip,body.glass .donenote{background:color-mix(in oklab,rgba(26,28,32,.42),var(--a1) 6%);border-color:rgba(255,255,255,.14);
+body.glass .pop,body.glass .toast,body.glass #tip,body.glass .donenote,body.glass .qbar{background:color-mix(in oklab,rgba(26,28,32,.42),var(--a1) 6%);border-color:rgba(255,255,255,.14);
  -webkit-backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 36px rgba(0,0,0,.4)}
 /* the gear and the Layout button sit in the tab bar's row over the bright sky: the tab bar's regular glass */
 body.glass .gear{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);

@@ -41,7 +41,8 @@ CFG = load_config()
 OUT = (ROOT / CFG["output_dir"]).resolve()
 DATA = (ROOT / CFG["data_dir"]).resolve()
 THUMBS = DATA / "thumbs"
-for d in (OUT, DATA, THUMBS):
+QTHUMBS = DATA / "qthumbs"  # the queue's small pictures, one per job id (made by the page once, stored here)
+for d in (OUT, DATA, THUMBS, QTHUMBS):
     d.mkdir(parents=True, exist_ok=True)
 
 # Windows often has a system proxy (VPN clients); Forge is local, so never use one.
@@ -75,7 +76,11 @@ history: list[dict] = []
 last_setup = {"v": None}  # setup of the last txt2img Forge ran for us (None: unknown, e.g. after a restart)
 
 
+qstate = {"rev": 0, "miss_t": 0.0, "miss": frozenset()}   # rev: bumped on every change to the list (save_queue)
+
+
 def save_queue():
+    qstate["rev"] += 1
     tmp = QUEUE_FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps(jobs, ensure_ascii=False, indent=1), encoding="utf-8")
     tmp.replace(QUEUE_FILE)
@@ -98,6 +103,10 @@ def load_state():
             pass
     for j in [j for j in jobs if j["status"] == "deleted"]:  # deleted before a restart: past the undo window now
         finish_delete(j["id"])
+    have = {j["id"] for j in jobs}   # thumbnails of jobs no longer on the list (removed, cleared)
+    for t in QTHUMBS.glob("*.jpg"):
+        if not t.stem.isdigit() or int(t.stem) not in have:
+            t.unlink(missing_ok=True)
     if STATS_FILE.exists():
         try:
             stats = json.loads(STATS_FILE.read_text(encoding="utf-8"))
@@ -161,15 +170,32 @@ def estimate(sp):
     return round((stats["sec_per_step"].get(mp) or 60) * steps, 1), None
 
 
+def missing_ids():
+    """Finished jobs whose file is gone (deleted outside Kiln) — checked at most every 2 s: with hundreds of pictures a
+    file check per job on every poll added up."""
+    now = time.time()
+    if now - qstate["miss_t"] > 2:
+        qstate["miss_t"] = now
+        qstate["miss"] = frozenset(j["id"] for j in jobs if j["status"] == "done" and j.get("file") and not (OUT / j["file"]).exists())
+    return qstate["miss"]
+
+
+def state_sig():
+    """What the page has seen: the list's revision, which files are missing, paused. Same signature = the page only
+    needs the running job's progress (the light poll — the full list was ~1 MB at 500 jobs, every 0.7 s)."""
+    return f"{qstate['rev']}.{hash(missing_ids()) & 0xffffffff}.{int(flags['paused'])}"
+
+
 def with_estimates(js):
     """Public job list with est / est_first on waiting jobs; finished files that are gone are marked missing;
     deleted jobs (waiting out their undo window) are left out."""
     out = []
+    miss = missing_ids()
     for j in js:
         if j["status"] == "deleted":
             continue
         pj = public(j)
-        if j["status"] == "done" and j.get("file") and not (OUT / j["file"]).exists():
+        if j["id"] in miss:
             pj["missing"] = True
         if j["status"] == "pending" and j.get("kind", "txt2img") == "txt2img":
             pj["est"], pj["est_first"] = estimate(j["spec"])
@@ -230,6 +256,7 @@ def finish_delete(jid):
         if t.exists():
             recycle(t)
         jobs.remove(j)
+        (QTHUMBS / f"{jid}.jpg").unlink(missing_ok=True)
         save_queue()
 
 
@@ -732,10 +759,18 @@ class Handler(BaseHTTPRequestHandler):
             return self.file(OUT, path[7:])
         if path.startswith("/thumbs/"):
             return self.file(THUMBS, path[8:])
+        if path.startswith("/qthumbs/"):  # never cached by the browser either (no-store), like the pictures
+            return self.file(QTHUMBS, path[9:])
         if path == "/api/state":
             client["last"] = time.time()
+            since = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("since", [""])[0]
             with lock:
-                return self.reply(200, {"forge": forge_status, "jobs": with_estimates(jobs), "stats": stats,
+                sig = state_sig()
+                if since and since == sig:  # nothing changed but the running job's progress
+                    run = next((j for j in jobs if j["status"] == "running"), None)
+                    return self.reply(200, {"sig": sig, "same": True, "run": public(run) if run else None, "forge": forge_status,
+                                            "stats": stats, "paused": flags["paused"]})
+                return self.reply(200, {"sig": sig, "forge": forge_status, "jobs": with_estimates(jobs), "stats": stats,
                                         "out_dir": str(OUT), "version": VERSION, "paused": flags["paused"]})
         if path == "/api/nextname":
             name = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
@@ -945,6 +980,19 @@ class Handler(BaseHTTPRequestHandler):
                 jobs.insert(first, j); save_queue()  # seconds next to minutes: it runs right after the current image
             wake.set()
             return self.reply(200, {"ids": [j["id"]]})
+        if path == "/api/qthumb":  # the page made a queue thumbnail (it decodes the picture anyway): keep it
+            data = str(b.get("data", ""))
+            try:
+                jid = int(b.get("id"))
+            except (TypeError, ValueError):
+                return self.reply(400, {"error": "bad id"})
+            if not data.startswith("data:image/jpeg"):
+                return self.reply(400, {"error": "bad thumb"})
+            with lock:
+                if not any(j["id"] == jid and j["status"] == "done" for j in jobs):
+                    return self.reply(404, {"error": "no such picture"})
+            (QTHUMBS / f"{jid}.jpg").write_bytes(base64.b64decode(data.split(",", 1)[1]))
+            return self.reply(200, {"url": f"/qthumbs/{jid}.jpg"})
         if path == "/api/thumb":
             name = Path(b.get("name", "")).name
             data = b.get("data", "")

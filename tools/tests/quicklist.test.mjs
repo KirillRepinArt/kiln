@@ -64,6 +64,7 @@ export async function dragsAlwaysEnd(k, t) {
 }
 
 export async function pressOutline(k, t) {
+  await k.mouse(2, 2); await k.sleep(1200);
   const l = await k.rect("#left"); const x = l.left + l.width / 2, y = l.top + 6;   // the box's top padding: an empty part
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 }); await k.sleep(250);

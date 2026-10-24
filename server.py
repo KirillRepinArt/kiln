@@ -234,7 +234,19 @@ def finish_delete(jid):
 
 
 def next_id():
-    return max([j["id"] for j in jobs], default=0) + 1
+    """Job ids are never handed out again (like file names): the page keys its state and its image copies by id, and a
+    reused id made a new job look like one it had already seen (2026-10-24)."""
+    f = DATA / "ids.json"
+    try:
+        hw = int(json.loads(f.read_text(encoding="utf-8")).get("high", 0))
+    except Exception:
+        hw = 0
+    n = max(hw, max([j["id"] for j in jobs], default=0)) + 1
+    try:
+        f.write_text(json.dumps({"high": n}), encoding="utf-8")
+    except Exception:
+        pass
+    return n
 
 
 def public(j):

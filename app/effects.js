@@ -41,8 +41,8 @@
 const amb=$("amb"),ambC=amb.getContext("2d"),favC=document.createElement("canvas");favC.width=favC.height=64;
 function jobProgress(j){const part=Math.min((Date.now()-j.stepStart)/j.est,.95)||0;return{p:(j.step+part)/j.steps,left:Math.max(0,(j.steps-j.step-part)*j.est*S.demo/1000)}}
 function status(){const j=current();
- if(window._jobsReady){const d=lastDone(),v=resultStale&&d?d.id:null;if((S.clearedId??null)!==v){S.clearedId=v;save()}} // remember: closed on a clean screen
- $("frame").classList.toggle("running",!!j&&!browsed());const pend=jobs.filter(x=>x.status==="pending").length;
+ if(window._jobsReady){const d=lastDone(),v=d&&!(PV.still&&PV.still.id===d.id)?d.id:null;if((S.clearedId??null)!==v){S.clearedId=v;save()}} // remember: closed on a clean screen
+ $("frame").classList.toggle("running",picMode()==="live");const pend=jobs.filter(x=>x.status==="pending").length;
  const gm=(S.set||{}).glow||"gen";
  const src=(S.view==="gen"&&gm!=="off"&&!(j&&skin().cover==="camera")&&!$("frame").classList.contains("held")&&(j||(gm==="always"&&shownDone())))?$("cv"):null;   /* Aurora has its frame glow instead */
  if(src&&src.width){ambC.imageSmoothingQuality="high";ambC.drawImage(src,0,0,12,12);amb.classList.add("on")}else amb.classList.remove("on");
@@ -68,7 +68,7 @@ let notifAsked=false;
 function askNotify(){if(notifAsked||!("Notification" in window))return;notifAsked=true;try{if(Notification.permission==="default")Notification.requestPermission()}catch(e){}}
 /* notifications are neutral: never the prompt, the name or a picture (they end up in the Windows notification centre) */
 let doneRun=0;
-function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>x.status==="pending"))return;const n=doneRun;doneRun=0;if(((S.set||{}).notify||"on")==="off")return;
+function onJobDone(j){if(window.emberBurst&&PV.still&&PV.still.id===j.id)emberBurst();   /* the finish plays on the result you see, never over another picture */doneRun++;if(jobs.some(x=>x.status==="pending"))return;const n=doneRun;doneRun=0;if(((S.set||{}).notify||"on")==="off")return;
  try{if(Notification.permission==="granted")new Notification("Kiln",{body:n>1?`Queue finished · ${n} images`:"Your image is ready",silent:(S.set||{}).notify==="silent"})}catch(e){}}
 
 
@@ -151,18 +151,18 @@ function onJobDone(j){window.emberBurst&&emberBurst();doneRun++;if(jobs.some(x=>
   const held=fr0.classList.contains("has")&&S.view==="gen"&&!!S.privacy;
   if(held!==CV.held){CV.held=held;fr0.classList.toggle("held",held);if(held&&!j)CV.t0=Date.now()-20000}
   const fast=(S.set||{}).fastcover==="skip"&&j&&window.LIVE&&j.est>0&&j.est<10;                // Settings → Cover: no cover on quick jobs
-  if(cover0==="crt"||cover0==="camera"){const k=j&&!browsed()?j.id:(Date.now()<(window._cpv||0)?"pv"+window._cpv:held?(crtJob??"held"):null);   // held after the finish: the same exposure goes on
+  if(cover0==="crt"||cover0==="camera"){const k=j&&picMode()==="live"?j.id:(Date.now()<(window._cpv||0)?"pv"+window._cpv:held?(crtJob??"held"):null);   // held after the finish: the same exposure goes on
    if(k!==crtJob){crtJob=k;if(k!=null){if(cover0==="crt")crt.powerOn(t);else cam.reset()}}} // a new job: the screen powers on / a new exposure starts
-  let target=0,tN=null;if(j&&!browsed()&&S.view==="gen"&&mode!=="off"&&!reduce&&!fast){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
+  let target=0,tN=null;if(j&&picMode()==="live"&&S.view==="gen"&&mode!=="off"&&!reduce&&!fast){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));
    // full while step 1 renders, most of it gone during step 2, a little left on step 3, clear for the last step
    const K=cover0==="crt"||cover0==="camera"?[[0,1],[.25,1],[.5,.85],[.75,.45],[.92,0]]:[[0,1],[.25,1],[.5,.4],[.75,.12],[.92,0]]; /* the CRT stays longer: the code forms the image on steps 2–3 */let k0=0;for(let i=1;i<K.length;i++)if(pr<=K[i][0]){const [a,va]=K[i-1],[b,vb]=K[i];k0=va+(vb-va)*(pr-a)/(b-a);break}
    target=k0*(mode==="light"?.55:1);if(cover0==="camera")tN=(pr>=.5?Math.max(k0,HOLD):k0)*(mode==="light"?.55:1)*(hover?.12:1);if(hover)target*=.12}
   else if(!j&&Date.now()<(window._cpv||0)&&S.view==="gen"&&mode!=="off"&&!reduce&&$("frame").classList.contains("has"))target=hover?.1:.8; // theme picked: preview the cover on the shown image
   if(cover0==="camera"){const r=t-finishAt;if(r<1400)target=Math.max(target,finStr);else if(r<1900)target=Math.max(target,finStr*(.5+.5*Math.cos(Math.PI*(r-1400)/500)))}   // the image's blur holds through the crescendo and lifts with the night
   if(held){target=1;tN=1}                                                                    // held: full, no fading with the steps, no hover peek
-  str+=(target-str)*Math.min(1,dtr/260);if(str<.002||(browsed()&&!held&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
-  if(tN==null)tN=target;if(j&&!browsed())fadeT=0;else if(fadeT){const p=Math.max(0,(t-fadeT)/(fadeDur||FADE));if(p>=1){fadeT=0;fadeDur=0}else tN=fadeFrom*(.5+.5*Math.cos(Math.PI*p))*(hover?.12:1)} // after the finish: a slow fade, slow at first
-  nstr+=(tN-nstr)*Math.min(1,dtr/260);if(nstr<.002||(browsed()&&!held&&!(Date.now()<(window._cpv||0))))nstr=0;
+  str+=(target-str)*Math.min(1,dtr/260);if(str<.002||(shownClean()&&!held&&!(Date.now()<(window._cpv||0))))str=0; // a finished image you browse to shows clean at once
+  if(tN==null)tN=target;if(j&&picMode()==="live")fadeT=0;else if(fadeT){const p=Math.max(0,(t-fadeT)/(fadeDur||FADE));if(p>=1){fadeT=0;fadeDur=0}else tN=fadeFrom*(.5+.5*Math.cos(Math.PI*p))*(hover?.12:1)} // after the finish: a slow fade, slow at first
+  nstr+=(tN-nstr)*Math.min(1,dtr/260);if(nstr<.002||(shownClean()&&!held&&!(Date.now()<(window._cpv||0))))nstr=0;
   document.getElementById("frame").style.setProperty("--vf",str?`blur(${(24*str).toFixed(1)}px) brightness(${(1-.45*str).toFixed(3)}) saturate(${(1-.4*str).toFixed(3)})`:"none");
   v.clearRect(0,0,W,H);
   if((cover0==="camera"?nstr:str)>0&&W){const T=t/1000;

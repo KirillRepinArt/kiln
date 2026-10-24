@@ -99,8 +99,8 @@ export async function startRing(k, t) {
   const ring = `getComputedStyle(document.querySelector('.tab[data-v="gen"] .tring')).display!=="none"`;
   t.ok(!(await k.ev(ring)), "idle: no ring on the Generating tab");
   await k.job("[fill:224433] ring", { steps: 4 });
-  t.ok(await k.until(`$("play").classList.contains("gen")`, 10000, 100), "a job runs: Start's triangle takes the flowing gradient");
-  t.ok(/playFlow/.test(await k.ev(`getComputedStyle(document.querySelector(".play svg path")).fill`)), "the bar's gradient");
+  t.ok(await k.until(`$("play").classList.contains("gen")`, 10000, 100), "a job runs: Start takes the flowing gradient (v0.5: the whole button, the triangle white)");
+  t.ok(await k.ev(`getComputedStyle($("play")).animationName==="flow"`), "the bar's gradient, flowing");
   t.ok(await k.until(ring, 3000, 100), "the Generating tab shows the job's progress ring");
   t.ok(await k.ev(`getComputedStyle(document.querySelector(".play .pring")).display==="none"`), "Start carries no ring (the Generating tab has it)");
   t.ok(await k.ev(`getComputedStyle(document.querySelector(".controls .play .badge")).display!=="none"`), "but the queue count is on Start, where you add to the queue");
@@ -161,7 +161,9 @@ export async function runningThumb(k, t) {
   t.ok(await k.ev(`getComputedStyle(document.querySelector('.tab[data-v="gen"] .tring')).display!=="none"`), "the job's progress is on the Generating tab");
   t.ok(/^Rendering #\d+ · step \d\/6/.test(await k.ev(`document.querySelector('.tab[data-v="gen"]').dataset.tip`)), "its tooltip says which job and how far", await k.ev(`document.querySelector('.tab[data-v="gen"]').dataset.tip`));
   await k.ev(`(document.querySelector('.tab[data-v="gen"]').click(),1)`); await k.sleep(400);
-  t.ok(await k.ev(`browseId===null`), "clicking it goes back to the render");
+  t.ok(await k.ev(`PV.browse===null&&PV.still&&PV.still.kind==="reference"`), "clicking it: Generating, the picture stays as a reference (a tab never changes the picture)");
+  await k.ev(`($("prog").click(),1)`); await k.sleep(400);
+  t.ok(await k.ev(`document.body.dataset.pic==="live"`), "the status row: the render (Q3)");
 }
 runningThumb.opts = { step: 1.2 };
 
@@ -190,16 +192,17 @@ export async function arrowsHold(k, t) {
   await k.job("[fill:228844] wide again", { ar: "16:9", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=3`, 30000);
   t.ok(await k.ev(`document.querySelector(".tab").dataset.v==="gallery"&&document.querySelectorAll(".tab")[1].dataset.v==="gen"`), "Gallery is the tab left of Generating (the tabs read like the timeline)");
   const on = () => k.ev(`document.querySelector(".tab.on").dataset.v`);
-  t.ok(await on() === "gen" && await k.ev(`browseId===null`), "at the start: Generating, the live view");
+  t.ok(await on() === "gen" && await k.ev(`PV.browse===null`), "at the start: Generating, the live view");
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.sleep(400);
-  t.ok(await on() === "gallery" && await k.ev(`browseId===lastDone().id`), "clicking Gallery: the last finished picture, Gallery lit");
+  t.ok(await on() === "gallery" && await k.ev(`PV.browse===lastDone().id`), "clicking Gallery: the last finished picture, Gallery lit");
   await k.ev(`(genNav(1),1)`); await k.sleep(500);
-  t.ok(await on() === "gen" && await k.ev(`browseId===null`), "stepping past the newest: back to Generating");
+  t.ok(await on() === "gen" && await k.ev(`PV.browse===null`), "stepping past the newest: back to Generating");
   await k.ev(`(genNav(-1),1)`); await k.sleep(500);
   t.ok(await on() === "gallery", "stepping back from the render lights Gallery");
   await k.ev(`(document.querySelector('.tab[data-v="gen"]').click(),1)`); await k.sleep(400);
-  t.ok(await on() === "gen" && await k.ev(`browseId===null`), "clicking Generating: the live view again");
-  t.ok(await k.ev(`!$("frame").classList.contains("has")`), "idle, it's clean — the picture lives in the Gallery, not shown twice");
+  t.ok(await on() === "gen" && await k.ev(`PV.browse===null&&PV.still&&PV.still.kind==="reference"`), "clicking Generating: the same picture stays, as a reference");
+  t.ok(await k.ev(`$("frame").classList.contains("has")`), "…on show (a tab switch never changes the picture)");
+  await k.ev(`(pv("close"),1)`); await k.sleep(300);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.mouse(2, 2); await k.sleep(900);
   const f = await R(k, "#frame"); await k.mouse(f.left + 30, f.top + f.height / 2); await k.sleep(500);
   const p0 = await R(k, ".gnav.prev");
@@ -256,9 +259,9 @@ export async function reuseLeavesClean(k, t) {
   await k.job("[fill:446688] one", { steps: 2 }); await k.job("[fill:884422] two", { steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),genNav(-1),1)`); await k.sleep(500);
   await k.ev(`($("pkPrompt").style.display==="none"?$("pkAll").click():$("pkPrompt").click(),1)`); await k.sleep(600);
-  t.ok(await k.ev(`browseId!==null&&peekJob===null&&$("frame").classList.contains("has")&&!P.readOnly`), "Reuse from the Gallery: you edit your draft with that picture still on show as the reference");
+  t.ok(await k.ev(`PV.browse===null&&PV.still&&PV.still.kind==="reference"&&peekJob===null&&$("frame").classList.contains("has")&&!P.readOnly&&document.querySelector(".tab.on").dataset.v==="gen"`), "Reuse from the Gallery: Generating, you edit your draft with that picture on show as the reference");
   await k.ev(`(closeShown(),1)`); await k.sleep(400);
-  t.ok(await k.ev(`browseId===null&&!$("frame").classList.contains("has")`), "✕ closes it: a clean Generating");
+  t.ok(await k.ev(`PV.browse===null&&!$("frame").classList.contains("has")`), "✕ closes it: a clean Generating");
   // the outline: in at once, out late and slowly
   await k.ev(`($("right").classList.add("edgehint"),1)`); await k.sleep(400);
   t.ok(+(await k.ev(`getComputedStyle($("fithint")).opacity`)) > .9, "the outline comes in");

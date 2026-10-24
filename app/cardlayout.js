@@ -85,8 +85,14 @@ updHm();
  function zoneAt(x,y,yMax){const W=innerWidth,Hh=innerHeight,cur=document.querySelector(".app.stacked")?"below":dockOf();
   let z=null;if(y>Math.max(Hh*.75,yMax+80)&&cur!=="below")z="below";else if(x<W*.3&&cur!=="left")z="left";else if(x>W*.7&&cur!=="right")z="right";return z}
  function down(e){if(S.hmode||e.button!==0||e.target.closest(NO))return;e.preventDefault();
-  d={x0:e.clientX,y0:e.clientY,t0:lyTop||0,moved:false,stk:!!document.querySelector(".app.stacked")};try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}}
- function move(e){if(!d)return;const dx=e.clientX-d.x0,dy=e.clientY-d.y0;if(!d.moved&&Math.hypot(dx,dy)<6)return;const {TS,colH,H}=geo();
+  d={x0:e.clientX,y0:e.clientY,t0:lyTop||0,moved:false,stk:!!document.querySelector(".app.stacked")};try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}hint(true)}
+ /* the press shows what moves: an outline round the whole block (title, box, LoRAs), like the resize outline */
+ const ch=$("cardhint");let hraf=0;
+ function hint(on){cancelAnimationFrame(hraf);if(!on){ch.classList.remove("show");return}
+  (function tick(){const rs=[$("ltitle"),L,$("chips")].map(x=>x.getBoundingClientRect()).filter(r=>r.width&&r.height),O=12;
+   const l=Math.min(...rs.map(r=>r.left)),t=Math.min(...rs.map(r=>r.top)),r=Math.max(...rs.map(r=>r.right)),b=Math.max(...rs.map(r=>r.bottom));
+   Object.assign(ch.style,{left:(l-O)+"px",top:(t-O)+"px",width:(r-l+2*O)+"px",height:(b-t+2*O)+"px"});ch.classList.add("show");hraf=requestAnimationFrame(tick)})()}
+ function move(e){if(!d)return;if(!(e.buttons&1)){up();return}const dx=e.clientX-d.x0,dy=e.clientY-d.y0;if(!d.moved&&Math.hypot(dx,dy)<6)return;const {TS,colH,H}=geo();
   if(!d.moved){d.moved=true;lyDrag=true;L.classList.add("nodur");T.classList.add("nodur");document.body.classList.add("cardmove");
    zones.forEach(z=>z.classList.toggle("show",z.dataset.z!==(d.stk?"below":dockOf())));
    if(!d.stk)ghosts.forEach(g=>{g.style.top=(anchorTop(g.dataset.p,H,colH)+TS)+"px";g.style.height=H+"px";g.classList.add("show")})}
@@ -94,7 +100,7 @@ updHm();
   if(d.stk)return;
   const t=Math.max(0,Math.min(colH-H-chipsH(),d.t0+dy));col.style.setProperty("--ltop",(t+TS)+"px");col.style.setProperty("--chtop",(t+TS+H+10)+"px");d.t=t;
   const n=nearest(t,H,colH);ghosts.forEach(g=>g.classList.toggle("near",!d.zone&&g.dataset.p===n))}
- function up(){if(!d)return;const was=d;d=null;if(!was.moved)return;
+ function up(){if(!d)return;const was=d;d=null;hint(false);if(!was.moved)return;
   lyDrag=false;L.classList.remove("nodur");T.classList.remove("nodur");document.body.classList.remove("cardmove");ghosts.forEach(g=>g.classList.remove("show","near"));zones.forEach(z=>z.classList.remove("show","near"));
   if(was.zone){setDock(was.zone);return}
   if(was.stk)return;const {colH,H}=geo();S.pos=nearest(was.t,H,colH);save();

@@ -736,3 +736,45 @@ html.tabmorph::view-transition-old(kiln-pic),html.tabmorph::view-transition-new(
 @keyframes kfadein{from{opacity:0;transform:scale(.985)}}
 @keyframes kfadein2{from{opacity:0;transform:scale(.985);filter:blur(4px)}}
 
+/* ======================= v0.5 (2026-10-24): the quick list ======================= */
+/* Vertical: the picture area's empty boxes let the pointer through. The prompt column is shifted up under them (the
+   even gaps), and they come later in the page, so they took the title's clicks ("the title isn't editable") */
+.app.stacked>.right,.app.stacked .rpanel:not(.paneled),.app.stacked #v-gen,.app.stacked .stage{pointer-events:none}
+.app.stacked .right>.tabs,.app.stacked .rpanel.paneled,.app.stacked #v-gen>.prog,.app.stacked .stage>.frame{pointer-events:auto}
+/* the privacy eye on the empty frame too: it also hides the prompt, the name and the LoRAs */
+.cbtn{display:grid}
+.frame:hover .cbtn{opacity:1}
+.frame.missing .cbtn{display:none}
+/* the prompt's ✕ Clear: top right of the box while it has text and you're over it */
+.pclear{position:absolute;top:4px;right:12px;z-index:3;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:var(--muted);
+ opacity:0;pointer-events:none;transition:opacity .15s,background .15s}
+.pclear svg{width:11px;height:11px}
+.left.hastext:hover .pclear{opacity:1;pointer-events:auto}
+.pclear:hover{background:var(--raised2);color:#fff}
+body.private .pclear{visibility:hidden}
+/* the LoRA search's ✕ */
+.sbox{position:relative;flex:1;display:flex;min-width:0}
+.sbox .search{flex:1;min-width:0;padding-right:38px}
+.sclear{position:absolute;right:6px;top:50%;margin-top:-13px;width:26px;height:26px;border-radius:50%;display:none;place-items:center;color:var(--muted)}
+.sclear svg{width:11px;height:11px}
+.sbox.has .sclear{display:grid}.sclear:hover{background:var(--raised2);color:#fff}
+/* the Generating ring: clearly darker than the letters in front of it */
+.tab:not(.on) .tring{background:#5d6369}.tab.on .tring{background:#757b81}
+/* Settings: section names you can find at a glance */
+.fgh{font-size:12px;font-weight:600;letter-spacing:.12em;color:#c9ccd0;padding-top:18px;margin-top:10px}
+.fgh.first{padding-top:2px;margin-top:0}
+/* Start while a job runs: the progress bar's flowing gradient over the whole button, the triangle glowing white; a ring
+   round the queue count fills with the job's progress */
+.play.gen,.play.gen:not(.off):hover{background:var(--flow);background-size:200% 100%;animation:flow 6s linear infinite;filter:none}
+.play.gen.off{filter:saturate(.55) brightness(.75)}
+.play.gen svg path,body.glass .play.gen svg path{fill:#fff}
+.play.gen svg{filter:drop-shadow(0 0 3px rgba(255,255,255,.75)) drop-shadow(0 0 9px color-mix(in oklab,var(--a2) 70%,transparent))}
+body.glass .play.gen,body.glass .play.gen:not(.off):hover{background:linear-gradient(90deg in oklch,color-mix(in oklab,var(--a1) 80%,transparent),color-mix(in oklab,var(--a2) 72%,transparent),color-mix(in oklab,var(--a3) 66%,transparent),color-mix(in oklab,var(--a2) 72%,transparent),color-mix(in oklab,var(--a1) 80%,transparent));
+ background-size:200% 100%;-webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -4px 10px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25)}
+body.glass .play.gen::before{display:none}
+.play.gen .badge.show::before{content:"";position:absolute;inset:-3px;padding:2px;border-radius:inherit;pointer-events:none;
+ background:conic-gradient(#fff calc(var(--p)*360deg),rgba(255,255,255,.18) 0);transition:--p .45s linear;
+ -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.play.gen .badge.show{min-width:22px;height:22px;top:-9px;right:-11px}
+@media (prefers-reduced-motion:reduce){.play.gen{animation:none}}

@@ -16,7 +16,7 @@
 <body>
 <canvas id="stars"></canvas>
 <canvas id="fglow" width="64" height="80" style="display:none"></canvas>
-<div class="fithint" id="fithint"></div>
+<div class="fithint" id="fithint"></div><div class="fithint" id="cardhint"></div>
 <div class="app">
 
   <div class="lcol" id="lcol">
@@ -24,7 +24,7 @@
   <div class="ltitle" id="ltitle"><div class="phead"><span class="plbl"><span class="nchip"><span class="fnpre" id="fnPre"></span><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60"><span class="fnsuf" id="fnSuf"></span><button class="pnsave" id="pnSave">Save name</button><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div><div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt"><span class="lg">Reuse prompt</span><span class="sm">Reuse</span></button><button id="pkAll"></button><button id="pkSeed" class="pkseed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button><button id="pkX" title="Back to my draft (Esc)">✕</button></div><div class="hmodes" id="hmodes"><button id="hmMatch" data-hm="match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/></svg></button><button id="hmFull" data-hm="full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
   <section class="left" id="left">
     <div class="vedge" id="vedge" title="Drag to resize · double-click for auto"></div>
-    <div class="pwrapT"><div class="privov" id="privov"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Private — press F9 or the eye to show</span></div><span class="pcount" id="pcount"></span><textarea id="prompt" spellcheck="true" placeholder="Describe what you want to see…"></textarea></div>
+    <div class="pwrapT"><div class="privov" id="privov"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Private — press F9 or the eye to show</span></div><span class="pcount" id="pcount"></span><button class="pclear" id="pclear" title="Clear the prompt — Undo (or Ctrl+Z) brings it back"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none"><path d="M6 6l12 12M18 6L6 18"/></svg></button><textarea id="prompt" spellcheck="true" placeholder="Describe what you want to see…"></textarea></div>
     <div class="controls">
       <button class="play" id="play" title="Add to queue (Ctrl+Enter)">
         <svg viewBox="0 0 24 24"><defs><linearGradient id="playFlow" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="0" spreadMethod="reflect"><stop offset="0" style="stop-color:var(--a1)"/><stop offset=".5" style="stop-color:var(--a2)"/><stop offset="1" style="stop-color:var(--a3)"/><animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="-48 0" dur="6s" repeatCount="indefinite"/></linearGradient><linearGradient id="playGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--a1)"/><stop offset=".55" style="stop-color:var(--a2)"/><stop offset="1" style="stop-color:var(--a3)"/></linearGradient></defs><path d="M6.5 4.6l13 7.4-13 7.4z"/></svg>
@@ -87,7 +87,7 @@
       <div class="view" id="v-loras">
         <div class="lwrap">
           <div class="ltop">
-            <input class="search" id="lsearch" placeholder="Search by name…">
+            <span class="sbox"><input class="search" id="lsearch" placeholder="Search by name…"><button class="sclear" id="lsClear" title="Clear the search"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>
             <label class="csz" title="Thumbnail size"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><input type="range" class="csize" id="csize" min="32" max="140" step="2"></label>
             <button class="iconbtn" id="lRefresh" title="Rescan the LoRA folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg></button>
             <label class="oneface" id="oneFace" title="Picking a face swaps out the previous one — two face LoRAs blend into one face"><span class="sw" id="ofSw"></span>One face at a time</label>
@@ -159,6 +159,7 @@
 <script src="app/composer.js" data-bundle="core"></script>
 <script src="app/cardlayout.js" data-bundle="core"></script>
 <script src="app/stage.js" data-bundle="core"></script>
+<script src="app/picstate.js" data-bundle="core"></script>
 <script src="app/skins.js" data-bundle="core"></script>
 <script src="app/effects.js" data-bundle="core"></script>
 <script src="app/queue.js" data-bundle="core"></script>

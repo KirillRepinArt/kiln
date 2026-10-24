@@ -4,7 +4,7 @@ function moveThumb(instant){const t=document.querySelector(".tab.on"),th=$("thum
 function showView(v){const was=S.view;
  if(was!==v){ // temporary state belongs to the visit: an open preview, a browse, a search, a scroll position
   if(was==="queue")$("qwrap").scrollTop=0; // the prompt box (and its peek) is left as it is
-  if(was==="loras"){$("lsearch").value="";$("lscroll").scrollTop=0}}
+  if(was==="loras"){$("lsearch").value="";$("lsearch").parentElement.classList.remove("has");$("lscroll").scrollTop=0}}
  S.view=v;$("rpanel").classList.toggle("paneled",v!=="gen");tabSync(true);
  document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id==="v-"+v));if(v==="queue")renderQueue();if(v==="loras")renderLoras();sizeFrame()}
 /* Gallery isn't a page of its own (yet): it's the name for browsing finished pictures in the picture view — the
@@ -16,8 +16,8 @@ function tabSync(force){const v=S.view==="gen"&&browsed()?"gallery":S.view;if(!f
 function tabGo(fn){const run=()=>{sizeFrame.defer=true;try{fn()}finally{sizeFrame.defer=false;if(sizeFrame.pending){sizeFrame.pending=false;sizeFrame()}}};
  document.documentElement.classList.add("tabmorph");layMorph(run);setTimeout(()=>document.documentElement.classList.remove("tabmorph"),600)}   /* a quick fade-through; the picture morphs if it's on both sides */
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>tabGo(()=>{const v=t.dataset.v;
- if(v==="gallery"){if(S.view!=="gen")showView("gen");if(!browsed()){const d=lastDone();if(d)browseTo(d);else toast("No finished pictures yet")}tabSync();return}
- if(v==="gen"&&browsed()){endPeek();if(!current())closeShown()}
+ if(v==="gallery"){if(S.view!=="gen")showView("gen");if(!browsed())pv("gallery");tabSync();return}
+ if(v==="gen"&&browsed())pv("generating");   /* the picture stays, as your reference */
  showView(v)}));
 /* the picture's arrows live on a fixed layer: while they show they follow the picture's side edges every frame (it
    glides), but while you're clicking through with them they hold their place on SCREEN (Photos / Lightroom: navigation
@@ -55,7 +55,7 @@ function fitBox(el,ar,bw,bh){const [a,b]=ar.split(":").map(Number);let w=bw,h=bw
 let BAR=66; // the status block under the picture: 12 + track 10 + 7 + status row 36; a caption: 6 + row 36 + 4; nothing: 24
 const inGallery=()=>S.view==="gen"&&!!browsed();
 /* what the row under the picture is: "bar" (rendering, or a paused queue), "cap" (a finished picture's caption), "none" */
-function rowMode(){if(S.view!=="gen")return"bar";if(browsed())return"none";if(current()||window.qPaused&&jobs.some(j=>j.status==="pending"))return"bar";return"none"}   /* the picture's caption went into the title (hover it) and the job's progress onto the Generating tab */
+function rowMode(){if(S.view!=="gen")return"bar";const m=picMode();if(m==="browse")return"none";if(current()||window.qPaused&&jobs.some(j=>j.status==="pending")||m==="still"&&PV.news!=null)return"bar";return"none"}   /* the picture's caption went into the title (hover it) and the job's progress onto the Generating tab */
 /* Wide window = the prompt and the image area as one pair: their own widths (S.lay.pw / S.lay.rw), a fixed 18 px gap,
    the pair centred in the window. A window resize only changes the margins around it. The image area is the same
    rectangle in every tab and for every image shape: Generating fits the picture into it, Queue / LoRAs / PNG Info
@@ -82,7 +82,7 @@ const lay={overImg:false,navAt:0,pressCard:false,last:null,drag:false};
    set with the image area's top / bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
 function picH(){const full=$("stage").getBoundingClientRect().height-BAR;if(lay.vh)return Math.min(full,lay.vh);
  const ih=S.lay&&(document.querySelector(".app.stacked")?S.lay.vih:S.lay.ih);return S.view==="gen"&&ih?Math.max(200,Math.min(full,ih*full)):full}   /* Vertical keeps its own limit (vih) */
-function hugW(){const j=browsed()||current()||shownDone(),ar=j?j.ar:S.ar,[a,b]=ar.split(":").map(Number),h=picH();return h>0?h*a/b+tbW(h):9999}
+function hugW(){const j=onShow()||current(),ar=j?j.ar:S.ar,[a,b]=ar.split(":").map(Number),h=picH();return h>0?h*a/b+tbW(h):9999}
 function layGeo(){const W=layW();
  if(S.lay&&S.lay.v===2){const o=S.lay;S.lay={pw:o.pw*W,rw:o.rw*W,iw:o.iw?o.iw*W:null,ih:o.ih,v:3}}   /* shares → px, once */
  else if(S.lay&&!S.lay.v){S.lay.v=3}
@@ -139,7 +139,7 @@ function layMorph(fn){const b=document.body,h=document.documentElement;let ended
 function sizeFrame(){if(sizeFrame.defer){sizeFrame.pending=true;return}   /* inside one click: once, at the end (it measures the page) */
  const app=document.querySelector(".app"),stk=app.classList.contains("stacked");
  /* the Gallery has no progress bar: its caption sits centred just under the picture, and the picture gets that room */
- {const m=rowMode();BAR=66;   /* the same rect for the same shape in Generating and the Gallery (2026-10-19): the row's room is always kept, used or not */document.body.classList.toggle("gallery",m==="cap");document.body.classList.toggle("norow",m==="none");sizeFrame.mode=m}const j=browsed()||current()||shownDone();const ar=j?j.ar:S.ar;
+ {const m=rowMode();BAR=66;   /* the same rect for the same shape in Generating and the Gallery (2026-10-19): the row's room is always kept, used or not */document.body.classList.toggle("gallery",m==="cap");document.body.classList.toggle("norow",m==="none");sizeFrame.mode=m}const j=onShow()||current();const ar=j?j.ar:S.ar;
  if(!stk&&!sizeFrame.hold)layApply(layNow());
  /* Vertical: the picture's area (and Queue / LoRAs / PNG Info) is a centred column no wider than a 16:9 picture at the
     height it has (plus its button column each side), never narrower than the tab bar or the prompt box — not edge to edge */
@@ -206,14 +206,11 @@ document.fonts&&document.fonts.ready.then(()=>moveThumb(true));
 function current(){return jobs.find(j=>j.status==="running")}
 function jEst(j){return j.est||j.steps*(SEC_PER_STEP[j.mp]||60)} // the server's history-based estimate when there is one
 function lastDone(){return [...jobs].reverse().find(j=>j.status==="done")}
-let resultStale=false;function shownDone(){return browsed()||(resultStale?null:lastDone())}
 /* ======================= browsing finished images =======================
    ← / → (or the arrows on the image) step through finished images: in the Generating view, the queue overlay and
    the full-size viewer. Browsing back holds that image even when a new one finishes; stepping past the newest
    returns to the live render. */
-let browseId=null;
 function doneList(){return jobs.filter(j=>j.status==="done")}
-function browsed(){if(browseId==null)return null;const b=jobs.find(j=>j.id===browseId&&j.status==="done");if(!b)browseId=null;return b||null}
 /* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design). 1) the frame closes in on the picture
    on show to the new picture's shape — the largest such box inside it, centred: the old picture is cropped, never
    squeezed, so nothing is ever empty; 2) at that box the new picture takes over (a short cross-fade: same shape now);
@@ -244,12 +241,12 @@ function frameMorph(o){const f=$("frame"),x=$("cvx");if(matchMedia("(prefers-red
   const B={l:q(O.l,M.l,N.l),t:q(O.t,M.t,N.t),w:q(O.w,M.w,N.w),h:q(O.h,M.h,N.h)};
   if(e<T){f.style.left=px(B.l-st.left);f.style.top=px(B.t-st.top);f.style.width=px(B.w);f.style.height=px(B.h);frameMorph.raf=requestAnimationFrame(step)}
   else{f.classList.remove("morph");f.style.left=px(n.l);f.style.top=px(n.t);f.style.width=px(n.w);f.style.height=px(n.h)}})(t0)}
-function genNav(dir,dry){const run=!!current(),b=browsed(),cur=b||(run?null:shownDone()),L=doneList();
- let i=cur?L.findIndex(x=>x.id===cur.id):L.length;if(i<0)i=L.length;const n=i+dir;let id;
- if(n<0)return false;if(n>=L.length){if(!b)return false;id=null}else id=L[n].id; // past the newest: back to your working view — clean when idle (the picture lives in the Gallery)
- if(!dry){if(window.xfadeSnap&&(id!=null||run))xfadeSnap();const fs=$("frame").style,o={w:parseFloat(fs.width),h:parseFloat(fs.height),l:parseFloat(fs.left),t:parseFloat(fs.top)};browseId=id;   /* a fade only when something replaces it — into an empty screen the picture just goes */resultStale=id==null&&!run;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();if(id==null)endPeek();else if(!peekOff)loadJob(L[n]);
-  if(window.preload)for(const q of [L[n-1],L[n+1]])if(q)preload(q);
-  if(id!=null&&S.view==="gen"&&Math.abs(parseFloat(fs.width)/parseFloat(fs.height)-o.w/o.h)>.02)frameMorph(o)}return true}   /* the neighbours decoded before you ask for them */
+function genNav(dir,dry){const m=picMode(),cur=onShow(),L=doneList();
+ let i=cur?L.findIndex(x=>x.id===cur.id):L.length;if(i<0)i=L.length;const n=i+dir;   /* the render / the empty frame sit after the newest */
+ if(n<0)return false;if(n>=L.length&&m!=="browse")return false;   /* past the newest: only the Gallery steps out (to Generating) */
+ if(!dry){const fs=$("frame").style,o={w:parseFloat(fs.width),h:parseFloat(fs.height),l:parseFloat(fs.left),t:parseFloat(fs.top)};
+  if(n>=L.length)pv("close");else pv("browse",L[n]);
+  if(n<L.length&&S.view==="gen"&&Math.abs(parseFloat(fs.width)/parseFloat(fs.height)-o.w/o.h)>.02)frameMorph(o)}return true}
 function vNav(dir,dry){const L=doneList(),i=L.findIndex(x=>x.id===(V.job&&V.job.id)),t=L[i+dir];if(i<0||!t)return false;if(!dry)openViewer(t);return true}
 function navFn(el){return el.closest("#viewer")?vNav:genNav}
 function updNav(){document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("off",!navFn(b)(+b.dataset.nav,true)))}
@@ -272,24 +269,27 @@ $("play").onclick=()=>{askNotify();addJobs()};
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();addJobs()}
  if(e.key==="Escape"){if($("viewer").classList.contains("show")){closeViewer();return}
   if($("modal").classList.contains("show")){$("modal").classList.remove("show");return}
-  if(browseId!=null&&!(e.target.closest&&e.target.closest(".pwrapT"))){closeShown();return} // Esc outside the editor = the image's ✕
+  if((PV.browse!=null||PV.still)&&!(e.target.closest&&e.target.closest(".pwrapT"))){pv("close");return} // Esc outside the editor = the picture's ✕
   closePops()}});
 function tick(){if(current()||window.qPaused)return;const j=jobs.find(j=>j.status==="pending");if(!j){renderAll();return}
  j.status="running";j.started=Date.now();j.step=0;j.stepStart=Date.now();const est=SEC_PER_STEP[j.mp]*1000/S.demo;j.est=est;const r=rng(j.seed^0x9e37);
  const next=()=>{if(j.status!=="running")return;j.timer=setTimeout(()=>{if(j.status!=="running")return;j.step++;j.stepStart=Date.now();
-   if(j.step>=j.steps){j.status="done";j.finished=Date.now();justDone=j.id;resultStale=false;onJobDone(j);renderAll();tick()}else next()},est*(.8+r()*.4))};next();renderAll()}
+   if(j.step>=j.steps){j.status="done";j.finished=Date.now();pv("done",j);onJobDone(j);renderAll();tick()}else next()},est*(.8+r()*.4))};next();renderAll()}
 function stopJob(j){if(!j)return;clearTimeout(j.timer);if(j.status==="running"){j.status="cancelled";toast("Stopped")}else if(j.status==="pending")jobs=jobs.filter(x=>x!==j);renderAll();tick()}
 $("stopBtn").onclick=()=>stopJob(current());
-$("prog").addEventListener("click",e=>{if(e.target.closest(".stop"))return;const b=browsed();if(b){peekOff=false;loadJob(b);return}const j=current();if(j)loadJob(j)}); // peek at the shown image's prompt
-function browseStatus(){const b=browsed(),on=!!(b&&peekOff);$("prog").classList.toggle("showp",on);if(on&&!window._dp&&!window.LIVE)$("ptxt").textContent=`#${b.id} · Show prompt`}   /* live: the caption (live.js) */
+$("prog").addEventListener("click",e=>{if(e.target.closest(".stop,.resume"))return;const m=picMode();
+ if(m==="browse"){if(PV.promptClosed){PV.promptClosed=false;loadJob(browsed())}return}
+ if(m==="still"){if(current())pv("toRender");else if(PV.news!=null)pv("browse",doneById(PV.news));return}
+ const j=current();if(j)loadJob(j)});
+function browseStatus(){const b=browsed(),on=!!(b&&PV.promptClosed);$("prog").classList.toggle("showp",on);if(on&&!window._dp&&!window.LIVE)$("ptxt").textContent=`#${b.id} · Show prompt`}   /* live: the caption (live.js) */
 function frame(){const j=current();const prog=$("prog");
  if(j){prog.classList.add("show","run");
   const part=Math.min((Date.now()-j.stepStart)/j.est,.95);const p=(j.step+part)/j.steps;$("fill").style.width=(p*100).toFixed(2)+"%";
   $("ptxt").textContent=`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`;$("peta").textContent=`~${fmt(Math.max(0,(j.steps-j.step-part)*j.est*S.demo/1000))} left`;
-  if(S.view==="gen"&&!browsed()){$("frame").classList.add("has");$("idle").style.display="none";if(+$("cv").dataset.j!==j.id){$("cv").dataset.j=j.id;sizeFrame()}paint($("cv"),j,p)}
+  if(S.view==="gen"&&picMode()==="live"){$("frame").classList.add("has");$("idle").style.display="none";if(+$("cv").dataset.j!==j.id){$("cv").dataset.j=j.id;sizeFrame()}paint($("cv"),j,p)}
   const mini=document.querySelector(`.qi[data-id="${j.id}"] .mini i`);if(mini)mini.style.width=(p*100)+"%";
  }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run");$("fill").style.width="0%";$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(S.steps*SEC_PER_STEP[S.mp])} per image`}
- if(!j||browsed()){const d=shownDone();
+ if(picMode()!=="live"){const d=onShow();
   if(d&&S.view==="gen"){if($("cv").dataset.d!=d.id){$("cv").dataset.d=d.id;$("cv").dataset.j="";sizeFrame();
     if(justDone===d.id){const f=$("frame");f.classList.remove("reveal");void f.offsetWidth;f.classList.add("reveal");setTimeout(()=>f.classList.remove("reveal"),1200);justDone=null}
     paint($("cv"),d,1)}$("frame").classList.add("has");$("idle").style.display="none"}

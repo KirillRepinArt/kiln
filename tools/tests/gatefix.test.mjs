@@ -10,6 +10,7 @@ export async function namesNeverReused(k, t) {
   await k.ev(`(removeMissing(),1)`); await k.sleep(1200);
   await k.job("[fill:e0e0e0] new one", { steps: 2, name: "Gap" }); await done(k, 2);
   t.ok(await k.ev(`lastDone().file`) === "gap-004.png", "the next one is gap-004 — a deleted number is never handed out again", await k.ev(`lastDone().file`));
+  t.ok(await k.ev(`lastDone().id`) === 4, "and its job id isn't a removed one's either", await k.ev(`lastDone().id`));
   await k.sleep(1500);
   const c = await k.cvColor(); t.ok(c[0] > 200 && c[1] > 200, "and the new picture shows (not an old one)", c);
 }

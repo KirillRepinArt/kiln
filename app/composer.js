@@ -22,7 +22,7 @@ function renderPills(){idleText();
    <div class="opt ${S.seedMode==="fixed"?"on":""}" data-v="fixed">Fixed</div>`;
  sizeFrame()}
 function closePops(){document.querySelectorAll(".pop.show").forEach(p=>{p.classList.remove("show");p.parentElement.classList.remove("open")});renderPills()}
-function staleIf(ch){if(ch&&!current()&&lastDone()){resultStale=true;$("cv").dataset.d="";$("frame").classList.remove("has")}}
+function staleIf(ch){if(ch)pv("shape")}
 const PILLS=[["pMP","popMP",v=>{staleIf(S.mp!==v);S.mp=v}],["pAR","popAR",v=>{staleIf(S.ar!==v);S.ar=v}],["pST","popST",v=>S.steps=+v],["pN","popN",v=>S.n=+v],["pSD","popSD",v=>S.seedMode=v]];
 function copySeed(s){if(s==null||s==="")return;navigator.clipboard.writeText(String(s)).then(()=>toast(`Seed ${s} copied`),()=>toast("Couldn't copy the seed"))}
 PILLS.forEach(([b,p,set])=>{$(b).addEventListener("click",e=>{const pop=$(p);
@@ -44,13 +44,13 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,Math.round(v)||a))}
 function applyPH(){if(window.layoutLeft){delete S.ph;layoutLeft();return}delete S.ph;const r=document.documentElement.style;const max=$("left").parentElement.getBoundingClientRect().height-36;if(S.pph>max)S.pph=Math.max(240,max);if(S.pph){r.setProperty("--ph",S.pph+"px");$("left").classList.add("sized")}else{r.removeProperty("--ph");$("left").classList.remove("sized")}}
 (function(){const g=$("vedge");let y0=0,h0=0;
  g.addEventListener("pointerdown",e=>{e.preventDefault();g.setPointerCapture(e.pointerId);g.classList.add("drag");document.body.classList.add("vresizing");$("left").classList.add("nodur");y0=e.clientY;h0=$("left").getBoundingClientRect().height});
- g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;const max=$("left").parentElement.getBoundingClientRect().height-36;S.pph=Math.max(240,Math.min(max,Math.round(h0+e.clientY-y0)));applyPH()});
+ g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;if(!(e.buttons&1)){g.dispatchEvent(new PointerEvent("pointerup"));return}const max=$("left").parentElement.getBoundingClientRect().height-36;S.pph=Math.max(240,Math.min(max,Math.round(h0+e.clientY-y0)));applyPH()});
  g.addEventListener("pointerup",()=>{g.classList.remove("drag");document.body.classList.remove("vresizing");$("left").classList.remove("nodur");lyFrozen=false;layoutLeft();save()});
  g.addEventListener("dblclick",()=>{S.pph=0;applyPH();save();toast("Prompt height back to auto")});})();
 function grow(){} // column widths now come from sizeFrame()
 (function(){const g=$("hsplit");let y0=0,h0=0;
  g.addEventListener("pointerdown",e=>{e.preventDefault();g.setPointerCapture(e.pointerId);g.classList.add("drag");document.body.classList.add("vresizing");y0=e.clientY;h0=$("left").getBoundingClientRect().height});
- g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;S.sch=Math.max(200,Math.min(Math.round(innerHeight*.7),Math.round(h0-(e.clientY-y0))));layoutLeft()});
+ g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;if(!(e.buttons&1)){g.dispatchEvent(new PointerEvent("pointerup"));return}S.sch=Math.max(200,Math.min(Math.round(innerHeight*.7),Math.round(h0-(e.clientY-y0))));layoutLeft()});
  g.addEventListener("pointerup",()=>{g.classList.remove("drag");document.body.classList.remove("vresizing");save()});
  g.addEventListener("dblclick",()=>{S.sch=0;save();layoutLeft();toast("Image / prompt split back to auto")});})();
 /* the panel edges (Phase 2a): po = the prompt's outer edge, dv = the divider between the prompt and the image area
@@ -63,7 +63,7 @@ function grow(){} // column widths now come from sizeFrame()
  for(const h of hs){
   h.addEventListener("pointerdown",ev=>{if(document.querySelector(".app.stacked")||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);   /* not the card's move gesture */
    d={e:h.dataset.e,x0:ev.clientX,g0:Object.assign({},lay.last||layGeo(),{gen:S.view==="gen"})};lay.drag=true;h.classList.add("drag");document.body.classList.add("resizing","laydrag");if(h.dataset.e!=="po")$("right").classList.add("edgehint")});
-  h.addEventListener("pointermove",ev=>{if(!d)return;layDrag(d.e,d.g0,ev.clientX-d.x0);sizeFrame.hold=true;sizeFrame();sizeFrame.hold=false;moveThumb(true)});
+  h.addEventListener("pointermove",ev=>{if(!d)return;if(!(ev.buttons&1)){up();return}layDrag(d.e,d.g0,ev.clientX-d.x0);sizeFrame.hold=true;sizeFrame();sizeFrame.hold=false;moveThumb(true)});
   const up=()=>{if(!d)return;d=null;h.classList.remove("drag");document.body.classList.remove("resizing","laydrag");$("right").classList.remove("edgehint");save();layRelease();setTimeout(()=>{sizeFrame();moveThumb(true)},480)};   /* after the glide */
   h.addEventListener("pointerup",up);h.addEventListener("pointercancel",up);
   h.addEventListener("dblclick",()=>{const df=layDef();if(h.dataset.e!=="ro")S.lay.pw=df.pw;if(h.dataset.e!=="po"){if(S.view==="gen")S.lay.iw=null;else S.lay.rw=df.rw}save();layRelease();moveThumb(true)});   /* defaults as shares of this window */
@@ -77,7 +77,7 @@ function grow(){} // column widths now come from sizeFrame()
   h.addEventListener("pointerdown",ev=>{if(S.view!=="gen"||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);   /* Vertical too (its own limit) */
    const f=$("frame");d={e:h.dataset.e,x0:ev.clientX,y0:ev.clientY,w0:f.offsetWidth,h0:f.offsetHeight,t0:f.offsetTop,full:$("stage").getBoundingClientRect().height-BAR};
    document.body.classList.add("vresizing","laydrag");$("right").classList.add("edgehint")});
-  h.addEventListener("pointermove",ev=>{if(!d)return;const dy=ev.clientY-d.y0,dx=ev.clientX-d.x0,side=d.e==="l"||d.e==="r";
+  h.addEventListener("pointermove",ev=>{if(!d)return;if(!(ev.buttons&1)){up();return}const dy=ev.clientY-d.y0,dx=ev.clientX-d.x0,side=d.e==="l"||d.e==="r";
    /* a side edge (Vertical): the picture scales about its centre, its shape kept — the edge follows the cursor */
    const want=side?(d.w0+2*(d.e==="r"?dx:-dx))*d.h0/d.w0:d.e==="b"?d.h0+dy:d.h0-dy;
    const nh=Math.max(200,Math.min(d.full,want));lay.vh=nh;lay.vtop=side?d.t0+(d.h0-nh)/2:d.e==="b"?d.t0:d.t0+(d.h0-nh);
@@ -93,7 +93,7 @@ function grow(){} // column widths now come from sizeFrame()
  for(const side of ["l","r"]){const h=document.createElement("div");h.className="sedge "+side;h.dataset.tip="Drag to resize the prompt box · double-click for its default width";L.appendChild(h);
   h.addEventListener("pointerdown",ev=>{if(!document.querySelector(".app.stacked")||ev.button!==0)return;ev.preventDefault();ev.stopPropagation();h.setPointerCapture(ev.pointerId);
    d={side,x0:ev.clientX,w0:stackW()};document.body.classList.add("resizing","laydrag")});
-  h.addEventListener("pointermove",ev=>{if(!d)return;const dx=ev.clientX-d.x0,max=innerWidth-36;
+  h.addEventListener("pointermove",ev=>{if(!d)return;if(!(ev.buttons&1)){up();return}const dx=ev.clientX-d.x0,max=innerWidth-36;
    const w=Math.max(Math.min(PWMIN,max),Math.min(max,d.w0+(side==="r"?dx:-dx)));S.vfit=false;S.lay=S.lay||layDef();S.lay.sw=w;
    col.style.setProperty("--sw",w+"px");col.style.setProperty("--soff",((side==="r"?1:-1)*(w-d.w0)/2)+"px")});   /* the other edge stays put */
   const up=()=>{if(!d)return;d=null;document.body.classList.remove("resizing","laydrag");col.style.setProperty("--soff","0px");save();updHm();layoutLeft()};   /* glides back to centre */
@@ -101,6 +101,8 @@ function grow(){} // column widths now come from sizeFrame()
   h.addEventListener("dblclick",()=>{if(S.lay)S.lay.sw=null;S.vfit=false;save();updHm();layoutLeft()})}})();
 function resetLayout(){S.lay=null;S.vfit=false;   /* widths, the picture's limits (iw, ih) — all back to the defaults */delete S.lw;S.pph=0;S.sch=0;S.pos="mid";S.hmode="";updHm();applyPH();save();sizeFrame();moveThumb(true);layoutLeft()}
 
+$("pclear").onclick=e=>{e.stopPropagation();if(peekJob||!P.value)return;const was=P.value,put=v=>{if(window.__cm){const c=window.__cm;c.dispatch({changes:{from:0,to:c.state.doc.length,insert:v}});c.focus()}else{P.value=v;P.dispatchEvent(new Event("input"))}};
+ put("");toast("Prompt cleared","Undo",()=>put(was))};
 P.addEventListener("input",()=>{grow();requestAnimationFrame(layoutLeft);if(!peekJob){draft=P.value;save()}updPrompt()});
 let chipsOpen=false;
 function renderChips(){requestAnimationFrame(()=>window.layoutLeft&&layoutLeft());

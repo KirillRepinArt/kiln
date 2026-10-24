@@ -46,7 +46,7 @@
   cv.width=W;cv.height=H;const c=cv.getContext("2d");c.fillStyle="#0b0b0e";c.fillRect(0,0,W,H)}   /* the words and the ways back are on the card (#missCard) */
  /* the missing-file card: what can bring it back, best first */
  const inBin={};
- function missUI(d){const on=!!(d&&d.missing&&S.view==="gen"&&!current()||d&&d.missing&&browsed());$("frame").classList.toggle("missing",on);if(!on)return;
+ function missUI(d){const on=!!(d&&d.missing&&S.view==="gen");$("frame").classList.toggle("missing",on);if(!on)return;
   $("missFile").textContent=d.file;if(inBin[d.id]===undefined){inBin[d.id]=null;api(`/api/jobs/${d.id}/recycled`,{}).then(r=>inBin[d.id]=!!r.found).catch(()=>{})}
   const held=imgs[urlFor(d)],copy=!!(held&&held.i.complete&&held.i.naturalWidth);
   $("mRestore").style.display=inBin[d.id]?"":"none";$("mSave").style.display=copy&&!inBin[d.id]?"":"none";
@@ -72,13 +72,15 @@
   if((typeof dragId!=="undefined"&&dragId!=null)||window._rp){setTimeout(poll,700);return} // dragging, or the new order not saved yet: keep the local order
   const prev=new Map(jobs.map(j=>[j.id,j]));
   jobs=s.jobs.map(x=>{const u=toUI(x),o=prev.get(u.id);if(o&&o.status==="running"&&u.status==="running"){u._ss=o._ss;u._lastStep=o._lastStep}return u});
-  for(const j of jobs){if(j.status==="done"&&!seen.has(j.id)){seen.add(j.id);neKey="";if(!firstPoll){justDone=j.id;resultStale=false;onJobDone(j)}}
-   if(j.status==="error"&&!seen.has("e"+j.id)){seen.add("e"+j.id);if(!firstPoll)toast(`Job #${j.id} failed: ${j.error||"error"}`)}}
-  if(firstPoll){const d=lastDone();if(d&&S.clearedId===d.id)resultStale=true;window._jobsReady=true; // you had closed the image last time
+  for(const j of jobs){const jk=j.id+":"+(j.created||0);   /* the server can hand an id out again after its job left the list */
+   if(j.status==="done"&&!seen.has(jk)){seen.add(jk);neKey="";if(!firstPoll){pv("done",j);onJobDone(j)}}
+   if(j.status==="error"&&!seen.has("e"+jk)){seen.add("e"+jk);if(!firstPoll)toast(`Job #${j.id} failed: ${j.error||"error"}`)}}
+  if(firstPoll){const d=lastDone();window._jobsReady=true;if(d&&S.clearedId!==d.id)PV.still={id:d.id,kind:"result"}; // the last result, unless you had closed it
    if(S.seenDone!=null){const n=jobs.filter(x=>x.status==="done"&&x.id>S.seenDone).length;if(n)setTimeout(()=>toast(`${n} image${n>1?"s":""} finished while Kiln was closed`),1200)}}
   {const m=Math.max(0,...jobs.filter(x=>x.status==="done").map(x=>x.id));if(m!==S.seenDone){S.seenDone=m;save()}}
   firstPoll=false;
   if(peekJob)peekJob=jobs.find(j=>j.id===peekJob.id)||peekJob;
+  pvPrune();
   const ns=jobs.map(j=>`${j.id}:${j.status}:${j.file}:${j.missing?1:0}:${j.name||""}`).join("|");
   if(ns!==sig){sig=ns;renderAll()}else{const n=jobs.filter(j=>j.status==="pending"||j.status==="running").length;$("badge").textContent=n;$("badge").classList.toggle("show",n>0);$("tabN").textContent=n||""}
   setTimeout(poll,current()?700:1800)}
@@ -94,7 +96,7 @@
    const ex=expandVariants(stripComments(text));
    specs.push({prompt:ex.text,raw:text,picks:ex.picks,name:S.pname.trim(),mp:S.mp,ar:S.ar,w,h,steps:S.steps,seed,loras:L,
     checkpoint:set.ckpt||undefined,modules:mods.length?mods:undefined,shift:+(set.shift||1.15),cfg:+(set.cfg||1),sampler,scheduler})}
-  save();await api("/api/jobs",{jobs:specs});if(browseId!=null)endPeek();   /* you were editing over a picture from the Gallery: it gives way to the render */toast(S.n>1?`Added ${S.n} jobs to the queue`:"Added to queue");
+  save();await api("/api/jobs",{jobs:specs});pv("start");   /* a picture you held gives way to the render once it has a picture */toast(S.n>1?`Added ${S.n} jobs to the queue`:"Added to queue");
   if(!forgeOk)setTimeout(()=>toast("Queued — Forge isn't running yet, jobs start when it is"),2300);poll()};
  window.stopJob=async function(j){if(!j)return;if(j.status==="running")j.stopping=true;await api(`/api/jobs/${j.id}/cancel`,{});poll()};
  $("qwrap").addEventListener("drop",()=>{},true);
@@ -115,11 +117,10 @@
   const r=await api(`/api/jobs/${j.id}/delete`,{});if(r.error){toast(r.error);return}
   jobs=jobs.filter(x=>x.id!==j.id);
   if($("viewer").classList.contains("show")&&V.job&&V.job.id===j.id){if(nb)openViewer(nb);else closeViewer()}
-  if(browseId===j.id){if(nb)browseTo(nb);else{browseId=null;endPeek()}}
-  if(peekJob&&peekJob.id===j.id)endPeek();
+  pv("deleted",{job:j,next:nb});if(peekJob&&peekJob.id===j.id)peekHide();
   toast("Moved to the Recycle Bin","Undo",async()=>{await api(`/api/jobs/${j.id}/undelete`,{});poll()});poll()};
  $("resumeBtn").onclick=e=>{e.stopPropagation();setPaused(false)};
- $("pchip").onclick=e=>{e.stopPropagation();endPeek()};   /* the running job's chip: back to the render */
+ $("pchip").onclick=e=>{e.stopPropagation();pv("close")};   /* the running job's chip: back to the render */
  /* browsing: the status row is the picture's caption — its number, file, shape and size (click: its prompt) */
  function capTxt(b){if(!b)return;const sp=b.spec||{},w=sp.w||(SIZES[b.mp]||{})[b.ar]?.[0],h=sp.h||(SIZES[b.mp]||{})[b.ar]?.[1];
   const t=[`#${b.id}`,b.file,b.ar,w&&h?`${w}×${h}`:""].filter(Boolean).join(" · ");if($("ptxt").textContent!==t)$("ptxt").textContent=t;$("peta").textContent=""}
@@ -225,17 +226,20 @@
     $("pchipT").textContent=j.stopping?"stopping":started?`${Math.min(j.step+1,j.steps)}/${j.steps}${rm!=null||j.eta?` · ${fmt(left)}`:""}`:"starting";
     capTxt(browsed())}
    else if(j.stopping){const r=(per-(Date.now()-(j._ss||Date.now())))/1000;setTxt("Stopping after this step");$("peta").textContent=r>3?`stops in ~${fmt(r)}`:"any moment now"}   /* Forge only stops between steps; the next job starts right after */
-   else{setTxt(pre+(j.kind==="upscale"?"Upscaling…":started?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`:`${WORDS[j.id%WORDS.length]}… <span class="sub">· ${j.warm?"starting":"loading model"}</span>`));
+   else{const other=S.view==="gen"&&picMode()==="live"&&!peekJob&&j.kind!=="upscale"&&(draft||"").trim()!==(j.raw||j.prompt||"").trim()?` <span class="sub">· #${j.id} · another prompt</span>`:"";
+    setTxt(pre+(j.kind==="upscale"?"Upscaling…":started?`Step ${Math.min(j.step+1,j.steps)}/${j.steps}`+other:`${WORDS[j.id%WORDS.length]}… <span class="sub">· ${j.warm?"starting":"loading model"}</span>`));
     $("peta").textContent=j.kind==="upscale"?"":(started||rm!=null)?`~${fmt(left)} left`:""}
-   if(S.view==="gen"&&!browsed()){const f=$("frame");f.classList.add("has");$("idle").style.display="none";
+   if(j.preview_rev&&PV.still&&PV.still.kind==="result"&&PV.browse==null)pv("preview");
+   if(S.view==="gen"&&picMode()==="live"){const f=$("frame");f.classList.add("has");$("idle").style.display="none";
     if(+$("cv").dataset.j!==j.id){$("cv").dataset.j=j.id;$("cv").dataset.d="";$("cv").dataset.want="";lastPrev=0;const c=$("cv");c.width=1;c.height=1;sizeFrame()}
     if(j.preview_rev&&j.preview_rev!==lastPrev&&!prevLoading){prevLoading=true;const r=j.preview_rev;const i=new Image();
-     const jid=j.id;i.onload=()=>{if(+$("cv").dataset.j===jid&&!browsed()){drawTo($("cv"),i,false);xfadeEnd()}lastPrev=r;prevLoading=false};i.onerror=()=>{prevLoading=false;lastPrev=r};i.src=`/api/preview/${j.id}?r=${r}`}}
+     const jid=j.id;i.onload=()=>{if(+$("cv").dataset.j===jid&&picMode()==="live"){drawTo($("cv"),i,false);xfadeEnd()}lastPrev=r;prevLoading=false};i.onerror=()=>{prevLoading=false;lastPrev=r};i.src=`/api/preview/${j.id}?r=${r}`}}
    const mini=document.querySelector(`.qi[data-id="${j.id}"] .mini i`);if(mini)mini.style.width=(p*100)+"%";
    const lp=document.querySelector(`img[data-lp="${j.id}"]`);if(lp&&j.preview_rev&&lp.dataset.r!=j.preview_rev){lp.dataset.r=j.preview_rev;lp.src=`/api/preview/${j.id}?r=${j.preview_rev}`}   /* Q6: the render, small, in its queue row */
   }else if(!window._dp){prog.classList.add("show");prog.classList.remove("run","stopping","bgjob");$("fill").style.width="0%";prog.classList.toggle("cap",S.view==="gen"&&!!shownDone());
     if(!forgeOk){$("ptxt").textContent=forgeStarting?"Starting Forge…":"Forge not running";$("peta").textContent=forgeStarting?"jobs start when it's ready":"queue waits for it"}
     else if(window.qPaused&&jobs.some(x=>x.status==="pending")){$("ptxt").textContent="Queue paused";$("peta").textContent=`${jobs.filter(x=>x.status==="pending").length} waiting`}
+    else if(S.view==="gen"&&PV.news!=null&&picMode()==="still"&&doneById(PV.news)){$("ptxt").textContent=`#${PV.news} finished`;$("peta").textContent="click to see it"}   /* behind your reference (Q1) */
     else if(S.view==="gen"&&shownDone())capTxt(shownDone());
     else{refreshEst();$("ptxt").textContent="Ready";$("peta").textContent=`~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))} per image`}
     /* the empty frame says what's next: the shape and size, and how long it takes (or why nothing starts) */
@@ -243,12 +247,12 @@
       Ss=!forgeOk?(forgeStarting?"jobs start when it's ready":"the queue waits for it"):`Estimated time: ~${fmt(nextEst??S.steps*(SEC_PER_STEP[S.mp]||60))}`;
      if($("idleT").textContent!==T)$("idleT").textContent=T;if($("idleS").textContent!==Ss)$("idleS").textContent=Ss}
    prog.classList.toggle("paused",!!window.qPaused&&jobs.some(x=>x.status==="pending"))}
-  if(!j||browsed()){const d=shownDone();
+  if(picMode()!=="live"){const d=onShow();
    if(d&&S.view==="gen"){if($("cv").dataset.d!=d.id||$("cv").dataset.m!==String(!!d.missing)){$("cv").dataset.d=d.id;$("cv").dataset.m=String(!!d.missing);$("cv").dataset.j="";sizeFrame();
      if(justDone===d.id){const f=$("frame");f.classList.remove("reveal");void f.offsetWidth;f.classList.add("reveal");setTimeout(()=>f.classList.remove("reveal"),1200);justDone=null}
      paint($("cv"),d,1)}$("frame").classList.add("has");$("idle").style.display="none"}
    else if(!d){$("frame").classList.remove("has");$("idle").style.display="";const c=$("cv");if(c.width>1){c.width=1;c.height=1;c.dataset.d="";c.dataset.j=""}}}
-  missUI(!j||browsed()?shownDone():null);browseStatus();requestAnimationFrame(frame)};
+  missUI(onShow());browseStatus();requestAnimationFrame(frame)};
 
  window.jobProgress=function(j){const per=Math.max(1,SEC_PER_STEP[j.mp]||60)*1000;const part=j.steps&&j._ss?Math.min((Date.now()-j._ss)/per,.95):0;
   const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;const started=j.step||j.preview_rev,rm=remaining(j);

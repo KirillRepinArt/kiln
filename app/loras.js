@@ -26,7 +26,8 @@ function renderLoras(){const q=$("lsearch").value.toLowerCase().trim();
  else{for(const [k,t] of G){const g=L.filter(l=>l.folder===k);if(g.length)h+=`<div class="lsec">${t} · ${g.length}</div>${srt(g).map(l=>row(l)).join("")}`}
   const o=L.filter(l=>!known.includes(l.folder));if(o.length)h+=`<div class="lsec">Other · ${o.length}</div>${srt(o).map(l=>row(l)).join("")}`}
  $("lscroll").innerHTML=`<div class="lgrid">${h}${!L.length?'<div class="empty">Nothing here</div>':""}</div>`}
-$("lsearch").oninput=renderLoras;
+$("lsearch").oninput=()=>{$("lsearch").parentElement.classList.toggle("has",!!$("lsearch").value);renderLoras()};
+$("lsClear").onclick=()=>{$("lsearch").value="";$("lsearch").oninput();$("lsearch").focus()};
 $("csize").value=S.th||48;document.documentElement.style.setProperty("--th",(S.th||48)+"px");
 $("csize").addEventListener("input",e=>{S.th=+e.target.value;document.documentElement.style.setProperty("--th",S.th+"px");save()});
 $("fchips").onclick=e=>{const b=e.target.closest("[data-f]");if(!b)return;S.lfilter=b.dataset.f;save();renderLoras()};

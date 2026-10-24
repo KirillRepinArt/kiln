@@ -33,10 +33,10 @@ $("qwrap").addEventListener("click",e=>{
  if(e.target.id==="clearDone"){jobs=jobs.filter(j=>j.status==="pending"||j.status==="running");renderAll();return}
  const x=e.target.closest("[data-x]");if(x){stopJob(jobs.find(j=>j.id==+x.dataset.x));return}
  const q=e.target.closest(".qi");if(!q)return;const j=jobs.find(j=>j.id==+q.dataset.id);
- if(j.status==="running"){showView("gen");loadJob(j);return}
- if(j.status==="done"){showView("gen");browseTo(j);return} // finished: browse to it in Generating
+ if(j.status==="running"){showView("gen");pv("peekRender");return}
+ if(j.status==="done"){showView("gen");pv("browse",j);return} // finished: in the Gallery
  loadJob(j)});
-function browseTo(j){if(window.xfadeSnap&&S.view==="gen"&&$("frame").classList.contains("has"))xfadeSnap();browseId=j.id;peekOff=false;resultStale=false;$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame();loadJob(j);updNav()}
+function browseTo(j){PV.promptClosed=false;pv("browse",j)}
 let undo=null;var justDone=null;
 let peekJob=null;
 /* the peek bar only offers what would change something: no "Reuse prompt" when the prompt is already your draft;
@@ -56,12 +56,13 @@ function loadJob(j){peekJob=j;P.value=j.raw||j.prompt;P.readOnly=true;P.classLis
  $("pnSave").textContent=j.status==="done"?"Rename":"Save name";document.querySelector(".plbl").classList.toggle("donename",j.status==="done");fnShow(false);
  peekButtons();$("peekbar").classList.add("show");$("left").classList.add("peeking");renderChips();renderPills();updPrompt();layoutLeft()}
 /* Two ways out of a browse: the prompt's ✕ (or Esc in the editor) closes only the prompt — your draft comes back, the
-   image stays, and the arrows keep the prompt closed (peekOff) until the browse ends; the image's ✕ (or Esc elsewhere)
-   closes both and returns to the live view. */
-let peekOff=false;
-function closePromptPeek(){if(browseId!=null){peekOff=true;endPeek(true)}else endPeek()}
-function endPeek(keep){if(!keep){peekOff=false;if(browseId!=null){if(window.xfadeSnap&&current())xfadeSnap();browseId=null;resultStale=!current();   /* the picture lives in the Gallery */$("cv").dataset.d="";$("cv").dataset.j="";sizeFrame()}}
- if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
+   picture stays, and the arrows keep the prompt closed (PV.promptClosed) until the browse ends; the picture's ✕ (or
+   Esc elsewhere) closes both (picstate.js). */
+function closePromptPeek(){pv("promptClose");peekHide()}
+/* out of the Gallery if you're in it, and your draft back in the prompt box */
+function endPeek(){if(PV.browse!=null)pv("close");else peekHide()}
+/* the prompt box shows your draft again */
+function peekHide(){if(!peekJob)return;peekJob=null;P.readOnly=false;P.classList.remove("peek");P.value=draft;
  const n=$("pname");n.value=S.pname||"";n.placeholder="Add name";n.readOnly=false;
  $("peekbar").classList.remove("show");$("pnSave").classList.remove("show");$("left").classList.remove("peeking");document.querySelector(".plbl").classList.remove("donename","fnon");renderChips();renderPills();updPrompt();layoutLeft()}
 function saveJobName(){const j=peekJob;if(!j)return;const v=$("pname").value.trim();
@@ -93,13 +94,13 @@ $("pnSave").onclick=e=>{e.stopPropagation();saveJobName()};
  $("qwrap").addEventListener("mouseleave",hide);$("qwrap").addEventListener("scroll",hide,{passive:true});$("qwrap").addEventListener("mousedown",hide)})();
 function reuse(all,seedToo){const j=peekJob;const fixed=!!(seedToo||S.keepSeed);if(!j)return;const prev={draft,S:{mp:S.mp,ar:S.ar,steps:S.steps,seedMode:S.seedMode,seed:S.seed,pname:S.pname},loras:LORAS.map(l=>({on:l.on,w:l.w}))};
  draft=j.raw||j.prompt;if((j.name||"").trim())S.pname=j.name.trim();   /* reusing the working file, title included: the next image joins its series */if(all){Object.assign(S,{mp:j.mp,ar:j.ar,steps:j.steps},fixed?{seedMode:"fixed",seed:j.seed}:{seedMode:"random"});LORAS.forEach(l=>{const i=j.loras.findIndex(x=>x.name===l.name);l.on=i>=0;if(i>=0){l.w=j.loras[i].w;l.onAt=Date.now()+i}})}
- if(browseId!=null){peekOff=true;endPeek(true)}else endPeek();save();renderAll();P.focus();   /* the picture stays as your reference while you edit — until Start or ✕ */
+ pv("reuse");peekHide();save();renderAll();P.focus();   /* the picture stays as your reference while you edit — until Start or ✕ */
  toast(all?`Reused #${j.id} — prompt, settings and LoRAs${fixed?", its seed":", new seed"}`:`Reused #${j.id}'s prompt`,"Undo",()=>{draft=prev.draft;P.value=draft;Object.assign(S,prev.S);$("pname").value=S.pname||"";LORAS.forEach((l,i)=>Object.assign(l,prev.loras[i]));save();renderAll();updPrompt()})}
 $("pkPrompt").onclick=()=>reuse(false);$("pkAll").onclick=()=>reuse(true,$("pkAll").dataset.m==="seed");
 $("pkSeed").onclick=e=>{e.stopPropagation();S.keepSeed=!S.keepSeed;save();keepSeedUI()};$("pkX").onclick=()=>closePromptPeek();
 P.addEventListener("keydown",e=>{if(!peekJob)return;if(e.key==="Escape"){closePromptPeek();return}
  if(e.key.length===1||e.key==="Backspace"||e.key==="Enter"){if(e.ctrlKey&&e.key==="Enter")return;reuse(false)}});
-function updPrompt(){if(window.nameUI)nameUI();const n=P.value.length;$("pcount").textContent=n?n.toLocaleString()+" chars":"";$("play").classList.toggle("off",!P.value.trim()||!!peekJob);
+function updPrompt(){if(window.nameUI)nameUI();const n=P.value.length;$("left").classList.toggle("hastext",!!n&&!peekJob);$("pcount").textContent=n?n.toLocaleString()+" chars":"";$("play").classList.toggle("off",!P.value.trim()||!!peekJob);
  $("play").title=peekJob?"Choose Reuse first":(!P.value.trim()?"Write a prompt first":"Add to queue (Ctrl+Enter)")}
 /* drag to reorder: the dragged row itself moves in the list (no re-render while dragging — that swapped the element
    under the pointer and made the cursor flicker); it moves once the pointer crosses a row's middle, so rows don't

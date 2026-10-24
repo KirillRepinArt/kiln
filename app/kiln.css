@@ -214,7 +214,14 @@ body.private .pwrapT .cm-editor,body.private .pwrapT textarea,body.private .ltit
 .play:not(.off):hover{filter:brightness(1.1) saturate(1.05)}
 .play.off{cursor:not-allowed}
 .play svg{width:20px;height:20px;margin-left:2px}
-.play svg path{fill:var(--play-fill);transition:fill .2s}
+.play svg path{fill:var(--play-fill);transition:fill .2s,opacity .2s,transform .25s var(--lay-e)}
+/* in the Gallery Start is Vary (a new seed): the triangle turns into the die from the Seed pop-up */
+.play svg .tri{transform-origin:12px 12px}
+.play .dice{opacity:0;transform:scale(.6) rotate(-30deg);transform-origin:12px 12px;transition:opacity .2s,transform .3s var(--lay-e)}
+.play .dice rect{fill:none;stroke:var(--ink);stroke-width:2}.play .dice circle{fill:var(--ink)}
+.play.vary .dice{opacity:1;transform:none}
+.play.vary svg .tri{opacity:0;transform:scale(.6)}
+.play svg{transition:margin .25s var(--lay-e)}.play.vary svg{margin-left:0}   /* the triangle sits 2 px right (optical centre); the die doesn't */
 .play.off svg path{fill:var(--muted)}
 .play:not(.off) svg path{fill:var(--ink)}
 .play.gen,.play.gen:not(.off):hover{background:var(--raised);filter:none}
@@ -772,7 +779,7 @@ body.private .pclear{visibility:hidden}
 .sclear svg{width:11px;height:11px}
 .sbox.has .sclear{display:grid}.sclear:hover{background:var(--raised2);color:#fff}
 /* the Generating ring: clearly darker than the letters in front of it */
-.tab:not(.on) .tring{background:#5d6369}.tab.on .tring{background:#757b81}
+.tab:not(.on) .tring{background:#8e9499}.tab.on .tring{background:#a7adb2}   /* the lighter greys: the knockout keeps them off the letters */
 /* Settings: section names you can find at a glance */
 .fgh{font-size:12px;font-weight:600;letter-spacing:.12em;color:#c9ccd0;padding-top:18px;margin-top:10px}
 .fgh.first{padding-top:2px;margin-top:0}

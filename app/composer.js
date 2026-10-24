@@ -42,11 +42,21 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,Math.round(v)||a))}
 
 /* ======================= prompt + chips ======================= */
 function applyPH(){if(window.layoutLeft){delete S.ph;layoutLeft();return}delete S.ph;const r=document.documentElement.style;const max=$("left").parentElement.getBoundingClientRect().height-36;if(S.pph>max)S.pph=Math.max(240,max);if(S.pph){r.setProperty("--ph",S.pph+"px");$("left").classList.add("sized")}else{r.removeProperty("--ph");$("left").classList.remove("sized")}}
-(function(){const g=$("vedge");let y0=0,h0=0;
- g.addEventListener("pointerdown",e=>{e.preventDefault();g.setPointerCapture(e.pointerId);g.classList.add("drag");document.body.classList.add("vresizing");$("left").classList.add("nodur");y0=e.clientY;h0=$("left").getBoundingClientRect().height});
- g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;if(!(e.buttons&1)){g.dispatchEvent(new PointerEvent("pointerup"));return}const max=$("left").parentElement.getBoundingClientRect().height-36;S.pph=Math.max(240,Math.min(max,Math.round(h0+e.clientY-y0)));applyPH()});
- g.addEventListener("pointerup",()=>{g.classList.remove("drag");document.body.classList.remove("vresizing");$("left").classList.remove("nodur");lyFrozen=false;layoutLeft();save()});
- g.addEventListener("dblclick",()=>{S.pph=0;applyPH();save();toast("Prompt height back to auto")});})();
+/* the prompt box's bottom edge. Side by side: its height. Vertical: its slot (as the line above the title) — the edge
+   follows the pointer down into the room below, and on release the layout settles (the picture gives up that room),
+   like every outer edge */
+(function(){const g=$("vedge");let y0=0,h0=0,stk=false,vH=0;
+ g.addEventListener("pointerdown",e=>{e.preventDefault();g.setPointerCapture(e.pointerId);g.classList.add("drag");document.body.classList.add("vresizing");$("left").classList.add("nodur");y0=e.clientY;h0=$("left").getBoundingClientRect().height;
+  stk=!!document.querySelector(".app.stacked");if(stk){lay.vbDrag=true;vH=h0;$("lcol").classList.add("vbdrag")}});
+ g.addEventListener("pointermove",e=>{if(!g.classList.contains("drag"))return;if(!(e.buttons&1)){g.dispatchEvent(new PointerEvent("pointerup"));return}
+  if(stk){const col=$("lcol"),TS=parseFloat(col.style.getPropertyValue("--ts"))||64,room=innerHeight-10-$("left").getBoundingClientRect().top-chipsH();
+   vH=Math.round(Math.max(200,Math.min(innerHeight*.7,room,h0+e.clientY-y0)));col.style.setProperty("--lh",vH+"px");col.style.setProperty("--chtop",(TS+vH+10)+"px");return}
+  const max=$("left").parentElement.getBoundingClientRect().height-36;S.pph=Math.max(240,Math.min(max,Math.round(h0+e.clientY-y0)));applyPH()});
+ g.addEventListener("pointerup",()=>{if(!g.classList.contains("drag"))return;g.classList.remove("drag");document.body.classList.remove("vresizing");$("left").classList.remove("nodur");
+  if(stk){S.sch=vH;lay.vbDrag=false;$("lcol").classList.remove("vbdrag");save();layoutLeft();sizeFrame();return}
+  lyFrozen=false;layoutLeft();save()});
+ g.addEventListener("dblclick",()=>{if(document.querySelector(".app.stacked")){S.sch=0;save();layoutLeft();sizeFrame();toast("Prompt height back to auto");return}
+  S.pph=0;applyPH();save();toast("Prompt height back to auto")});})();
 function grow(){} // column widths now come from sizeFrame()
 (function(){const g=$("hsplit");let y0=0,h0=0;
  g.addEventListener("pointerdown",e=>{e.preventDefault();g.setPointerCapture(e.pointerId);g.classList.add("drag");document.body.classList.add("vresizing");y0=e.clientY;h0=$("left").getBoundingClientRect().height});

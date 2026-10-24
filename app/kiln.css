@@ -88,7 +88,8 @@ button,.tab,.pill,.chip,.qi,.li,.fchips button{user-select:none;-webkit-user-sel
 .vedge::after,.hsplit::after{content:"";position:absolute;left:50%;width:46px;height:4px;margin-left:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
 .vedge::after{top:5px}.hsplit::after{top:6px}
 .vedge:hover::after,.vedge.drag::after,.hsplit:hover::after,.hsplit.drag::after{opacity:1}
-.left.hm .vedge,.app.stacked .vedge{display:none}
+.left.hm .vedge{display:none}
+#lcol.vbdrag>.chips{transition:none}   /* Vertical: the chips follow the dragged bottom edge directly */
 .hsplit{display:none}
 .app.stacked .hsplit{display:block;position:absolute;left:0;right:0;top:-10px;height:8px;cursor:ns-resize;z-index:6;touch-action:none}   /* stage.js places it above the title */
 /* the resize outline: on the page's bottom layer (above the sky, under the panels), 12 px round the picture

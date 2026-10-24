@@ -117,10 +117,11 @@ export async function narrowReuseRow(k, t) {
 export async function tabSwitchKeepsTabs(k, t) {
   await k.mouse(2, 2); await k.sleep(1000);
   const r = await k.ev(`(()=>{const h=document.documentElement,b=document.body;h.classList.add("tabmorph","laymorph");b.classList.add("laysnap");
-   const o={app:getComputedStyle(document.querySelector(".app")).viewTransitionName,panel:getComputedStyle($("rpanel")).viewTransitionName,thumb:getComputedStyle(document.querySelector(".seg .thumb")).transitionDuration};
+   const o={app:getComputedStyle(document.querySelector(".app")).viewTransitionName,panel:getComputedStyle($("rpanel")).viewTransitionName,prompt:getComputedStyle($("lcol")).viewTransitionName,tabs:getComputedStyle(document.querySelector(".tabs")).transitionDuration,thumb:getComputedStyle(document.querySelector(".seg .thumb")).transitionDuration};
    h.classList.remove("tabmorph","laymorph");b.classList.remove("laysnap");return o})()`);
   t.ok(r.app === "none" && r.panel === "kiln-panel", "a tab switch fades only the content under the tabs (the tab bar and the prompt stay live)", r);
   t.ok(/0\.28s/.test(r.thumb), "…and the selected tab's pill slides", r);
+  t.ok(r.prompt === "kiln-prompt" && /0\.42s/.test(r.tabs), "the prompt box slides as a snapshot, the tab bar glides (no jump between the tabs' widths)", r);
   const x0 = await k.ev(`$("thumb").getBoundingClientRect().left`);
   await k.ev(`(document.querySelector('.tab[data-v="queue"]').click(),1)`); await k.sleep(120);
   const x1 = await k.ev(`$("thumb").getBoundingClientRect().left`), x2 = await k.ev(`document.querySelector('.tab[data-v="queue"]').getBoundingClientRect().left`);

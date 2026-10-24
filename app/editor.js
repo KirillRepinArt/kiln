@@ -47,7 +47,7 @@ if(cm){
  /* the scrollbar's room is kept only while the text overflows: a prompt that fits has no gutter strip at all (on glass
     it flickered as the backdrop repainted). Sticky until clearly short again, so the edge of fitting doesn't toggle it */
  const edge=()=>{const sc=view.scrollDOM;wrap.classList.toggle("scrolled",sc.scrollTop>2);wrap.classList.toggle("more",sc.scrollTop+sc.clientHeight<sc.scrollHeight-2)};   /* the fades at the box's edges */
- const ovf=()=>{const sc=view.scrollDOM,on=wrap.classList.contains("ovf"),o=sc.scrollHeight>sc.clientHeight+1;if(o!==on&&(o||sc.scrollHeight<sc.clientHeight-24))wrap.classList.toggle("ovf",o);edge()};
+ const ovf=()=>{const sc=view.scrollDOM,on=wrap.classList.contains("ovf"),o=sc.scrollHeight>sc.clientHeight+1;if(o!==on&&(o||view.dom.offsetHeight<wrap.clientHeight-4))wrap.classList.toggle("ovf",o)   /* off once it fits AND the editor has room left in the box (it sizes to its text: "fits by N px" never happened) */;edge()};
  const view=new EditorView({parent:wrap,state:EditorState.create({doc:proto.get.call(ta),extensions:[
   history(),EditorView.lineWrapping,EditorView.contentAttributes.of({spellcheck:"true",autocorrect:"off",autocapitalize:"off"}),placeholder("Describe what you want to see…"),deco,ro.of(EditorState.readOnly.of(false)),
   keymap.of([{key:"Mod-/",run:toggleLineComment},{key:"Mod-Enter",run:()=>{window.addJobs&&addJobs();return true}},...historyKeymap,...defaultKeymap.filter(k=>k.key!=="Mod-Enter")]),

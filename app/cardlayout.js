@@ -7,8 +7,9 @@ let lyFrozen=false,lyHover=false,lyT=null,lyTop=null,lyCy=null,lyIT=null,lyIB=nu
 /* S.pos (wide window): "top" = card top level with the image top (name row beside the tabs), "mid" = centred on the
    image, "bot" = card bottom level with the status line. A bottom card grows upward while you type. */
 function anchorTop(pos,H,colH){const t=pos==="top"?(lyIT??0):pos==="bot"?((lyIB??colH)-H):(lyCy??colH/2)-H/2;return Math.max(0,Math.min(colH-H,t))}
+const EDMIN=122;   /* the editor's least height (kiln.css .cm-editor min-height: its header row + a few lines) */
 function cardNaturalH(){const L=$("left"),w=L.querySelector(".pwrapT");const sc=L.querySelector(".cm-scroller");
- const edH=(sc?sc.scrollHeight:P.scrollHeight)+16;return Math.max(170,L.offsetHeight-w.offsetHeight+Math.max(84,edH))}
+ const edH=(sc?sc.scrollHeight:P.scrollHeight)+16;return Math.max(170,L.offsetHeight-w.offsetHeight+Math.max(EDMIN,edH))}
 const CARDMAX=900; // wide window: the prompt card never gets wider than this (text stops at ~76ch anyway)
 function tabsW(){const k=document.querySelector(".tabs").children;return k.length?Math.ceil(k[k.length-1].getBoundingClientRect().right-k[0].getBoundingClientRect().left):0}
 function minRight(){return Math.max(420,tabsW()+2)} // the image column never gets narrower than the tab bar
@@ -27,7 +28,7 @@ function applyMode(){const a=document.querySelector(".app"),was=a.classList.cont
    narrower than the box's minimum or wider than the window */
 function stackW(){const max=innerWidth-36,pic=typeof lay!=="undefined"&&lay.target&&lay.target.w;
  const w=S.vfit&&pic?pic:(S.lay&&S.lay.sw)||760;return Math.round(Math.max(Math.min(PWMIN,max),Math.min(max,w)))}
-function cardMinH(){const L=$("left");return L.offsetHeight-L.querySelector(".pwrapT").offsetHeight+84}
+function cardMinH(){const L=$("left");return L.offsetHeight-L.querySelector(".pwrapT").offsetHeight+EDMIN}
 function chipsH(){const c=$("chips");return c.childElementCount?c.offsetHeight+10:0} // the row always shows ("LoRA +") // the chip row under the box, and its gap
 function layoutLeft(){if(lyDrag)return;const L=$("left"),col=$("lcol"),CH=chipsH();const TS=$("peekbar").classList.contains("show")?104:64; /* the Reuse bar takes the row above the box; the name moves up */col.style.setProperty("--ts",TS+"px");
  const stk=!!document.querySelector(".app.stacked"),hm=!stk&&(S.hmode==="full"||S.hmode==="match")?S.hmode:"";   /* Vertical has no height modes: they took the picture's room */L.classList.toggle("hm",!!hm);$("ltitle").classList.toggle("hm",!!hm);

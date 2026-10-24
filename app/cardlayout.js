@@ -77,7 +77,7 @@ updHm();
  const geo=()=>{const TS=parseFloat(col.style.getPropertyValue("--ts"))||64;return{TS,colH:col.clientHeight-TS,H:L.offsetHeight}};
  const nearest=(t,H,colH)=>["top","mid","bot"].map(p=>[p,Math.abs(anchorTop(p,H,colH)-t)]).sort((a,b)=>a[1]-b[1])[0][0];
  /* dock zones: drag the prompt far to the other side, or to the bottom, and drop it there */
- const zones=["left","right","below"].map(z=>{const g=document.createElement("div");g.className="dockzone "+z;g.dataset.z=z;
+ const zones=["left","right","below"].map(z=>{const g=document.createElement("div");g.className="dockzone dz-"+z;g.dataset.z=z;
   g.innerHTML=`<span>${{left:"Prompt on the left",right:"Prompt on the right",below:"Prompt below the picture"}[z]}</span>`;document.body.appendChild(g);return g});
  const dockOf=()=>S.dock||"left";
  /* "below" needs the pointer well past the lowest place the card can go (yMax): moving the card to its bottom position

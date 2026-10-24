@@ -218,8 +218,6 @@ body.private .pwrapT .cm-editor,body.private .pwrapT textarea,body.private .ltit
 .play.off svg path{fill:var(--muted)}
 .play:not(.off) svg path{fill:var(--ink)}
 .play.gen,.play.gen:not(.off):hover{background:var(--raised);filter:none}
-.play.gen svg path,body.glass .play.gen svg path{fill:url(#playFlow)}
-.play.gen svg{filter:drop-shadow(0 0 5px color-mix(in oklab,var(--a2) 45%,transparent))}
 /* the queue count on Start's corner: you add to the queue there, so the number goes up where you click */
 .badge{position:absolute;top:-8px;right:-10px;min-width:22px;height:20px;padding:0 6px;border-radius:999px;display:none;place-items:center;
  font-size:11.5px;font-weight:600;color:#fff;background:transparent;text-shadow:0 0 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.7)}
@@ -588,7 +586,13 @@ kbd{display:inline-block;min-width:24px;padding:2px 7px;border-radius:7px;backgr
 .dockzone{position:fixed;z-index:90;display:none;align-items:center;justify-content:center;pointer-events:none;border:2px dashed rgba(255,255,255,.22);border-radius:24px;
  background:rgba(255,255,255,.03);color:rgba(255,255,255,.55);font-size:14px;font-weight:500;transition:background .15s,border-color .15s,color .15s}
 .dockzone.show{display:flex}.dockzone.near{background:color-mix(in oklab,var(--a1) 14%,transparent);border-color:color-mix(in oklab,var(--a1) 70%,transparent);color:#fff}
-.dockzone.left{left:12px;top:12px;bottom:22%;width:28%}.dockzone.right{right:12px;top:12px;bottom:22%;width:28%}.dockzone.below{left:12px;right:12px;bottom:12px;height:18%}
+.dockzone.dz-left{left:12px;top:12px;bottom:22%;width:28%}.dockzone.dz-right{right:12px;top:12px;bottom:22%;width:28%}.dockzone.dz-below{left:12px;right:12px;bottom:12px;height:18%}
+/* glass, all three alike (the left one used to pick up the prompt box's glass through a shared class name) */
+body.glass .dockzone{background:transparent;isolation:isolate;border-color:rgba(255,255,255,.18)}
+body.glass .dockzone::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);
+ -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.14);transition:background .15s}
+body.glass .dockzone.near{border-color:color-mix(in oklab,var(--a1) 70%,transparent)}
+body.glass .dockzone.near::before{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 22%)}
 
 /* ======================= backgrounds ======================= */
 #stars{position:fixed;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1.2s var(--ease);pointer-events:none;z-index:0}
@@ -767,8 +771,10 @@ body.private .pclear{visibility:hidden}
    round the queue count fills with the job's progress */
 .play.gen,.play.gen:not(.off):hover{background:var(--flow);background-size:200% 100%;animation:flow 6s linear infinite;filter:none}
 .play.gen.off{filter:saturate(.55) brightness(.75)}
-.play.gen svg path,body.glass .play.gen svg path{fill:#fff}
-.play.gen svg{filter:drop-shadow(0 0 3px rgba(255,255,255,.75)) drop-shadow(0 0 9px color-mix(in oklab,var(--a2) 70%,transparent))}
+/* the triangle: smoked glass, like the pills — the ready state's dark triangle with the flow showing faintly through,
+   a light rim that catches it, a soft glow round its edge (the light comes from outside, not from a white fill) */
+.play.gen svg path,body.glass .play.gen svg path{fill:color-mix(in oklab,var(--ink) 72%,transparent);stroke:rgba(255,255,255,.6);stroke-width:1.1px}
+.play.gen svg{filter:drop-shadow(0 0 3px rgba(255,255,255,.45)) drop-shadow(0 0 8px color-mix(in oklab,var(--a2) 60%,transparent))}
 body.glass .play.gen,body.glass .play.gen:not(.off):hover{background:linear-gradient(90deg in oklch,color-mix(in oklab,var(--a1) 80%,transparent),color-mix(in oklab,var(--a2) 72%,transparent),color-mix(in oklab,var(--a3) 66%,transparent),color-mix(in oklab,var(--a2) 72%,transparent),color-mix(in oklab,var(--a1) 80%,transparent));
  background-size:200% 100%;-webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -4px 10px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25)}

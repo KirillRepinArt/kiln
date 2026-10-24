@@ -179,9 +179,9 @@ textarea#prompt.peek{color:#b6bcc0}
 @property --ft{syntax:"<length>";inherits:true;initial-value:0px}@property --fb{syntax:"<length>";inherits:true;initial-value:0px}
 .pwrapT .cm-scroller{overflow:auto;font-family:inherit;line-height:1.62;transition:--ft .2s,--fb .2s;
  -webkit-mask-image:linear-gradient(transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);mask-image:linear-gradient(transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%)}
-.pwrapT.scrolled .cm-scroller{--ft:22px}.pwrapT.more .cm-scroller{--fb:22px}   /* text fades at an edge only where there's more of it */
+.pwrapT.scrolled .cm-scroller{--ft:28px}.pwrapT.more .cm-scroller{--fb:28px}   /* the fade is the inset: the 28 px margin stays a margin while the text scrolls through it */   /* text fades at an edge only where there's more of it */
 /* …and slides under a gradual blur there first (the glass "scroll edge"): a thin layer whose blur ramps up toward the edge */
-.pwrapT::before,.pwrapT::after{content:"";position:absolute;left:0;right:0;height:38px;z-index:1;pointer-events:none;
+.pwrapT::before,.pwrapT::after{content:"";position:absolute;left:0;right:0;height:28px;z-index:1;pointer-events:none;
  -webkit-backdrop-filter:blur(0px);backdrop-filter:blur(0px);transition:backdrop-filter .2s,-webkit-backdrop-filter .2s}
 .pwrapT::before{top:0;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
 .pwrapT::after{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000);mask-image:linear-gradient(transparent,#000)}

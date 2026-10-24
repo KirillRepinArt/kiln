@@ -100,8 +100,9 @@ $("pkPrompt").onclick=()=>reuse(false);$("pkAll").onclick=()=>reuse(true,$("pkAl
 $("pkSeed").onclick=e=>{e.stopPropagation();S.keepSeed=!S.keepSeed;save();keepSeedUI()};$("pkX").onclick=()=>closePromptPeek();
 P.addEventListener("keydown",e=>{if(!peekJob)return;if(e.key==="Escape"){closePromptPeek();return}
  if(e.key.length===1||e.key==="Backspace"||e.key==="Enter"){if(e.ctrlKey&&e.key==="Enter")return;reuse(false)}});
-function updPrompt(){if(window.nameUI)nameUI();const n=P.value.length;$("left").classList.toggle("hastext",!!n&&!peekJob);$("pcount").textContent=n?n.toLocaleString()+" chars":"";$("play").classList.toggle("off",!P.value.trim()||!!peekJob);
- $("play").title=peekJob?"Choose Reuse first":(!P.value.trim()?"Write a prompt first":"Add to queue (Ctrl+Enter)")}
+function updPrompt(){if(window.nameUI)nameUI();const n=P.value.length;$("left").classList.toggle("hastext",!!n&&!peekJob);$("pcount").textContent=n?n.toLocaleString()+" chars":"";$("play").removeAttribute("title");const vary=!!(peekJob&&peekJob.status==="done"&&typeof picMode==="function"&&picMode()==="browse");
+ $("play").classList.toggle("off",vary?false:!P.value.trim()||!!peekJob);$("play").classList.toggle("vary",vary);
+ $("play").dataset.tip=vary?`Vary: #${peekJob.id} again with a new seed — same prompt, settings and LoRAs; your draft stays (Ctrl+Enter)`:peekJob?"Choose Reuse first":(!P.value.trim()?"Write a prompt first":"Add to queue (Ctrl+Enter)")}
 /* drag to reorder: the dragged row itself moves in the list (no re-render while dragging — that swapped the element
    under the pointer and made the cursor flicker); it moves once the pointer crosses a row's middle, so rows don't
    ping-pong; the others slide out of the way */

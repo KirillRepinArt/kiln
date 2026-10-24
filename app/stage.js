@@ -17,7 +17,7 @@ function tabGo(fn){const run=()=>{sizeFrame.defer=true;try{fn()}finally{sizeFram
  document.documentElement.classList.add("tabmorph");layMorph(run);setTimeout(()=>document.documentElement.classList.remove("tabmorph"),600)}   /* a quick fade-through; the picture morphs if it's on both sides */
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>tabGo(()=>{const v=t.dataset.v;
  if(v==="gallery"){if(S.view!=="gen")showView("gen");if(!browsed())pv("gallery");tabSync();return}
- if(v==="gen"&&browsed())pv("generating");   /* the picture stays, as your reference */
+ if(v==="gen")pv("generating");   /* the live view: the render, or the clean frame */
  showView(v)}));
 /* the picture's arrows live on a fixed layer: while they show they follow the picture's side edges every frame (it
    glides), but while you're clicking through with them they hold their place on SCREEN (Photos / Lightroom: navigation

@@ -40,7 +40,19 @@
 /* ambient glow + window title + favicon progress ring (throttled) */
 const amb=$("amb"),ambC=amb.getContext("2d"),favC=document.createElement("canvas");favC.width=favC.height=64;
 function jobProgress(j){const part=Math.min((Date.now()-j.stepStart)/j.est,.95)||0;return{p:(j.step+part)/j.steps,left:Math.max(0,(j.steps-j.step-part)*j.est*S.demo/1000)}}
-function status(){const j=current();
+/* the Generating ring's knockout: the word's own glyphs, stroked ~1.25 px wider, cut out of the ring's holder — done
+   once per font, size and screen scale, not per frame */
+function ringKnockout(){const w=document.querySelector('.tab[data-v="gen"] .trw'),tl=w&&w.closest(".tl");if(!w||!document.body.classList.contains("jobrun"))return;
+ const r=w.getBoundingClientRect();if(!r.width)return;const gt=w.parentElement.lastChild,rg=document.createRange();rg.selectNodeContents(gt);const gr=rg.getBoundingClientRect();
+ const cs=getComputedStyle(tl),dpr=devicePixelRatio||1,font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`,key=[font,cs.letterSpacing,dpr,Math.round((gr.left-r.left)*10),Math.round((gr.top-r.top)*10)].join("|");
+ if(w.dataset.ko===key)return;w.dataset.ko=key;
+ const c=document.createElement("canvas");c.width=Math.ceil(r.width*dpr);c.height=Math.ceil(r.height*dpr);const g=c.getContext("2d");g.scale(dpr,dpr);
+ g.fillStyle="#000";g.fillRect(0,0,r.width,r.height);g.globalCompositeOperation="destination-out";g.font=font;try{g.letterSpacing=cs.letterSpacing}catch(e){}
+ const m=g.measureText("G"),y=gr.top-r.top+m.fontBoundingBoxAscent,x=gr.left-r.left;
+ g.lineWidth=2.5;g.lineJoin="round";g.strokeText(tl.textContent,x,y);g.fillText(tl.textContent,x,y);
+ w.style.setProperty("--ko",`url(${c.toDataURL()})`)}
+document.fonts&&document.fonts.ready.then(()=>{const w=document.querySelector(".trw");if(w)delete w.dataset.ko});
+function status(){const j=current();ringKnockout();
  if(window._jobsReady){const d=lastDone(),v=d&&!(PV.still&&PV.still.id===d.id)?d.id:null;if((S.clearedId??null)!==v){S.clearedId=v;save()}} // remember: closed on a clean screen
  $("frame").classList.toggle("running",picMode()==="live");const pend=jobs.filter(x=>x.status==="pending").length;
  const gm=(S.set||{}).glow||"gen";

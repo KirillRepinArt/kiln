@@ -87,7 +87,15 @@
 
  /* ---------- queue actions -> server ---------- */
  window.tick=function(){};
- window.addJobs=async function(){if(peekJob){toast("Viewing a queued prompt — choose Reuse, or ✕ to go back");return}
+ /* Start in the Gallery = Vary: the picture on show again — its prompt, settings, LoRAs and series — with a new seed.
+   Your draft isn't touched, and you stay where you are (Midjourney's Vary; Reuse is for editing first) */
+ async function vary(j){if(j.kind==="upscale"){toast("Variations come from generated pictures, not upscales");return}
+  const sp=Object.assign({},j.spec);delete sp.as_file;sp.seed=Math.floor(Math.random()*4294967295);
+  const r=await api("/api/jobs",{jobs:[sp]}),id=r&&r.ids&&r.ids[0];
+  toast(`Variation of #${j.id} queued — new seed`,id?"Undo":"",()=>api(`/api/jobs/${id}/cancel`,{}).then(poll));
+  if(!forgeOk)setTimeout(()=>toast("Queued — Forge isn't running yet, jobs start when it is"),2300);poll()}
+ window.addJobs=async function(){if(peekJob&&picMode()==="browse"&&peekJob.status==="done"){await vary(peekJob);return}
+  if(peekJob){toast("Viewing a queued prompt — choose Reuse, or ✕ to go back");return}
   const text=P.value.trim();if(!text){toast("Write a prompt first");return}
   const on=LORAS.filter(l=>l.on);on.forEach(l=>l.used=Date.now());const L=on.map(l=>({name:l.name,w:+l.w}));
   const set=S.set||{},[sampler,scheduler]=(set.sampler||"Euler · Simple").split(" · ");const [w,h]=SIZES[S.mp][S.ar];

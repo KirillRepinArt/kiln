@@ -57,7 +57,10 @@ export async function tabsAndArrows(k, t) {
   await k.ev(`(genNav(-1),1)`); await k.sleep(500); s = await st(k);
   t.ok(s.browse === ids[0] && s.peek === ids[0], "← : the picture before it", s);
   await tab(k, "gen"); await k.sleep(700); s = await st(k);
-  t.ok(s.pic === "still" && s.still === "reference" && s.sid === ids[0] && s.draft && s.tab === "gen", "Generating tab: the same picture stays, as a reference, with your draft", s);
+  t.ok(s.pic === "empty" && s.draft && s.tab === "gen", "Generating tab, idle: the clean frame (the live view), your draft", s);
+  await k.ev(`(genNav(-1),1)`); await k.sleep(500); await k.ev(`(genNav(-1),1)`); await k.sleep(500);
+  await k.ev(`($("pkPrompt").click(),1)`); await k.sleep(500); s = await st(k);
+  t.ok(s.pic === "still" && s.still === "reference" && s.sid === ids[0], "Reuse: the picture as a reference", s);
   t.ok(!(await k.ev(`genNav(-1,true)`)), "← from the oldest: nothing to go to");
   await k.ev(`(genNav(1),1)`); await k.sleep(500); s = await st(k);
   t.ok(s.pic === "browse" && s.browse === ids[1], "→ from it: the next picture, in the Gallery", s);
@@ -90,7 +93,7 @@ export async function referenceHolds(k, t) {
   await k.ev(`($("prog").click(),1)`); await k.sleep(500); s = await st(k);
   t.ok(s.pic === "browse" && s.browse === (await k.ev(`lastDone().id`)), "clicking it: the new picture, in the Gallery", s);
   // Start from a reference: it holds until the render has a picture, then gives way
-  await tab(k, "gen"); await k.sleep(400);
+  await k.ev(`($("pkPrompt").click(),1)`); await k.sleep(400);
   await k.ev(`(P.value="[fill:28dc28] go",draft=P.value,1)`); await k.ev(`addJobs().then(()=>1)`);
   s = await st(k); t.ok(s.pic === "still" && s.still === "result", "Start: the picture stays for now (it gives way like a result)", s);
   t.ok(await k.until(`document.body.dataset.pic==="live"`, 15000, 100), "…and the render takes over once it has a picture");
@@ -119,10 +122,10 @@ export async function shapeAndDelete(k, t) {
   await k.job("[fill:dc2828] one", { steps: 2 }); await done(k, 1); await k.sleep(400);
   await k.ev(`($("pAR").click(),1)`); await k.sleep(200); await k.ev(`(document.querySelector('#popAR .rt[data-v="16:9"]').click(),1)`); await k.sleep(400);
   let s = await st(k); t.ok(s.pic === "empty", "a result + a new ratio: the empty frame shows the next shape", s);
-  await tab(k, "gallery"); await k.sleep(400); await tab(k, "gen"); await k.sleep(400);
+  await tab(k, "gallery"); await k.sleep(400); await k.ev(`($("pkPrompt").click(),1)`); await k.sleep(400);
   await k.ev(`($("pAR").click(),1)`); await k.sleep(200); await k.ev(`(document.querySelector('#popAR .rt[data-v="1:1"]').click(),1)`); await k.sleep(400);
   s = await st(k); t.ok(s.pic === "still" && s.still === "reference", "a reference + a new ratio: it stays", s);
-  await k.ev(`(document.dispatchEvent(new KeyboardEvent("keydown",{key:"Delete",bubbles:true})),1)`); await k.sleep(800);
+  await k.ev(`(document.activeElement.blur(),document.dispatchEvent(new KeyboardEvent("keydown",{key:"Delete",bubbles:true})),1)`); await k.sleep(800);
   s = await st(k); t.ok(s.pic === "empty" && !s.has, "Del on a still: to the Recycle Bin, the frame clean", s);
 }
 shapeAndDelete.opts = { step: 0.05 };
@@ -146,3 +149,33 @@ export async function rowsAndRestart(k, t) {
   s = await st(k); t.ok(s.pic === "empty", "closed, it stays closed after a restart", s);
 }
 rowsAndRestart.opts = { step: 0.5 };
+
+/* the Generating tab is the live view: over a reference, while a job renders, it shows the render */
+export async function generatingTabIsLive(k, t) {
+  await k.job("[fill:dc2828] one", { steps: 2 }); await done(k, 1);
+  await k.job("[fill:2828dc] two", { steps: 8 }); await k.until(`current()&&current().preview_rev>0`, 20000, 100);
+  await tab(k, "gallery"); await k.sleep(400); await k.ev(`($("pkPrompt").click(),1)`); await k.sleep(400);
+  t.ok((await st(k)).still === "reference", "a reference over the running render");
+  await tab(k, "gen"); await k.sleep(500); const s = await st(k);
+  t.ok(s.pic === "live" && s.draft, "the Generating tab: the render, your draft kept", s);
+  await k.sleep(800);
+  t.ok(await k.ev(`document.querySelector(".trw").style.getPropertyValue("--ko").startsWith("url(")`), "the ring has its knockout round the letters");
+}
+generatingTabIsLive.opts = { step: 1 };
+
+/* Start in the Gallery = Vary: the picture again with a new seed; your draft untouched, you stay in the Gallery */
+export async function startVaries(k, t) {
+  await k.job("[fill:dc2828] the original", { steps: 2, name: "Fox" }); await done(k, 1);
+  await k.ev(`(P.value="my draft",draft=P.value,1)`);
+  await tab(k, "gallery"); await k.sleep(500);
+  const src = await k.ev(`({id:lastDone().id,seed:lastDone().seed,prompt:lastDone().prompt,name:lastDone().name})`);
+  t.ok(await k.ev(`!$("play").classList.contains("off")&&/^Vary/.test($("play").dataset.tip)`), "in the Gallery Start is live: it says Vary");
+  await k.ev(`($("play").click(),1)`); await k.until(`jobs.length>=2`, 8000, 100);
+  const nj = await k.ev(`(()=>{const j=jobs.find(x=>x.id!==${src.id});return{prompt:j.prompt,seed:j.seed,name:j.name}})()`);
+  t.ok(nj.prompt === src.prompt && nj.name === src.name, "the same prompt and series", { src, nj });
+  t.ok(nj.seed !== src.seed, "a new seed", { src, nj });
+  const s = await st(k); t.ok(s.pic === "browse" && s.browse === src.id, "you stay on the picture in the Gallery", s);
+  t.ok(await k.ev(`draft==="my draft"`), "your draft untouched");
+  t.ok(/^Variation of #\d+ queued/.test(await k.ev(`$("toastMsg").textContent`)), "it says so, with Undo");
+}
+startVaries.opts = { step: 0.5 };

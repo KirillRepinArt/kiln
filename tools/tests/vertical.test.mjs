@@ -96,7 +96,7 @@ export async function columnCap(k, t) {
 columnCap.opts = { width: 2400, height: 1000 };
 
 export async function startRing(k, t) {
-  const ring = `getComputedStyle(document.querySelector('.tab[data-v="gen"] .tring')).display!=="none"`;
+  const ring = `getComputedStyle(document.querySelector('.tab[data-v="gen"] .trw')).display!=="none"`;
   t.ok(!(await k.ev(ring)), "idle: no ring on the Generating tab");
   await k.job("[fill:224433] ring", { steps: 4 });
   t.ok(await k.until(`$("play").classList.contains("gen")`, 10000, 100), "a job runs: Start takes the flowing gradient (v0.5: the whole button, the triangle white)");
@@ -158,12 +158,10 @@ export async function runningThumb(k, t) {
   t.ok(await k.ev(`!document.body.classList.contains("norow")&&getComputedStyle(document.querySelector(".prog .track")).visibility==="visible"`), "watching the render: the bar");
   await k.ev(`(browseTo(lastDone()),1)`); await k.sleep(900);
   t.ok(await k.ev(`document.body.classList.contains("norow")`), "browsing during a job: no row under the picture (no caption, no chip)");
-  t.ok(await k.ev(`getComputedStyle(document.querySelector('.tab[data-v="gen"] .tring')).display!=="none"`), "the job's progress is on the Generating tab");
+  t.ok(await k.ev(`getComputedStyle(document.querySelector('.tab[data-v="gen"] .trw')).display!=="none"`), "the job's progress is on the Generating tab");
   t.ok(/^Rendering #\d+ · step \d\/6/.test(await k.ev(`document.querySelector('.tab[data-v="gen"]').dataset.tip`)), "its tooltip says which job and how far", await k.ev(`document.querySelector('.tab[data-v="gen"]').dataset.tip`));
   await k.ev(`(document.querySelector('.tab[data-v="gen"]').click(),1)`); await k.sleep(400);
-  t.ok(await k.ev(`PV.browse===null&&PV.still&&PV.still.kind==="reference"`), "clicking it: Generating, the picture stays as a reference (a tab never changes the picture)");
-  await k.ev(`($("prog").click(),1)`); await k.sleep(400);
-  t.ok(await k.ev(`document.body.dataset.pic==="live"`), "the status row: the render (Q3)");
+  t.ok(await k.ev(`PV.browse===null&&document.body.dataset.pic==="live"`), "clicking it: Generating shows the render (the live view)");
 }
 runningThumb.opts = { step: 1.2 };
 
@@ -200,9 +198,7 @@ export async function arrowsHold(k, t) {
   await k.ev(`(genNav(-1),1)`); await k.sleep(500);
   t.ok(await on() === "gallery", "stepping back from the render lights Gallery");
   await k.ev(`(document.querySelector('.tab[data-v="gen"]').click(),1)`); await k.sleep(400);
-  t.ok(await on() === "gen" && await k.ev(`PV.browse===null&&PV.still&&PV.still.kind==="reference"`), "clicking Generating: the same picture stays, as a reference");
-  t.ok(await k.ev(`$("frame").classList.contains("has")`), "…on show (a tab switch never changes the picture)");
-  await k.ev(`(pv("close"),1)`); await k.sleep(300);
+  t.ok(await on() === "gen" && await k.ev(`PV.browse===null&&document.body.dataset.pic==="empty"`), "clicking Generating, idle: the clean frame (the live view)");
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.mouse(2, 2); await k.sleep(900);
   const f = await R(k, "#frame"); await k.mouse(f.left + 30, f.top + f.height / 2); await k.sleep(500);
   const p0 = await R(k, ".gnav.prev");

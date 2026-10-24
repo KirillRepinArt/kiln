@@ -1,7 +1,8 @@
 /* Kiln · what the picture area shows: one state, one place that changes it (ux-review/11-picture-states.md)
    Generating shows LIVE (the render under its cover), a STILL (a finished picture: the result that just landed, or a
    reference you brought there yourself) or EMPTY; the Gallery is BROWSE(k). Rules, in order:
-   1. a tab switch never changes the picture; an arrow always does
+   1. the Gallery tab opens on the picture you're looking at; the Generating tab is the live view (the render, or the
+      clean frame when idle — revised 2026-10-24, the user's call); an arrow always changes the picture
    2. a result gives way to the render only once the render has a picture of its own (its first preview)
    3. a reference stays until you let it go (✕, Start, an arrow) — a running render never pushes it away
    4. ✕ on a picture = the clean area: the render if a job runs, else the empty frame (← brings the picture back)
@@ -57,8 +58,9 @@ function pv(ev,arg){const run=current();
    if(PV.browse==null&&PV.still&&PV.still.kind==="result"&&!run){PV.still=null;resetCv();$("frame").classList.remove("has")}break;
   case "gallery":   /* the Gallery tab: the picture on show, else the newest (rule 1) */
    {const k=onShow()||lastDone();if(!k){toast("No finished pictures yet");break}browseSet(k)}break;
-  case "generating":   /* the Generating tab from the Gallery: the picture stays, as a reference (rule 1) */
-   if(PV.browse!=null){PV.still={id:PV.browse,kind:"reference"};browseEnd()}break;
+  case "generating":   /* the Generating tab: the live view — what's being made, or the clean frame (rule 1) */
+   if(PV.browse!=null){if(run)snapOut();browseEnd();PV.still=null;PV.news=null;PV.yielded=null;resetCv()}
+   else if(run&&PV.still){snapOut();PV.still=null;PV.news=null;resetCv()}break;
   case "browse": browseSet(arg);break;   /* a finished queue row, a neighbour after a delete */
   case "reuse":   /* Reuse from the Gallery: Generating, with the picture as your reference */
    if(PV.browse!=null){PV.still={id:PV.browse,kind:"reference"};PV.browse=null;PV.promptClosed=false}break;

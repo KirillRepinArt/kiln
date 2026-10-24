@@ -46,7 +46,8 @@ if(cm){
 
  /* the scrollbar's room is kept only while the text overflows: a prompt that fits has no gutter strip at all (on glass
     it flickered as the backdrop repainted). Sticky until clearly short again, so the edge of fitting doesn't toggle it */
- const ovf=()=>{const sc=view.scrollDOM,on=wrap.classList.contains("ovf"),o=sc.scrollHeight>sc.clientHeight+1;if(o!==on&&(o||sc.scrollHeight<sc.clientHeight-24))wrap.classList.toggle("ovf",o)};
+ const edge=()=>{const sc=view.scrollDOM;wrap.classList.toggle("scrolled",sc.scrollTop>2);wrap.classList.toggle("more",sc.scrollTop+sc.clientHeight<sc.scrollHeight-2)};   /* the fades at the box's edges */
+ const ovf=()=>{const sc=view.scrollDOM,on=wrap.classList.contains("ovf"),o=sc.scrollHeight>sc.clientHeight+1;if(o!==on&&(o||sc.scrollHeight<sc.clientHeight-24))wrap.classList.toggle("ovf",o);edge()};
  const view=new EditorView({parent:wrap,state:EditorState.create({doc:proto.get.call(ta),extensions:[
   history(),EditorView.lineWrapping,EditorView.contentAttributes.of({spellcheck:"true",autocorrect:"off",autocapitalize:"off"}),placeholder("Describe what you want to see…"),deco,ro.of(EditorState.readOnly.of(false)),
   keymap.of([{key:"Mod-/",run:toggleLineComment},{key:"Mod-Enter",run:()=>{window.addJobs&&addJobs();return true}},...historyKeymap,...defaultKeymap.filter(k=>k.key!=="Mod-Enter")]),
@@ -70,6 +71,7 @@ if(cm){
   $("left").addEventListener("transitionend",()=>view.requestMeasure())}document.fonts&&document.fonts.ready.then(()=>view.requestMeasure());
  new MutationObserver(()=>view.dom.classList.toggle("peek",ta.classList.contains("peek"))).observe(ta,{attributes:true,attributeFilter:["class"]});
  Object.defineProperty(ta,"scrollTop",{get(){return view.scrollDOM.scrollTop},set(v){view.scrollDOM.scrollTop=v}});
+ view.scrollDOM.addEventListener("scroll",edge,{passive:true});
  window.__cm=view;
 }
 })();

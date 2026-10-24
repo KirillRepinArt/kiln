@@ -96,3 +96,20 @@ export async function dockZonesGlass(k, t) {
   t.ok(await k.ev(`getComputedStyle(document.querySelector(".dockzone")).display!=="none"`), "letting go: they fade back out rather than vanish");
   await k.sleep(600); t.ok(await k.ev(`getComputedStyle(document.querySelector(".dockzone")).display==="none"`), "…and are gone after");
 }
+
+export async function promptEdges(k, t) {
+  await k.mouse(2, 2); await k.sleep(1000);
+  await k.ev(`(P.value=Array(40).fill("a long line of prompt text").join(String.fromCharCode(10)),draft=P.value,layoutLeft(),1)`); await k.sleep(800);
+  const w = () => k.ev(`[...$("prompt").parentElement.classList].join(" ")`);
+  t.ok(/more/.test(await w()) && !/scrolled/.test(await w()), "overflowing, at the top: the bottom fades, the top doesn't", await w());
+  await k.ev(`(document.querySelector(".pwrapT .cm-scroller").scrollTop=99999,1)`); await k.sleep(300);
+  t.ok(/scrolled/.test(await w()) && !/more/.test(await w()), "scrolled to the end: the top fades, the bottom doesn't", await w());
+}
+
+export async function narrowReuseRow(k, t) {
+  await k.job("[fill:446688] one", { steps: 2 }); await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  await k.ev(`(S.lay.pw=380,sizeFrame(),layoutLeft(),document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.mouse(2, 2); await k.sleep(1200);
+  const r = await k.ev(`(()=>{const a=$("peekbar").getBoundingClientRect(),b=$("hmodes").getBoundingClientRect();return{narrow:$("ltitle").classList.contains("tnarrow"),overlap:!(a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top),sameRow:Math.abs((a.top+a.bottom)/2-(b.top+b.bottom)/2)<6}})()`);
+  t.ok(r.narrow && !r.overlap && r.sameRow, "a narrow box: the Reuse bar and the size buttons share one row, no overlap", r);
+  await k.shot("narrow-row");
+}

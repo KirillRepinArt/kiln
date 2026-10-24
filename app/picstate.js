@@ -10,7 +10,7 @@
       draft but Reuse (with Undo)
    The prompt box's peek (peekJob, loadJob / peekHide in queue.js) is the second half: the Gallery's picture, or on
    demand the render's / a waiting job's prompt. */
-const PV={browse:null,still:null,promptClosed:false,news:null,yielded:null,dir:1};   /* dir: the way you last stepped (← -1, → +1) */   /* still: {id, kind:"result"|"reference"}; news: a result that landed while you held a reference (Q1); yielded: the result that gave way to the render — it comes back if the render stops without a picture */
+const PV={browse:null,still:null,promptClosed:false,news:null,yielded:null,dir:1,from:null};   /* from: the tab a picture was opened from — ✕ goes back there */   /* dir: the way you last stepped (← -1, → +1) */   /* still: {id, kind:"result"|"reference"}; news: a result that landed while you held a reference (Q1); yielded: the result that gave way to the render — it comes back if the render stops without a picture */
 function doneById(id){return id==null?null:jobs.find(j=>j.id===id&&j.status==="done")||null}
 function browsed(){return doneById(PV.browse)}
 function stillJob(){return PV.still?doneById(PV.still.id):null}
@@ -48,7 +48,8 @@ function pv(ev,arg){const run=current();
    if(PV.browse==null&&PV.still&&PV.still.kind==="result"){snapOut();PV.yielded=PV.still.id;PV.still=null;resetCv()}break;
   case "close":   /* ✕ on the picture, Esc outside the editor */
    if(run)snapOut();   /* a fade only when the render replaces it — into the empty frame the picture just goes */
-   if(PV.browse!=null)browseEnd();PV.still=null;PV.news=null;PV.yielded=null;resetCv();break;
+   if(PV.browse!=null)browseEnd();PV.still=null;PV.news=null;PV.yielded=null;resetCv();
+   {const back=PV.from;PV.from=null;if(back&&arg!=="arrow"&&back!=="gen")showView(back)}break;
   case "toRender":   /* the status row while a picture stands in front of a running render (Q3) */
    if(run&&PV.still){snapOut();PV.still=null;PV.news=null;resetCv()}break;
   case "start":   /* Start: what you held gives way to the render once it has a picture (rule 2) */

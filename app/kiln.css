@@ -153,6 +153,10 @@ button,.tab,.pill,.chip,.qi,.li,.fchips button{user-select:none;-webkit-user-sel
 .hmodes button:hover{background:var(--raised2);color:#fff}.hmodes button.on{background:#f2f2f2;color:#111}
 .hmodes svg{width:16px;height:16px}
 .app.stacked #hmFull{display:none}
+.ltitle.tnarrow:has(.peekbar.show){flex-direction:row;flex-wrap:wrap;justify-content:center;align-content:flex-end;align-items:center;column-gap:8px}
+.ltitle.tnarrow:has(.peekbar.show) .phead{flex-basis:100%}
+.ltitle.tnarrow .peekbar{max-width:none}
+.ltitle.tnarrow:has(.peekbar.show) .hmodes{position:static;margin-top:12px;margin-bottom:3px;opacity:1}
 
 /* ======================= prompt box ======================= */
 .left{position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--ltop,0px);height:var(--lh,auto);display:flex;flex-direction:column;padding-top:12px;
@@ -170,7 +174,16 @@ textarea#prompt.peek{color:#b6bcc0}
 .pwrapT.cm-on textarea#prompt{display:none}
 /* CodeMirror (editor.js) — these sit beside CodeMirror's own injected styles, so they keep their specificity */
 .pwrapT .cm-editor{flex:0 1 auto;min-height:84px;max-height:100%;margin:8px 12px 8px 0;outline:0!important;background:transparent;font:inherit}   /* !important: CodeMirror's focus outline */
-.pwrapT .cm-scroller{overflow:auto;font-family:inherit;line-height:1.62}
+@property --ft{syntax:"<length>";inherits:true;initial-value:0px}@property --fb{syntax:"<length>";inherits:true;initial-value:0px}
+.pwrapT .cm-scroller{overflow:auto;font-family:inherit;line-height:1.62;transition:--ft .2s,--fb .2s;
+ -webkit-mask-image:linear-gradient(transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);mask-image:linear-gradient(transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%)}
+.pwrapT.scrolled .cm-scroller{--ft:22px}.pwrapT.more .cm-scroller{--fb:22px}   /* text fades at an edge only where there's more of it */
+/* …and slides under a gradual blur there first (the glass "scroll edge"): a thin layer whose blur ramps up toward the edge */
+.pwrapT::before,.pwrapT::after{content:"";position:absolute;left:0;right:0;height:38px;z-index:1;pointer-events:none;
+ -webkit-backdrop-filter:blur(0px);backdrop-filter:blur(0px);transition:backdrop-filter .2s,-webkit-backdrop-filter .2s}
+.pwrapT::before{top:0;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
+.pwrapT::after{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000);mask-image:linear-gradient(transparent,#000)}
+.pwrapT.scrolled::before,.pwrapT.more::after{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .pwrapT.ovf .cm-scroller{scrollbar-gutter:stable}   /* the scrollbar keeps its room only while the text overflows (editor.js) */
 .pwrapT .cm-content{padding:4px 0 10px 0;caret-color:#fff;font-size:15px}
 .pwrapT .cm-line{padding:0 24px 0 28px}   /* the text fills the box: you set its width yourself */
@@ -223,7 +236,8 @@ body.private .pwrapT .cm-editor,body.private .pwrapT textarea,body.private .ltit
 .play.vary .dice{opacity:1;transform:none}
 .play.gen .dice rect{stroke:#fff}.play.gen .dice circle{fill:#fff}
 .play.vary svg .tri{opacity:0;transform:scale(.6)}
-.play svg{transition:margin .25s var(--lay-e)}.play.vary svg{margin-left:0}   /* the triangle sits 2 px right (optical centre); the die doesn't */
+.play svg{transition:margin .25s var(--lay-e),transform .28s cubic-bezier(.3,1.7,.5,1)}
+.play:not(.off):hover svg{transform:scale(1.3)}.play.vary svg{margin-left:0}   /* the triangle sits 2 px right (optical centre); the die doesn't */
 .play.off svg path{fill:var(--muted)}
 .play:not(.off) svg path{fill:var(--ink)}
 .play.gen,.play.gen:not(.off):hover{background:var(--raised);filter:none}
@@ -412,7 +426,7 @@ body.norow .prog{visibility:hidden}
 .prog .fill::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--tw,600px);background:var(--flow);background-size:200% 100%;animation:flow 6s linear infinite}
 @keyframes flow{from{background-position:0 0}to{background-position:-200% 0}}
 .prog .meta{position:relative;display:flex;align-items:center;gap:10px;height:36px;font-size:13px;font-weight:500;color:#CDCDCD;white-space:nowrap}
-.prog.run .meta,.prog.showp .meta{cursor:pointer}   /* click: the shown picture's prompt */
+body[data-pic=still] .prog.run .meta,.prog.showp .meta{cursor:pointer}   /* click: the render (behind a still), or the prompt you closed */
 .prog .meta .eta{margin-left:auto;color:var(--muted)}
 #ptxt{overflow:hidden;text-overflow:ellipsis;min-width:0}
 #ptxt .sub{color:var(--muted);font-weight:400}
@@ -626,7 +640,7 @@ kbd{display:inline-block;min-width:24px;padding:2px 7px;border-radius:7px;backgr
 .dockzone.show{display:flex;background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.55);transform:none}
 @starting-style{.dockzone.show{background:transparent;border-color:transparent;color:transparent;transform:scale(.97)}}
 .dockzone.near{background:color-mix(in oklab,var(--a1) 14%,transparent);border-color:color-mix(in oklab,var(--a1) 70%,transparent);color:#fff}
-.dockzone.dz-left{left:12px;top:12px;bottom:22%;width:28%}.dockzone.dz-right{right:12px;top:12px;bottom:22%;width:28%}.dockzone.dz-below{left:12px;right:12px;bottom:12px;height:18%}
+.dockzone.dz-left{left:12px;top:84px;bottom:22%;width:28%}.dockzone.dz-right{right:12px;top:84px;bottom:22%;width:28%}   /* below the tab bar: navigation stays in view */.dockzone.dz-below{left:12px;right:12px;bottom:12px;height:18%}
 /* glass, all three alike (the left one used to pick up the prompt box's glass through a shared class name) */
 body.glass .dockzone{-webkit-backdrop-filter:blur(0px) saturate(1) brightness(1);backdrop-filter:blur(0px) saturate(1) brightness(1)}
 body.glass .dockzone.show{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
@@ -705,8 +719,7 @@ body.glass .fg input[readonly]:hover{background-color:transparent}
 /* the pill row floats over the bottom of the glass box: the prompt scrolls under it, fading and blurring (Liquid
    Glass's scroll-edge effect); the last line can always scroll clear of it */
 body.glass .left .controls{position:absolute;left:0;right:0;bottom:0;z-index:2}
-body.glass .left .pwrapT .cm-scroller{padding-bottom:calc(var(--ctrlh,64px) - 6px);
- -webkit-mask-image:linear-gradient(#000 calc(100% - var(--ctrlh,64px) - 14px),rgba(0,0,0,.35) calc(100% - 22px));mask-image:linear-gradient(#000 calc(100% - var(--ctrlh,64px) - 14px),rgba(0,0,0,.35) calc(100% - 22px))}
+body.glass .left .pwrapT .cm-scroller{padding-bottom:calc(var(--ctrlh,64px) - 6px)}   /* the text runs on under the glass controls, almost to the box's edge */
 body.glass .left .pwrapT .cm-editor{margin-bottom:0}
 body.glass .left .pcount{right:72px;bottom:calc(var(--ctrlh,64px) - 2px)}   /* just above the controls, left of Start */
 body.glass .left .privov{bottom:var(--ctrlh,64px)}

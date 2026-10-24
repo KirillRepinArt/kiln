@@ -195,3 +195,25 @@ export async function deleteOnwardAndNote(k, t) {
   const s = await st(k); t.ok(s.pic === "browse" && s.browse === (await k.ev(`lastDone().id`)) && s.tab === "gallery", "click: that picture, in the Gallery", s);
 }
 deleteOnwardAndNote.opts = { step: 0.05 };
+
+/* v0.6 notes: → off the finished picture; ✕ back to the Queue; ▶ while the render's prompt is shown = Vary; the Queue
+   keeps its thumbnails between visits */
+export async function notes06(k, t) {
+  await k.job("[fill:dc2828] one", { steps: 2 }); await done(k, 1); await k.sleep(400);
+  t.ok((await st(k)).pic === "still", "a finished picture in Generating");
+  await k.ev(`(document.activeElement.blur(),genNav(1),1)`); await k.sleep(300);
+  t.ok((await st(k)).pic === "empty", "→ takes it off (the render / the empty frame)");
+  await k.ev(`(showView("queue"),1)`); await k.sleep(400); await k.until(`(()=>{const i=document.querySelector(".qi img.qt");return i&&i.naturalWidth>0})()`, 8000, 100);
+  const el = await k.ev(`(window.__qt=document.querySelector(".qi img.qt"),1)`);
+  await k.ev(`(document.querySelector(".qi .p").click(),1)`); await k.sleep(400);
+  t.ok((await st(k)).pic === "browse", "a Queue row opens the picture");
+  await k.ev(`($("bclose").click(),1)`); await k.sleep(400);
+  t.ok(await k.ev(`S.view==="queue"`), "✕ takes you back to the Queue");
+  t.ok(await k.ev(`document.querySelector(".qi img.qt")===window.__qt`), "the Queue kept its thumbnail (the same loaded element — no reload, no flash)");
+  await k.ev(`(showView("gen"),1)`); await k.job("[fill:2828dc] the render", { steps: 30 }); await k.until(`current()&&current().preview_rev>0`, 20000, 100);
+  const f = await k.rect("#frame"); await k.click(f.left + f.width / 2, f.top + f.height / 2); await k.sleep(300);
+  t.ok(await k.ev(`!!peekJob&&$("play").classList.contains("vary")&&!$("play").classList.contains("off")`), "the render's prompt shown: ▶ is Vary (the die)");
+  const n0 = await k.ev(`jobs.length`); await k.ev(`($("play").click(),1)`); await k.until(`jobs.length>${n0}`, 6000, 100);
+  t.ok(await k.ev(`jobs.length`) > n0, "…and queues another like it");
+}
+notes06.opts = { step: 0.5 };

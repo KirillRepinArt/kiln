@@ -12,7 +12,7 @@ function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=
  const left=pend.reduce((a,j)=>a+jEst(j),0);for(const id of [...QS])if(!done.some(j=>j.id===id))QS.delete(id);$("qwrap").classList.toggle("selecting",QS.size>0);
  const item=(j,k)=>`<div class="qi${j.missing?" missing":""}${QS.has(j.id)?" sel":""}" data-id="${j.id}" draggable="${k==="pend"}">
    ${k==="pend"?'<span class="handle" title="Drag to reorder">⋮⋮</span>':""}${k==="done"?`<span class="qck" data-ck="${j.id}" data-tip="Select (Ctrl-click · Shift-click a range)"></span>`:""}
-   <div class="th">${j.missing?"gone":j.status==="done"?(window.LIVE?`<img class="qt" data-qt="${j.id}" loading="lazy" decoding="async" alt="" src="/qthumbs/${j.id}.jpg">`:`<canvas data-th="${j.id}"></canvas>`):j.status==="cancelled"?"stopped":k==="run"?(window.LIVE?`<img class="lp" data-lp="${j.id}" alt="">`:"…"):"#"+j.id}</div>
+   <div class="th">${j.missing?"gone":j.status==="done"?(window.LIVE?`<span data-tth="${j.id}"></span>`:`<canvas data-th="${j.id}"></canvas>`):j.status==="cancelled"?"stopped":k==="run"?(window.LIVE?`<img class="lp" data-lp="${j.id}" alt="">`:"…"):"#"+j.id}</div>
    <div class="body"><div class="p">${j.file?`<b style="font-weight:600">${esc(j.file)}</b> · `:""}${esc((j.prompt||"").slice(0,240))}</div>
    <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · <span class="seedc" data-seed="${j.seed}" data-tip="Click to copy the seed">seed ${j.seed}</span>${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.missing?' · <span class="gone">file deleted</span>':""}</div>
    ${j.created||j.finished?`<div class="meta times">${j.created?`added ${clock(j.created)}`:""}${j.finished&&j.status==="done"?` · done ${clock(j.finished)}`:""}${j.finished&&j.started?` · took ${fmt((j.finished-j.started)*(window.LIVE?1:S.demo)/1000)}`:""}</div>`:""}
@@ -22,7 +22,19 @@ function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=
   `<div class="qsec"><span>Up next ${pend.length?`· ${pend.length} · ~${fmt(left)}`:""}${window.qPaused?' · <b class="paused">paused</b>':""}</span><button id="pauseQ" data-tip="${window.qPaused?"Start the waiting jobs again":"The current image finishes; nothing new starts until you resume"}">${window.qPaused?"Resume":"Pause after this"}</button></div>`+
   (pend.length?pend.map(j=>item(j,"pend")).join(""):'<div class="empty">Nothing queued</div>')+
   (done.length?`<div class="qsec"><span>Finished · ${done.length}</span><span>${done.some(j=>j.missing)?`<button id="rmMissing">Remove missing (${done.filter(j=>j.missing).length})</button> `:""}<button id="clearDone">Clear list</button></span></div>${done.map(j=>item(j,"done")).join("")}`:"");
- done.forEach(j=>{const c=document.querySelector(`canvas[data-th="${j.id}"]`);if(c&&j.status==="done"&&!j.missing)paint(c,j,1)})}
+ done.forEach(j=>{const c=document.querySelector(`canvas[data-th="${j.id}"]`);if(c&&j.status==="done"&&!j.missing)paint(c,j,1)});
+ if(window.LIVE){const have=new Set(done.map(j=>j.id));for(const id of QT.keys())if(!have.has(id))QT.delete(id);
+  $("qwrap").querySelectorAll("[data-tth]").forEach(ph=>{const id=+ph.dataset.tth;let im=QT.get(id);
+   if(!im){im=new Image();im.className="qt";im.dataset.qt=id;im.alt="";im.decoding="async";im.loading="lazy";
+    im.onerror=()=>{if(im.dataset.tried)return;im.dataset.tried="1";const j=jobs.find(x=>x.id===id);if(j&&window.makeQThumb)makeQThumb(j,im)};
+    im.src=`/qthumbs/${id}.jpg`;QT.set(id,im)}
+   ph.replaceWith(im)})}
+ renderQueueInner.sig=queueSig()}
+/* each finished row's thumbnail element, loaded once and moved into every rebuild of the list (a new element would load
+   again: the files are never cached by the browser, so the list flashed empty on every visit) */
+const QT=new Map();
+/* what the list shows: unchanged → opening the tab rebuilds nothing */
+function queueSig(){return jobs.map(j=>`${j.id}:${j.status}:${j.file||""}:${j.missing?1:0}:${j.name||""}:${j.est||""}`).join("|")+"|"+[...QS].join(",")+"|"+!!window.qPaused}
 function qsBar(done){if(!QS.size)return"";const sel=done.filter(j=>QS.has(j.id)),names=[...new Set(sel.map(j=>(j.name||"").trim()))];
  let series="";if(names.length===1&&names[0]){const all=done.filter(j=>(j.name||"").trim()===names[0]).length;if(all>sel.length)series=`<button id="qsSeries">Select all “${esc(names[0])}” · ${all}</button>`}
  return `<div class="qbar"><span class="qn">${QS.size} selected</span>${series}${sel.length<done.length?'<button id="qsAll">Select all</button>':""}<span class="qgap"></span>
@@ -64,7 +76,7 @@ $("qwrap").addEventListener("click",e=>{
  const x=e.target.closest("[data-x]");if(x){stopJob(jobs.find(j=>j.id==+x.dataset.x));return}
  const q=e.target.closest(".qi");if(!q)return;const j=jobs.find(j=>j.id==+q.dataset.id);
  if(j.status==="running"){showView("gen");pv("peekRender");return}
- if(j.status==="done"){showView("gen");pv("browse",j);return} // finished: in the Gallery
+ if(j.status==="done"){showView("gen");PV.from="queue";pv("browse",j);return} // finished: in the Gallery (✕ brings you back here)
  loadJob(j)});
 function browseTo(j){PV.promptClosed=false;pv("browse",j)}
 let undo=null;var justDone=null;
@@ -130,7 +142,7 @@ $("pkPrompt").onclick=()=>reuse(false);$("pkAll").onclick=()=>reuse(true,$("pkAl
 $("pkSeed").onclick=e=>{e.stopPropagation();S.keepSeed=!S.keepSeed;save();keepSeedUI()};$("pkX").onclick=()=>closePromptPeek();
 P.addEventListener("keydown",e=>{if(!peekJob)return;if(e.key==="Escape"){closePromptPeek();return}
  if(e.key.length===1||e.key==="Backspace"||e.key==="Enter"){if(e.ctrlKey&&e.key==="Enter")return;reuse(false)}});
-function updPrompt(){if(window.nameUI)nameUI();const n=P.value.length;$("left").classList.toggle("hastext",!!n&&!peekJob);$("pcount").textContent=n?n.toLocaleString()+" chars":"";$("play").removeAttribute("title");const vary=!!(peekJob&&peekJob.status==="done"&&typeof picMode==="function"&&picMode()==="browse");
+function updPrompt(){if(window.nameUI)nameUI();const n=P.value.length;$("left").classList.toggle("hastext",!!n&&!peekJob);$("pcount").textContent=n?n.toLocaleString()+" chars":"";$("play").removeAttribute("title");const vary=!!(peekJob&&peekJob.kind!=="upscale");
  $("play").classList.toggle("off",vary?false:!P.value.trim()||!!peekJob);$("play").classList.toggle("vary",vary);
  $("play").dataset.tip=vary?`Vary: #${peekJob.id} again with a new seed — same prompt, settings and LoRAs; your draft stays (Ctrl+Enter)`:peekJob?"Choose Reuse first":(!P.value.trim()?"Write a prompt first":"Add to queue (Ctrl+Enter)")}
 /* drag to reorder: the dragged row itself moves in the list (no re-render while dragging — that swapped the element

@@ -61,6 +61,8 @@ $("left").addEventListener("pointerleave",()=>{lyHover=false;thaw()});
 $("left").addEventListener("focusin",freeze);
 $("left").addEventListener("focusout",()=>{if(!lyHover)thaw()});
 new ResizeObserver(()=>layoutLeft()).observe($("lcol"));
+/* a narrow box: the Reuse bar and the size buttons in one centred row (side by side they collided) */
+new ResizeObserver(()=>{const T=$("ltitle");T.classList.toggle("tnarrow",T.clientWidth<560)}).observe($("ltitle"));
 /* the size buttons by the name: side by side, Match = the picture's height; in Vertical, Fit = the picture's width */
 const HM_H='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/></svg>',
  HM_W='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5v14M20 5v14M8 12h8M11 9l-3 3 3 3M13 9l3 3-3 3"/></svg>';

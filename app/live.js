@@ -104,8 +104,7 @@
   const r=await api("/api/jobs",{jobs:[sp]}),id=r&&r.ids&&r.ids[0];
   toast(`Variation of #${j.id} queued — new seed`,id?"Undo":"",()=>api(`/api/jobs/${id}/cancel`,{}).then(poll));
   if(!forgeOk)setTimeout(()=>toast("Queued — Forge isn't running yet, jobs start when it is"),2300);poll()}
- window.addJobs=async function(){if(peekJob&&picMode()==="browse"&&peekJob.status==="done"){await vary(peekJob);return}
-  if(peekJob){toast("Viewing a queued prompt — choose Reuse, or ✕ to go back");return}
+ window.addJobs=async function(){if(peekJob){await vary(peekJob);return}   /* the box shows a job's prompt: ▶ makes another like it */
   const text=P.value.trim();if(!text){toast("Write a prompt first");return}
   const on=LORAS.filter(l=>l.on);on.forEach(l=>l.used=Date.now());const L=on.map(l=>({name:l.name,w:+l.w}));
   const set=S.set||{},[sampler,scheduler]=(set.sampler||"Euler · Simple").split(" · ");const [w,h]=SIZES[S.mp][S.ar];
@@ -130,7 +129,7 @@
    const im=held&&held.i.complete&&held.i.naturalWidth?held.i:await new Promise(r=>{const i=new Image();i.decoding="async";i.onload=()=>r(i);i.onerror=()=>r(null);i.src=urlFor(j)});   /* not via the cache: hundreds of thumbnails mustn't push the pictures you browse out of it */
    if(im){const Z=120,c=document.createElement("canvas");c.width=c.height=Z;const s=Math.min(im.naturalWidth,im.naturalHeight);
     c.getContext("2d").drawImage(im,(im.naturalWidth-s)/2,(im.naturalHeight-s)/2,s,s,0,0,Z,Z);const data=c.toDataURL("image/jpeg",.82);
-    const t=el&&el.isConnected?el:document.querySelector(`img.qt[data-qt="${j.id}"]`);if(t)t.src=data;
+    const t=el||document.querySelector(`img.qt[data-qt="${j.id}"]`);if(t)t.src=data;
     await api("/api/qthumb",{id:j.id,data})}}catch(e){}
   setTimeout(qtNext,0)}
  /* several at once: one Undo for all (Delete), or off the list (cancelled rows, missing files) */
@@ -150,7 +149,7 @@
   const r=document.querySelector('.tab[data-v="gen"]').getBoundingClientRect();dn.style.left=Math.round(r.left+r.width/2)+"px";dn.style.top=Math.round(r.bottom+10)+"px";
   dn.classList.add("show");clearTimeout(dnT);dnT=setTimeout(dnHide,6000)};
  dn.addEventListener("mouseenter",()=>clearTimeout(dnT));dn.addEventListener("mouseleave",()=>{clearTimeout(dnT);dnT=setTimeout(dnHide,2500)});
- dn.onclick=()=>{const j=doneById(dnId);dnHide();if(!j)return;tabGo(()=>{showView("gen");pv("browse",j)})};
+ dn.onclick=()=>{const j=doneById(dnId);dnHide();if(!j)return;tabGo(()=>{PV.from=S.view!=="gen"?S.view:null;showView("gen");pv("browse",j)})};
  window.removeJob=async j=>{if(!j)return;await api(`/api/jobs/${j.id}/remove`,{});poll()};
  window.removeMissing=async()=>{await api("/api/remove-missing",{});poll()};
  window.setPaused=async p=>{await api("/api/pause",{paused:p});window.qPaused=p;sig="";poll();toast(p?"Queue paused — the current image finishes, nothing new starts":"Queue resumed")};

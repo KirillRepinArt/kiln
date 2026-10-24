@@ -40,3 +40,19 @@ export async function selecting(k, t) {
   t.ok((await sel(k)).length === 0, "leaving the Queue tab ends the selection");
 }
 selecting.opts = { step: 0.05 };
+
+/* reordering the waiting jobs leaves the finished rows alone; the running row shows an hourglass until its first
+   preview; "Added to queue" appears under the Queue tab */
+export async function sectionsStay(k, t) {
+  await k.job("[fill:dc2828] done one", { steps: 2 }); await done(k, 1);
+  await k.job("[fill:2828dc] slow", { steps: 40 }); await k.until(`!!current()`, 15000, 50);
+  t.ok(await k.ev(`(()=>{const r=$("toast").getBoundingClientRect(),q=document.querySelector('.tab[data-v="queue"]').getBoundingClientRect();return Math.abs((r.left+r.right)/2-(q.left+q.right)/2)<3&&r.top>q.bottom})()`), "“Added to queue” appears under the Queue tab");
+  await k.job("w1", { steps: 2 }); await k.job("w2", { steps: 2 });
+  await k.ev(`(showView("queue"),1)`); await k.sleep(400);
+  t.ok(await k.ev(`!current().preview_rev?getComputedStyle(document.querySelector(".qi .th .hg")).display!=="none":true`), "before its first preview the running row shows an hourglass (no empty square)");
+  await k.ev(`(window.__fin=[...document.querySelectorAll("#qsFin .qi")],1)`);
+  await k.ev(`(()=>{const p=jobs.filter(j=>j.status==="pending"),a=jobs.indexOf(p[0]),b=jobs.indexOf(p[1]);[jobs[a],jobs[b]]=[jobs[b],jobs[a]];renderQueue();return 1})()`); await k.sleep(200);
+  t.ok(await k.ev(`[...document.querySelectorAll("#qsFin .qi")].every((q,i)=>q===window.__fin[i])&&window.__fin.length>0`), "reordering the waiting jobs doesn't rebuild the finished ones");
+  t.ok(await k.ev(`[...document.querySelectorAll("#qsPend .qi")].map(q=>q.querySelector(".p").textContent).join("|")`).then(x => /w2.*w1/.test(x)), "…while the waiting ones show the new order");
+}
+sectionsStay.opts = { step: 1 };

@@ -7,7 +7,7 @@ let lyFrozen=false,lyHover=false,lyT=null,lyTop=null,lyCy=null,lyIT=null,lyIB=nu
 /* S.pos (wide window): "top" = card top level with the image top (name row beside the tabs), "mid" = centred on the
    image, "bot" = card bottom level with the status line. A bottom card grows upward while you type. */
 function anchorTop(pos,H,colH){const t=pos==="top"?(lyIT??0):pos==="bot"?((lyIB??colH)-H):(lyCy??colH/2)-H/2;return Math.max(0,Math.min(colH-H,t))}
-const EDMIN=122;   /* the editor's least height (kiln.css .cm-editor min-height: its header row + a few lines) */
+const EDMIN=108;   /* the editor's least height (kiln.css .cm-editor min-height: its header row + a few lines) */
 function cardNaturalH(){const L=$("left"),w=L.querySelector(".pwrapT");const sc=L.querySelector(".cm-scroller");
  const edH=(sc?sc.scrollHeight:P.scrollHeight)+16;return Math.max(170,L.offsetHeight-w.offsetHeight+Math.max(EDMIN,edH))}
 const CARDMAX=900; // wide window: the prompt card never gets wider than this (text stops at ~76ch anyway)

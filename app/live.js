@@ -102,7 +102,7 @@
  async function vary(j){if(j.kind==="upscale"){toast("Variations come from generated pictures, not upscales");return}
   const sp=Object.assign({},j.spec);delete sp.as_file;sp.seed=Math.floor(Math.random()*4294967295);
   const r=await api("/api/jobs",{jobs:[sp]}),id=r&&r.ids&&r.ids[0];
-  toast(`Variation of #${j.id} queued — new seed`,id?"Undo":"",()=>api(`/api/jobs/${id}/cancel`,{}).then(poll));
+  toast(`Variation of #${j.id} queued — new seed`,id?"Undo":"",()=>api(`/api/jobs/${id}/cancel`,{}).then(poll),"queue");
   if(!forgeOk)setTimeout(()=>toast("Queued — Forge isn't running yet, jobs start when it is"),2300);poll()}
  window.addJobs=async function(){if(peekJob){await vary(peekJob);return}   /* the box shows a job's prompt: ▶ makes another like it */
   const text=P.value.trim();if(!text){toast("Write a prompt first");return}
@@ -113,7 +113,7 @@
    const ex=expandVariants(stripComments(text));
    specs.push({prompt:ex.text,raw:text,picks:ex.picks,name:S.pname.trim(),mp:S.mp,ar:S.ar,w,h,steps:S.steps,seed,loras:L,
     checkpoint:set.ckpt||undefined,modules:mods.length?mods:undefined,shift:+(set.shift||1.15),cfg:+(set.cfg||1),sampler,scheduler})}
-  save();await api("/api/jobs",{jobs:specs});pv("start");   /* a picture you held gives way to the render once it has a picture */toast(S.n>1?`Added ${S.n} jobs to the queue`:"Added to queue");
+  save();await api("/api/jobs",{jobs:specs});pv("start");   /* a picture you held gives way to the render once it has a picture */toast(S.n>1?`Added ${S.n} jobs to the queue`:"Added to queue","",null,"queue");
   if(!forgeOk)setTimeout(()=>toast("Queued — Forge isn't running yet, jobs start when it is"),2300);poll()};
  window.stopJob=async function(j){if(!j)return;if(j.status==="running")j.stopping=true;await api(`/api/jobs/${j.id}/cancel`,{});poll()};
  $("qwrap").addEventListener("drop",()=>{},true);
@@ -173,7 +173,7 @@
   if(a==="open")return api("/api/open",{id:j.id});
   if(a==="folder")return api("/api/reveal",{id:j.id});
   if(a==="up"){const u=(S.set||{}).upscaler||(models&&models.upscalers[0]);if(!u)return toast("No upscalers found in Forge");
-   return api("/api/upscale",{id:j.id,upscaler:u,scale:+((S.set||{}).upscale||2)}).then(()=>{toast(`Upscale ×${(S.set||{}).upscale||2} queued (${u})`);poll()})}
+   return api("/api/upscale",{id:j.id,upscaler:u,scale:+((S.set||{}).upscale||2)}).then(()=>{toast(`Upscale ×${(S.set||{}).upscale||2} queued (${u})`,"",null,"queue");poll()})}
   if(a==="i2i")return toast("img2img is next on the roadmap");
   if(a==="del")return deleteJob(j)}
  for(const [el,get] of [[$("sideGen"),()=>shownDone()]]){

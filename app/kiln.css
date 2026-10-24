@@ -35,6 +35,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 ::-webkit-scrollbar-thumb:active{background:#74747c;border-width:2px;background-clip:padding-box}
 svg *{stroke-linecap:round;stroke-linejoin:round}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid color-mix(in oklab,var(--a1) 55%,transparent);outline-offset:2px}   /* keyboard focus stays visible, in the theme's colour */
+.pwrapT .cm-editor:focus-visible,.pwrapT .cm-content:focus-visible,input:focus-visible,textarea:focus-visible{outline:0}
 input,select,textarea{font:inherit;color:var(--text)}
 input[type=range]{accent-color:#E6E6EA}
 button,.tab,.pill,.chip,.qi,.li,.fchips button{user-select:none;-webkit-user-select:none}
@@ -169,11 +171,11 @@ button,.tab,.pill,.chip,.qi,.li,.fchips button{user-select:none;-webkit-user-sel
 .app:not(.stacked) .left,.app:not(.stacked) .ltitle{cursor:grab}
 .app:not(.stacked) .left.hm,.app:not(.stacked) .ltitle.hm{cursor:default}
 .pwrapT{position:relative;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden;cursor:text}
-textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;background:transparent;border:0;outline:0;padding:42px 24px 10px 26px;margin:0 12px 8px 0;line-height:1.62;overflow:auto}
+textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;background:transparent;border:0;outline:0;padding:28px 16px 10px 28px;margin:0 12px 8px 0;line-height:1.62;overflow:auto}
 textarea#prompt.peek{color:#b6bcc0}
 .pwrapT.cm-on textarea#prompt{display:none}
 /* CodeMirror (editor.js) — these sit beside CodeMirror's own injected styles, so they keep their specificity */
-.pwrapT .cm-editor{flex:0 1 auto;min-height:122px;max-height:100%;margin:0 12px 8px 0;outline:0!important;background:transparent;font:inherit}   /* !important: CodeMirror's focus outline */
+.pwrapT .cm-editor{flex:0 1 auto;min-height:108px;max-height:100%;margin:0 12px 8px 0;outline:0!important;background:transparent;font:inherit}   /* !important: CodeMirror's focus outline */
 @property --ft{syntax:"<length>";inherits:true;initial-value:0px}@property --fb{syntax:"<length>";inherits:true;initial-value:0px}
 .pwrapT .cm-scroller{overflow:auto;font-family:inherit;line-height:1.62;transition:--ft .2s,--fb .2s;
  -webkit-mask-image:linear-gradient(transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);mask-image:linear-gradient(transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%)}
@@ -187,8 +189,8 @@ textarea#prompt.peek{color:#b6bcc0}
 .pwrapT.ovf .cm-scroller{scrollbar-gutter:stable}
 .pwrapT .cm-scroller::-webkit-scrollbar-track{margin:44px 0 10px}
 body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track{margin-bottom:calc(var(--ctrlh,64px) + 4px)}   /* the scrollbar keeps its room only while the text overflows (editor.js) */
-.pwrapT .cm-content{padding:42px 0 10px 0;caret-color:#fff;font-size:15px}
-.pwrapT .cm-line{padding:0 24px 0 28px}   /* the text fills the box: you set its width yourself */
+.pwrapT .cm-content{padding:28px 0 10px 0;caret-color:#fff;font-size:15px}
+.pwrapT .cm-line{padding:0 16px 0 28px}   /* with the editor's 12 px margin: 28 px on the right too */   /* the text fills the box: you set its width yourself */
 .pwrapT .cm-cursor{border-left:2px solid #fff}
 .pwrapT .cm-selectionBackground,.pwrapT .cm-focused .cm-selectionBackground{background:color-mix(in oklab,var(--an,#7890ff) 36%,transparent)!important}   /* !important: CodeMirror's own selection colour */
 .pwrapT .cm-placeholder{color:var(--faint)}
@@ -202,7 +204,7 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track{margin-bottom:cal
 .cm-vbar{color:#6f6f78}
 .cm-lora{background:#2a2a30;border-radius:6px;color:#bdbdc6;padding:0 3px;box-shadow:0 0 0 1px #3a3a42}
 /* the character count, while you type */
-.pcount{position:absolute;right:42px;top:10px;height:24px;line-height:24px;z-index:3;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--faint);opacity:0;transition:opacity .2s;pointer-events:none}
+.pcount{position:absolute;right:34px;top:8px;height:20px;line-height:20px;z-index:3;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--faint);opacity:0;transition:opacity .2s;pointer-events:none}
 .pwrapT:focus-within .pcount{opacity:1}
 /* privacy on: the prompt, the name and the LoRA chips are hidden; the box stays, with a lock */
 .privov{display:none;position:absolute;inset:0;z-index:5;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:13.5px;border-radius:inherit;cursor:default}
@@ -463,17 +465,28 @@ body.gallery .prog .eta,body.gallery .prog .resume,body.gallery .prog.paused:not
 .qi:hover{background:var(--raised2)}.qi.drag{opacity:.4}
 .qi.new{animation:qin .35s var(--ease)}
 @keyframes qin{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
-.qi .handle{color:var(--faint);cursor:grab;width:14px}
+.qi .handle{color:var(--faint);cursor:grab;width:20px;text-align:center;flex:none}   /* the same slot as the selection circle: edge → it → thumbnail, 12 px each */
 .qi .th{width:46px;height:46px;border-radius:10px;background:#222;flex:none;overflow:hidden;display:grid;place-items:center;color:var(--faint);font-size:11px}
 .qi .th canvas,.qi .th img.lp,.qi .th img.qt{width:100%;height:100%}
 .qi .th img.lp,.qi .th img.qt{object-fit:cover;display:block}
 .qi .th img.qt:not([src]){visibility:hidden}
+.qi .th .hg{display:none;width:24px;height:24px;color:var(--muted)}
+.qi .th:has(img.lp:not([src])) .hg{display:block}.qi .th img.lp:not([src]){display:none}
+.hg .hgg{transform-origin:12px 12px;animation:hgflip 2.6s infinite}
+.hg .st{transform-origin:12px 11.4px;animation:hgtop 2.6s infinite linear}.hg .sb{transform-origin:12px 20.2px;animation:hgbot 2.6s infinite linear}
+@keyframes hgflip{0%,78%{transform:rotate(0)}100%{transform:rotate(180deg);animation-timing-function:cubic-bezier(.6,0,.3,1)}}
+@keyframes hgtop{0%{transform:scaleY(1)}75%,100%{transform:scaleY(0)}}
+@keyframes hgbot{0%{transform:scaleY(0)}75%,100%{transform:scaleY(1)}}
+@media (prefers-reduced-motion:reduce){.hg .hgg,.hg .st,.hg .sb{animation:none}}
 /* only the rows on screen are laid out and painted (hundreds of finished pictures) */
 .qi{content-visibility:auto;contain-intrinsic-size:auto 68px}
 /* selection: a round box at the row's start — on hover, or always while something is selected */
-.qck{position:relative;width:20px;height:20px;border-radius:50%;flex:none;margin-right:-4px;border:1.5px solid rgba(255,255,255,.38);opacity:0;transition:opacity .15s,background .15s,border-color .15s;cursor:pointer}
+.qck{position:relative;width:20px;height:20px;border-radius:50%;flex:none;border:1.5px solid rgba(255,255,255,.38);opacity:0;transition:opacity .15s,background .15s,border-color .15s;cursor:pointer}
 .qi:hover .qck,.qwrap.selecting .qck{opacity:1}
 .qi.sel .qck{background:var(--a1);border-color:var(--a1)}
+body.glass .qck{border:0;background:color-mix(in oklab,rgba(255,255,255,.06),var(--cool,#9ab) 14%);-webkit-backdrop-filter:blur(8px) saturate(1.6);backdrop-filter:blur(8px) saturate(1.6);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.16)}   /* thin glass, like every control */
+body.glass .qi.sel .qck{background:var(--a1);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1px color-mix(in oklab,var(--a1) 70%,#fff)}
 .qi.sel .qck::after{content:"";position:absolute;left:5.5px;top:2.5px;width:5px;height:9px;border:solid var(--ink);border-width:0 2px 2px 0;transform:rotate(45deg)}
 .qi.sel{box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--a1) 75%,transparent)}
 .qbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;border-radius:14px;background:var(--raised2);font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
@@ -795,7 +808,7 @@ html.laymorph #fglow[style*="display: none"]{view-transition-name:none}
    the selected tab's pill slides to its new place — a fade of the whole app read as the page reloading (2026-10-25) */
 html.tabmorph .app{view-transition-name:none}
 html.tabmorph .rpanel{view-transition-name:kiln-panel}
-::view-transition-group(kiln-panel){animation:none}
+::view-transition-group(kiln-panel){animation-duration:var(--lay-t);animation-timing-function:var(--lay-e);overflow:clip;border-radius:var(--r-panel)}   /* the box morphs to the new size, like the Gallery's frame */
 ::view-transition-old(kiln-panel),::view-transition-new(kiln-panel){object-fit:none;object-position:50% 0;height:100%}   /* the panel changes width: its snapshot must not stretch (it read as a zoom) */
 html.tabmorph #lcol{view-transition-name:kiln-prompt}   /* the prompt box slides to its new place as a snapshot: no glass re-blurred per frame (that lagged with Forge on the GPU) */
 ::view-transition-group(kiln-prompt){animation-duration:var(--lay-t);animation-timing-function:var(--lay-e)}
@@ -820,7 +833,7 @@ html.tabmorph::view-transition-old(kiln-pic),html.tabmorph::view-transition-new(
 .frame:hover .cbtn{opacity:1}
 .frame.missing .cbtn{display:none}
 /* the prompt's ✕ Clear: top right of the box while it has text and you're over it */
-.pclear{position:absolute;top:10px;right:10px;z-index:3;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:var(--muted);
+.pclear{position:absolute;top:8px;right:8px;z-index:3;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:var(--muted);
  opacity:0;pointer-events:none;transition:opacity .15s,background .15s}
 .pclear svg{width:11px;height:11px}
 .left.hastext:hover .pclear{opacity:1;pointer-events:auto}

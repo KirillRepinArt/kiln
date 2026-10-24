@@ -10,18 +10,21 @@ function renderQueue(){const before={},W=$("qwrap"),y0=W.scrollTop-200,y1=W.scro
 const QS=new Set();let qsAnchor=null;
 function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=jobs.filter(j=>j.status==="pending"),done=jobs.filter(j=>j.status==="done"||j.status==="cancelled").reverse();
  const left=pend.reduce((a,j)=>a+jEst(j),0);for(const id of [...QS])if(!done.some(j=>j.id===id))QS.delete(id);$("qwrap").classList.toggle("selecting",QS.size>0);
- const item=(j,k)=>`<div class="qi${j.missing?" missing":""}${QS.has(j.id)?" sel":""}" data-id="${j.id}" draggable="${k==="pend"}">
+ const item=(j,k)=>`<div class="qi${j.missing?" missing":""}" data-id="${j.id}" draggable="${k==="pend"}">
    ${k==="pend"?'<span class="handle" title="Drag to reorder">⋮⋮</span>':""}${k==="done"?`<span class="qck" data-ck="${j.id}" data-tip="Select (Ctrl-click · Shift-click a range)"></span>`:""}
-   <div class="th">${j.missing?"gone":j.status==="done"?(window.LIVE?`<span data-tth="${j.id}"></span>`:`<canvas data-th="${j.id}"></canvas>`):j.status==="cancelled"?"stopped":k==="run"?(window.LIVE?`<img class="lp" data-lp="${j.id}" alt="">`:"…"):"#"+j.id}</div>
+   <div class="th">${j.missing?"gone":j.status==="done"?(window.LIVE?`<span data-tth="${j.id}"></span>`:`<canvas data-th="${j.id}"></canvas>`):j.status==="cancelled"?"stopped":k==="run"?(window.LIVE?`<svg class="hg" viewBox="0 0 24 24" fill="none"><g class="hgg"><path d="M7 3.5h10M7 20.5h10" stroke="currentColor" stroke-width="1.6"/><path d="M8 3.5c0 4 1.6 6 4 8.5-2.4 2.5-4 4.5-4 8.5M16 3.5c0 4-1.6 6-4 8.5 2.4 2.5 4 4.5 4 8.5" stroke="currentColor" stroke-width="1.4"/><path class="st" d="M9.2 6.5h5.6c-.4 2-1.3 3.4-2.8 4.9-1.5-1.5-2.4-2.9-2.8-4.9z" fill="currentColor"/><path class="sb" d="M12 14.2c1.8 1.9 2.7 3.6 3 6H9c.3-2.4 1.2-4.1 3-6z" fill="currentColor"/></g></svg><img class="lp" data-lp="${j.id}" alt="">`:"…"):"#"+j.id}</div>
    <div class="body"><div class="p">${j.file?`<b style="font-weight:600">${esc(j.file)}</b> · `:""}${esc((j.prompt||"").slice(0,240))}</div>
    <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · <span class="seedc" data-seed="${j.seed}" data-tip="Click to copy the seed">seed ${j.seed}</span>${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.missing?' · <span class="gone">file deleted</span>':""}</div>
    ${j.created||j.finished?`<div class="meta times">${j.created?`added ${clock(j.created)}`:""}${j.finished&&j.status==="done"?` · done ${clock(j.finished)}`:""}${j.finished&&j.started?` · took ${fmt((j.finished-j.started)*(window.LIVE?1:S.demo)/1000)}`:""}</div>`:""}
    ${k==="run"?'<div class="mini"><i></i></div>':""}</div>
    ${k!=="done"?`<button class="x" data-x="${j.id}" title="${k==="run"?"Stop":"Remove"}">${IC.x}</button>`:`<button class="x" data-rm="${j.id}" title="${j.status==="done"&&!j.missing?"Remove from the list — the file stays":"Remove from the list"}">${IC.x}</button>`}</div>`;
- $("qwrap").innerHTML=(run.length?`<div class="qsec">Generating now</div>${run.map(j=>item(j,"run")).join("")}`:"")+
-  `<div class="qsec"><span>Up next ${pend.length?`· ${pend.length} · ~${fmt(left)}`:""}${window.qPaused?' · <b class="paused">paused</b>':""}</span><button id="pauseQ" data-tip="${window.qPaused?"Start the waiting jobs again":"The current image finishes; nothing new starts until you resume"}">${window.qPaused?"Resume":"Pause after this"}</button></div>`+
-  (pend.length?pend.map(j=>item(j,"pend")).join(""):'<div class="empty">Nothing queued</div>')+
-  (done.length?`<div class="qsec qfin${QS.size?" qbar":""}" id="qfin">${finHead(done)}</div>`+done.map(j=>item(j,"done")).join(""):"");
+ const W=$("qwrap");if(!$("qsRun"))W.innerHTML='<div id="qsRun"></div><div id="qsPend"></div><div id="qsFin"></div>';
+ const put=(id,html)=>{const el=$(id);if(QSEC[id]===html)return false;QSEC[id]=html;el.innerHTML=html;return true};   /* a section is rebuilt only when what it shows changed (reordering the waiting jobs left the finished ones alone) */
+ put("qsRun",run.length?`<div class="qsec">Generating now</div>${run.map(j=>item(j,"run")).join("")}`:"");
+ put("qsPend",`<div class="qsec"><span>Up next ${pend.length?`· ${pend.length} · ~${fmt(left)}`:""}${window.qPaused?' · <b class="paused">paused</b>':""}</span><button id="pauseQ" data-tip="${window.qPaused?"Start the waiting jobs again":"The current image finishes; nothing new starts until you resume"}">${window.qPaused?"Resume":"Pause after this"}</button></div>`+
+  (pend.length?pend.map(j=>item(j,"pend")).join(""):'<div class="empty">Nothing queued</div>'));
+ put("qsFin",done.length?`<div class="qsec qfin" id="qfin"></div>`+done.map(j=>item(j,"done")).join(""):"");
+ qsUpdate();   /* the selection (highlights, the header) is applied to whatever is there — never part of the rebuild */
  done.forEach(j=>{const c=document.querySelector(`canvas[data-th="${j.id}"]`);if(c&&j.status==="done"&&!j.missing)paint(c,j,1)});
  if(window.LIVE){const have=new Set(done.map(j=>j.id));for(const id of QT.keys())if(!have.has(id))QT.delete(id);
   $("qwrap").querySelectorAll("[data-tth]").forEach(ph=>{const id=+ph.dataset.tth;let im=QT.get(id);
@@ -30,6 +33,7 @@ function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=
     im.src=`/qthumbs/${id}.jpg`;QT.set(id,im)}
    ph.replaceWith(im)})}
  renderQueueInner.sig=queueSig()}
+const QSEC={};   /* the last markup of each section */
 /* each finished row's thumbnail element, loaded once and moved into every rebuild of the list (a new element would load
    again: the files are never cached by the browser, so the list flashed empty on every visit) */
 const QT=new Map();

@@ -5,7 +5,8 @@ import { $ } from "./dom.js";
 import { lay, rowMode, sizeFrame } from "./layout.js";
 import { onShow, picMode, pv, pvSync } from "./picstate.js";
 import { paint } from "./pictures.js";
-import { S, SIZES } from "./state.js";
+import { SIZES } from "./presets.js";
+import { S } from "./state.js";
 import { tabSync } from "./tabs.js";
 
 /* ======================= full-size viewer ======================= */

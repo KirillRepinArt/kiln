@@ -3,13 +3,14 @@ import { capTxt, stopJob } from "./actions.js";
 import { fmt } from "./boot.js";
 import { browseStatus } from "./browse.js";
 import { $ } from "./dom.js";
-import { current } from "./jobs.js";
+import { current, doneById, jobs } from "./jobs.js";
 import { sizeFrame } from "./layout.js";
 import { api } from "./live.js";
-import { PV, browsed, doneById, onShow, picMode, pv, shownDone } from "./picstate.js";
+import { PV, browsed, onShow, picMode, pv, shownDone } from "./picstate.js";
 import { drawTo, missUI, paint, xfadeEnd } from "./pictures.js";
+import { SEC_PER_STEP, SIZES } from "./presets.js";
 import { justDone, loadJob, peekJob, setJustDone } from "./queue.js";
-import { S, SEC_PER_STEP, SIZES, draft, jobs } from "./state.js";
+import { S, draft } from "./state.js";
 import { forgeOk, forgeStarting } from "./sync.js";
 
 /* ---------- progress: real steps, smooth glide in between, live preview ---------- */
@@ -69,25 +70,11 @@ export function frame() {
     const started = j.step || j.preview_rev;
     prog.classList.remove("cap");
     /* browsing a finished picture while this job renders: the row is about the picture you're looking at (its caption);
-      the job becomes a chip at the row's end — a live thumbnail (soft until the last step, like the cover; a lock with
-      privacy on) and its step and time left; the ring on Start shows its progress (effects.js) */
+      the job's progress is the ring on Start and on the Generating tab (effects.js) */
     const bg = S.view === "gen" && !!browsed(),
       pre = "";
     prog.classList.toggle("bgjob", bg);
     if (bg) {
-      const im = $("pthImg"),
-        key = j.id + ":" + (j.preview_rev || 0);
-      if (im.dataset.k !== key) {
-        im.dataset.k = key;
-        if (j.preview_rev) im.src = `/api/preview/${j.id}?r=${j.preview_rev}`;
-        else im.removeAttribute("src");
-      }
-      $("pth").classList.toggle("soft", j.step < j.steps - 1);
-      $("pchipT").textContent = j.stopping
-        ? "stopping"
-        : started
-          ? `${Math.min(j.step + 1, j.steps)}/${j.steps}${rm != null || j.eta ? ` · ${fmt(left)}` : ""}`
-          : "starting";
       capTxt(browsed());
     } else if (j.stopping) {
       const r = (per - (Date.now() - (j._ss || Date.now()))) / 1000;

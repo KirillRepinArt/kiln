@@ -1,11 +1,11 @@
 /* Kiln · starfield, ambient glow + title/favicon, notifications, veil + embers */
 import { fmt } from "./boot.js";
 import { $ } from "./dom.js";
-import { current, lastDone } from "./jobs.js";
+import { current, jobs, lastDone } from "./jobs.js";
 import { PV, picMode, shownClean, shownDone } from "./picstate.js";
 import { jobProgress } from "./progress.js";
 import { makeCRT, makeCamera, makeCodeBg, makeHalo, makeNightSky, mixHex, skin, themeCols, toHex } from "./skins.js";
-import { S, jobs, save } from "./state.js";
+import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 
 /* ambient glow + window title + favicon progress ring (throttled) */

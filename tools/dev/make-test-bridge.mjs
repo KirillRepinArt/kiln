@@ -26,14 +26,20 @@ const names = JSON.parse(readFileSync("tools/dev/bridge-names.json", "utf8")).fi
 // what a test may assign, and how the owner takes it
 const SET = {
   draft: "setDraft",
-  jobs: "setJobs",
+  jobs: "replaceJobs",
   peekJob: "setPeekJob",
   justDone: "setJustDone",
   qsAnchor: "setQsAnchor",
 };
-const extra = ["setDraft", "setJobs", "setPeekJob", "setJustDone", "setQsAnchor", "lyUnfreeze", "blockSaves"].filter(
-  n => !names.includes(n),
-);
+const extra = [
+  "setDraft",
+  "replaceJobs",
+  "setPeekJob",
+  "setJustDone",
+  "setQsAnchor",
+  "lyUnfreeze",
+  "blockSaves",
+].filter(n => !names.includes(n));
 const all = [
   ...new Set([...names.filter(n => !ALIAS[n]), ...extra, ...names.flatMap(n => (ALIAS[n] ? ALIAS[n].uses : []))]),
 ];

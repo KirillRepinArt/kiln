@@ -14,10 +14,10 @@ import { esc, fmt, nameUI, renderAll, slugify, toast } from "./boot.js";
 import { layoutLeft } from "./cardlayout.js";
 import { copySeed, renderChips, renderPills } from "./composer.js";
 import { $ } from "./dom.js";
-import { jEst } from "./jobs.js";
+import { jEst, jobs, orderPending } from "./jobs.js";
 import { PV, pv } from "./picstate.js";
 import { keepSeedUI } from "./pnginfo.js";
-import { IC, LORAS, P, S, draft, jobs, save, setDraft, setJobs } from "./state.js";
+import { IC, LORAS, P, S, draft, save, setDraft } from "./state.js";
 import { showView } from "./tabs.js";
 
 export function renderQueue() {
@@ -526,11 +526,6 @@ export function initQueue() {
       removeJob(jobs.find(j => j.id == +rm.dataset.rm));
       return;
     }
-    if (e.target.id === "clearDone") {
-      setJobs(jobs.filter(j => j.status === "pending" || j.status === "running"));
-      renderAll();
-      return;
-    }
     const x = e.target.closest("[data-x]");
     if (x) {
       stopJob(jobs.find(j => j.id == +x.dataset.x));
@@ -674,9 +669,7 @@ export function initQueue() {
   $("qwrap").addEventListener("dragend", () => {
     if (!dragEl) return;
     const ids = [...$("qwrap").querySelectorAll('.qi[draggable="true"]')].map(x => +x.dataset.id);
-    const pend = ids.map(id => jobs.find(j => j.id === id)).filter(Boolean);
-    let k = 0;
-    setJobs(jobs.map(j => (j.status === "pending" && pend.includes(j) ? pend[k++] : j))); // the new order, in place of the old
+    orderPending(ids.map(id => jobs.find(j => j.id === id)).filter(Boolean)); // the new order, in place of the old
     dragEl.classList.remove("drag");
     dragId = null;
     dragEl = null;

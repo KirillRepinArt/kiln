@@ -2212,9 +2212,6 @@ body[data-pic="still"] .prog.run .meta,
   opacity: 0.45;
   pointer-events: none;
 }
-.pchip {
-  display: none;
-} /* the running job's chip (live.js still fills it): retired 2026-10-19 — the Generating tab has the progress */
 
 /* ======================= Queue ======================= */
 .qwrap {
@@ -3684,7 +3681,6 @@ body.glass .peekbar button:not(#pkAll),
 body.glass .qsec button,
 body.glass .prog .stop,
 body.glass .prog .resume,
-body.glass .pchip,
 body.glass .chip,
 body.glass .fchips button:not(.on),
 body.glass .iconbtn,

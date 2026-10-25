@@ -8,8 +8,9 @@ import { BAR, lay, layDef, layDrag, layGeo, layRelease, sizeFrame } from "./layo
 import { PWMIN } from "./layoutmath.js";
 import { renderLoras } from "./loras.js";
 import { PV, pv } from "./picstate.js";
+import { RATIOS, SEC_PER_STEP, SIZES } from "./presets.js";
 import { peekButtons, peekJob, updPrompt } from "./queue.js";
-import { IC, LORAS, P, RATIOS, S, SEC_PER_STEP, SIZES, save, setDraft } from "./state.js";
+import { IC, LORAS, P, S, save, setDraft } from "./state.js";
 import { moveThumb, showView } from "./tabs.js";
 import { closeViewer } from "./viewer.js";
 

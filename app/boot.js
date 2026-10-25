@@ -2,10 +2,11 @@
 import { applyMode } from "./cardlayout.js";
 import { applyPH, grow, renderChips, renderPills } from "./composer.js";
 import { $ } from "./dom.js";
+import { jobs } from "./jobs.js";
 import { renderLoras } from "./loras.js";
 import { peekJob, renderQueue, saveJobName, updPrompt } from "./queue.js";
 import { applyFont, applyGlass, applyTheme } from "./settings.js";
-import { P, S, jobs, save } from "./state.js";
+import { P, S, save } from "./state.js";
 import { moveThumb, showView } from "./tabs.js";
 
 /* ======================= misc ======================= */

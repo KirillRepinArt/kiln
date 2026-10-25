@@ -2,13 +2,14 @@
 import { renderAll, slugify, toast } from "./boot.js";
 import { $ } from "./dom.js";
 import { models } from "./forge.js";
-import { doneList } from "./jobs.js";
+import { doneList, dropJobs, jobs } from "./jobs.js";
 import { api } from "./live.js";
 import { PV, pv, pvPrune } from "./picstate.js";
 import { imgs, urlFor } from "./pictures.js";
+import { SIZES } from "./presets.js";
 import { expandVariants, stripComments } from "./prompttext.js";
 import { peekHide, peekJob } from "./queue.js";
-import { LORAS, P, S, SIZES, jobs, save, setJobs } from "./state.js";
+import { LORAS, P, S, save } from "./state.js";
 import { forgeOk, fullNextPoll, poll } from "./sync.js";
 import { V, closeViewer, openViewer } from "./viewer.js";
 
@@ -143,8 +144,7 @@ export async function deleteMany(ids) {
   await Promise.all(
     del.map(j => api(`/api/jobs/${j.id}/delete`, {})).concat(rm.map(j => api(`/api/jobs/${j.id}/remove`, {}))),
   );
-  const gone = new Set(L.map(j => j.id));
-  setJobs(jobs.filter(j => !gone.has(j.id)));
+  dropJobs(L.map(j => j.id));
   pvPrune();
   renderAll();
   const msg = [del.length && `${del.length} moved to the Recycle Bin`, rm.length && `${rm.length} taken off the list`]
@@ -158,8 +158,7 @@ export async function deleteMany(ids) {
 }
 export async function removeMany(ids) {
   await Promise.all([...ids].map(id => api(`/api/jobs/${id}/remove`, {})));
-  const g = new Set(ids);
-  setJobs(jobs.filter(j => !g.has(j.id)));
+  dropJobs(ids);
   pvPrune();
   renderAll();
   poll();
@@ -254,7 +253,7 @@ export async function deleteJob(j) {
     toast(r.error);
     return;
   }
-  setJobs(jobs.filter(x => x.id !== j.id));
+  dropJobs([j.id]);
   if ($("viewer").classList.contains("show") && V.job && V.job.id === j.id) {
     if (nb) openViewer(nb);
     else closeViewer();

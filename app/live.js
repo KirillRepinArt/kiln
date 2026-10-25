@@ -5,10 +5,11 @@ import { act, dn, dnHide, dnHideIn, dnId, dnT, removeJob, setPaused } from "./ac
 import { esc, toast } from "./boot.js";
 import { $ } from "./dom.js";
 import { fg, fu, fx, loadModels, models, rb, refreshUp, rescanLoras, up, upl, us, usl } from "./forge.js";
-import { PV, doneById, pv, shownDone } from "./picstate.js";
+import { doneById, replaceJobs } from "./jobs.js";
+import { PV, pv, shownDone } from "./picstate.js";
 import { imgs, inBin, shownMissing, urlFor } from "./pictures.js";
 import { frame } from "./progress.js";
-import { S, save, setJobs } from "./state.js";
+import { S, save } from "./state.js";
 import { poll } from "./sync.js";
 import { showView, tabGo } from "./tabs.js";
 
@@ -114,10 +115,6 @@ export async function startLive() {
     e.stopPropagation();
     setPaused(false);
   };
-  $("pchip").onclick = e => {
-    e.stopPropagation();
-    pv("close");
-  };
   for (const [el, get] of [[$("sideGen"), () => shownDone()]]) {
     el.addEventListener(
       "click",
@@ -187,7 +184,7 @@ export async function startLive() {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") fetch("/api/state").catch(() => {});
   });
-  setJobs([]);
+  replaceJobs([]);
   await loadModels(false);
   refreshUp();
   if (!models)

@@ -13,11 +13,11 @@
 import { toast } from "./boot.js";
 import { updNav } from "./browse.js";
 import { $ } from "./dom.js";
-import { current, doneList, lastDone } from "./jobs.js";
+import { current, doneById, doneList, lastDone } from "./jobs.js";
 import { sizeFrame } from "./layout.js";
 import { preload, xfadeSnap } from "./pictures.js";
 import { loadJob, peekHide, peekJob, setJustDone } from "./queue.js";
-import { S, jobs } from "./state.js";
+import { S } from "./state.js";
 import { showView, tabSync } from "./tabs.js";
 
 export const PV = {
@@ -29,9 +29,6 @@ export const PV = {
   dir: 1,
   from: null,
 }; /* from: the tab a picture was opened from — ✕ goes back there */ /* dir: the way you last stepped (← -1, → +1) */ /* still: {id, kind:"result"|"reference"}; news: a result that landed while you held a reference (Q1); yielded: the result that gave way to the render — it comes back if the render stops without a picture */
-export function doneById(id) {
-  return id == null ? null : jobs.find(j => j.id === id && j.status === "done") || null;
-}
 export function browsed() {
   return doneById(PV.browse);
 }

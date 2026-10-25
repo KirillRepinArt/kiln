@@ -4,7 +4,7 @@ import { syncH } from "./boot.js";
 import { applyMode, layoutLeft, lyReset, stackW } from "./cardlayout.js";
 import { applyPH } from "./composer.js";
 import { $ } from "./dom.js";
-import { current } from "./jobs.js";
+import { current, jobs } from "./jobs.js";
 import {
   CARDMAX,
   GAP,
@@ -18,7 +18,7 @@ import {
   upgradeLayoutPrefs,
 } from "./layoutmath.js";
 import { PV, onShow, picMode } from "./picstate.js";
-import { S, jobs, save } from "./state.js";
+import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 
 /* Kiln · the page layout: the prompt and the picture area side by side or stacked, their widths and heights,

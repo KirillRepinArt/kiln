@@ -10,7 +10,7 @@ import { closePops, grow, renderPills } from "./composer.js";
 import { $ } from "./dom.js";
 import { status } from "./effects.js";
 import { up } from "./forge.js";
-import { current, doneList, lastDone } from "./jobs.js";
+import { current, doneList, jobs, lastDone, replaceJobs } from "./jobs.js";
 import { BAR, lay, setDock, sizeFrame, tbW } from "./layout.js";
 import { api, st } from "./live.js";
 import { renderLoras } from "./loras.js";
@@ -39,7 +39,7 @@ import {
 } from "./queue.js";
 import { applyTheme } from "./settings.js";
 import { rgba } from "./skins.js";
-import { LORAS, P, S, blockSaves, draft, jobs, save, setDraft, setJobs } from "./state.js";
+import { LORAS, P, S, blockSaves, draft, save, setDraft } from "./state.js";
 import { poll, seen } from "./sync.js";
 import { showView } from "./tabs.js";
 import { closeShown, closeViewer, openViewer } from "./viewer.js";
@@ -76,7 +76,7 @@ export function installTestBridge() {
     genNav: { get: () => genNav },
     grow: { get: () => grow },
     img: { get: () => img },
-    jobs: { get: () => jobs, set: v => setJobs(v) },
+    jobs: { get: () => jobs, set: v => replaceJobs(v) },
     justDone: { get: () => justDone, set: v => setJustDone(v) },
     keepSeedUI: { get: () => keepSeedUI },
     lastDone: { get: () => lastDone },
@@ -117,7 +117,6 @@ export function installTestBridge() {
     seen: { get: () => seen },
     setDock: { get: () => setDock },
     setDraft: { get: () => setDraft },
-    setJobs: { get: () => setJobs },
     setJustDone: { get: () => setJustDone },
     setPaused: { get: () => setPaused },
     setPeekJob: { get: () => setPeekJob },

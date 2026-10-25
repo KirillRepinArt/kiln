@@ -4,11 +4,12 @@ import { renderAll, toast } from "./boot.js";
 import { $ } from "./dom.js";
 import { onJobDone } from "./effects.js";
 import { forgeMsg, loadModels, models, refreshUp } from "./forge.js";
-import { current, lastDone } from "./jobs.js";
+import { current, jobs, lastDone, replaceJobs } from "./jobs.js";
 import { PV, pv, pvPrune } from "./picstate.js";
+import { SEC_PER_STEP } from "./presets.js";
 import { forgetNextEstimate } from "./progress.js";
 import { dragId, peekJob, setPeekJob } from "./queue.js";
-import { S, SEC_PER_STEP, jobs, save, setJobs } from "./state.js";
+import { S, save } from "./state.js";
 
 /* ---------- server job -> UI job ---------- */
 function toUI(s) {
@@ -102,7 +103,7 @@ export async function poll() {
   }
   since = s.sig || "";
   const prev = new Map(jobs.map(j => [j.id, j]));
-  setJobs(
+  replaceJobs(
     s.jobs.map(x => {
       const u = toUI(x),
         o = prev.get(u.id);

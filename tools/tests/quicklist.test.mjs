@@ -38,12 +38,13 @@ export async function verticalTitleClicks(k, t) {
 verticalTitleClicks.opts = { width: 1872, height: 1080, step: 0.05 };
 
 export async function privacyWithNoPicture(k, t) {
+  await k.sleep(1000); // the launch glide: measure the frame where it settles, not on its way
   const f = await k.rect("#frame");
   await k.mouse(f.left + f.width / 2, f.top + f.height / 2);
-  await k.sleep(400);
   t.ok(
-    await k.ev(
+    await k.until(
       `!$("frame").classList.contains("has")&&getComputedStyle($("cbtn")).display!=="none"&&+getComputedStyle($("cbtn")).opacity>.9`,
+      2000,
     ),
     "the eye is on the empty frame (on hover)",
   );

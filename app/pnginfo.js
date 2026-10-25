@@ -188,7 +188,7 @@ keepSeedUI();
 $("pSend").onclick = () => {
   if (!parsed) return;
   P.value = parsed.prompt;
-  draft = parsed.prompt;
+  setDraft(parsed.prompt);
   if (parsed.steps) S.steps = parsed.steps;
   if (parsed.seed && S.keepSeed) {
     S.seed = parsed.seed;

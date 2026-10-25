@@ -352,15 +352,17 @@
     }
     since = s.sig || "";
     const prev = new Map(jobs.map(j => [j.id, j]));
-    jobs = s.jobs.map(x => {
-      const u = toUI(x),
-        o = prev.get(u.id);
-      if (o && o.status === "running" && u.status === "running") {
-        u._ss = o._ss;
-        u._lastStep = o._lastStep;
-      }
-      return u;
-    });
+    setJobs(
+      s.jobs.map(x => {
+        const u = toUI(x),
+          o = prev.get(u.id);
+        if (o && o.status === "running" && u.status === "running") {
+          u._ss = o._ss;
+          u._lastStep = o._lastStep;
+        }
+        return u;
+      }),
+    );
     for (const j of jobs) {
       const jk = j.id + ":" + (j.created || 0); /* the server can hand an id out again after its job left the list */
       if (j.status === "done" && !seen.has(jk)) {
@@ -395,7 +397,7 @@
       }
     }
     firstPoll = false;
-    if (peekJob) peekJob = jobs.find(j => j.id === peekJob.id) || peekJob;
+    if (peekJob) setPeekJob(jobs.find(j => j.id === peekJob.id) || peekJob);
     pvPrune();
     const ns = jobs.map(j => `${j.id}:${j.status}:${j.file}:${j.missing ? 1 : 0}:${j.name || ""}`).join("|");
     if (ns !== sig) {
@@ -560,7 +562,7 @@
       del.map(j => api(`/api/jobs/${j.id}/delete`, {})).concat(rm.map(j => api(`/api/jobs/${j.id}/remove`, {}))),
     );
     const gone = new Set(L.map(j => j.id));
-    jobs = jobs.filter(j => !gone.has(j.id));
+    setJobs(jobs.filter(j => !gone.has(j.id)));
     pvPrune();
     renderAll();
     const msg = [del.length && `${del.length} moved to the Recycle Bin`, rm.length && `${rm.length} taken off the list`]
@@ -575,7 +577,7 @@
   window.removeMany = async ids => {
     await Promise.all([...ids].map(id => api(`/api/jobs/${id}/remove`, {})));
     const g = new Set(ids);
-    jobs = jobs.filter(j => !g.has(j.id));
+    setJobs(jobs.filter(j => !g.has(j.id)));
     pvPrune();
     renderAll();
     poll();
@@ -681,7 +683,7 @@
       toast(r.error);
       return;
     }
-    jobs = jobs.filter(x => x.id !== j.id);
+    setJobs(jobs.filter(x => x.id !== j.id));
     if ($("viewer").classList.contains("show") && V.job && V.job.id === j.id) {
       if (nb) openViewer(nb);
       else closeViewer();
@@ -1125,7 +1127,7 @@
             void f.offsetWidth;
             f.classList.add("reveal");
             setTimeout(() => f.classList.remove("reveal"), 1200);
-            justDone = null;
+            setJustDone(null);
           }
           paint($("cv"), d, 1);
         }
@@ -1173,7 +1175,7 @@
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") fetch("/api/state").catch(() => {});
   });
-  jobs = [];
+  setJobs([]);
   await loadModels(false);
   refreshUp();
   if (!models)

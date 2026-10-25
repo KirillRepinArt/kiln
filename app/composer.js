@@ -257,7 +257,7 @@ function applyPH() {
       sizeFrame();
       return;
     }
-    lyFrozen = false;
+    lyUnfreeze();
     layoutLeft();
     save();
   });
@@ -566,7 +566,7 @@ P.addEventListener("input", () => {
   grow();
   requestAnimationFrame(layoutLeft);
   if (!peekJob) {
-    draft = P.value;
+    setDraft(P.value);
     save();
   }
   updPrompt();

@@ -82,6 +82,14 @@ const S = {
 };
 let draft = "";
 let jobs = [];
+/* other files replace the job list and the draft only through these: a module's variables can be assigned only
+   inside it (everyone else sees the new value) */
+function setJobs(list) {
+  jobs = list;
+}
+function setDraft(text) {
+  draft = text;
+}
 try {
   const sv = JSON.parse(localStorage.getItem("kiln_state") || "{}");
   Object.assign(S, sv.S || {});

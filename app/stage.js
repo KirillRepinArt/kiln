@@ -20,7 +20,7 @@ function showView(v) {
       $("qwrap").scrollTop = 0;
       if (typeof QS !== "undefined") {
         QS.clear();
-        qsAnchor = null;
+        setQsAnchor(null);
       }
     } // the prompt box (and its peek) is left as it is
     if (was === "loras") {
@@ -346,9 +346,7 @@ function setDock(z) {
   layMorph(() => {
     S.dock = z;
     save();
-    lyFrozen = false;
-    lyTop = null;
-    lyCy = null;
+    lyReset();
     applyMode();
     sizeFrame();
     layoutLeft();

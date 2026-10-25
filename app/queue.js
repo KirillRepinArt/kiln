@@ -289,7 +289,7 @@ $("qwrap").addEventListener("click", e => {
     return;
   }
   if (e.target.id === "clearDone") {
-    jobs = jobs.filter(j => j.status === "pending" || j.status === "running");
+    setJobs(jobs.filter(j => j.status === "pending" || j.status === "running"));
     renderAll();
     return;
   }
@@ -321,6 +321,16 @@ function browseTo(j) {
 let undo = null;
 var justDone = null;
 let peekJob = null;
+/* written from other files only through these */
+function setPeekJob(j) {
+  peekJob = j;
+}
+function setJustDone(id) {
+  justDone = id;
+}
+function setQsAnchor(id) {
+  qsAnchor = id;
+}
 /* the peek bar only offers what would change something: no "Reuse prompt" when the prompt is already your draft;
    "Use this seed" when only the seed differs; nothing but ✕ when it all matches */
 function sameLoras(j) {
@@ -516,7 +526,7 @@ function reuse(all, seedToo) {
     S: { mp: S.mp, ar: S.ar, steps: S.steps, seedMode: S.seedMode, seed: S.seed, pname: S.pname },
     loras: LORAS.map(l => ({ on: l.on, w: l.w })),
   };
-  draft = j.raw || j.prompt;
+  setDraft(j.raw || j.prompt);
   if ((j.name || "").trim()) S.pname = j.name.trim();
   /* reusing the working file, title included: the next image joins its series */
   if (all) {
@@ -545,7 +555,7 @@ function reuse(all, seedToo) {
       : `Reused #${j.id}'s prompt`,
     "Undo",
     () => {
-      draft = prev.draft;
+      setDraft(prev.draft);
       P.value = draft;
       Object.assign(S, prev.S);
       $("pname").value = S.pname || "";
@@ -647,7 +657,7 @@ $("qwrap").addEventListener("dragend", () => {
   const ids = [...$("qwrap").querySelectorAll('.qi[draggable="true"]')].map(x => +x.dataset.id);
   const pend = ids.map(id => jobs.find(j => j.id === id)).filter(Boolean);
   let k = 0;
-  jobs = jobs.map(j => (j.status === "pending" && pend.includes(j) ? pend[k++] : j)); // the new order, in place of the old
+  setJobs(jobs.map(j => (j.status === "pending" && pend.includes(j) ? pend[k++] : j))); // the new order, in place of the old
   dragEl.classList.remove("drag");
   dragId = null;
   dragEl = null;

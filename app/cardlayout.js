@@ -12,6 +12,15 @@ let lyFrozen = false,
   lyIB = null,
   lyBot = null,
   lyDrag = false;
+/* the card's held layout let go: frozen while you work, its top and centre forgotten (also from other files) */
+function lyReset() {
+  lyFrozen = false;
+  lyTop = null;
+  lyCy = null;
+}
+function lyUnfreeze() {
+  lyFrozen = false;
+}
 /* S.pos (wide window): "top" = card top level with the image top (name row beside the tabs), "mid" = centred on the
    image, "bot" = card bottom level with the status line. A bottom card grows upward while you type. */
 function anchorTop(pos, H, colH) {
@@ -55,9 +64,7 @@ function applyMode() {
       T = $("ltitle");
     L.classList.add("nodur");
     T.classList.add("nodur");
-    lyFrozen = false;
-    lyTop = null;
-    lyCy = null;
+    lyReset();
     sizeFrame();
     layoutLeft();
     moveThumb(true);

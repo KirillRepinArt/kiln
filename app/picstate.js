@@ -115,7 +115,7 @@ function pv(ev, arg) {
       }
       PV.still = { id: arg.id, kind: "result" };
       PV.yielded = null;
-      justDone = arg.id;
+      setJustDone(arg.id);
       break;
     case "preview" /* the render has a picture of its own: a result gives way to it (cross-fade) */:
       if (PV.browse == null && PV.still && PV.still.kind === "result") {

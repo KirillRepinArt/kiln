@@ -62,9 +62,13 @@ export async function stopping(k, t) {
   const s = await k.rect("#stopBtn");
   t.ok(s.height >= 34, "Stop is a proper button", s.height);
   await k.ev(`($("stopBtn").click(),1)`);
-  await k.sleep(300);
-  t.ok(await k.ev(`$("prog").classList.contains("stopping")`), "the bar freezes and greys at once");
-  t.ok(/Stopping after this step/.test(await k.ev(`$("ptxt").textContent`)), "and says when it will stop");
+  // within the running step (3 s): the click asks the server first, which took longer than a fixed 0.3 s on CI
+  t.ok(await k.until(`$("prog").classList.contains("stopping")`, 1500, 50), "the bar freezes and greys at once");
+  t.ok(
+    await k.until(`/Stopping after this step/.test($("ptxt").textContent)`, 1500, 50),
+    "and says when it will stop",
+    await k.ev(`$("ptxt").textContent`),
+  );
   t.ok(await k.until(`!current()`, 15000), "the job stops");
   t.ok(await k.until(`!$("prog").classList.contains("stopping")`, 3000), "the status row goes back to normal");
 }

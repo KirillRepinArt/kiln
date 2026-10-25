@@ -145,7 +145,8 @@ export async function pressOutline(k, t) {
 export async function startWhileRunning(k, t) {
   await k.job("a slow one", { steps: 20 });
   await k.until(`!!current()`, 20000, 100);
-  await k.sleep(800);
+  // Start's state follows the status loop (every 0.4 s) and the triangle fades over 0.2 s: wait for it, don't time it
+  await k.until(`/255, 255, 255/.test(getComputedStyle(document.querySelector("#play svg path")).fill)`, 3000, 50);
   const s = await k.ev(
     `(()=>{const p=getComputedStyle($("play")),b=getComputedStyle($("badge"),"::before");return{anim:p.animationName,bg:p.backgroundImage.slice(0,40),fill:getComputedStyle(document.querySelector("#play svg path")).fill,ring:b.content!=="none"&&b.display!=="none"}})()`,
   );

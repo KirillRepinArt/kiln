@@ -1,6 +1,7 @@
 /* CodeMirror 6 prompt editor, bundled in app/vendor/codemirror.js (works offline). Opened as a file, the browser won't
    load a local module, so it tries the CDN; failing both, the plain textarea stays. */
-(async function () {
+/* called from main.js, last */
+async function startEditor() {
   const V = "?deps=@codemirror/state@6.4.1";
   let cm;
   try {
@@ -266,4 +267,4 @@
     view.scrollDOM.addEventListener("scroll", edge, { passive: true });
     window.__cm = view;
   }
-})();
+}

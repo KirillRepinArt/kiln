@@ -57,6 +57,11 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
 - Drag to reorder, × to remove, **Stop** to cancel the running job (it stops after the current step — Forge can't
   stop mid-step — and says so). **×N** queues a batch — random seeds, or counting up from a fixed seed.
 - **Pause after this** (Queue tab): the current image finishes, nothing new starts until you resume.
+- **Select** finished pictures: the round box on a row, Ctrl-click, Shift-click a range (then a plain click adds or
+  removes), Ctrl+A, Esc. The Finished header turns into the actions: **All “Fox”** (the whole series), Select all,
+  **Remove from list**, **Delete** (Del) — to the Recycle Bin with one Undo for all of them.
+- Built for long queues: hundreds of finished pictures open and scroll instantly — small thumbnails made once and kept,
+  only the rows on screen drawn, and while a job renders Kiln asks the server only for its progress.
 - Rows show when a job was added, finished and how long it took; the running row shows the live render (not with
   privacy on); hover a finished thumbnail for a bigger look. A waiting job's name can be changed in its peek.
 - **Delete** an image (`Del`, or the trash button beside it): it goes to the Recycle Bin, with Undo. ✕ on a
@@ -65,8 +70,8 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
   (the original file), **Save back** (if Kiln still holds it from this session), **Render again** (same seed, same
   file name) or **Remove from list**.
 - An **upscale** goes to the front of the line: seconds, right after the current image.
-- Click a finished job to open it in the Gallery. Click a waiting or running job — or the status line under
-  the image — to **peek** at its prompt without touching your draft, then **Reuse prompt** or **Reuse all**
+- Click a finished job to open it in the Gallery (✕ brings you back to the Queue). Click a waiting or running job to
+  **peek** at its prompt without touching your draft, then **Reuse prompt** or **Reuse all**
   (settings and LoRAs; its seed too if the 🔒 next to it is on — off gives a variation). Reusing a named image also
   takes its name, so the next one joins the series. The same buttons, in the same places, on every picture.
 - **Honest time estimates** from your own history: the median of your last five runs at the same image size and
@@ -116,7 +121,9 @@ The queue shows which variant each job got, so a good result can be traced back.
   it; a stopped render brings back the picture before it). The **Gallery** tab opens on the picture you're looking at;
   the **Generating** tab always takes you back to what's being made. Arrows always change the picture.
 - Click the render to see its prompt in the box (✕ / `Esc` gives your draft back); while you edit something else, the
-  status line says the render is *another prompt*.
+  status line says the render is *another prompt*. Whenever the box shows a job's prompt, ▶ is **Vary** (another like
+  it, new seed), and typing in it makes it your draft right away (Ctrl+Z steps back to your old one). `→` on a finished
+  picture takes it off and shows the render.
 - A picture that finishes while you're on another tab, or browsing the Gallery, shows as a small card under the
   Generating tab — click it to open the picture.
 - **Cover** (Settings → Cover): full, light or off, optionally skipped on jobs under 10 s; hover the image to peek.
@@ -140,7 +147,8 @@ The queue shows which variant each job got, so a good result can be traced back.
   **G** of Generating (cut clear of the letters) fills with its progress wherever you are; ▶ flows with the bar's colours
   and its queue count gets a ring of its own. An empty Generating
   says what's next and the estimated time. Hover the MP pill for the exact pixel size.
-- Kiln's own messages appear by the prompt, never over the controls. **Notifications** say only that an image is
+- Kiln's own messages appear by the prompt, never over the controls; messages about the queue appear under the Queue
+  tab. Long prompts scroll under the glass controls and fade into the box's edges. **Notifications** say only that an image is
   ready — never the prompt or the name. Reopening Kiln tells you how
   many images finished while it was closed.
 - `?` lists every keyboard shortcut.

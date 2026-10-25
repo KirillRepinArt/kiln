@@ -2,6 +2,26 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
+## v0.6 — 2026-10-25 (queue at scale)
+
+- **Fast with hundreds of pictures:** while a job renders Kiln asks the server only for its progress (at 500 jobs each
+  check went from ~900 KB to under 1 KB); queue thumbnails are small files made once and kept (opening the Queue no
+  longer decodes every full picture), only the rows on screen are drawn, and Kiln keeps at most 16 pictures decoded.
+  Measured on 500 pictures with a job rendering: the Queue opens in ~55 ms (was 228 ms).
+- **Select** finished pictures — the round box, Ctrl / Shift-click, Ctrl+A, Esc, the whole series — and Delete them
+  with one Undo, or Remove them from the list. Selecting and reordering never move or redraw the other rows.
+- The Queue: "Generating now" / "Up next" / "Finished"; an hourglass until the running job's first preview; ✕ on a
+  picture opened from the Queue brings you back there.
+- Whenever the prompt box shows a job's prompt, ▶ is **Vary**; typing in it makes it your draft at once (Ctrl+Z goes
+  back). `→` takes a finished picture off Generating.
+- Tab switches keep the tab bar in place (its pill slides) and morph the panel to its new size; drop zones as glass
+  plates, below the tab bar; one outline rule (a place to drop: a line inset on a plate; something you move: a line
+  outside it).
+- The prompt box: equal insets, the ✕ and the character count in its corner, text scrolling under the glass controls and
+  fading into the edges, the scrollbar clear of both; queue messages under the Queue tab; a gentler Start hover; a soft
+  keyboard focus ring.
+- **Fixes:** text under the pills wasn't blurred in the Gallery; a prompt's scrollbar gutter could stay after it fit.
+
 ## v0.5 — 2026-10-24 (consolidation)
 
 - **The picture area, one set of rules:** Generating is the live view. A finished picture stays there at full quality

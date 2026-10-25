@@ -707,7 +707,7 @@ export function initComposer() {
       if (Math.abs(dx) > 3) drag.moved = true;
       if (drag.moved) setW(drag.l, drag.w0 + Math.round(dx / 4) * 0.01 * (e.shiftKey ? 1 : 5), drag.el);
     });
-    box.addEventListener("pointerup", e => {
+    box.addEventListener("pointerup", () => {
       if (!drag) return;
       const d = drag;
       drag = null;

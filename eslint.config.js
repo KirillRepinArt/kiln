@@ -16,8 +16,6 @@ export default [
   {
     files: ["app/**/*.js"],
     languageOptions: { sourceType: "module", ecmaVersion: 2024, globals: { ...globals.browser } },
-    // dead code that sharing one global space hid: a warning until it's removed (the next commit), then an error again
-    rules: { "no-unused-vars": ["warn", { caughtErrors: "none" }] },
   },
   {
     files: ["tools/**/*.mjs", "*.js"],

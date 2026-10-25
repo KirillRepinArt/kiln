@@ -94,7 +94,6 @@ function fitBox(el, ar, bw, bh) {
   el.style.height = h + "px";
 }
 export let BAR = 66; // the status block under the picture: 12 + track 10 + 7 + status row 36; a caption: 6 + row 36 + 4; nothing: 24
-const inGallery = () => S.view === "gen" && !!browsed();
 /* what the row under the picture is: "bar" (rendering, or a paused queue), "cap" (a finished picture's caption), "none" */
 export function rowMode() {
   if (S.view !== "gen") return "bar";
@@ -242,7 +241,7 @@ export function layDrag(edge, g0, dx) {
   return g;
 }
 /* prompt on the right: the left margin sits next to the image area's outer edge */
-function layDragR(edge, g0, dx, W) {
+function layDragR(edge, g0, dx) {
   const g = Object.assign({}, g0);
   if (edge === "po") {
     const pw = Math.max(PWMIN, Math.min(CARDMAX, g0.pw + g0.mR, g0.pw - dx));
@@ -517,15 +516,12 @@ function bez(x1, y1, x2, y2) {
     return f(t, y1, y2);
   };
 }
-const eIn = bez(0.4, 0, 1, 1),
-  eOut = bez(0, 0, 0.2, 1),
-  eMove = bez(0.45, 0, 0.25, 1),
-  eCrop = bez(
-    0.2,
-    0.6,
-    0.3,
-    1,
-  ); /* eCrop: the box reaches the middle in ~¼ of the time (the user: the contraction ×2), then opens out slowly */
+const eCrop = bez(
+  0.2,
+  0.6,
+  0.3,
+  1,
+); /* eCrop: the box reaches the middle in ~¼ of the time (the user: the contraction ×2), then opens out slowly */
 /* the crop and the reveal run on the SCREEN: the panel the frame sits in may be gliding (the pair re-centring), and a
    morph written in the panel's coordinates drifted with it — lopsided. Each frame the box is placed on screen and the
    panel's current offset taken off. The target is read from the frame's data (sizeFrame keeps it there while a morph
@@ -559,13 +555,7 @@ function frameMorph(o) {
   f.style.setProperty("--nw", px(n0.w));
   f.style.setProperty("--nh", px(n0.h));
   f.classList.add("morph");
-  const L = (a, b, p) => ({
-      l: a.l + (b.l - a.l) * p,
-      t: a.t + (b.t - a.t) * p,
-      w: a.w + (b.w - a.w) * p,
-      h: a.h + (b.h - a.h) * p,
-    }),
-    t0 = performance.now();
+  const t0 = performance.now();
   if (x) {
     x.dataset.morph = "1";
     x.getAnimations().forEach(q => q.cancel());

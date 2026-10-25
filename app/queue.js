@@ -209,7 +209,6 @@ export function browseTo(j) {
   PV.promptClosed = false;
   pv("browse", j);
 }
-let undo = null;
 export var justDone = null;
 export let peekJob = null;
 /* written from other files only through these */

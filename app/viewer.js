@@ -102,7 +102,7 @@ export function initViewer() {
         else vZoomAt(1, x, y);
       }, 230);
     });
-    el.addEventListener("dblclick", e => {
+    el.addEventListener("dblclick", () => {
       clearTimeout(clickT);
       if (V.job) openInApp(V.job);
     });

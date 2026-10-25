@@ -271,7 +271,6 @@ export function makeNightSky() {
   const aur = makeAurora();
   let stars = [],
     ridge = [],
-    ridge2 = [],
     key = "";
   return {
     draw(ctx, W, H, t, d, cols, op) {
@@ -299,10 +298,6 @@ export function makeNightSky() {
         ridge = Array.from(
           { length: 97 },
           (_, i) => 0.55 * fbm(i * 0.09, 3.7) + 0.45 * Math.pow(fbm(i * 0.23, 8.1), 1.6),
-        );
-        ridge2 = Array.from(
-          { length: 97 },
-          (_, i) => 0.6 * fbm(i * 0.06 + 11, 2.3) + 0.4 * Math.pow(fbm(i * 0.17 + 4, 5.9), 1.4),
         );
       }
       const land = !!op.landscape,
@@ -1435,7 +1430,6 @@ export function makeCodeBg() {
     key = "",
     streams = [],
     fatT = 0,
-    acc = 0,
     events = [],
     evT = 8000 + Math.random() * 12000;
   const spawn = (W, H, d, run, fx, fat, first) => {

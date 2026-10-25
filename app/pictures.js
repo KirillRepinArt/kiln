@@ -132,7 +132,7 @@ export function preload(j) {
     e.i.decode().catch(() => {});
   } catch (_) {}
 }
-export function paint(cv, j, progress) {
+export function paint(cv, j) {
   const u = urlFor(j);
   if (!u) return;
   xfadeFrom(cv, j.id);
@@ -165,7 +165,7 @@ export function paint(cv, j, progress) {
     }
   });
 }
-export function missing(cv, j) {
+export function missing(cv) {
   const dpr = devicePixelRatio || 1,
     fd = cv.id === "cv" && $("frame").dataset,
     W = Math.max(64, Math.round(((fd && +fd.tw) || cv.clientWidth || 300) * dpr)),

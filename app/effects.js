@@ -3,18 +3,7 @@ import { $ } from "./dom.js";
 import { S, jobs, save } from "./state.js";
 import { current, lastDone, moveThumb } from "./stage.js";
 import { PV, picMode, shownClean, shownDone } from "./picstate.js";
-import {
-  makeAurora,
-  makeCRT,
-  makeCamera,
-  makeCodeBg,
-  makeHalo,
-  makeNightSky,
-  mixHex,
-  skin,
-  themeCols,
-  toHex,
-} from "./skins.js";
+import { makeCRT, makeCamera, makeCodeBg, makeHalo, makeNightSky, mixHex, skin, themeCols, toHex } from "./skins.js";
 import { fmt } from "./boot.js";
 import { jobProgress } from "./progress.js";
 
@@ -198,13 +187,11 @@ export function initEffects() {
       H = 0,
       stars = [],
       shoot = null,
-      last = 0,
       lastDraw = 0,
       was = "",
       bcols = null,
       bcT = 0;
-    const aur = makeAurora(),
-      night = makeNightSky(),
+    const night = makeNightSky(),
       code = makeCodeBg();
     let lastIn = performance.now(),
       dimV = 1,
@@ -246,7 +233,6 @@ export function initEffects() {
           c.clearRect(0, 0, W, H);
         }
         if (t - lastDraw < (current() ? 49 : 31)) {
-          last = t;
           requestAnimationFrame(draw);
           return;
         }
@@ -279,7 +265,6 @@ export function initEffects() {
             reduce,
             holes,
           });
-          last = t;
           requestAnimationFrame(draw);
           return;
         }
@@ -341,7 +326,6 @@ export function initEffects() {
         }
         c.globalAlpha = 1;
       } else if (W && !cv.classList.contains("on") && getComputedStyle(cv).opacity < 0.02) c.clearRect(0, 0, W, H);
-      last = t;
       requestAnimationFrame(draw);
     }
     requestAnimationFrame(draw);
@@ -374,8 +358,7 @@ export function initEffects() {
       embersHalf = false,
       cols = ["#FF8A00", "#FF5E8A", "#3FE0F0"],
       colT = 0;
-    const aur = makeAurora(),
-      crt = makeCRT(),
+    const crt = makeCRT(),
       cam = makeCamera();
     let crtJob = null,
       sweepT = 0,
@@ -542,7 +525,6 @@ export function initEffects() {
      never a jump. ~20 fps: it moves slowly. */
       {
         const gm = (S.set || {}).glow || "gen",
-          run = !!current(),
           on =
             cover0 === "camera" &&
             gm !== "off" &&

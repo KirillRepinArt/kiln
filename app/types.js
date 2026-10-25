@@ -97,7 +97,7 @@
  * @property {number | null} [clearedId] the finished picture you closed with ✕
  * @property {LayoutPrefs} [lay]     your layout sizes
  * @property {"left" | "right" | "below"} [dock]  where the prompt goes
- * @property {"top" | "mid"} [pos]   wide window: the prompt card's height position
+ * @property {"top" | "mid" | "bot"} [pos]  wide window: where the prompt card rests (picture top / centre / status line)
  * @property {"" | "full" | "match"} [hmode]  the prompt box's height mode
  * @property {boolean} [vfit]        Vertical: the prompt box as wide as the picture (Fit width)
  * @property {number} [sch]          Vertical: the prompt slot's height (0 = automatic)
@@ -126,6 +126,21 @@
  * @property {boolean} frameHold     the layout is held (the prompt box's bottom edge being dragged)
  * @property {"bar" | "none" | null} row  the row under the picture: the progress bar, or nothing
  * @property {number} colW           Vertical: the picture column's width (0 otherwise)
+ */
+
+/**
+ * The prompt card's placement (wide window), moment to moment. Frozen while you work in it (pointer over it, or its
+ * editor focused): it only grows downward, so nothing moves under the cursor; ~0.5 s after you leave it re-centres.
+ * @typedef {object} CardState
+ * @property {boolean} frozen
+ * @property {boolean} hover          the pointer is over the card
+ * @property {number | undefined} thawTimer
+ * @property {number | null} top      its top (column coordinates)
+ * @property {number | null} bottom   its bottom, chip row included
+ * @property {number | null} cy       the picture's vertical centre — what "mid" centres on
+ * @property {number | null} imgTop   the picture's top — "top" lines up with it
+ * @property {number | null} imgBottom the status line under the picture — "bot" lines up with it
+ * @property {boolean} drag           the card is being dragged to a new resting place
  */
 
 export {};

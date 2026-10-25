@@ -17,7 +17,12 @@ for (const f of readdirSync("app").filter(f => f.endsWith(".js"))) {
         JSON.stringify(x.id, (k, v) => (v && v.type === "Identifier" && k !== "key" && (owner[v.name] = f), v));
   }
 }
-const names = JSON.parse(readFileSync("tools/dev/bridge-names.json", "utf8")).filter(n => owner[n]);
+// names the tests still use for state that moved: what they read now (and the module names that needs)
+const ALIAS = {
+  lyFrozen: { get: "card.frozen", uses: ["card", "lyUnfreeze"] },
+  lyTop: { get: "card.top", uses: ["card"] },
+};
+const names = JSON.parse(readFileSync("tools/dev/bridge-names.json", "utf8")).filter(n => owner[n] || ALIAS[n]);
 // what a test may assign, and how the owner takes it
 const SET = {
   draft: "setDraft",
@@ -29,7 +34,9 @@ const SET = {
 const extra = ["setDraft", "setJobs", "setPeekJob", "setJustDone", "setQsAnchor", "lyUnfreeze", "blockSaves"].filter(
   n => !names.includes(n),
 );
-const all = [...names, ...extra];
+const all = [
+  ...new Set([...names.filter(n => !ALIAS[n]), ...extra, ...names.flatMap(n => (ALIAS[n] ? ALIAS[n].uses : []))]),
+];
 const byFile = {};
 for (const n of all) (byFile[owner[n]] ||= []).push(n);
 const imports = Object.entries(byFile)
@@ -45,7 +52,7 @@ const props = names
         : n === "save"
           ? "set: () => blockSaves() /* a test replacing save = no more saves in this page */"
           : null;
-    return `    ${n}: { get: () => ${n}${set ? ", " + set : ""} },`;
+    return `    ${n}: { get: () => ${ALIAS[n] ? ALIAS[n].get : n}${set ? ", " + set : ""} },`;
   })
   .join("\n");
 writeFileSync(

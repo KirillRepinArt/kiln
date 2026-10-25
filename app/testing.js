@@ -5,7 +5,7 @@
 import { act, addJobs, deleteJob, removeMissing, setPaused, stopJob, vary } from "./actions.js";
 import { nameUI, toast } from "./boot.js";
 import { genNav, updNav } from "./browse.js";
-import { chipsH, layoutLeft, lyFrozen, lyTop, lyUnfreeze } from "./cardlayout.js";
+import { card, chipsH, layoutLeft, lyUnfreeze } from "./cardlayout.js";
 import { closePops, grow, renderPills } from "./composer.js";
 import { $ } from "./dom.js";
 import { status } from "./effects.js";
@@ -84,7 +84,7 @@ export function installTestBridge() {
     layoutLeft: { get: () => layoutLeft },
     loadJob: { get: () => loadJob },
     lyFrozen: {
-      get: () => lyFrozen,
+      get: () => card.frozen,
       set: v =>
         v
           ? (() => {
@@ -92,7 +92,7 @@ export function installTestBridge() {
             })()
           : lyUnfreeze(),
     },
-    lyTop: { get: () => lyTop },
+    lyTop: { get: () => card.top },
     lyUnfreeze: { get: () => lyUnfreeze },
     missing: { get: () => missing },
     nameFrom: { get: () => nameFrom },

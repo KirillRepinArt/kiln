@@ -8,6 +8,10 @@ import {
   stackColumnW,
   framePlacement,
   upgradeLayoutPrefs,
+  promptSlotH,
+  cardAnchorTop,
+  cardHeightMode,
+  cardPlacement,
   GAP,
   MMIN,
   PWMIN,
@@ -114,4 +118,51 @@ test("older saved layouts become today's: shares of the window → px, once", ()
   assert.equal(upgradeLayoutPrefs(today, 1500), today, "today's format is left alone");
   assert.equal(upgradeLayoutPrefs({ pw: 680, rw: 660, iw: null }, 1500).v, 3, "no version: already px, just labelled");
   assert.equal(upgradeLayoutPrefs(undefined, 1500), undefined, "nothing saved: nothing to do");
+});
+
+/* ---------- the prompt card ---------- */
+const anchors = { it: 100, ib: 700, cy: 400 }; // picture top 100, status line 700, centre 400
+
+test("Vertical: the prompt slot is yours, or ~42 % of the window (≤ 250), between 200 px and 70 % of it", () => {
+  assert.equal(promptSlotH(0, 1000), 250, "default: 420 → capped at 250");
+  assert.equal(promptSlotH(0, 400), 200, "never below 200");
+  assert.equal(promptSlotH(600, 1000), 600, "yours");
+  assert.equal(promptSlotH(900, 1000), 700, "never above 70 % of the window");
+});
+
+test("the card rests at the picture's top, centre or status line — inside the column", () => {
+  assert.equal(cardAnchorTop("top", 300, 900, anchors), 100);
+  assert.equal(cardAnchorTop("mid", 300, 900, anchors), 250, "centred on the picture");
+  assert.equal(cardAnchorTop("bot", 300, 900, anchors), 400, "its bottom on the status line");
+  assert.equal(cardAnchorTop("bot", 300, 900, { ...anchors, ib: 1200 }), 600, "never past the column's end");
+  assert.equal(
+    cardAnchorTop("mid", 300, 900, { it: null, ib: null, cy: null }),
+    300,
+    "no picture: the column's centre",
+  );
+});
+
+test("height modes: Full = the column, Match = picture top to status line; too short → its least height, centred", () => {
+  assert.deepEqual(cardHeightMode("full", 900, 40, 200, anchors), { top: 0, H: 860 });
+  assert.deepEqual(cardHeightMode("match", 900, 40, 200, anchors), { top: 100, H: 560 });
+  assert.deepEqual(cardHeightMode("match", 900, 40, 200, { it: 300, ib: 400, cy: 350 }), { top: 230, H: 200 });
+});
+
+test("the card: your height or its text's, within the room", () => {
+  const c = { colH: 900, CH: 40, pos: "mid", frozen: false, prevTop: null, prevBottom: null, a: anchors };
+  assert.equal(cardPlacement({ ...c, pph: 0, naturalH: 300 }).H, 300, "the text's");
+  assert.equal(cardPlacement({ ...c, pph: 500, naturalH: 300 }).H, 500, "yours");
+  assert.equal(cardPlacement({ ...c, pph: 100, naturalH: 300 }).H, 240, "yours, never under 240");
+  assert.equal(cardPlacement({ ...c, pph: 0, naturalH: 2000 }).H, 860, "never more than the room");
+});
+
+test("frozen while you work: the top stays put and only the bottom grows (a bottom card grows upward)", () => {
+  const c = { colH: 900, CH: 40, pph: 0, naturalH: 500, frozen: true, a: anchors };
+  const mid = cardPlacement({ ...c, pos: "mid", prevTop: 200, prevBottom: 540 });
+  assert.equal(mid.top, 200, "the top where it was");
+  assert.equal(mid.bottom, 540, "the remembered bottom isn't moved");
+  const bot = cardPlacement({ ...c, pos: "bot", prevTop: 200, prevBottom: 740 });
+  assert.equal(bot.top + bot.H + 40, 740, "a bottom card keeps its bottom: it grew upward");
+  const free = cardPlacement({ ...c, frozen: false, pos: "mid", prevTop: 200, prevBottom: 540 });
+  assert.equal(free.top, 130, "not frozen: back to its resting place (centred on the picture)");
 });

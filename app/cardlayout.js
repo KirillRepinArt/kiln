@@ -1,7 +1,8 @@
+// @ts-check
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
-import { $ } from "./dom.js";
-import { lay, setDock, sizeFrame, vAlign } from "./layout.js";
-import { PWMIN } from "./layoutmath.js";
+import { $, q } from "./dom.js";
+import { lay, minRight, setDock, sizeFrame, vAlign } from "./layout.js";
+import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement, promptSlotH } from "./layoutmath.js";
 import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 
@@ -9,47 +10,39 @@ import { moveThumb } from "./tabs.js";
    Centred on the image's vertical centre while there's room. While the editor is focused or the pointer is over
    the card it is FROZEN: it only grows downward (then scrolls), so nothing moves under the cursor. ~0.5 s after the
    pointer leaves (and the editor isn't focused) it glides back to centre and re-expands to use the space. */
-export let lyFrozen = false,
-  lyHover = false,
-  lyT = null,
-  lyTop = null,
-  lyCy = null,
-  lyIT = null,
-  lyIB = null,
-  lyBot = null,
-  lyDrag = false;
+/** @type {import("./types.js").CardState} */
+export const card = {
+  frozen: false,
+  hover: false,
+  thawTimer: undefined,
+  top: null,
+  bottom: null,
+  cy: null,
+  imgTop: null,
+  imgBottom: null,
+  drag: false,
+};
+/** the picture's lines the card lines up with (layoutmath's CardAnchors) */
+const anchors = () => ({ it: card.imgTop, ib: card.imgBottom, cy: card.cy });
 /* the card's held layout let go: frozen while you work, its top and centre forgotten (also from other files) */
 export function lyReset() {
-  lyFrozen = false;
-  lyTop = null;
-  lyCy = null;
+  card.frozen = false;
+  card.top = null;
+  card.cy = null;
 }
 export function lyUnfreeze() {
-  lyFrozen = false;
-}
-/* S.pos (wide window): "top" = card top level with the image top (name row beside the tabs), "mid" = centred on the
-   image, "bot" = card bottom level with the status line. A bottom card grows upward while you type. */
-function anchorTop(pos, H, colH) {
-  const t = pos === "top" ? (lyIT ?? 0) : pos === "bot" ? (lyIB ?? colH) - H : (lyCy ?? colH / 2) - H / 2;
-  return Math.max(0, Math.min(colH - H, t));
+  card.frozen = false;
 }
 const EDMIN = 108; /* the editor's least height (kiln.css .cm-editor min-height: its header row + a few lines) */
 function cardNaturalH() {
   const L = $("left"),
-    w = L.querySelector(".pwrapT");
+    w = q(".pwrapT", L);
   const sc = L.querySelector(".cm-scroller");
   const edH = (sc ? sc.scrollHeight : P.scrollHeight) + 16;
   return Math.max(170, L.offsetHeight - w.offsetHeight + Math.max(EDMIN, edH));
 }
-export function tabsW() {
-  const k = document.querySelector(".tabs").children;
-  return k.length ? Math.ceil(k[k.length - 1].getBoundingClientRect().right - k[0].getBoundingClientRect().left) : 0;
-}
-export function minRight() {
-  return Math.max(420, tabsW() + 2);
-} // the image column never gets narrower than the tab bar
 export function applyMode() {
-  const a = document.querySelector(".app"),
+  const a = q(".app"),
     was = a.classList.contains("stacked");
   // switch to narrow below 980 px (or a tall window); back to wide only above 1020 px, so dragging near the edge doesn't flicker
   const narrow =
@@ -94,14 +87,14 @@ export function stackW() {
 }
 function cardMinH() {
   const L = $("left");
-  return L.offsetHeight - L.querySelector(".pwrapT").offsetHeight + EDMIN;
+  return L.offsetHeight - q(".pwrapT", L).offsetHeight + EDMIN;
 }
 export function chipsH() {
   const c = $("chips");
   return c.childElementCount ? c.offsetHeight + 10 : 0;
 } // the row always shows ("LoRA +") // the chip row under the box, and its gap
 export function layoutLeft() {
-  if (lyDrag) return;
+  if (card.drag) return;
   const L = $("left"),
     col = $("lcol"),
     CH = chipsH();
@@ -115,14 +108,11 @@ export function layoutLeft() {
   $("ltitle").classList.toggle("hm", !!hm);
   if (stk) {
     let H;
-    lyTop = 0;
+    card.top = 0;
     /* the prompt's SLOT is fixed: set with the line above the name, or ~4 lines + the pills by default. The box fits its
      text inside it (top-aligned) and the picture's size never depends on what the prompt says — browsing prompts of
      different lengths used to resize and move the picture on every step (2026-10-19) */
-    const slot = Math.max(
-      200,
-      Math.min(S.sch || Math.min(250, Math.round(innerHeight * 0.42)), Math.round(innerHeight * 0.7)),
-    );
+    const slot = promptSlotH(S.sch, innerHeight);
     if (lay.vbDrag)
       return; /* its bottom edge is being dragged: the box follows the pointer, the layout settles on release */
     H =
@@ -147,71 +137,54 @@ export function layoutLeft() {
     lay.target; /* the picture's target (it may be mid-glide): the prompt moves with it, not after it */
   if (S.view === "gen" && f.height > 0) {
     if (T) {
-      lyCy = T.top + T.h / 2 - c.top - TS;
-      lyIT = T.top - c.top - TS;
-      lyIB = T.bottom - c.top - TS;
+      card.cy = T.top + T.h / 2 - c.top - TS;
+      card.imgTop = T.top - c.top - TS;
+      card.imgBottom = T.bottom - c.top - TS;
     } else {
-      lyCy = f.top + f.height / 2 - c.top - TS;
-      lyIT = f.top - c.top - TS;
+      card.cy = f.top + f.height / 2 - c.top - TS;
+      card.imgTop = f.top - c.top - TS;
       const pb = $("prog").getBoundingClientRect();
-      lyIB = (pb.height ? pb.bottom : f.bottom) - c.top - TS;
+      card.imgBottom = (pb.height ? pb.bottom : f.bottom) - c.top - TS;
     }
   }
-  if (lyCy == null) lyCy = colH / 2;
+  if (card.cy == null) card.cy = colH / 2;
   if (hm) {
-    let top, H;
-    if (hm === "full") {
-      top = 0;
-      H = colH;
-    } else {
-      top = Math.max(0, lyIT ?? 0);
-      H = Math.min(colH - top, (lyIB ?? colH) - top);
-    } // match: image top to status line
-    H = Math.max(0, H - CH);
-    const mn = cardMinH();
-    if (H < mn) {
-      H = Math.min(colH - CH, mn);
-      top = Math.max(0, Math.min(colH - H - CH, lyCy - (H + CH) / 2));
-    }
-    lyTop = top;
-    lyBot = top + H + CH;
+    const { top, H } = cardHeightMode(hm, colH, CH, cardMinH(), { ...anchors(), cy: card.cy });
+    card.top = top;
+    card.bottom = top + H + CH;
     col.style.setProperty("--ltop", top + TS + "px");
     col.style.setProperty("--lh", H + "px");
     col.style.setProperty("--chtop", top + TS + H + 10 + "px");
     return;
   }
-  // the box and its chip row are placed as one group
-  const room = colH - CH;
-  let H = S.pph ? Math.min(Math.max(240, S.pph), room) : Math.min(cardNaturalH(), room);
-  let top;
-  const pos = S.pos || "mid";
-  if (lyFrozen && lyTop != null) {
-    if (pos === "bot" && lyBot != null) {
-      top = Math.max(0, lyBot - H - CH);
-      H = Math.min(H, room - top);
-    } else {
-      top = lyTop;
-      H = Math.min(H, room - top);
-    }
-  } else {
-    top = anchorTop(pos, H + CH, colH);
-    lyBot = top + H + CH;
-  }
-  lyTop = top;
+  // the box and its chip row are placed as one group (the text's height is measured only when it's used)
+  const { top, H, bottom } = cardPlacement({
+    colH,
+    CH,
+    pph: S.pph,
+    naturalH: S.pph ? 0 : cardNaturalH(),
+    pos: S.pos || "mid",
+    frozen: card.frozen,
+    prevTop: card.top,
+    prevBottom: card.bottom,
+    a: anchors(),
+  });
+  card.bottom = bottom;
+  card.top = top;
   col.style.setProperty("--ltop", top + TS + "px");
   col.style.setProperty("--lh", H + "px");
   col.style.setProperty("--chtop", top + TS + H + 10 + "px");
 }
 function freeze() {
-  clearTimeout(lyT);
-  lyFrozen = true;
+  clearTimeout(card.thawTimer);
+  card.frozen = true;
 }
 function thaw() {
-  clearTimeout(lyT);
-  lyT = setTimeout(() => {
+  clearTimeout(card.thawTimer);
+  card.thawTimer = setTimeout(() => {
     const ed = document.activeElement && $("left").contains(document.activeElement);
-    if (lyHover || ed) return;
-    lyFrozen = false;
+    if (card.hover || ed) return;
+    card.frozen = false;
     S.pph = 0;
     layoutLeft();
   }, 500);
@@ -246,16 +219,16 @@ export function updHm() {
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initCardlayout() {
   $("left").addEventListener("pointerenter", () => {
-    lyHover = true;
+    card.hover = true;
     freeze();
   });
   $("left").addEventListener("pointerleave", () => {
-    lyHover = false;
+    card.hover = false;
     thaw();
   });
   $("left").addEventListener("focusin", freeze);
   $("left").addEventListener("focusout", () => {
-    if (!lyHover) thaw();
+    if (!card.hover) thaw();
   });
   new ResizeObserver(() => layoutLeft()).observe($("lcol"));
   /* a narrow box: the Reuse bar and the size buttons in one centred row (side by side they collided) */
@@ -264,13 +237,13 @@ export function initCardlayout() {
     T.classList.toggle("tnarrow", T.clientWidth < 560);
   }).observe($("ltitle"));
   $("hmodes").addEventListener("click", e => {
-    const b = e.target.closest("[data-hm]");
+    const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-hm]"));
     if (!b) return;
     if (b.dataset.hm === "match" && document.querySelector(".app.stacked")) S.vfit = !S.vfit;
-    else S.hmode = S.hmode === b.dataset.hm ? "" : b.dataset.hm;
+    else S.hmode = S.hmode === b.dataset.hm ? "" : /** @type {"full" | "match"} */ (b.dataset.hm);
     save();
     updHm();
-    lyFrozen = false;
+    card.frozen = false;
     layoutLeft();
   });
   updHm();
@@ -278,6 +251,8 @@ export function initCardlayout() {
     const L = $("left"),
       T = $("ltitle"),
       col = $("lcol");
+    /** the card being pressed / dragged: where it started, whether it moved, where it would go
+     * @type {{ x0: number, y0: number, t0: number, moved: boolean, stk: boolean, zone?: "left" | "right" | "below" | null, t?: number } | null} */
     let d = null;
     const NO = "input,textarea,button,a,select,.chip,.pwrapT,.vedge,.pedge,.pop,.cwi";
     const ghosts = ["top", "mid", "bot"].map(p => {
@@ -291,8 +266,12 @@ export function initCardlayout() {
       const TS = parseFloat(col.style.getPropertyValue("--ts")) || 64;
       return { TS, colH: col.clientHeight - TS, H: L.offsetHeight };
     };
+    /** the resting place nearest to a top t @param {number} t @param {number} H @param {number} colH
+     * @returns {"top" | "mid" | "bot"} */
     const nearest = (t, H, colH) =>
-      ["top", "mid", "bot"].map(p => [p, Math.abs(anchorTop(p, H, colH) - t)]).sort((a, b) => a[1] - b[1])[0][0];
+      /** @type {const} */ (["top", "mid", "bot"])
+        .map(p => /** @type {const} */ ([p, Math.abs(cardAnchorTop(p, H, colH, anchors()) - t)]))
+        .sort((a, b) => a[1] - b[1])[0][0];
     /* dock zones: drag the prompt far to the other side, or to the bottom, and drop it there */
     const zones = ["left", "right", "below"].map(z => {
       const g = document.createElement("div");
@@ -305,28 +284,38 @@ export function initCardlayout() {
     const dockOf = () => S.dock || "left";
     /* "below" needs the pointer well past the lowest place the card can go (yMax): moving the card to its bottom position
     never docks it by accident — the card stops, the pointer goes on, the zone lights up */
+    /** @param {number} x @param {number} y @param {number} yMax */
     function zoneAt(x, y, yMax) {
       const W = innerWidth,
         Hh = innerHeight,
         cur = document.querySelector(".app.stacked") ? "below" : dockOf();
+      /** @type {"left" | "right" | "below" | null} */
       let z = null;
       if (y > Math.max(Hh * 0.75, yMax + 80) && cur !== "below") z = "below";
       else if (x < W * 0.3 && cur !== "left") z = "left";
       else if (x > W * 0.7 && cur !== "right") z = "right";
       return z;
     }
+    /** @param {PointerEvent} e */
     function down(e) {
-      if (S.hmode || e.button !== 0 || e.target.closest(NO)) return;
+      if (S.hmode || e.button !== 0 || /** @type {HTMLElement} */ (e.target).closest(NO)) return;
       e.preventDefault();
-      d = { x0: e.clientX, y0: e.clientY, t0: lyTop || 0, moved: false, stk: !!document.querySelector(".app.stacked") };
+      d = {
+        x0: e.clientX,
+        y0: e.clientY,
+        t0: card.top || 0,
+        moved: false,
+        stk: !!document.querySelector(".app.stacked"),
+      };
       try {
-        e.currentTarget.setPointerCapture(e.pointerId);
+        /** @type {HTMLElement} */ (e.currentTarget).setPointerCapture(e.pointerId);
       } catch (_) {}
       hint(true);
     }
     /* the press shows what moves: an outline round the whole block (title, box, LoRAs), like the resize outline */
     const ch = $("cardhint");
     let hraf = 0;
+    /** @param {boolean} on */
     function hint(on) {
       cancelAnimationFrame(hraf);
       if (!on) {
@@ -350,39 +339,41 @@ export function initCardlayout() {
         hraf = requestAnimationFrame(tick);
       })();
     }
+    /** @param {PointerEvent} e */
     function move(e) {
-      if (!d) return;
+      const m = d;
+      if (!m) return;
       if (!(e.buttons & 1)) {
         up();
         return;
       }
-      const dx = e.clientX - d.x0,
-        dy = e.clientY - d.y0;
-      if (!d.moved && Math.hypot(dx, dy) < 6) return;
+      const dx = e.clientX - m.x0,
+        dy = e.clientY - m.y0;
+      if (!m.moved && Math.hypot(dx, dy) < 6) return;
       const { TS, colH, H } = geo();
-      if (!d.moved) {
-        d.moved = true;
-        lyDrag = true;
+      if (!m.moved) {
+        m.moved = true;
+        card.drag = true;
         L.classList.add("nodur");
         T.classList.add("nodur");
         document.body.classList.add("cardmove");
-        zones.forEach(z => z.classList.toggle("show", z.dataset.z !== (d.stk ? "below" : dockOf())));
-        if (!d.stk)
+        zones.forEach(z => z.classList.toggle("show", z.dataset.z !== (m.stk ? "below" : dockOf())));
+        if (!m.stk)
           ghosts.forEach(g => {
-            g.style.top = anchorTop(g.dataset.p, H, colH) + TS + "px";
+            g.style.top = cardAnchorTop(/** @type {string} */ (g.dataset.p), H, colH, anchors()) + TS + "px";
             g.style.height = H + "px";
             g.classList.add("show");
           });
       }
-      d.zone = zoneAt(e.clientX, e.clientY, d.stk ? 0 : d.y0 + (colH - H - chipsH() - d.t0));
-      zones.forEach(z => z.classList.toggle("near", z.dataset.z === d.zone));
-      if (d.stk) return;
-      const t = Math.max(0, Math.min(colH - H - chipsH(), d.t0 + dy));
+      m.zone = zoneAt(e.clientX, e.clientY, m.stk ? 0 : m.y0 + (colH - H - chipsH() - m.t0));
+      zones.forEach(z => z.classList.toggle("near", z.dataset.z === m.zone));
+      if (m.stk) return;
+      const t = Math.max(0, Math.min(colH - H - chipsH(), m.t0 + dy));
       col.style.setProperty("--ltop", t + TS + "px");
       col.style.setProperty("--chtop", t + TS + H + 10 + "px");
-      d.t = t;
+      m.t = t;
       const n = nearest(t, H, colH);
-      ghosts.forEach(g => g.classList.toggle("near", !d.zone && g.dataset.p === n));
+      ghosts.forEach(g => g.classList.toggle("near", !m.zone && g.dataset.p === n));
     }
     function up() {
       if (!d) return;
@@ -390,7 +381,7 @@ export function initCardlayout() {
       d = null;
       hint(false);
       if (!was.moved) return;
-      lyDrag = false;
+      card.drag = false;
       L.classList.remove("nodur");
       T.classList.remove("nodur");
       document.body.classList.remove("cardmove");
@@ -402,12 +393,12 @@ export function initCardlayout() {
       }
       if (was.stk) return;
       const { colH, H } = geo();
-      S.pos = nearest(was.t, H, colH);
+      S.pos = nearest(/** @type {number} */ (was.t), H, colH); // set by every move once it moved
       save();
-      const fz = lyFrozen;
-      lyFrozen = false;
+      const fz = card.frozen;
+      card.frozen = false;
       layoutLeft();
-      lyFrozen = fz;
+      card.frozen = fz;
     }
     for (const el of [L, T]) {
       el.addEventListener("pointerdown", down);
@@ -416,8 +407,8 @@ export function initCardlayout() {
       el.addEventListener("pointercancel", up);
     }
     // the empty space under the text belongs to the editor: a click there puts the cursor at the end
-    document.querySelector(".pwrapT").addEventListener("mousedown", e => {
-      if (!e.target.classList.contains("pwrapT")) return;
+    q(".pwrapT").addEventListener("mousedown", e => {
+      if (!(/** @type {HTMLElement} */ (e.target).classList.contains("pwrapT"))) return;
       e.preventDefault();
       P.focus();
       if (window.__cm) {
@@ -428,7 +419,7 @@ export function initCardlayout() {
   })();
   // glass mode floats the controls row over the prompt: the text needs that much room to scroll clear of it
   new ResizeObserver(() => {
-    $("left").style.setProperty("--ctrlh", $("left").querySelector(".controls").offsetHeight + "px");
+    $("left").style.setProperty("--ctrlh", q(".controls", $("left")).offsetHeight + "px");
     layoutLeft();
-  }).observe(document.querySelector("#left .controls"));
+  }).observe(q("#left .controls"));
 }

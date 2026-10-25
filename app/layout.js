@@ -1,7 +1,7 @@
 // @ts-check
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
 import { syncH } from "./boot.js";
-import { applyMode, layoutLeft, lyReset, minRight, stackW, tabsW } from "./cardlayout.js";
+import { applyMode, layoutLeft, lyReset, stackW } from "./cardlayout.js";
 import { applyPH } from "./composer.js";
 import { $ } from "./dom.js";
 import { current } from "./jobs.js";
@@ -63,6 +63,15 @@ export function tbW(h) {
    goes to the margins; shrinking takes the margins first (down to MMIN), then both panels in proportion, and they come
    back when there's room (flex's "shrink, don't grow"). Shares of the window (v:2) shrank them far too early. */
 const layW = () => innerWidth - 36;
+/* the tab bar's width, as laid out now */
+export function tabsW() {
+  const k = /** @type {HTMLElement} */ (document.querySelector(".tabs")).children;
+  return k.length ? Math.ceil(k[k.length - 1].getBoundingClientRect().right - k[0].getBoundingClientRect().left) : 0;
+}
+/* the picture area never gets narrower than the tab bar */
+export function minRight() {
+  return Math.max(420, tabsW() + 2);
+}
 /* saved layouts of older versions → today's (once, at start-up: main.js) */
 export function migrateLayoutPrefs() {
   S.lay = upgradeLayoutPrefs(S.lay, layW());

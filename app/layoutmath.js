@@ -110,3 +110,93 @@ export function upgradeLayoutPrefs(L, W) {
   if (L && !L.v) L.v = 3;
   return L;
 }
+
+/* ---------- the prompt card (wide window) ---------- */
+
+/**
+ * The picture's lines the card lines up with, in the card column's coordinates (null = not known yet).
+ * @typedef {{ it: number | null, ib: number | null, cy: number | null }} CardAnchors  it: the picture's top, ib: the
+ *   status line under it, cy: the picture's vertical centre
+ */
+
+/**
+ * Vertical: the prompt's slot height — yours (sch) or ~42 % of the window (at most 250 px), always 200 px to 70 % of it.
+ * @param {number | undefined} sch
+ * @param {number} innerH the window's height
+ */
+export function promptSlotH(sch, innerH) {
+  return Math.max(200, Math.min(sch || Math.min(250, Math.round(innerH * 0.42)), Math.round(innerH * 0.7)));
+}
+
+/**
+ * Where a card of height H rests: "top" level with the picture's top, "bot" level with its status line, "mid" centred
+ * on the picture — always inside the column.
+ * @param {string} pos "top" | "mid" | "bot"
+ * @param {number} H the card's height (box + chip row)
+ * @param {number} colH the column's height
+ * @param {CardAnchors} a
+ */
+export function cardAnchorTop(pos, H, colH, a) {
+  const t = pos === "top" ? (a.it ?? 0) : pos === "bot" ? (a.ib ?? colH) - H : (a.cy ?? colH / 2) - H / 2;
+  return Math.max(0, Math.min(colH - H, t));
+}
+
+/**
+ * The height modes: "full" = the whole column; "match" = from the picture's top to its status line. Too short for the
+ * box's least height: that height, centred on the picture.
+ * @param {"full" | "match"} mode
+ * @param {number} colH the column's height
+ * @param {number} CH the chip row under the box (with its gap)
+ * @param {number} minH the box's least height
+ * @param {CardAnchors & { cy: number }} a
+ */
+export function cardHeightMode(mode, colH, CH, minH, a) {
+  let top, H;
+  if (mode === "full") {
+    top = 0;
+    H = colH;
+  } else {
+    top = Math.max(0, a.it ?? 0);
+    H = Math.min(colH - top, (a.ib ?? colH) - top);
+  }
+  H = Math.max(0, H - CH);
+  if (H < minH) {
+    H = Math.min(colH - CH, minH);
+    top = Math.max(0, Math.min(colH - H - CH, a.cy - (H + CH) / 2));
+  }
+  return { top, H };
+}
+
+/**
+ * The card in the usual mode: your height (pph) or its text's, within the room. Frozen (you're working in it): the top
+ * stays put and only the bottom grows — a card resting at the bottom grows upward instead.
+ * @param {object} c
+ * @param {number} c.colH the column's height
+ * @param {number} c.CH the chip row (with its gap)
+ * @param {number} c.pph the height you set (0 = the text's)
+ * @param {number} c.naturalH the height the text wants
+ * @param {string} c.pos where it rests: "top" | "mid" | "bot"
+ * @param {boolean} c.frozen
+ * @param {number | null} c.prevTop the top it had
+ * @param {number | null} c.prevBottom the bottom it had (box + chips)
+ * @param {CardAnchors} c.a
+ */
+export function cardPlacement({ colH, CH, pph, naturalH, pos, frozen, prevTop, prevBottom, a }) {
+  const room = colH - CH;
+  let H = pph ? Math.min(Math.max(240, pph), room) : Math.min(naturalH, room);
+  let top,
+    bottom = prevBottom;
+  if (frozen && prevTop != null) {
+    if (pos === "bot" && prevBottom != null) {
+      top = Math.max(0, prevBottom - H - CH);
+      H = Math.min(H, room - top);
+    } else {
+      top = prevTop;
+      H = Math.min(H, room - top);
+    }
+  } else {
+    top = cardAnchorTop(pos, H + CH, colH, a);
+    bottom = top + H + CH;
+  }
+  return { top, H, bottom };
+}

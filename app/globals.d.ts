@@ -29,7 +29,8 @@ interface Window {
   _themeV?: unknown;
   _bgWave?: number;
   _rp?: unknown;
-  __cm?: unknown;
+  /** the prompt's CodeMirror view (app/vendor has no type declarations) */
+  __cm?: any;
   /** test mode only (?test): the end-to-end tests' handle (app/testing.js) */
   kiln?: Record<string, unknown>;
 }

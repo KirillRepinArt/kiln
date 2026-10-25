@@ -34,27 +34,28 @@ const freePort = () => new Promise(r => { const s = createServer(); s.listen(0, 
 async function waitHttp(url, ms = 15000) { const t = Date.now(); while (Date.now() - t < ms) { try { await fetch(url); return } catch (e) { await sleep(150) } } throw new Error("no answer from " + url) }
 
 /* one Kiln instance + browser page, with the helpers a test uses */
-async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, autoExit = false, before = null } = {}, procs = []) {
+async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, autoExit = false, before = null } = {}, procs = [], log = []) {
   const dir = join(tmpdir(), `kiln-test-${name}-${Date.now()}`), out = join(dir, "out"), data = join(dir, "data");
   mkdirSync(out, { recursive: true }); mkdirSync(data, { recursive: true });
   if (before) await before({ out, data });   // a test can fill the queue and the output folder before Kiln starts
   const [fport, kport, dport] = [await freePort(), await freePort(), await freePort()];
-  const log = [];
-  const run = (cmd, args, env) => { const p = spawn(cmd, args, { cwd: ROOT, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
-    p.stdout.on("data", d => log.push(String(d))); p.stderr.on("data", d => log.push(String(d))); procs.push(p); return p };
+  // each output line tagged with who said it (forge / kiln / edge), for the report of a failing test
+  const run = (tag, cmd, args, env) => { const p = spawn(cmd, args, { cwd: ROOT, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+    const take = d => String(d).split(/\r?\n/).filter(Boolean).forEach(l => log.push(`${tag}: ${l}`));
+    p.stdout.on("data", take); p.stderr.on("data", take); procs.push(p); return p };
   // everything started from here on is stopped again if the start fails: a failed start must never leave a fake Forge,
   // a Kiln server or an Edge running (under load, leaked ones made the next starts fail too, and so on until the PC froze)
   let ws = null;
   try {
-  run(PY, ["tools/fake_forge.py", String(fport), String(step)]);
+  run("forge", PY, ["tools/fake_forge.py", String(fport), String(step)]);
   await waitHttp(`http://127.0.0.1:${fport}/sdapi/v1/options`);
-  run(PY, ["-c", `import server; server.CFG['exit_when_closed']=${autoExit ? "True" : "False"}; server.CFG['forge_start']=''; server.main()`],
+  run("kiln", PY, ["-c", `import server; server.CFG['exit_when_closed']=${autoExit ? "True" : "False"}; server.CFG['forge_start']=''; server.main()`],
     { KILN_PORT: String(kport), KILN_FORGE_URL: `http://127.0.0.1:${fport}`, KILN_OUTPUT_DIR: out, KILN_DATA_DIR: data, PYTHONUNBUFFERED: "1",
       KILN_UPDATE_URL: `http://127.0.0.1:${fport}/tags`, KILN_NO_RECYCLE: "1", ...env });
   await waitHttp(`http://127.0.0.1:${kport}/api/state`);
   const url = `http://127.0.0.1:${kport}/`;
   // --no-proxy-server like kiln.bat: a system proxy (VPN client, antivirus web filter) must not stall the local page
-  run(browserPath(), ["--headless=new", `--user-data-dir=${join(dir, "profile")}`, `--remote-debugging-port=${dport}`, "--no-proxy-server",
+  run("edge", browserPath(), ["--headless=new", `--user-data-dir=${join(dir, "profile")}`, `--remote-debugging-port=${dport}`, "--no-proxy-server",
     "--no-first-run", "--no-default-browser-check", `--window-size=${width},${height}`, "about:blank"]);
   let pg = null;
   for (let i = 0; i < 80 && !pg; i++) { try { pg = (await (await fetch(`http://127.0.0.1:${dport}/json`)).json()).find(t => t.type === "page") } catch (e) {} if (!pg) await sleep(250) }
@@ -132,16 +133,19 @@ for (const f of readdirSync(HERE).filter(f => f.endsWith(".test.mjs") && f.inclu
 const TEST_LIMIT_MS = 3 * 60_000;
 
 async function runOne({ file, tname, fn }) {
-  const label = `${file} › ${tname}`, t = checker(); let k = null; const t0 = Date.now(), procs = [];
+  const label = `${file} › ${tname}`, t = checker(); let k = null; const t0 = Date.now(), procs = [], log = [];
   let timer;
   const limit = new Promise((_, fail) => { timer = setTimeout(() => fail(new Error(`stuck: still running after ${TEST_LIMIT_MS / 60000} min`)), TEST_LIMIT_MS) });
   try {
     await Promise.race([limit, (async () => {
-      try { k = await launch(`${file}-${tname}`, fn.opts || {}, procs); startFails = 0 } catch (e) { startFails++; throw e }
+      try { k = await launch(`${file}-${tname}`, fn.opts || {}, procs, log); startFails = 0 } catch (e) { startFails++; throw e }
       await fn(k, t);
       t.ok(k.errors.length === 0, "no page errors", k.errors) })()]) }
   catch (e) { t.fails.push("threw: " + (e.stack || e)) }
   finally { clearTimeout(timer); if (k) await Promise.race([k.close(), sleep(10_000)]); procs.forEach(killTree) }
+  // a failure shows the last things Kiln's server and the fake Forge said (Edge's own chatter left out)
+  const said = log.filter(l => !l.startsWith("edge:")).slice(-20);
+  if (t.fails.length && said.length) t.fails.push("server log (last lines):\n      " + said.join("\n      "));
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   return t.fails.length ? { ok: false, label, text: [`✗ ${label} (${secs}s)`, ...t.fails.map(x => "    ✗ " + x)].join("\n") }
                         : { ok: true, label, text: [`✓ ${label} (${secs}s, ${t.passes.length} checks)`, ...t.notes.map(x => "    ~ not judged on CI: " + x)].join("\n") };

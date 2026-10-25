@@ -4,7 +4,8 @@
 import { initBoot } from "./boot.js";
 import { initBrowse } from "./browse.js";
 import { initCardlayout } from "./cardlayout.js";
-import { initComposer, initStartKeys } from "./composer.js";
+import { initChips } from "./chips.js";
+import { initEdges } from "./edges.js";
 import { startEditor } from "./editor.js";
 import { initEffects } from "./effects.js";
 import { initKeys } from "./keys.js";
@@ -12,8 +13,10 @@ import { initLayout, migrateLayoutPrefs } from "./layout.js";
 import { startLive } from "./live.js";
 import { initLoras } from "./loras.js";
 import { initPeek } from "./peek.js";
+import { initPills } from "./pills.js";
 import { initPnginfo } from "./pnginfo.js";
 import { initStatusRow } from "./progress.js";
+import { initPromptBox, initStartKeys } from "./prompt.js";
 import { initQueue } from "./queue.js";
 import { initSettings } from "./settings.js";
 import { initSkins } from "./skins.js";
@@ -26,7 +29,10 @@ import { initViewer } from "./viewer.js";
 if (new URLSearchParams(location.search).has("test")) installTestBridge(); // the e2e tests' way in
 initState();
 migrateLayoutPrefs(); // saved layouts of older versions → today's
-initComposer();
+initPills();
+initEdges();
+initPromptBox();
+initChips();
 initCardlayout();
 initTabs();
 initBrowse();

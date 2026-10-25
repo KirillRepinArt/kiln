@@ -2,12 +2,12 @@
 /** @typedef {import("./types.js").Job} Job */
 import { deleteMany, makeQThumb, removeJob, removeMany, removeMissing, setPaused, stopJob } from "./actions.js";
 import { esc, fmt } from "./boot.js";
-import { copySeed } from "./composer.js";
 import { $, hit, qa, target } from "./dom.js";
 import { jEst, jobs, orderPending } from "./jobs.js";
 import { loadJob } from "./peek.js";
 import { PV, pv } from "./picstate.js";
 import { urlFor } from "./pictures.js";
+import { copySeed } from "./pills.js";
 import { IC, S } from "./state.js";
 import { showView } from "./tabs.js";
 

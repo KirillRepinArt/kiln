@@ -1,8 +1,7 @@
 // @ts-check
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
 import { syncH } from "./boot.js";
-import { applyMode, layoutLeft, lyReset, stackW } from "./cardlayout.js";
-import { applyPH } from "./composer.js";
+import { applyMode, applyPH, layoutLeft, lyReset, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { current, jobs } from "./jobs.js";
 import {
@@ -496,4 +495,21 @@ export function initLayout() {
     syncH();
     moveThumb(true);
   });
+}
+// column widths now come from sizeFrame()
+export function resetLayout() {
+  S.lay = null;
+  S.vfit = false;
+  /* widths, the picture's limits (iw, ih) — all back to the defaults */
+  delete S.lw;
+  S.pph = 0;
+  S.sch = 0;
+  S.pos = "mid";
+  S.hmode = "";
+  updHm();
+  applyPH();
+  save();
+  sizeFrame();
+  moveThumb(true);
+  layoutLeft();
 }

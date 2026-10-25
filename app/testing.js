@@ -6,7 +6,6 @@ import { act, addJobs, deleteJob, removeMissing, setPaused, stopJob, vary } from
 import { nameUI, toast } from "./boot.js";
 import { browseTo, genNav, updNav } from "./browse.js";
 import { card, chipsH, layoutLeft, lyUnfreeze } from "./cardlayout.js";
-import { closePops, grow, renderPills } from "./composer.js";
 import { $ } from "./dom.js";
 import { status } from "./effects.js";
 import { up } from "./forge.js";
@@ -17,6 +16,7 @@ import { renderLoras } from "./loras.js";
 import { endPeek, fnShow, loadJob, peekHide, peekJob, reuse, setPeekJob, updPrompt } from "./peek.js";
 import { PV, browsed, justDone, pvSync, setJustDone } from "./picstate.js";
 import { __imgsN, img, missing } from "./pictures.js";
+import { closePops, renderPills } from "./pills.js";
 import { drop, keepSeedUI, nameFrom, parsed, readPng } from "./pnginfo.js";
 import { frame } from "./progress.js";
 import { QS, qsAnchor, qsClear, qsDelete, qsUpdate, setQsAnchor } from "./queue.js";
@@ -57,7 +57,6 @@ export function installTestBridge() {
     fnShow: { get: () => fnShow },
     frame: { get: () => frame },
     genNav: { get: () => genNav },
-    grow: { get: () => grow },
     img: { get: () => img },
     jobs: { get: () => jobs, set: v => replaceJobs(v) },
     justDone: { get: () => justDone, set: v => setJustDone(v) },

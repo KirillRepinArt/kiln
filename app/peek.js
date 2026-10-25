@@ -3,9 +3,10 @@
 import { renameFile, renameJob } from "./actions.js";
 import { nameUI, renderAll, slugify, toast } from "./boot.js";
 import { layoutLeft } from "./cardlayout.js";
-import { renderChips, renderPills } from "./composer.js";
+import { renderChips } from "./chips.js";
 import { $ } from "./dom.js";
 import { PV, pv } from "./picstate.js";
+import { renderPills } from "./pills.js";
 import { keepSeedUI } from "./pnginfo.js";
 import { LORAS, P, S, draft, save, setDraft } from "./state.js";
 

@@ -1,9 +1,8 @@
 /* Kiln · settings, themes */
 import { toast } from "./boot.js";
-import { resetLayout } from "./composer.js";
 import { $ } from "./dom.js";
 import { current } from "./jobs.js";
-import { setDock, sizeFrame } from "./layout.js";
+import { resetLayout, setDock, sizeFrame } from "./layout.js";
 import { harmonics, skin } from "./skins.js";
 import { S, save } from "./state.js";
 import { moveThumb, showView } from "./tabs.js";

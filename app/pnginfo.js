@@ -1,6 +1,5 @@
 /* Kiln · PNG Info tab */
 import { esc, renderAll, toast } from "./boot.js";
-import { grow } from "./composer.js";
 import { $ } from "./dom.js";
 import { SIZES } from "./presets.js";
 import { LORAS, P, S, save, setDraft } from "./state.js";
@@ -246,7 +245,6 @@ export function initPnginfo() {
     save();
     showView("gen");
     renderAll();
-    grow();
     toast(
       `Loaded into the prompt${parsed.name ? ` as “${parsed.name}”` : ""} — ${S.keepSeed ? "its seed" : "new random seed"}`,
     );

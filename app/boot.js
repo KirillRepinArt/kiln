@@ -1,10 +1,11 @@
 /* Kiln · helpers and start-up */
-import { applyMode } from "./cardlayout.js";
-import { applyPH, grow, renderChips, renderPills } from "./composer.js";
+import { applyMode, applyPH } from "./cardlayout.js";
+import { renderChips } from "./chips.js";
 import { $ } from "./dom.js";
 import { jobs } from "./jobs.js";
 import { renderLoras } from "./loras.js";
 import { peekJob, saveJobName, updPrompt } from "./peek.js";
+import { renderPills } from "./pills.js";
 import { renderQueue } from "./queue.js";
 import { applyFont, applyGlass, applyTheme } from "./settings.js";
 import { P, S, save } from "./state.js";
@@ -158,6 +159,5 @@ export function initBoot() {
   S.view = "gen";
   showView("gen");
   renderAll();
-  grow();
   syncH();
 }

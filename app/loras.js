@@ -1,6 +1,6 @@
 /* Kiln · LoRA library tab */
 import { esc } from "./boot.js";
-import { fmtW, renderChips } from "./composer.js";
+import { fmtW, renderChips } from "./chips.js";
 import { $ } from "./dom.js";
 import { LORAS, S, save } from "./state.js";
 

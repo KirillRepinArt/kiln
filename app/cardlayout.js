@@ -423,3 +423,9 @@ export function initCardlayout() {
     layoutLeft();
   }).observe(q("#left .controls"));
 }
+
+/* ======================= prompt + chips ======================= */
+export function applyPH() {
+  delete S.ph;
+  layoutLeft();
+}

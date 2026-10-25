@@ -1,6 +1,6 @@
 /* Kiln · what comes from Forge: models, LoRAs, upscalers, the Settings facts; LoRA thumbnails kept by the server */
 import { esc, toast } from "./boot.js";
-import { renderChips } from "./composer.js";
+import { renderChips } from "./chips.js";
 import { $ } from "./dom.js";
 import { current } from "./jobs.js";
 import { api } from "./live.js";

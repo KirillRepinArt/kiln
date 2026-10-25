@@ -95,7 +95,7 @@
  * @property {boolean} [privacy]     the privacy cover is on (sticky)
  * @property {number | null} [seenDone]  the newest finished job you've seen (for "finished while you were away")
  * @property {number | null} [clearedId] the finished picture you closed with ✕
- * @property {LayoutPrefs} [lay]     your layout sizes
+ * @property {LayoutPrefs | null} [lay]  your layout sizes (null: the defaults — Reset layout)
  * @property {"left" | "right" | "below"} [dock]  where the prompt goes
  * @property {"top" | "mid" | "bot"} [pos]  wide window: where the prompt card rests (picture top / centre / status line)
  * @property {"" | "full" | "match"} [hmode]  the prompt box's height mode
@@ -104,6 +104,7 @@
  * @property {number} pph            the prompt box's height you set (0 = automatic)
  * @property {number} [th]           the LoRA chips' thumbnail size
  * @property {number} [lw]           an old saved prompt width (before S.lay)
+ * @property {number} [ph]           an old saved prompt height (dropped when the layout applies)
  * @property {Record<string, string>} [set]  Settings dialog choices (theme parts, cover, model, sampler, upscaler …)
  */
 

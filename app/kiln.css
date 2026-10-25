@@ -6,673 +6,3568 @@
    switches while you drag, the morph); each one says why. */
 
 /* ======================= tokens ======================= */
-:root{
-  --bg:#000000; --text:#EDEDED; --muted:#9A9A9F; --faint:#5E5E64; --sel:#FFFFFF;
+:root {
+  --bg: #000000;
+  --text: #ededed;
+  --muted: #9a9a9f;
+  --faint: #5e5e64;
+  --sel: #ffffff;
   /* the greys lean a few percent toward the theme, so a skin feels whole (--tw = strength) */
-  --tw:6%;
-  --panel:color-mix(in oklab,#1C1C1E,var(--a1) var(--tw)); --raised:color-mix(in oklab,#2A2A2D,var(--a1) var(--tw));
-  --raised2:color-mix(in oklab,#343438,var(--a1) var(--tw)); --line:color-mix(in oklab,#333338,var(--a1) var(--tw));
-  --a1:#FF8A00; --a2:#FF5E8A; --a3:#3FE0F0; --ink:#140b00;
-  --grad:linear-gradient(135deg in oklch,var(--a1),var(--a2) 55%,var(--a3));
-  --flow:linear-gradient(90deg in oklch,var(--a1),var(--a2),var(--a3),var(--a2),var(--a1));
-  --r-panel:24px; --r-pill:999px;
-  --ease:cubic-bezier(.2,.8,.2,1); --dur:.2s;
+  --tw: 6%;
+  --panel: color-mix(in oklab, #1c1c1e, var(--a1) var(--tw));
+  --raised: color-mix(in oklab, #2a2a2d, var(--a1) var(--tw));
+  --raised2: color-mix(in oklab, #343438, var(--a1) var(--tw));
+  --line: color-mix(in oklab, #333338, var(--a1) var(--tw));
+  --a1: #ff8a00;
+  --a2: #ff5e8a;
+  --a3: #3fe0f0;
+  --ink: #140b00;
+  --grad: linear-gradient(135deg in oklch, var(--a1), var(--a2) 55%, var(--a3));
+  --flow: linear-gradient(90deg in oklch, var(--a1), var(--a2), var(--a3), var(--a2), var(--a1));
+  --r-panel: 24px;
+  --r-pill: 999px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur: 0.2s;
   /* every layout glide: Material 3's emphasized decelerate — most of the way in the first third, then a long soft
      settle. One curve for all the pieces that move together, or they'd drift apart mid-move */
-  --lay-t:.42s; --lay-e:cubic-bezier(.05,.7,.1,1);
+  --lay-t: 0.42s;
+  --lay-e: cubic-bezier(0.05, 0.7, 0.1, 1);
   /* the layout switch (Left / Right / Vertical): the picture morphs on this */
-  --sw-t:440ms; --sw-e:cubic-bezier(.3,0,0,1);
-  --liw:calc(var(--th,48px) + 250px);   /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
+  --sw-t: 440ms;
+  --sw-e: cubic-bezier(0.3, 0, 0, 1);
+  --liw: calc(
+    var(--th, 48px) + 250px
+  ); /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
 }
-@property --p{syntax:"<number>";inherits:true;initial-value:0}
+@property --p {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
 
 /* ======================= base ======================= */
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:15px/1.45 var(--font,Inter),"Geist","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-::-webkit-scrollbar{width:15px;height:15px}::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#3c3c42;border-radius:10px;border:4px solid transparent;background-clip:padding-box;min-height:40px}
-::-webkit-scrollbar-thumb:hover{background:#5a5a62;border-width:2px;background-clip:padding-box}
-::-webkit-scrollbar-thumb:active{background:#74747c;border-width:2px;background-clip:padding-box}
-svg *{stroke-linecap:round;stroke-linejoin:round}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-:focus-visible{outline:2px solid color-mix(in oklab,var(--a1) 55%,transparent);outline-offset:2px}   /* keyboard focus stays visible, in the theme's colour */
-.pwrapT .cm-editor:focus-visible,.pwrapT .cm-content:focus-visible,input:focus-visible,textarea:focus-visible{outline:0}
-input,select,textarea{font:inherit;color:var(--text)}
-input[type=range]{accent-color:#E6E6EA}
-button,.tab,.pill,.chip,.qi,.li,.fchips button{user-select:none;-webkit-user-select:none}
-.qi .meta,.pill .val,.rt .px,.pop .hint{font-variant-numeric:tabular-nums}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    15px/1.45 var(--font, Inter),
+    "Geist",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+::-webkit-scrollbar {
+  width: 15px;
+  height: 15px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3c3c42;
+  border-radius: 10px;
+  border: 4px solid transparent;
+  background-clip: padding-box;
+  min-height: 40px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5a62;
+  border-width: 2px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:active {
+  background: #74747c;
+  border-width: 2px;
+  background-clip: padding-box;
+}
+svg * {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--a1) 55%, transparent);
+  outline-offset: 2px;
+} /* keyboard focus stays visible, in the theme's colour */
+.pwrapT .cm-editor:focus-visible,
+.pwrapT .cm-content:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 0;
+}
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--text);
+}
+input[type="range"] {
+  accent-color: #e6e6ea;
+}
+button,
+.tab,
+.pill,
+.chip,
+.qi,
+.li,
+.fchips button {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.qi .meta,
+.pill .val,
+.rt .px,
+.pop .hint {
+  font-variant-numeric: tabular-nums;
+}
 
 /* ======================= app layout =======================
    Side by side: the prompt and the picture area are one centred pair (stage.js layGeo sets the widths and margins);
    Vertical (.stacked): the picture on top, the prompt under it; .pright mirrors the pair. */
-.app{position:relative;z-index:1;display:grid;grid-template-rows:minmax(0,1fr);height:100vh;margin:0 auto;padding:18px;align-items:stretch;
- grid-template-columns:var(--mL,1fr) var(--pw,680px) var(--gap,18px) var(--rw,660px) var(--mR,1fr);transition:grid-template-columns var(--lay-t) var(--lay-e)}
-.app.pright{grid-template-columns:var(--mL,1fr) var(--rw,660px) var(--gap,18px) var(--pw,680px) var(--mR,1fr)}
-.app.stacked{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
-.app>.lcol,.app>.right{position:relative}
-.app>.lcol{grid-column:2}.app>.split{grid-column:3}.app>.right{grid-column:4}
-.app.pright>.lcol{grid-column:4}.app.pright>.right{grid-column:2}
-.app.stacked>*{grid-column:1/-1}
+.app {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+  margin: 0 auto;
+  padding: 18px;
+  align-items: stretch;
+  grid-template-columns: var(--mL, 1fr) var(--pw, 680px) var(--gap, 18px) var(--rw, 660px) var(--mR, 1fr);
+  transition: grid-template-columns var(--lay-t) var(--lay-e);
+}
+.app.pright {
+  grid-template-columns: var(--mL, 1fr) var(--rw, 660px) var(--gap, 18px) var(--pw, 680px) var(--mR, 1fr);
+}
+.app.stacked {
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.app > .lcol,
+.app > .right {
+  position: relative;
+}
+.app > .lcol {
+  grid-column: 2;
+}
+.app > .split {
+  grid-column: 3;
+}
+.app > .right {
+  grid-column: 4;
+}
+.app.pright > .lcol {
+  grid-column: 4;
+}
+.app.pright > .right {
+  grid-column: 2;
+}
+.app.stacked > * {
+  grid-column: 1/-1;
+}
 /* side by side everything sits in row 1: auto-placement can't go back left, so with the prompt on the right the
    picture area would wrap onto a second row */
-.app:not(.stacked)>.lcol,.app:not(.stacked)>.split,.app:not(.stacked)>.right{grid-row:1}
-.split{position:relative;touch-action:none;pointer-events:none;cursor:default}   /* the gap between the panels (its edges are .pedge) */
-.app.stacked .split{display:none}
-.lcol{min-height:0;min-width:0}
-.app.stacked .lcol{order:2;height:var(--lch,320px);margin-top:6px}
-.app.stacked #lcol{pointer-events:none}.app.stacked #lcol>*{pointer-events:auto}   /* its empty parts let the pointer through to the picture's edges */
-.right{display:flex;flex-direction:column;min-height:0;min-width:0}
-.app.stacked .right{order:1}
-.app.stacked>.right{justify-self:center;max-width:100%;transition:width var(--lay-t) var(--lay-e)}   /* Vertical: a centred column (stage.js sets its width) */
+.app:not(.stacked) > .lcol,
+.app:not(.stacked) > .split,
+.app:not(.stacked) > .right {
+  grid-row: 1;
+}
+.split {
+  position: relative;
+  touch-action: none;
+  pointer-events: none;
+  cursor: default;
+} /* the gap between the panels (its edges are .pedge) */
+.app.stacked .split {
+  display: none;
+}
+.lcol {
+  min-height: 0;
+  min-width: 0;
+}
+.app.stacked .lcol {
+  order: 2;
+  height: var(--lch, 320px);
+  margin-top: 6px;
+}
+.app.stacked #lcol {
+  pointer-events: none;
+}
+.app.stacked #lcol > * {
+  pointer-events: auto;
+} /* its empty parts let the pointer through to the picture's edges */
+.right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.app.stacked .right {
+  order: 1;
+}
+.app.stacked > .right {
+  justify-self: center;
+  max-width: 100%;
+  transition: width var(--lay-t) var(--lay-e);
+} /* Vertical: a centred column (stage.js sets its width) */
 
 /* ======================= edges (drag to resize) =======================
    .pedge: the panels' vertical edges (po = the prompt's outer edge, pi/ri = the divider, ro = the picture area's outer
    edge); .sedge: the prompt box's sides in Vertical; .hedge: the picture's own edges; .vedge / .hsplit: the prompt's
    height. No grip bars: the outline (.fithint) and the cursor are the signal. */
-.pedge{position:absolute;top:0;bottom:0;width:12px;z-index:8;cursor:ew-resize;touch-action:none}
-.pedge.po{left:-8px}.pedge.pi{right:-8px}.pedge.ro{right:-8px}
-.pedge.ri{left:-12px;width:16px}   /* the band reaches the picture's outline */
-.app.pright .pedge.po{left:auto;right:-8px}.app.pright .pedge.pi{right:auto;left:-8px}
-.app.pright .pedge.ri{left:auto;right:-12px}.app.pright .pedge.ro{right:auto;left:-8px}
-.app.stacked .pedge{display:none}
-.sedge{display:none;position:absolute;top:0;bottom:0;width:12px;z-index:8;cursor:ew-resize;touch-action:none}
-.sedge.l{left:-8px}.sedge.r{right:-8px}
-.app.stacked .sedge{display:block}
-.hedges{position:absolute;pointer-events:none;z-index:7}
-.rpanel.paneled .hedges{display:none}
+.pedge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  z-index: 8;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.pedge.po {
+  left: -8px;
+}
+.pedge.pi {
+  right: -8px;
+}
+.pedge.ro {
+  right: -8px;
+}
+.pedge.ri {
+  left: -12px;
+  width: 16px;
+} /* the band reaches the picture's outline */
+.app.pright .pedge.po {
+  left: auto;
+  right: -8px;
+}
+.app.pright .pedge.pi {
+  right: auto;
+  left: -8px;
+}
+.app.pright .pedge.ri {
+  left: auto;
+  right: -12px;
+}
+.app.pright .pedge.ro {
+  right: auto;
+  left: -8px;
+}
+.app.stacked .pedge {
+  display: none;
+}
+.sedge {
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  z-index: 8;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.sedge.l {
+  left: -8px;
+}
+.sedge.r {
+  right: -8px;
+}
+.app.stacked .sedge {
+  display: block;
+}
+.hedges {
+  position: absolute;
+  pointer-events: none;
+  z-index: 7;
+}
+.rpanel.paneled .hedges {
+  display: none;
+}
 /* the grab strips cover the space between the picture and its outline (Fitts: the target you're shown is the target) */
-.hedge{position:absolute;left:0;right:0;height:16px;cursor:ns-resize;pointer-events:auto;touch-action:none}
-.hedge.t{top:-12px}.hedge.b{bottom:-8px}
-.hedge.l,.hedge.r{display:none;top:0;bottom:0;height:auto;width:16px;cursor:ew-resize}
-.hedge.l{left:-12px;right:auto}.hedge.r{right:-12px;left:auto}
-.app.stacked .hedge.l,.app.stacked .hedge.r{display:block}   /* Vertical: side edges on the picture */
-.vedge{position:absolute;left:30px;right:30px;bottom:-7px;height:14px;cursor:ns-resize;touch-action:none;z-index:6}
-.vedge::after,.hsplit::after{content:"";position:absolute;left:50%;width:46px;height:4px;margin-left:-23px;border-radius:2px;background:#8a8a92;opacity:0;transition:opacity .15s}
-.vedge::after{top:5px}.hsplit::after{top:6px}
-.vedge:hover::after,.vedge.drag::after,.hsplit:hover::after,.hsplit.drag::after{opacity:1}
-.left.hm .vedge{display:none}
-#lcol.vbdrag>.chips{transition:none}   /* Vertical: the chips follow the dragged bottom edge directly */
-.hsplit{display:none}
-.app.stacked .hsplit{display:block;position:absolute;left:0;right:0;top:-10px;height:8px;cursor:ns-resize;z-index:6;touch-action:none}   /* stage.js places it above the title */
+.hedge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 16px;
+  cursor: ns-resize;
+  pointer-events: auto;
+  touch-action: none;
+}
+.hedge.t {
+  top: -12px;
+}
+.hedge.b {
+  bottom: -8px;
+}
+.hedge.l,
+.hedge.r {
+  display: none;
+  top: 0;
+  bottom: 0;
+  height: auto;
+  width: 16px;
+  cursor: ew-resize;
+}
+.hedge.l {
+  left: -12px;
+  right: auto;
+}
+.hedge.r {
+  right: -12px;
+  left: auto;
+}
+.app.stacked .hedge.l,
+.app.stacked .hedge.r {
+  display: block;
+} /* Vertical: side edges on the picture */
+.vedge {
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  bottom: -7px;
+  height: 14px;
+  cursor: ns-resize;
+  touch-action: none;
+  z-index: 6;
+}
+.vedge::after,
+.hsplit::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 46px;
+  height: 4px;
+  margin-left: -23px;
+  border-radius: 2px;
+  background: #8a8a92;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.vedge::after {
+  top: 5px;
+}
+.hsplit::after {
+  top: 6px;
+}
+.vedge:hover::after,
+.vedge.drag::after,
+.hsplit:hover::after,
+.hsplit.drag::after {
+  opacity: 1;
+}
+.left.hm .vedge {
+  display: none;
+}
+#lcol.vbdrag > .chips {
+  transition: none;
+} /* Vertical: the chips follow the dragged bottom edge directly */
+.hsplit {
+  display: none;
+}
+.app.stacked .hsplit {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 8px;
+  cursor: ns-resize;
+  z-index: 6;
+  touch-action: none;
+} /* stage.js places it above the title */
 /* the resize outline: on the page's bottom layer (above the sky, under the panels), 12 px round the picture
    (stage.js places it every frame). Hover intent: in quickly, out late and slowly, so sweeping across an edge never
    makes it blink. !important: these two transitions outrank the motion switches below on purpose */
-.fithint{position:fixed;display:block;z-index:0;pointer-events:none;opacity:0;border:1px dashed rgba(255,255,255,.28);border-radius:calc(var(--r-panel) + 12px);transition:opacity .4s ease .3s!important}
-.fithint.show{opacity:1;transition:opacity .2s ease 0s!important}
+.fithint {
+  position: fixed;
+  display: block;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  border: 1px dashed rgba(255, 255, 255, 0.28);
+  border-radius: calc(var(--r-panel) + 12px);
+  transition: opacity 0.4s ease 0.3s !important;
+}
+.fithint.show {
+  opacity: 1;
+  transition: opacity 0.2s ease 0s !important;
+}
 /* Queue / LoRAs / PNG Info: the whole panel is what an edge sizes */
-.right.edgehint:has(.rpanel.paneled)::before{content:"";position:absolute;inset:64px 0 0 0;border:1px dashed rgba(255,255,255,.18);border-radius:var(--r-panel);pointer-events:none;z-index:7}
+.right.edgehint:has(.rpanel.paneled)::before {
+  content: "";
+  position: absolute;
+  inset: 64px 0 0 0;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: var(--r-panel);
+  pointer-events: none;
+  z-index: 7;
+}
 
 /* ======================= prompt column: the name row =======================
    The title over the box (theme title font), the file name round it on hover, the Reuse bar when you look at an old
    picture. layoutLeft() sets --ltop / --ts / --lh / --chtop. */
-.ltitle{position:absolute;right:0;width:min(100%,var(--cw,680px));top:calc(var(--ltop,0px) - var(--ts,64px) + 4px);height:calc(var(--ts,64px) - 10px);
- padding:0 26px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;container-type:inline-size;
- transition:top var(--lay-t) var(--lay-e),height var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
-.phead{display:flex;justify-content:center;align-items:center;padding:0;font-size:12.5px;color:var(--muted);flex:none}
-.plbl{display:flex;align-items:center;justify-content:center;min-width:0;flex:1;font-weight:500;letter-spacing:.02em}
-.nchip{position:relative;display:inline-flex;align-items:center;border-radius:999px;transition:background .15s;min-width:0}
-.pname{flex:0 1 auto;field-sizing:content;min-width:9ch;max-width:100%;background:transparent;border:0;outline:0;font:inherit;font-family:var(--font-title,inherit);
- font-size:24px;font-weight:600;letter-spacing:-.01em;color:#f2f2f2;text-align:center;padding:2px 6px;margin-left:0;border-radius:6px}
-.pname::placeholder{color:#55555c;font-weight:500}
-.pname:hover{background:#26262a}
-.pname:focus{background:#26262a;box-shadow:inset 0 0 0 1px #3a3a40}
-.plbl.hasname .pname:hover,.plbl.hasname .pname:focus{background:transparent;box-shadow:none}
-.ltitle .plbl .pname:not([readonly]){padding:2px 12px;transition:background .15s,box-shadow .15s}
-.plbl.dimname .pname{color:#9a9aa2}
-.ltitle .plbl.peekname .pname{color:#77777e}   /* an old picture's name: greyed */
-.ltitle .plbl.peekname .pname:not([readonly]):focus{color:#f2f2f2}
+.ltitle {
+  position: absolute;
+  right: 0;
+  width: min(100%, var(--cw, 680px));
+  top: calc(var(--ltop, 0px) - var(--ts, 64px) + 4px);
+  height: calc(var(--ts, 64px) - 10px);
+  padding: 0 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  container-type: inline-size;
+  transition:
+    top var(--lay-t) var(--lay-e),
+    height var(--lay-t) var(--lay-e),
+    width var(--lay-t) var(--lay-e),
+    transform var(--lay-t) var(--lay-e);
+}
+.phead {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  flex: none;
+}
+.plbl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.nchip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  transition: background 0.15s;
+  min-width: 0;
+}
+.pname {
+  flex: 0 1 auto;
+  field-sizing: content;
+  min-width: 9ch;
+  max-width: 100%;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  font-family: var(--font-title, inherit);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 2px 6px;
+  margin-left: 0;
+  border-radius: 6px;
+}
+.pname::placeholder {
+  color: #55555c;
+  font-weight: 500;
+}
+.pname:hover {
+  background: #26262a;
+}
+.pname:focus {
+  background: #26262a;
+  box-shadow: inset 0 0 0 1px #3a3a40;
+}
+.plbl.hasname .pname:hover,
+.plbl.hasname .pname:focus {
+  background: transparent;
+  box-shadow: none;
+}
+.ltitle .plbl .pname:not([readonly]) {
+  padding: 2px 12px;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
+}
+.plbl.dimname .pname {
+  color: #9a9aa2;
+}
+.ltitle .plbl.peekname .pname {
+  color: #77777e;
+} /* an old picture's name: greyed */
+.ltitle .plbl.peekname .pname:not([readonly]):focus {
+  color: #f2f2f2;
+}
 /* a finished picture's title: as it is — no plate at rest or on hover, only while you edit it */
-.ltitle .plbl.donename .pname:not(:focus),.ltitle .plbl.donename .pname:not(:focus):hover{background:transparent;box-shadow:none;cursor:text}
-.pnx{width:18px;height:18px;border-radius:50%;display:none;place-items:center;color:var(--muted);flex:none;margin-left:0;opacity:0;transition:opacity .15s}
-.pnx:hover{background:#3a3a40;color:#fff}.pnx svg{width:9px;height:9px}
-.plbl.hasname .pnx{display:grid}.plbl.peekname .pnx{display:none}
-.ltitle:hover .plbl.hasname .pnx{opacity:1}
+.ltitle .plbl.donename .pname:not(:focus),
+.ltitle .plbl.donename .pname:not(:focus):hover {
+  background: transparent;
+  box-shadow: none;
+  cursor: text;
+}
+.pnx {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: none;
+  place-items: center;
+  color: var(--muted);
+  flex: none;
+  margin-left: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.pnx:hover {
+  background: #3a3a40;
+  color: #fff;
+}
+.pnx svg {
+  width: 9px;
+  height: 9px;
+}
+.plbl.hasname .pnx {
+  display: grid;
+}
+.plbl.peekname .pnx {
+  display: none;
+}
+.ltitle:hover .plbl.hasname .pnx {
+  opacity: 1;
+}
 /* the file name round the title (hover a finished picture's title): its number and .png appear beside it, fading in
    and drifting out of the title (queue.js fnShow sets their margins) */
-.fnpre,.fnsuf{display:inline;position:absolute;top:50%;pointer-events:none;opacity:0;color:#6f747a;font-size:24px;font-weight:500;white-space:nowrap;letter-spacing:-.01em;
- font-family:var(--font-title,inherit);transition:opacity .2s ease,transform .2s ease}
-.fnpre{right:100%;margin-right:8px;transform:translate(8px,-50%);letter-spacing:.02em}.fnsuf{left:100%;margin-left:0;transform:translate(-8px,-50%)}
-.plbl.fnon .fnpre,.plbl.fnon .fnsuf{opacity:1;transform:translate(0,-50%);transition:opacity .45s cubic-bezier(.2,.7,.2,1),transform .55s cubic-bezier(.2,.7,.2,1)}
-.pnsave{display:none;margin-left:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--grad);color:var(--ink);white-space:nowrap}
-.pnsave.show{display:inline-block}
+.fnpre,
+.fnsuf {
+  display: inline;
+  position: absolute;
+  top: 50%;
+  pointer-events: none;
+  opacity: 0;
+  color: #6f747a;
+  font-size: 24px;
+  font-weight: 500;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  font-family: var(--font-title, inherit);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.fnpre {
+  right: 100%;
+  margin-right: 8px;
+  transform: translate(8px, -50%);
+  letter-spacing: 0.02em;
+}
+.fnsuf {
+  left: 100%;
+  margin-left: 0;
+  transform: translate(-8px, -50%);
+}
+.plbl.fnon .fnpre,
+.plbl.fnon .fnsuf {
+  opacity: 1;
+  transform: translate(0, -50%);
+  transition:
+    opacity 0.45s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.pnsave {
+  display: none;
+  margin-left: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--grad);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.pnsave.show {
+  display: inline-block;
+}
 /* the Reuse bar: the row above the box, centred, its ends clear of the size buttons; ~9 px over the box */
-.peekbar{display:none;align-items:center;gap:6px;padding:5px 5px 5px 12px;margin-top:12px;margin-bottom:3px;max-width:calc(100% - 136px);border-radius:999px;
- background:#2c2c31;border:1px solid #3a3a40;font-size:12.5px;white-space:nowrap;z-index:3}
-.peekbar.show{display:flex}
-.peekbar>span{color:var(--muted);margin-right:4px;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.peekbar button{padding:5px 11px;border-radius:999px;background:#3a3a40;font-size:12.5px}
-.peekbar button:hover{background:#4a4a52}
-.peekbar #pkAll{background:#fff;color:#111;font-weight:600}
-.peekbar .pkseed{min-width:32px;padding:5px 9px;display:grid;place-items:center;color:var(--muted)}.peekbar .pkseed svg{width:15px;height:15px}
-.peekbar .pkseed.on{color:var(--a1)}
-.peekbar .sm{display:none}
-@container (max-width:470px){.ltitle #peekLbl{display:none}}
-@container (max-width:340px){.ltitle .peekbar .lg{display:none}.ltitle .peekbar .sm{display:inline}}
+.peekbar {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 5px 5px 12px;
+  margin-top: 12px;
+  margin-bottom: 3px;
+  max-width: calc(100% - 136px);
+  border-radius: 999px;
+  background: #2c2c31;
+  border: 1px solid #3a3a40;
+  font-size: 12.5px;
+  white-space: nowrap;
+  z-index: 3;
+}
+.peekbar.show {
+  display: flex;
+}
+.peekbar > span {
+  color: var(--muted);
+  margin-right: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.peekbar button {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #3a3a40;
+  font-size: 12.5px;
+}
+.peekbar button:hover {
+  background: #4a4a52;
+}
+.peekbar #pkAll {
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+}
+.peekbar .pkseed {
+  min-width: 32px;
+  padding: 5px 9px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.peekbar .pkseed svg {
+  width: 15px;
+  height: 15px;
+}
+.peekbar .pkseed.on {
+  color: var(--a1);
+}
+.peekbar .sm {
+  display: none;
+}
+@container (max-width:470px) {
+  .ltitle #peekLbl {
+    display: none;
+  }
+}
+@container (max-width:340px) {
+  .ltitle .peekbar .lg {
+    display: none;
+  }
+  .ltitle .peekbar .sm {
+    display: inline;
+  }
+}
 /* the size buttons at the name row's right: Match the picture's height · Full height (Vertical: Fit the width) */
-.hmodes{position:absolute;right:22px;bottom:6px;display:flex;gap:4px;z-index:4;opacity:0;transition:opacity .15s}
-#lcol:hover .hmodes,.hmodes.on{opacity:1}
-.hmodes button{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
-.hmodes button:hover{background:var(--raised2);color:#fff}.hmodes button.on{background:#f2f2f2;color:#111}
-.hmodes svg{width:16px;height:16px}
-.app.stacked #hmFull{display:none}
-.ltitle.tnarrow:has(.peekbar.show){flex-direction:row;flex-wrap:wrap;justify-content:center;align-content:flex-end;align-items:center;column-gap:8px}
-.ltitle.tnarrow:has(.peekbar.show) .phead{flex-basis:100%}
-.ltitle.tnarrow .peekbar{max-width:none}
-.ltitle.tnarrow:has(.peekbar.show) .hmodes{position:static;margin-top:12px;margin-bottom:3px;opacity:1}
+.hmodes {
+  position: absolute;
+  right: 22px;
+  bottom: 6px;
+  display: flex;
+  gap: 4px;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+#lcol:hover .hmodes,
+.hmodes.on {
+  opacity: 1;
+}
+.hmodes button {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.hmodes button:hover {
+  background: var(--raised2);
+  color: #fff;
+}
+.hmodes button.on {
+  background: #f2f2f2;
+  color: #111;
+}
+.hmodes svg {
+  width: 16px;
+  height: 16px;
+}
+.app.stacked #hmFull {
+  display: none;
+}
+.ltitle.tnarrow:has(.peekbar.show) {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-end;
+  align-items: center;
+  column-gap: 8px;
+}
+.ltitle.tnarrow:has(.peekbar.show) .phead {
+  flex-basis: 100%;
+}
+.ltitle.tnarrow .peekbar {
+  max-width: none;
+}
+.ltitle.tnarrow:has(.peekbar.show) .hmodes {
+  position: static;
+  margin-top: 12px;
+  margin-bottom: 3px;
+  opacity: 1;
+}
 
 /* ======================= prompt box ======================= */
-.left{position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--ltop,0px);height:var(--lh,auto);display:flex;flex-direction:column;padding-top:0;
- background:var(--panel);border:1px solid #34343a;border-radius:var(--r-panel);container-type:inline-size;
- transition:top var(--lay-t) var(--lay-e),height var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
-.left.nodur,.ltitle.nodur{transition:none}
-.app.stacked .left,.app.stacked .ltitle{right:auto;left:50%;width:min(100%,var(--sw,760px));transform:translateX(calc(-50% + var(--soff,0px)))}
-.app.pright .left,.app.pright .ltitle,.app.pright .ghost,.app.pright #lcol>.chips{right:auto;left:0}
+.left {
+  position: absolute;
+  right: 0;
+  width: min(100%, var(--cw, 680px));
+  top: var(--ltop, 0px);
+  height: var(--lh, auto);
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+  background: var(--panel);
+  border: 1px solid #34343a;
+  border-radius: var(--r-panel);
+  container-type: inline-size;
+  transition:
+    top var(--lay-t) var(--lay-e),
+    height var(--lay-t) var(--lay-e),
+    width var(--lay-t) var(--lay-e),
+    transform var(--lay-t) var(--lay-e);
+}
+.left.nodur,
+.ltitle.nodur {
+  transition: none;
+}
+.app.stacked .left,
+.app.stacked .ltitle {
+  right: auto;
+  left: 50%;
+  width: min(100%, var(--sw, 760px));
+  transform: translateX(calc(-50% + var(--soff, 0px)));
+}
+.app.pright .left,
+.app.pright .ltitle,
+.app.pright .ghost,
+.app.pright #lcol > .chips {
+  right: auto;
+  left: 0;
+}
 /* side by side: grab the empty parts of the box (or the name row) to move it — top / middle / bottom */
-.app:not(.stacked) .left,.app:not(.stacked) .ltitle{cursor:grab}
-.app:not(.stacked) .left.hm,.app:not(.stacked) .ltitle.hm{cursor:default}
-.pwrapT{position:relative;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden;cursor:text}
-textarea#prompt{field-sizing:content;flex:1 1 auto;min-height:200px;resize:none;background:transparent;border:0;outline:0;padding:28px 16px 10px 28px;margin:0 12px 8px 0;line-height:1.62;overflow:auto}
-textarea#prompt.peek{color:#b6bcc0}
-.pwrapT.cm-on textarea#prompt{display:none}
+.app:not(.stacked) .left,
+.app:not(.stacked) .ltitle {
+  cursor: grab;
+}
+.app:not(.stacked) .left.hm,
+.app:not(.stacked) .ltitle.hm {
+  cursor: default;
+}
+.pwrapT {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  cursor: text;
+}
+textarea#prompt {
+  field-sizing: content;
+  flex: 1 1 auto;
+  min-height: 200px;
+  resize: none;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  padding: 28px 16px 10px 28px;
+  margin: 0 12px 8px 0;
+  line-height: 1.62;
+  overflow: auto;
+}
+textarea#prompt.peek {
+  color: #b6bcc0;
+}
+.pwrapT.cm-on textarea#prompt {
+  display: none;
+}
 /* CodeMirror (editor.js) — these sit beside CodeMirror's own injected styles, so they keep their specificity */
-.pwrapT .cm-editor{flex:0 1 auto;min-height:108px;max-height:100%;margin:0 12px 8px 0;outline:0!important;background:transparent;font:inherit}   /* !important: CodeMirror's focus outline */
-@property --ft{syntax:"<length>";inherits:true;initial-value:0px}@property --fb{syntax:"<length>";inherits:true;initial-value:0px}
-.pwrapT .cm-scroller{overflow:auto;font-family:inherit;line-height:1.62;transition:--ft .2s,--fb .2s;
- -webkit-mask-image:linear-gradient(transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);mask-image:linear-gradient(transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%)}
-.pwrapT.scrolled .cm-scroller{--ft:28px}.pwrapT.more .cm-scroller{--fb:28px}   /* the fade is the inset: the 28 px margin stays a margin while the text scrolls through it */   /* text fades at an edge only where there's more of it */
+.pwrapT .cm-editor {
+  flex: 0 1 auto;
+  min-height: 108px;
+  max-height: 100%;
+  margin: 0 12px 8px 0;
+  outline: 0 !important;
+  background: transparent;
+  font: inherit;
+} /* !important: CodeMirror's focus outline */
+@property --ft {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+@property --fb {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+.pwrapT .cm-scroller {
+  overflow: auto;
+  font-family: inherit;
+  line-height: 1.62;
+  transition:
+    --ft 0.2s,
+    --fb 0.2s;
+  -webkit-mask-image: linear-gradient(transparent 0, #000 var(--ft), #000 calc(100% - var(--fb)), transparent 100%);
+  mask-image: linear-gradient(transparent 0, #000 var(--ft), #000 calc(100% - var(--fb)), transparent 100%);
+}
+.pwrapT.scrolled .cm-scroller {
+  --ft: 28px;
+}
+.pwrapT.more .cm-scroller {
+  --fb: 28px;
+} /* the fade is the inset: the 28 px margin stays a margin while the text scrolls through it */ /* text fades at an edge only where there's more of it */
 /* …and slides under a gradual blur there first (the glass "scroll edge"): a thin layer whose blur ramps up toward the edge */
-.pwrapT::before,.pwrapT::after{content:"";position:absolute;left:0;right:0;height:28px;z-index:1;pointer-events:none;
- -webkit-backdrop-filter:blur(0px);backdrop-filter:blur(0px);transition:backdrop-filter .2s,-webkit-backdrop-filter .2s}
-.pwrapT::before{top:0;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
-.pwrapT::after{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000);mask-image:linear-gradient(transparent,#000)}
-.pwrapT.scrolled::before,.pwrapT.more::after{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-.pwrapT.ovf .cm-scroller{scrollbar-gutter:stable}
-.pwrapT .cm-scroller::-webkit-scrollbar-track{margin:32px 0 10px}   /* starts just under the ✕ (which ends where the text starts, 28 px) */
-body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track{margin-bottom:calc(var(--ctrlh,64px) + 4px)}   /* the scrollbar keeps its room only while the text overflows (editor.js) */
-.pwrapT .cm-content{padding:28px 0 10px 0;caret-color:#fff;font-size:15px}
-.pwrapT .cm-line{padding:0 16px 0 28px}   /* with the editor's 12 px margin: 28 px on the right too */   /* the text fills the box: you set its width yourself */
-.pwrapT .cm-cursor{border-left:2px solid #fff}
-.pwrapT .cm-selectionBackground,.pwrapT .cm-focused .cm-selectionBackground{background:color-mix(in oklab,var(--an,#7890ff) 36%,transparent)!important}   /* !important: CodeMirror's own selection colour */
-.pwrapT .cm-placeholder{color:var(--faint)}
-.pwrapT .cm-editor.peek .cm-content{color:#b6bcc0}
+.pwrapT::before,
+.pwrapT::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 28px;
+  z-index: 1;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(0px);
+  backdrop-filter: blur(0px);
+  transition:
+    backdrop-filter 0.2s,
+    -webkit-backdrop-filter 0.2s;
+}
+.pwrapT::before {
+  top: 0;
+  -webkit-mask-image: linear-gradient(#000, transparent);
+  mask-image: linear-gradient(#000, transparent);
+}
+.pwrapT::after {
+  bottom: 0;
+  -webkit-mask-image: linear-gradient(transparent, #000);
+  mask-image: linear-gradient(transparent, #000);
+}
+.pwrapT.scrolled::before,
+.pwrapT.more::after {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.pwrapT.ovf .cm-scroller {
+  scrollbar-gutter: stable;
+}
+.pwrapT .cm-scroller::-webkit-scrollbar-track {
+  margin: 32px 0 10px;
+} /* starts just under the ✕ (which ends where the text starts, 28 px) */
+body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
+  margin-bottom: calc(var(--ctrlh, 64px) + 4px);
+} /* the scrollbar keeps its room only while the text overflows (editor.js) */
+.pwrapT .cm-content {
+  padding: 28px 0 10px 0;
+  caret-color: #fff;
+  font-size: 15px;
+}
+.pwrapT .cm-line {
+  padding: 0 16px 0 28px;
+} /* with the editor's 12 px margin: 28 px on the right too */ /* the text fills the box: you set its width yourself */
+.pwrapT .cm-cursor {
+  border-left: 2px solid #fff;
+}
+.pwrapT .cm-selectionBackground,
+.pwrapT .cm-focused .cm-selectionBackground {
+  background: color-mix(in oklab, var(--an, #7890ff) 36%, transparent) !important;
+} /* !important: CodeMirror's own selection colour */
+.pwrapT .cm-placeholder {
+  color: var(--faint);
+}
+.pwrapT .cm-editor.peek .cm-content {
+  color: #b6bcc0;
+}
 /* prompt structure (editor.js marks it; PNG Info reuses the classes) */
-.cm-ln-comment{color:#6c6c74;font-style:italic}
-.cm-ln-list{text-indent:-2.4em}
-.cm-marker{display:inline-block;width:2em;margin-right:.4em;text-align:right;color:#6f6f78;text-indent:0;font-variant-numeric:tabular-nums}
-.cm-ln-label{font-size:11.5px!important;text-transform:uppercase;letter-spacing:.09em;color:#8a8a92;padding-top:6px!important}   /* !important: over .cm-line's size and padding */
-.cm-variant{background:#2c2c33;border-radius:6px;box-shadow:0 0 0 1px #3c3c44;padding:0 2px}
-.cm-vbar{color:#6f6f78}
-.cm-lora{background:#2a2a30;border-radius:6px;color:#bdbdc6;padding:0 3px;box-shadow:0 0 0 1px #3a3a42}
+.cm-ln-comment {
+  color: #6c6c74;
+  font-style: italic;
+}
+.cm-ln-list {
+  text-indent: -2.4em;
+}
+.cm-marker {
+  display: inline-block;
+  width: 2em;
+  margin-right: 0.4em;
+  text-align: right;
+  color: #6f6f78;
+  text-indent: 0;
+  font-variant-numeric: tabular-nums;
+}
+.cm-ln-label {
+  font-size: 11.5px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #8a8a92;
+  padding-top: 6px !important;
+} /* !important: over .cm-line's size and padding */
+.cm-variant {
+  background: #2c2c33;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px #3c3c44;
+  padding: 0 2px;
+}
+.cm-vbar {
+  color: #6f6f78;
+}
+.cm-lora {
+  background: #2a2a30;
+  border-radius: 6px;
+  color: #bdbdc6;
+  padding: 0 3px;
+  box-shadow: 0 0 0 1px #3a3a42;
+}
 /* the character count, while you type */
-.pcount{position:absolute;right:50px;top:8px;height:20px;line-height:20px;z-index:3;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--faint);opacity:0;transition:opacity .2s;pointer-events:none}
-.pwrapT:focus-within .pcount{opacity:1}
+.pcount {
+  position: absolute;
+  right: 50px;
+  top: 8px;
+  height: 20px;
+  line-height: 20px;
+  z-index: 3;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.pwrapT:focus-within .pcount {
+  opacity: 1;
+}
 /* privacy on: the prompt, the name and the LoRA chips are hidden; the box stays, with a lock */
-.privov{display:none;position:absolute;inset:0;z-index:5;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:13.5px;border-radius:inherit;cursor:default}
-.privov svg{width:18px;height:18px}
-body.private .privov{display:flex}
-body.private .pwrapT .cm-editor,body.private .pwrapT textarea,body.private .ltitle .nchip,body.private .chips,body.private .peekbar,body.private .pcount{visibility:hidden}
+.privov {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13.5px;
+  border-radius: inherit;
+  cursor: default;
+}
+.privov svg {
+  width: 18px;
+  height: 18px;
+}
+body.private .privov {
+  display: flex;
+}
+body.private .pwrapT .cm-editor,
+body.private .pwrapT textarea,
+body.private .ltitle .nchip,
+body.private .chips,
+body.private .peekbar,
+body.private .pcount {
+  visibility: hidden;
+}
 
 /* ======================= controls: the pills and Start ======================= */
 /* one inset (16 px) left, bottom and right; pills and Start share their bottom edge; pill text lines up with the prompt */
-.controls{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:8px 16px 16px 16px}
-.pills{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-start;flex:0 1 auto;min-width:0}
-.pill{position:relative;flex:0 0 auto;height:38px;padding:0 12px;border-radius:var(--r-pill);background:transparent;display:flex;flex-direction:column;justify-content:center;align-items:center;
- color:#CDCDCD;font-weight:500;transition:color var(--dur),background var(--dur)}
-.pill:hover,.pill.open{color:var(--text);background:var(--raised)}
-.pill .val{font-size:15px;line-height:1.1;white-space:nowrap}
-.pill .il{color:var(--muted);font-weight:400;margin-right:6px}
-@container (max-width:560px){.pill .w{display:none}.pill{padding:0 11px}}
-@container (max-width:470px){.pill .il{display:none}}
-.left.peeking .pills{pointer-events:none}.left.peeking .pill{color:#8b9095}.left.peeking .pill .il{color:#686d72}.left.peeking #pN{display:none}
-.left.peeking #pSD{pointer-events:auto;cursor:copy}   /* an old picture's seed pill copies its seed */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 16px 16px 16px;
+}
+.pills {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.pill {
+  position: relative;
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--r-pill);
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #cdcdcd;
+  font-weight: 500;
+  transition:
+    color var(--dur),
+    background var(--dur);
+}
+.pill:hover,
+.pill.open {
+  color: var(--text);
+  background: var(--raised);
+}
+.pill .val {
+  font-size: 15px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.pill .il {
+  color: var(--muted);
+  font-weight: 400;
+  margin-right: 6px;
+}
+@container (max-width:560px) {
+  .pill .w {
+    display: none;
+  }
+  .pill {
+    padding: 0 11px;
+  }
+}
+@container (max-width:470px) {
+  .pill .il {
+    display: none;
+  }
+}
+.left.peeking .pills {
+  pointer-events: none;
+}
+.left.peeking .pill {
+  color: #8b9095;
+}
+.left.peeking .pill .il {
+  color: #686d72;
+}
+.left.peeking #pN {
+  display: none;
+}
+.left.peeking #pSD {
+  pointer-events: auto;
+  cursor: copy;
+} /* an old picture's seed pill copies its seed */
 /* Start: the theme gradient with a dark triangle; nothing to queue — plain, a grey triangle; while a job runs — plain,
    the triangle in the progress bar's flowing gradient (the same colours and pace) */
-.play{position:relative;order:2;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--raised);--play-fill:url(#playGrad);transition:transform .12s,filter .12s}
-.play:not(.off){background:var(--grad)}
-.play:not(.off):hover{filter:brightness(1.1) saturate(1.05)}
-.play.off{cursor:not-allowed}
-.play svg{width:20px;height:20px;margin-left:2px}
-.play svg path{fill:var(--play-fill);transition:fill .2s,opacity .2s,transform .25s var(--lay-e)}
+.play {
+  position: relative;
+  order: 2;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--raised);
+  --play-fill: url(#playGrad);
+  transition:
+    transform 0.12s,
+    filter 0.12s;
+}
+.play:not(.off) {
+  background: var(--grad);
+}
+.play:not(.off):hover {
+  filter: brightness(1.1) saturate(1.05);
+}
+.play.off {
+  cursor: not-allowed;
+}
+.play svg {
+  width: 20px;
+  height: 20px;
+  margin-left: 2px;
+}
+.play svg path {
+  fill: var(--play-fill);
+  transition:
+    fill 0.2s,
+    opacity 0.2s,
+    transform 0.25s var(--lay-e);
+}
 /* in the Gallery Start is Vary (a new seed): the triangle turns into the die from the Seed pop-up */
-.play svg .tri{transform-origin:12px 12px}
-.play .dice{opacity:0;transform:scale(.6) rotate(-30deg);transform-origin:12px 12px;transition:opacity .2s,transform .3s var(--lay-e)}
-.play .dice rect{fill:none;stroke:var(--ink);stroke-width:2}.play .dice circle{fill:var(--ink)}
-.play.vary .dice{opacity:1;transform:none}
-.play.gen .dice rect{stroke:#fff}.play.gen .dice circle{fill:#fff}
-.play.vary svg .tri{opacity:0;transform:scale(.6)}
-.play svg{transition:margin .25s var(--lay-e),transform .45s cubic-bezier(.2,.7,.2,1)}
-.play:not(.off):hover svg{transform:scale(1.2)}.play.vary svg{margin-left:0}   /* the triangle sits 2 px right (optical centre); the die doesn't */
-.play.off svg path{fill:var(--muted)}
-.play:not(.off) svg path{fill:var(--ink)}
-.play.gen,.play.gen:not(.off):hover{background:var(--raised);filter:none}
+.play svg .tri {
+  transform-origin: 12px 12px;
+}
+.play .dice {
+  opacity: 0;
+  transform: scale(0.6) rotate(-30deg);
+  transform-origin: 12px 12px;
+  transition:
+    opacity 0.2s,
+    transform 0.3s var(--lay-e);
+}
+.play .dice rect {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.play .dice circle {
+  fill: var(--ink);
+}
+.play.vary .dice {
+  opacity: 1;
+  transform: none;
+}
+.play.gen .dice rect {
+  stroke: #fff;
+}
+.play.gen .dice circle {
+  fill: #fff;
+}
+.play.vary svg .tri {
+  opacity: 0;
+  transform: scale(0.6);
+}
+.play svg {
+  transition:
+    margin 0.25s var(--lay-e),
+    transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.play:not(.off):hover svg {
+  transform: scale(1.2);
+}
+.play.vary svg {
+  margin-left: 0;
+} /* the triangle sits 2 px right (optical centre); the die doesn't */
+.play.off svg path {
+  fill: var(--muted);
+}
+.play:not(.off) svg path {
+  fill: var(--ink);
+}
+.play.gen,
+.play.gen:not(.off):hover {
+  background: var(--raised);
+  filter: none;
+}
 /* the queue count on Start's corner: you add to the queue there, so the number goes up where you click */
-.badge{position:absolute;top:-8px;right:-10px;min-width:22px;height:20px;padding:0 6px;border-radius:999px;display:none;place-items:center;
- font-size:11.5px;font-weight:600;color:#fff;background:transparent;text-shadow:0 0 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.7)}
-.badge.show{display:grid}
-.play .ptrack,.play .pring{display:none}   /* the old progress ring on Start (retired 2026-10-19) */
+.badge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: none;
+  place-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #fff;
+  background: transparent;
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.9),
+    0 0 8px rgba(0, 0, 0, 0.7);
+}
+.badge.show {
+  display: grid;
+}
+.play .ptrack,
+.play .pring {
+  display: none;
+} /* the old progress ring on Start (retired 2026-10-19) */
 /* pop-ups over the pills */
-.pop{position:absolute;bottom:58px;left:0;transform-origin:bottom left;visibility:hidden;opacity:0;transform:translateY(6px) scale(.97);
- transition:opacity var(--dur) var(--ease),transform var(--dur) var(--ease),visibility 0s linear var(--dur);background:#232326;border:1px solid #3a3a3f;border-radius:16px;
- padding:8px;min-width:160px;box-shadow:0 12px 40px rgba(0,0,0,.55);z-index:40;text-align:left;color:var(--text);cursor:default}
-.pop.show{visibility:visible;opacity:1;transform:none;transition:opacity var(--dur) var(--ease),transform var(--dur) var(--ease),visibility 0s}
-.pop .opt{display:flex;justify-content:space-between;gap:14px;width:100%;padding:7px 10px;border-radius:10px;font-size:14px;cursor:pointer}
-.pop .opt:hover{background:var(--raised2)}.pop .opt.on{color:#fff;font-weight:600}
-.pop .opt small{color:var(--muted)}
-.pop .row{display:flex;align-items:center;gap:8px;padding:6px}
-.pop input[type=number]{width:64px;background:var(--raised);border:1px solid #3a3a3f;border-radius:10px;padding:6px 8px}
-.pop .hint{padding:2px 8px 4px;color:var(--muted);font-size:12px}
-.qb{padding:5px 11px;border-radius:999px;background:var(--raised);font-size:13px}
-.qb:hover{background:var(--raised2)}.qb.on{background:#fff;color:#111;font-weight:600}
-.rgrid{display:grid;grid-template-columns:repeat(4,72px);gap:6px}
-.rt{height:84px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;padding:8px 4px 6px;cursor:pointer;border:1px solid transparent}
-.rt:hover{background:var(--raised2)}.rt.on{border-color:rgba(255,255,255,.85)}
-.rt .shape{border:2px solid #8a8a90;border-radius:4px}
-.rt.on .shape{border-color:#fff}
-.rt .t{font-size:12.5px;line-height:1}.rt .px{font-size:10px;color:var(--muted);line-height:1}
-.iconbtn{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--raised)}
-.iconbtn:hover{background:var(--raised2)}.iconbtn svg{width:18px;height:18px}
-.iconbtn.spin svg{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-.seedc{cursor:copy;border-bottom:1px dotted rgba(255,255,255,.22)}.seedc:hover{color:var(--text)}   /* seeds you can copy */
+.pop {
+  position: absolute;
+  bottom: 58px;
+  left: 0;
+  transform-origin: bottom left;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease),
+    visibility 0s linear var(--dur);
+  background: #232326;
+  border: 1px solid #3a3a3f;
+  border-radius: 16px;
+  padding: 8px;
+  min-width: 160px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  z-index: 40;
+  text-align: left;
+  color: var(--text);
+  cursor: default;
+}
+.pop.show {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease),
+    visibility 0s;
+}
+.pop .opt {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.pop .opt:hover {
+  background: var(--raised2);
+}
+.pop .opt.on {
+  color: #fff;
+  font-weight: 600;
+}
+.pop .opt small {
+  color: var(--muted);
+}
+.pop .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+}
+.pop input[type="number"] {
+  width: 64px;
+  background: var(--raised);
+  border: 1px solid #3a3a3f;
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+.pop .hint {
+  padding: 2px 8px 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.qb {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--raised);
+  font-size: 13px;
+}
+.qb:hover {
+  background: var(--raised2);
+}
+.qb.on {
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+}
+.rgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 72px);
+  gap: 6px;
+}
+.rt {
+  height: 84px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  padding: 8px 4px 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.rt:hover {
+  background: var(--raised2);
+}
+.rt.on {
+  border-color: rgba(255, 255, 255, 0.85);
+}
+.rt .shape {
+  border: 2px solid #8a8a90;
+  border-radius: 4px;
+}
+.rt.on .shape {
+  border-color: #fff;
+}
+.rt .t {
+  font-size: 12.5px;
+  line-height: 1;
+}
+.rt .px {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1;
+}
+.iconbtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--raised);
+}
+.iconbtn:hover {
+  background: var(--raised2);
+}
+.iconbtn svg {
+  width: 18px;
+  height: 18px;
+}
+.iconbtn.spin svg {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.seedc {
+  cursor: copy;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.22);
+}
+.seedc:hover {
+  color: var(--text);
+} /* seeds you can copy */
 
 /* ======================= LoRA chips under the box ======================= */
 /* centred under the box, moving with it (layoutLeft sets --chtop); drag one to reorder */
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-#lcol>.chips{position:absolute;right:0;width:min(100%,var(--cw,680px));top:var(--chtop,0px);justify-content:flex-start;align-items:center;padding:0 16px;
- transition:top var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
-#lcol>.chips:empty{display:none}
-.app.stacked #lcol>.chips{right:auto;left:50%;width:min(100%,var(--sw,760px));transform:translateX(calc(-50% + var(--soff,0px)))}
-body.liveresize #lcol>.chips,body.cardmove #lcol>.chips{transition:none}
-.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 6px 4px 10px;border-radius:var(--r-pill);background:var(--raised);font-size:12.5px;color:#d6d6da;cursor:default}
-.chip:hover{background:var(--raised2)}
-.chip.face{background:#34343a}
-.chip[draggable=true]{cursor:grab}.chip.dragging{opacity:.35}
-.chip[hidden]{display:none}
-.chip .cn{cursor:pointer}
-.chip .cw{font-weight:600;color:#fff;cursor:ew-resize;padding:0 3px;border-radius:5px;font-variant-numeric:tabular-nums}
-.chip .cw:hover{background:#3a3a40}
-.chip .cwi{width:46px;background:#1c1c1e;border:1px solid #4a4a52;border-radius:5px;color:#fff;font:inherit;font-weight:600;padding:0 3px;outline:0}
-.chip .cx{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
-.chip .cx:hover{background:#4a4a50;color:#fff}.chip .cx svg{width:10px;height:10px}
-.chiplbl{font-size:12px;letter-spacing:.02em;color:#8f959a;margin:0 6px 0 12px;user-select:none}   /* LoRA / LoRAs, spelled as written */
-.chipadd{padding:4px 11px;color:#cfd3d6;font-weight:600}.chipadd:hover{color:#fff}
-.chipmore{padding:4px 10px;font-weight:600;color:#d6d6da}
-.chips.peek .chip{opacity:.68;pointer-events:none}.chips.peek .chipmore{pointer-events:auto;opacity:1}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#lcol > .chips {
+  position: absolute;
+  right: 0;
+  width: min(100%, var(--cw, 680px));
+  top: var(--chtop, 0px);
+  justify-content: flex-start;
+  align-items: center;
+  padding: 0 16px;
+  transition:
+    top var(--lay-t) var(--lay-e),
+    width var(--lay-t) var(--lay-e),
+    transform var(--lay-t) var(--lay-e);
+}
+#lcol > .chips:empty {
+  display: none;
+}
+.app.stacked #lcol > .chips {
+  right: auto;
+  left: 50%;
+  width: min(100%, var(--sw, 760px));
+  transform: translateX(calc(-50% + var(--soff, 0px)));
+}
+body.liveresize #lcol > .chips,
+body.cardmove #lcol > .chips {
+  transition: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 10px;
+  border-radius: var(--r-pill);
+  background: var(--raised);
+  font-size: 12.5px;
+  color: #d6d6da;
+  cursor: default;
+}
+.chip:hover {
+  background: var(--raised2);
+}
+.chip.face {
+  background: #34343a;
+}
+.chip[draggable="true"] {
+  cursor: grab;
+}
+.chip.dragging {
+  opacity: 0.35;
+}
+.chip[hidden] {
+  display: none;
+}
+.chip .cn {
+  cursor: pointer;
+}
+.chip .cw {
+  font-weight: 600;
+  color: #fff;
+  cursor: ew-resize;
+  padding: 0 3px;
+  border-radius: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.chip .cw:hover {
+  background: #3a3a40;
+}
+.chip .cwi {
+  width: 46px;
+  background: #1c1c1e;
+  border: 1px solid #4a4a52;
+  border-radius: 5px;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  padding: 0 3px;
+  outline: 0;
+}
+.chip .cx {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.chip .cx:hover {
+  background: #4a4a50;
+  color: #fff;
+}
+.chip .cx svg {
+  width: 10px;
+  height: 10px;
+}
+.chiplbl {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: #8f959a;
+  margin: 0 6px 0 12px;
+  user-select: none;
+} /* LoRA / LoRAs, spelled as written */
+.chipadd {
+  padding: 4px 11px;
+  color: #cfd3d6;
+  font-weight: 600;
+}
+.chipadd:hover {
+  color: #fff;
+}
+.chipmore {
+  padding: 4px 10px;
+  font-weight: 600;
+  color: #d6d6da;
+}
+.chips.peek .chip {
+  opacity: 0.68;
+  pointer-events: none;
+}
+.chips.peek .chipmore {
+  pointer-events: auto;
+  opacity: 1;
+}
 
 /* ======================= tabs ======================= */
-.tabs{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;height:52px;transition:width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)}
-.right .tabs{align-self:flex-start;max-width:none;position:relative;z-index:4}
-.app.stacked .right .tabs{align-self:center;width:auto!important}   /* !important: over the inline width sizeFrame gives it side by side */
-.seg{position:relative;display:flex;gap:2px;padding:4px;border-radius:var(--r-pill);background:var(--panel);border:1px solid #26262a}
-.seg .thumb{position:absolute;top:4px;bottom:4px;left:0;width:0;border-radius:var(--r-pill);background:#3A3A3F;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 3px rgba(0,0,0,.4);transition:left .28s var(--ease),width .28s var(--ease)}
-.tab{position:relative;z-index:1;display:inline-flex;align-items:center;gap:5px;flex:none;height:40px;padding:0 18px;border-radius:var(--r-pill);white-space:nowrap;
- font-size:15px;font-weight:500;letter-spacing:-.01em;color:#CDCDCD;transition:color var(--dur) var(--ease)}
-.tab:hover,.tab.on{color:#fff}
-.tab .n{font-size:11px;font-weight:600;color:var(--muted);position:relative;top:-5px;line-height:1}
-.tab .n:empty{display:none}
+.tabs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  height: 52px;
+  transition:
+    width var(--lay-t) var(--lay-e),
+    transform var(--lay-t) var(--lay-e);
+}
+.right .tabs {
+  align-self: flex-start;
+  max-width: none;
+  position: relative;
+  z-index: 4;
+}
+.app.stacked .right .tabs {
+  align-self: center;
+  width: auto !important;
+} /* !important: over the inline width sizeFrame gives it side by side */
+.seg {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--panel);
+  border: 1px solid #26262a;
+}
+.seg .thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 0;
+  border-radius: var(--r-pill);
+  background: #3a3a3f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+  transition:
+    left 0.28s var(--ease),
+    width 0.28s var(--ease);
+}
+.tab {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #cdcdcd;
+  transition: color var(--dur) var(--ease);
+}
+.tab:hover,
+.tab.on {
+  color: #fff;
+}
+.tab .n {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  position: relative;
+  top: -5px;
+  line-height: 1;
+}
+.tab .n:empty {
+  display: none;
+}
 /* the running job's progress as a ring round the G of Generating, behind the letters (the word is its stacking layer):
    a hairline circle shows at once that a job runs (the App Store / Safari download pattern), the solid arc grows over
    it. One element: the mask is hairline ∪ (thick ring ∩ the progress slice) */
-.tab .tl{position:relative;isolation:isolate}
-.tab .tg{position:relative;display:inline-block}
+.tab .tl {
+  position: relative;
+  isolation: isolate;
+}
+.tab .tg {
+  position: relative;
+  display: inline-block;
+}
 /* its holder carries a knockout (effects.js): the letters in front, grown ~1.25 px, cut out of the ring — a map label's
    halo, so the ring never touches a glyph */
-.tab .trw{display:none;position:absolute;left:50%;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;z-index:-1;
- -webkit-mask:var(--ko,linear-gradient(#000 0 0)) 0 0/100% 100% no-repeat;mask:var(--ko,linear-gradient(#000 0 0)) 0 0/100% 100% no-repeat}
-body.jobrun .tab .trw{display:block}
-.tab .tring{position:absolute;inset:0;border-radius:50%;transition:--p .45s linear;
- -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 1.6px),rgba(0,0,0,.5) calc(100% - 1.2px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0),radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px));
- -webkit-mask-composite:source-over,source-in;
- mask:radial-gradient(farthest-side,transparent calc(100% - 1.6px),rgba(0,0,0,.5) calc(100% - 1.2px)),conic-gradient(#000 calc(var(--p)*360deg),transparent 0),radial-gradient(farthest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px));
- mask-composite:add,intersect}
-.tab:not(.on) .tring{background:#8e9499}.tab.on .tring{background:#a7adb2}   /* a step darker than the label, a touch brighter on the selected pill */
-.gear{margin-left:4px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
-.gear:hover{background:var(--raised);color:var(--text)}.gear svg{width:22px;height:22px}
+.tab .trw {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  z-index: -1;
+  -webkit-mask: var(--ko, linear-gradient(#000 0 0)) 0 0/100% 100% no-repeat;
+  mask: var(--ko, linear-gradient(#000 0 0)) 0 0/100% 100% no-repeat;
+}
+body.jobrun .tab .trw {
+  display: block;
+}
+.tab .tring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transition: --p 0.45s linear;
+  -webkit-mask:
+    radial-gradient(farthest-side, transparent calc(100% - 1.6px), rgba(0, 0, 0, 0.5) calc(100% - 1.2px)),
+    conic-gradient(#000 calc(var(--p) * 360deg), transparent 0),
+    radial-gradient(farthest-side, transparent calc(100% - 3.4px), #000 calc(100% - 3px));
+  -webkit-mask-composite: source-over, source-in;
+  mask:
+    radial-gradient(farthest-side, transparent calc(100% - 1.6px), rgba(0, 0, 0, 0.5) calc(100% - 1.2px)),
+    conic-gradient(#000 calc(var(--p) * 360deg), transparent 0),
+    radial-gradient(farthest-side, transparent calc(100% - 3.4px), #000 calc(100% - 3px));
+  mask-composite: add, intersect;
+}
+.tab:not(.on) .tring {
+  background: #8e9499;
+}
+.tab.on .tring {
+  background: #a7adb2;
+} /* a step darker than the label, a touch brighter on the selected pill */
+.gear {
+  margin-left: 4px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.gear:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+.gear svg {
+  width: 22px;
+  height: 22px;
+}
 /* the Layout button and its menu: one row of diagrams */
-.laywrap{position:relative;display:inline-flex}
-.laymenu{top:52px;bottom:auto;left:auto;right:0;transform-origin:top right;min-width:0;padding:6px}
-.laymenu .lrow{display:flex;align-items:center;gap:2px}
-.laymenu .lrow .opt{width:auto;gap:0;padding:8px 9px;justify-content:center;align-items:center;border-radius:10px;white-space:nowrap}
-.laymenu .lrow .opt.on{background:rgba(255,255,255,.12)}
-.laymenu .opt .lic{width:28px;height:20px;flex:none;margin-right:0;color:#9aa0a6;align-self:center}
-.laymenu .opt.on .lic,.laymenu .opt:hover .lic{color:#fff}
-.laymenu .lrow .lsep{width:1px;height:22px;margin:0 4px;background:rgba(255,255,255,.12)}
+.laywrap {
+  position: relative;
+  display: inline-flex;
+}
+.laymenu {
+  top: 52px;
+  bottom: auto;
+  left: auto;
+  right: 0;
+  transform-origin: top right;
+  min-width: 0;
+  padding: 6px;
+}
+.laymenu .lrow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.laymenu .lrow .opt {
+  width: auto;
+  gap: 0;
+  padding: 8px 9px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.laymenu .lrow .opt.on {
+  background: rgba(255, 255, 255, 0.12);
+}
+.laymenu .opt .lic {
+  width: 28px;
+  height: 20px;
+  flex: none;
+  margin-right: 0;
+  color: #9aa0a6;
+  align-self: center;
+}
+.laymenu .opt.on .lic,
+.laymenu .opt:hover .lic {
+  color: #fff;
+}
+.laymenu .lrow .lsep {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
 
 /* ======================= the panel under the tabs ======================= */
-.rpanel{position:relative;flex:1;min-height:0;overflow:visible;background:transparent;border:1px solid transparent;border-radius:0;
- transition:background .25s var(--ease),border-color .25s var(--ease),box-shadow .25s var(--ease)}   /* Generating: no panel, nothing clips the edge handles */
-.rpanel.paneled{overflow:hidden;background:var(--panel);border-color:#26262a;border-radius:var(--r-panel)}
-.view{position:absolute;inset:0;visibility:hidden;opacity:0;transform:translateY(4px);transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s linear .22s}
-.view.on{visibility:visible;opacity:1;transform:none;transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s}
-#amb{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0;image-rendering:auto;filter:saturate(1.25) brightness(.85);
- -webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent 100%);mask-image:radial-gradient(closest-side,#000 55%,transparent 100%);transition:opacity 1.2s var(--ease)}
-#amb.on{opacity:.32}   /* the panel's wash of the picture's colours */
+.rpanel {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: visible;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0;
+  transition:
+    background 0.25s var(--ease),
+    border-color 0.25s var(--ease),
+    box-shadow 0.25s var(--ease);
+} /* Generating: no panel, nothing clips the edge handles */
+.rpanel.paneled {
+  overflow: hidden;
+  background: var(--panel);
+  border-color: #26262a;
+  border-radius: var(--r-panel);
+}
+.view {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.22s var(--ease),
+    transform 0.22s var(--ease),
+    visibility 0s linear 0.22s;
+}
+.view.on {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.22s var(--ease),
+    transform 0.22s var(--ease),
+    visibility 0s;
+}
+#amb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  image-rendering: auto;
+  filter: saturate(1.25) brightness(0.85);
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+  transition: opacity 1.2s var(--ease);
+}
+#amb.on {
+  opacity: 0.32;
+} /* the panel's wash of the picture's colours */
 
 /* ======================= the picture (Generating) ======================= */
-.stage{position:absolute;inset:0;z-index:1}
-.frame{position:absolute;border-radius:var(--r-panel);overflow:hidden;background:transparent;outline:1px solid #1d1d22;outline-offset:-1px}
-.frame.has{background:#07070a;outline:1px solid rgba(255,255,255,.07);outline-offset:-1px}
+.stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.frame {
+  position: absolute;
+  border-radius: var(--r-panel);
+  overflow: hidden;
+  background: transparent;
+  outline: 1px solid #1d1d22;
+  outline-offset: -1px;
+}
+.frame.has {
+  background: #07070a;
+  outline: 1px solid rgba(255, 255, 255, 0.07);
+  outline-offset: -1px;
+}
 /* position and size glide (stage.js sizeFrame); the canvas is drawn at the box's final size, so it never stretches.
    A crop-and-reveal (.morph) moves the box itself, frame by frame */
-body:not(.laydrag) .stage .frame:not(.morph){transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e),height var(--lay-t) var(--lay-e)}
-.frame.reveal{animation:develop 1.1s var(--ease)}
-@keyframes develop{0%{filter:brightness(1.35) saturate(1.2)}100%{filter:none}}
-.frame.clickable{cursor:zoom-in}
-.frame.held,.frame.missing{cursor:default}
-.frame canvas{display:block}
+body:not(.laydrag) .stage .frame:not(.morph) {
+  transition:
+    top var(--lay-t) var(--lay-e),
+    left var(--lay-t) var(--lay-e),
+    width var(--lay-t) var(--lay-e),
+    height var(--lay-t) var(--lay-e);
+}
+.frame.reveal {
+  animation: develop 1.1s var(--ease);
+}
+@keyframes develop {
+  0% {
+    filter: brightness(1.35) saturate(1.2);
+  }
+  100% {
+    filter: none;
+  }
+}
+.frame.clickable {
+  cursor: zoom-in;
+}
+.frame.held,
+.frame.missing {
+  cursor: default;
+}
+.frame canvas {
+  display: block;
+}
 /* the picture's canvas fills the box (cover): while the box glides to another shape, no corner is ever empty. #cvx is
    the picture on show, copied, fading out over the next one (live.js) */
-#cv,#cvx{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
-#cv{z-index:1;filter:var(--vf,none)}
-#cvx{z-index:1;pointer-events:none;opacity:0;transition:opacity .2s cubic-bezier(.4,0,.2,1)}
+#cv,
+#cvx {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#cv {
+  z-index: 1;
+  filter: var(--vf, none);
+}
+#cvx {
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
 /* the crop-and-reveal: both pictures at their own final size, centred; the frame is the only thing that moves */
-.frame.morph #cvx{width:var(--ow);height:var(--oh);left:50%;top:50%;transform:translate(-50%,-50%)}
-.frame.morph #cv{width:var(--nw);height:var(--nh);left:50%;top:50%;transform:translate(-50%,-50%)}
+.frame.morph #cvx {
+  width: var(--ow);
+  height: var(--oh);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.frame.morph #cv {
+  width: var(--nw);
+  height: var(--nh);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
 /* privacy: the picture is hidden outright (never a blur: a blur still shows shapes and skin tones) */
-.frame.held #cv,.frame.held #cvx{visibility:hidden}
-#veil,#embers{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-#veil{z-index:2}#embers{z-index:3}
+.frame.held #cv,
+.frame.held #cvx {
+  visibility: hidden;
+}
+#veil,
+#embers {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+#veil {
+  z-index: 2;
+}
+#embers {
+  z-index: 3;
+}
 /* the empty frame: what's next and how long */
-.idle{position:absolute;inset:0;z-index:1;display:grid;place-items:center;color:#7a7a82;font-size:14px;text-align:center;pointer-events:none}
-#idleT,#idleS{font-size:15px;color:#a4a8ad}
+.idle {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  color: #7a7a82;
+  font-size: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+#idleT,
+#idleS {
+  font-size: 15px;
+  color: #a4a8ad;
+}
 /* the missing-file card (a file deleted outside Kiln): no picture, just the ways back */
-.miss{display:none;position:absolute;inset:0;z-index:4;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center}
-.frame.missing .miss{display:flex}
-.miss .mt{font-size:16px;font-weight:600;color:var(--text)}.miss .mf{font-size:12.5px;color:var(--muted);word-break:break-all}
-.miss .ma{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}.miss .mh{font-size:12.5px;color:var(--faint);max-width:340px}
+.miss {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+.frame.missing .miss {
+  display: flex;
+}
+.miss .mt {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.miss .mf {
+  font-size: 12.5px;
+  color: var(--muted);
+  word-break: break-all;
+}
+.miss .ma {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+.miss .mh {
+  font-size: 12.5px;
+  color: var(--faint);
+  max-width: 340px;
+}
 /* buttons on the picture: the eye (privacy) top right, ✕ top left */
-.cbtn,.bclose{position:absolute;top:10px;width:40px;height:40px;border-radius:14px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:6}
-.cbtn{right:10px;opacity:0;transition:opacity .15s,background .15s}
-.bclose{left:10px;transition:background .15s}
-.cbtn svg{width:20px;height:20px}.bclose svg{width:16px;height:16px}
-.cbtn:hover,.bclose:hover{background:rgba(40,40,44,.9)}
-.frame.has .cbtn,body.private .cbtn{display:grid}
-.frame.has:hover .cbtn{opacity:1}
-.frame.held .cbtn{opacity:.55}.frame.held:hover .cbtn{opacity:1}
-.frame.has .cbtn.lit{opacity:.7}.frame.has:hover .cbtn.lit{opacity:1}
-body.private .cbtn{opacity:.7}body.private .frame:hover .cbtn{opacity:1}
-.frame.missing .cbtn{display:none}
-.frame.browsing .bclose,.frame.clearable:hover .bclose{display:grid}
+.cbtn,
+.bclose {
+  position: absolute;
+  top: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(12, 12, 14, 0.72);
+  backdrop-filter: blur(6px);
+  display: none;
+  place-items: center;
+  z-index: 6;
+}
+.cbtn {
+  right: 10px;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+.bclose {
+  left: 10px;
+  transition: background 0.15s;
+}
+.cbtn svg {
+  width: 20px;
+  height: 20px;
+}
+.bclose svg {
+  width: 16px;
+  height: 16px;
+}
+.cbtn:hover,
+.bclose:hover {
+  background: rgba(40, 40, 44, 0.9);
+}
+.frame.has .cbtn,
+body.private .cbtn {
+  display: grid;
+}
+.frame.has:hover .cbtn {
+  opacity: 1;
+}
+.frame.held .cbtn {
+  opacity: 0.55;
+}
+.frame.held:hover .cbtn {
+  opacity: 1;
+}
+.frame.has .cbtn.lit {
+  opacity: 0.7;
+}
+.frame.has:hover .cbtn.lit {
+  opacity: 1;
+}
+body.private .cbtn {
+  opacity: 0.7;
+}
+body.private .frame:hover .cbtn {
+  opacity: 1;
+}
+.frame.missing .cbtn {
+  display: none;
+}
+.frame.browsing .bclose,
+.frame.clearable:hover .bclose {
+  display: grid;
+}
 /* the edit buttons: a column OUTSIDE the picture, on the side away from the prompt; shown on hover of the picture or the
    column (one zone, composer.js), hidden when they can't act (empty, rendering, private, file gone). A short picture
    wraps the column outward. The column itself is part of the hover zone; its buttons take clicks once shown */
-.gtools{position:absolute;z-index:6;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:6px;padding-left:6px;opacity:0;pointer-events:auto;
- transition:opacity .15s,top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e)}
-.gtools.lefty{align-content:flex-end;flex-wrap:wrap-reverse;padding-left:0;padding-right:6px}
-.stage.tools .gtools{opacity:1}
-.rpanel.paneled .gtools,.stage:has(.frame.running) .gtools,.stage:has(.frame.held) .gtools,.stage:has(.frame.missing) .gtools,.stage:has(.frame:not(.has)) .gtools{display:none}
-.gtools .side{display:contents}
-.side button{position:relative;width:40px;height:40px;border-radius:14px;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;
- opacity:.85;pointer-events:none;transition:opacity .15s,background .15s}
-.side button:hover{background:rgba(40,40,44,.9);opacity:1}
-.stage.tools .gtools .side button{pointer-events:auto}
-.gtools button svg{width:19px;height:19px}
+.gtools {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
+  padding-left: 6px;
+  opacity: 0;
+  pointer-events: auto;
+  transition:
+    opacity 0.15s,
+    top var(--lay-t) var(--lay-e),
+    left var(--lay-t) var(--lay-e);
+}
+.gtools.lefty {
+  align-content: flex-end;
+  flex-wrap: wrap-reverse;
+  padding-left: 0;
+  padding-right: 6px;
+}
+.stage.tools .gtools {
+  opacity: 1;
+}
+.rpanel.paneled .gtools,
+.stage:has(.frame.running) .gtools,
+.stage:has(.frame.held) .gtools,
+.stage:has(.frame.missing) .gtools,
+.stage:has(.frame:not(.has)) .gtools {
+  display: none;
+}
+.gtools .side {
+  display: contents;
+}
+.side button {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(12, 12, 14, 0.72);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  opacity: 0.85;
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+.side button:hover {
+  background: rgba(40, 40, 44, 0.9);
+  opacity: 1;
+}
+.stage.tools .gtools .side button {
+  pointer-events: auto;
+}
+.gtools button svg {
+  width: 19px;
+  height: 19px;
+}
 /* the arrows: on the picture (a fixed layer stage.js places every frame; the one you click holds while you're on it),
    and in the full-size viewer */
-.nav{position:absolute;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;background:rgba(12,12,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;
- z-index:6;opacity:0;transition:opacity .15s,background .15s}
-.nav.prev{left:10px}.nav.next{right:10px}
-.nav svg{width:18px;height:18px}.nav:hover{background:rgba(40,40,44,.9)}
-.nav.off{pointer-events:none}
-.viewer:hover .nav:not(.off){opacity:1}
-.gnav{position:fixed;margin-top:0;z-index:20}
-.gnav.glide{transition:opacity .15s,background .15s,left var(--lay-t) var(--lay-e),top var(--lay-t) var(--lay-e)}   /* only the one you let go of glides */
-body.navs .gnav:not(.off){opacity:1}
-body:has(.rpanel.paneled) .gnav,body:has(.frame.missing) .gnav,body:has(.modal.show) .gnav,body:has(.viewer.show) .gnav{display:none}
+.nav {
+  position: absolute;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  border-radius: 50%;
+  background: rgba(12, 12, 14, 0.72);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  z-index: 6;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+.nav.prev {
+  left: 10px;
+}
+.nav.next {
+  right: 10px;
+}
+.nav svg {
+  width: 18px;
+  height: 18px;
+}
+.nav:hover {
+  background: rgba(40, 40, 44, 0.9);
+}
+.nav.off {
+  pointer-events: none;
+}
+.viewer:hover .nav:not(.off) {
+  opacity: 1;
+}
+.gnav {
+  position: fixed;
+  margin-top: 0;
+  z-index: 20;
+}
+.gnav.glide {
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    left var(--lay-t) var(--lay-e),
+    top var(--lay-t) var(--lay-e);
+} /* only the one you let go of glides */
+body.navs .gnav:not(.off) {
+  opacity: 1;
+}
+body:has(.rpanel.paneled) .gnav,
+body:has(.frame.missing) .gnav,
+body:has(.modal.show) .gnav,
+body:has(.viewer.show) .gnav {
+  display: none;
+}
 
 /* ======================= the status row under the picture =======================
    The bar only while you watch the render; an empty Generating has no row (body.norow), the frame says what's next */
-.prog{position:absolute;left:0;top:0;width:300px;display:none;flex-direction:column;gap:7px;z-index:1;transition:top var(--lay-t) var(--lay-e),left var(--lay-t) var(--lay-e),width var(--lay-t) var(--lay-e)}
-.prog.show{display:flex}
-body.norow .prog{visibility:hidden}
-.prog .track{position:relative;height:10px;border-radius:999px;background:#1c1c1e;overflow:hidden}
-.prog:not(.run) .track,.prog.bgjob .track{visibility:hidden}
-.prog .fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:var(--r-pill);overflow:hidden}
-.prog .fill::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--tw,600px);background:var(--flow);background-size:200% 100%;animation:flow 6s linear infinite}
-@keyframes flow{from{background-position:0 0}to{background-position:-200% 0}}
-.prog .meta{position:relative;display:flex;align-items:center;gap:10px;height:36px;font-size:13px;font-weight:500;color:#CDCDCD;white-space:nowrap}
-body[data-pic=still] .prog.run .meta,.prog.showp .meta{cursor:pointer}   /* click: the render (behind a still), or the prompt you closed */
-.prog .meta .eta{margin-left:auto;color:var(--muted)}
-#ptxt{overflow:hidden;text-overflow:ellipsis;min-width:0}
-#ptxt .sub{color:var(--muted);font-weight:400}
-.prog .stop,.prog .resume{height:36px;border-radius:999px;background:var(--raised);font-size:13.5px;font-weight:500;color:#e6e6ea}
-.prog .stop{display:none;align-items:center;gap:7px;padding:0 15px 0 12px;transition:background .15s}
-.prog .stop svg{width:11px;height:11px}
-.prog .stop:hover{background:#45454a}
-.prog.run .stop{display:inline-flex}
-.prog .resume{display:none;padding:0 15px}
-.prog.paused:not(.run) .resume{display:inline-flex;align-items:center}
-.prog.bgjob .eta,.prog.bgjob .stop{display:none}
+.prog {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 300px;
+  display: none;
+  flex-direction: column;
+  gap: 7px;
+  z-index: 1;
+  transition:
+    top var(--lay-t) var(--lay-e),
+    left var(--lay-t) var(--lay-e),
+    width var(--lay-t) var(--lay-e);
+}
+.prog.show {
+  display: flex;
+}
+body.norow .prog {
+  visibility: hidden;
+}
+.prog .track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: #1c1c1e;
+  overflow: hidden;
+}
+.prog:not(.run) .track,
+.prog.bgjob .track {
+  visibility: hidden;
+}
+.prog .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.prog .fill::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--tw, 600px);
+  background: var(--flow);
+  background-size: 200% 100%;
+  animation: flow 6s linear infinite;
+}
+@keyframes flow {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.prog .meta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #cdcdcd;
+  white-space: nowrap;
+}
+body[data-pic="still"] .prog.run .meta,
+.prog.showp .meta {
+  cursor: pointer;
+} /* click: the render (behind a still), or the prompt you closed */
+.prog .meta .eta {
+  margin-left: auto;
+  color: var(--muted);
+}
+#ptxt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+#ptxt .sub {
+  color: var(--muted);
+  font-weight: 400;
+}
+.prog .stop,
+.prog .resume {
+  height: 36px;
+  border-radius: 999px;
+  background: var(--raised);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #e6e6ea;
+}
+.prog .stop {
+  display: none;
+  align-items: center;
+  gap: 7px;
+  padding: 0 15px 0 12px;
+  transition: background 0.15s;
+}
+.prog .stop svg {
+  width: 11px;
+  height: 11px;
+}
+.prog .stop:hover {
+  background: #45454a;
+}
+.prog.run .stop {
+  display: inline-flex;
+}
+.prog .resume {
+  display: none;
+  padding: 0 15px;
+}
+.prog.paused:not(.run) .resume {
+  display: inline-flex;
+  align-items: center;
+}
+.prog.bgjob .eta,
+.prog.bgjob .stop {
+  display: none;
+}
 /* stopping: the bar freezes and greys; Forge stops between steps */
-.prog.stopping .fill{filter:grayscale(1) brightness(.7)}.prog.stopping .fill::before{animation-play-state:paused}
-.prog.stopping .stop{opacity:.45;pointer-events:none}
-.pchip{display:none}   /* the running job's chip (live.js still fills it): retired 2026-10-19 — the Generating tab has the progress */
+.prog.stopping .fill {
+  filter: grayscale(1) brightness(0.7);
+}
+.prog.stopping .fill::before {
+  animation-play-state: paused;
+}
+.prog.stopping .stop {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.pchip {
+  display: none;
+} /* the running job's chip (live.js still fills it): retired 2026-10-19 — the Generating tab has the progress */
 /* the Gallery: no bar; the caption centred under the picture */
-body.gallery .prog .track{display:none}
-body.gallery .prog .meta{justify-content:center}
-body.gallery #ptxt{color:#cfd2d6;font-weight:500}
-body.gallery .prog .eta,body.gallery .prog .resume,body.gallery .prog.paused:not(.run) .resume{display:none}
+body.gallery .prog .track {
+  display: none;
+}
+body.gallery .prog .meta {
+  justify-content: center;
+}
+body.gallery #ptxt {
+  color: #cfd2d6;
+  font-weight: 500;
+}
+body.gallery .prog .eta,
+body.gallery .prog .resume,
+body.gallery .prog.paused:not(.run) .resume {
+  display: none;
+}
 
 /* ======================= Queue ======================= */
-.qwrap{position:absolute;inset:0;overflow:auto;padding:4px 2px 18px}
-.rpanel.paneled .qwrap{inset:12px;padding:6px;border-radius:12px}
-.qsec{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin:14px 8px 8px;display:flex;justify-content:space-between;align-items:center}
-.qsec:first-child{margin-top:4px}
-.qsec>span:last-child:not(:first-child){display:flex;gap:6px}
-.qsec button{font-size:11.5px;letter-spacing:0;text-transform:none;color:var(--muted);padding:3px 9px;border-radius:999px;background:var(--raised)}
-.qsec button:hover{color:var(--text)}
-.qsec .paused{color:var(--a1);font-weight:600}
-.qi{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--raised);margin-bottom:8px;cursor:pointer}
-.qi:hover{background:var(--raised2)}.qi.drag{opacity:.4}
-.qi.new{animation:qin .35s var(--ease)}
-@keyframes qin{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
-.qi .handle{color:var(--faint);cursor:grab;width:20px;text-align:center;flex:none}   /* the same slot as the selection circle: edge → it → thumbnail, 12 px each */
-.qi .th{width:46px;height:46px;border-radius:10px;background:#222;flex:none;overflow:hidden;display:grid;place-items:center;color:var(--faint);font-size:11px}
-.qi .th canvas,.qi .th img.lp,.qi .th img.qt{width:100%;height:100%}
-.qi .th img.lp,.qi .th img.qt{object-fit:cover;display:block}
-.qi .th img.qt:not([src]){visibility:hidden}
-.qi .th .hg{display:none;width:24px;height:24px;color:var(--muted)}
-.qi .th:has(img.lp:not([src])) .hg{display:block}.qi .th img.lp:not([src]){display:none}
-.hg .hgg{transform-origin:12px 12px;animation:hgflip 2.6s infinite}
-.hg .st{transform-origin:12px 11.4px;animation:hgtop 2.6s infinite linear}.hg .sb{transform-origin:12px 20.2px;animation:hgbot 2.6s infinite linear}
-@keyframes hgflip{0%,78%{transform:rotate(0)}100%{transform:rotate(180deg);animation-timing-function:cubic-bezier(.6,0,.3,1)}}
-@keyframes hgtop{0%{transform:scaleY(1)}75%,100%{transform:scaleY(0)}}
-@keyframes hgbot{0%{transform:scaleY(0)}75%,100%{transform:scaleY(1)}}
-@media (prefers-reduced-motion:reduce){.hg .hgg,.hg .st,.hg .sb{animation:none}}
+.qwrap {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 4px 2px 18px;
+}
+.rpanel.paneled .qwrap {
+  inset: 12px;
+  padding: 6px;
+  border-radius: 12px;
+}
+.qsec {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin: 14px 8px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.qsec:first-child {
+  margin-top: 4px;
+}
+.qsec > span:last-child:not(:first-child) {
+  display: flex;
+  gap: 6px;
+}
+.qsec button {
+  font-size: 11.5px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--raised);
+}
+.qsec button:hover {
+  color: var(--text);
+}
+.qsec .paused {
+  color: var(--a1);
+  font-weight: 600;
+}
+.qi {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--raised);
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.qi:hover {
+  background: var(--raised2);
+}
+.qi.drag {
+  opacity: 0.4;
+}
+.qi.new {
+  animation: qin 0.35s var(--ease);
+}
+@keyframes qin {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.qi .handle {
+  color: var(--faint);
+  cursor: grab;
+  width: 20px;
+  text-align: center;
+  flex: none;
+} /* the same slot as the selection circle: edge → it → thumbnail, 12 px each */
+.qi .th {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  background: #222;
+  flex: none;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: var(--faint);
+  font-size: 11px;
+}
+.qi .th canvas,
+.qi .th img.lp,
+.qi .th img.qt {
+  width: 100%;
+  height: 100%;
+}
+.qi .th img.lp,
+.qi .th img.qt {
+  object-fit: cover;
+  display: block;
+}
+.qi .th img.qt:not([src]) {
+  visibility: hidden;
+}
+.qi .th .hg {
+  display: none;
+  width: 24px;
+  height: 24px;
+  color: var(--muted);
+}
+.qi .th:has(img.lp:not([src])) .hg {
+  display: block;
+}
+.qi .th img.lp:not([src]) {
+  display: none;
+}
+.hg .hgg {
+  transform-origin: 12px 12px;
+  animation: hgflip 2.6s infinite;
+}
+.hg .st {
+  transform-origin: 12px 11.4px;
+  animation: hgtop 2.6s infinite linear;
+}
+.hg .sb {
+  transform-origin: 12px 20.2px;
+  animation: hgbot 2.6s infinite linear;
+}
+@keyframes hgflip {
+  0%,
+  78% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(180deg);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.3, 1);
+  }
+}
+@keyframes hgtop {
+  0% {
+    transform: scaleY(1);
+  }
+  75%,
+  100% {
+    transform: scaleY(0);
+  }
+}
+@keyframes hgbot {
+  0% {
+    transform: scaleY(0);
+  }
+  75%,
+  100% {
+    transform: scaleY(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hg .hgg,
+  .hg .st,
+  .hg .sb {
+    animation: none;
+  }
+}
 /* only the rows on screen are laid out and painted (hundreds of finished pictures) */
-#qsFin .qi{content-visibility:auto;contain-intrinsic-size:auto 68px}   /* the finished rows only: a rebuilt waiting row measured at the estimate made the rows below it jump */
+#qsFin .qi {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 68px;
+} /* the finished rows only: a rebuilt waiting row measured at the estimate made the rows below it jump */
 /* selection: a round box at the row's start — on hover, or always while something is selected */
-.qck{position:relative;width:20px;height:20px;border-radius:50%;flex:none;border:1.5px solid rgba(255,255,255,.38);opacity:0;transition:opacity .15s,background .15s,border-color .15s;cursor:pointer}
-.qi:hover .qck,.qwrap.selecting .qck{opacity:1}
-.qi.sel .qck{background:var(--a1);border-color:var(--a1)}
-body.glass .qck{border:0;background:color-mix(in oklab,rgba(255,255,255,.06),var(--cool,#9ab) 14%);-webkit-backdrop-filter:blur(8px) saturate(1.6);backdrop-filter:blur(8px) saturate(1.6);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.16)}   /* thin glass, like every control */
-body.glass .qi.sel .qck{background:var(--a1);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1px color-mix(in oklab,var(--a1) 70%,#fff)}
-.qi.sel .qck::after{content:"";position:absolute;left:5.5px;top:2.5px;width:5px;height:9px;border:solid var(--ink);border-width:0 2px 2px 0;transform:rotate(45deg)}
-.qi.sel{box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--a1) 75%,transparent)}
-.qbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;border-radius:14px;background:var(--raised2);font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
-.qsec.qfin{min-height:44px;margin:14px 0 8px;padding:0 7px 0 8px;border-radius:14px;transition:background .15s,padding .15s}   /* the same height selecting or not: the rows never move */
-.qsec.qbar{letter-spacing:0;text-transform:none;padding-left:14px}   /* while selecting, the Finished header is the action row (it sticks)*/
-.qbar .qn{margin-right:6px;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted)}.qbar .qgap{flex:1}
-.qbar{flex-wrap:wrap;row-gap:6px}.qbar .qn b{color:var(--text);font-weight:600}
-.qbar button{padding:5px 12px;border-radius:999px;background:var(--raised);font-size:12.5px;color:#e6e6ea;white-space:nowrap}
-.qbar button:hover{background:#45454a}
-.qbar .qdel{background:color-mix(in oklab,#e0605a 32%,var(--raised));color:#fff}.qbar .qdel:hover{background:color-mix(in oklab,#e0605a 48%,var(--raised))}
-.qbar .qx{width:30px;height:30px;padding:0;display:grid;place-items:center}.qbar .qx svg{width:12px;height:12px}
-.qi .body{flex:1;min-width:0}
-.qi .p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
-.qi .meta{font-size:12px;color:var(--muted)}
-.qi .meta.times{font-size:11.5px;color:var(--faint)}
-.qi .mini{height:4px;border-radius:2px;background:#1a1a1c;margin-top:6px;overflow:hidden}
-.qi .mini i{display:block;height:100%;width:0;background:linear-gradient(90deg in oklch,var(--a1),var(--a3))}
-.qi .x{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:var(--muted)}
-.qi .x:hover{background:#45454a;color:var(--text)}.qi .x svg{width:14px;height:14px}
-.qi.missing>:not(.x){opacity:.5}   /* the row fades, its ✕ (remove from the list) stays clear */
-.qi.missing .th{font-size:10.5px}.qi .gone{color:#e0a060}
-.empty{color:var(--faint);text-align:center;padding:40px 10px;font-size:14px}
-#qwrap .empty{padding:10px 12px 14px;font-size:13px;text-align:left}   /* "Nothing queued": one quiet line after Up next */
+.qck {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.38);
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    border-color 0.15s;
+  cursor: pointer;
+}
+.qi:hover .qck,
+.qwrap.selecting .qck {
+  opacity: 1;
+}
+.qi.sel .qck {
+  background: var(--a1);
+  border-color: var(--a1);
+}
+body.glass .qck {
+  border: 0;
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.06), var(--cool, #9ab) 14%);
+  -webkit-backdrop-filter: blur(8px) saturate(1.6);
+  backdrop-filter: blur(8px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.16);
+} /* thin glass, like every control */
+body.glass .qi.sel .qck {
+  background: var(--a1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 1px color-mix(in oklab, var(--a1) 70%, #fff);
+}
+.qi.sel .qck::after {
+  content: "";
+  position: absolute;
+  left: 5.5px;
+  top: 2.5px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--ink);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.qi.sel {
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--a1) 75%, transparent);
+}
+.qbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 14px;
+  background: var(--raised2);
+  font-size: 13px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.qsec.qfin {
+  min-height: 44px;
+  margin: 14px 0 8px;
+  padding: 0 7px 0 8px;
+  border-radius: 14px;
+  transition:
+    background 0.15s,
+    padding 0.15s;
+} /* the same height selecting or not: the rows never move */
+.qsec.qbar {
+  letter-spacing: 0;
+  text-transform: none;
+  padding-left: 14px;
+} /* while selecting, the Finished header is the action row (it sticks)*/
+.qbar .qn {
+  margin-right: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+}
+.qbar .qgap {
+  flex: 1;
+}
+.qbar {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+.qbar .qn b {
+  color: var(--text);
+  font-weight: 600;
+}
+.qbar button {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--raised);
+  font-size: 12.5px;
+  color: #e6e6ea;
+  white-space: nowrap;
+}
+.qbar button:hover {
+  background: #45454a;
+}
+.qbar .qdel {
+  background: color-mix(in oklab, #e0605a 32%, var(--raised));
+  color: #fff;
+}
+.qbar .qdel:hover {
+  background: color-mix(in oklab, #e0605a 48%, var(--raised));
+}
+.qbar .qx {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+.qbar .qx svg {
+  width: 12px;
+  height: 12px;
+}
+.qi .body {
+  flex: 1;
+  min-width: 0;
+}
+.qi .p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+.qi .meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.qi .meta.times {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.qi .mini {
+  height: 4px;
+  border-radius: 2px;
+  background: #1a1a1c;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.qi .mini i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg in oklch, var(--a1), var(--a3));
+}
+.qi .x {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.qi .x:hover {
+  background: #45454a;
+  color: var(--text);
+}
+.qi .x svg {
+  width: 14px;
+  height: 14px;
+}
+.qi.missing > :not(.x) {
+  opacity: 0.5;
+} /* the row fades, its ✕ (remove from the list) stays clear */
+.qi.missing .th {
+  font-size: 10.5px;
+}
+.qi .gone {
+  color: #e0a060;
+}
+.empty {
+  color: var(--faint);
+  text-align: center;
+  padding: 40px 10px;
+  font-size: 14px;
+}
+#qwrap .empty {
+  padding: 10px 12px 14px;
+  font-size: 13px;
+  text-align: left;
+} /* "Nothing queued": one quiet line after Up next */
 /* the bigger look on hovering a finished thumbnail: above its row (below if there's no room), never over it */
-#qpop{position:fixed;left:0;top:0;z-index:60;border-radius:14px;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .15s;
- box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.1);background:#0b0b0e}
-#qpop.show{opacity:1}#qpop img{width:100%;height:100%;object-fit:contain;display:block}
+#qpop {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  border-radius: 14px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: #0b0b0e;
+}
+#qpop.show {
+  opacity: 1;
+}
+#qpop img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
 
 /* ======================= LoRAs ======================= */
-.lwrap{position:absolute;inset:0;display:flex;flex-direction:column;padding:4px 2px 16px}
-.rpanel.paneled .lwrap{padding:16px 18px}
-.ltop{display:flex;gap:10px;align-items:center;margin-bottom:10px}
-.ltop #lRefresh{flex:none}
-.search{flex:1;background:var(--raised);border:1px solid #3a3a40;border-radius:999px;padding:9px 16px;outline:0}
-.csz{display:flex;align-items:center;gap:6px;color:var(--muted);flex:none}
-.csz svg{width:14px;height:14px}
-.csize{width:90px;flex:none}
-.oneface{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;white-space:nowrap}
-.sw{width:34px;height:20px;border-radius:10px;background:#45454a;position:relative;transition:background .15s;flex:none;cursor:pointer}
-.sw::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#ddd;transition:left .15s}
-.sw.on{background:#0A84FF}.sw.on::after{left:17px;background:#fff}
-.fchips{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
-.fchips button{padding:5px 12px;border-radius:999px;background:var(--raised);font-size:13px;color:var(--muted)}
-.fchips button.on{background:#36363b;color:#fff}
-.warn{font-size:12.5px;color:#ffcf8a;background:#2e2618;border-radius:12px;padding:7px 12px;margin-bottom:10px;display:none}
-.warn.show{display:block}
-.lscroll{overflow:auto;flex:1;padding-right:2px}
+.lwrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 2px 16px;
+}
+.rpanel.paneled .lwrap {
+  padding: 16px 18px;
+}
+.ltop {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.ltop #lRefresh {
+  flex: none;
+}
+.search {
+  flex: 1;
+  background: var(--raised);
+  border: 1px solid #3a3a40;
+  border-radius: 999px;
+  padding: 9px 16px;
+  outline: 0;
+}
+.csz {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  flex: none;
+}
+.csz svg {
+  width: 14px;
+  height: 14px;
+}
+.csize {
+  width: 90px;
+  flex: none;
+}
+.oneface {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sw {
+  width: 34px;
+  height: 20px;
+  border-radius: 10px;
+  background: #45454a;
+  position: relative;
+  transition: background 0.15s;
+  flex: none;
+  cursor: pointer;
+}
+.sw::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ddd;
+  transition: left 0.15s;
+}
+.sw.on {
+  background: #0a84ff;
+}
+.sw.on::after {
+  left: 17px;
+  background: #fff;
+}
+.fchips {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.fchips button {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--raised);
+  font-size: 13px;
+  color: var(--muted);
+}
+.fchips button.on {
+  background: #36363b;
+  color: #fff;
+}
+.warn {
+  font-size: 12.5px;
+  color: #ffcf8a;
+  background: #2e2618;
+  border-radius: 12px;
+  padding: 7px 12px;
+  margin-bottom: 10px;
+  display: none;
+}
+.warn.show {
+  display: block;
+}
+.lscroll {
+  overflow: auto;
+  flex: 1;
+  padding-right: 2px;
+}
 /* one row format with the thumbnail in front: name (+ tags) and the switch on top, the weight under the name */
-.lgrid{display:grid;grid-template-columns:repeat(auto-fill,min(100%,var(--liw)));justify-content:center;column-gap:16px}
-.lgrid .lsec,.lgrid .empty,.lgrid .lnone{grid-column:1/-1}
-.lsec{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin:4px 4px 8px}
-.lgrid .lnone{font-size:12.5px;color:var(--faint);padding:2px 4px 10px}
-.li{display:flex;align-items:center;gap:12px;min-width:0;padding:8px 10px;border-radius:14px;margin-bottom:2px;background:transparent;transition:background var(--dur)}
-.li:hover{background:#26262a}
-.li.on{background:#232327}
-.li.on:hover{background:#2a2a2f}
-.li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
-.li .nm small{display:inline;margin-left:6px;color:var(--muted);font-size:11.5px}
-.li .tag{font-size:10px;color:var(--muted);margin-left:8px;padding:1px 6px;border:1px solid #45454b;border-radius:999px;vertical-align:1px}
-.li input[type=number]{width:56px;background:var(--raised);border:1px solid #3a3a40;border-radius:8px;padding:3px 6px;font-size:13px;font-variant-numeric:tabular-nums}
-.lbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
-.l1,.l2{display:flex;align-items:center;gap:8px;min-width:0}
-.l1 .nm{flex:1;min-width:0}
-.l2 input[type=range]{flex:1;min-width:0}
-.l2 input[type=number]{width:62px;flex:none}
-.lth{width:var(--th,48px);height:var(--th,48px);border-radius:10px;overflow:hidden;display:grid;place-items:center;font-weight:600;color:rgba(255,255,255,.75);font-size:calc(var(--th,48px)*.3);cursor:pointer;flex:none}
-.lth img{width:100%;height:100%;object-fit:cover;display:block}
-.star{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:14px;color:#777}
-.l2 .star{width:22px;height:22px;flex:none}
-.star.on{color:#ffd166}
-.nmedit{width:100%;background:#1c1c1e;border:1px solid rgba(255,255,255,.6);border-radius:6px;padding:1px 5px;font-size:13px}
-.flash{animation:flash 1s}
-@keyframes flash{0%{box-shadow:0 0 0 2px #fff}100%{box-shadow:0 0 0 0 transparent}}
+.lgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, min(100%, var(--liw)));
+  justify-content: center;
+  column-gap: 16px;
+}
+.lgrid .lsec,
+.lgrid .empty,
+.lgrid .lnone {
+  grid-column: 1/-1;
+}
+.lsec {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin: 4px 4px 8px;
+}
+.lgrid .lnone {
+  font-size: 12.5px;
+  color: var(--faint);
+  padding: 2px 4px 10px;
+}
+.li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 14px;
+  margin-bottom: 2px;
+  background: transparent;
+  transition: background var(--dur);
+}
+.li:hover {
+  background: #26262a;
+}
+.li.on {
+  background: #232327;
+}
+.li.on:hover {
+  background: #2a2a2f;
+}
+.li .nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.li .nm small {
+  display: inline;
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.li .tag {
+  font-size: 10px;
+  color: var(--muted);
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid #45454b;
+  border-radius: 999px;
+  vertical-align: 1px;
+}
+.li input[type="number"] {
+  width: 56px;
+  background: var(--raised);
+  border: 1px solid #3a3a40;
+  border-radius: 8px;
+  padding: 3px 6px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.lbody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.l1,
+.l2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.l1 .nm {
+  flex: 1;
+  min-width: 0;
+}
+.l2 input[type="range"] {
+  flex: 1;
+  min-width: 0;
+}
+.l2 input[type="number"] {
+  width: 62px;
+  flex: none;
+}
+.lth {
+  width: var(--th, 48px);
+  height: var(--th, 48px);
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: calc(var(--th, 48px) * 0.3);
+  cursor: pointer;
+  flex: none;
+}
+.lth img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.star {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  color: #777;
+}
+.l2 .star {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+.star.on {
+  color: #ffd166;
+}
+.nmedit {
+  width: 100%;
+  background: #1c1c1e;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  padding: 1px 5px;
+  font-size: 13px;
+}
+.flash {
+  animation: flash 1s;
+}
+@keyframes flash {
+  0% {
+    box-shadow: 0 0 0 2px #fff;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
 
 /* ======================= PNG Info ======================= */
-.pwrap{position:absolute;inset:0;padding:4px 2px 18px;display:flex;flex-direction:column;gap:12px}
-.rpanel.paneled .pwrap{padding:18px}
-.drop{border:2px dashed #3d3d42;border-radius:16px;padding:26px;text-align:center;color:var(--muted);cursor:pointer}
-.drop.over{border-color:rgba(255,255,255,.7);color:var(--text)}
-.pwrap:has(.pout:empty) .drop{flex:1;display:flex;flex-direction:column;justify-content:center}   /* nothing loaded: the whole panel is the drop target */
-.pout{flex:1;overflow:auto;background:#161618;border-radius:14px;padding:18px 20px;font-size:14px;color:#cfcfd4}
-.pout.raw{white-space:pre-wrap;font-size:13px}
-.pout:empty{display:none}
-.pi-h{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8a8a92;margin:2px 0 8px}
-.pi-p{line-height:1.62;color:#e6e6ea;margin-bottom:18px}
-.pi-p .ln{min-height:1.62em}
-.pi-p .ln.list{padding-left:2.4em;text-indent:-2.4em}
-.pi-p .ln.lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;color:#8a8a92;padding-top:6px}
-.pi-p .ln.cmt{color:#6c6c74;font-style:italic}
-.pi-neg{color:#a8a8b0}
-.pi-grid{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;font-size:13px}
-.pi-grid dt{color:#8a8a92}
-.pi-grid dd{margin:0;color:#e6e6ea;word-break:break-word;font-variant-numeric:tabular-nums}
-.pimg{display:none;justify-content:center;flex:none;max-height:38%;min-height:0}
-.pimg.show{display:flex}
-.pimg img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain;outline:1px solid rgba(255,255,255,.07);outline-offset:-1px}
-.pact{display:flex;gap:8px;justify-content:flex-end}
-#pClear{margin-left:0;margin-right:auto}
-.pi-raw{font-size:12px;color:var(--muted);background:var(--raised);padding:4px 10px;border-radius:999px}
-.pact .keepseed{margin-right:auto;margin-left:10px}
-.btn{padding:9px 16px;border-radius:999px;background:var(--raised);font-size:14px}
-.btn:hover{background:var(--raised2)}.btn.pri{background:var(--grad);color:var(--ink);font-weight:600}
-.btn[disabled]{opacity:.4;pointer-events:none}
+.pwrap {
+  position: absolute;
+  inset: 0;
+  padding: 4px 2px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rpanel.paneled .pwrap {
+  padding: 18px;
+}
+.drop {
+  border: 2px dashed #3d3d42;
+  border-radius: 16px;
+  padding: 26px;
+  text-align: center;
+  color: var(--muted);
+  cursor: pointer;
+}
+.drop.over {
+  border-color: rgba(255, 255, 255, 0.7);
+  color: var(--text);
+}
+.pwrap:has(.pout:empty) .drop {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+} /* nothing loaded: the whole panel is the drop target */
+.pout {
+  flex: 1;
+  overflow: auto;
+  background: #161618;
+  border-radius: 14px;
+  padding: 18px 20px;
+  font-size: 14px;
+  color: #cfcfd4;
+}
+.pout.raw {
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+.pout:empty {
+  display: none;
+}
+.pi-h {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #8a8a92;
+  margin: 2px 0 8px;
+}
+.pi-p {
+  line-height: 1.62;
+  color: #e6e6ea;
+  margin-bottom: 18px;
+}
+.pi-p .ln {
+  min-height: 1.62em;
+}
+.pi-p .ln.list {
+  padding-left: 2.4em;
+  text-indent: -2.4em;
+}
+.pi-p .ln.lbl {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #8a8a92;
+  padding-top: 6px;
+}
+.pi-p .ln.cmt {
+  color: #6c6c74;
+  font-style: italic;
+}
+.pi-neg {
+  color: #a8a8b0;
+}
+.pi-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 18px;
+  font-size: 13px;
+}
+.pi-grid dt {
+  color: #8a8a92;
+}
+.pi-grid dd {
+  margin: 0;
+  color: #e6e6ea;
+  word-break: break-word;
+  font-variant-numeric: tabular-nums;
+}
+.pimg {
+  display: none;
+  justify-content: center;
+  flex: none;
+  max-height: 38%;
+  min-height: 0;
+}
+.pimg.show {
+  display: flex;
+}
+.pimg img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 12px;
+  object-fit: contain;
+  outline: 1px solid rgba(255, 255, 255, 0.07);
+  outline-offset: -1px;
+}
+.pact {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+#pClear {
+  margin-left: 0;
+  margin-right: auto;
+}
+.pi-raw {
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--raised);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.pact .keepseed {
+  margin-right: auto;
+  margin-left: 10px;
+}
+.btn {
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--raised);
+  font-size: 14px;
+}
+.btn:hover {
+  background: var(--raised2);
+}
+.btn.pri {
+  background: var(--grad);
+  color: var(--ink);
+  font-weight: 600;
+}
+.btn[disabled] {
+  opacity: 0.4;
+  pointer-events: none;
+}
 
 /* ======================= dialogs: Settings, the shortcut sheet ======================= */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:100;visibility:hidden;opacity:0;transition:opacity .22s var(--ease),visibility 0s linear .22s}
-.modal.show{visibility:visible;opacity:1;transition:opacity .22s var(--ease),visibility 0s}
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.22s var(--ease),
+    visibility 0s linear 0.22s;
+}
+.modal.show {
+  visibility: visible;
+  opacity: 1;
+  transition:
+    opacity 0.22s var(--ease),
+    visibility 0s;
+}
 /* a fixed header (✕ where it sits elsewhere in Kiln, the title, icon actions); only the content scrolls */
-.mcard{width:min(560px,92vw);max-height:88vh;display:flex;flex-direction:column;padding:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-panel)}
-.modal .mcard{transform:scale(.97);transition:transform .22s var(--ease)}.modal.show .mcard{transform:none}
-.modal:not(.show) .mcard{transition:none}   /* closing is instant (re-blurring glass on every frame of a shrink lagged) */
-.mhead{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:1px solid rgba(255,255,255,.06);flex:none}
-.mhead h2{margin:0;flex:1;font-size:18px;font-weight:600;letter-spacing:-.01em}
-.mhead .mact{display:flex;gap:6px}
-.mhead .iconbtn svg{width:17px;height:17px}
-.mbody{overflow:auto;padding:16px 24px 22px}
-.fg{display:grid;grid-template-columns:150px 1fr;gap:4px 14px;align-items:center;font-size:14px}
-.fg label{color:var(--muted)}
-.fg select,.fg input{background:transparent;border:1px solid transparent;border-radius:8px;padding:6px 8px;width:100%;color:#f2f2f2;transition:background .15s,border-color .15s}
-.fg select{appearance:none;-webkit-appearance:none;padding-right:26px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8a92' fill='none' stroke-width='1.4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
-.fg select:hover,.fg input:hover{background-color:#26262a}
-.fg select:focus,.fg input:focus{outline:0;border-color:#3a3a40;background-color:#1f1f22}
-.fg select option{background:#232326;color:#f2f2f2}
-.fg input[readonly]{color:var(--muted)}
-.fgh{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8a8a92;border-top:1px solid #2c2c31;padding-top:14px;margin-top:8px}
-.fgh.first{border-top:0;padding-top:0;margin-top:0}
-.about{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.about span{color:var(--muted);margin-right:4px}
-.updres{grid-column:1/-1;font-size:13px;color:var(--muted);line-height:1.5}.updres:empty{display:none}
-.updres code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:5px}.updres a{color:var(--a3)}
-.keys .mcard{width:min(520px,92vw)}.keys .fgh{margin:16px 0 10px}
-.kgrid{display:grid;grid-template-columns:auto 1fr;gap:9px 18px;align-items:center;font-size:14px}
-.kgrid .kt{color:var(--muted)}.kgrid.mouse .kk{color:var(--text);font-size:13px}
-kbd{display:inline-block;min-width:24px;padding:2px 7px;border-radius:7px;background:rgba(255,255,255,.08);box-shadow:inset 0 -1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(255,255,255,.08);
- font:500 12.5px var(--font,Inter),system-ui;text-align:center;color:var(--text)}
+.mcard {
+  width: min(560px, 92vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+}
+.modal .mcard {
+  transform: scale(0.97);
+  transition: transform 0.22s var(--ease);
+}
+.modal.show .mcard {
+  transform: none;
+}
+.modal:not(.show) .mcard {
+  transition: none;
+} /* closing is instant (re-blurring glass on every frame of a shrink lagged) */
+.mhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex: none;
+}
+.mhead h2 {
+  margin: 0;
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.mhead .mact {
+  display: flex;
+  gap: 6px;
+}
+.mhead .iconbtn svg {
+  width: 17px;
+  height: 17px;
+}
+.mbody {
+  overflow: auto;
+  padding: 16px 24px 22px;
+}
+.fg {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 4px 14px;
+  align-items: center;
+  font-size: 14px;
+}
+.fg label {
+  color: var(--muted);
+}
+.fg select,
+.fg input {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 8px;
+  width: 100%;
+  color: #f2f2f2;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.fg select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8a92' fill='none' stroke-width='1.4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+.fg select:hover,
+.fg input:hover {
+  background-color: #26262a;
+}
+.fg select:focus,
+.fg input:focus {
+  outline: 0;
+  border-color: #3a3a40;
+  background-color: #1f1f22;
+}
+.fg select option {
+  background: #232326;
+  color: #f2f2f2;
+}
+.fg input[readonly] {
+  color: var(--muted);
+}
+.fgh {
+  grid-column: 1/-1;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #8a8a92;
+  border-top: 1px solid #2c2c31;
+  padding-top: 14px;
+  margin-top: 8px;
+}
+.fgh.first {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+.about {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.about span {
+  color: var(--muted);
+  margin-right: 4px;
+}
+.updres {
+  grid-column: 1/-1;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.updres:empty {
+  display: none;
+}
+.updres code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+.updres a {
+  color: var(--a3);
+}
+.keys .mcard {
+  width: min(520px, 92vw);
+}
+.keys .fgh {
+  margin: 16px 0 10px;
+}
+.kgrid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 9px 18px;
+  align-items: center;
+  font-size: 14px;
+}
+.kgrid .kt {
+  color: var(--muted);
+}
+.kgrid.mouse .kk {
+  color: var(--text);
+  font-size: 13px;
+}
+kbd {
+  display: inline-block;
+  min-width: 24px;
+  padding: 2px 7px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  font:
+    500 12.5px var(--font, Inter),
+    system-ui;
+  text-align: center;
+  color: var(--text);
+}
 
 /* ======================= overlays: the viewer, toasts, tooltips, docking ======================= */
-.viewer{position:fixed;inset:0;background:#000;z-index:150;visibility:hidden;opacity:0;transition:opacity .2s var(--ease),visibility 0s linear .2s;overflow:hidden;cursor:zoom-in}
-.viewer.show{visibility:visible;opacity:1;transition:opacity .2s var(--ease),visibility 0s}
-.viewer.zoomed{cursor:grab}.viewer.panning{cursor:grabbing}
-#vcv{position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:auto}
-.vclose{position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:12px;background:rgba(40,40,44,.8);display:grid;place-items:center;z-index:2}
-.vclose svg{width:16px;height:16px}
-.vzoom{position:absolute;top:22px;right:20px;font-size:13px;color:#cdcdcd;font-variant-numeric:tabular-nums;background:rgba(40,40,44,.8);padding:5px 10px;border-radius:999px}
-.vhint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-size:12px;color:#77777e;white-space:nowrap}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#232326;border:1px solid #3a3a3f;padding:8px 10px 8px 16px;border-radius:999px;font-size:13.5px;
- opacity:0;transition:opacity .2s;pointer-events:none;z-index:200;display:flex;gap:10px;align-items:center}
-.toast.show{opacity:1;pointer-events:auto}
+.viewer {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 150;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.2s var(--ease),
+    visibility 0s linear 0.2s;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+.viewer.show {
+  visibility: visible;
+  opacity: 1;
+  transition:
+    opacity 0.2s var(--ease),
+    visibility 0s;
+}
+.viewer.zoomed {
+  cursor: grab;
+}
+.viewer.panning {
+  cursor: grabbing;
+}
+#vcv {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  image-rendering: auto;
+}
+.vclose {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(40, 40, 44, 0.8);
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+.vclose svg {
+  width: 16px;
+  height: 16px;
+}
+.vzoom {
+  position: absolute;
+  top: 22px;
+  right: 20px;
+  font-size: 13px;
+  color: #cdcdcd;
+  font-variant-numeric: tabular-nums;
+  background: rgba(40, 40, 44, 0.8);
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+.vhint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: #77777e;
+  white-space: nowrap;
+}
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: #232326;
+  border: 1px solid #3a3a3f;
+  padding: 8px 10px 8px 16px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  z-index: 200;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.toast.show {
+  opacity: 1;
+  pointer-events: auto;
+}
 /* "#14 finished" under the Generating tab, when you weren't watching it */
-.donenote{position:fixed;left:0;top:0;z-index:120;display:flex;align-items:center;gap:10px;padding:5px 16px 5px 5px;border-radius:999px;background:#232326;border:1px solid #3a3a3f;
- font-size:13.5px;font-weight:500;color:var(--text);white-space:nowrap;cursor:pointer;opacity:0;pointer-events:none;transform:translate(-50%,-8px) scale(.96);
- box-shadow:0 12px 36px rgba(0,0,0,.4);transition:opacity .2s,transform .35s var(--lay-e)}
-.donenote.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
-.dnth{width:34px;height:34px;border-radius:50%;overflow:hidden;flex:none;background:#15171a}
-.dnth img{width:100%;height:100%;object-fit:cover;display:block}.dnth img:not([src]),.donenote.priv .dnth img{visibility:hidden}
-.toast button{padding:4px 12px;border-radius:999px;background:var(--raised2);font-size:13px}
-.toast button:empty{display:none}
-#tip{position:fixed;left:0;top:0;z-index:400;background:#2c2c31;border:1px solid #3a3a40;color:#e6e6ea;font-size:12px;line-height:1.35;padding:5px 9px;border-radius:8px;max-width:280px;
- pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 8px 24px rgba(0,0,0,.5)}
-#tip.show{opacity:1}
+.donenote {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 16px 5px 5px;
+  border-radius: 999px;
+  background: #232326;
+  border: 1px solid #3a3a3f;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -8px) scale(0.96);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+  transition:
+    opacity 0.2s,
+    transform 0.35s var(--lay-e);
+}
+.donenote.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+.dnth {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: none;
+  background: #15171a;
+}
+.dnth img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dnth img:not([src]),
+.donenote.priv .dnth img {
+  visibility: hidden;
+}
+.toast button {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--raised2);
+  font-size: 13px;
+}
+.toast button:empty {
+  display: none;
+}
+#tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 400;
+  background: #2c2c31;
+  border: 1px solid #3a3a40;
+  color: #e6e6ea;
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 5px 9px;
+  border-radius: 8px;
+  max-width: 280px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+#tip.show {
+  opacity: 1;
+}
 /* no server: a note over everything, nothing else to do (live.js) */
-.offline{z-index:1000}.offline .mcard{max-width:420px;text-align:center}.offline p{color:var(--faint);line-height:1.5}
+.offline {
+  z-index: 1000;
+}
+.offline .mcard {
+  max-width: 420px;
+  text-align: center;
+}
+.offline p {
+  color: var(--faint);
+  line-height: 1.5;
+}
 /* moving the prompt box: the three places it snaps to, and the dock zones */
-.ghost{position:absolute;right:0;width:min(100%,var(--cw,680px));border-radius:var(--r-panel);outline:1px dashed rgba(255,255,255,.16);outline-offset:12px;pointer-events:none;opacity:0;transition:opacity .15s,border-color .15s}
-.ghost.show{opacity:1}.ghost.near{outline-color:rgba(255,255,255,.5)}
+.ghost {
+  position: absolute;
+  right: 0;
+  width: min(100%, var(--cw, 680px));
+  border-radius: var(--r-panel);
+  outline: 1px dashed rgba(255, 255, 255, 0.16);
+  outline-offset: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    border-color 0.15s;
+}
+.ghost.show {
+  opacity: 1;
+}
+.ghost.near {
+  outline-color: rgba(255, 255, 255, 0.5);
+}
 /* the drop zones condense in: outline, tint and (in glass) the blur grow from nothing while the zone settles from 97 %;
    the reverse when you let go. Never by opacity — Chromium switches the glass off inside anything partly transparent */
-.dockzone{position:fixed;z-index:90;display:none;align-items:center;justify-content:center;pointer-events:none;border:0;border-radius:24px;
- background:transparent;color:transparent;font-size:14px;font-weight:500;transform:scale(.97);
- transition:background .22s var(--lay-e),border-color .22s var(--lay-e),color .22s var(--lay-e),backdrop-filter .3s var(--lay-e),box-shadow .3s var(--lay-e),transform .3s var(--lay-e),display .3s allow-discrete}
-.dockzone.show{display:flex;background:rgba(255,255,255,.03);color:rgba(255,255,255,.55);transform:none}
-@starting-style{.dockzone.show{background:transparent;color:transparent;transform:scale(.97)}}
-.dockzone::after{content:"";position:absolute;inset:10px;border:1.5px dashed currentColor;border-radius:15px;opacity:.5;pointer-events:none;transition:border-color .15s,opacity .15s}   /* the line inset on the plate, like PNG Info's drop area */
-.dockzone.near::after{border-color:color-mix(in oklab,var(--a1) 80%,transparent);opacity:1}
-.dockzone.near{background:color-mix(in oklab,var(--a1) 14%,transparent);color:#fff}
-.dockzone.dz-left{left:12px;top:84px;bottom:22%;width:28%}.dockzone.dz-right{right:12px;top:84px;bottom:22%;width:28%}   /* below the tab bar: navigation stays in view */.dockzone.dz-below{left:12px;right:12px;bottom:12px;height:18%}
+.dockzone {
+  position: fixed;
+  z-index: 90;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  color: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  transform: scale(0.97);
+  transition:
+    background 0.22s var(--lay-e),
+    border-color 0.22s var(--lay-e),
+    color 0.22s var(--lay-e),
+    backdrop-filter 0.3s var(--lay-e),
+    box-shadow 0.3s var(--lay-e),
+    transform 0.3s var(--lay-e),
+    display 0.3s allow-discrete;
+}
+.dockzone.show {
+  display: flex;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.55);
+  transform: none;
+}
+@starting-style {
+  .dockzone.show {
+    background: transparent;
+    color: transparent;
+    transform: scale(0.97);
+  }
+}
+.dockzone::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border: 1.5px dashed currentColor;
+  border-radius: 15px;
+  opacity: 0.5;
+  pointer-events: none;
+  transition:
+    border-color 0.15s,
+    opacity 0.15s;
+} /* the line inset on the plate, like PNG Info's drop area */
+.dockzone.near::after {
+  border-color: color-mix(in oklab, var(--a1) 80%, transparent);
+  opacity: 1;
+}
+.dockzone.near {
+  background: color-mix(in oklab, var(--a1) 14%, transparent);
+  color: #fff;
+}
+.dockzone.dz-left {
+  left: 12px;
+  top: 84px;
+  bottom: 22%;
+  width: 28%;
+}
+.dockzone.dz-right {
+  right: 12px;
+  top: 84px;
+  bottom: 22%;
+  width: 28%;
+} /* below the tab bar: navigation stays in view */
+.dockzone.dz-below {
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  height: 18%;
+}
 /* glass, all three alike (the left one used to pick up the prompt box's glass through a shared class name) */
-body.glass .dockzone{-webkit-backdrop-filter:blur(0px) saturate(1) brightness(1);backdrop-filter:blur(0px) saturate(1) brightness(1)}
-body.glass .dockzone.show{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
- -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1))}
-@starting-style{body.glass .dockzone.show{background:transparent;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:blur(0px) saturate(1) brightness(1);backdrop-filter:blur(0px) saturate(1) brightness(1)}}
-body.glass .dockzone.near{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 22%);border-color:color-mix(in oklab,var(--a1) 70%,transparent)}
+body.glass .dockzone {
+  -webkit-backdrop-filter: blur(0px) saturate(1) brightness(1);
+  backdrop-filter: blur(0px) saturate(1) brightness(1);
+}
+body.glass .dockzone.show {
+  background: color-mix(in oklab, rgba(18, 20, 22, var(--gta, 0.28)), var(--a1) 6%);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
+  backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
+}
+@starting-style {
+  body.glass .dockzone.show {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: blur(0px) saturate(1) brightness(1);
+    backdrop-filter: blur(0px) saturate(1) brightness(1);
+  }
+}
+body.glass .dockzone.near {
+  background: color-mix(in oklab, rgba(18, 20, 22, var(--gta, 0.28)), var(--a1) 22%);
+  border-color: color-mix(in oklab, var(--a1) 70%, transparent);
+}
 
 /* ======================= backgrounds ======================= */
-#stars{position:fixed;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1.2s var(--ease);pointer-events:none;z-index:0}
-#stars.on{opacity:1}
-#fglow{position:fixed;left:0;top:0;width:0;height:0;z-index:0;pointer-events:none;opacity:0;mix-blend-mode:screen}   /* Aurora's halo round the picture (skins.js makeHalo) */
+#stars {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1.2s var(--ease);
+  pointer-events: none;
+  z-index: 0;
+}
+#stars.on {
+  opacity: 1;
+}
+#fglow {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+} /* Aurora's halo round the picture (skins.js makeHalo) */
 
 /* ======================= glass: the material the UI is made of =======================
    Settings → Material (Solid is the alternative). Three thicknesses: regular (prompt box, tab bar, Reuse bar, pop-ups,
@@ -680,190 +3575,734 @@ body.glass .dockzone.near{background:color-mix(in oklab,rgba(18,20,22,var(--gta,
    row) is a light capsule. Glass that holds glass of its own carries it on a ::before layer, not on itself: in
    Chromium an element with a backdrop-filter becomes the backdrop of its children, so glass inside glass could not blur
    what is really under it (the prompt under a pop-up, the text under the pills). */
-body.glass .left,body.glass .rpanel.paneled,body.glass .mcard,body.glass .seg,body.glass .peekbar{background:transparent;isolation:isolate;border-color:rgba(255,255,255,.12)}
-body.glass .ltitle .peekbar,body.glass .mcard{position:relative}
-body.glass .left::before,body.glass .rpanel.paneled::before,body.glass .mcard::before,body.glass .seg::before,body.glass .peekbar::before,body.glass .pill::before,body.glass .play::before{
- content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none}
+body.glass .left,
+body.glass .rpanel.paneled,
+body.glass .mcard,
+body.glass .seg,
+body.glass .peekbar {
+  background: transparent;
+  isolation: isolate;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+body.glass .ltitle .peekbar,
+body.glass .mcard {
+  position: relative;
+}
+body.glass .left::before,
+body.glass .rpanel.paneled::before,
+body.glass .mcard::before,
+body.glass .seg::before,
+body.glass .peekbar::before,
+body.glass .pill::before,
+body.glass .play::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -1;
+  pointer-events: none;
+}
 /* regular */
-body.glass .left::before,body.glass .seg::before,body.glass .peekbar::before,body.glass .frame:not(.has)::before{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);
- -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03)}
-body.glass .pop,body.glass .toast,body.glass #tip,body.glass .donenote,body.glass .qbar{background:color-mix(in oklab,rgba(26,28,32,.42),var(--a1) 6%);border-color:rgba(255,255,255,.14);
- -webkit-backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);backdrop-filter:blur(20px) saturate(1.9) brightness(1.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 36px rgba(0,0,0,.4)}
+body.glass .left::before,
+body.glass .seg::before,
+body.glass .peekbar::before,
+body.glass .frame:not(.has)::before {
+  background: color-mix(in oklab, rgba(18, 20, 22, var(--gta, 0.28)), var(--a1) 6%);
+  -webkit-backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
+  backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+body.glass .pop,
+body.glass .toast,
+body.glass #tip,
+body.glass .donenote,
+body.glass .qbar {
+  background: color-mix(in oklab, rgba(26, 28, 32, 0.42), var(--a1) 6%);
+  border-color: rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(20px) saturate(1.9) brightness(1.15);
+  backdrop-filter: blur(20px) saturate(1.9) brightness(1.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 12px 36px rgba(0, 0, 0, 0.4);
+}
 /* the gear and the Layout button sit in the tab bar's row over the bright sky: the tab bar's regular glass */
-body.glass .gear{background:color-mix(in oklab,rgba(18,20,22,var(--gta,.28)),var(--a1) 6%);
- -webkit-backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.4) brightness(var(--gtb,2.1));
- box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.03),0 0 0 1px rgba(255,255,255,.1)}
-body.glass .gear:hover{background:color-mix(in oklab,rgba(44,48,50,var(--gta,.28)),var(--a1) 8%);color:var(--text)}
+body.glass .gear {
+  background: color-mix(in oklab, rgba(18, 20, 22, var(--gta, 0.28)), var(--a1) 6%);
+  -webkit-backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
+  backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+body.glass .gear:hover {
+  background: color-mix(in oklab, rgba(44, 48, 50, var(--gta, 0.28)), var(--a1) 8%);
+  color: var(--text);
+}
 /* nothing to show: the picture area is regular glass, the background's light blurred behind it */
-body.glass .frame:not(.has){outline-color:rgba(255,255,255,.12)}
-body.glass .frame:not(.has)::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+body.glass .frame:not(.has) {
+  outline-color: rgba(255, 255, 255, 0.12);
+}
+body.glass .frame:not(.has)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
 /* thick */
-body.glass .rpanel.paneled::before,body.glass .mcard::before{background:color-mix(in oklab,rgba(16,18,20,var(--gtk,.3)),var(--a1) 5%);
- -webkit-backdrop-filter:blur(16px) saturate(2.2) brightness(var(--gtb,2.1));backdrop-filter:blur(16px) saturate(2.2) brightness(var(--gtb,2.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
-body.glass .left,body.glass .rpanel.paneled,body.glass .mcard{box-shadow:0 18px 50px rgba(0,0,0,.35)}
-body.glass .seg .thumb{background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+body.glass .rpanel.paneled::before,
+body.glass .mcard::before {
+  background: color-mix(in oklab, rgba(16, 18, 20, var(--gtk, 0.3)), var(--a1) 5%);
+  -webkit-backdrop-filter: blur(16px) saturate(2.2) brightness(var(--gtb, 2.1));
+  backdrop-filter: blur(16px) saturate(2.2) brightness(var(--gtb, 2.1));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+body.glass .left,
+body.glass .rpanel.paneled,
+body.glass .mcard {
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+body.glass .seg .thumb {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
 /* thin: controls (the pills and Start carry theirs on ::before, so their pop-ups can blur the prompt too) */
-body.glass .pill,body.glass .play{isolation:isolate}
-body.glass .pill::before,body.glass .play::before{background:color-mix(in oklab,rgba(255,255,255,.045),var(--cool,#9ab) 14%);-webkit-backdrop-filter:blur(10px) saturate(1.7);backdrop-filter:blur(10px) saturate(1.7);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(255,255,255,.04),0 0 0 1px rgba(255,255,255,.1)}
-body.glass .pill:hover,body.glass .pill.open{background:transparent}
-body.glass .pill:hover::before,body.glass .pill.open::before,body.glass .play.gen:hover::before{background:color-mix(in oklab,rgba(255,255,255,.15),var(--cool,#9ab) 18%)}
-body.glass .qb:not(.on),body.glass .btn:not(.pri),body.glass .peekbar button:not(#pkAll),body.glass .qsec button,body.glass .prog .stop,body.glass .prog .resume,body.glass .pchip,
-body.glass .chip,body.glass .fchips button:not(.on),body.glass .iconbtn,body.glass .pi-raw,body.glass .hmodes button:not(.on),body.glass .qi .x,body.glass .search{
- background:color-mix(in oklab,rgba(255,255,255,.08),var(--cool,#9ab) 16%);-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 0 0 1px rgba(255,255,255,.07)}
-body.glass .btn:not(.pri):hover,body.glass .chip:hover,body.glass .prog .stop:hover,body.glass .qb:not(.on):hover,body.glass .iconbtn:hover,
-body.glass .fchips button:not(.on):hover,body.glass .hmodes button:not(.on):hover,body.glass .qi .x:hover,body.glass .peekbar button:not(#pkAll):hover{background:color-mix(in oklab,rgba(255,255,255,.16),var(--cool,#9ab) 18%)}
-body.glass .hmodes button:not(.on),body.glass .qi .x{background:transparent;box-shadow:none}   /* icon-only: no capsule at rest */
-body.glass .hmodes button:not(.on):hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.17)}
+body.glass .pill,
+body.glass .play {
+  isolation: isolate;
+}
+body.glass .pill::before,
+body.glass .play::before {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.045), var(--cool, #9ab) 14%);
+  -webkit-backdrop-filter: blur(10px) saturate(1.7);
+  backdrop-filter: blur(10px) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+body.glass .pill:hover,
+body.glass .pill.open {
+  background: transparent;
+}
+body.glass .pill:hover::before,
+body.glass .pill.open::before,
+body.glass .play.gen:hover::before {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.15), var(--cool, #9ab) 18%);
+}
+body.glass .qb:not(.on),
+body.glass .btn:not(.pri),
+body.glass .peekbar button:not(#pkAll),
+body.glass .qsec button,
+body.glass .prog .stop,
+body.glass .prog .resume,
+body.glass .pchip,
+body.glass .chip,
+body.glass .fchips button:not(.on),
+body.glass .iconbtn,
+body.glass .pi-raw,
+body.glass .hmodes button:not(.on),
+body.glass .qi .x,
+body.glass .search {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.08), var(--cool, #9ab) 16%);
+  -webkit-backdrop-filter: blur(12px) saturate(1.7);
+  backdrop-filter: blur(12px) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.17),
+    0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+body.glass .btn:not(.pri):hover,
+body.glass .chip:hover,
+body.glass .prog .stop:hover,
+body.glass .qb:not(.on):hover,
+body.glass .iconbtn:hover,
+body.glass .fchips button:not(.on):hover,
+body.glass .hmodes button:not(.on):hover,
+body.glass .qi .x:hover,
+body.glass .peekbar button:not(#pkAll):hover {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.16), var(--cool, #9ab) 18%);
+}
+body.glass .hmodes button:not(.on),
+body.glass .qi .x {
+  background: transparent;
+  box-shadow: none;
+} /* icon-only: no capsule at rest */
+body.glass .hmodes button:not(.on):hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.17);
+}
 /* the buttons on the picture (no hover change in glass: the glass is the button) */
-body.glass .side button,body.glass .side button:hover,body.glass .nav,body.glass .nav:hover,body.glass .bclose,body.glass .bclose:hover,body.glass .vclose,body.glass .cbtn{
- background:rgba(20,22,24,.38);-webkit-backdrop-filter:blur(18px) saturate(1.7);backdrop-filter:blur(18px) saturate(1.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.10)}
-body.glass .cbtn:hover{background:rgba(44,48,50,.5)}
+body.glass .side button,
+body.glass .side button:hover,
+body.glass .nav,
+body.glass .nav:hover,
+body.glass .bclose,
+body.glass .bclose:hover,
+body.glass .vclose,
+body.glass .cbtn {
+  background: rgba(20, 22, 24, 0.38);
+  -webkit-backdrop-filter: blur(18px) saturate(1.7);
+  backdrop-filter: blur(18px) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+body.glass .cbtn:hover {
+  background: rgba(44, 48, 50, 0.5);
+}
 /* thin rows inside thick panels */
-body.glass .qi{background:color-mix(in oklab,rgba(12,14,14,.5),var(--a1) 4%);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
-body.glass .qi:hover{background:color-mix(in oklab,rgba(40,44,44,.5),var(--a1) 6%)}
-body.glass .li{background:color-mix(in oklab,rgba(12,14,14,.3),var(--a1) 3%)}
-body.glass .li:hover{background:rgba(255,255,255,.06)}body.glass .li.on{background:rgba(255,255,255,.05)}
-body.glass .pout{background:rgba(0,0,0,.22)}body.glass .drop{border-color:rgba(255,255,255,.18)}
+body.glass .qi {
+  background: color-mix(in oklab, rgba(12, 14, 14, 0.5), var(--a1) 4%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+body.glass .qi:hover {
+  background: color-mix(in oklab, rgba(40, 44, 44, 0.5), var(--a1) 6%);
+}
+body.glass .li {
+  background: color-mix(in oklab, rgba(12, 14, 14, 0.3), var(--a1) 3%);
+}
+body.glass .li:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+body.glass .li.on {
+  background: rgba(255, 255, 255, 0.05);
+}
+body.glass .pout {
+  background: rgba(0, 0, 0, 0.22);
+}
+body.glass .drop {
+  border-color: rgba(255, 255, 255, 0.18);
+}
 /* tabs switch at once: a fading view is partly transparent, and Chromium turns off the glass inside anything partly
    transparent, so the blur popped in only after the fade */
-body.glass .view{opacity:1;transform:none;transition:visibility 0s}
+body.glass .view {
+  opacity: 1;
+  transform: none;
+  transition: visibility 0s;
+}
 /* Settings: appears at once (a fading dialog would switch its glass off until the fade ends); only the dark overlay eases in */
-body.glass .modal{opacity:1;background:rgba(0,0,0,0);transition:background-color .22s var(--ease),visibility 0s linear .22s}
-body.glass .modal.show{background:rgba(0,0,0,.55);transition:background-color .22s var(--ease),visibility 0s}
-body.glass .modal:not(.show){transition:none}
-body.glass .fg select option{background:#1d2120}
-body.glass .fg select:hover,body.glass .fg input:not([readonly]):hover{background-color:color-mix(in oklab,rgba(255,255,255,.08),var(--cool,#9ab) 16%);box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 0 0 1px rgba(255,255,255,.06)}
-body.glass .fg select:focus,body.glass .fg input:not([readonly]):focus{background-color:color-mix(in oklab,rgba(255,255,255,.11),var(--cool,#9ab) 18%);border-color:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
-body.glass .fg input[readonly]:hover{background-color:transparent}
+body.glass .modal {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0);
+  transition:
+    background-color 0.22s var(--ease),
+    visibility 0s linear 0.22s;
+}
+body.glass .modal.show {
+  background: rgba(0, 0, 0, 0.55);
+  transition:
+    background-color 0.22s var(--ease),
+    visibility 0s;
+}
+body.glass .modal:not(.show) {
+  transition: none;
+}
+body.glass .fg select option {
+  background: #1d2120;
+}
+body.glass .fg select:hover,
+body.glass .fg input:not([readonly]):hover {
+  background-color: color-mix(in oklab, rgba(255, 255, 255, 0.08), var(--cool, #9ab) 16%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+body.glass .fg select:focus,
+body.glass .fg input:not([readonly]):focus {
+  background-color: color-mix(in oklab, rgba(255, 255, 255, 0.11), var(--cool, #9ab) 18%);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+body.glass .fg input[readonly]:hover {
+  background-color: transparent;
+}
 /* the pill row floats over the bottom of the glass box: the prompt scrolls under it, fading and blurring (Liquid
    Glass's scroll-edge effect); the last line can always scroll clear of it */
-body.glass .left .controls{position:absolute;left:0;right:0;bottom:0;z-index:2}
-body.glass .left .pwrapT .cm-scroller{padding-bottom:calc(var(--ctrlh,64px) - 6px)}   /* the text runs on under the glass controls, almost to the box's edge */
-body.glass .left .pwrapT .cm-editor{margin-bottom:0}
+body.glass .left .controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+}
+body.glass .left .pwrapT .cm-scroller {
+  padding-bottom: calc(var(--ctrlh, 64px) - 6px);
+} /* the text runs on under the glass controls, almost to the box's edge */
+body.glass .left .pwrapT .cm-editor {
+  margin-bottom: 0;
+}
 /* the character count sits at the box's top (its own header strip), beside the ✕ */
-body.glass .left .privov{bottom:var(--ctrlh,64px)}
+body.glass .left .privov {
+  bottom: var(--ctrlh, 64px);
+}
 /* main actions (Start, Send to prompt, Reuse all, Save name): tinted glass — the theme gradient, see-through, with
    the glass's light edge. Nothing to queue / a job running: Start is plain thin glass */
-body.glass .btn.pri,body.glass .peekbar #pkAll,body.glass .play:not(.off),body.glass .pnsave{
- background:linear-gradient(135deg in oklch,color-mix(in oklab,var(--a1) 80%,transparent),color-mix(in oklab,var(--a2) 72%,transparent) 55%,color-mix(in oklab,var(--a3) 66%,transparent));
- -webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -4px 10px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25)}
-body.glass .btn.pri,body.glass .peekbar #pkAll{position:relative;color:var(--ink);font-weight:600}
-body.glass .pnsave{box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25);padding:4px 12px}
-body.glass .btn.pri:hover,body.glass .peekbar #pkAll:hover{filter:brightness(1.1) saturate(1.05)}
-body.glass .play{background:transparent}
-body.glass .play:not(.off)::before{display:none}
-body.glass .play.gen,body.glass .play.gen:not(.off):hover{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
-body.glass .play.gen::before{display:block}
+body.glass .btn.pri,
+body.glass .peekbar #pkAll,
+body.glass .play:not(.off),
+body.glass .pnsave {
+  background: linear-gradient(
+    135deg in oklch,
+    color-mix(in oklab, var(--a1) 80%, transparent),
+    color-mix(in oklab, var(--a2) 72%, transparent) 55%,
+    color-mix(in oklab, var(--a3) 66%, transparent)
+  );
+  -webkit-backdrop-filter: blur(14px) saturate(1.8);
+  backdrop-filter: blur(14px) saturate(1.8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 2px 8px rgba(0, 0, 0, 0.25);
+}
+body.glass .btn.pri,
+body.glass .peekbar #pkAll {
+  position: relative;
+  color: var(--ink);
+  font-weight: 600;
+}
+body.glass .pnsave {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 2px 8px rgba(0, 0, 0, 0.25);
+  padding: 4px 12px;
+}
+body.glass .btn.pri:hover,
+body.glass .peekbar #pkAll:hover {
+  filter: brightness(1.1) saturate(1.05);
+}
+body.glass .play {
+  background: transparent;
+}
+body.glass .play:not(.off)::before {
+  display: none;
+}
+body.glass .play.gen,
+body.glass .play.gen:not(.off):hover {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+body.glass .play.gen::before {
+  display: block;
+}
 /* the queue count on Start: clear glass, so the number reads over the button's edge */
-body.glass .badge{background:rgba(255,255,255,.03);-webkit-backdrop-filter:blur(1.5px) saturate(1.5);backdrop-filter:blur(1.5px) saturate(1.5);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.14);text-shadow:0 0 3px rgba(0,0,0,.6)}
+body.glass .badge {
+  background: rgba(255, 255, 255, 0.03);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.5);
+  backdrop-filter: blur(1.5px) saturate(1.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.14);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+}
 /* the name plate: editing a name (your draft's, or a waiting job's in its peek) sits on a thin glass plate like the
    pills; a waiting job's name shows a faint plate at rest, so you can tell it's editable */
-body.glass .ltitle .plbl.peekname .pname:not([readonly]){background:color-mix(in oklab,rgba(255,255,255,.04),var(--cool,#9ab) 10%);box-shadow:0 0 0 1px rgba(255,255,255,.06);border-radius:14px}
-body.glass .ltitle .plbl .pname:not([readonly]):hover,body.glass .ltitle .plbl .pname:not([readonly]):focus{border-radius:14px;
- background:color-mix(in oklab,rgba(255,255,255,.07),var(--cool,#9ab) 14%);-webkit-backdrop-filter:blur(12px) saturate(1.7);backdrop-filter:blur(12px) saturate(1.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px rgba(255,255,255,.09)}
-body.glass .ltitle .plbl .pname:not([readonly]):focus{background:color-mix(in oklab,rgba(255,255,255,.1),var(--cool,#9ab) 16%);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px rgba(255,255,255,.14),0 6px 18px rgba(0,0,0,.25)}
-body.glass .ltitle .plbl.donename .pname:not(:focus),body.glass .ltitle .plbl.donename .pname:not(:focus):hover{background:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+body.glass .ltitle .plbl.peekname .pname:not([readonly]) {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.04), var(--cool, #9ab) 10%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+}
+body.glass .ltitle .plbl .pname:not([readonly]):hover,
+body.glass .ltitle .plbl .pname:not([readonly]):focus {
+  border-radius: 14px;
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.07), var(--cool, #9ab) 14%);
+  -webkit-backdrop-filter: blur(12px) saturate(1.7);
+  backdrop-filter: blur(12px) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.09);
+}
+body.glass .ltitle .plbl .pname:not([readonly]):focus {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.1), var(--cool, #9ab) 16%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 6px 18px rgba(0, 0, 0, 0.25);
+}
+body.glass .ltitle .plbl.donename .pname:not(:focus),
+body.glass .ltitle .plbl.donename .pname:not(:focus):hover {
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 
 /* ======================= skins ======================= */
 /* glass thickness per theme: Aurora's sky is bright, so its glass is thicker and gathers less light than Emerald's */
-body.skin-aurora{--gta:.48;--gtk:.52;--gtb:1.35}
+body.skin-aurora {
+  --gta: 0.48;
+  --gtk: 0.52;
+  --gtb: 1.35;
+}
 /* Emerald: the title in Courier Prime, glowing faintly, spaced like a title card; the Generating ring as twelve 30°
    segments that light up one by one in the theme's green — a terminal readout that ticks, not sweeps */
-body.skin-emerald .ltitle .pname{font-weight:700;letter-spacing:.06em;text-shadow:0 0 14px color-mix(in oklab,var(--a1) 45%,transparent)}
-body.skin-emerald .tab .tring{background:var(--a1);transition:none;
- -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.6px)),conic-gradient(#000 calc(round(down,var(--p)*12,1)*30deg),rgba(0,0,0,.2) 0),repeating-conic-gradient(#000 0 25deg,transparent 25deg 30deg);
- -webkit-mask-composite:source-in,source-in;
- mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.6px)),conic-gradient(#000 calc(round(down,var(--p)*12,1)*30deg),rgba(0,0,0,.2) 0),repeating-conic-gradient(#000 0 25deg,transparent 25deg 30deg);
- mask-composite:intersect,intersect}
+body.skin-emerald .ltitle .pname {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 14px color-mix(in oklab, var(--a1) 45%, transparent);
+}
+body.skin-emerald .tab .tring {
+  background: var(--a1);
+  transition: none;
+  -webkit-mask:
+    radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.6px)),
+    conic-gradient(#000 calc(round(down, var(--p) * 12, 1) * 30deg), rgba(0, 0, 0, 0.2) 0),
+    repeating-conic-gradient(#000 0 25deg, transparent 25deg 30deg);
+  -webkit-mask-composite: source-in, source-in;
+  mask:
+    radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.6px)),
+    conic-gradient(#000 calc(round(down, var(--p) * 12, 1) * 30deg), rgba(0, 0, 0, 0.2) 0),
+    repeating-conic-gradient(#000 0 25deg, transparent 25deg 30deg);
+  mask-composite: intersect, intersect;
+}
 
 /* ======================= motion =======================
    Drags and window resizes follow the pointer directly: these switches turn every transition off (and set the
    cursor) while they last — !important, they must win over everything */
-body.resizing,body.resizing *{cursor:ew-resize!important;user-select:none}
-body.vresizing,body.vresizing *{cursor:ns-resize!important;user-select:none}
-body.cardmove,body.cardmove *{cursor:grabbing!important;user-select:none}
-body.liveresize *,body.liveresize *::before,body.liveresize *::after{transition:none!important}
-body.laydrag *{transition:none!important}
-body.laysnap *,body.laysnap *::before,body.laysnap *::after{transition:none!important}   /* a layout switch is captured where it ends */
+body.resizing,
+body.resizing * {
+  cursor: ew-resize !important;
+  user-select: none;
+}
+body.vresizing,
+body.vresizing * {
+  cursor: ns-resize !important;
+  user-select: none;
+}
+body.cardmove,
+body.cardmove * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+body.liveresize *,
+body.liveresize *::before,
+body.liveresize *::after {
+  transition: none !important;
+}
+body.laydrag * {
+  transition: none !important;
+}
+body.laysnap *,
+body.laysnap *::before,
+body.laysnap *::after {
+  transition: none !important;
+} /* a layout switch is captured where it ends */
 /* a layout switch (Left / Right / Vertical) is a View Transition: the picture is the same object, so it MOVES to its
    new place and size (a shared-element morph, Material's container transform); everything else fades out, then back
    in a beat after the picture leads, clearing from a slight blur. The names exist only during a switch: a named
    element is a backdrop root, so the glass couldn't see the sky */
-html.laymorph .app{view-transition-name:kiln-app}
-html.laymorph .view.on #frame{view-transition-name:kiln-pic}
-html.laymorph #fglow{visibility:visible;view-transition-name:kiln-glow}   /* the glow travels with the picture */
-html.laymorph #fglow[style*="display: none"]{view-transition-name:none}
-::view-transition-old(root){display:none}::view-transition-new(root){animation:none}
-::view-transition-group(kiln-app){animation:none}
-::view-transition-old(kiln-app){animation:kfadeout 120ms cubic-bezier(.4,0,1,1) both}
-::view-transition-new(kiln-app){animation:kfadein2 300ms cubic-bezier(0,0,.2,1) 170ms both}
-::view-transition-group(kiln-pic){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);z-index:2}
-::view-transition-old(kiln-pic),::view-transition-new(kiln-pic){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);height:100%}
-::view-transition-group(kiln-glow){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);z-index:1;mix-blend-mode:screen}
-::view-transition-old(kiln-glow),::view-transition-new(kiln-glow){animation-duration:var(--sw-t);animation-timing-function:var(--sw-e);height:100%}
+html.laymorph .app {
+  view-transition-name: kiln-app;
+}
+html.laymorph .view.on #frame {
+  view-transition-name: kiln-pic;
+}
+html.laymorph #fglow {
+  visibility: visible;
+  view-transition-name: kiln-glow;
+} /* the glow travels with the picture */
+html.laymorph #fglow[style*="display: none"] {
+  view-transition-name: none;
+}
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(kiln-app) {
+  animation: none;
+}
+::view-transition-old(kiln-app) {
+  animation: kfadeout 120ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(kiln-app) {
+  animation: kfadein2 300ms cubic-bezier(0, 0, 0.2, 1) 170ms both;
+}
+::view-transition-group(kiln-pic) {
+  animation-duration: var(--sw-t);
+  animation-timing-function: var(--sw-e);
+  z-index: 2;
+}
+::view-transition-old(kiln-pic),
+::view-transition-new(kiln-pic) {
+  animation-duration: var(--sw-t);
+  animation-timing-function: var(--sw-e);
+  height: 100%;
+}
+::view-transition-group(kiln-glow) {
+  animation-duration: var(--sw-t);
+  animation-timing-function: var(--sw-e);
+  z-index: 1;
+  mix-blend-mode: screen;
+}
+::view-transition-old(kiln-glow),
+::view-transition-new(kiln-glow) {
+  animation-duration: var(--sw-t);
+  animation-timing-function: var(--sw-e);
+  height: 100%;
+}
 /* tab switches: only the content under the tabs fades through; the tab bar and the prompt stay as they are (live), and
    the selected tab's pill slides to its new place — a fade of the whole app read as the page reloading (2026-10-25) */
-html.tabmorph .app{view-transition-name:none}
-html.tabmorph .rpanel{view-transition-name:kiln-panel}
-::view-transition-group(kiln-panel){animation-duration:.65s;animation-timing-function:var(--lay-e);overflow:clip;border-radius:var(--r-panel)}   /* the box morphs to the new size, like the Gallery's frame */
-::view-transition-old(kiln-panel),::view-transition-new(kiln-panel){object-fit:none;object-position:50% 0;height:100%}   /* the panel changes width: its snapshot must not stretch (it read as a zoom) */
-html.tabmorph #lcol{view-transition-name:kiln-prompt}   /* the prompt box slides to its new place as a snapshot: no glass re-blurred per frame (that lagged with Forge on the GPU) */
-::view-transition-group(kiln-prompt){animation-duration:.65s;animation-timing-function:var(--lay-e)}
-::view-transition-old(kiln-prompt),::view-transition-new(kiln-prompt){height:100%}
-html.tabmorph body.laysnap .tabs{transition:width var(--lay-t) var(--lay-e),transform var(--lay-t) var(--lay-e)!important}   /* the tab bar glides live (small) */
-html.tabmorph::view-transition-old(kiln-panel){animation:kfadeout 180ms cubic-bezier(.4,0,1,1) both}
-html.tabmorph::view-transition-new(kiln-panel){animation:kfadein 320ms cubic-bezier(0,0,.2,1) 100ms both}
-html.tabmorph body.laysnap .seg .thumb{transition:left .28s var(--ease),width .28s var(--ease)!important}   /* !important: over the switch's glide stop */
-html.tabmorph::view-transition-group(kiln-pic){animation-duration:260ms;animation-timing-function:cubic-bezier(.2,0,0,1)}
-html.tabmorph::view-transition-old(kiln-pic),html.tabmorph::view-transition-new(kiln-pic){animation-duration:200ms}
-@keyframes kfadeout{to{opacity:0}}
-@keyframes kfadein{from{opacity:0;transform:scale(.985)}}
-@keyframes kfadein2{from{opacity:0;transform:scale(.985);filter:blur(4px)}}
+html.tabmorph .app {
+  view-transition-name: none;
+}
+html.tabmorph .rpanel {
+  view-transition-name: kiln-panel;
+}
+::view-transition-group(kiln-panel) {
+  animation-duration: 0.65s;
+  animation-timing-function: var(--lay-e);
+  overflow: clip;
+  border-radius: var(--r-panel);
+} /* the box morphs to the new size, like the Gallery's frame */
+::view-transition-old(kiln-panel),
+::view-transition-new(kiln-panel) {
+  object-fit: none;
+  object-position: 50% 0;
+  height: 100%;
+} /* the panel changes width: its snapshot must not stretch (it read as a zoom) */
+html.tabmorph #lcol {
+  view-transition-name: kiln-prompt;
+} /* the prompt box slides to its new place as a snapshot: no glass re-blurred per frame (that lagged with Forge on the GPU) */
+::view-transition-group(kiln-prompt) {
+  animation-duration: 0.65s;
+  animation-timing-function: var(--lay-e);
+}
+::view-transition-old(kiln-prompt),
+::view-transition-new(kiln-prompt) {
+  height: 100%;
+}
+html.tabmorph body.laysnap .tabs {
+  transition:
+    width var(--lay-t) var(--lay-e),
+    transform var(--lay-t) var(--lay-e) !important;
+} /* the tab bar glides live (small) */
+html.tabmorph::view-transition-old(kiln-panel) {
+  animation: kfadeout 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+html.tabmorph::view-transition-new(kiln-panel) {
+  animation: kfadein 320ms cubic-bezier(0, 0, 0.2, 1) 100ms both;
+}
+html.tabmorph body.laysnap .seg .thumb {
+  transition:
+    left 0.28s var(--ease),
+    width 0.28s var(--ease) !important;
+} /* !important: over the switch's glide stop */
+html.tabmorph::view-transition-group(kiln-pic) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+html.tabmorph::view-transition-old(kiln-pic),
+html.tabmorph::view-transition-new(kiln-pic) {
+  animation-duration: 200ms;
+}
+@keyframes kfadeout {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes kfadein {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+@keyframes kfadein2 {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+    filter: blur(4px);
+  }
+}
 
 /* ======================= v0.5 (2026-10-24): the quick list ======================= */
 /* Vertical: the picture area's empty boxes let the pointer through. The prompt column is shifted up under them (the
    even gaps), and they come later in the page, so they took the title's clicks ("the title isn't editable") */
-.app.stacked>.right,.app.stacked .rpanel:not(.paneled),.app.stacked #v-gen,.app.stacked .stage{pointer-events:none}
-.app.stacked .right>.tabs,.app.stacked .rpanel.paneled,.app.stacked #v-gen>.prog,.app.stacked .stage>.frame{pointer-events:auto}
+.app.stacked > .right,
+.app.stacked .rpanel:not(.paneled),
+.app.stacked #v-gen,
+.app.stacked .stage {
+  pointer-events: none;
+}
+.app.stacked .right > .tabs,
+.app.stacked .rpanel.paneled,
+.app.stacked #v-gen > .prog,
+.app.stacked .stage > .frame {
+  pointer-events: auto;
+}
 /* the privacy eye on the empty frame too: it also hides the prompt, the name and the LoRAs */
-.cbtn{display:grid}
-.frame:hover .cbtn{opacity:1}
-.frame.missing .cbtn{display:none}
+.cbtn {
+  display: grid;
+}
+.frame:hover .cbtn {
+  opacity: 1;
+}
+.frame.missing .cbtn {
+  display: none;
+}
 /* the prompt's ✕ Clear: top right of the box while it has text and you're over it */
-.pclear{position:absolute;top:8px;right:24px;z-index:3;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:var(--muted);
- opacity:0;pointer-events:none;transition:opacity .15s,background .15s}
-.pclear svg{width:11px;height:11px}
-.left.hastext:hover .pclear{opacity:1;pointer-events:auto}
-.pclear:hover{background:var(--raised2);color:#fff}
-body.private .pclear{visibility:hidden}
+.pclear {
+  position: absolute;
+  top: 8px;
+  right: 24px;
+  z-index: 3;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+.pclear svg {
+  width: 11px;
+  height: 11px;
+}
+.left.hastext:hover .pclear {
+  opacity: 1;
+  pointer-events: auto;
+}
+.pclear:hover {
+  background: var(--raised2);
+  color: #fff;
+}
+body.private .pclear {
+  visibility: hidden;
+}
 /* the LoRA search's ✕ */
-.sbox{position:relative;flex:1;display:flex;min-width:0}
-.sbox .search{flex:1;min-width:0;padding-right:38px}
-.sclear{position:absolute;right:6px;top:50%;margin-top:-13px;width:26px;height:26px;border-radius:50%;display:none;place-items:center;color:var(--muted)}
-.sclear svg{width:11px;height:11px}
-.sbox.has .sclear{display:grid}.sclear:hover{background:var(--raised2);color:#fff}
+.sbox {
+  position: relative;
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+.sbox .search {
+  flex: 1;
+  min-width: 0;
+  padding-right: 38px;
+}
+.sclear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  margin-top: -13px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: none;
+  place-items: center;
+  color: var(--muted);
+}
+.sclear svg {
+  width: 11px;
+  height: 11px;
+}
+.sbox.has .sclear {
+  display: grid;
+}
+.sclear:hover {
+  background: var(--raised2);
+  color: #fff;
+}
 /* the Generating ring: clearly darker than the letters in front of it */
-.tab:not(.on) .tring{background:#8e9499}.tab.on .tring{background:#a7adb2}   /* the lighter greys: the knockout keeps them off the letters */
+.tab:not(.on) .tring {
+  background: #8e9499;
+}
+.tab.on .tring {
+  background: #a7adb2;
+} /* the lighter greys: the knockout keeps them off the letters */
 /* Settings: section names you can find at a glance */
-.fgh{font-size:12px;font-weight:600;letter-spacing:.12em;color:#c9ccd0;padding-top:18px;margin-top:10px}
-.fgh.first{padding-top:2px;margin-top:0}
+.fgh {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #c9ccd0;
+  padding-top: 18px;
+  margin-top: 10px;
+}
+.fgh.first {
+  padding-top: 2px;
+  margin-top: 0;
+}
 /* Start while a job runs: the progress bar's flowing gradient over the whole button, the triangle glowing white; a ring
    round the queue count fills with the job's progress */
-.play.gen,.play.gen:not(.off):hover{background:var(--flow);background-size:200% 100%;animation:flow 6s linear infinite;filter:none}
-.play.gen.off{filter:saturate(.55) brightness(.75)}
+.play.gen,
+.play.gen:not(.off):hover {
+  background: var(--flow);
+  background-size: 200% 100%;
+  animation: flow 6s linear infinite;
+  filter: none;
+}
+.play.gen.off {
+  filter: saturate(0.55) brightness(0.75);
+}
 /* the triangle: bright while working (dark when idle) */
-.play.gen svg path,body.glass .play.gen svg path{fill:#fff}
-.play.gen svg{filter:drop-shadow(0 0 3px rgba(255,255,255,.75)) drop-shadow(0 0 9px color-mix(in oklab,var(--a2) 70%,transparent))}
-body.glass .play.gen,body.glass .play.gen:not(.off):hover{background:linear-gradient(90deg in oklch,color-mix(in oklab,var(--a1) 80%,transparent),color-mix(in oklab,var(--a2) 72%,transparent),color-mix(in oklab,var(--a3) 66%,transparent),color-mix(in oklab,var(--a2) 72%,transparent),color-mix(in oklab,var(--a1) 80%,transparent));
- background-size:200% 100%;-webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);
- box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -4px 10px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.25)}
-body.glass .play.gen::before{display:none}
-.play.gen .badge.show::before{content:"";position:absolute;inset:-3px;padding:2px;border-radius:inherit;pointer-events:none;
- background:conic-gradient(#fff calc(var(--p)*360deg),rgba(255,255,255,.18) 0);transition:--p .45s linear;
- -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
-.play.gen .badge.show{min-width:22px;height:22px;top:-9px;right:-11px}
-@media (prefers-reduced-motion:reduce){.play.gen{animation:none}}
+.play.gen svg path,
+body.glass .play.gen svg path {
+  fill: #fff;
+}
+.play.gen svg {
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.75))
+    drop-shadow(0 0 9px color-mix(in oklab, var(--a2) 70%, transparent));
+}
+body.glass .play.gen,
+body.glass .play.gen:not(.off):hover {
+  background: linear-gradient(
+    90deg in oklch,
+    color-mix(in oklab, var(--a1) 80%, transparent),
+    color-mix(in oklab, var(--a2) 72%, transparent),
+    color-mix(in oklab, var(--a3) 66%, transparent),
+    color-mix(in oklab, var(--a2) 72%, transparent),
+    color-mix(in oklab, var(--a1) 80%, transparent)
+  );
+  background-size: 200% 100%;
+  -webkit-backdrop-filter: blur(14px) saturate(1.8);
+  backdrop-filter: blur(14px) saturate(1.8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 2px 8px rgba(0, 0, 0, 0.25);
+}
+body.glass .play.gen::before {
+  display: none;
+}
+.play.gen .badge.show::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  padding: 2px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(#fff calc(var(--p) * 360deg), rgba(255, 255, 255, 0.18) 0);
+  transition: --p 0.45s linear;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+.play.gen .badge.show {
+  min-width: 22px;
+  height: 22px;
+  top: -9px;
+  right: -11px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .play.gen {
+    animation: none;
+  }
+}

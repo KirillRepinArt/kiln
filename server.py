@@ -3,6 +3,7 @@
 Standard library only (Python 3.10+). Run:   python server.py        then open http://127.0.0.1:7870
 Settings: copy config.example.json to config.local.json and edit (that file is git-ignored).
 """
+
 import base64
 import datetime
 import json
@@ -42,9 +43,13 @@ def load_config():
     if p.exists():
         cfg.update(json.loads(p.read_text(encoding="utf-8")))
     # env overrides (handy for testing against tools/fake_forge.py)
-    for k, env, typ in (("forge_url", "KILN_FORGE_URL", str), ("port", "KILN_PORT", int),
-                        ("output_dir", "KILN_OUTPUT_DIR", str), ("data_dir", "KILN_DATA_DIR", str),
-                        ("forge_start", "KILN_FORGE_START", str)):
+    for k, env, typ in (
+        ("forge_url", "KILN_FORGE_URL", str),
+        ("port", "KILN_PORT", int),
+        ("output_dir", "KILN_OUTPUT_DIR", str),
+        ("data_dir", "KILN_DATA_DIR", str),
+        ("forge_start", "KILN_FORGE_START", str),
+    ):
         if os.environ.get(env):
             cfg[k] = typ(os.environ[env])
     return cfg
@@ -64,8 +69,9 @@ _opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 def forge(method, path, body=None, timeout=15):
     data = None if body is None else json.dumps(body).encode()
-    req = urllib.request.Request(CFG["forge_url"].rstrip("/") + path, data=data, method=method,
-                                 headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(
+        CFG["forge_url"].rstrip("/") + path, data=data, method=method, headers={"Content-Type": "application/json"}
+    )
     with _opener.open(req, timeout=timeout) as r:
         raw = r.read()
     return json.loads(raw) if raw else None
@@ -89,7 +95,7 @@ history: list[dict] = []
 last_setup = {"v": None}  # setup of the last txt2img Forge ran for us (None: unknown, e.g. after a restart)
 
 
-qstate = {"rev": 0, "miss_t": 0.0, "miss": frozenset()}   # rev: bumped on every change to the list (save_queue)
+qstate = {"rev": 0, "miss_t": 0.0, "miss": frozenset()}  # rev: bumped on every change to the list (save_queue)
 
 
 def save_queue():
@@ -116,7 +122,7 @@ def load_state():
             pass
     for j in [j for j in jobs if j["status"] == "deleted"]:  # deleted before a restart: past the undo window now
         finish_delete(j["id"])
-    have = {j["id"] for j in jobs}   # thumbnails of jobs no longer on the list (removed, cleared)
+    have = {j["id"] for j in jobs}  # thumbnails of jobs no longer on the list (removed, cleared)
     for t in QTHUMBS.glob("*.jpg"):
         if not t.stem.isdigit() or int(t.stem) not in have:
             t.unlink(missing_ok=True)
@@ -133,8 +139,17 @@ def load_state():
             history = []
     else:  # first run with history: seed it from the finished jobs still in the queue
         prev = None
-        for j in sorted((j for j in jobs if j["status"] == "done" and j.get("kind", "txt2img") == "txt2img"
-                         and j.get("started") and j.get("finished")), key=lambda j: j["started"]):
+        for j in sorted(
+            (
+                j
+                for j in jobs
+                if j["status"] == "done"
+                and j.get("kind", "txt2img") == "txt2img"
+                and j.get("started")
+                and j.get("finished")
+            ),
+            key=lambda j: j["started"],
+        ):
             su = setup_of(j["spec"])
             history.append(run_record(j, su, su == prev))
             prev = su
@@ -151,9 +166,16 @@ def setup_of(sp):
 def run_record(j, setup, warm):
     sp = j["spec"]
     first = j.get("t_first")
-    return {"setup": setup, "steps": sp["steps"], "w": sp["w"], "h": sp["h"], "mp": mp_bucket(sp["w"], sp["h"]),
-            "warm": bool(warm), "dur": round(j["finished"] - j["started"], 1),
-            "first": round(first - j["started"], 1) if first else None}
+    return {
+        "setup": setup,
+        "steps": sp["steps"],
+        "w": sp["w"],
+        "h": sp["h"],
+        "mp": mp_bucket(sp["w"], sp["h"]),
+        "warm": bool(warm),
+        "dur": round(j["finished"] - j["started"], 1),
+        "first": round(first - j["started"], 1) if first else None,
+    }
 
 
 def save_history():
@@ -189,14 +211,16 @@ def missing_ids():
     now = time.time()
     if now - qstate["miss_t"] > 2:
         qstate["miss_t"] = now
-        qstate["miss"] = frozenset(j["id"] for j in jobs if j["status"] == "done" and j.get("file") and not (OUT / j["file"]).exists())
+        qstate["miss"] = frozenset(
+            j["id"] for j in jobs if j["status"] == "done" and j.get("file") and not (OUT / j["file"]).exists()
+        )
     return qstate["miss"]
 
 
 def state_sig():
     """What the page has seen: the list's revision, which files are missing, paused. Same signature = the page only
     needs the running job's progress (the light poll — the full list was ~1 MB at 500 jobs, every 0.7 s)."""
-    return f"{qstate['rev']}.{hash(missing_ids()) & 0xffffffff}.{int(flags['paused'])}"
+    return f"{qstate['rev']}.{hash(missing_ids()) & 0xFFFFFFFF}.{int(flags['paused'])}"
 
 
 def with_estimates(js):
@@ -224,10 +248,20 @@ def recycle(path):
     from ctypes import wintypes
 
     class SHFILEOPSTRUCTW(ctypes.Structure):
-        _fields_ = [("hwnd", wintypes.HWND), ("wFunc", wintypes.UINT), ("pFrom", wintypes.LPCWSTR), ("pTo", wintypes.LPCWSTR),
-                    ("fFlags", ctypes.c_uint16), ("fAnyOperationsAborted", wintypes.BOOL), ("hNameMappings", ctypes.c_void_p),
-                    ("lpszProgressTitle", wintypes.LPCWSTR)]
-    op = SHFILEOPSTRUCTW(None, 3, str(path) + "\0", None, 0x40 | 0x10 | 0x04 | 0x400, False, None, None)  # FO_DELETE, ALLOWUNDO|NOCONFIRMATION|SILENT|NOERRORUI
+        _fields_ = [
+            ("hwnd", wintypes.HWND),
+            ("wFunc", wintypes.UINT),
+            ("pFrom", wintypes.LPCWSTR),
+            ("pTo", wintypes.LPCWSTR),
+            ("fFlags", ctypes.c_uint16),
+            ("fAnyOperationsAborted", wintypes.BOOL),
+            ("hNameMappings", ctypes.c_void_p),
+            ("lpszProgressTitle", wintypes.LPCWSTR),
+        ]
+
+    op = SHFILEOPSTRUCTW(
+        None, 3, str(path) + "\0", None, 0x40 | 0x10 | 0x04 | 0x400, False, None, None
+    )  # FO_DELETE, ALLOWUNDO|NOCONFIRMATION|SILENT|NOERRORUI
     return ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op)) == 0
 
 
@@ -250,7 +284,11 @@ def recycled(dest):
             try:
                 raw = i.read_bytes()
                 ver = struct.unpack("<q", raw[:8])[0]
-                orig = (raw[28:28 + 2 * struct.unpack("<i", raw[24:28])[0]] if ver == 2 else raw[24:544]).decode("utf-16-le").split("\0")[0]
+                orig = (
+                    (raw[28 : 28 + 2 * struct.unpack("<i", raw[24:28])[0]] if ver == 2 else raw[24:544])
+                    .decode("utf-16-le")
+                    .split("\0")[0]
+                )
             except Exception:
                 continue
             r = i.with_name("$R" + i.name[2:])
@@ -302,9 +340,9 @@ def mp_bucket(w, h):
 def png_has_text(data, key):
     i = 8
     while i < len(data):
-        n = struct.unpack(">I", data[i:i + 4])[0]
-        tag = data[i + 4:i + 8]
-        if tag in (b"tEXt", b"iTXt") and data[i + 8:i + 8 + n].split(b"\0", 1)[0] == key.encode():
+        n = struct.unpack(">I", data[i : i + 4])[0]
+        tag = data[i + 4 : i + 8]
+        if tag in (b"tEXt", b"iTXt") and data[i + 8 : i + 8 + n].split(b"\0", 1)[0] == key.encode():
             return True
         if tag == b"IEND":
             break
@@ -315,7 +353,12 @@ def png_has_text(data, key):
 def png_add_text(data, key, text):
     """Insert an iTXt chunk (UTF-8) before IEND — Forge/A1111 'parameters' format."""
     payload = key.encode() + b"\0\0\0\0\0" + text.encode("utf-8")
-    chunk = struct.pack(">I", len(payload)) + b"iTXt" + payload + struct.pack(">I", zlib.crc32(b"iTXt" + payload) & 0xFFFFFFFF)
+    chunk = (
+        struct.pack(">I", len(payload))
+        + b"iTXt"
+        + payload
+        + struct.pack(">I", zlib.crc32(b"iTXt" + payload) & 0xFFFFFFFF)
+    )
     end = data.rfind(b"IEND") - 4
     return data[:end] + chunk + data[end:]
 
@@ -324,10 +367,10 @@ def png_drop_text(data, key):
     """The PNG without its text chunk(s) named `key` (to replace one)."""
     out, i = data[:8], 8
     while i < len(data):
-        n = struct.unpack(">I", data[i:i + 4])[0]
-        tag = data[i + 4:i + 8]
-        if not (tag in (b"tEXt", b"iTXt") and data[i + 8:i + 8 + n].split(b"\0", 1)[0] == key.encode()):
-            out += data[i:i + 12 + n]
+        n = struct.unpack(">I", data[i : i + 4])[0]
+        tag = data[i + 4 : i + 8]
+        if not (tag in (b"tEXt", b"iTXt") and data[i + 8 : i + 8 + n].split(b"\0", 1)[0] == key.encode()):
+            out += data[i : i + 12 + n]
         if tag == b"IEND":
             break
         i += 12 + n
@@ -411,11 +454,18 @@ def run_txt2img(job):
     payload = {
         "prompt": (sp["prompt"] + (" " + lora_tags if lora_tags else "")).strip(),
         "negative_prompt": "",
-        "width": sp["w"], "height": sp["h"], "steps": sp["steps"],
+        "width": sp["w"],
+        "height": sp["h"],
+        "steps": sp["steps"],
         "seed": sp.get("seed", -1),
-        "cfg_scale": sp.get("cfg", 1.0), "distilled_cfg_scale": sp.get("shift", 1.15),
-        "sampler_name": sp.get("sampler", "Euler"), "scheduler": sp.get("scheduler", "Simple"),
-        "batch_size": 1, "n_iter": 1, "send_images": True, "save_images": False,
+        "cfg_scale": sp.get("cfg", 1.0),
+        "distilled_cfg_scale": sp.get("shift", 1.15),
+        "sampler_name": sp.get("sampler", "Euler"),
+        "scheduler": sp.get("scheduler", "Simple"),
+        "batch_size": 1,
+        "n_iter": 1,
+        "send_images": True,
+        "save_images": False,
     }
     stop = threading.Event()
     t = threading.Thread(target=poll_progress, args=(job, stop), daemon=True)
@@ -436,7 +486,11 @@ def run_txt2img(job):
         img = png_add_text(img, "kiln_name", sp["name"].strip())  # the series name, for PNG Info -> Send to prompt
     again = Path(sp.get("as_file") or "").name  # Render again: back under its own name, if that's free
     with lock:
-        name = again if again.endswith(".png") and not (OUT / again).exists() else next_filename(sp.get("name", ""), seed, take=True)
+        name = (
+            again
+            if again.endswith(".png") and not (OUT / again).exists()
+            else next_filename(sp.get("name", ""), seed, take=True)
+        )
     (OUT / name).write_bytes(img)
     with lock:
         job.update(file=name, seed_used=seed, infotext=infotext)
@@ -446,10 +500,16 @@ def run_txt2img(job):
 def run_upscale(job):
     sp = job["spec"]
     src = OUT / sp["source"]
-    r = forge("POST", "/sdapi/v1/extra-single-image", {
-        "image": base64.b64encode(src.read_bytes()).decode(),
-        "upscaling_resize": sp.get("scale", 2), "upscaler_1": sp["upscaler"],
-    }, timeout=None)
+    r = forge(
+        "POST",
+        "/sdapi/v1/extra-single-image",
+        {
+            "image": base64.b64encode(src.read_bytes()).decode(),
+            "upscaling_resize": sp.get("scale", 2),
+            "upscaler_1": sp["upscaler"],
+        },
+        timeout=None,
+    )
     out = src.with_name(f"{src.stem}_x{sp.get('scale', 2)}.png")
     out.write_bytes(base64.b64decode(r["image"]))
     with lock:
@@ -462,7 +522,8 @@ def worker():
         with lock:
             job = None if flags["paused"] else next((j for j in jobs if j["status"] == "pending"), None)
         if not job:
-            wake.wait(2); wake.clear()
+            wake.wait(2)
+            wake.clear()
             continue
         try:
             forge("GET", "/sdapi/v1/options", timeout=5)
@@ -482,9 +543,11 @@ def worker():
         try:
             result = run_upscale(job) if job["kind"] == "upscale" else run_txt2img(job)
         except urllib.error.URLError as e:
-            result = "error"; job["error"] = f"Forge: {e}"
+            result = "error"
+            job["error"] = f"Forge: {e}"
         except Exception as e:
-            result = "error"; job["error"] = f"{type(e).__name__}: {e}"
+            result = "error"
+            job["error"] = f"{type(e).__name__}: {e}"
         with lock:
             job.update(status=result, finished=time.time())
             last_preview["v"] = previews.pop(job["id"], None) or last_preview["v"]
@@ -614,8 +677,12 @@ def health():
             forge_status.update(ok=True, error=None, starting=False, busy=bool((r.get("state") or {}).get("job_count")))
         except Exception:
             starting = forge_proc is not None and forge_proc.poll() is None and forge_status["starting"]
-            forge_status.update(ok=False, busy=False, starting=starting,
-                                error="Forge is starting" if starting else f"Forge not reachable at {CFG['forge_url']}")
+            forge_status.update(
+                ok=False,
+                busy=False,
+                starting=starting,
+                error="Forge is starting" if starting else f"Forge not reachable at {CFG['forge_url']}",
+            )
         time.sleep(4)
 
 
@@ -636,17 +703,25 @@ def get_models(refresh=False):
     if _models["data"] and not refresh and time.time() - _models["t"] < 60:
         return _models["data"]
     if refresh:
-        try: forge("POST", "/sdapi/v1/refresh-loras", {})
-        except Exception: pass
+        try:
+            forge("POST", "/sdapi/v1/refresh-loras", {})
+        except Exception:
+            pass
     raw = forge("GET", "/sdapi/v1/loras")
+
     # Find the LoRA root from the paths themselves (Forge Neo's /cmd-flags can 500): the last "Lora"
     # folder in a path, else the common parent of all files.
     def lora_root(p):
         parts = [x.lower() for x in p.parts]
-        return Path(*p.parts[:len(parts) - parts[::-1].index("lora")]) if "lora" in parts else None
+        return Path(*p.parts[: len(parts) - parts[::-1].index("lora")]) if "lora" in parts else None
+
     paths = [Path(l["path"]) for l in raw]
     roots = {lora_root(p) for p in paths} - {None}
-    common = roots.pop() if len(roots) == 1 else (Path(os.path.commonpath([str(p.parent) for p in paths])) if paths else None)
+    common = (
+        roots.pop()
+        if len(roots) == 1
+        else (Path(os.path.commonpath([str(p.parent) for p in paths])) if paths else None)
+    )
     loras = []
     for l, p in zip(raw, paths):
         try:
@@ -656,15 +731,27 @@ def get_models(refresh=False):
             folder = p.parent.name
         meta = l.get("metadata") or {}
         thumb = THUMBS / f"{l['name']}.jpg"
-        loras.append({"name": l["name"], "folder": folder, "category": lora_category(folder),
-                      "internal": meta.get("ss_output_name") or "",
-                      "thumb": f"/thumbs/{l['name']}.jpg" if thumb.exists() else None})
+        loras.append(
+            {
+                "name": l["name"],
+                "folder": folder,
+                "category": lora_category(folder),
+                "internal": meta.get("ss_output_name") or "",
+                "thumb": f"/thumbs/{l['name']}.jpg" if thumb.exists() else None,
+            }
+        )
     data = {
         "checkpoints": [m["title"] for m in forge("GET", "/sdapi/v1/sd-models")],
         "modules": [{"name": m["model_name"], "file": m["filename"]} for m in forge("GET", "/sdapi/v1/sd-modules")],
-        "upscalers": [u["name"] for u in forge("GET", "/sdapi/v1/upscalers") if u["name"] not in ("None", "Lanczos", "Nearest")],
+        "upscalers": [
+            u["name"] for u in forge("GET", "/sdapi/v1/upscalers") if u["name"] not in ("None", "Lanczos", "Nearest")
+        ],
         "loras": sorted(loras, key=lambda x: x["name"].lower()),
-        "current": {k: v for k, v in forge("GET", "/sdapi/v1/options").items() if k in ("sd_model_checkpoint", "forge_additional_modules")},
+        "current": {
+            k: v
+            for k, v in forge("GET", "/sdapi/v1/options").items()
+            if k in ("sd_model_checkpoint", "forge_additional_modules")
+        },
     }
     _models.update(t=time.time(), data=data)
     return data
@@ -677,26 +764,53 @@ REPO = "KirillRepinArt/kiln"
 
 def check_update():
     """Newest vX.Y tag on GitHub vs this VERSION. Only runs when the user presses Check for updates."""
-    url = os.environ.get("KILN_UPDATE_URL") or f"https://api.github.com/repos/{REPO}/tags"  # env: tests point it at the fake Forge
+    url = (
+        os.environ.get("KILN_UPDATE_URL") or f"https://api.github.com/repos/{REPO}/tags"
+    )  # env: tests point it at the fake Forge
     req = urllib.request.Request(url, headers={"User-Agent": "Kiln", "Accept": "application/vnd.github+json"})
-    with _opener.open(req, timeout=10) as r:  # direct: Python misreads a SOCKS system proxy (VPN clients) as socks4 and fails
+    with _opener.open(
+        req, timeout=10
+    ) as r:  # direct: Python misreads a SOCKS system proxy (VPN clients) as socks4 and fails
         tags = [t["name"] for t in json.loads(r.read())]
+
     def ver(t):
         m = re.fullmatch(r"v(\d+)\.(\d+)(?:\.(\d+))?", t)
         return tuple(int(x or 0) for x in m.groups()) if m else None
+
     vs = sorted((v, t) for t in tags if (v := ver(t)))
     latest = vs[-1][1] if vs else None
-    return {"current": VERSION, "latest": latest, "newer": bool(vs) and vs[-1][0] > ver("v" + VERSION),
-            "url": f"https://github.com/{REPO}"}
+    return {
+        "current": VERSION,
+        "latest": latest,
+        "newer": bool(vs) and vs[-1][0] > ver("v" + VERSION),
+        "url": f"https://github.com/{REPO}",
+    }
 
 
-MIME = {".html": "text/html; charset=utf-8", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp",
-        ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".ico": "image/x-icon",
-        ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8"}
+MIME = {
+    ".html": "text/html; charset=utf-8",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".webp": "image/webp",
+    ".js": "text/javascript",
+    ".css": "text/css",
+    ".json": "application/json",
+    ".ico": "image/x-icon",
+    ".woff2": "font/woff2",
+    ".txt": "text/plain; charset=utf-8",
+}
 
 
 def sniff(b):
-    return "image/png" if b[:4] == b"\x89PNG" else "image/jpeg" if b[:2] == b"\xff\xd8" else "image/webp" if b[8:12] == b"WEBP" else "application/octet-stream"
+    return (
+        "image/png"
+        if b[:4] == b"\x89PNG"
+        else "image/jpeg"
+        if b[:2] == b"\xff\xd8"
+        else "image/webp"
+        if b[8:12] == b"WEBP"
+        else "application/octet-stream"
+    )
 
 
 def build_page():
@@ -704,17 +818,21 @@ def build_page():
     like the single file they came from (separate script tags let timers and resize callbacks run in between)."""
     page = (ROOT / "index.html").read_text(encoding="utf-8")
     app = ROOT / "app"
-    page = re.sub(r'<link rel="stylesheet" href="app/([\w.-]+)" data-inline>',
-                  lambda m: "<style>\n" + (app / m.group(1)).read_text(encoding="utf-8") + "</style>", page)
+    page = re.sub(
+        r'<link rel="stylesheet" href="app/([\w.-]+)" data-inline>',
+        lambda m: "<style>\n" + (app / m.group(1)).read_text(encoding="utf-8") + "</style>",
+        page,
+    )
     out, bundle, parts = [], None, []
 
     def flush():
         if parts:
             out.append("<script>\n" + "\n".join(parts) + "</script>\n")
             parts.clear()
+
     pos = 0
     for m in re.finditer(r'<script src="app/([\w.-]+)" data-bundle="(\w+)"></script>\s*', page):
-        between = page[pos:m.start()]
+        between = page[pos : m.start()]
         if between.strip() or m.group(2) != bundle:
             flush()
             out.append(between)
@@ -727,7 +845,8 @@ def build_page():
 
 
 class Handler(BaseHTTPRequestHandler):
-    def log_message(self, *a): pass
+    def log_message(self, *a):
+        pass
 
     def reply(self, code, body=b"", ctype="application/json", cache=False, headers=None):
         if isinstance(body, (dict, list)) or body is None:
@@ -760,7 +879,9 @@ class Handler(BaseHTTPRequestHandler):
             if inject and "test" in self.path:
                 page = page.replace(b"</body>", b"<script>" + Path(inject).read_bytes() + b"</script></body>")
             extra = {}
-            if not client.get("purged"):  # older versions cached images for a day: clear the browser's cache once per run
+            if not client.get(
+                "purged"
+            ):  # older versions cached images for a day: clear the browser's cache once per run
                 client["purged"] = True
                 extra["Clear-Site-Data"] = '"cache"'
             return self.reply(200, page, MIME[".html"], headers=extra)
@@ -781,20 +902,43 @@ class Handler(BaseHTTPRequestHandler):
                 sig = state_sig()
                 if since and since == sig:  # nothing changed but the running job's progress
                     run = next((j for j in jobs if j["status"] == "running"), None)
-                    return self.reply(200, {"sig": sig, "same": True, "run": public(run) if run else None, "forge": forge_status,
-                                            "stats": stats, "paused": flags["paused"]})
-                return self.reply(200, {"sig": sig, "forge": forge_status, "jobs": with_estimates(jobs), "stats": stats,
-                                        "out_dir": str(OUT), "version": VERSION, "paused": flags["paused"]})
+                    return self.reply(
+                        200,
+                        {
+                            "sig": sig,
+                            "same": True,
+                            "run": public(run) if run else None,
+                            "forge": forge_status,
+                            "stats": stats,
+                            "paused": flags["paused"],
+                        },
+                    )
+                return self.reply(
+                    200,
+                    {
+                        "sig": sig,
+                        "forge": forge_status,
+                        "jobs": with_estimates(jobs),
+                        "stats": stats,
+                        "out_dir": str(OUT),
+                        "version": VERSION,
+                        "paused": flags["paused"],
+                    },
+                )
         if path == "/api/nextname":
             name = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
             if not name.strip():
                 return self.reply(200, {"file": None})
             with lock:  # count jobs already queued under this name so the hint is accurate
-                pend = sum(1 for j in jobs if j["status"] in ("pending", "running") and j["spec"].get("name", "").strip() == name.strip())
+                pend = sum(
+                    1
+                    for j in jobs
+                    if j["status"] in ("pending", "running") and j["spec"].get("name", "").strip() == name.strip()
+                )
             nxt = next_filename(name, 0)
             m = re.search(r"-(\d+)\.png$", nxt)
             if m and pend:
-                nxt = nxt[:m.start(1)] + f"{int(m.group(1)) + pend:03d}.png"
+                nxt = nxt[: m.start(1)] + f"{int(m.group(1)) + pend:03d}.png"
             return self.reply(200, {"file": nxt})
         if path.startswith("/api/preview/"):
             b = previews.get(int(path.rsplit("/", 1)[1]))
@@ -826,10 +970,18 @@ class Handler(BaseHTTPRequestHandler):
             ids = []
             with lock:
                 for sp in b.get("jobs", []):
-                    j = {"id": next_id(), "kind": sp.pop("kind", "txt2img"), "status": "pending", "created": time.time(),
-                         "spec": sp, "step": 0, "progress": 0}
+                    j = {
+                        "id": next_id(),
+                        "kind": sp.pop("kind", "txt2img"),
+                        "status": "pending",
+                        "created": time.time(),
+                        "spec": sp,
+                        "step": 0,
+                        "progress": 0,
+                    }
                     j["steps"] = sp.get("steps", 0)
-                    jobs.append(j); ids.append(j["id"])
+                    jobs.append(j)
+                    ids.append(j["id"])
                 save_queue()
             wake.set()
             return self.reply(200, {"ids": ids})
@@ -843,9 +995,12 @@ class Handler(BaseHTTPRequestHandler):
                 if j["status"] == "pending":
                     jobs.remove(j)
                 elif j["status"] == "running":
-                    j["_cancel"] = True; j["stopping"] = True
-                    try: forge("POST", "/sdapi/v1/interrupt", {})
-                    except Exception: pass
+                    j["_cancel"] = True
+                    j["stopping"] = True
+                    try:
+                        forge("POST", "/sdapi/v1/interrupt", {})
+                    except Exception:
+                        pass
                 save_queue()
             return self.reply(200, {"ok": True})
         if path == "/api/pause":  # Pause queue after the current job / Resume
@@ -863,7 +1018,9 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(404, {"error": "no such job"})
                 if act == "remove" and j["status"] in ("done", "cancelled", "error"):  # off the list; the file stays
                     jobs.remove(j)
-                elif act == "name" and j["status"] == "pending":  # the file name is only decided when the image is saved
+                elif (
+                    act == "name" and j["status"] == "pending"
+                ):  # the file name is only decided when the image is saved
                     j["spec"]["name"] = str(b.get("name", "")).strip()[:60]
                 elif act == "delete" and j["status"] == "done" and j.get("file"):
                     src = OUT / j["file"]
@@ -882,7 +1039,9 @@ class Handler(BaseHTTPRequestHandler):
                 save_queue()
             return self.reply(200, {"ok": True})
         m = re.fullmatch(r"/api/jobs/(\d+)/rename", path)
-        if m:  # the simple rename (the full one comes with the Gallery): a finished picture joins the series you type, as
+        if (
+            m
+        ):  # the simple rename (the full one comes with the Gallery): a finished picture joins the series you type, as
             # its next number; the name inside the PNG follows; `as_file` puts a file back under an exact name (Undo)
             jid = int(m.group(1))
             with lock:
@@ -894,7 +1053,11 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(409, {"error": "the file is gone"})
                 name = str(b.get("name", "")).strip()[:60]
                 want = Path(str(b.get("as_file") or "")).name
-                new = want if want.endswith(".png") and not (OUT / want).exists() else next_filename(name, j.get("seed_used") or j["spec"].get("seed", 0), take=True)
+                new = (
+                    want
+                    if want.endswith(".png") and not (OUT / want).exists()
+                    else next_filename(name, j.get("seed_used") or j["spec"].get("seed", 0), take=True)
+                )
                 if new == j["file"]:
                     return self.reply(200, {"file": new, "old": new})
                 data = png_drop_text(src.read_bytes(), "kiln_name")
@@ -929,8 +1092,10 @@ class Handler(BaseHTTPRequestHandler):
                 if not hit:
                     return self.reply(404, {"error": "not in the Recycle Bin any more"})
                 hit[1].replace(dest)
-                try: hit[0].unlink()
-                except OSError: pass
+                try:
+                    hit[0].unlink()
+                except OSError:
+                    pass
                 return self.reply(200, {"ok": True})
             data = str(b.get("data", ""))
             if not data.startswith("data:image/png;base64,"):
@@ -944,7 +1109,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(200, {"ok": True})
         if path == "/api/remove-missing":
             with lock:
-                jobs[:] = [j for j in jobs if not (j["status"] == "done" and j.get("file") and not (OUT / j["file"]).exists())]
+                jobs[:] = [
+                    j for j in jobs if not (j["status"] == "done" and j.get("file") and not (OUT / j["file"]).exists())
+                ]
                 save_queue()
             return self.reply(200, {"ok": True})
         if path == "/api/reorder":
@@ -970,19 +1137,38 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/open":
                 os.startfile(str(f)) if os.name == "nt" else subprocess.Popen(["xdg-open", str(f)])
             else:
-                subprocess.Popen(["explorer", "/select,", str(f)]) if os.name == "nt" else subprocess.Popen(["xdg-open", str(f.parent)])
+                subprocess.Popen(["explorer", "/select,", str(f)]) if os.name == "nt" else subprocess.Popen(
+                    ["xdg-open", str(f.parent)]
+                )
             return self.reply(200, {"ok": True})
         if path == "/api/upscale":
             with lock:
                 src = next((x for x in jobs if x["id"] == b.get("id")), None)
                 if not src or not src.get("file"):
                     return self.reply(404, {"error": "no image"})
-                j = {"id": next_id(), "kind": "upscale", "status": "pending", "created": time.time(), "step": 0, "progress": 0,
-                     "spec": {"source": src["file"], "upscaler": b.get("upscaler"), "scale": b.get("scale", 2),
-                              "prompt": f"Upscale ×{b.get('scale', 2)} · {src['file']}", "name": "", "w": src["spec"]["w"],
-                              "h": src["spec"]["h"], "steps": 0, "mp": src["spec"].get("mp"), "ar": src["spec"].get("ar")}}
+                j = {
+                    "id": next_id(),
+                    "kind": "upscale",
+                    "status": "pending",
+                    "created": time.time(),
+                    "step": 0,
+                    "progress": 0,
+                    "spec": {
+                        "source": src["file"],
+                        "upscaler": b.get("upscaler"),
+                        "scale": b.get("scale", 2),
+                        "prompt": f"Upscale ×{b.get('scale', 2)} · {src['file']}",
+                        "name": "",
+                        "w": src["spec"]["w"],
+                        "h": src["spec"]["h"],
+                        "steps": 0,
+                        "mp": src["spec"].get("mp"),
+                        "ar": src["spec"].get("ar"),
+                    },
+                }
                 first = next((i for i, x in enumerate(jobs) if x["status"] == "pending"), len(jobs))
-                jobs.insert(first, j); save_queue()  # seconds next to minutes: it runs right after the current image
+                jobs.insert(first, j)
+                save_queue()  # seconds next to minutes: it runs right after the current image
             wake.set()
             return self.reply(200, {"ids": [j["id"]]})
         if path == "/api/qthumb":  # the page made a queue thumbnail (it decodes the picture anyway): keep it
@@ -1011,8 +1197,10 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     for stream in (sys.stdout, sys.stderr):  # Windows consoles default to a legacy codepage
-        try: stream.reconfigure(encoding="utf-8", errors="replace")
-        except Exception: pass
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
     load_state()
     start_forge()
     threading.Thread(target=worker, daemon=True).start()

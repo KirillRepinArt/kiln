@@ -15,7 +15,8 @@ git config core.hooksPath .githooks           # the checks below run before ever
 - **Privacy scan** (`tools/privacy_scan.py`): the repo is public, so personal paths, e-mail addresses, pictures with a
   prompt inside, and your own private words never go in. Private words: one regular expression per line in
   `.git/info/private-patterns` (inside `.git/`, so it's never committed). The commit message is scanned too.
-- **Linters** on the files you're committing: ESLint (JavaScript), Stylelint (CSS), Ruff (Python).
+- **Linters and formatting** on the files you're committing: ESLint (JavaScript), Stylelint (CSS), Ruff (Python),
+  Prettier and `ruff format` (layout). `npm run format` / `.venv\Scripts\ruff format` fix the layout for you.
 
 ## Tests
 ```

@@ -12,7 +12,17 @@ export default {
     "function-calc-no-unspaced-operator": true,
     "string-no-newline": true,
     "selector-pseudo-class-no-unknown": true,
-    "selector-pseudo-element-no-unknown": [true, { ignorePseudoElements: ["view-transition-group", "view-transition-old", "view-transition-new", "view-transition-image-pair"] }],
+    "selector-pseudo-element-no-unknown": [
+      true,
+      {
+        ignorePseudoElements: [
+          "view-transition-group",
+          "view-transition-old",
+          "view-transition-new",
+          "view-transition-image-pair",
+        ],
+      },
+    ],
     "selector-type-no-unknown": [true, { ignoreTypes: ["/^cm-/"] }],
     "media-feature-name-no-unknown": true,
     "at-rule-no-unknown": true,

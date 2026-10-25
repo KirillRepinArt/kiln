@@ -2,7 +2,8 @@
 const overlap = (a, b) => !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
 
 export async function countClearsStart(k, t) {
-  await k.ev(`(P.value="short",draft=P.value,P.focus(),updPrompt(),1)`); await k.sleep(300);
+  await k.ev(`(P.value="short",draft=P.value,P.focus(),updPrompt(),1)`);
+  await k.sleep(300);
   t.ok(!overlap(await k.rect("#pcount"), await k.rect("#play")), "the character count doesn't sit under Start");
 }
 

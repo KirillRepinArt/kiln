@@ -3,22 +3,10 @@
   "port": 7870,
   "output_dir": "outputs",
   "data_dir": "data",
-  "people_folders": [
-    "people",
-    "faces",
-    "characters",
-    "persons"
-  ],
-  "style_folders": [
-    "style",
-    "styles"
-  ],
+  "people_folders": ["people", "faces", "characters", "persons"],
+  "style_folders": ["style", "styles"],
   "exit_when_closed": true,
-  "spellcheck": [
-    "en-US",
-    "ru",
-    "es"
-  ],
+  "spellcheck": ["en-US", "ru", "es"],
   "forge_start": "",
   "stop_forge_on_exit": true
 }

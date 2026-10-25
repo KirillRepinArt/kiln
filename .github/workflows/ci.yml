@@ -21,6 +21,7 @@ jobs:
       - run: npm run lint
       - run: pip install -r requirements-dev.txt
       - run: ruff check
+      - run: ruff format --check
       - run: python tools/privacy_scan.py --all
 
   e2e:

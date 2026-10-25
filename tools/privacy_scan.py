@@ -27,7 +27,12 @@ ROOT = Path(__file__).resolve().parent.parent
 GENERIC = [
     ("a path into a personal folder", re.compile(r"(?<![A-Za-z])[A-Za-z]:[\\/]+Users[\\/]+[^\\/\s\"']+", re.I)),
     ("a path into a home folder", re.compile(r"(?<![\w.])/(?:home|Users)/(?!Shared\b)[A-Za-z0-9_.-]+")),
-    ("an e-mail address", re.compile(r"\b[A-Za-z0-9._%+-]+@(?!users\.noreply\.github\.com|anthropic\.com\b)[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b")),
+    (
+        "an e-mail address",
+        re.compile(
+            r"\b[A-Za-z0-9._%+-]+@(?!users\.noreply\.github\.com|anthropic\.com\b)[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b"
+        ),
+    ),
 ]
 # text chunks a generator writes into a picture; any of them means the PNG is a real render with its prompt inside
 PNG_TEXT_KEYS = {b"parameters", b"prompt", b"workflow", b"kiln_name", b"kiln_id", b"Comment", b"Description"}
@@ -46,7 +51,9 @@ def private_patterns() -> list[tuple[str, re.Pattern[str]]]:
         lines = Path(path).read_text(encoding="utf-8").splitlines()
     except OSError:
         return []
-    return [("a private word", re.compile(x.strip(), re.I)) for x in lines if x.strip() and not x.lstrip().startswith("#")]
+    return [
+        ("a private word", re.compile(x.strip(), re.I)) for x in lines if x.strip() and not x.lstrip().startswith("#")
+    ]
 
 
 def png_text_keys(data: bytes) -> set[bytes]:
@@ -76,7 +83,11 @@ def check_text(where: str, text: str, rules, first_line: int = 1) -> list[str]:
 
 def check_png(where: str, data: bytes) -> list[str]:
     keys = png_text_keys(data) & PNG_TEXT_KEYS
-    return [f"{where}: a picture with generation text inside ({', '.join(k.decode() for k in sorted(keys))})"] if keys else []
+    return (
+        [f"{where}: a picture with generation text inside ({', '.join(k.decode() for k in sorted(keys))})"]
+        if keys
+        else []
+    )
 
 
 def scan_staged(rules) -> list[str]:

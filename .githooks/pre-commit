@@ -12,9 +12,12 @@ JS=$(files 'app/*.js' 'tools/*.mjs' '*.js'); CSS=$(files 'app/*.css'); PYF=$(fil
 if [ -n "$JS$CSS" ] && [ ! -d node_modules ]; then echo "pre-commit: linters not installed — run npm install (skipping JS/CSS checks)"; fi
 if [ -n "$JS" ] && [ -d node_modules ]; then echo "$JS" | tr '\n' '\0' | xargs -0 npx --no-install eslint || fail=1; fi
 if [ -n "$CSS" ] && [ -d node_modules ]; then echo "$CSS" | tr '\n' '\0' | xargs -0 npx --no-install stylelint || fail=1; fi
+FMT=$(files 'app/*.js' 'app/*.css' 'tools/*.mjs' '*.js' '*.mjs' '*.json' '.github/*.yml')
+if [ -n "$FMT" ] && [ -d node_modules ]; then echo "$FMT" | tr '\n' '\0' | xargs -0 npx --no-install prettier --check || { echo "pre-commit: npm run format fixes the layout"; fail=1; }; fi
 RUFF=$(command -v ruff); [ -x .venv/Scripts/ruff.exe ] && RUFF=.venv/Scripts/ruff.exe; [ -x .venv/bin/ruff ] && RUFF=.venv/bin/ruff
 if [ -n "$PYF" ]; then
   if [ -n "$RUFF" ]; then echo "$PYF" | tr '\n' '\0' | xargs -0 "$RUFF" check || fail=1
+    echo "$PYF" | tr '\n' '\0' | xargs -0 "$RUFF" format --check || fail=1
   else echo "pre-commit: ruff not installed — see CONTRIBUTING.md (skipping Python checks)"; fi
 fi
 [ $fail -eq 0 ] || { echo "pre-commit: fix the problems above, then commit again."; exit 1; }

@@ -2,22 +2,30 @@
 const done = (k, n) => k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=${n}`, 30000);
 
 export async function reuseTakesName(k, t) {
-  await k.job("a grey wolf", { name: "Wolf Pack", steps: 2 }); await done(k, 1);
+  await k.job("a grey wolf", { name: "Wolf Pack", steps: 2 });
+  await done(k, 1);
   await k.ev(`(S.pname="something else",$("pname").value=S.pname,P.value="another draft",draft=P.value,1)`);
   await k.ev(`(loadJob(lastDone()),reuse(false),1)`);
-  t.ok(await k.ev(`S.pname`) === "Wolf Pack" && await k.ev(`$("pname").value`) === "Wolf Pack", "Reuse takes the job's name");
+  t.ok(
+    (await k.ev(`S.pname`)) === "Wolf Pack" && (await k.ev(`$("pname").value`)) === "Wolf Pack",
+    "Reuse takes the job's name",
+  );
 }
 
 export async function pngInfoName(k, t) {
-  await k.job("a grey wolf", { name: "Wolf Pack", steps: 2 }); await done(k, 1);
+  await k.job("a grey wolf", { name: "Wolf Pack", steps: 2 });
+  await done(k, 1);
   const file = await k.ev(`lastDone().file`);
   t.ok(file === "wolf-pack-001.png", "named file", file);
-  const read = name => k.ev(`fetch("/files/"+encodeURIComponent(${JSON.stringify(file)})).then(r=>r.blob()).then(b=>readPng(new File([b],${JSON.stringify(name)},{type:"image/png"}))).then(()=>parsed&&parsed.name)`);
-  t.ok(await read(file) === "Wolf Pack", "the name comes back from inside the PNG");
-  t.ok(await read("00012-12345.png") === "Wolf Pack", "…even when the file was renamed");
+  const read = name =>
+    k.ev(
+      `fetch("/files/"+encodeURIComponent(${JSON.stringify(file)})).then(r=>r.blob()).then(b=>readPng(new File([b],${JSON.stringify(name)},{type:"image/png"}))).then(()=>parsed&&parsed.name)`,
+    );
+  t.ok((await read(file)) === "Wolf Pack", "the name comes back from inside the PNG");
+  t.ok((await read("00012-12345.png")) === "Wolf Pack", "…even when the file was renamed");
   await k.ev(`(S.pname="",$("pname").value="",$("pSend").click(),1)`);
-  t.ok(await k.ev(`S.pname`) === "Wolf Pack", "Send to prompt applies it");
-  t.ok(await k.ev(`nameFrom({name:"night-city-003.png"})`) !== null, "older files: from slug-NNN.png");
+  t.ok((await k.ev(`S.pname`)) === "Wolf Pack", "Send to prompt applies it");
+  t.ok((await k.ev(`nameFrom({name:"night-city-003.png"})`)) !== null, "older files: from slug-NNN.png");
 }
 
 export async function loraRescan(k, t) {

@@ -1,14 +1,12 @@
-/* ======================= LIVE MODE =======================
-   When served by server.py, swap the simulated runner for the real queue.
-   Opened as a file, none of this runs and the demo stays as it was. */
+/* ======================= the app's connection to its server =======================
+   Everything that talks to server.py: the queue, pictures, previews, LoRAs and models. Without the server (opened
+   as a file, or server.py stopped) a note says so, and the page reloads by itself once the server answers. */
 (async function(){
- if(!location.protocol.startsWith("http"))return;
- let st;try{st=await (await fetch("/api/state")).json()}catch(e){return}
+ let st;try{if(!location.protocol.startsWith("http"))throw 0;st=await (await fetch("/api/state")).json()}
+ catch(e){$("offline").classList.add("show");if(location.protocol.startsWith("http"))setInterval(()=>fetch("/api/state").then(()=>location.reload(),()=>{}),3000);return}
  window.LIVE=true;
  const api=(p,b)=>fetch(p,b===undefined?{}:{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}).then(r=>r.json());
  document.documentElement.classList.add("live");
- $("demoNote").textContent="";
- $("sDemo").closest(".fg")&&($("sDemo").previousElementSibling.style.display="none",$("sDemo").style.display="none");
 
  /* ---------- images: real files and live previews, cached ---------- */
  const imgs=new Map(),IMAX=16;   /* the pictures used last (the cache used to keep every picture you'd seen, decoded) */
@@ -96,7 +94,6 @@
   setTimeout(poll,current()?700:1800)}
 
  /* ---------- queue actions -> server ---------- */
- window.tick=function(){};
  /* Start in the Gallery = Vary: the picture on show again — its prompt, settings, LoRAs and series — with a new seed.
    Your draft isn't touched, and you stay where you are (Midjourney's Vary; Reuse is for editing first) */
  async function vary(j){if(j.kind==="upscale"){toast("Variations come from generated pictures, not upscales");return}
@@ -205,13 +202,7 @@
   sel("ckpt",models.checkpoints.map(c=>({v:c,t:c.replace(/\s*\[[0-9a-f]+\]$/,"")})),`Keep Forge's current (${curCk||"none"})`);
   const vae=models.modules.filter(m=>/vae|\bae\b/i.test(m.name)),te=models.modules.filter(m=>!/vae|\bae\b/i.test(m.name));
   sel("vae",vae.map(m=>({v:m.file,t:m.name})),"Keep Forge's current");sel("te",te.map(m=>({v:m.file,t:m.name})),"Keep Forge's current");
-  renderLoras();renderChips();restoreLoras();return true}
- /* a one-time restore of LoRA names, stars and weights the server holds in data/lora_restore.json */
- let restoreTried=false;
- async function restoreLoras(){if(restoreTried)return;restoreTried=true;let r;try{const x=await fetch("/api/lora-restore");if(!x.ok)return;r=await x.json()}catch(e){return}
-  let n=0;for(const x of r.loras||[]){const l=LORAS.find(l=>l.name===x.name);if(!l)continue;
-   if(x.display)l.display=x.display;if(x.fav!=null)l.fav=!!x.fav;if(x.w!=null)l.w=+x.w;if(x.used)l.used=x.used;n++}
-  save();renderLoras();renderChips();await api("/api/lora-restore",{done:true});if(n)toast(`Restored names, stars and weights for ${n} LoRAs`)}
+  renderLoras();renderChips();return true}
  // settings: read-only server facts + upscaler choice
  const fg=document.querySelector(".mcard .fg");
  fg.querySelector('[data-set="outdir"]').value=st.out_dir;fg.querySelector('[data-set="outdir"]').readOnly=true;
@@ -298,6 +289,7 @@
      paint($("cv"),d,1)}$("frame").classList.add("has");$("idle").style.display="none"}
    else if(!d){$("frame").classList.remove("has");$("idle").style.display="";const c=$("cv");if(c.width>1){c.width=1;c.height=1;c.dataset.d="";c.dataset.j=""}}}
   missUI(onShow());browseStatus();requestAnimationFrame(frame)};
+ requestAnimationFrame(frame);   /* the frame loop: progress, the live preview, the picture on show */
 
  window.jobProgress=function(j){const per=Math.max(1,SEC_PER_STEP[j.mp]||60)*1000;const part=j.steps&&j._ss?Math.min((Date.now()-j._ss)/per,.95):0;
   const p=j.steps?Math.min(1,(j.step+part)/j.steps):0;const started=j.step||j.preview_rev,rm=remaining(j);

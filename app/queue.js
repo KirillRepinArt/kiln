@@ -12,10 +12,10 @@ function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=
  const left=pend.reduce((a,j)=>a+jEst(j),0);for(const id of [...QS])if(!done.some(j=>j.id===id))QS.delete(id);$("qwrap").classList.toggle("selecting",QS.size>0);
  const item=(j,k)=>`<div class="qi${j.missing?" missing":""}" data-id="${j.id}" draggable="${k==="pend"}">
    ${k==="pend"?'<span class="handle" title="Drag to reorder">⋮⋮</span>':""}${k==="done"?`<span class="qck" data-ck="${j.id}" data-tip="Select (Ctrl-click · Shift-click a range)"></span>`:""}
-   <div class="th">${j.missing?"gone":j.status==="done"?(window.LIVE?`<span data-tth="${j.id}"></span>`:`<canvas data-th="${j.id}"></canvas>`):j.status==="cancelled"?"stopped":k==="run"?(window.LIVE?`<svg class="hg" viewBox="0 0 24 24" fill="none"><g class="hgg"><path d="M7 3.5h10M7 20.5h10" stroke="currentColor" stroke-width="1.6"/><path d="M8 3.5c0 4 1.6 6 4 8.5-2.4 2.5-4 4.5-4 8.5M16 3.5c0 4-1.6 6-4 8.5 2.4 2.5 4 4.5 4 8.5" stroke="currentColor" stroke-width="1.4"/><path class="st" d="M9.2 6.5h5.6c-.4 2-1.3 3.4-2.8 4.9-1.5-1.5-2.4-2.9-2.8-4.9z" fill="currentColor"/><path class="sb" d="M12 14.2c1.8 1.9 2.7 3.6 3 6H9c.3-2.4 1.2-4.1 3-6z" fill="currentColor"/></g></svg><img class="lp" data-lp="${j.id}" alt="">`:"…"):"#"+j.id}</div>
+   <div class="th">${j.missing?"gone":j.status==="done"?`<span data-tth="${j.id}"></span>`:j.status==="cancelled"?"stopped":k==="run"?`<svg class="hg" viewBox="0 0 24 24" fill="none"><g class="hgg"><path d="M7 3.5h10M7 20.5h10" stroke="currentColor" stroke-width="1.6"/><path d="M8 3.5c0 4 1.6 6 4 8.5-2.4 2.5-4 4.5-4 8.5M16 3.5c0 4-1.6 6-4 8.5 2.4 2.5 4 4.5 4 8.5" stroke="currentColor" stroke-width="1.4"/><path class="st" d="M9.2 6.5h5.6c-.4 2-1.3 3.4-2.8 4.9-1.5-1.5-2.4-2.9-2.8-4.9z" fill="currentColor"/><path class="sb" d="M12 14.2c1.8 1.9 2.7 3.6 3 6H9c.3-2.4 1.2-4.1 3-6z" fill="currentColor"/></g></svg><img class="lp" data-lp="${j.id}" alt="">`:"#"+j.id}</div>
    <div class="body"><div class="p">${j.file?`<b style="font-weight:600">${esc(j.file)}</b> · `:""}${esc((j.prompt||"").slice(0,240))}</div>
    <div class="meta">${j.picks&&j.picks.length?`<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · `:""}${j.mp} MP · ${j.ar} · ${j.steps} steps · <span class="seedc" data-seed="${j.seed}" data-tip="Click to copy the seed">seed ${j.seed}</span>${k==="pend"?` · ~${fmt(jEst(j))}`:""}${j.missing?' · <span class="gone">file deleted</span>':""}</div>
-   ${j.created||j.finished?`<div class="meta times">${j.created?`added ${clock(j.created)}`:""}${j.finished&&j.status==="done"?` · done ${clock(j.finished)}`:""}${j.finished&&j.started?` · took ${fmt((j.finished-j.started)*(window.LIVE?1:S.demo)/1000)}`:""}</div>`:""}
+   ${j.created||j.finished?`<div class="meta times">${j.created?`added ${clock(j.created)}`:""}${j.finished&&j.status==="done"?` · done ${clock(j.finished)}`:""}${j.finished&&j.started?` · took ${fmt((j.finished-j.started)/1000)}`:""}</div>`:""}
    ${k==="run"?'<div class="mini"><i></i></div>':""}</div>
    ${k!=="done"?`<button class="x" data-x="${j.id}" title="${k==="run"?"Stop":"Remove"}">${IC.x}</button>`:`<button class="x" data-rm="${j.id}" title="${j.status==="done"&&!j.missing?"Remove from the list — the file stays":"Remove from the list"}">${IC.x}</button>`}</div>`;
  const W=$("qwrap");if(!$("qsRun"))W.innerHTML='<div id="qsRun"></div><div id="qsPend"></div><div id="qsFin"></div>';
@@ -25,8 +25,7 @@ function renderQueueInner(){const run=jobs.filter(j=>j.status==="running"),pend=
   (pend.length?pend.map(j=>item(j,"pend")).join(""):'<div class="empty">Nothing queued</div>'));
  put("qsFin",done.length?`<div class="qsec qfin" id="qfin"></div>`+done.map(j=>item(j,"done")).join(""):"");
  qsUpdate();   /* the selection (highlights, the header) is applied to whatever is there — never part of the rebuild */
- done.forEach(j=>{const c=document.querySelector(`canvas[data-th="${j.id}"]`);if(c&&j.status==="done"&&!j.missing)paint(c,j,1)});
- if(window.LIVE){const have=new Set(done.map(j=>j.id));for(const id of QT.keys())if(!have.has(id))QT.delete(id);
+ {const have=new Set(done.map(j=>j.id));for(const id of QT.keys())if(!have.has(id))QT.delete(id);
   $("qwrap").querySelectorAll("[data-tth]").forEach(ph=>{const id=+ph.dataset.tth;let im=QT.get(id);
    if(!im){im=new Image();im.className="qt";im.dataset.qt=id;im.alt="";im.decoding="async";im.loading="lazy";
     im.onerror=()=>{if(im.dataset.tried)return;im.dataset.tried="1";const j=jobs.find(x=>x.id===id);if(j&&window.makeQThumb)makeQThumb(j,im)};
@@ -54,7 +53,7 @@ function qsClick(j,range){const L=qsFinished();
  if(range&&qsAnchor!=null){const a=L.findIndex(x=>x.id===qsAnchor),b=L.findIndex(x=>x.id===j.id);if(a>=0&&b>=0){for(let i=Math.min(a,b);i<=Math.max(a,b);i++)QS.add(L[i].id);qsUpdate();return}}
  if(QS.has(j.id))QS.delete(j.id);else QS.add(j.id);qsAnchor=j.id;qsUpdate()}
 function qsClear(){if(!QS.size)return false;QS.clear();qsAnchor=null;qsUpdate();return true}
-function qsDelete(){if(!QS.size)return;const ids=[...QS];QS.clear();qsAnchor=null;if(window.deleteMany)deleteMany(ids);else toast("Prototype: would delete "+ids.length);renderQueue()}
+function qsDelete(){if(!QS.size)return;const ids=[...QS];QS.clear();qsAnchor=null;deleteMany(ids);renderQueue()}
 $("qwrap").addEventListener("click",e=>{
  if(e.target.closest("#qsX")){qsClear();return}
  if(e.target.closest("#qsAll")){qsFinished().forEach(j=>QS.add(j.id));qsUpdate();return}
@@ -72,11 +71,6 @@ $("qwrap").addEventListener("error",e=>{const im=e.target;if(!im.matches||!im.ma
 /* the formatters made once: creating them per row (hundreds) was most of the Queue tab's build time */
 const CLK={t:new Intl.DateTimeFormat([],{hour:"2-digit",minute:"2-digit"}),d:new Intl.DateTimeFormat([],{month:"short",day:"numeric"})};
 function clock(ms){const d=new Date(ms),now=new Date(),t=CLK.t.format(d);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate()?t:CLK.d.format(d)+" "+t}
-/* demo versions; live.js replaces them with server calls */
-window.removeJob=j=>{jobs=jobs.filter(x=>x!==j);renderAll()};
-window.deleteJob=j=>{if(!j)return;toast("Prototype: would move the file to the Recycle Bin")};
-window.setPaused=p=>{window.qPaused=p;renderAll();if(!p)tick()};
-window.renameJob=(j,n)=>{j.name=n;toast("Name saved")};
 $("qwrap").addEventListener("click",e=>{
  const sc=e.target.closest(".seedc");if(sc){e.stopPropagation();copySeed(sc.dataset.seed);return}
  if(e.target.id==="pauseQ"){setPaused(!window.qPaused);return}

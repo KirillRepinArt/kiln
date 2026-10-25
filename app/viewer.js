@@ -19,7 +19,6 @@ function closeViewer(){$("viewer").classList.remove("show");V.job=null}
   clearTimeout(clickT);const x=e.clientX,y=e.clientY;clickT=setTimeout(()=>{if(V.s>V.fit+.001)vFit();else vZoomAt(1,x,y)},230)});
  el.addEventListener("dblclick",e=>{clearTimeout(clickT);if(V.job)openInApp(V.job)});
  $("vclose").onclick=closeViewer;})();
-function openInApp(j){toast(`Prototype: would open ${j.file||("#"+j.id+".png")} in your default app`)}
 /* click the finished image (Generating view and queue overlay) */
 (function(){let t=null;
  function bind(el,getJob){el.addEventListener("click",e=>{if(e.target.closest(".side,.nav,.bclose,.cbtn,.miss")||el.classList.contains("held"))return;

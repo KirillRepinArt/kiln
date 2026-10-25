@@ -646,7 +646,8 @@ kbd{display:inline-block;min-width:24px;padding:2px 7px;border-radius:7px;backgr
 #tip{position:fixed;left:0;top:0;z-index:400;background:#2c2c31;border:1px solid #3a3a40;color:#e6e6ea;font-size:12px;line-height:1.35;padding:5px 9px;border-radius:8px;max-width:280px;
  pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #tip.show{opacity:1}
-.demo{position:fixed;left:18px;bottom:12px;font-size:11.5px;color:var(--faint)}
+/* no server: a note over everything, nothing else to do (live.js) */
+.offline{z-index:1000}.offline .mcard{max-width:420px;text-align:center}.offline p{color:var(--faint);line-height:1.5}
 /* moving the prompt box: the three places it snaps to, and the dock zones */
 .ghost{position:absolute;right:0;width:min(100%,var(--cw,680px));border-radius:var(--r-panel);outline:1px dashed rgba(255,255,255,.16);outline-offset:12px;pointer-events:none;opacity:0;transition:opacity .15s,border-color .15s}
 .ghost.show{opacity:1}.ghost.near{outline-color:rgba(255,255,255,.5)}

@@ -799,9 +799,6 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/preview/"):
             b = previews.get(int(path.rsplit("/", 1)[1]))
             return self.reply(200, b, sniff(b)) if b else self.reply(404, {"error": "no preview"})
-        if path == "/api/lora-restore":  # a one-time restore file (data/lora_restore.json) the page merges into its LoRA list
-            f = DATA / "lora_restore.json"
-            return self.reply(200, json.loads(f.read_text(encoding="utf-8"))) if f.exists() else self.reply(404, {"error": "none"})
         if path == "/api/models":
             try:
                 return self.reply(200, get_models("refresh" in self.path))
@@ -822,11 +819,6 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200, check_update())
             except Exception as e:
                 return self.reply(200, {"error": f"GitHub not reachable ({type(e).__name__})", "current": VERSION})
-        if path == "/api/lora-restore":  # the page applied it: keep it as .done, never apply twice
-            f = DATA / "lora_restore.json"
-            if f.exists():
-                f.replace(DATA / "lora_restore.done.json")
-            return self.reply(200, {"ok": True})
         if path == "/api/bye":  # a Kiln window is closing (sendBeacon from pagehide)
             client["bye"] = time.time()
             return self.reply(200, {})

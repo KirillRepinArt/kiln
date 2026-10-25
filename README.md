@@ -13,8 +13,7 @@ not hunting through files.
 ![Kiln — writing the next prompt while the current image renders](docs/screenshot.png)
 
 > **Status: early, working.** Kiln drives a local Forge Neo through its API: real queue, live previews,
-> your own LoRAs and models. Opened as a plain file, `index.html` runs as a self-contained demo with simulated
-> generation.
+> your own LoRAs and models.
 
 ---
 
@@ -182,8 +181,7 @@ The interface is `index.html` plus plain files in `app/` (CSS and scripts), no b
 **LoRA folders.** Kiln reads your LoRAs from Forge. Put face LoRAs in a `people` (or `faces`, `characters`)
 subfolder and styles in `style`; the folder names are configurable in `config.local.json`.
 
-**Demo / development.** Open `index.html` directly for the simulated demo, or run `python tools/fake_forge.py`
-and point Kiln at it (`KILN_FORGE_URL=http://127.0.0.1:7861 python server.py`) to exercise the whole pipeline
+**Development.** Run `python tools/fake_forge.py` and point Kiln at it (`KILN_FORGE_URL=http://127.0.0.1:7861 python server.py`) to exercise the whole pipeline
 without a GPU. `node tools/tests/run.mjs` runs the end-to-end tests (Node 22+, Edge or Chrome): each test starts
 its own fake Forge, Kiln and a headless browser. Changes are listed in `CHANGELOG.md`.
 

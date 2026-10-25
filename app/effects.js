@@ -39,7 +39,7 @@
 
 /* ambient glow + window title + favicon progress ring (throttled) */
 const amb=$("amb"),ambC=amb.getContext("2d"),favC=document.createElement("canvas");favC.width=favC.height=64;
-function jobProgress(j){const part=Math.min((Date.now()-j.stepStart)/j.est,.95)||0;return{p:(j.step+part)/j.steps,left:Math.max(0,(j.steps-j.step-part)*j.est*S.demo/1000)}}
+
 /* the Generating ring's knockout: the word's own glyphs, stroked ~1.25 px wider, cut out of the ring's holder — done
    once per font, size and screen scale, not per frame */
 function ringKnockout(){const w=document.querySelector('.tab[data-v="gen"] .trw'),tl=w&&w.closest(".tl");if(!w||!document.body.classList.contains("jobrun"))return;
@@ -162,7 +162,7 @@ function onJobDone(j){if(window.emberBurst&&PV.still&&PV.still.id===j.id)emberBu
   const j=current();const mode=(S.set||{}).veil||"full";const cover0=skin().cover;const fr0=$("frame");
   const held=fr0.classList.contains("has")&&S.view==="gen"&&!!S.privacy;
   if(held!==CV.held){CV.held=held;fr0.classList.toggle("held",held);if(held&&!j)CV.t0=Date.now()-20000}
-  const fast=(S.set||{}).fastcover==="skip"&&j&&window.LIVE&&j.est>0&&j.est<10;                // Settings → Cover: no cover on quick jobs
+  const fast=(S.set||{}).fastcover==="skip"&&j&&j.est>0&&j.est<10;                // Settings → Cover: no cover on quick jobs
   if(cover0==="crt"||cover0==="camera"){const k=j&&picMode()==="live"?j.id:(Date.now()<(window._cpv||0)?"pv"+window._cpv:held?(crtJob??"held"):null);   // held after the finish: the same exposure goes on
    if(k!==crtJob){crtJob=k;if(k!=null){if(cover0==="crt")crt.powerOn(t);else cam.reset()}}} // a new job: the screen powers on / a new exposure starts
   let target=0,tN=null;if(j&&picMode()==="live"&&S.view==="gen"&&mode!=="off"&&!reduce&&!fast){const pr=Math.max(0,Math.min(1,jobProgress(j).p||0));

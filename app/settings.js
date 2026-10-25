@@ -25,5 +25,3 @@ function applyGlass(){document.body.classList.toggle("glass",(S.set||{}).glass==
 $("updBtn").onclick=()=>toast("The update check needs the Kiln server (kiln.bat)");$("keysBtn").onclick=()=>openKeys();
 $("gear").onclick=()=>$("modal").classList.add("show");$("mClose").onclick=()=>$("modal").classList.remove("show");
 $("modal").onclick=e=>{if(e.target.id==="modal")$("modal").classList.remove("show")};
-$("sDemo").value=String(S.demo);$("sDemo").onchange=e=>{S.demo=+e.target.value;save();demoNote()};
-function demoNote(){$("demoNote").textContent=S.demo===1?"Prototype · simulated generation at real-time speed":`Prototype · simulated generation, ×${S.demo} faster than your 1060 · not connected to Forge`}

@@ -7,29 +7,19 @@ const SIZES={ // ~0.5 / 1.0 / 1.5 / 2.0 MP presets, all sides multiples of 16
  "2.0":{"1:1":[1408,1408],"4:3":[1632,1216],"3:2":[1728,1152],"16:9":[1888,1056],"21:9":[2160,928],"3:4":[1232,1648],"2:3":[1152,1728],"9:16":[1056,1872]}};
 const RATIOS=["3:4","2:3","9:16","1:1","4:3","3:2","16:9","21:9"];
 const SEC_PER_STEP={"0.5":35,"1.0":60,"1.5":130,"2.0":220}; // placeholders until real history exists
-/* LoRA library — demo data only; names under "people" are fictional placeholders. — the real app reads Forge's /sdapi/v1/loras (folder comes from the file path) */
-const LIB=[
- ["krea2_turbo_4step_rank_64_lora_comfyui","utility"],["detail_enhancer_krea2","utility"],["skin_texture_krea2","utility"],
- ["lenovo_ultrareal_krea2","style"],["realistic_snapshot_krea2","style"],["krea2_softwatercolor","style"],["krea2_vintagetarot","style"],
- ["krea2_janedoe_v2_large_onetrainer","people"],["krea2_annasmith_v1_onetrainer","people"],["krea2_lunavale_v1_large_onetrainer","people"],
- ["krea2_miraklein_v3_onetrainer","people"],["krea2_sofiareyes_v1_onetrainer","people"],["krea2_evarosen_v2_onetrainer","people"],
- ["krea2_ninablake_v1_large_onetrainer","people"],["krea2_claraholt_v1_onetrainer","people"],["krea2_idamorrow_v2_onetrainer","people"],
-];
-const DEF={krea2_turbo_4step_rank_64_lora_comfyui:{w:.75,on:true,recipe:true,note:"4-step distill"},
- detail_enhancer_krea2:{w:.5,on:true,recipe:true,note:"example utility LoRA"},skin_texture_krea2:{w:.4,note:"example utility LoRA"}};
+/* LoRA names → what the list shows: people LoRAs named krea2_<name>_v<N>… become "Name" + their version tags */
 function parseName(file,folder){
  const m=file.match(/^krea2_([a-z0-9]+)_v(\d+)(?:_(large|small))?(?:_(onetrainer|aitoolkit|kohya))?$/i);
  if(folder==="people"&&m){const n=m[1];return{display:n[0].toUpperCase()+n.slice(1),tags:[`v${m[2]}`,m[3],m[4]].filter(Boolean).join(" · ")}}
  return{display:file.replace(/^krea2_?/,"").replace(/_krea2$/,"").replace(/_lora_comfyui$/,"").replace(/_rank_\d+/,"").replace(/_/g," "),tags:""}}
-const LORAS=LIB.map(([file,folder])=>{const p=parseName(file,folder);const d=DEF[file]||{};
- return{name:file,folder,display:p.display,tags:p.tags,w:d.w??(folder==="people"?0.7:0.5),on:!!d.on,recipe:!!d.recipe,note:d.note||"",fav:false,used:0,thumb:null}});
+const LORAS=[];   /* filled from Forge's LoRA list (live.js loadModels) — never saved before that arrives */
 
 /* ======================= state ======================= */
-const S={pname:"",ncount:{},pph:0,lw:0,mp:"1.5",ar:"3:4",steps:4,seedMode:"random",seed:123456789,n:1,view:"gen",demo:20,theme:"ice",oneFace:true,lfilter:"all"};
-let draft="";let jobs=[];let nextId=1;
+const S={pname:"",pph:0,lw:0,mp:"1.5",ar:"3:4",steps:4,seedMode:"random",seed:123456789,n:1,view:"gen",theme:"ice",oneFace:true,lfilter:"all"};
+let draft="";let jobs=[];
 try{const sv=JSON.parse(localStorage.getItem("kiln_state")||"{}");Object.assign(S,sv.S||{});draft=sv.draft||"";
- (sv.loras||[]).forEach(x=>{const l=LORAS.find(l=>l.name===x.name);if(l)Object.assign(l,x)})}catch(e){}
-/* LoRA entries are merged, never replaced: a LoRA this page doesn't know right now (the demo list at start-up, before
+ delete S.demo;delete S.ncount}catch(e){}   /* settings of the removed demo mode */
+/* LoRA entries are merged, never replaced: a LoRA this page doesn't know right now (none at start-up, before
    Forge's list arrives; a LoRA moved away for a while) keeps its saved name, weight and star. Replacing the list once
    wiped every renamed LoRA (2026-10-18). */
 function save(){try{let old=[];try{old=JSON.parse(localStorage.getItem("kiln_state")||"{}").loras||[]}catch(e){}
@@ -59,12 +49,5 @@ function sideButtons(el,getJob){el.innerHTML=
   <button data-tip="Use as LoRA thumbnail" data-a="thumb">${IC.thumb}</button>
   <button data-tip="Delete (Del) — to the Recycle Bin" data-a="del">${IC.trash}</button>`;
  el.onclick=e=>{const b=e.target.closest("button");if(!b)return;e.stopPropagation();
-  if(b.dataset.a==="thumb"){setThumbs(getJob());return}
-  if(b.dataset.a==="del"){deleteJob(getJob());return}
- toast({i2i:"Prototype: would send this image to img2img",up:"Prototype: would upscale with your default upscaler",open:"Prototype: would open the PNG in your default app",folder:"Prototype: would open Explorer with the file selected"}[b.dataset.a])}}
+  if(b.dataset.a==="thumb")setThumbs(getJob())}}   /* the other buttons: live.js */
 sideButtons($("sideGen"),()=>shownDone());
-function setThumbs(j){if(!j)return;const faces=j.loras.map(x=>LORAS.find(l=>l.name===x.name)).filter(l=>l&&l.folder==="people");
- if(!faces.length){toast("This image used no face LoRA");return}
- const c=document.createElement("canvas");paint(c,j,1);const t=document.createElement("canvas");t.width=t.height=160;
- const s=Math.min(c.width,c.height);t.getContext("2d").drawImage(c,(c.width-s)/2,(c.height-s)*0.25,s,s,0,0,160,160);
- const url=t.toDataURL("image/jpeg",.8);faces.forEach(l=>l.thumb=url);save();renderLoras();toast(`Thumbnail set for ${faces.map(l=>l.display).join(", ")}`)}

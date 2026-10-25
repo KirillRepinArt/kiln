@@ -21,7 +21,7 @@ function picMode(){return browsed()?"browse":stillJob()?"still":current()?"live"
 /* a picture that shows clean at once (no cover easing off it): one you browse to, or a reference */
 function shownClean(){return PV.browse!=null||!!(PV.still&&PV.still.kind==="reference")}
 /* after the job list changes: a picture that's gone (deleted, cleared from the list) lets go */
-function pvPrune(){if(!window._jobsReady&&window.LIVE)return;let ch=false;
+function pvPrune(){if(!window._jobsReady)return;let ch=false;
  if(PV.browse!=null&&!browsed()){PV.browse=null;PV.promptClosed=false;ch=true}
  if(PV.still&&!stillJob()){PV.still=null;ch=true}
  if(PV.news!=null&&!doneById(PV.news))PV.news=null;

@@ -131,7 +131,6 @@
       <label>Theme</label><select id="sTheme"><option value="aurora">Aurora · northern lights</option><option value="ember">Ember</option><option value="ice">Ember → Ice</option><option value="emerald">Emerald · Matrix rain</option><option value="sunset">Sunset</option></select>
       <label>Font</label><select data-set="font" id="sFont"><option value="theme">Theme font</option><option value="Geist">Geist</option><option value="Inter">Inter</option><option value="Satoshi">Satoshi</option><option value="Manrope">Manrope</option><option value="IBM Plex Sans">IBM Plex Sans</option></select>
       <label>Material</label><select data-set="glass"><option value="on">Glass</option><option value="off">Solid</option></select>
-      <label>Demo speed</label><select id="sDemo"><option value="20">×20 (prototype)</option><option value="60">×60</option><option value="1">real time</option></select>
       <div class="fgh" id="fghFx">Effects</div>
       <label>Ambient glow</label><select data-set="glow"><option value="gen">While generating</option><option value="always">Always</option><option value="off">Off</option></select>
       <label>Embers when done</label><select data-set="embers"><option value="on">On</option><option value="off">Off</option></select>
@@ -150,7 +149,7 @@
   </div>
 </div>
 
-<div class="demo" id="demoNote"></div>
+<div class="modal offline" id="offline"><div class="mcard"><h2>Kiln's server isn't running</h2><p>Start Kiln with <b>kiln.bat</b>. This page reconnects by itself as soon as the server is back.</p></div></div>
 <div class="viewer" id="viewer"><canvas id="vcv"></canvas><button class="nav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button><button class="vclose" id="vclose" title="Close (Esc)"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="vzoom" id="vzoom"></div><div class="vhint">← → browse · Click: fit ↔ 100% · Wheel: zoom · Drag: pan · Double-click: open in default app · Esc: close</div></div>
 <button class="nav gnav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav gnav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button>
 <div class="donenote" id="donenote"><span class="dnth"><img id="dnImg" alt=""></span><span id="dnTxt"></span></div>

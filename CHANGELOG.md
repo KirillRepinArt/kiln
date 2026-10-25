@@ -9,6 +9,9 @@ Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when th
   linters (ESLint, Stylelint, Ruff); CI runs the linters, the privacy scan and the end-to-end tests on every push; the
   tests run several at a time. Setup in CONTRIBUTING.md.
 - Fixed a test that could never fail (a regular expression with control characters in it).
+- **Demo mode removed:** opening `index.html` as a file (or Kiln's server stopping) now shows a note to start Kiln
+  with `kiln.bat`, and the page reconnects by itself — instead of a simulated queue with made-up LoRAs. Kiln no
+  longer starts on a fake LoRA list before Forge's arrives. The one-time LoRA restore of v0.2.1 is gone too.
 
 ## v0.6 — 2026-10-25 (queue at scale)
 

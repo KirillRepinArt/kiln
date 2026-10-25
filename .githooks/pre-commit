@@ -1,0 +1,20 @@
+#!/bin/sh
+# Runs before every commit (switched on by `git config core.hooksPath .githooks`, see CONTRIBUTING.md).
+# 1. The privacy scan — always: nothing personal goes into this public repo.
+# 2. The linters on the files being committed, when they're installed (`npm install`, `.venv` with ruff).
+cd "$(git rev-parse --show-toplevel)" || exit 1
+PY=python; [ -x .venv/Scripts/python.exe ] && PY=.venv/Scripts/python.exe; [ -x .venv/bin/python ] && PY=.venv/bin/python
+"$PY" tools/privacy_scan.py --staged || exit 1
+
+fail=0
+files() { git diff --cached --name-only --diff-filter=ACMR -- "$@"; }
+JS=$(files 'app/*.js' 'tools/*.mjs' '*.js'); CSS=$(files 'app/*.css'); PYF=$(files '*.py')
+if [ -n "$JS$CSS" ] && [ ! -d node_modules ]; then echo "pre-commit: linters not installed — run npm install (skipping JS/CSS checks)"; fi
+if [ -n "$JS" ] && [ -d node_modules ]; then echo "$JS" | tr '\n' '\0' | xargs -0 npx --no-install eslint || fail=1; fi
+if [ -n "$CSS" ] && [ -d node_modules ]; then echo "$CSS" | tr '\n' '\0' | xargs -0 npx --no-install stylelint || fail=1; fi
+RUFF=$(command -v ruff); [ -x .venv/Scripts/ruff.exe ] && RUFF=.venv/Scripts/ruff.exe; [ -x .venv/bin/ruff ] && RUFF=.venv/bin/ruff
+if [ -n "$PYF" ]; then
+  if [ -n "$RUFF" ]; then echo "$PYF" | tr '\n' '\0' | xargs -0 "$RUFF" check || fail=1
+  else echo "pre-commit: ruff not installed — see CONTRIBUTING.md (skipping Python checks)"; fi
+fi
+[ $fail -eq 0 ] || { echo "pre-commit: fix the problems above, then commit again."; exit 1; }

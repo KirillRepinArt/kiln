@@ -104,7 +104,6 @@ export async function windowResize(k, t) {
 
 export async function resetAndDoubleClick(k, t) {
   await viewport(k, 1700, 950); await k.ev(`(showView("queue"),1)`); await settle(k);
-  const d = await box(k);
   await drag(k, ".pedge.po", -80); await drag(k, ".pedge.ro", 60); await k.sleep(500);
   const h = await R(k, ".pedge.po"); await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x: h.left + 6, y: h.top + 100, button: "left", clickCount: 2 });
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: h.left + 6, y: h.top + 100, button: "left", clickCount: 2 }); await k.sleep(500);
@@ -209,7 +208,7 @@ export async function toolbarBesideThePicture(k, t) {
   const g = await R(k, "#gtools"); await k.mouse(g.left + 20, g.top + 20); await k.sleep(450);
   t.ok(await toolsShown(k), "moving onto them keeps them (one hover zone)");
   const btns = await k.ev(`[...document.querySelectorAll("#gtools button")].map(b=>{const r=b.getBoundingClientRect();return [r.left,r.top,r.right,r.bottom]})`), rp = await R(k, "#rpanel");
-  t.ok(btns.length === 6 && btns.every(([l, tp, r, b]) => l >= f.right && r <= rp.right + 1 && b <= rp.bottom + 1), "all six outside the picture and none cut off (they wrap into a second column)", { btns, rp: [rp.right, rp.bottom] });
+  t.ok(btns.length === 6 && btns.every(([l, , r, b]) => l >= f.right && r <= rp.right + 1 && b <= rp.bottom + 1), "all six outside the picture and none cut off (they wrap into a second column)", { btns, rp: [rp.right, rp.bottom] });
   await k.mouse(2, 2); await k.sleep(500);
   t.ok(!(await toolsShown(k)), "leaving hides them after a moment");
   await k.ev(`(setDock("right"),1)`); await k.mouse(2, 2); await k.sleep(900);

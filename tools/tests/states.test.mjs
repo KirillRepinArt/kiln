@@ -204,7 +204,7 @@ export async function notes06(k, t) {
   await k.ev(`(document.activeElement.blur(),genNav(1),1)`); await k.sleep(300);
   t.ok((await st(k)).pic === "empty", "→ takes it off (the render / the empty frame)");
   await k.ev(`(showView("queue"),1)`); await k.sleep(400); await k.until(`(()=>{const i=document.querySelector(".qi img.qt");return i&&i.naturalWidth>0})()`, 8000, 100);
-  const el = await k.ev(`(window.__qt=document.querySelector(".qi img.qt"),1)`);
+  await k.ev(`(window.__qt=document.querySelector(".qi img.qt"),1)`);
   await k.ev(`(document.querySelector(".qi .p").click(),1)`); await k.sleep(400);
   t.ok((await st(k)).pic === "browse", "a Queue row opens the picture");
   await k.ev(`($("bclose").click(),1)`); await k.sleep(400);

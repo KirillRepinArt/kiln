@@ -4,7 +4,6 @@ import { existsSync, unlinkSync, readFileSync, writeFileSync, mkdirSync } from "
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 const done = (k, n = 1) => k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=${n}`, 30000);
-const card = k => k.ev(`$("frame").classList.contains("missing")&&getComputedStyle($("missCard")).display!=="none"`);
 const shown = (k, id) => k.ev(`getComputedStyle($("${id}")).display!=="none"`);
 
 export async function neverCached(k, t) {

@@ -8,7 +8,7 @@
 // reads them again — in the same instant, on the same DOM — and lists every difference. :hover / :focus / :active
 // are forced (DevTools) on each element a rule hovers, one at a time. Report: tools/tests/out/cssdiff.txt.
 // Without KILN_CSS_REF the test is skipped.
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, unlinkSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 

@@ -65,7 +65,7 @@ export async function dragsAlwaysEnd(k, t) {
 
 export async function pressOutline(k, t) {
   await k.mouse(2, 2); await k.sleep(1200);
-  const l = await k.rect("#left"), tt = await k.rect("#ltitle"); const x = tt.left + 30, y = tt.top + tt.height - 14;   // the name line, off the name itself
+  const tt = await k.rect("#ltitle"); const x = tt.left + 30, y = tt.top + tt.height - 14;   // the name line, off the name itself
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 }); await k.sleep(250);
   const h = await k.rect("#cardhint"), tr = await k.rect("#ltitle"), L = await k.rect("#left");
@@ -103,7 +103,7 @@ export async function promptEdges(k, t) {
   const w = () => k.ev(`[...$("prompt").parentElement.classList].join(" ")`);
   t.ok(/more/.test(await w()) && !/scrolled/.test(await w()), "overflowing, at the top: the bottom fades, the top doesn't", await w());
   await k.ev(`(document.querySelector(".pwrapT .cm-scroller").scrollTop=99999,1)`); await k.sleep(300);
-  t.ok(/scrolled/.test(await w()) && !/more/.test(await w()), "scrolled to the end: the top fades, the bottom doesn't", await w());
+  t.ok(/scrolled/.test(await w()) && !/more/.test(await w()), "scrolled to the end: the top fades, the bottom doesn't", await w());
 }
 
 export async function narrowReuseRow(k, t) {

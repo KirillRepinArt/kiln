@@ -14,7 +14,6 @@ async function drag(k, sel, dx) {
 
 export async function presets(k, t) {
   await viewport(k, 1700, 950); await k.mouse(2, 2); await k.sleep(600);
-  const L0 = await R(k, "#left");
   await menu(k, "right");
   let L = await R(k, "#left"), Rr = await R(k, "#right");
   t.ok(L.left > Rr.right && Math.round(L.left - Rr.right) === 18 && Math.abs((await R(k, "#lcol")).top - Rr.top) < 2 && Rr.bottom <= 950, "Horizontal · prompt on the right: right of the picture, same row, 18 px gap", { L: L.left, R: [Rr.right, Rr.top, Rr.bottom] });

@@ -1,8 +1,9 @@
 // Kiln end-to-end tests: each test gets its own fake Forge, Kiln server and headless Edge/Chrome (fresh profile,
 // fresh data and output folders), driven over the DevTools protocol in real time.
 //
-//   node tools/tests/run.mjs              # all tests
+//   node tools/tests/run.mjs              # all tests, several at a time
 //   node tools/tests/run.mjs cover        # tests whose file name contains "cover"
+//   node tools/tests/run.mjs -j 1         # one at a time (-j N or KILN_JOBS=N; default: a third of the CPU cores, at most 3)
 //
 // Needs Node 22+ (built-in WebSocket), Python 3 and Edge or Chrome (KILN_BROWSER=path to pick one).
 // Screenshots and logs land in tools/tests/out/ (git-ignored).
@@ -11,7 +12,7 @@ import { mkdirSync, rmSync, readdirSync, existsSync, writeFileSync } from "node:
 import { createServer } from "node:net";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { tmpdir } from "node:os";
+import { tmpdir, availableParallelism } from "node:os";
 
 const HERE = dirname(fileURLToPath(import.meta.url)), ROOT = join(HERE, "..", ".."), OUT = join(HERE, "out");
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -24,7 +25,12 @@ function browserPath() {
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"];
   const p = c.find(existsSync); if (!p) throw new Error("No Edge/Chrome found — set KILN_BROWSER"); return p;
 }
-const freePort = () => new Promise(r => { const s = createServer(); s.listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)) }) });
+/* a port nobody listens on; never the same one twice in a run (tests start in parallel, and a port just closed by one
+   test could otherwise be handed to the next before the first one's server has bound it) */
+const given = new Set();
+/* stop a process and everything it started (Edge runs a dozen helper processes; Windows doesn't end them with the parent) */
+const killTree = p => { try { if (process.platform === "win32") spawn("taskkill", ["/T", "/F", "/PID", String(p.pid)], { stdio: "ignore" }); else p.kill() } catch (e) {} };
+const freePort = () => new Promise(r => { const s = createServer(); s.listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => given.has(p) ? r(freePort()) : (given.add(p), r(p))) }) });
 async function waitHttp(url, ms = 15000) { const t = Date.now(); while (Date.now() - t < ms) { try { await fetch(url); return } catch (e) { await sleep(150) } } throw new Error("no answer from " + url) }
 
 /* one Kiln instance + browser page, with the helpers a test uses */
@@ -36,6 +42,10 @@ async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, 
   const procs = [], log = [];
   const run = (cmd, args, env) => { const p = spawn(cmd, args, { cwd: ROOT, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
     p.stdout.on("data", d => log.push(String(d))); p.stderr.on("data", d => log.push(String(d))); procs.push(p); return p };
+  // everything started from here on is stopped again if the start fails: a failed start must never leave a fake Forge,
+  // a Kiln server or an Edge running (under load, leaked ones made the next starts fail too, and so on until the PC froze)
+  let ws = null;
+  try {
   run(PY, ["tools/fake_forge.py", String(fport), String(step)]);
   await waitHttp(`http://127.0.0.1:${fport}/sdapi/v1/options`);
   run(PY, ["-c", `import server; server.CFG['exit_when_closed']=${autoExit ? "True" : "False"}; server.CFG['forge_start']=''; server.main()`],
@@ -49,7 +59,7 @@ async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, 
   let pg = null;
   for (let i = 0; i < 80 && !pg; i++) { try { pg = (await (await fetch(`http://127.0.0.1:${dport}/json`)).json()).find(t => t.type === "page" && t.url.startsWith(url)) } catch (e) {} if (!pg) await sleep(250) }
   if (!pg) throw new Error("browser page not found");
-  const ws = new WebSocket(pg.webSocketDebuggerUrl); let id = 0; const wait = {}, errors = [], requests = [];
+  ws = new WebSocket(pg.webSocketDebuggerUrl); let id = 0; const wait = {}, errors = [], requests = [];
   ws.onmessage = m => { const d = JSON.parse(m.data); if (d.id && wait[d.id]) { wait[d.id](d); delete wait[d.id] }
     if (d.method === "Runtime.exceptionThrown") errors.push(d.params.exceptionDetails.exception?.description || d.params.exceptionDetails.text);
     if (d.method === "Runtime.consoleAPICalled" && d.params.type === "error") errors.push("console.error " + d.params.args.map(a => a.value ?? a.description).join(" "));
@@ -80,10 +90,16 @@ async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, 
     cvColor: () => ev(`(()=>{const c=$("cv"),d=c.getContext("2d").getImageData(0,(c.height/2)|0,c.width,1).data,s=[0,0,0];for(let i=0;i<d.length;i+=4){s[0]+=d[i];s[1]+=d[i+1];s[2]+=d[i+2]}return s.map(v=>Math.round(v/(d.length/4)))})()`),
     shot: async n => { mkdirSync(OUT, { recursive: true }); const s = await send("Page.captureScreenshot", { format: "png" }); writeFileSync(join(OUT, `${name}-${n}.png`), Buffer.from(s.result.data, "base64")) },
     log,
-    async close() { try { await send("Browser.close") } catch (e) {} ws.close(); await sleep(300); for (const p of procs) try { p.kill() } catch (e) {}
+    async close() { try { await send("Browser.close") } catch (e) {} ws.close(); await sleep(300); procs.forEach(killTree)
       await sleep(300); try { rmSync(dir, { recursive: true, force: true }) } catch (e) {} },
   };
   return k;
+  } catch (e) {
+    try { ws?.close() } catch (e2) {}
+    procs.forEach(killTree)
+    await sleep(300); try { rmSync(dir, { recursive: true, force: true }) } catch (e2) {}
+    throw e;
+  }
 }
 
 /* tiny assertion collector */
@@ -92,22 +108,40 @@ function checker() { const fails = [], passes = []; return {
   near(a, b, tol, what) { this.ok(Math.abs(a - b) <= tol, what, { got: a, want: b, tol }) },
   fails, passes } }
 
-const filter = process.argv[2] || "";
-const files = readdirSync(HERE).filter(f => f.endsWith(".test.mjs") && f.includes(filter)).sort();
-let failed = 0;
-for (const f of files) {
+/* arguments: an optional file-name filter and -j N */
+const args = process.argv.slice(2);
+const ji = args.indexOf("-j"), jobs = Math.max(1, +(ji >= 0 ? args.splice(ji, 2)[1] : process.env.KILN_JOBS || Math.min(3, Math.floor(availableParallelism() / 3))));
+const filter = args[0] || "";
+const tests = [];
+for (const f of readdirSync(HERE).filter(f => f.endsWith(".test.mjs") && f.includes(filter)).sort()) {
   const mod = await import(pathToFileURL(join(HERE, f)));
-  for (const [tname, fn] of Object.entries(mod)) {
-    if (typeof fn !== "function") continue;
-    const label = `${f.replace(".test.mjs", "")} › ${tname}`, t = checker(); let k = null; const t0 = Date.now();
-    try { k = await launch(`${f.replace(".test.mjs", "")}-${tname}`, fn.opts || {}); await fn(k, t);
-      t.ok(k.errors.length === 0, "no page errors", k.errors) }
-    catch (e) { t.fails.push("threw: " + (e.stack || e)) }
-    finally { if (k) await k.close() }
-    const secs = ((Date.now() - t0) / 1000).toFixed(1);
-    if (t.fails.length) { failed++; console.log(`✗ ${label} (${secs}s)`); t.fails.forEach(x => console.log("    ✗ " + x)) }
-    else console.log(`✓ ${label} (${secs}s, ${t.passes.length} checks)`);
-  }
+  for (const [tname, fn] of Object.entries(mod)) if (typeof fn === "function") tests.push({ file: f.replace(".test.mjs", ""), tname, fn });
 }
-console.log(failed ? `\n${failed} test(s) failed` : "\nall passed");
-process.exit(failed ? 1 : 0);
+
+/* one test: its own Kiln, browser and folders; returns its report as text, printed in one piece */
+async function runOne({ file, tname, fn }) {
+  const label = `${file} › ${tname}`, t = checker(); let k = null; const t0 = Date.now();
+  try { try { k = await launch(`${file}-${tname}`, fn.opts || {}); startFails = 0 } catch (e) { startFails++; throw e }
+    await fn(k, t);
+    t.ok(k.errors.length === 0, "no page errors", k.errors) }
+  catch (e) { t.fails.push("threw: " + (e.stack || e)) }
+  finally { if (k) await k.close() }
+  const secs = ((Date.now() - t0) / 1000).toFixed(1);
+  return t.fails.length ? { ok: false, label, text: [`✗ ${label} (${secs}s)`, ...t.fails.map(x => "    ✗ " + x)].join("\n") }
+                        : { ok: true, label, text: `✓ ${label} (${secs}s, ${t.passes.length} checks)` };
+}
+
+/* a pool of workers, each taking the next test off the list until it's empty. Circuit breaker: when Kiln fails to
+   start 3 times in a row the machine is overloaded (or something is broken) — stop rather than start more */
+let startFails = 0;
+const t0 = Date.now(), queue = [...tests], results = [];
+console.log(`${tests.length} tests, ${Math.min(jobs, tests.length)} at a time`);
+await Promise.all(Array.from({ length: Math.min(jobs, tests.length) }, async () => {
+  while (queue.length && startFails < 3) { const r = await runOne(queue.shift()); results.push(r); console.log(r.text) }
+}));
+if (queue.length) console.log(`
+STOPPED: Kiln failed to start 3 times in a row — ${queue.length} tests not run. Try fewer at a time (-j 1).`);
+const failed = results.filter(r => !r.ok);
+const mins = ((Date.now() - t0) / 60000).toFixed(1);
+console.log(failed.length ? `\n${failed.length} test(s) failed (${mins} min):\n` + failed.map(r => "  " + r.label).join("\n") : `\nall passed (${mins} min)`);
+process.exit(failed.length || queue.length ? 1 : 0);

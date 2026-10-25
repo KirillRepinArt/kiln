@@ -8,7 +8,7 @@
 // Needs Node 22+ (built-in WebSocket), Python 3 and Edge or Chrome (KILN_BROWSER=path to pick one).
 // Screenshots and logs land in tools/tests/out/ (git-ignored).
 import { spawn } from "node:child_process";
-import { mkdirSync, rmSync, readdirSync, existsSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, readdirSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -139,9 +139,18 @@ console.log(`${tests.length} tests, ${Math.min(jobs, tests.length)} at a time`);
 await Promise.all(Array.from({ length: Math.min(jobs, tests.length) }, async () => {
   while (queue.length && startFails < 3) { const r = await runOne(queue.shift()); results.push(r); console.log(r.text) }
 }));
-if (queue.length) console.log(`
-STOPPED: Kiln failed to start 3 times in a row — ${queue.length} tests not run. Try fewer at a time (-j 1).`);
+if (queue.length) console.log(`\nSTOPPED: Kiln failed to start 3 times in a row — ${queue.length} tests not run. Try fewer at a time (-j 1).`);
 const failed = results.filter(r => !r.ok);
 const mins = ((Date.now() - t0) / 60000).toFixed(1);
 console.log(failed.length ? `\n${failed.length} test(s) failed (${mins} min):\n` + failed.map(r => "  " + r.label).join("\n") : `\nall passed (${mins} min)`);
+
+/* on GitHub Actions: each failure as an annotation and a summary table, shown on the run's page (logs need admin rights) */
+if (process.env.GITHUB_ACTIONS) {
+  const esc = s => s.replace(/%/g, "%25").replace(/\r/g, "").replace(/\n/g, "%0A");
+  for (const r of failed) console.log(`::error title=${esc(r.label)}::${esc(r.text.slice(0, 4000))}`);
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+    `### End-to-end tests: ${results.length - failed.length} of ${tests.length} passed (${mins} min)\n\n` +
+    (failed.length ? failed.map(r => "```\n" + r.text + "\n```").join("\n") + "\n" : "") +
+    (queue.length ? `\n**Stopped:** ${queue.length} tests not run (Kiln failed to start 3 times in a row).\n` : ""));
+}
 process.exit(failed.length || queue.length ? 1 : 0);

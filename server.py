@@ -825,6 +825,14 @@ def build_page():
         page,
     )
     page = page.replace('class="modal offline show"', 'class="modal offline"', 1)
+    # every module listed up front, so the browser fetches them all at once instead of discovering the imports one
+    # layer at a time (main.js → its imports → theirs …)
+    preload = "".join(f'    <link rel="modulepreload" href="app/{f.name}">\n' for f in sorted(app.glob("*.js")))
+    page = page.replace(
+        '    <script type="module" src="app/main.js"></script>',
+        preload + '    <script type="module" src="app/main.js"></script>',
+        1,
+    )
     return page.encode("utf-8")
 
 

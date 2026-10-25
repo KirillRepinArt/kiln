@@ -1,15 +1,21 @@
 /* Kiln · PNG Info tab */
+import { $ } from "./dom.js";
+import { LORAS, P, S, SIZES, save, setDraft } from "./state.js";
+import { grow } from "./composer.js";
+import { showView } from "./stage.js";
+import { esc, renderAll, toast } from "./boot.js";
+
 /* ======================= PNG info (real) ======================= */
-let parsed = null;
-const drop = $("drop");
+export let parsed = null;
+export const drop = $("drop");
 let kname = null;
 /* the series name: Kiln writes it into its PNGs (kiln_name); older Kiln files give it back from the file name (slug-NNN.png) */
-function nameFrom(f) {
+export function nameFrom(f) {
   if (kname) return kname;
   const m = (f.name || "").match(/^(.+?)-\d{3,}(?:_x[\d.]+)?\.png$/i);
   return m && !/^kiln-\d{8}-\d{6}$|^\d+$/.test(m[1]) ? m[1].replace(/-/g, " ") : "";
 }
-async function readPng(f) {
+export async function readPng(f) {
   kname = null;
   try {
     const u = URL.createObjectURL(f);
@@ -124,7 +130,7 @@ function parseParams(t) {
   };
 }
 /* Keep seed (shared with the peek bar's lock): off = a new random seed, for variations; on = the image's own seed */
-function keepSeedUI() {
+export function keepSeedUI() {
   $("pKeepSw").classList.toggle("on", !!S.keepSeed);
   const k = $("pkSeed");
   if (k) {
@@ -136,7 +142,7 @@ function keepSeedUI() {
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initPnginfo() {
+export function initPnginfo() {
   drop.onclick = () => $("file").click();
   $("file").onchange = e => e.target.files[0] && readPng(e.target.files[0]);
   ["dragenter", "dragover"].forEach(t =>

@@ -1,9 +1,14 @@
 /* Kiln · pictures: the real files and the live previews — loading, the small cache, drawing them on a canvas,
    the cross-fade between two, the missing-file card */
+import { $ } from "./dom.js";
+import { S } from "./state.js";
+import { shownDone } from "./picstate.js";
+import { api } from "./live.js";
+
 /* ---------- images: real files and live previews, cached ---------- */
-const imgs = new Map(),
+export const imgs = new Map(),
   IMAX = 16; /* the pictures used last (the cache used to keep every picture you'd seen, decoded) */
-function img(url) {
+export function img(url) {
   let e = imgs.get(url);
   if (e) {
     imgs.delete(url);
@@ -24,13 +29,13 @@ function img(url) {
   while (imgs.size > IMAX) imgs.delete(imgs.keys().next().value);
   return e;
 }
-function __imgsN() {
+export function __imgsN() {
   return imgs.size;
 }
-function urlFor(j) {
+export function urlFor(j) {
   return j.file ? `/files/${encodeURIComponent(j.file)}?j=${j.id}` : null;
 }
-function drawTo(cv, im, natural) {
+export function drawTo(cv, im, natural) {
   const dpr = devicePixelRatio || 1,
     iw = im.naturalWidth,
     ih = im.naturalHeight;
@@ -96,7 +101,7 @@ function xfadeGo(cv, id) {
 }
 /* any other change of what's on show (leaving the Gallery, ✕, the render taking over): the picture fades out the same
     way — over whatever comes next (a render's first preview), or at once if nothing does (a clean screen) */
-function xfadeSnap() {
+export function xfadeSnap() {
   const cv = $("cv"),
     x = $("cvx");
   if (!x || cv.width < 2) return;
@@ -111,7 +116,7 @@ function xfadeSnap() {
   clearTimeout(x._t);
   x._t = setTimeout(xfadeEnd, 260);
 }
-function xfadeEnd() {
+export function xfadeEnd() {
   const x = $("cvx");
   if (!x || !x.dataset.wait || x.dataset.morph) return;
   x.dataset.wait = "";
@@ -119,7 +124,7 @@ function xfadeEnd() {
   x.style.transition = "";
   x.style.opacity = "0";
 }
-function preload(j) {
+export function preload(j) {
   const u = urlFor(j);
   if (!u || j.missing) return;
   const e = img(u);
@@ -127,7 +132,7 @@ function preload(j) {
     e.i.decode().catch(() => {});
   } catch (_) {}
 }
-function paint(cv, j, progress) {
+export function paint(cv, j, progress) {
   const u = urlFor(j);
   if (!u) return;
   xfadeFrom(cv, j.id);
@@ -160,7 +165,7 @@ function paint(cv, j, progress) {
     }
   });
 }
-function missing(cv, j) {
+export function missing(cv, j) {
   const dpr = devicePixelRatio || 1,
     fd = cv.id === "cv" && $("frame").dataset,
     W = Math.max(64, Math.round(((fd && +fd.tw) || cv.clientWidth || 300) * dpr)),
@@ -175,8 +180,8 @@ function missing(cv, j) {
   c.fillRect(0, 0, W, H);
 } /* the words and the ways back are on the card (#missCard) */
 /* the missing-file card: what can bring it back, best first */
-const inBin = {};
-function missUI(d) {
+export const inBin = {};
+export function missUI(d) {
   const on = !!(d && d.missing && S.view === "gen");
   $("frame").classList.toggle("missing", on);
   if (!on) return;
@@ -197,7 +202,7 @@ function missUI(d) {
       ? "Kiln still has it from this session — Save back writes it to the output folder again."
       : "Render again makes it anew from the same prompt, seed and settings.";
 }
-const shownMissing = () => {
+export const shownMissing = () => {
   const d = shownDone();
   return d && d.missing ? d : null;
 };

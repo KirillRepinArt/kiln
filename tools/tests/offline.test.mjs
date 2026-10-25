@@ -1,4 +1,5 @@
 // Without its server (opened as a file, or server.py stopped) Kiln says so — no fake demo, no dead controls.
+// Opened as a file, the note is in the HTML itself (ES modules don't load from a file); served, the server hides it.
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -17,5 +18,6 @@ export async function noServerSaysSo(k, t) {
   await k.sleep(600);
   await k.shot("note");
   t.ok(await k.ev(`document.getElementById("offline").textContent.includes("kiln.bat")`), "…and how to start it");
-  t.ok(await k.ev(`!window.LIVE&&LORAS.length===0&&jobs.length===0`), "no fake LoRAs or jobs behind it");
+  // as a file the page's modules can't load at all: the note is plain HTML, nothing runs behind it
+  t.ok(await k.ev(`!window.LIVE&&typeof window.LORAS==="undefined"`), "nothing runs behind it (no fake LoRAs or jobs)");
 }

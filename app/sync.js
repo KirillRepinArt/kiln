@@ -1,4 +1,15 @@
 /* Kiln · the server's job list → the page's: polling, what changed, a finished job's moment */
+import { forgetNextEstimate } from "./progress.js";
+import { $ } from "./dom.js";
+import { S, SEC_PER_STEP, jobs, save, setJobs } from "./state.js";
+import { current, lastDone } from "./stage.js";
+import { PV, pv, pvPrune } from "./picstate.js";
+import { onJobDone } from "./effects.js";
+import { dragId, peekJob, setPeekJob } from "./queue.js";
+import { renderAll, toast } from "./boot.js";
+import { doneNote, makeQThumb } from "./actions.js";
+import { forgeMsg, loadModels, models, refreshUp } from "./forge.js";
+
 /* ---------- server job -> UI job ---------- */
 function toUI(s) {
   const sp = s.spec || {};
@@ -29,14 +40,18 @@ function toUI(s) {
     created: s.created && s.created * 1000,
   });
 }
-let sig = "",
+export let sig = "",
   forgeOk = true,
   forgeStarting = false,
   firstPoll = true,
   loadingM = false;
-const seen = new Set();
+export const seen = new Set();
 let since = "";
-async function poll() {
+/* the next poll asks for the whole list (after something that changed it on the server) */
+export function fullNextPoll() {
+  sig = "";
+}
+export async function poll() {
   let s;
   try {
     s = await (await fetch("/api/state" + (since ? "?since=" + since : ""))).json();
@@ -102,7 +117,7 @@ async function poll() {
     const jk = j.id + ":" + (j.created || 0); /* the server can hand an id out again after its job left the list */
     if (j.status === "done" && !seen.has(jk)) {
       seen.add(jk);
-      neKey = "";
+      forgetNextEstimate();
       if (!firstPoll) {
         pv("done", j);
         onJobDone(j);

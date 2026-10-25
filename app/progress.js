@@ -1,4 +1,15 @@
 /* Kiln · progress: real steps, a smooth glide in between, the live preview, the frame loop */
+import { $ } from "./dom.js";
+import { S, SEC_PER_STEP, SIZES, draft, jobs } from "./state.js";
+import { browseStatus, current, sizeFrame } from "./stage.js";
+import { PV, browsed, doneById, onShow, picMode, pv, shownDone } from "./picstate.js";
+import { justDone, peekJob, setJustDone } from "./queue.js";
+import { fmt } from "./boot.js";
+import { api } from "./live.js";
+import { drawTo, missUI, paint, xfadeEnd } from "./pictures.js";
+import { forgeOk, forgeStarting } from "./sync.js";
+import { capTxt } from "./actions.js";
+
 /* ---------- progress: real steps, smooth glide in between, live preview ---------- */
 let lastPrev = 0,
   prevLoading = false;
@@ -20,8 +31,12 @@ function setTxt(h) {
   const el = $("ptxt");
   if (el.innerHTML !== h) el.innerHTML = h;
 }
-let nextEst = null,
+export let nextEst = null,
   neKey = "";
+/* a job finished: the estimate shown for the next one is worked out again */
+export function forgetNextEstimate() {
+  neKey = "";
+}
 function refreshEst() {
   const [w, h] = SIZES[S.mp][S.ar],
     k = `${w}x${h}x${S.steps}`;
@@ -33,7 +48,7 @@ function refreshEst() {
     })
     .catch(() => {});
 }
-function frame() {
+export function frame() {
   const j = current();
   const prog = $("prog");
   if (j) {
@@ -210,7 +225,7 @@ function frame() {
   requestAnimationFrame(frame);
 } /* the frame loop: progress, the live preview, the picture on show */
 
-function jobProgress(j) {
+export function jobProgress(j) {
   const per = Math.max(1, SEC_PER_STEP[j.mp] || 60) * 1000;
   const part = j.steps && j._ss ? Math.min((Date.now() - j._ss) / per, 0.95) : 0;
   const p = j.steps ? Math.min(1, (j.step + part) / j.steps) : 0;

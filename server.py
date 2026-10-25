@@ -814,8 +814,9 @@ def sniff(b):
 
 
 def build_page():
-    """index.html with app/*.css|js inlined. Scripts of one bundle become ONE script, so they run back to back exactly
-    like the single file they came from (separate script tags let timers and resize callbacks run in between)."""
+    """index.html with app/kiln.css inlined. The scripts are ES modules: the page loads app/main.js, which imports the
+    rest from /app/. The "server isn't running" note is shown by the HTML itself (for index.html opened as a file, where
+    modules can't load) and hidden here, since the server is obviously running."""
     page = (ROOT / "index.html").read_text(encoding="utf-8")
     app = ROOT / "app"
     page = re.sub(
@@ -823,25 +824,8 @@ def build_page():
         lambda m: "<style>\n" + (app / m.group(1)).read_text(encoding="utf-8") + "</style>",
         page,
     )
-    out, bundle, parts = [], None, []
-
-    def flush():
-        if parts:
-            out.append("<script>\n" + "\n".join(parts) + "</script>\n")
-            parts.clear()
-
-    pos = 0
-    for m in re.finditer(r'<script src="app/([\w.-]+)" data-bundle="(\w+)"></script>\s*', page):
-        between = page[pos : m.start()]
-        if between.strip() or m.group(2) != bundle:
-            flush()
-            out.append(between)
-        bundle = m.group(2)
-        parts.append(f"/* ---- app/{m.group(1)} ---- */\n" + (app / m.group(1)).read_text(encoding="utf-8"))
-        pos = m.end()
-    flush()
-    out.append(page[pos:])
-    return "".join(out).encode("utf-8")
+    page = page.replace('class="modal offline show"', 'class="modal offline"', 1)
+    return page.encode("utf-8")
 
 
 class Handler(BaseHTTPRequestHandler):

@@ -1,6 +1,18 @@
 /* Kiln · tabs, image frame sizing, queue core, browsing */
+import { $ } from "./dom.js";
+import { S, SEC_PER_STEP, jobs, save } from "./state.js";
+import { applyPH, closePops } from "./composer.js";
+import { CARDMAX, applyMode, layoutLeft, lyReset, minRight, stackW, tabsW } from "./cardlayout.js";
+import { PV, browsed, doneById, onShow, picMode, pv } from "./picstate.js";
+import { askNotify } from "./effects.js";
+import { QS, loadJob, queueSig, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
+import { V, closeViewer, openViewer } from "./viewer.js";
+import { renderLoras } from "./loras.js";
+import { syncH } from "./boot.js";
+import { addJobs, stopJob } from "./actions.js";
+
 /* ======================= tabs ======================= */
-function moveThumb(instant) {
+export function moveThumb(instant) {
   const t = document.querySelector(".tab.on"),
     th = $("thumb");
   if (!t) return;
@@ -12,7 +24,7 @@ function moveThumb(instant) {
     th.style.transition = "";
   }
 }
-function showView(v) {
+export function showView(v) {
   const was = S.view;
   if (was !== v) {
     // temporary state belongs to the visit: an open preview, a browse, a search, a scroll position
@@ -43,7 +55,7 @@ function showView(v) {
 }
 /* Gallery isn't a page of its own (yet): it's the name for browsing finished pictures in the picture view — the
    state ← and the arrows already put you in. Clicking it opens the last finished picture; Generating = the live view */
-function tabSync(force) {
+export function tabSync(force) {
   const v = S.view === "gen" && browsed() ? "gallery" : S.view;
   if (!force && tabSync.v === v) return;
   tabSync.v = v;
@@ -52,7 +64,7 @@ function tabSync(force) {
 }
 /* a tab switch is navigation, not a layout edit: the new tab is laid out at once (no glide — on a GPU busy with Forge,
    0.4 s of glass re-blurring the sky per frame was the lag, 2026-10-19), and the layout is measured once per click */
-function tabGo(fn) {
+export function tabGo(fn) {
   const run = () => {
     sizeFrame.defer = true;
     try {
@@ -81,10 +93,10 @@ function fitBox(el, ar, bw, bh) {
   el.style.width = w + "px";
   el.style.height = h + "px";
 }
-let BAR = 66; // the status block under the picture: 12 + track 10 + 7 + status row 36; a caption: 6 + row 36 + 4; nothing: 24
+export let BAR = 66; // the status block under the picture: 12 + track 10 + 7 + status row 36; a caption: 6 + row 36 + 4; nothing: 24
 const inGallery = () => S.view === "gen" && !!browsed();
 /* what the row under the picture is: "bar" (rendering, or a paused queue), "cap" (a finished picture's caption), "none" */
-function rowMode() {
+export function rowMode() {
   if (S.view !== "gen") return "bar";
   const m = picMode();
   if (m === "browse") return "none";
@@ -98,12 +110,12 @@ function rowMode() {
    fill it. Edges (composer.js): the divider between them trades width (the prompt stops at its minimum); an outer edge
    follows the cursor, and on release the pair glides back to centre — the same rule as resizing the window.
    (Design agreed 2026-10-18 after the first try left a growing gap in the middle.) */
-const LISTMIN = 660,
+export const LISTMIN = 660,
   GAP = 18,
   PWMIN = 360;
 /* the edit buttons' column beside the picture: 40 px buttons, 6 px apart and from the picture. Room is kept for as many
    columns as the picture's height needs, so none is ever cut off (the panel clips anything outside the area) */
-function tbW(h) {
+export function tbW(h) {
   const n = document.querySelectorAll("#sideGen button").length || 6,
     per = Math.max(1, Math.floor((Math.max(h, 40) + 6) / 46)),
     cols = Math.ceil(n / per);
@@ -120,8 +132,8 @@ function tbW(h) {
    back when there's room (flex's "shrink, don't grow"). Shares of the window (v:2) shrank them far too early. */
 const layW = () => innerWidth - 36,
   MMIN = 24;
-const layDef = () => ({ pw: 680, rw: Math.max(LISTMIN, tabsW() + 2), iw: null, v: 3 });
-const lay = { overImg: false, navAt: 0, pressCard: false, last: null, drag: false };
+export const layDef = () => ({ pw: 680, rw: Math.max(LISTMIN, tabsW() + 2), iw: null, v: 3 });
+export const lay = { overImg: false, navAt: 0, pressCard: false, last: null, drag: false };
 /* the picture's height: the stage minus the status row, capped in Generating by S.lay.ih (a share of that height,
    set with the image area's top / bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
 function picH() {
@@ -137,7 +149,7 @@ function hugW() {
     h = picH();
   return h > 0 ? (h * a) / b + tbW(h) : 9999;
 }
-function layGeo() {
+export function layGeo() {
   const W = layW();
   if (S.lay && S.lay.v === 2) {
     const o = S.lay;
@@ -197,7 +209,7 @@ function layNow() {
    are the same boundary): one panel grows exactly as much as the other shrinks. po / ro = the outer edges: that panel
    changes and the pair is held still (off) so the edge stays under the cursor; layRelease() lets it re-centre.
    In Generating the right-side width written is the picture's cap (iw), elsewhere the panel width (rw). */
-function layDrag(edge, g0, dx) {
+export function layDrag(edge, g0, dx) {
   const g = Object.assign({}, g0),
     W = layW(),
     R = document.querySelector(".app").classList.contains("pright");
@@ -251,14 +263,14 @@ function layDragR(edge, g0, dx, W) {
   layApply(g);
   return g;
 }
-function layRelease() {
+export function layRelease() {
   lay.drag = false;
   sizeFrame();
 }
 /* the prompt's place: "left" / "right" beside the picture (horizontal) or "below" it (vertical). Switching is a
    fade-through (Material's pattern for elements whose paths would cross): the old layout fades out, the new one fades in
    where it belongs — sliding made the panels pass through each other. */
-function setDock(z) {
+export function setDock(z) {
   if ((S.dock || "left") === z) return;
   layMorph(() => {
     S.dock = z;
@@ -270,8 +282,8 @@ function setDock(z) {
     moveThumb(true);
     sizeFrame();
     layoutLeft();
-    if (window.layMenuUI) layMenuUI();
-    if (window.haloNow) haloNow();
+    if (window.layMenuUI) window.layMenuUI();
+    if (window.haloNow) window.haloNow();
   });
 }
 /* a layout switch as a View Transition: the old layout is a snapshot, the new one is applied with every glide off (so it
@@ -304,7 +316,7 @@ function layMorph(fn) {
     end();
   }
 }
-function sizeFrame() {
+export function sizeFrame() {
   if (sizeFrame.defer) {
     sizeFrame.pending = true;
     return;
@@ -423,13 +435,13 @@ function sizeFrame() {
   pr.style.width = w + "px";
   pr.style.top = top + h + (BAR === 66 ? 12 : 6) + "px";
   pr.style.setProperty("--tw", w + "px");
-  if (window.layoutLeft) requestAnimationFrame(layoutLeft);
+  requestAnimationFrame(layoutLeft);
 }
 /* Vertical: the picture block sits between two equal gaps — the title starts as far under it (or under its progress
    bar) as the picture starts under the tab bar. A shift of the prompt column, not a resize (shrinking it would hand the
    picture more height and move the gap again). Worked out from TARGETS: the name row may be mid-glide (the Reuse bar
    row opening), so the title's place comes from the row's target height, not from where it is right now */
-function vAlign() {
+export function vAlign() {
   const col = $("lcol");
   if (!document.querySelector(".app.stacked") || lay.vB == null) {
     if (col.dataset.dy) {
@@ -458,20 +470,20 @@ function vAlign() {
 let lrT = null;
 
 /* ======================= queue ======================= */
-function current() {
+export function current() {
   return jobs.find(j => j.status === "running");
 }
-function jEst(j) {
+export function jEst(j) {
   return j.est || j.steps * (SEC_PER_STEP[j.mp] || 60);
 } // the server's history-based estimate when there is one
-function lastDone() {
+export function lastDone() {
   return [...jobs].reverse().find(j => j.status === "done");
 }
 /* ======================= browsing finished images =======================
    ← / → (or the arrows on the image) step through finished images: in the Generating view, the queue overlay and
    the full-size viewer. Browsing back holds that image even when a new one finishes; stepping past the newest
    returns to the live render. */
-function doneList() {
+export function doneList() {
   return jobs.filter(j => j.status === "done");
 }
 /* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design). 1) the frame closes in on the picture
@@ -595,7 +607,7 @@ function frameMorph(o) {
     }
   })(t0);
 }
-function genNav(dir, dry) {
+export function genNav(dir, dry) {
   const m = picMode(),
     cur = onShow(),
     L = doneList();
@@ -627,10 +639,10 @@ function vNav(dir, dry) {
 function navFn(el) {
   return el.closest("#viewer") ? vNav : genNav;
 }
-function updNav() {
+export function updNav() {
   document.querySelectorAll(".nav").forEach(b => b.classList.toggle("off", !navFn(b)(+b.dataset.nav, true)));
 }
-function stripComments(t) {
+export function stripComments(t) {
   return t
     .split("\n")
     .filter(l => !/^\s*\/\//.test(l))
@@ -638,7 +650,7 @@ function stripComments(t) {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
-function expandVariants(t) {
+export function expandVariants(t) {
   const picks = [];
   const out = t.replace(/\{([^{}]*\|[^{}]*)\}/g, (m, body) => {
     const o = body.split("|").map(x => x.trim());
@@ -648,14 +660,14 @@ function expandVariants(t) {
   });
   return { text: out, picks };
 } /* the render's prompt: click the render itself (the status line doubled it) */
-function browseStatus() {
+export function browseStatus() {
   const b = browsed(),
     on = !!(b && PV.promptClosed);
   $("prog").classList.toggle("showp", on);
 } /* the caption itself: live.js */
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initStage() {
+export function initStage() {
   document.querySelectorAll(".tab").forEach(
     t =>
       (t.onclick = () =>

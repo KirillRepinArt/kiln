@@ -470,7 +470,7 @@
       </div>
     </div>
 
-    <div class="modal offline" id="offline"
+    <div class="modal offline show" id="offline"
       ><div class="mcard"
         ><h2>Kiln's server isn't running</h2
         ><p>Start Kiln with <b>kiln.bat</b>. This page reconnects by itself as soon as the server is back.</p></div
@@ -499,28 +499,6 @@
     ></div>
     <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastBtn"></button></div>
 
-    <script src="app/state.js" data-bundle="core"></script>
-    <script src="app/composer.js" data-bundle="core"></script>
-    <script src="app/cardlayout.js" data-bundle="core"></script>
-    <script src="app/stage.js" data-bundle="core"></script>
-    <script src="app/picstate.js" data-bundle="core"></script>
-    <script src="app/skins.js" data-bundle="core"></script>
-    <script src="app/effects.js" data-bundle="core"></script>
-    <script src="app/queue.js" data-bundle="core"></script>
-    <script src="app/viewer.js" data-bundle="core"></script>
-    <script src="app/tooltips.js" data-bundle="core"></script>
-    <script src="app/loras.js" data-bundle="core"></script>
-    <script src="app/pnginfo.js" data-bundle="core"></script>
-    <script src="app/settings.js" data-bundle="core"></script>
-    <script src="app/boot.js" data-bundle="core"></script>
-    <script src="app/keys.js" data-bundle="core"></script>
-    <script src="app/live.js" data-bundle="live"></script>
-    <script src="app/pictures.js" data-bundle="live"></script>
-    <script src="app/sync.js" data-bundle="live"></script>
-    <script src="app/actions.js" data-bundle="live"></script>
-    <script src="app/forge.js" data-bundle="live"></script>
-    <script src="app/progress.js" data-bundle="live"></script>
-    <script src="app/editor.js" data-bundle="editor"></script>
-    <script src="app/main.js" data-bundle="main"></script>
+    <script type="module" src="app/main.js"></script>
   </body>
 </html>

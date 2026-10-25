@@ -1,4 +1,22 @@
 /* Kiln · starfield, ambient glow + title/favicon, notifications, veil + embers */
+import { $ } from "./dom.js";
+import { S, jobs, save } from "./state.js";
+import { current, lastDone, moveThumb } from "./stage.js";
+import { PV, picMode, shownClean, shownDone } from "./picstate.js";
+import {
+  makeAurora,
+  makeCRT,
+  makeCamera,
+  makeCodeBg,
+  makeHalo,
+  makeNightSky,
+  mixHex,
+  skin,
+  themeCols,
+  toHex,
+} from "./skins.js";
+import { fmt } from "./boot.js";
+import { jobProgress } from "./progress.js";
 
 /* ambient glow + window title + favicon progress ring (throttled) */
 const amb = $("amb"),
@@ -46,7 +64,7 @@ function ringKnockout() {
   g.fillText(tl.textContent, x, y);
   w.style.setProperty("--ko", `url(${c.toDataURL()})`);
 }
-function status() {
+export function status() {
   const j = current();
   ringKnockout();
   if (window._jobsReady) {
@@ -142,7 +160,7 @@ function status() {
   $("fav").href = favC.toDataURL("image/png");
 }
 let notifAsked = false;
-function askNotify() {
+export function askNotify() {
   if (notifAsked || !("Notification" in window)) return;
   notifAsked = true;
   try {
@@ -151,8 +169,8 @@ function askNotify() {
 }
 /* notifications are neutral: never the prompt, the name or a picture (they end up in the Windows notification centre) */
 let doneRun = 0;
-function onJobDone(j) {
-  if (window.emberBurst && PV.still && PV.still.id === j.id) emberBurst();
+export function onJobDone(j) {
+  if (window.emberBurst && PV.still && PV.still.id === j.id) window.emberBurst();
   /* the finish plays on the result you see, never over another picture */
   doneRun++;
   if (jobs.some(x => x.status === "pending")) return;
@@ -169,7 +187,7 @@ function onJobDone(j) {
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initEffects() {
+export function initEffects() {
   /* app background, set by the skin: starfield (three parallax layers, gentle twinkle, a rare shooting star),
    northern lights over a dimmer starfield, or sparse cold code. Redrawn at ~30 fps. */
   (function () {
@@ -469,8 +487,8 @@ function initEffects() {
       e.preventDefault();
       if (skin().cover === "camera") {
         window._cpv = Date.now() + 1600;
-        setTimeout(() => window.emberBurst && emberBurst(), 1500);
-      } else window.emberBurst && emberBurst();
+        setTimeout(() => window.emberBurst && window.emberBurst(), 1500);
+      } else window.emberBurst && window.emberBurst();
     });
     /* Privacy: the eye (top right of the image) and F9. On: the picture is covered outright, running or finished (no
     transparency, no hover peek, no fading with the steps, no starlight/code drawn from it, no finish, no ambient glow,

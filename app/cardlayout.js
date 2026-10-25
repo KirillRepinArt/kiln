@@ -1,9 +1,13 @@
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
+import { $ } from "./dom.js";
+import { P, S, save } from "./state.js";
+import { PWMIN, lay, moveThumb, setDock, sizeFrame, vAlign } from "./stage.js";
+
 /* ======================= prompt card layout =======================
    Centred on the image's vertical centre while there's room. While the editor is focused or the pointer is over
    the card it is FROZEN: it only grows downward (then scrolls), so nothing moves under the cursor. ~0.5 s after the
    pointer leaves (and the editor isn't focused) it glides back to centre and re-expands to use the space. */
-let lyFrozen = false,
+export let lyFrozen = false,
   lyHover = false,
   lyT = null,
   lyTop = null,
@@ -13,12 +17,12 @@ let lyFrozen = false,
   lyBot = null,
   lyDrag = false;
 /* the card's held layout let go: frozen while you work, its top and centre forgotten (also from other files) */
-function lyReset() {
+export function lyReset() {
   lyFrozen = false;
   lyTop = null;
   lyCy = null;
 }
-function lyUnfreeze() {
+export function lyUnfreeze() {
   lyFrozen = false;
 }
 /* S.pos (wide window): "top" = card top level with the image top (name row beside the tabs), "mid" = centred on the
@@ -35,15 +39,15 @@ function cardNaturalH() {
   const edH = (sc ? sc.scrollHeight : P.scrollHeight) + 16;
   return Math.max(170, L.offsetHeight - w.offsetHeight + Math.max(EDMIN, edH));
 }
-const CARDMAX = 900; // wide window: the prompt card never gets wider than this (text stops at ~76ch anyway)
-function tabsW() {
+export const CARDMAX = 900; // wide window: the prompt card never gets wider than this (text stops at ~76ch anyway)
+export function tabsW() {
   const k = document.querySelector(".tabs").children;
   return k.length ? Math.ceil(k[k.length - 1].getBoundingClientRect().right - k[0].getBoundingClientRect().left) : 0;
 }
-function minRight() {
+export function minRight() {
   return Math.max(420, tabsW() + 2);
 } // the image column never gets narrower than the tab bar
-function applyMode() {
+export function applyMode() {
   const a = document.querySelector(".app"),
     was = a.classList.contains("stacked");
   // switch to narrow below 980 px (or a tall window); back to wide only above 1020 px, so dragging near the edge doesn't flicker
@@ -77,11 +81,11 @@ function applyMode() {
       });
     });
   }
-  if (window.updHm) updHm();
+  updHm();
 }
 /* Vertical: the prompt box's width — yours (S.lay.sw, set with its side edges), or the picture's (Fit width), never
    narrower than the box's minimum or wider than the window */
-function stackW() {
+export function stackW() {
   const max = innerWidth - 36,
     pic = typeof lay !== "undefined" && lay.target && lay.target.w;
   const w = S.vfit && pic ? pic : (S.lay && S.lay.sw) || 760;
@@ -91,11 +95,11 @@ function cardMinH() {
   const L = $("left");
   return L.offsetHeight - L.querySelector(".pwrapT").offsetHeight + EDMIN;
 }
-function chipsH() {
+export function chipsH() {
   const c = $("chips");
   return c.childElementCount ? c.offsetHeight + 10 : 0;
 } // the row always shows ("LoRA +") // the chip row under the box, and its gap
-function layoutLeft() {
+export function layoutLeft() {
   if (lyDrag) return;
   const L = $("left"),
     col = $("lcol"),
@@ -127,7 +131,7 @@ function layoutLeft() {
       chg = col.style.getPropertyValue("--lch") !== lch;
     col.style.setProperty("--lch", lch);
     col.style.setProperty("--ltop", TS + "px");
-    if (window.vAlign) requestAnimationFrame(vAlign);
+    requestAnimationFrame(vAlign);
     col.style.setProperty("--lh", H + "px");
     col.style.setProperty("--chtop", TS + H + 10 + "px");
     if (chg) requestAnimationFrame(sizeFrame);
@@ -216,7 +220,7 @@ const HM_H =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/></svg>',
   HM_W =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5v14M20 5v14M8 12h8M11 9l-3 3 3 3M13 9l3 3-3 3"/></svg>';
-function updHm() {
+export function updHm() {
   const stk = !!document.querySelector(".app.stacked"),
     m = S.hmode || "",
     fit = stk ? !!S.vfit : m === "match";
@@ -239,7 +243,7 @@ function updHm() {
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initCardlayout() {
+export function initCardlayout() {
   $("left").addEventListener("pointerenter", () => {
     lyHover = true;
     freeze();

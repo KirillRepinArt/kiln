@@ -1,21 +1,17 @@
-/* CodeMirror 6 prompt editor, bundled in app/vendor/codemirror.js (works offline). Opened as a file, the browser won't
-   load a local module, so it tries the CDN; failing both, the plain textarea stays. */
+/* CodeMirror 6 prompt editor, bundled in app/vendor/codemirror.js (works offline). If it can't load, the plain
+   textarea stays. */
+import { $ } from "./dom.js";
+import { layoutLeft } from "./cardlayout.js";
+import { addJobs } from "./actions.js";
+
 /* called from main.js, last */
-async function startEditor() {
-  const V = "?deps=@codemirror/state@6.4.1";
+export async function startEditor() {
   let cm;
   try {
-    cm = await import("./app/vendor/codemirror.js");
-  } catch (e) {}
-  if (!cm)
-    try {
-      const st = await import("https://esm.sh/@codemirror/state@6.4.1");
-      const vw = await import("https://esm.sh/@codemirror/view@6.26.3" + V);
-      const cmd = await import("https://esm.sh/@codemirror/commands@6.5.0" + V + ",@codemirror/view@6.26.3");
-      cm = { ...st, ...vw, ...cmd };
-    } catch (e) {
-      console.warn("CodeMirror unavailable, using plain textarea", e);
-    }
+    cm = await import("./vendor/codemirror.js");
+  } catch (e) {
+    console.warn("CodeMirror unavailable, using plain textarea", e);
+  }
   if (cm) {
     const {
       EditorState,
@@ -41,7 +37,7 @@ async function startEditor() {
       if (rfq) return;
       rfq = requestAnimationFrame(() => {
         rfq = 0;
-        window.layoutLeft && layoutLeft();
+        layoutLeft();
       });
     }; // text set from code never fired "input", so the card kept its old height
 
@@ -156,7 +152,7 @@ async function startEditor() {
             {
               key: "Mod-Enter",
               run: () => {
-                window.addJobs && addJobs();
+                addJobs();
                 return true;
               },
             },
@@ -213,7 +209,7 @@ async function startEditor() {
     });
     wrap.insertBefore(view.dom, ta);
     wrap.classList.add("cm-on");
-    requestAnimationFrame(() => window.layoutLeft && layoutLeft()); // the card was sized for the plain textarea
+    requestAnimationFrame(() => layoutLeft()); // the card was sized for the plain textarea
 
     /* keep the old textarea API working: P.value / P.readOnly / P.focus / P.classList("peek") drive the editor */
     Object.defineProperty(ta, "value", {

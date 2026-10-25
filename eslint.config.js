@@ -1,6 +1,5 @@
 // ESLint: catches real mistakes in the page's JavaScript (tools/ and tests run in Node).
-// Until the page code becomes ES modules (ROADMAP v0.7 step 4) its files are plain scripts sharing globals, so
-// "undefined variable" and "unused variable" can't be checked across files yet — they're switched on then.
+// The page's files are ES modules: every name is imported or declared, so an undefined one is a missing import.
 import js from "@eslint/js";
 import globals from "globals";
 
@@ -16,10 +15,10 @@ export default [
   },
   {
     files: ["app/**/*.js"],
-    languageOptions: { sourceType: "script", ecmaVersion: 2024, globals: { ...globals.browser } },
-    rules: { "no-undef": "off", "no-unused-vars": "off", "no-redeclare": "off" },
+    languageOptions: { sourceType: "module", ecmaVersion: 2024, globals: { ...globals.browser } },
+    // dead code that sharing one global space hid: a warning until it's removed (the next commit), then an error again
+    rules: { "no-unused-vars": ["warn", { caughtErrors: "none" }] },
   },
-  { files: ["app/editor.js"], languageOptions: { sourceType: "module" } },
   {
     files: ["tools/**/*.mjs", "*.js"],
     languageOptions: { sourceType: "module", ecmaVersion: 2024, globals: { ...globals.node } },

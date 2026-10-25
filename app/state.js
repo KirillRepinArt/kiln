@@ -1,6 +1,10 @@
 /* Kiln · data, state, icons, image hover buttons */
+import { $ } from "./dom.js";
+import { shownDone } from "./picstate.js";
+import { setThumbs } from "./forge.js";
+
 /* ======================= data ======================= */
-const SIZES = {
+export const SIZES = {
   // ~0.5 / 1.0 / 1.5 / 2.0 MP presets, all sides multiples of 16
   "0.5": {
     "1:1": [720, 720],
@@ -43,10 +47,10 @@ const SIZES = {
     "9:16": [1056, 1872],
   },
 };
-const RATIOS = ["3:4", "2:3", "9:16", "1:1", "4:3", "3:2", "16:9", "21:9"];
-const SEC_PER_STEP = { "0.5": 35, "1.0": 60, "1.5": 130, "2.0": 220 }; // placeholders until real history exists
+export const RATIOS = ["3:4", "2:3", "9:16", "1:1", "4:3", "3:2", "16:9", "21:9"];
+export const SEC_PER_STEP = { "0.5": 35, "1.0": 60, "1.5": 130, "2.0": 220 }; // placeholders until real history exists
 /* LoRA names → what the list shows: people LoRAs named krea2_<name>_v<N>… become "Name" + their version tags */
-function parseName(file, folder) {
+export function parseName(file, folder) {
   const m = file.match(/^krea2_([a-z0-9]+)_v(\d+)(?:_(large|small))?(?:_(onetrainer|aitoolkit|kohya))?$/i);
   if (folder === "people" && m) {
     const n = m[1];
@@ -62,10 +66,10 @@ function parseName(file, folder) {
     tags: "",
   };
 }
-const LORAS = []; /* filled from Forge's LoRA list (live.js loadModels) — never saved before that arrives */
+export const LORAS = []; /* filled from Forge's LoRA list (live.js loadModels) — never saved before that arrives */
 
 /* ======================= state ======================= */
-const S = {
+export const S = {
   pname: "",
   pph: 0,
   lw: 0,
@@ -80,20 +84,26 @@ const S = {
   oneFace: true,
   lfilter: "all",
 };
-let draft = "";
-let jobs = [];
+export let draft = "";
+export let jobs = [];
 /* other files replace the job list and the draft only through these: a module's variables can be assigned only
    inside it (everyone else sees the new value) */
-function setJobs(list) {
+export function setJobs(list) {
   jobs = list;
 }
-function setDraft(text) {
+export function setDraft(text) {
   draft = text;
 } /* settings of the removed demo mode */
 /* LoRA entries are merged, never replaced: a LoRA this page doesn't know right now (none at start-up, before
    Forge's list arrives; a LoRA moved away for a while) keeps its saved name, weight and star. Replacing the list once
    wiped every renamed LoRA (2026-10-18). */
-function save() {
+/* a test hook: one test stands in for a window closing mid-job, when nothing may be saved any more */
+let savesBlocked = false;
+export function blockSaves() {
+  savesBlocked = true;
+}
+export function save() {
+  if (savesBlocked) return;
   try {
     let old = [];
     try {
@@ -116,11 +126,10 @@ function save() {
     );
   } catch (e) {}
 }
-const $ = id => document.getElementById(id);
-const P = $("prompt");
+export const P = $("prompt");
 
 /* ======================= icons ======================= */
-const IC = {
+export const IC = {
   i2i: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="3" y="5" width="8" height="8" rx="1.5"/><rect x="13" y="11" width="8" height="8" rx="1.5"/><path d="M11 9h3a2 2 0 0 1 2 2"/><path d="M14.5 7.5L16 9l-1.5 1.5"/></svg>',
   up: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>',
   open: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
@@ -150,7 +159,7 @@ function sideButtons(el, getJob) {
 } /* the other buttons: live.js */
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initState() {
+export function initState() {
   try {
     const sv = JSON.parse(localStorage.getItem("kiln_state") || "{}");
     Object.assign(S, sv.S || {});

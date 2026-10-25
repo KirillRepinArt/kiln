@@ -1,4 +1,9 @@
 /* Kiln · LoRA library tab */
+import { $ } from "./dom.js";
+import { LORAS, S, save } from "./state.js";
+import { fmtW, renderChips } from "./composer.js";
+import { esc } from "./boot.js";
+
 /* ======================= LoRA library ======================= */
 const FTIP = {
   people: "Faces: LoRAs in a people, faces, characters or persons folder",
@@ -21,7 +26,7 @@ function hue(n) {
   for (const c of n) h = (h * 31 + c.charCodeAt(0)) % 360;
   return h;
 }
-function renderLoras() {
+export function renderLoras() {
   const q = $("lsearch").value.toLowerCase().trim();
   $("fchips").innerHTML = FILTERS.map(
     ([k, t]) =>
@@ -101,7 +106,7 @@ function toggleL(l) {
 let clickT = null;
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initLoras() {
+export function initLoras() {
   $("lsearch").oninput = () => {
     $("lsearch").parentElement.classList.toggle("has", !!$("lsearch").value);
     renderLoras();

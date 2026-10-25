@@ -1,8 +1,19 @@
 /* ======================= the app's connection to its server =======================
    Everything that talks to server.py: the queue, pictures, previews, LoRAs and models. Without the server (opened
    as a file, or server.py stopped) a note says so, and the page reloads by itself once the server answers. */
-let st;
-const api = (p, b) =>
+import { $ } from "./dom.js";
+import { S, save, setJobs } from "./state.js";
+import { showView, tabGo } from "./stage.js";
+import { PV, doneById, pv, shownDone } from "./picstate.js";
+import { esc, toast } from "./boot.js";
+import { imgs, inBin, shownMissing, urlFor } from "./pictures.js";
+import { poll } from "./sync.js";
+import { act, dn, dnHide, dnHideIn, dnId, dnT, removeJob, setPaused } from "./actions.js";
+import { fg, fu, fx, loadModels, models, rb, refreshUp, rescanLoras, up, upl, us, usl } from "./forge.js";
+import { frame } from "./progress.js";
+
+export let st;
+export const api = (p, b) =>
   fetch(
     p,
     b === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) },
@@ -11,7 +22,7 @@ const api = (p, b) =>
 
 /* the connection starts: the first answer from the server (or the note that it isn't there), then the wiring and
    the first poll — called from main.js */
-async function startLive() {
+export async function startLive() {
   try {
     if (!location.protocol.startsWith("http")) throw 0;
     st = await (await fetch("/api/state")).json();
@@ -87,8 +98,7 @@ async function startLive() {
   window.fileUrl = urlFor;
   dn.addEventListener("mouseenter", () => clearTimeout(dnT));
   dn.addEventListener("mouseleave", () => {
-    clearTimeout(dnT);
-    dnT = setTimeout(dnHide, 2500);
+    dnHideIn(2500);
   });
   dn.onclick = () => {
     const j = doneById(dnId);

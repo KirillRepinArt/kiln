@@ -2,6 +2,8 @@
    Aurora = northern lights; Emerald = code: a sparse cold code background and an old phosphor monitor as the render
    screen. The other themes keep the starfield and the light bands. Everything is cheap on purpose (the GPU is busy
    generating): pre-drawn glyphs and patterns, low resolution where softness is the look, ~30 fps. */
+import { S } from "./state.js";
+
 const SKINS = {
   ice: { bg: "stars", cover: "bands" },
   sunset: { bg: "stars", cover: "bands" },
@@ -9,16 +11,16 @@ const SKINS = {
   aurora: { bg: "aurora", cover: "camera" },
   emerald: { bg: "code", cover: "crt", font: "IBM Plex Mono", title: "Courier Prime" },
 };
-function skin() {
+export function skin() {
   return SKINS[S.theme] || SKINS.ice;
 }
-function toHex(c) {
+export function toHex(c) {
   if (/^#[0-9a-f]{6}$/i.test(c)) return c;
   const d = document.createElement("canvas").getContext("2d");
   d.fillStyle = c;
   return d.fillStyle;
 }
-function rgba(hex, a) {
+export function rgba(hex, a) {
   const n = parseInt(toHex(hex).slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
@@ -67,7 +69,7 @@ function oklch2hex(L, C, h) {
       .join("")
   );
 }
-function harmonics(hex) {
+export function harmonics(hex) {
   const [L, C, h] = hex2oklch(hex),
     f = (dh, cm = 1, l = L) => oklch2hex(l, C * cm, (((h + dh) % 360) + 360) % 360);
   const toBlue = d => {
@@ -76,7 +78,7 @@ function harmonics(hex) {
   }; // turn toward blue
   return { an: f(toBlue(32)), comp: f(180, 0.9), tri1: f(120), tri2: f(240), cool: mixHex("#9fb6cc", hex, 0.2) };
 } // cool: a cold steel with a fifth of the theme in it — cold for every theme
-function themeCols() {
+export function themeCols() {
   const cs = getComputedStyle(document.documentElement);
   return ["--a1", "--a2", "--a3"].map(k => toHex(cs.getPropertyValue(k).trim() || "#ffffff"));
 }
@@ -119,7 +121,7 @@ const AURORA_LAYOUTS = {
     { a: [1.1, 0.18], b: [-0.1, 0.64], sag: 0.08, len: 0.44, depth: 1 },
   ],
 };
-function makeAurora() {
+export function makeAurora() {
   const off = document.createElement("canvas"),
     o = off.getContext("2d"),
     soft = document.createElement("canvas"),
@@ -265,7 +267,7 @@ function makeAurora() {
 /* Aurora's background as a night landscape, the classic aurora photograph: stars wheeling slowly around the pole star
    (the earth turning, as in a timelapse — about one turn in 10 minutes), the aurora over a dark mountain ridge, and a
    still lake below that mirrors the sky, softened. */
-function makeNightSky() {
+export function makeNightSky() {
   const aur = makeAurora();
   let stars = [],
     ridge = [],
@@ -494,7 +496,7 @@ function trailsWorker() {
     postMessage({ gen: m.gen, th: m.th, bm }, [bm]);
   };
 }
-function makeCamera() {
+export function makeCamera() {
   const aur = makeAurora(),
     lit = document.createElement("canvas"),
     lc = lit.getContext("2d");
@@ -1071,7 +1073,7 @@ function makeCamera() {
    Its own clock only: nothing here is paced by the job's speed (it must look the same on any GPU). Swells (a meteor,
    the finish) come in through `boost` with a soft envelope from effects.js. Drawn at device pixels; the bloom at
    1/5 size, the edge from two fixed band shapes cut by a lobe-lit tint, so a frame is a handful of image draws. */
-function makeHalo() {
+export function makeHalo() {
   const so = document.createElement("canvas"),
     sx = so.getContext("2d"),
     sb = document.createElement("canvas"),
@@ -1427,7 +1429,7 @@ function glyphAtlas(cs, trail, head, glowT, glowH) {
 /* background: sparse, slow, pale and cold, with a wide range of sizes — tiny sharp far columns, now and then one fat soft
    near one. Size sets depth: speed, blur and brightness. It answers the app quietly: almost still and dimming when idle,
    livelier and drifting toward the render window while a job runs, one wave of light when an image lands. */
-function makeCodeBg() {
+export function makeCodeBg() {
   let at = null,
     at2 = null,
     key = "",
@@ -1591,7 +1593,7 @@ function makeCodeBg() {
    one lone stream falls, then the cascade fills the screen — fine, bright, standing text written by bright heads.
    As the steps go on the code takes on your image's light and dark (it forms the picture), and the screen hands over to
    the clean image. */
-function makeCRT() {
+export function makeCRT() {
   const scr = document.createElement("canvas"),
     s = scr.getContext("2d"),
     ovl = document.createElement("canvas"),
@@ -1890,7 +1892,7 @@ function makeCRT() {
     },
   };
 }
-function mixHex(a, b, t) {
+export function mixHex(a, b, t) {
   const A = parseInt(toHex(a).slice(1), 16),
     B = parseInt(toHex(b).slice(1), 16);
   const m = s => Math.round(((A >> s) & 255) * (1 - t) + ((B >> s) & 255) * t);
@@ -1898,7 +1900,7 @@ function mixHex(a, b, t) {
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initSkins() {
+export function initSkins() {
   /* the render screen of Aurora: a comet-mode star-trail time-lapse, after real photos (Takasaka, Yukon 2010).
    The pole is inside the frame and the sky turns at the background's speed (one turn in ~10 min); each trail has a bright
    head (the star now) and a tail fading behind it, lengthening with the job's progress to the photo's 28°. Stars follow

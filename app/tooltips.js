@@ -1,7 +1,8 @@
 /* Kiln · tooltips */
+import { $ } from "./dom.js";
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initTooltips() {
+export function initTooltips() {
   /* ======================= tooltips: one consistent style, short delay ======================= */
   (function () {
     const tip = document.createElement("div");

@@ -1,8 +1,20 @@
 /* Kiln · queue actions sent to the server: add, Vary, stop, remove, delete (with Undo), rename, pause, reorder */
+import { $ } from "./dom.js";
+import { LORAS, P, S, SIZES, jobs, save, setJobs } from "./state.js";
+import { doneList, expandVariants, stripComments } from "./stage.js";
+import { PV, pv, pvPrune } from "./picstate.js";
+import { peekHide, peekJob } from "./queue.js";
+import { V, closeViewer, openViewer } from "./viewer.js";
+import { renderAll, slugify, toast } from "./boot.js";
+import { api } from "./live.js";
+import { imgs, urlFor } from "./pictures.js";
+import { forgeOk, fullNextPoll, poll } from "./sync.js";
+import { models } from "./forge.js";
+
 /* ---------- queue actions -> server ---------- */
 /* Start in the Gallery = Vary: the picture on show again — its prompt, settings, LoRAs and series — with a new seed.
    Your draft isn't touched, and you stay where you are (Midjourney's Vary; Reuse is for editing first) */
-async function vary(j) {
+export async function vary(j) {
   if (j.kind === "upscale") {
     toast("Variations come from generated pictures, not upscales");
     return;
@@ -21,7 +33,7 @@ async function vary(j) {
   if (!forgeOk) setTimeout(() => toast("Queued — Forge isn't running yet, jobs start when it is"), 2300);
   poll();
 }
-async function addJobs() {
+export async function addJobs() {
   if (peekJob) {
     await vary(peekJob);
     return;
@@ -70,18 +82,18 @@ async function addJobs() {
   if (!forgeOk) setTimeout(() => toast("Queued — Forge isn't running yet, jobs start when it is"), 2300);
   poll();
 }
-async function stopJob(j) {
+export async function stopJob(j) {
   if (!j) return;
   if (j.status === "running") j.stopping = true;
   await api(`/api/jobs/${j.id}/cancel`, {});
   poll();
 }
-function openInApp(j) {
+export function openInApp(j) {
   return api("/api/open", { id: j.id });
 }
 const qtq = [];
 let qtBusy = false;
-function makeQThumb(j, el) {
+export function makeQThumb(j, el) {
   if (!j || j.missing || !j.file || j.status !== "done" || qtq.some(x => x[0].id === j.id)) return;
   qtq.push([j, el]);
   if (!qtBusy) qtNext();
@@ -123,7 +135,7 @@ async function qtNext() {
   setTimeout(qtNext, 0);
 }
 /* several at once: one Undo for all (Delete), or off the list (cancelled rows, missing files) */
-async function deleteMany(ids) {
+export async function deleteMany(ids) {
   const L = [...ids].map(id => jobs.find(j => j.id === id)).filter(Boolean),
     del = L.filter(j => j.status === "done" && j.file && !j.missing),
     rm = L.filter(j => !del.includes(j));
@@ -143,7 +155,7 @@ async function deleteMany(ids) {
   });
   poll();
 }
-async function removeMany(ids) {
+export async function removeMany(ids) {
   await Promise.all([...ids].map(id => api(`/api/jobs/${id}/remove`, {})));
   const g = new Set(ids);
   setJobs(jobs.filter(j => !g.has(j.id)));
@@ -153,16 +165,21 @@ async function removeMany(ids) {
 }
 /* a picture finished while you weren't watching Generating: a small card slides out under the Generating tab (where
     its ring was); click = the picture in the Gallery. ~6 s, held while you're on it; several in a row = one card */
-let dnT = null,
+export let dnT = null,
   dnN = 0,
   dnId = null;
-const dn = $("donenote");
-function dnHide() {
+/* the finished note goes away after ms (restarted by each call) */
+export function dnHideIn(ms) {
+  clearTimeout(dnT);
+  dnT = setTimeout(dnHide, ms);
+}
+export const dn = $("donenote");
+export function dnHide() {
   clearTimeout(dnT);
   dn.classList.remove("show");
   dnN = 0;
 }
-function doneNote(j) {
+export function doneNote(j) {
   dnN = dn.classList.contains("show") ? dnN + 1 : 1;
   dnId = j.id;
   $("dnTxt").textContent = dnN > 1 ? `${dnN} finished · the last #${j.id}` : `#${j.id} finished`;
@@ -174,26 +191,25 @@ function doneNote(j) {
   dn.style.left = Math.round(r.left + r.width / 2) + "px";
   dn.style.top = Math.round(r.bottom + 10) + "px";
   dn.classList.add("show");
-  clearTimeout(dnT);
-  dnT = setTimeout(dnHide, 6000);
+  dnHideIn(6000);
 }
-async function removeJob(j) {
+export async function removeJob(j) {
   if (!j) return;
   await api(`/api/jobs/${j.id}/remove`, {});
   poll();
 }
-async function removeMissing() {
+export async function removeMissing() {
   await api("/api/remove-missing", {});
   poll();
 }
-async function setPaused(p) {
+export async function setPaused(p) {
   await api("/api/pause", { paused: p });
   window.qPaused = p;
-  sig = "";
+  fullNextPoll();
   poll();
   toast(p ? "Queue paused — the current image finishes, nothing new starts" : "Queue resumed");
 }
-async function renameFile(j, n) {
+export async function renameFile(j, n) {
   let r;
   try {
     r = await api(`/api/jobs/${j.id}/rename`, { name: n });
@@ -215,7 +231,7 @@ async function renameFile(j, n) {
   poll();
   return true;
 }
-async function renameJob(j, n) {
+export async function renameJob(j, n) {
   await api(`/api/jobs/${j.id}/name`, { name: n });
   toast(
     n ? `Name saved — it will be saved as ${slugify(n)}-NNN.png` : "Name cleared — it will be named by date and seed",
@@ -223,7 +239,7 @@ async function renameJob(j, n) {
   poll();
 }
 /* Q1: delete = to the Recycle Bin, with Undo (the server waits 12 s before it really goes) */
-async function deleteJob(j) {
+export async function deleteJob(j) {
   if (!j) return;
   const L = doneList(),
     i = L.findIndex(x => x.id === j.id),
@@ -251,7 +267,7 @@ async function deleteJob(j) {
   poll();
 } /* the running job's chip: back to the render */
 /* browsing: the status row is the picture's caption — its number, file, shape and size (click: its prompt) */
-function capTxt(b) {
+export function capTxt(b) {
   if (!b) return;
   const sp = b.spec || {},
     w = sp.w || (SIZES[b.mp] || {})[b.ar]?.[0],
@@ -260,7 +276,7 @@ function capTxt(b) {
   if ($("ptxt").textContent !== t) $("ptxt").textContent = t;
   $("peta").textContent = "";
 }
-function act(a, j) {
+export function act(a, j) {
   if (!j) return;
   if (a === "open") return api("/api/open", { id: j.id });
   if (a === "folder") return api("/api/reveal", { id: j.id });

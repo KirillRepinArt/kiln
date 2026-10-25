@@ -1,6 +1,16 @@
 /* Kiln · what comes from Forge: models, LoRAs, upscalers, the Settings facts; LoRA thumbnails kept by the server */
+import { $ } from "./dom.js";
+import { LORAS, S, parseName, save } from "./state.js";
+import { renderChips } from "./composer.js";
+import { current } from "./stage.js";
+import { renderLoras } from "./loras.js";
+import { esc, toast } from "./boot.js";
+import { api } from "./live.js";
+import { img, urlFor } from "./pictures.js";
+import { forgeOk } from "./sync.js";
+
 /* ---------- LoRA thumbnails stored by the server ---------- */
-async function setThumbs(j) {
+export async function setThumbs(j) {
   if (!j) return;
   const faces = j.loras.map(x => LORAS.find(l => l.name === x.name)).filter(l => l && l.folder === "people");
   if (!faces.length) {
@@ -24,14 +34,14 @@ async function setThumbs(j) {
 }
 
 /* ---------- models, LoRAs and settings from Forge ---------- */
-let models = null;
-function forgeMsg(m) {
+export let models = null;
+export function forgeMsg(m) {
   if (!current()) {
     $("ptxt").textContent = m;
     $("peta").textContent = "";
   }
 }
-async function loadModels(refresh) {
+export async function loadModels(refresh) {
   try {
     const r = await fetch("/api/models" + (refresh ? "?refresh" : ""));
     if (!r.ok) throw 0;
@@ -101,24 +111,24 @@ async function loadModels(refresh) {
   return true;
 }
 // settings: read-only server facts + upscaler choice
-const fg = document.querySelector(".mcard .fg");
-const fu = fg.querySelector('[data-set="forge"]');
-const up = document.createElement("select");
-const upl = document.createElement("label");
-const us = document.createElement("select");
-const usl = document.createElement("label");
-const fx = $("fghAp");
-const refreshUp = () => {
+export const fg = document.querySelector(".mcard .fg");
+export const fu = fg.querySelector('[data-set="forge"]');
+export const up = document.createElement("select");
+export const upl = document.createElement("label");
+export const us = document.createElement("select");
+export const usl = document.createElement("label");
+export const fx = $("fghAp");
+export const refreshUp = () => {
   if (!models) return;
   up.innerHTML = models.upscalers.map(u => `<option>${esc(u)}</option>`).join("");
   if (S.set.upscaler) up.value = S.set.upscaler;
   us.value = S.set.upscale || "2";
 };
-const rb = document.createElement("button");
+export const rb = document.createElement("button");
 /* the LoRA tab rescans the folder: with its button, and on its own when the tab opens (at most once a minute, never
     while a job runs — Forge is busy then); a quiet note only when something changed */
 let lscanT = 0;
-async function rescanLoras(manual) {
+export async function rescanLoras(manual) {
   if (!manual && (current() || Date.now() - lscanT < 60000 || !forgeOk)) return;
   lscanT = Date.now();
   const b = $("lRefresh");

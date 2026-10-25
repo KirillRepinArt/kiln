@@ -1,7 +1,14 @@
 /* Kiln · full-size viewer, clicking the image */
+import { $ } from "./dom.js";
+import { S, SIZES } from "./state.js";
+import { rowMode, sizeFrame, tabSync, updNav } from "./stage.js";
+import { onShow, picMode, pv, pvSync } from "./picstate.js";
+import { paint } from "./pictures.js";
+import { deleteJob, openInApp } from "./actions.js";
+
 /* ======================= full-size viewer ======================= */
-const V = { job: null, s: 1, tx: 0, ty: 0, fit: 1, w: 0, h: 0 };
-function openViewer(j) {
+export const V = { job: null, s: 1, tx: 0, ty: 0, fit: 1, w: 0, h: 0 };
+export function openViewer(j) {
   if (!j || j.status !== "done") return;
   V.job = j;
   const [w, h] = SIZES[j.mp][j.ar];
@@ -37,18 +44,18 @@ function vZoomAt(ns, cx, cy) {
   ns = Math.max(V.fit, Math.min(4, ns));
   vSet(ns, cx - (cx - V.tx) * (ns / V.s), cy - (cy - V.ty) * (ns / V.s));
 }
-function closeViewer() {
+export function closeViewer() {
   $("viewer").classList.remove("show");
   V.job = null;
 }
 // browsing: back to the live view; otherwise: clear the finished image (same as changing size or ratio does)
 /* ✕ closes the image: idle -> the empty Ready screen (← brings it back); while generating -> back to the render */
-function closeShown() {
+export function closeShown() {
   pv("close");
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initViewer() {
+export function initViewer() {
   (function () {
     const el = $("viewer");
     let down = null,

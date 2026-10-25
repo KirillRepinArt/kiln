@@ -1,5 +1,25 @@
 /* Kiln · Queue tab, peek / reuse */
-function renderQueue() {
+import { $ } from "./dom.js";
+import { IC, LORAS, P, S, draft, jobs, save, setDraft, setJobs } from "./state.js";
+import { copySeed, renderChips, renderPills } from "./composer.js";
+import { layoutLeft } from "./cardlayout.js";
+import { jEst, showView } from "./stage.js";
+import { PV, pv } from "./picstate.js";
+import { keepSeedUI } from "./pnginfo.js";
+import { esc, fmt, nameUI, renderAll, slugify, toast } from "./boot.js";
+import {
+  deleteMany,
+  makeQThumb,
+  removeJob,
+  removeMany,
+  removeMissing,
+  renameFile,
+  renameJob,
+  setPaused,
+  stopJob,
+} from "./actions.js";
+
+export function renderQueue() {
   const before = {},
     W = $("qwrap"),
     y0 = W.scrollTop - 200,
@@ -30,9 +50,9 @@ function renderQueue() {
 }
 /* selection (finished rows): the round box, Ctrl-click, Shift-click a range; once something is selected a plain click
    adds or removes (Google Photos / Lightroom); Ctrl+A all, Esc none, Del deletes them. A bar on top acts on them */
-const QS = new Set();
-let qsAnchor = null;
-function renderQueueInner() {
+export const QS = new Set();
+export let qsAnchor = null;
+export function renderQueueInner() {
   const run = jobs.filter(j => j.status === "running"),
     pend = jobs.filter(j => j.status === "pending"),
     done = jobs.filter(j => j.status === "done" || j.status === "cancelled").reverse();
@@ -83,7 +103,7 @@ function renderQueueInner() {
             if (im.dataset.tried) return;
             im.dataset.tried = "1";
             const j = jobs.find(x => x.id === id);
-            if (j && window.makeQThumb) makeQThumb(j, im);
+            if (j) makeQThumb(j, im);
           };
           im.src = `/qthumbs/${id}.jpg`;
           QT.set(id, im);
@@ -98,7 +118,7 @@ const QSEC = {}; /* the last markup of each section */
    again: the files are never cached by the browser, so the list flashed empty on every visit) */
 const QT = new Map();
 /* what the list shows: unchanged → opening the tab rebuilds nothing */
-function queueSig() {
+export function queueSig() {
   return (
     jobs.map(j => `${j.id}:${j.status}:${j.file || ""}:${j.missing ? 1 : 0}:${j.name || ""}:${j.est || ""}`).join("|") +
     "|" +
@@ -185,21 +205,21 @@ function clock(ms) {
     ? t
     : CLK.d.format(d) + " " + t;
 }
-function browseTo(j) {
+export function browseTo(j) {
   PV.promptClosed = false;
   pv("browse", j);
 }
 let undo = null;
-var justDone = null;
-let peekJob = null;
+export var justDone = null;
+export let peekJob = null;
 /* written from other files only through these */
-function setPeekJob(j) {
+export function setPeekJob(j) {
   peekJob = j;
 }
-function setJustDone(id) {
+export function setJustDone(id) {
   justDone = id;
 }
-function setQsAnchor(id) {
+export function setQsAnchor(id) {
   qsAnchor = id;
 }
 /* the peek bar only offers what would change something: no "Reuse prompt" when the prompt is already your draft;
@@ -217,7 +237,7 @@ function sameLoras(j) {
 }
 /* the same buttons in the same places on every picture (2026-10-19): hiding the ones that "wouldn't change anything"
    was clever, but a bar whose buttons come and go can't be learned by the hand */
-function peekButtons() {
+export function peekButtons() {
   const j = peekJob;
   if (!j) return;
   const pSame = (j.raw || j.prompt || "").trim() === (draft || "").trim();
@@ -233,7 +253,7 @@ function peekButtons() {
   $("peekLbl").textContent =
     `#${j.id}${j.status === "running" ? " · generating" : ""}${pSame && sSame && seedSame ? " · same as your draft" : ""}`;
 }
-function loadJob(j) {
+export function loadJob(j) {
   peekJob = j;
   P.value = j.raw || j.prompt;
   P.readOnly = true;
@@ -264,12 +284,12 @@ function closePromptPeek() {
   peekHide();
 }
 /* out of the Gallery if you're in it, and your draft back in the prompt box */
-function endPeek() {
+export function endPeek() {
   if (PV.browse != null) pv("close");
   else peekHide();
 }
 /* the prompt box shows your draft again */
-function peekHide() {
+export function peekHide() {
   if (!peekJob) return;
   peekJob = null;
   P.readOnly = false;
@@ -288,15 +308,11 @@ function peekHide() {
   updPrompt();
   layoutLeft();
 }
-function saveJobName() {
+export function saveJobName() {
   const j = peekJob;
   if (!j) return;
   const v = $("pname").value.trim();
   if (j.status === "done") {
-    if (!window.renameFile) {
-      toast("Renaming needs the Kiln server");
-      return;
-    }
     $("pnSave").classList.remove("show");
     renameFile(j, v).then(ok => {
       if (!ok) $("pname").value = j.name || "";
@@ -311,7 +327,7 @@ function saveJobName() {
 }
 /* hovering a finished picture's title shows its file name in place: the title as it is on disk (lower case, dashes),
    its number and .png on either side, and the job's #. Editing it renames the file (the series and the next number) */
-function fnShow(on) {
+export function fnShow(on) {
   const j = peekJob,
     n = $("pname"),
     l = document.querySelector(".plbl");
@@ -333,7 +349,7 @@ function fnShow(on) {
   } /* the title stays exactly as it is; its number and .png appear beside it */
   l.classList.toggle("fnon", on);
 }
-function reuse(all, seedToo) {
+export function reuse(all, seedToo) {
   const j = peekJob;
   const fixed = !!(seedToo || S.keepSeed);
   if (!j) return;
@@ -382,8 +398,8 @@ function reuse(all, seedToo) {
     },
   );
 }
-function updPrompt() {
-  if (window.nameUI) nameUI();
+export function updPrompt() {
+  nameUI();
   const n = P.value.length;
   $("left").classList.toggle("hastext", !!n && !peekJob);
   $("pcount").textContent = n ? n.toLocaleString() + " chars" : "";
@@ -402,11 +418,11 @@ function updPrompt() {
 /* drag to reorder: the dragged row itself moves in the list (no re-render while dragging — that swapped the element
    under the pointer and made the cursor flicker); it moves once the pointer crosses a row's middle, so rows don't
    ping-pong; the others slide out of the way */
-let dragId = null,
+export let dragId = null,
   dragEl = null;
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initQueue() {
+export function initQueue() {
   $("qwrap").addEventListener(
     "click",
     e => {
@@ -435,7 +451,7 @@ function initQueue() {
       if (e.target.closest("#qsRemove")) {
         const ids = [...QS];
         QS.clear();
-        if (window.removeMany) removeMany(ids);
+        removeMany(ids);
         renderQueue();
         return;
       }
@@ -486,7 +502,7 @@ function initQueue() {
       if (!im.matches || !im.matches("img.qt") || im.dataset.tried) return;
       im.dataset.tried = "1";
       const j = jobs.find(x => x.id === +im.dataset.qt);
-      if (j && window.makeQThumb) makeQThumb(j, im);
+      if (j) makeQThumb(j, im);
     },
     true,
   );
@@ -573,7 +589,7 @@ function initQueue() {
           [a, b] = (j.ar || "1:1").split(":").map(Number),
           w = a >= b ? 320 : Math.round((320 * a) / b),
           h = Math.round((w * b) / a);
-        pop.innerHTML = `<img src="${fileUrl(j)}" alt="">`;
+        pop.innerHTML = `<img src="${window.fileUrl(j)}" alt="">`;
         pop.style.width = w + "px";
         pop.style.height = h + "px";
         /* never over the row you're pointing at: above it, lined up with its thumbnail; below it if there's no room above */

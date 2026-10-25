@@ -1,4 +1,13 @@
 /* Kiln · prompt card controls: pills, prompt, LoRA chips */
+import { $ } from "./dom.js";
+import { IC, LORAS, P, RATIOS, S, SEC_PER_STEP, SIZES, save, setDraft } from "./state.js";
+import { chipsH, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
+import { BAR, PWMIN, lay, layDef, layDrag, layGeo, layRelease, moveThumb, showView, sizeFrame } from "./stage.js";
+import { pv } from "./picstate.js";
+import { peekButtons, peekJob, updPrompt } from "./queue.js";
+import { renderLoras } from "./loras.js";
+import { esc, fmt, toast } from "./boot.js";
+
 /* ======================= pills ======================= */
 function slider(id, min, max, val, quick, hint) {
   return `<div class="row"><input type="range" id="${id}R" min="${min}" max="${max}" value="${val}" style="flex:1"><input type="number" id="${id}N" min="1" max="${max * 2}" value="${val}"></div>
@@ -17,7 +26,7 @@ function idleText() {
   $("idleT").textContent = `Next: ${S.ar} · ${w}×${h}`;
   $("idleS").textContent = `Estimated time: ~${fmt(S.steps * SEC_PER_STEP[S.mp])}`;
 } /* live.js keeps it current */
-function renderPills() {
+export function renderPills() {
   idleText();
   const pk = typeof peekJob !== "undefined" && peekJob; // peeking: the pills show that job's own settings
   const v = pk
@@ -53,7 +62,7 @@ function renderPills() {
    <div class="opt ${S.seedMode === "fixed" ? "on" : ""}" data-v="fixed">Fixed</div>`;
   sizeFrame();
 }
-function closePops() {
+export function closePops() {
   document.querySelectorAll(".pop.show").forEach(p => {
     p.classList.remove("show");
     p.parentElement.classList.remove("open");
@@ -84,7 +93,7 @@ const PILLS = [
   ["pN", "popN", v => (S.n = +v)],
   ["pSD", "popSD", v => (S.seedMode = v)],
 ];
-function copySeed(s) {
+export function copySeed(s) {
   if (s == null || s === "") return;
   navigator.clipboard.writeText(String(s)).then(
     () => toast(`Seed ${s} copied`),
@@ -96,26 +105,12 @@ function clamp(v, a, b) {
 }
 
 /* ======================= prompt + chips ======================= */
-function applyPH() {
-  if (window.layoutLeft) {
-    delete S.ph;
-    layoutLeft();
-    return;
-  }
+export function applyPH() {
   delete S.ph;
-  const r = document.documentElement.style;
-  const max = $("left").parentElement.getBoundingClientRect().height - 36;
-  if (S.pph > max) S.pph = Math.max(240, max);
-  if (S.pph) {
-    r.setProperty("--ph", S.pph + "px");
-    $("left").classList.add("sized");
-  } else {
-    r.removeProperty("--ph");
-    $("left").classList.remove("sized");
-  }
+  layoutLeft();
 }
-function grow() {} // column widths now come from sizeFrame()
-function resetLayout() {
+export function grow() {} // column widths now come from sizeFrame()
+export function resetLayout() {
   S.lay = null;
   S.vfit = false;
   /* widths, the picture's limits (iw, ih) — all back to the defaults */
@@ -132,8 +127,8 @@ function resetLayout() {
   layoutLeft();
 }
 let chipsOpen = false;
-function renderChips() {
-  requestAnimationFrame(() => window.layoutLeft && layoutLeft());
+export function renderChips() {
+  requestAnimationFrame(() => layoutLeft());
   const pk = typeof peekJob !== "undefined" && peekJob;
   $("chips").classList.toggle("peek", !!pk);
   if (pk) {
@@ -200,12 +195,12 @@ function capChips() {
     "Show all · " +
     hid.map(c => c.querySelector(".cn").textContent + " " + c.querySelector(".cw").textContent).join(", ");
 }
-function fmtW(w) {
+export function fmtW(w) {
   return (+w).toFixed(2).replace(/\.?0+$/, "");
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initComposer() {
+export function initComposer() {
   PILLS.forEach(([b, p, set]) => {
     $(b).addEventListener("click", e => {
       const pop = $(p);

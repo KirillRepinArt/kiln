@@ -69,7 +69,7 @@ export const test = base.extend({
     );
     const notFound = [];
     page.on("response", r => r.status() === 404 && notFound.push(r.url()));
-    await page.goto(`http://127.0.0.1:${kport}/`);
+    await page.goto(`http://127.0.0.1:${kport}/?test`);
     await page.waitForFunction("!!(window.LIVE&&window._jobsReady&&LORAS.length)", null, { timeout: 30000 });
 
     const ev = expr => page.evaluate(expr);

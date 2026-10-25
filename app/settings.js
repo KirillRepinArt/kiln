@@ -1,4 +1,11 @@
 /* Kiln · settings, themes */
+import { $ } from "./dom.js";
+import { S, save } from "./state.js";
+import { resetLayout } from "./composer.js";
+import { current, moveThumb, setDock, showView, sizeFrame } from "./stage.js";
+import { harmonics, skin } from "./skins.js";
+import { toast } from "./boot.js";
+
 /* ======================= settings / themes ======================= */
 const THEMES = {
   ice: ["#FF8A00", "#FF5E8A", "#3FE0F0", "#140b00"],
@@ -7,7 +14,7 @@ const THEMES = {
   ember: ["#E8361C", "#FF8A00", "#FFD166", "#1a0500"],
   emerald: ["#00E676", "#76FF03", "#B9F6CA", "#00140a"],
 };
-function applyTheme() {
+export function applyTheme() {
   const t = THEMES[S.theme] || THEMES.ice;
   const r = document.documentElement.style;
   ["--a1", "--a2", "--a3", "--ink"].forEach((k, i) => r.setProperty(k, t[i]));
@@ -20,7 +27,7 @@ function applyTheme() {
   applyFont();
 }
 /* "Theme font" (the default until you pick one) follows the skin: Emerald = IBM Plex Mono, its name in Courier Prime */
-function applyFont() {
+export function applyFont() {
   S.set = S.set || {};
   if (!S.set.fontPicked) S.set.font = "theme";
   const sk = skin(),
@@ -34,12 +41,12 @@ function applyFont() {
   if (sel) sel.value = S.set.font;
   requestAnimationFrame(() => moveThumb(true));
 }
-function applyGlass() {
+export function applyGlass() {
   document.body.classList.toggle("glass", (S.set || {}).glass === "on");
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initSettings() {
+export function initSettings() {
   $("sTheme").value = S.theme;
   $("sTheme").onchange = e => {
     S.theme = e.target.value;
@@ -88,8 +95,8 @@ function initSettings() {
     });
     window.layMenuUI = () =>
       m.querySelectorAll("[data-lay]").forEach(o => o.classList.toggle("on", o.dataset.lay === (S.dock || "left")));
-    layMenuUI();
-    b.addEventListener("click", layMenuUI);
+    window.layMenuUI();
+    b.addEventListener("click", window.layMenuUI);
   })();
   $("rAll").onclick = () => {
     if (!confirm("Reset everything? Prompt, name, settings, favourites, thumbnails and layout go back to defaults."))
@@ -116,7 +123,7 @@ function initSettings() {
     });
   });
   $("updBtn").onclick = () => toast("The update check needs the Kiln server (kiln.bat)");
-  $("keysBtn").onclick = () => openKeys();
+  $("keysBtn").onclick = () => window.openKeys();
   $("gear").onclick = () => $("modal").classList.add("show");
   $("mClose").onclick = () => $("modal").classList.remove("show");
   $("modal").onclick = e => {

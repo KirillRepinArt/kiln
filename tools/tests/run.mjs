@@ -118,7 +118,7 @@ async function launch(
       },
     );
     await waitHttp(`http://127.0.0.1:${kport}/api/state`);
-    const url = `http://127.0.0.1:${kport}/`;
+    const url = `http://127.0.0.1:${kport}/?test`; // test mode: app/testing.js
     // --no-proxy-server like kiln.bat: a system proxy (VPN client, antivirus web filter) must not stall the local page
     run("edge", browserPath(), [
       "--headless=new",

@@ -10,7 +10,14 @@
       draft but Reuse (with Undo)
    The prompt box's peek (peekJob, loadJob / peekHide in queue.js) is the second half: the Gallery's picture, or on
    demand the render's / a waiting job's prompt. */
-const PV = {
+import { $ } from "./dom.js";
+import { S, jobs } from "./state.js";
+import { current, doneList, lastDone, showView, sizeFrame, tabSync, updNav } from "./stage.js";
+import { loadJob, peekHide, peekJob, setJustDone } from "./queue.js";
+import { toast } from "./boot.js";
+import { preload, xfadeSnap } from "./pictures.js";
+
+export const PV = {
   browse: null,
   still: null,
   promptClosed: false,
@@ -19,31 +26,31 @@ const PV = {
   dir: 1,
   from: null,
 }; /* from: the tab a picture was opened from — ✕ goes back there */ /* dir: the way you last stepped (← -1, → +1) */ /* still: {id, kind:"result"|"reference"}; news: a result that landed while you held a reference (Q1); yielded: the result that gave way to the render — it comes back if the render stops without a picture */
-function doneById(id) {
+export function doneById(id) {
   return id == null ? null : jobs.find(j => j.id === id && j.status === "done") || null;
 }
-function browsed() {
+export function browsed() {
   return doneById(PV.browse);
 }
 function stillJob() {
   return PV.still ? doneById(PV.still.id) : null;
 }
 /* the finished picture on show (the Gallery's, or Generating's still) */
-function onShow() {
+export function onShow() {
   return browsed() || stillJob();
 }
-function shownDone() {
+export function shownDone() {
   return onShow();
 }
-function picMode() {
+export function picMode() {
   return browsed() ? "browse" : stillJob() ? "still" : current() ? "live" : "empty";
 }
 /* a picture that shows clean at once (no cover easing off it): one you browse to, or a reference */
-function shownClean() {
+export function shownClean() {
   return PV.browse != null || !!(PV.still && PV.still.kind === "reference");
 }
 /* after the job list changes: a picture that's gone (deleted, cleared from the list) lets go */
-function pvPrune() {
+export function pvPrune() {
   if (!window._jobsReady) return;
   let ch = false;
   if (PV.browse != null && !browsed()) {
@@ -78,7 +85,7 @@ function resetCv() {
 }
 /* the picture fades out over what comes next (live.js: a snapshot on #cvx) */
 function snapOut() {
-  if (window.xfadeSnap && S.view === "gen" && $("frame").classList.contains("has")) xfadeSnap();
+  if (S.view === "gen" && $("frame").classList.contains("has")) xfadeSnap();
 }
 /* into the Gallery at k: the prompt box peeks its prompt (unless you closed the prompt while browsing) */
 function browseSet(j) {
@@ -91,12 +98,12 @@ function browseSet(j) {
   sizeFrame();
   if (!PV.promptClosed) loadJob(j);
   else if (peekJob) peekHide();
-  if (window.preload) {
+  {
     const L = doneList(),
       i = L.findIndex(x => x.id === j.id);
-    for (const q of [L[i - 1], L[i + 1]]) if (q) preload(q);
+    for (const q of [L[i - 1], L[i + 1]]) if (q) preload(q); // the neighbours, decoded ahead
   }
-  if (window.updNav) updNav();
+  updNav();
 }
 /* out of the Gallery: the prompt box gets your draft back */
 function browseEnd() {
@@ -104,7 +111,7 @@ function browseEnd() {
   PV.promptClosed = false;
   if (peekJob) peekHide();
 }
-function pv(ev, arg) {
+export function pv(ev, arg) {
   const run = current();
   switch (ev) {
     case "done" /* a job finished: Generating shows it — unless you're in the Gallery or hold a reference */:
@@ -224,11 +231,11 @@ function pv(ev, arg) {
       break;
   }
   pvSync();
-  if (window.tabSync) tabSync();
-  if (ev !== "done" && ev !== "preview" && window.sizeFrame) sizeFrame();
+  tabSync();
+  if (ev !== "done" && ev !== "preview") sizeFrame();
 }
 /* what the CSS and the rest of the page read: body[data-pic] / [data-still], and the frame's affordances */
-function pvSync() {
+export function pvSync() {
   const m = picMode(),
     b = document.body,
     f = $("frame"),

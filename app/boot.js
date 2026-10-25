@@ -1,12 +1,21 @@
 /* Kiln · helpers and start-up */
+import { $ } from "./dom.js";
+import { P, S, jobs, save } from "./state.js";
+import { applyPH, grow, renderChips, renderPills } from "./composer.js";
+import { applyMode } from "./cardlayout.js";
+import { moveThumb, showView } from "./stage.js";
+import { peekJob, renderQueue, saveJobName, updPrompt } from "./queue.js";
+import { renderLoras } from "./loras.js";
+import { applyFont, applyGlass, applyTheme } from "./settings.js";
+
 /* ======================= misc ======================= */
-function fmt(s) {
+export function fmt(s) {
   s = Math.round(s);
   const m = Math.floor(s / 60),
     r = s % 60;
   return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}:${String(r).padStart(2, "0")}`;
 }
-function esc(s) {
+export function esc(s) {
   return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 }
 function toastPlace(at) {
@@ -35,7 +44,7 @@ function toastPlace(at) {
   else Object.assign(el, { top: "auto", bottom: "24px" });
 }
 let tt;
-function toast(m, btn, fn, at) {
+export function toast(m, btn, fn, at) {
   $("toastMsg").textContent = m;
   toastPlace(at);
   const b = $("toastBtn");
@@ -48,10 +57,10 @@ function toast(m, btn, fn, at) {
   clearTimeout(tt);
   tt = setTimeout(() => $("toast").classList.remove("show"), btn ? 5000 : 2200);
 }
-function syncH() {
+export function syncH() {
   document.documentElement.style.setProperty("--rightH", $("right").getBoundingClientRect().height + "px");
 }
-function renderAll() {
+export function renderAll() {
   const n = jobs.filter(j => j.status === "pending" || j.status === "running").length;
   $("badge").textContent = n;
   $("badge").classList.toggle("show", n > 0);
@@ -63,7 +72,7 @@ function renderAll() {
   if (S.view === "loras") renderLoras();
 }
 let nnT = null;
-function slugify(n) {
+export function slugify(n) {
   return (
     n
       .toLowerCase()
@@ -93,7 +102,7 @@ function nextHint() {
     250,
   );
 }
-function nameUI() {
+export function nameUI() {
   const l = document.querySelector(".plbl");
   l.classList.toggle("peekname", !!peekJob);
   if (peekJob) {
@@ -106,7 +115,7 @@ function nameUI() {
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initBoot() {
+export function initBoot() {
   $("pname").value = S.pname || "";
   $("pname").addEventListener("input", e => {
     if (peekJob) {

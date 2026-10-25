@@ -1,4 +1,8 @@
 /* Kiln · keyboard shortcuts sheet: "?" anywhere outside a text field, or Settings → About */
+import { $ } from "./dom.js";
+import { IC } from "./state.js";
+import { esc } from "./boot.js";
+
 const KEYS = [
   ["Ctrl+Enter", "Add to the queue"],
   ["← →", "Browse finished images"],
@@ -18,7 +22,7 @@ const MOUSE = [
 ];
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
-function initKeys() {
+export function initKeys() {
   (function () {
     const m = document.createElement("div");
     m.className = "modal keys";
@@ -58,7 +62,7 @@ function initKeys() {
         const a = document.activeElement;
         if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
         e.preventDefault();
-        m.classList.contains("show") ? close() : openKeys();
+        m.classList.contains("show") ? close() : window.openKeys();
       },
       true,
     );

@@ -20,7 +20,10 @@ export async function order(k, t) {
 export async function offline(k, t) {
   t.ok(k.readyMs < 8000, "ready in under 8 s (the old font stall was 21 s)", k.readyMs + " ms");
   const ext = k.requests.filter(
-    r => ["Stylesheet", "Font"].includes(r.type) && !r.url.startsWith(k.url) && !r.url.startsWith("data:"),
+    r =>
+      ["Stylesheet", "Font"].includes(r.type) &&
+      !r.url.startsWith(new URL(k.url).origin + "/") &&
+      !r.url.startsWith("data:"), // Kiln's own address
   );
   t.ok(
     ext.length === 0,

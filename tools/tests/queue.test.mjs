@@ -1,6 +1,6 @@
 // Phase 1 queue items: pause, delete with undo, remove from list, times, renaming waiting jobs, previews, upscale
 // jumping the line, missing files.
-import { existsSync, unlinkSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 const done = (k, n = 1) => k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=${n}`, 40000);
 const state = k => k.ev(`fetch("/api/state").then(r=>r.json())`);
@@ -149,7 +149,7 @@ export async function missingFiles(k, t) {
   await done(k);
   await k.job("an owl", { steps: 2 });
   await done(k, 2);
-  unlinkSync(join(k.out, await k.ev(`jobs.filter(j=>j.status==="done")[0].file`)));
+  k.rm(join(k.out, await k.ev(`jobs.filter(j=>j.status==="done")[0].file`)));
   await k.ev(`(showView("queue"),1)`);
   t.ok(
     await k.until(`!!document.querySelector(".qi.missing")`, 5000),
@@ -165,7 +165,7 @@ export async function missingFiles(k, t) {
   t.ok((await k.ev(`jobs.filter(j=>j.status==="done").length`)) === 1, "✕ on a missing row removes it");
   await k.job("a bear", { steps: 2 });
   await done(k, 2);
-  unlinkSync(join(k.out, await k.ev(`lastDone().file`)));
+  k.rm(join(k.out, await k.ev(`lastDone().file`)));
   await k.until(`!!document.querySelector(".qi.missing")`, 5000);
   await k.ev(`($("rmMissing").click(),1)`);
   await k.sleep(1200);

@@ -1,6 +1,6 @@
 // Files deleted outside Kiln: never cached by the browser, never shown, and the ways back (Recycle Bin, save back,
 // render again, remove).
-import { existsSync, unlinkSync, readFileSync, writeFileSync, mkdirSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 const done = (k, n = 1) => k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=${n}`, 30000);
@@ -18,7 +18,7 @@ export async function saveBack(k, t) {
   await done(k);
   await k.sleep(1500); // shown, so this page holds it
   const file = await k.ev(`lastDone().file`);
-  unlinkSync(join(k.out, file));
+  k.rm(join(k.out, file));
   t.ok(await k.until(`$("frame").classList.contains("missing")`, 5000), "the card replaces the picture");
   const c = await k.cvColor();
   t.ok(c[0] < 30, "no picture of the deleted file is shown", c);
@@ -53,7 +53,7 @@ export async function renderAgain(k, t) {
   await done(k);
   const file = await k.ev(`lastDone().file`),
     seed = await k.ev(`lastDone().seed`);
-  unlinkSync(join(k.out, file)); // deleted while Kiln was closed…
+  k.rm(join(k.out, file)); // deleted while Kiln was closed…
   await k.reload();
   await k.sleep(800);
   await k.until("!!(window.LIVE&&window._jobsReady)", 15000); // …so this session never held it
@@ -91,7 +91,7 @@ export async function restoreFromBin(k, t) {
   p16.copy(info, 28);
   writeFileSync(join(sid, "$IKILNT1.png"), info);
   writeFileSync(join(sid, "$RKILNT1.png"), bytes);
-  unlinkSync(path);
+  k.rm(path);
   await k.until(`$("frame").classList.contains("missing")`, 5000);
   await k.sleep(800);
   t.ok(await shown(k, "mRestore"), "found in the Recycle Bin: Restore is offered");

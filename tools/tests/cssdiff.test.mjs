@@ -8,7 +8,7 @@
 // reads them again — in the same instant, on the same DOM — and lists every difference. :hover / :focus / :active
 // are forced (DevTools) on each element a rule hovers, one at a time. Report: tools/tests/out/cssdiff.txt.
 // Without KILN_CSS_REF the test is skipped.
-import { readFileSync, writeFileSync, mkdirSync, unlinkSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -259,7 +259,7 @@ export async function cssdiff(k, t) {
   // the missing-file card
   const file = await k.ev(`lastDone().file`);
   try {
-    unlinkSync(join(k.out, file));
+    k.rm(join(k.out, file));
   } catch (e) {}
   await k.until(`$("frame").classList.contains("missing")`, 6000);
   await settle();

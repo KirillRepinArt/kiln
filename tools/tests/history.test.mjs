@@ -1,5 +1,4 @@
 // What the image canvas shows after cancels, deletions and quick browsing.
-import { unlinkSync } from "node:fs";
 import { join } from "node:path";
 const done = (k, n) => k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=${n}`, 30000);
 const close = (a, b, tol = 12) => a.every((v, i) => Math.abs(v - b[i]) <= tol);
@@ -34,7 +33,7 @@ export async function missingFile(k, t) {
   await done(k, 3);
   await k.sleep(2000);
   const files = await k.ev(`jobs.filter(j=>j.status==="done").map(j=>j.file)`);
-  unlinkSync(join(k.out, files[1])); // blue is gone before the page ever loads it
+  k.rm(join(k.out, files[1])); // blue is gone before the page ever loads it
   await k.send("Network.setCacheDisabled", { cacheDisabled: true });
   await k.reload({ ignoreCache: true });
   await k.sleep(800);

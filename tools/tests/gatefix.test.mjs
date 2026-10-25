@@ -1,5 +1,4 @@
 // Phase 1b gate fixes.
-import { unlinkSync } from "node:fs";
 import { join } from "node:path";
 const done = (k, n = 1) => k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=${n}`, 30000);
 
@@ -9,8 +8,8 @@ export async function namesNeverReused(k, t) {
     await done(k, ["dc2828", "2850e6", "28c83c"].indexOf(c) + 1);
   }
   t.ok((await k.ev(`lastDone().file`)) === "gap-003.png", "gap-001…003");
-  unlinkSync(join(k.out, "gap-003.png"));
-  unlinkSync(join(k.out, "gap-002.png")); // deleted outside Kiln
+  k.rm(join(k.out, "gap-003.png"));
+  k.rm(join(k.out, "gap-002.png")); // deleted outside Kiln
   await k.ev(`(removeMissing(),1)`);
   await k.sleep(1200);
   await k.job("[fill:e0e0e0] new one", { steps: 2, name: "Gap" });

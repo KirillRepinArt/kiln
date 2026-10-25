@@ -146,7 +146,8 @@ async function launch(
     let id = 0;
     const wait = {},
       errors = [],
-      requests = [];
+      requests = [],
+      failed = []; // requests that failed (and the browser's own error lines): what stops a module graph loading
     ws.onmessage = m => {
       const d = JSON.parse(m.data);
       if (d.id && wait[d.id]) {
@@ -157,7 +158,15 @@ async function launch(
         errors.push(d.params.exceptionDetails.exception?.description || d.params.exceptionDetails.text);
       if (d.method === "Runtime.consoleAPICalled" && d.params.type === "error")
         errors.push("console.error " + d.params.args.map(a => a.value ?? a.description).join(" "));
-      if (d.method === "Network.requestWillBeSent") requests.push({ url: d.params.request.url, type: d.params.type });
+      if (d.method === "Network.requestWillBeSent") {
+        requests.push({ url: d.params.request.url, type: d.params.type, id: d.params.requestId });
+      }
+      if (d.method === "Network.loadingFailed") {
+        const r = requests.find(x => x.id === d.params.requestId);
+        failed.push(`${r ? r.url.replace(/^https?:\/\/[^/]+/, "") : "?"} ${d.params.errorText}`);
+      }
+      if (d.method === "Log.entryAdded" && d.params.entry.level === "error")
+        failed.push("log: " + d.params.entry.text.slice(0, 160));
     };
     await new Promise((r, j) => {
       ws.onopen = r;
@@ -170,6 +179,7 @@ async function launch(
         ws.send(JSON.stringify({ id: i, method, params }));
       });
     await send("Runtime.enable");
+    await send("Log.enable");
     await send("Network.enable");
     await send("Page.enable");
     // the same conditions on every machine, set before Kiln loads (it reads them at start): motion on — Windows Server
@@ -214,7 +224,7 @@ async function launch(
       } catch (e) {}
       const last = requests.slice(-8).map(r => r.url.replace(url.split("?")[0], "/"));
       throw new Error(
-        `Kiln never became ready: ${state}; errors: ${JSON.stringify(errors)}; last requests: ${last.join(" ")}`,
+        `Kiln never became ready: ${state}; errors: ${JSON.stringify(errors)}; failed: ${JSON.stringify(failed)}; last requests: ${last.join(" ")}`,
       );
     }
     const k = {
@@ -271,6 +281,9 @@ async function launch(
         );
         if (!ok) throw new Error("the reloaded page never became ready");
       },
+      /* delete a file as something outside Kiln would; a file just written can be held a moment (an antivirus scanning
+         it — EBUSY on Windows): retried for up to a second */
+      rm: path => rmSync(path, { maxRetries: 10, retryDelay: 100 }),
       shot: async n => {
         mkdirSync(OUT, { recursive: true });
         const s = await send("Page.captureScreenshot", { format: "png" });

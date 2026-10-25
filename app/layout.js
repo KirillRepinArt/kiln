@@ -1,3 +1,5 @@
+// @ts-check
+/** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
 /* Kiln · the page layout: the prompt and the picture area side by side or stacked, their widths and heights,
    the edges you drag, docking, and the holds that keep things still while you work */
 import { applyMode, layoutLeft, lyReset, minRight, stackW, tabsW } from "./cardlayout.js";
@@ -13,6 +15,7 @@ import {
   pageGeometry,
   stackColumnW,
   toolColumnW,
+  upgradeLayoutPrefs,
 } from "./layoutmath.js";
 import { PV, onShow, picMode } from "./picstate.js";
 import { S, jobs, save } from "./state.js";
@@ -20,12 +23,13 @@ import { moveThumb } from "./tabs.js";
 
 /* a quick fade-through; the picture morphs if it's on both sides */
 
+/** @param {HTMLElement} el @param {string} ar @param {number} bw @param {number} bh */
 function fitBox(el, ar, bw, bh) {
   const { w, h } = fitInBox(ar, bw, bh);
   el.style.width = w + "px";
   el.style.height = h + "px";
 }
-export let BAR = 66; // the status block under the picture: 12 + track 10 + 7 + status row 36; a caption: 6 + row 36 + 4; nothing: 24
+export const BAR = 66; // the status block under the picture: 12 + track 10 + 7 + status row 36; a caption: 6 + row 36 + 4; nothing: 24
 /* what the row under the picture is: "bar" (rendering, or a paused queue), "cap" (a finished picture's caption), "none" */
 export function rowMode() {
   if (S.view !== "gen") return "bar";
@@ -43,6 +47,7 @@ export function rowMode() {
    (Design agreed 2026-10-18 after the first try left a growing gap in the middle.) */
 /* the edit buttons' column beside the picture: 40 px buttons, 6 px apart and from the picture. Room is kept for as many
    columns as the picture's height needs, so none is ever cut off (the panel clips anything outside the area) */
+/** @param {number} h the picture's height */
 export function tbW(h) {
   return toolColumnW(h, document.querySelectorAll("#sideGen button").length || 6);
 }
@@ -56,8 +61,29 @@ export function tbW(h) {
    goes to the margins; shrinking takes the margins first (down to MMIN), then both panels in proportion, and they come
    back when there's room (flex's "shrink, don't grow"). Shares of the window (v:2) shrank them far too early. */
 const layW = () => innerWidth - 36;
+/* saved layouts of older versions → today's (once, at start-up: main.js) */
+export function migrateLayoutPrefs() {
+  S.lay = upgradeLayoutPrefs(S.lay, layW());
+}
 export const layDef = () => ({ pw: 680, rw: Math.max(LISTMIN, tabsW() + 2), iw: null, v: 3 });
-export const lay = { overImg: false, navAt: 0, pressCard: false, last: null, drag: false };
+/** @type {import("./types.js").LayoutState} */
+export const lay = {
+  overImg: false,
+  pressCard: false,
+  navHold: null,
+  last: null,
+  drag: false,
+  vh: null,
+  vtop: null,
+  vbDrag: false,
+  target: null,
+  vB: null,
+  frameDefer: false,
+  framePending: false,
+  frameHold: false,
+  row: null,
+  colW: 0,
+};
 /* the picture's height: the stage minus the status row, capped in Generating by S.lay.ih (a share of that height,
    set with the image area's top / bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
 function picH() {
@@ -75,13 +101,6 @@ function hugW() {
 }
 export function layGeo() {
   const W = layW();
-  if (S.lay && S.lay.v === 2) {
-    const o = S.lay;
-    S.lay = { pw: o.pw * W, rw: o.rw * W, iw: o.iw ? o.iw * W : null, ih: o.ih, v: 3 };
-  } /* shares → px, once */
-  else if (S.lay && !S.lay.v) {
-    S.lay.v = 3;
-  }
   const gen = S.view === "gen",
     L = S.lay || (S.lay = Object.assign(layDef(), S.lw ? { pw: S.lw } : {})),
     minR = gen
@@ -90,10 +109,11 @@ export function layGeo() {
   // the picture's hug width is measured only when it's used (Generating, no edge held)
   return pageGeometry({ W, gen, drag: lay.drag, minR, hug: gen && !lay.drag ? hugW() : undefined }, L);
 }
+/** @param {Geometry} g */
 function layApply(g) {
-  const app = document.querySelector(".app"),
+  const app = /** @type {HTMLElement} */ (document.querySelector(".app")),
     st = app.style,
-    px = v => Math.round(v * 10) / 10 + "px";
+    px = (/** @type {number} */ v) => Math.round(v * 10) / 10 + "px";
   const mL = Math.max(0, g.mL + (g.off || 0)),
     mR = Math.max(0, g.W - GAP - g.pw - g.rw - mL);
   st.setProperty("--mL", px(mL));
@@ -124,13 +144,13 @@ function layNow() {
    are the same boundary): one panel grows exactly as much as the other shrinks. po / ro = the outer edges: that panel
    changes and the pair is held still (off) so the edge stays under the cursor; layRelease() lets it re-centre.
    In Generating the right-side width written is the picture's cap (iw), elsewhere the panel width (rw). */
+/** @param {"dv" | "po" | "ro"} edge @param {Geometry} g0 the geometry when the drag began @param {number} dx px moved */
 export function layDrag(edge, g0, dx) {
   const g = Object.assign({}, g0),
-    W = layW(),
-    R = document.querySelector(".app").classList.contains("pright");
+    R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright");
   if (R) {
     dx = -dx;
-    if (edge === "po" || edge === "ro") return layDragR(edge, g0, dx, W);
+    if (edge === "po" || edge === "ro") return layDragR(edge, g0, dx);
   } /* prompt on the right: everything mirrored */
   if (edge === "dv") {
     const pw = Math.max(PWMIN, Math.min(CARDMAX, g0.pw + g0.rw - g0.minR, g0.pw + dx));
@@ -150,13 +170,15 @@ export function layDrag(edge, g0, dx) {
     g.off = g0.mL - W2 / 2;
   }
   g.mL = g.mR = Math.max(0, (g.W - GAP - g.pw - g.rw) / 2);
-  S.lay.pw = g.pw;
-  if (g0.gen) S.lay.iw = g.rw;
-  else S.lay.rw = g.rw;
+  const L = /** @type {LayoutPrefs} */ (S.lay); // made by layGeo before any drag
+  L.pw = g.pw;
+  if (g0.gen) L.iw = g.rw;
+  else L.rw = g.rw;
   layApply(g);
   return g;
 }
 /* prompt on the right: the left margin sits next to the image area's outer edge */
+/** @param {"dv" | "po" | "ro"} edge @param {Geometry} g0 @param {number} dx */
 function layDragR(edge, g0, dx) {
   const g = Object.assign({}, g0);
   if (edge === "po") {
@@ -172,9 +194,10 @@ function layDragR(edge, g0, dx) {
     g.off = g0.mL - (rw - g0.rw) - W2 / 2;
   } /* dx arrives mirrored: leftwards grows it */
   g.mL = g.mR = Math.max(0, (g.W - GAP - g.pw - g.rw) / 2);
-  S.lay.pw = g.pw;
-  if (g0.gen) S.lay.iw = g.rw;
-  else S.lay.rw = g.rw;
+  const L = /** @type {LayoutPrefs} */ (S.lay); // made by layGeo before any drag
+  L.pw = g.pw;
+  if (g0.gen) L.iw = g.rw;
+  else L.rw = g.rw;
   layApply(g);
   return g;
 }
@@ -185,6 +208,7 @@ export function layRelease() {
 /* the prompt's place: "left" / "right" beside the picture (horizontal) or "below" it (vertical). Switching is a
    fade-through (Material's pattern for elements whose paths would cross): the old layout fades out, the new one fades in
    where it belongs — sliding made the panels pass through each other. */
+/** @param {"left" | "right" | "below"} z */
 export function setDock(z) {
   if ((S.dock || "left") === z) return;
   layMorph(() => {
@@ -203,6 +227,7 @@ export function setDock(z) {
 }
 /* a layout switch as a View Transition: the old layout is a snapshot, the new one is applied with every glide off (so it
    is captured where it ends, not mid-way), then they cross-fade (CSS ::view-transition-*). Without the API: a plain switch */
+/** @param {() => void} fn the switch itself */
 export function layMorph(fn) {
   const b = document.body,
     h = document.documentElement;
@@ -232,40 +257,37 @@ export function layMorph(fn) {
   }
 }
 export function sizeFrame() {
-  if (sizeFrame.defer) {
-    sizeFrame.pending = true;
+  if (lay.frameDefer) {
+    lay.framePending = true;
     return;
   } /* inside one click: once, at the end (it measures the page) */
-  const app = document.querySelector(".app"),
+  const app = /** @type {HTMLElement} */ (document.querySelector(".app")),
     stk = app.classList.contains("stacked");
-  /* the Gallery has no progress bar: its caption sits centred just under the picture, and the picture gets that room */
   {
     const m = rowMode();
-    BAR = 66;
     /* the same rect for the same shape in Generating and the Gallery (2026-10-19): the row's room is always kept, used or not */
-    document.body.classList.toggle("gallery", m === "cap");
     document.body.classList.toggle("norow", m === "none");
-    sizeFrame.mode = m;
+    lay.row = m;
   }
   const j = onShow() || current();
   const ar = j ? j.ar : S.ar;
-  if (!stk && !sizeFrame.hold) layApply(layNow());
+  if (!stk && !lay.frameHold) layApply(layNow());
   /* Vertical: the picture's area (and Queue / LoRAs / PNG Info) is a centred column no wider than a 16:9 picture at the
     height it has (plus its button column each side), never narrower than the tab bar or the prompt box — not edge to edge */
   {
     const rt = $("right");
     if (stk) {
       const hh = picH();
-      sizeFrame.colW = stackColumnW(app.clientWidth - 36, minRight(), stackW(), hh, tbW(hh));
-      rt.style.width = sizeFrame.colW + "px";
+      lay.colW = stackColumnW(app.clientWidth - 36, minRight(), stackW(), hh, tbW(hh));
+      rt.style.width = lay.colW + "px";
     } else {
       if (rt.style.width) rt.style.width = "";
-      sizeFrame.colW = 0;
+      lay.colW = 0;
     }
   }
   /* the target geometry, not a measurement: the grid may be mid-glide */
   const st = $("stage").getBoundingClientRect(),
-    SW = stk ? (sizeFrame.colW ? sizeFrame.colW - 2 : st.width) : lay.last.rw;
+    SW = stk ? (lay.colW ? lay.colW - 2 : st.width) : /** @type {Geometry} */ (lay.last).rw; // wide: layApply above has set it
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
   const PH = picH(),
     TB = tbW(PH),
@@ -284,7 +306,7 @@ export function sizeFrame() {
   /* Vertical keeps the column's room on both sides */
   /* a held top / bottom edge (lay.vtop): the other edge stays put. The button column goes on the side away from the
     prompt; Vertical: the picture itself on the centre line (the prompt box and the tab bar are centred there too) */
-  const tbLeft = !stk && document.querySelector(".app").classList.contains("pright"),
+  const tbLeft = !stk && /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
     { top, left, toolsX } = framePlacement({
       areaW: SW,
       areaH: st.height,
@@ -313,7 +335,7 @@ export function sizeFrame() {
   lay.target = { top: st.top + top, h, bottom: st.top + top + h + BAR - 1, w };
   /* the area's outer handle sits on the picture's outer edge in Generating (the edge you see), not past the button column */
   {
-    const ro = document.querySelector(".pedge.ro");
+    const ro = /** @type {HTMLElement} */ (document.querySelector(".pedge.ro"));
     if (ro) {
       const on = !stk && S.view === "gen",
         d = tbLeft ? left : SW - (left + w);
@@ -327,7 +349,7 @@ export function sizeFrame() {
   /* Vertical: the picture block sits between two equal gaps — the title starts as far under it (or under its progress
     bar) as the picture starts under the tab bar. A shift, not a resize: shrinking the column would hand the picture more
     height and move the gap again */
-  lay.vB = stk ? st.top + top + h + (sizeFrame.mode === "bar" ? 12 + $("prog").offsetHeight : 0) : null;
+  lay.vB = stk ? st.top + top + h + (lay.row === "bar" ? 12 + $("prog").offsetHeight : 0) : null;
   vAlign();
   const he = $("hedges");
   if (he) {
@@ -338,7 +360,7 @@ export function sizeFrame() {
   }
   /* tab bar: centred over the panel in Queue / LoRAs / PNG Info; in Generating it sits right on top of the picture and is
     centred on the picture itself, not on picture + button column — as far as the area allows (it never pokes out) */
-  const tb = document.querySelector(".tabs");
+  const tb = /** @type {HTMLElement} */ (document.querySelector(".tabs"));
   if (tb) {
     tb.style.width = stk ? "" : SW + "px";
     const gen = S.view === "gen";
@@ -367,18 +389,18 @@ export function vAlign() {
     }
     return;
   }
-  const seg = document.querySelector(".seg"),
-    tbs = document.querySelector(".tabs"),
+  const seg = /** @type {HTMLElement} */ (document.querySelector(".seg")),
+    tbs = /** @type {HTMLElement} */ (document.querySelector(".tabs")),
     T = $("ltitle"),
     A = 12 + (tbs.getBoundingClientRect().bottom - seg.getBoundingClientRect().bottom);
-  const cur = parseFloat(col.dataset.dy || 0),
+  const cur = parseFloat(col.dataset.dy || "0"),
     colTop = col.getBoundingClientRect().top - cur,
     TS = parseFloat(col.style.getPropertyValue("--ts")) || 64;
   const fromBottom = T.getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top,
     pn = colTop + 4 + (TS - 10) - fromBottom; /* the name row: top 4, height TS-10, its content at the bottom */
   const dy = Math.round(Math.min(0, lay.vB + A - pn));
   if (String(dy) !== col.dataset.dy) {
-    col.dataset.dy = dy;
+    col.dataset.dy = String(dy);
     col.style.transform = dy ? `translateY(${dy}px)` : "";
   }
   $("hsplit").style.top = pn - colTop - 10 + "px";

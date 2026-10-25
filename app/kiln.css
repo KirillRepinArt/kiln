@@ -2215,22 +2215,6 @@ body[data-pic="still"] .prog.run .meta,
 .pchip {
   display: none;
 } /* the running job's chip (live.js still fills it): retired 2026-10-19 — the Generating tab has the progress */
-/* the Gallery: no bar; the caption centred under the picture */
-body.gallery .prog .track {
-  display: none;
-}
-body.gallery .prog .meta {
-  justify-content: center;
-}
-body.gallery #ptxt {
-  color: #cfd2d6;
-  font-weight: 500;
-}
-body.gallery .prog .eta,
-body.gallery .prog .resume,
-body.gallery .prog.paused:not(.run) .resume {
-  display: none;
-}
 
 /* ======================= Queue ======================= */
 .qwrap {

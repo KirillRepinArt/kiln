@@ -97,3 +97,16 @@ export function framePlacement({ areaW, areaH, w, h, tb, row, heldTop, stacked, 
   const left = stacked ? Math.floor((areaW - w) / 2) : toolsLeft ? g0 + tb : g0;
   return { top, left, toolsX: toolsLeft ? left - tb : left + w };
 }
+
+/**
+ * Saved layouts from older versions → today's format (3: px). Format 2 kept widths as shares of the window: they become
+ * px for the window they're opened in. Older ones had no version (already px). Returns what to save — the same object
+ * when nothing changes.
+ * @param {any} L the saved layout (S.lay), or nothing
+ * @param {number} W the window's room now
+ */
+export function upgradeLayoutPrefs(L, W) {
+  if (L && L.v === 2) return { pw: L.pw * W, rw: L.rw * W, iw: L.iw ? L.iw * W : null, ih: L.ih, v: 3 };
+  if (L && !L.v) L.v = 3;
+  return L;
+}

@@ -7,6 +7,7 @@ import {
   pageGeometry,
   stackColumnW,
   framePlacement,
+  upgradeLayoutPrefs,
   GAP,
   MMIN,
   PWMIN,
@@ -99,4 +100,18 @@ test("Vertical: the picture itself is on the centre line", () => {
     toolsLeft: false,
   });
   assert.equal(p.left, 200);
+});
+
+test("older saved layouts become today's: shares of the window → px, once", () => {
+  assert.deepEqual(upgradeLayoutPrefs({ pw: 0.4, rw: 0.5, iw: null, ih: 0.8, v: 2 }, 1500), {
+    pw: 600,
+    rw: 750,
+    iw: null,
+    ih: 0.8,
+    v: 3,
+  });
+  const today = { pw: 680, rw: 660, iw: null, v: 3 };
+  assert.equal(upgradeLayoutPrefs(today, 1500), today, "today's format is left alone");
+  assert.equal(upgradeLayoutPrefs({ pw: 680, rw: 660, iw: null }, 1500).v, 3, "no version: already px, just labelled");
+  assert.equal(upgradeLayoutPrefs(undefined, 1500), undefined, "nothing saved: nothing to do");
 });

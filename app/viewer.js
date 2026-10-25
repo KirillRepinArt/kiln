@@ -2,7 +2,7 @@
 import { deleteJob, openInApp } from "./actions.js";
 import { updNav } from "./browse.js";
 import { $ } from "./dom.js";
-import { rowMode, sizeFrame } from "./layout.js";
+import { lay, rowMode, sizeFrame } from "./layout.js";
 import { onShow, picMode, pv, pvSync } from "./picstate.js";
 import { paint } from "./pictures.js";
 import { S, SIZES } from "./state.js";
@@ -138,7 +138,7 @@ export function initViewer() {
   })();
   setInterval(() => {
     tabSync();
-    if (typeof rowMode === "function" && sizeFrame.mode && rowMode() !== sizeFrame.mode) sizeFrame();
+    if (typeof rowMode === "function" && lay.row && rowMode() !== lay.row) sizeFrame();
     pvSync();
     updNav();
   }, 300);

@@ -439,9 +439,9 @@ export function initComposer() {
           return;
         }
         layDrag(d.e, d.g0, ev.clientX - d.x0);
-        sizeFrame.hold = true;
+        lay.frameHold = true;
         sizeFrame();
-        sizeFrame.hold = false;
+        lay.frameHold = false;
         moveThumb(true);
       });
       const up = () => {

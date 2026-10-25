@@ -77,4 +77,55 @@
  * @property {boolean} gen   worked out for Generating
  */
 
+/**
+ * Your settings and choices, saved in the browser's storage (S, state.js). Most are optional: missing = the default.
+ * @typedef {object} Settings
+ * @property {string} pname          the series name in the box ("" = none)
+ * @property {string} mp             megapixels: "0.5" | "1.0" | "1.5" | "2.0"
+ * @property {string} ar             aspect ratio
+ * @property {number} steps
+ * @property {"random" | "fixed"} seedMode
+ * @property {number} seed
+ * @property {number} n              how many pictures per Start
+ * @property {"gen" | "queue" | "loras" | "png" | "gallery"} view  the tab on show
+ * @property {string} theme
+ * @property {boolean} oneFace       only one "people" LoRA on at a time
+ * @property {string} lfilter        the LoRA tab's folder filter
+ * @property {boolean} [keepSeed]    Reuse / Vary keep the seed
+ * @property {boolean} [privacy]     the privacy cover is on (sticky)
+ * @property {number | null} [seenDone]  the newest finished job you've seen (for "finished while you were away")
+ * @property {number | null} [clearedId] the finished picture you closed with ✕
+ * @property {LayoutPrefs} [lay]     your layout sizes
+ * @property {"left" | "right" | "below"} [dock]  where the prompt goes
+ * @property {"top" | "mid"} [pos]   wide window: the prompt card's height position
+ * @property {"" | "full" | "match"} [hmode]  the prompt box's height mode
+ * @property {boolean} [vfit]        Vertical: the prompt box as wide as the picture (Fit width)
+ * @property {number} [sch]          Vertical: the prompt slot's height (0 = automatic)
+ * @property {number} pph            the prompt box's height you set (0 = automatic)
+ * @property {number} [th]           the LoRA chips' thumbnail size
+ * @property {number} [lw]           an old saved prompt width (before S.lay)
+ * @property {Record<string, string>} [set]  Settings dialog choices (theme parts, cover, model, sampler, upscaler …)
+ */
+
+/**
+ * The layout's moment-to-moment state (not saved): what you're doing right now, and what was last applied.
+ * @typedef {object} LayoutState
+ * @property {boolean} overImg       the pointer is over the picture
+ * @property {boolean} pressCard     a press in the prompt card (it holds its place until you let go)
+ * @property {HTMLElement | null} navHold  the on-picture arrow being clicked: it stays put until the pointer leaves it
+ * @property {Geometry | null} last  the geometry last applied
+ * @property {boolean} drag          an edge is being dragged
+ * @property {number | null} vh      a top / bottom edge held: the picture's live height
+ * @property {number | null} vtop    …and the top that stays put meanwhile
+ * @property {boolean} vbDrag        Vertical: the prompt box's bottom edge being dragged
+ * @property {{top: number, h: number, bottom: number, w: number} | null} target  where the picture is going (not
+ *   where it is mid-glide): the prompt's vertical anchors use this
+ * @property {number | null} vB      Vertical: the bottom of the picture block (the gap under it is matched above)
+ * @property {boolean} frameDefer    inside one click: sizeFrame runs once, at the end
+ * @property {boolean} framePending  …and was asked for meanwhile
+ * @property {boolean} frameHold     the layout is held (the prompt box's bottom edge being dragged)
+ * @property {"bar" | "none" | null} row  the row under the picture: the progress bar, or nothing
+ * @property {number} colW           Vertical: the picture column's width (0 otherwise)
+ */
+
 export {};

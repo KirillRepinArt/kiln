@@ -69,6 +69,7 @@ export function parseName(file, folder) {
 export const LORAS = []; /* filled from Forge's LoRA list (live.js loadModels) — never saved before that arrives */
 
 /* ======================= state ======================= */
+/** @type {import("./types.js").Settings} */
 export const S = {
   pname: "",
   pph: 0,

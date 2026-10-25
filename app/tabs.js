@@ -1,6 +1,6 @@
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $ } from "./dom.js";
-import { layMorph, sizeFrame } from "./layout.js";
+import { lay, layMorph, sizeFrame } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { browsed } from "./picstate.js";
 import { QS, queueSig, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
@@ -61,13 +61,13 @@ export function tabSync(force) {
    0.4 s of glass re-blurring the sky per frame was the lag, 2026-10-19), and the layout is measured once per click */
 export function tabGo(fn) {
   const run = () => {
-    sizeFrame.defer = true;
+    lay.frameDefer = true;
     try {
       fn();
     } finally {
-      sizeFrame.defer = false;
-      if (sizeFrame.pending) {
-        sizeFrame.pending = false;
+      lay.frameDefer = false;
+      if (lay.framePending) {
+        lay.framePending = false;
         sizeFrame();
       }
     }

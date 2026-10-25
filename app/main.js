@@ -7,6 +7,7 @@ import { initComposer } from "./composer.js";
 import { startEditor } from "./editor.js";
 import { initEffects } from "./effects.js";
 import { initKeys } from "./keys.js";
+import { migrateLayoutPrefs } from "./layout.js";
 import { startLive } from "./live.js";
 import { initLoras } from "./loras.js";
 import { initPnginfo } from "./pnginfo.js";
@@ -21,6 +22,7 @@ import { initViewer } from "./viewer.js";
 
 if (new URLSearchParams(location.search).has("test")) installTestBridge(); // the e2e tests' way in
 initState();
+migrateLayoutPrefs(); // saved layouts of older versions → today's
 initComposer();
 initCardlayout();
 initStage();

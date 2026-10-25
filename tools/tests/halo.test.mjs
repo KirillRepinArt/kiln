@@ -9,11 +9,19 @@ export async function noGlowUnderGlass(k, t) {
     "the halo is on while it renders",
   );
   await k.sleep(1200);
-  const a =
-    await k.ev(`(()=>{const g=$("fglow"),gr=g.getBoundingClientRect(),c=g.getContext("2d"),dp=g.width/gr.width,f=$("frame").getBoundingClientRect(),L=$("left").getBoundingClientRect();
+  // the halo pulses (lobes on 3–9 s cycles): read both spots 10 times over 2 s and keep the brightest of each — a single
+  // reading could land in a dip (16 on CI against 20)
+  const sample = () =>
+    k.ev(`(()=>{const g=$("fglow"),gr=g.getBoundingClientRect(),c=g.getContext("2d"),dp=g.width/gr.width,f=$("frame").getBoundingClientRect(),L=$("left").getBoundingClientRect();
     const at=(x,y)=>c.getImageData(Math.round((x-gr.left)*dp),Math.round((y-gr.top)*dp),1,1).data[3];
     const yL=L.top+L.height/2,yf=f.top+f.height/2,inner=L.left<f.left?L.right-3:L.left+3,free=L.left<f.left?f.right+12:f.left-12;
     return{underBox:Math.max(at(inner,yL),at(inner,yL-20),at(inner,yL+20)),gap:at(L.left<f.left?L.right+9:L.left-9,yL),free:at(free,yf)}})()`);
+  const a = { underBox: 0, gap: 0, free: 0 };
+  for (let i = 0; i < 10; i++) {
+    const s = await sample();
+    for (const key in a) a[key] = Math.max(a[key], s[key]);
+    await k.sleep(200);
+  }
   t.ok(a.free > 20, "the free side glows", a);
   t.ok(a.underBox <= 2, "nothing under the prompt box's edge", a);
 }

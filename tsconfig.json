@@ -1,0 +1,17 @@
+{
+  // TypeScript as a checker only: the app stays plain JavaScript (no build step). Types are JSDoc comments; a file is
+  // checked once it starts with // @ts-check (adopted file by file, ROADMAP v0.7 step 5).
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["app/**/*.js"],
+  "exclude": ["app/vendor/**"]
+}

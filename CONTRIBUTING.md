@@ -18,6 +18,10 @@ git config core.hooksPath .githooks           # the checks below run before ever
 - **Linters and formatting** on the files you're committing: ESLint (JavaScript), Stylelint (CSS), Ruff (Python),
   Prettier and `ruff format` (layout). `npm run format` / `.venv\Scripts\ruff format` fix the layout for you.
 
+## Types
+The page is plain JavaScript; TypeScript only *checks* it (`npm run typecheck`, also in the hook and CI). Shapes shared
+across files live in `app/types.js` as JSDoc; a file is checked once it starts with `// @ts-check` (adopted file by file).
+
 ## Tests
 ```
 npm test                       # all end-to-end tests, several at a time (fake Forge + Kiln + headless Edge each)

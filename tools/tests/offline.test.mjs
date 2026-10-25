@@ -19,5 +19,5 @@ export async function noServerSaysSo(k, t) {
   await k.shot("note");
   t.ok(await k.ev(`document.getElementById("offline").textContent.includes("kiln.bat")`), "…and how to start it");
   // as a file the page's modules can't load at all: the note is plain HTML, nothing runs behind it
-  t.ok(await k.ev(`!window.LIVE&&typeof window.LORAS==="undefined"`), "nothing runs behind it (no fake LoRAs or jobs)");
+  t.ok(await k.ev(`!window.LIVE&&typeof window.kiln==="undefined"`), "nothing runs behind it (no fake LoRAs or jobs)");
 }

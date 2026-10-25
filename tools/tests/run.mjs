@@ -66,6 +66,10 @@ async function waitHttp(url, ms = 15000) {
   throw new Error("no answer from " + url);
 }
 
+/* an expression from a test, run inside the app's test handle (window.kiln, test mode only): the older tests say
+   current() or draft = …, meaning the app's own. New tests write kiln.current() themselves. */
+const inKiln = expr => `(() => { with (window.kiln || {}) { return (${expr}\n); } })()`;
+
 /* one Kiln instance + browser page, with the helpers a test uses */
 async function launch(
   name,
@@ -176,7 +180,7 @@ async function launch(
     await send("Emulation.setLocaleOverride", { locale: "en-GB" });
     await send("Page.navigate", { url });
     const ev = async expr => {
-      const r = await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true });
+      const r = await send("Runtime.evaluate", { expression: inKiln(expr), returnByValue: true, awaitPromise: true });
       if (r.result?.exceptionDetails)
         throw new Error(
           "in page: " +

@@ -72,7 +72,8 @@ export const test = base.extend({
     await page.goto(`http://127.0.0.1:${kport}/?test`);
     await page.waitForFunction("!!(window.LIVE&&window._jobsReady&&LORAS.length)", null, { timeout: 30000 });
 
-    const ev = expr => page.evaluate(expr);
+    // the trial's expressions say current() etc.: run them inside the app's test handle, window.kiln
+    const ev = expr => page.evaluate(`(() => { with (window.kiln || {}) { return (${expr}\n); } })()`);
     await use({
       page,
       out,

@@ -200,7 +200,7 @@ export async function dividerAndEdges(k, t) {
   await k.ev(`(showView("loras"),1)`);
   await settle(k);
   t.ok(Math.abs((await R(k, "#rpanel")).width - w) < 1, "LoRAs has the same width as Queue");
-  await k.send("Page.reload", {});
+  await k.reload();
   await k.sleep(800);
   await k.until("!!(window.LIVE&&window._jobsReady)", 15000);
   await k.ev(`(showView("queue"),1)`);

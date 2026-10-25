@@ -44,7 +44,7 @@ export async function privacyButton(k, t) {
   await k.job("a wolf", { steps: 3 });
   await running(k);
   t.ok(await held(k), "it stays on for the next job");
-  await k.send("Page.reload", {});
+  await k.reload();
   await k.sleep(800);
   await k.until("!!(window.LIVE&&window._jobsReady)", 15000);
   await k.sleep(800);

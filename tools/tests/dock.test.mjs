@@ -84,7 +84,7 @@ export async function presets(k, t) {
   L = await R(k, "#left");
   const f = await R(k, "#frame");
   t.ok(L.top > f.bottom, "the prompt is under the picture");
-  await k.send("Page.reload", {});
+  await k.reload();
   await k.sleep(800);
   await k.until("!!(window.LIVE&&window._jobsReady)", 15000);
   await k.sleep(800);

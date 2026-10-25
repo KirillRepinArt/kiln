@@ -297,7 +297,7 @@ export async function rowsAndRestart(k, t) {
   await k.ev(`(peekHide(),1)`);
   await k.ev(`(PV.still={id:doneList()[0].id,kind:"result"},pvSync(),1)`);
   await k.sleep(800); // the last result on show…
-  await k.send("Page.reload");
+  await k.reload();
   await k.sleep(500);
   await k.until(`!!(window.LIVE&&window._jobsReady)`, 20000, 100);
   await k.sleep(800);
@@ -305,7 +305,7 @@ export async function rowsAndRestart(k, t) {
   t.ok(s.pic === "still" && s.still === "result", "…comes back after a restart", s);
   await k.ev(`($("bclose").click(),1)`);
   await k.sleep(800);
-  await k.send("Page.reload");
+  await k.reload();
   await k.sleep(500);
   await k.until(`!!(window.LIVE&&window._jobsReady)`, 20000, 100);
   await k.sleep(800);
@@ -371,9 +371,10 @@ export async function deleteOnwardAndNote(k, t) {
   }
   const ids = await k.ev(`doneList().map(j=>j.id)`);
   await tab(k, "gallery");
-  await k.sleep(300);
+  // a tab switch is a View Transition: the Gallery opens a moment later (after the snapshot) — wait for it, then step
+  await k.until(`PV.browse===${ids[2]}`, 3000, 50);
   await k.ev(`(genNav(-1),genNav(-1),genNav(1),1)`);
-  await k.sleep(400); // stepping → onto the middle one
+  await k.until(`PV.browse===${ids[1]}`, 2000, 50); // stepping → onto the middle one
   await k.ev(`(deleteJob(browsed()),1)`);
   // each step waits for its result (the delete goes through the server; a fixed wait could delete the wrong picture)
   t.ok(await k.until(`PV.browse===${ids[2]}`, 3000, 50), "stepping →, delete: the newer one (onward)", await st(k));

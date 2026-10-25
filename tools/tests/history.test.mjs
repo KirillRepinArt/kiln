@@ -36,7 +36,7 @@ export async function missingFile(k, t) {
   const files = await k.ev(`jobs.filter(j=>j.status==="done").map(j=>j.file)`);
   unlinkSync(join(k.out, files[1])); // blue is gone before the page ever loads it
   await k.send("Network.setCacheDisabled", { cacheDisabled: true });
-  await k.send("Page.reload", { ignoreCache: true });
+  await k.reload({ ignoreCache: true });
   await k.sleep(800);
   await k.until("!!(window.LIVE&&window._jobsReady)", 15000);
   await k.sleep(1500);

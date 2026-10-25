@@ -259,6 +259,18 @@ async function launch(
         ev(
           `(()=>{const c=$("cv"),d=c.getContext("2d").getImageData(0,(c.height/2)|0,c.width,1).data,s=[0,0,0];for(let i=0;i<d.length;i+=4){s[0]+=d[i];s[1]+=d[i+1];s[2]+=d[i+2]}return s.map(v=>Math.round(v/(d.length/4)))})()`,
         ),
+      /* reload the page and wait until the NEW one is ready: the old one can still answer for a moment after the reload
+         is asked for, so a plain "wait until ready" could pass on it and the next read land on a page still loading */
+      reload: async (params = {}) => {
+        await ev("(window.__oldPage = 1)");
+        await send("Page.reload", params);
+        const ok = await until(
+          "!window.__oldPage && !!(window.LIVE && window._jobsReady && window.kiln && LORAS.length)",
+          30000,
+          100,
+        );
+        if (!ok) throw new Error("the reloaded page never became ready");
+      },
       shot: async n => {
         mkdirSync(OUT, { recursive: true });
         const s = await send("Page.captureScreenshot", { format: "png" });

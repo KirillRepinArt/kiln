@@ -54,7 +54,7 @@ export async function renderAgain(k, t) {
   const file = await k.ev(`lastDone().file`),
     seed = await k.ev(`lastDone().seed`);
   unlinkSync(join(k.out, file)); // deleted while Kiln was closed…
-  await k.send("Page.reload", {});
+  await k.reload();
   await k.sleep(800);
   await k.until("!!(window.LIVE&&window._jobsReady)", 15000); // …so this session never held it
   await k.until(`$("frame").classList.contains("missing")`, 5000);

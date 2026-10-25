@@ -79,10 +79,9 @@ export async function finishedWhileClosed(k, t) {
   await done(k);
   // as if the window had closed before this job finished: no save may slip in between (the poll would update it)
   await k.ev(
-    `(()=>{save=function(){};const st=JSON.parse(localStorage.getItem("kiln_state"));st.S.seenDone=0;localStorage.setItem("kiln_state",JSON.stringify(st));location.reload();return 1})()`,
+    `(()=>{save=function(){};const st=JSON.parse(localStorage.getItem("kiln_state"));st.S.seenDone=0;localStorage.setItem("kiln_state",JSON.stringify(st));return 1})()`,
   );
-  await k.sleep(800);
-  await k.until("!!(window.LIVE&&window._jobsReady)", 15000);
+  await k.reload(); // waits for the new page, not the old one
   t.ok(
     await k.until(`/1 image finished while Kiln was closed/.test($("toastMsg").textContent)`, 6000, 100),
     "a note on reopening",

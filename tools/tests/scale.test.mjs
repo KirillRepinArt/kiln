@@ -146,7 +146,7 @@ export async function scale(k, t) {
   const loads2 = await k.ev(`performance.getEntriesByType("resource").map(e=>e.name)`);
   r.fullPngLoadsAfterScroll = loads2.filter(u => u.includes("/files/")).length;
   // 3b · a second visit (thumbnails exist now): no full pictures at all
-  await k.send("Page.reload");
+  await k.reload();
   await k.until(`!!(window.LIVE&&window._jobsReady)`, 20000, 100);
   await k.sleep(800);
   await k.ev(`(performance.clearResourceTimings(),1)`);

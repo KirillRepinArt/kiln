@@ -45,7 +45,7 @@ export async function sideEdges(k, t) {
   t.near(L1.width, 880, 2, "at the new width");
   t.near((await R(k, "#chips")).width, 880, 2, "the LoRA row follows the box");
   t.near(await k.ev(`S.lay.sw`), 880, 1, "remembered");
-  await k.send("Page.reload", {});
+  await k.reload();
   await k.sleep(800);
   await k.until("!!(window.LIVE&&window._jobsReady)", 15000);
   await k.sleep(800);

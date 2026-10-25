@@ -9,7 +9,7 @@ export async function earlySaveKeepsNames(k, t) {
   await k.ev(
     `(()=>{const st=JSON.parse(localStorage.getItem("kiln_state"));st.S.set=st.S.set||{};st.S.set.privacy="off";localStorage.setItem("kiln_state",JSON.stringify(st));return 1})()`,
   );
-  await k.send("Page.reload", {});
+  await k.reload();
   await k.sleep(800);
   await k.until("!!(window.LIVE&&LORAS.length>5)", 15000);
   await k.sleep(800);

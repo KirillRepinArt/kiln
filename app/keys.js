@@ -1,7 +1,7 @@
 /* Kiln · keyboard shortcuts sheet: "?" anywhere outside a text field, or Settings → About */
+import { esc } from "./boot.js";
 import { $ } from "./dom.js";
 import { IC } from "./state.js";
-import { esc } from "./boot.js";
 
 const KEYS = [
   ["Ctrl+Enter", "Add to the queue"],

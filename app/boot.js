@@ -1,12 +1,12 @@
 /* Kiln · helpers and start-up */
-import { $ } from "./dom.js";
-import { P, S, jobs, save } from "./state.js";
-import { applyPH, grow, renderChips, renderPills } from "./composer.js";
 import { applyMode } from "./cardlayout.js";
-import { moveThumb, showView } from "./stage.js";
-import { peekJob, renderQueue, saveJobName, updPrompt } from "./queue.js";
+import { applyPH, grow, renderChips, renderPills } from "./composer.js";
+import { $ } from "./dom.js";
 import { renderLoras } from "./loras.js";
+import { peekJob, renderQueue, saveJobName, updPrompt } from "./queue.js";
 import { applyFont, applyGlass, applyTheme } from "./settings.js";
+import { P, S, jobs, save } from "./state.js";
+import { moveThumb, showView } from "./tabs.js";
 
 /* ======================= misc ======================= */
 export function fmt(s) {

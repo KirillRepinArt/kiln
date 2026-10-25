@@ -1,14 +1,16 @@
 /* Kiln · progress: real steps, a smooth glide in between, the live preview, the frame loop */
-import { $ } from "./dom.js";
-import { S, SEC_PER_STEP, SIZES, draft, jobs } from "./state.js";
-import { browseStatus, current, sizeFrame } from "./stage.js";
-import { PV, browsed, doneById, onShow, picMode, pv, shownDone } from "./picstate.js";
-import { justDone, peekJob, setJustDone } from "./queue.js";
-import { fmt } from "./boot.js";
-import { api } from "./live.js";
-import { drawTo, missUI, paint, xfadeEnd } from "./pictures.js";
-import { forgeOk, forgeStarting } from "./sync.js";
 import { capTxt } from "./actions.js";
+import { fmt } from "./boot.js";
+import { browseStatus } from "./browse.js";
+import { $ } from "./dom.js";
+import { current } from "./jobs.js";
+import { sizeFrame } from "./layout.js";
+import { api } from "./live.js";
+import { PV, browsed, doneById, onShow, picMode, pv, shownDone } from "./picstate.js";
+import { drawTo, missUI, paint, xfadeEnd } from "./pictures.js";
+import { justDone, peekJob, setJustDone } from "./queue.js";
+import { S, SEC_PER_STEP, SIZES, draft, jobs } from "./state.js";
+import { forgeOk, forgeStarting } from "./sync.js";
 
 /* ---------- progress: real steps, smooth glide in between, live preview ---------- */
 let lastPrev = 0,

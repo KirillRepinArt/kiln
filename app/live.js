@@ -1,16 +1,16 @@
 /* ======================= the app's connection to its server =======================
    Everything that talks to server.py: the queue, pictures, previews, LoRAs and models. Without the server (opened
    as a file, or server.py stopped) a note says so, and the page reloads by itself once the server answers. */
-import { $ } from "./dom.js";
-import { S, save, setJobs } from "./state.js";
-import { showView, tabGo } from "./stage.js";
-import { PV, doneById, pv, shownDone } from "./picstate.js";
-import { esc, toast } from "./boot.js";
-import { imgs, inBin, shownMissing, urlFor } from "./pictures.js";
-import { poll } from "./sync.js";
 import { act, dn, dnHide, dnHideIn, dnId, dnT, removeJob, setPaused } from "./actions.js";
+import { esc, toast } from "./boot.js";
+import { $ } from "./dom.js";
 import { fg, fu, fx, loadModels, models, rb, refreshUp, rescanLoras, up, upl, us, usl } from "./forge.js";
+import { PV, doneById, pv, shownDone } from "./picstate.js";
+import { imgs, inBin, shownMissing, urlFor } from "./pictures.js";
 import { frame } from "./progress.js";
+import { S, save, setJobs } from "./state.js";
+import { poll } from "./sync.js";
+import { showView, tabGo } from "./tabs.js";
 
 export let st;
 export const api = (p, b) =>

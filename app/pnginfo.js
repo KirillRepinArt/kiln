@@ -1,9 +1,9 @@
 /* Kiln · PNG Info tab */
+import { esc, renderAll, toast } from "./boot.js";
+import { grow } from "./composer.js";
 import { $ } from "./dom.js";
 import { LORAS, P, S, SIZES, save, setDraft } from "./state.js";
-import { grow } from "./composer.js";
-import { showView } from "./stage.js";
-import { esc, renderAll, toast } from "./boot.js";
+import { showView } from "./tabs.js";
 
 /* ======================= PNG info (real) ======================= */
 export let parsed = null;

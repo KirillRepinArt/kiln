@@ -1,12 +1,4 @@
 /* Kiln · Queue tab, peek / reuse */
-import { $ } from "./dom.js";
-import { IC, LORAS, P, S, draft, jobs, save, setDraft, setJobs } from "./state.js";
-import { copySeed, renderChips, renderPills } from "./composer.js";
-import { layoutLeft } from "./cardlayout.js";
-import { jEst, showView } from "./stage.js";
-import { PV, pv } from "./picstate.js";
-import { keepSeedUI } from "./pnginfo.js";
-import { esc, fmt, nameUI, renderAll, slugify, toast } from "./boot.js";
 import {
   deleteMany,
   makeQThumb,
@@ -18,6 +10,15 @@ import {
   setPaused,
   stopJob,
 } from "./actions.js";
+import { esc, fmt, nameUI, renderAll, slugify, toast } from "./boot.js";
+import { layoutLeft } from "./cardlayout.js";
+import { copySeed, renderChips, renderPills } from "./composer.js";
+import { $ } from "./dom.js";
+import { jEst } from "./jobs.js";
+import { PV, pv } from "./picstate.js";
+import { keepSeedUI } from "./pnginfo.js";
+import { IC, LORAS, P, S, draft, jobs, save, setDraft, setJobs } from "./state.js";
+import { showView } from "./tabs.js";
 
 export function renderQueue() {
   const before = {},
@@ -132,7 +133,7 @@ function finHead(done) {
   return `<span>Finished · ${done.length}</span><span>${done.some(j => j.missing) ? `<button id="rmMissing">Remove missing (${done.filter(j => j.missing).length})</button> ` : ""}<button id="clearDone">Clear list</button></span>`;
 }
 /* selecting changes nothing but the highlight and the header's contents (it rebuilt the whole list, and the header grew) */
-function qsUpdate() {
+export function qsUpdate() {
   const done = qsFinished(),
     W = $("qwrap");
   for (const id of [...QS]) if (!done.some(j => j.id === id)) QS.delete(id);
@@ -177,14 +178,14 @@ function qsClick(j, range) {
   qsAnchor = j.id;
   qsUpdate();
 }
-function qsClear() {
+export function qsClear() {
   if (!QS.size) return false;
   QS.clear();
   qsAnchor = null;
   qsUpdate();
   return true;
 }
-function qsDelete() {
+export function qsDelete() {
   if (!QS.size) return;
   const ids = [...QS];
   QS.clear();

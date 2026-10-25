@@ -1,12 +1,13 @@
 /* Kiln · prompt card controls: pills, prompt, LoRA chips */
-import { $ } from "./dom.js";
-import { IC, LORAS, P, RATIOS, S, SEC_PER_STEP, SIZES, save, setDraft } from "./state.js";
+import { esc, fmt, toast } from "./boot.js";
 import { chipsH, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
-import { BAR, PWMIN, lay, layDef, layDrag, layGeo, layRelease, moveThumb, showView, sizeFrame } from "./stage.js";
+import { $ } from "./dom.js";
+import { BAR, PWMIN, lay, layDef, layDrag, layGeo, layRelease, sizeFrame } from "./layout.js";
+import { renderLoras } from "./loras.js";
 import { pv } from "./picstate.js";
 import { peekButtons, peekJob, updPrompt } from "./queue.js";
-import { renderLoras } from "./loras.js";
-import { esc, fmt, toast } from "./boot.js";
+import { IC, LORAS, P, RATIOS, S, SEC_PER_STEP, SIZES, save, setDraft } from "./state.js";
+import { moveThumb, showView } from "./tabs.js";
 
 /* ======================= pills ======================= */
 function slider(id, min, max, val, quick, hint) {

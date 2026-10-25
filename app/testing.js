@@ -4,11 +4,14 @@
    tools/dev/make-test-bridge.mjs. */
 import { act, addJobs, deleteJob, removeMissing, setPaused, stopJob, vary } from "./actions.js";
 import { nameUI, toast } from "./boot.js";
+import { genNav, updNav } from "./browse.js";
 import { chipsH, layoutLeft, lyFrozen, lyTop, lyUnfreeze } from "./cardlayout.js";
 import { closePops, grow, renderPills } from "./composer.js";
 import { $ } from "./dom.js";
 import { status } from "./effects.js";
 import { up } from "./forge.js";
+import { current, doneList, lastDone } from "./jobs.js";
+import { BAR, lay, setDock, sizeFrame, tbW } from "./layout.js";
 import { api, st } from "./live.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pvSync } from "./picstate.js";
@@ -25,6 +28,9 @@ import {
   peekHide,
   peekJob,
   qsAnchor,
+  qsClear,
+  qsDelete,
+  qsUpdate,
   reuse,
   setJustDone,
   setPeekJob,
@@ -33,9 +39,9 @@ import {
 } from "./queue.js";
 import { applyTheme } from "./settings.js";
 import { rgba } from "./skins.js";
-import { BAR, current, doneList, genNav, lastDone, lay, setDock, showView, sizeFrame, tbW, updNav } from "./stage.js";
 import { LORAS, P, S, blockSaves, draft, jobs, save, setDraft, setJobs } from "./state.js";
 import { poll, seen } from "./sync.js";
+import { showView } from "./tabs.js";
 import { closeShown, closeViewer, openViewer } from "./viewer.js";
 
 export function installTestBridge() {
@@ -98,6 +104,9 @@ export function installTestBridge() {
     poll: { get: () => poll },
     pvSync: { get: () => pvSync },
     qsAnchor: { get: () => qsAnchor, set: v => setQsAnchor(v) },
+    qsClear: { get: () => qsClear },
+    qsDelete: { get: () => qsDelete },
+    qsUpdate: { get: () => qsUpdate },
     readPng: { get: () => readPng },
     removeMissing: { get: () => removeMissing },
     renderLoras: { get: () => renderLoras },

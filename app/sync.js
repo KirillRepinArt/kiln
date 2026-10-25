@@ -1,14 +1,14 @@
 /* Kiln · the server's job list → the page's: polling, what changed, a finished job's moment */
-import { forgetNextEstimate } from "./progress.js";
-import { $ } from "./dom.js";
-import { S, SEC_PER_STEP, jobs, save, setJobs } from "./state.js";
-import { current, lastDone } from "./stage.js";
-import { PV, pv, pvPrune } from "./picstate.js";
-import { onJobDone } from "./effects.js";
-import { dragId, peekJob, setPeekJob } from "./queue.js";
-import { renderAll, toast } from "./boot.js";
 import { doneNote, makeQThumb } from "./actions.js";
+import { renderAll, toast } from "./boot.js";
+import { $ } from "./dom.js";
+import { onJobDone } from "./effects.js";
 import { forgeMsg, loadModels, models, refreshUp } from "./forge.js";
+import { current, lastDone } from "./jobs.js";
+import { PV, pv, pvPrune } from "./picstate.js";
+import { forgetNextEstimate } from "./progress.js";
+import { dragId, peekJob, setPeekJob } from "./queue.js";
+import { S, SEC_PER_STEP, jobs, save, setJobs } from "./state.js";
 
 /* ---------- server job -> UI job ---------- */
 function toUI(s) {

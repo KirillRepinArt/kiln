@@ -1,7 +1,8 @@
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $ } from "./dom.js";
+import { PWMIN, lay, setDock, sizeFrame, vAlign } from "./layout.js";
 import { P, S, save } from "./state.js";
-import { PWMIN, lay, moveThumb, setDock, sizeFrame, vAlign } from "./stage.js";
+import { moveThumb } from "./tabs.js";
 
 /* ======================= prompt card layout =======================
    Centred on the image's vertical centre while there's room. While the editor is focused or the pointer is over

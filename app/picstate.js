@@ -10,12 +10,15 @@
       draft but Reuse (with Undo)
    The prompt box's peek (peekJob, loadJob / peekHide in queue.js) is the second half: the Gallery's picture, or on
    demand the render's / a waiting job's prompt. */
-import { $ } from "./dom.js";
-import { S, jobs } from "./state.js";
-import { current, doneList, lastDone, showView, sizeFrame, tabSync, updNav } from "./stage.js";
-import { loadJob, peekHide, peekJob, setJustDone } from "./queue.js";
 import { toast } from "./boot.js";
+import { updNav } from "./browse.js";
+import { $ } from "./dom.js";
+import { current, doneList, lastDone } from "./jobs.js";
+import { sizeFrame } from "./layout.js";
 import { preload, xfadeSnap } from "./pictures.js";
+import { loadJob, peekHide, peekJob, setJustDone } from "./queue.js";
+import { S, jobs } from "./state.js";
+import { showView, tabSync } from "./tabs.js";
 
 export const PV = {
   browse: null,

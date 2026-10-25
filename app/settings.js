@@ -1,10 +1,12 @@
 /* Kiln · settings, themes */
-import { $ } from "./dom.js";
-import { S, save } from "./state.js";
-import { resetLayout } from "./composer.js";
-import { current, moveThumb, setDock, showView, sizeFrame } from "./stage.js";
-import { harmonics, skin } from "./skins.js";
 import { toast } from "./boot.js";
+import { resetLayout } from "./composer.js";
+import { $ } from "./dom.js";
+import { current } from "./jobs.js";
+import { setDock, sizeFrame } from "./layout.js";
+import { harmonics, skin } from "./skins.js";
+import { S, save } from "./state.js";
+import { moveThumb, showView } from "./tabs.js";
 
 /* ======================= settings / themes ======================= */
 const THEMES = {

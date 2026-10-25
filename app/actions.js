@@ -1,15 +1,16 @@
 /* Kiln · queue actions sent to the server: add, Vary, stop, remove, delete (with Undo), rename, pause, reorder */
-import { $ } from "./dom.js";
-import { LORAS, P, S, SIZES, jobs, save, setJobs } from "./state.js";
-import { doneList, expandVariants, stripComments } from "./stage.js";
-import { PV, pv, pvPrune } from "./picstate.js";
-import { peekHide, peekJob } from "./queue.js";
-import { V, closeViewer, openViewer } from "./viewer.js";
 import { renderAll, slugify, toast } from "./boot.js";
-import { api } from "./live.js";
-import { imgs, urlFor } from "./pictures.js";
-import { forgeOk, fullNextPoll, poll } from "./sync.js";
+import { $ } from "./dom.js";
 import { models } from "./forge.js";
+import { doneList } from "./jobs.js";
+import { api } from "./live.js";
+import { PV, pv, pvPrune } from "./picstate.js";
+import { imgs, urlFor } from "./pictures.js";
+import { expandVariants, stripComments } from "./prompttext.js";
+import { peekHide, peekJob } from "./queue.js";
+import { LORAS, P, S, SIZES, jobs, save, setJobs } from "./state.js";
+import { forgeOk, fullNextPoll, poll } from "./sync.js";
+import { V, closeViewer, openViewer } from "./viewer.js";
 
 /* ---------- queue actions -> server ---------- */
 /* Start in the Gallery = Vary: the picture on show again — its prompt, settings, LoRAs and series — with a new seed.

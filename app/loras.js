@@ -1,8 +1,8 @@
 /* Kiln · LoRA library tab */
+import { esc } from "./boot.js";
+import { fmtW, renderChips } from "./composer.js";
 import { $ } from "./dom.js";
 import { LORAS, S, save } from "./state.js";
-import { fmtW, renderChips } from "./composer.js";
-import { esc } from "./boot.js";
 
 /* ======================= LoRA library ======================= */
 const FTIP = {

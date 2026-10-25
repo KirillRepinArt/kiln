@@ -1,7 +1,7 @@
 /* Kiln · data, state, icons, image hover buttons */
 import { $ } from "./dom.js";
-import { shownDone } from "./picstate.js";
 import { setThumbs } from "./forge.js";
+import { shownDone } from "./picstate.js";
 
 /* ======================= data ======================= */
 export const SIZES = {

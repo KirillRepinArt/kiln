@@ -1,12 +1,12 @@
 /* Kiln · what comes from Forge: models, LoRAs, upscalers, the Settings facts; LoRA thumbnails kept by the server */
-import { $ } from "./dom.js";
-import { LORAS, S, parseName, save } from "./state.js";
-import { renderChips } from "./composer.js";
-import { current } from "./stage.js";
-import { renderLoras } from "./loras.js";
 import { esc, toast } from "./boot.js";
+import { renderChips } from "./composer.js";
+import { $ } from "./dom.js";
+import { current } from "./jobs.js";
 import { api } from "./live.js";
+import { renderLoras } from "./loras.js";
 import { img, urlFor } from "./pictures.js";
+import { LORAS, S, parseName, save } from "./state.js";
 import { forgeOk } from "./sync.js";
 
 /* ---------- LoRA thumbnails stored by the server ---------- */

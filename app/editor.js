@@ -1,8 +1,8 @@
 /* CodeMirror 6 prompt editor, bundled in app/vendor/codemirror.js (works offline). If it can't load, the plain
    textarea stays. */
-import { $ } from "./dom.js";
-import { layoutLeft } from "./cardlayout.js";
 import { addJobs } from "./actions.js";
+import { layoutLeft } from "./cardlayout.js";
+import { $ } from "./dom.js";
 
 /* called from main.js, last */
 export async function startEditor() {

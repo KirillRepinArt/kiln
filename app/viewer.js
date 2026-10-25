@@ -1,10 +1,12 @@
 /* Kiln · full-size viewer, clicking the image */
+import { deleteJob, openInApp } from "./actions.js";
+import { updNav } from "./browse.js";
 import { $ } from "./dom.js";
-import { S, SIZES } from "./state.js";
-import { rowMode, sizeFrame, tabSync, updNav } from "./stage.js";
+import { rowMode, sizeFrame } from "./layout.js";
 import { onShow, picMode, pv, pvSync } from "./picstate.js";
 import { paint } from "./pictures.js";
-import { deleteJob, openInApp } from "./actions.js";
+import { S, SIZES } from "./state.js";
+import { tabSync } from "./tabs.js";
 
 /* ======================= full-size viewer ======================= */
 export const V = { job: null, s: 1, tx: 0, ty: 0, fit: 1, w: 0, h: 0 };

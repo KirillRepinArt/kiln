@@ -1,9 +1,9 @@
 /* Kiln · pictures: the real files and the live previews — loading, the small cache, drawing them on a canvas,
    the cross-fade between two, the missing-file card */
 import { $ } from "./dom.js";
-import { S } from "./state.js";
-import { shownDone } from "./picstate.js";
 import { api } from "./live.js";
+import { shownDone } from "./picstate.js";
+import { S } from "./state.js";
 
 /* ---------- images: real files and live previews, cached ---------- */
 export const imgs = new Map(),

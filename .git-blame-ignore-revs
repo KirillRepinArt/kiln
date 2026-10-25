@@ -1,0 +1,6 @@
+# Formatting-only commits: git blame (and GitHub's blame view) skips them, so each line still points at the change
+# that wrote it.  Locally: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# Prettier + ruff format of the code (v0.7 step 3)
+f921287036ed463718a22164d6598c460bb8020b
+# Prettier of index.html (v0.7 step 3)
+ac698093c127c092378fa4b9418c1f91913605a5

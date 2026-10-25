@@ -1,6 +1,7 @@
 /* Kiln · stepping through finished pictures: the arrows, ← / →, and the status line while browsing */
 import { $ } from "./dom.js";
 import { doneList } from "./jobs.js";
+import { lay } from "./layout.js";
 import { frameMorph } from "./morph.js";
 import { PV, browsed, onShow, picMode, pv } from "./picstate.js";
 import { S } from "./state.js";
@@ -45,4 +46,64 @@ export function browseStatus() {
   const b = browsed(),
     on = !!(b && PV.promptClosed);
   $("prog").classList.toggle("showp", on);
+}
+
+/* start-up wiring: the on-picture arrows (held under the pointer while you click them), ← / → (called from main.js, in order) */
+export function initBrowse() {
+  /* the picture's arrows live on a fixed layer: while they show they follow the picture's side edges every frame (it
+   glides), but while you're clicking through with them they hold their place on SCREEN (Photos / Lightroom: navigation
+   never runs away from the pointer); ~1 s after the last click they glide to the new picture's edges */
+  (function () {
+    const [pv, nx] = document.querySelectorAll(".gnav");
+    /* the arrow you clicked stays exactly where it is for as long as your pointer is on it (click as fast as you like);
+    move off it and it slides to the picture's edge. The other one follows the picture at once. Keys don't hold anything */
+    for (const el of [pv, nx])
+      el.addEventListener("pointerleave", () => {
+        if (lay.navHold === el) {
+          lay.navHold = null;
+          el.classList.add("glide");
+          clearTimeout(el._t);
+          el._t = setTimeout(() => el.classList.remove("glide"), 460);
+        }
+      });
+    function tick() {
+      if (document.body.classList.contains("navs")) {
+        const r = $("frame").getBoundingClientRect(),
+          y = Math.round(r.top + r.height / 2 - 20) + "px";
+        for (const [el, x] of [
+          [pv, Math.round(r.left + 10) + "px"],
+          [nx, Math.round(r.right - 50) + "px"],
+        ])
+          if (el !== lay.navHold && (el.style.left !== x || el.style.top !== y)) {
+            el.style.left = x;
+            el.style.top = y;
+          }
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+  document.addEventListener(
+    "click",
+    e => {
+      const b = e.target.closest(".nav");
+      if (!b) return;
+      e.stopPropagation();
+      if (b.classList.contains("gnav")) lay.navHold = b;
+      navFn(b)(+b.dataset.nav);
+      updNav();
+    },
+    true,
+  );
+  document.addEventListener("keydown", e => {
+    if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+    const a = document.activeElement;
+    if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+    if ($("modal").classList.contains("show")) return;
+    const f = $("viewer").classList.contains("show") ? vNav : S.view === "gen" ? genNav : null;
+    if (f && f(e.key === "ArrowLeft" ? -1 : 1)) {
+      e.preventDefault();
+      updNav();
+    }
+  });
 }

@@ -1,5 +1,5 @@
 /* Kiln · progress: real steps, a smooth glide in between, the live preview, the frame loop */
-import { capTxt } from "./actions.js";
+import { capTxt, stopJob } from "./actions.js";
 import { fmt } from "./boot.js";
 import { browseStatus } from "./browse.js";
 import { $ } from "./dom.js";
@@ -8,7 +8,7 @@ import { sizeFrame } from "./layout.js";
 import { api } from "./live.js";
 import { PV, browsed, doneById, onShow, picMode, pv, shownDone } from "./picstate.js";
 import { drawTo, missUI, paint, xfadeEnd } from "./pictures.js";
-import { justDone, peekJob, setJustDone } from "./queue.js";
+import { justDone, loadJob, peekJob, setJustDone } from "./queue.js";
 import { S, SEC_PER_STEP, SIZES, draft, jobs } from "./state.js";
 import { forgeOk, forgeStarting } from "./sync.js";
 
@@ -244,4 +244,25 @@ export function jobProgress(j) {
             : Math.max(0, ((j.steps - j.step - part) * per) / 1000)
           : null,
   };
+}
+
+/* start-up wiring: Stop, and a click on the status row under the picture (called from main.js, in order) */
+export function initStatusRow() {
+  $("stopBtn").onclick = () => stopJob(current());
+  $("prog").addEventListener("click", e => {
+    if (e.target.closest(".stop,.resume")) return;
+    const m = picMode();
+    if (m === "browse") {
+      if (PV.promptClosed) {
+        PV.promptClosed = false;
+        loadJob(browsed());
+      }
+      return;
+    }
+    if (m === "still") {
+      if (current()) pv("toRender");
+      else if (PV.news != null) pv("browse", doneById(PV.news));
+      return;
+    }
+  });
 }

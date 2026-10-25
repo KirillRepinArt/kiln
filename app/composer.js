@@ -1,14 +1,17 @@
 /* Kiln · prompt card controls: pills, prompt, LoRA chips */
+import { addJobs } from "./actions.js";
 import { esc, fmt, toast } from "./boot.js";
 import { chipsH, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
+import { askNotify } from "./effects.js";
 import { BAR, lay, layDef, layDrag, layGeo, layRelease, sizeFrame } from "./layout.js";
 import { PWMIN } from "./layoutmath.js";
 import { renderLoras } from "./loras.js";
-import { pv } from "./picstate.js";
+import { PV, pv } from "./picstate.js";
 import { peekButtons, peekJob, updPrompt } from "./queue.js";
 import { IC, LORAS, P, RATIOS, S, SEC_PER_STEP, SIZES, save, setDraft } from "./state.js";
 import { moveThumb, showView } from "./tabs.js";
+import { closeViewer } from "./viewer.js";
 
 /* ======================= pills ======================= */
 function slider(id, min, max, val, quick, hint) {
@@ -823,4 +826,33 @@ export function initComposer() {
       if (S.view === "loras") renderLoras();
     });
   })();
+}
+
+/* start-up wiring: Start, Ctrl+Enter, Esc (called from main.js, in order) */
+export function initStartKeys() {
+  $("play").onclick = () => {
+    askNotify();
+    addJobs();
+  };
+  document.addEventListener("keydown", e => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      addJobs();
+    }
+    if (e.key === "Escape") {
+      if ($("viewer").classList.contains("show")) {
+        closeViewer();
+        return;
+      }
+      if ($("modal").classList.contains("show")) {
+        $("modal").classList.remove("show");
+        return;
+      }
+      if ((PV.browse != null || PV.still) && !(e.target.closest && e.target.closest(".pwrapT"))) {
+        pv("close");
+        return;
+      } // Esc outside the editor = the picture's ✕
+      closePops();
+    }
+  });
 }

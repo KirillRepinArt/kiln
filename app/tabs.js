@@ -2,7 +2,7 @@
 import { $ } from "./dom.js";
 import { lay, layMorph, sizeFrame } from "./layout.js";
 import { renderLoras } from "./loras.js";
-import { browsed } from "./picstate.js";
+import { PV, browsed, pv } from "./picstate.js";
 import { QS, queueSig, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
 import { S } from "./state.js";
 
@@ -75,4 +75,25 @@ export function tabGo(fn) {
   document.documentElement.classList.add("tabmorph");
   layMorph(run);
   setTimeout(() => document.documentElement.classList.remove("tabmorph"), 900);
+}
+
+/* start-up wiring: the tab bar's clicks; the pill's place once the fonts have loaded (called from main.js, in order) */
+export function initTabs() {
+  document.querySelectorAll(".tab").forEach(
+    t =>
+      (t.onclick = () =>
+        tabGo(() => {
+          const v = t.dataset.v;
+          PV.from = null;
+          if (v === "gallery") {
+            if (S.view !== "gen") showView("gen");
+            if (!browsed()) pv("gallery");
+            tabSync();
+            return;
+          }
+          if (v === "gen") pv("generating"); /* the live view: the render, or the clean frame */
+          showView(v);
+        })),
+  );
+  document.fonts && document.fonts.ready.then(() => moveThumb(true));
 }

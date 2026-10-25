@@ -2,20 +2,22 @@
    the files used to run in when each started itself): the screen, then the connection to the server, then the prompt
    editor (both of those wait for answers, so the screen is up while they do). */
 import { initBoot } from "./boot.js";
+import { initBrowse } from "./browse.js";
 import { initCardlayout } from "./cardlayout.js";
-import { initComposer } from "./composer.js";
+import { initComposer, initStartKeys } from "./composer.js";
 import { startEditor } from "./editor.js";
 import { initEffects } from "./effects.js";
 import { initKeys } from "./keys.js";
-import { migrateLayoutPrefs } from "./layout.js";
+import { initLayout, migrateLayoutPrefs } from "./layout.js";
 import { startLive } from "./live.js";
 import { initLoras } from "./loras.js";
 import { initPnginfo } from "./pnginfo.js";
+import { initStatusRow } from "./progress.js";
 import { initQueue } from "./queue.js";
 import { initSettings } from "./settings.js";
 import { initSkins } from "./skins.js";
-import { initStage } from "./stage.js";
 import { initState } from "./state.js";
+import { initTabs } from "./tabs.js";
 import { installTestBridge } from "./testing.js";
 import { initTooltips } from "./tooltips.js";
 import { initViewer } from "./viewer.js";
@@ -25,7 +27,11 @@ initState();
 migrateLayoutPrefs(); // saved layouts of older versions → today's
 initComposer();
 initCardlayout();
-initStage();
+initTabs();
+initBrowse();
+initLayout();
+initStartKeys();
+initStatusRow();
 initSkins();
 initEffects();
 initQueue();

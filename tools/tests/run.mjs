@@ -55,9 +55,9 @@ async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, 
   const url = `http://127.0.0.1:${kport}/`;
   // --no-proxy-server like kiln.bat: a system proxy (VPN client, antivirus web filter) must not stall the local page
   run(browserPath(), ["--headless=new", `--user-data-dir=${join(dir, "profile")}`, `--remote-debugging-port=${dport}`, "--no-proxy-server",
-    "--no-first-run", "--no-default-browser-check", `--window-size=${width},${height}`, url]);
+    "--no-first-run", "--no-default-browser-check", `--window-size=${width},${height}`, "about:blank"]);
   let pg = null;
-  for (let i = 0; i < 80 && !pg; i++) { try { pg = (await (await fetch(`http://127.0.0.1:${dport}/json`)).json()).find(t => t.type === "page" && t.url.startsWith(url)) } catch (e) {} if (!pg) await sleep(250) }
+  for (let i = 0; i < 80 && !pg; i++) { try { pg = (await (await fetch(`http://127.0.0.1:${dport}/json`)).json()).find(t => t.type === "page") } catch (e) {} if (!pg) await sleep(250) }
   if (!pg) throw new Error("browser page not found");
   ws = new WebSocket(pg.webSocketDebuggerUrl); let id = 0; const wait = {}, errors = [], requests = [];
   ws.onmessage = m => { const d = JSON.parse(m.data); if (d.id && wait[d.id]) { wait[d.id](d); delete wait[d.id] }
@@ -67,6 +67,11 @@ async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, 
   await new Promise((r, j) => { ws.onopen = r; ws.onerror = j });
   const send = (method, params = {}) => new Promise(r => { const i = ++id; wait[i] = r; ws.send(JSON.stringify({ id: i, method, params })) });
   await send("Runtime.enable"); await send("Network.enable"); await send("Page.enable");
+  // the same conditions on every machine, set before Kiln loads (it reads them at start): motion on — Windows Server
+  // (CI) has animations off, which Kiln honours as "reduce motion" — and a 24-hour English clock
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+  await send("Emulation.setLocaleOverride", { locale: "en-GB" });
+  await send("Page.navigate", { url });
   const ev = async expr => { const r = await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true });
     if (r.result?.exceptionDetails) throw new Error("in page: " + (r.result.exceptionDetails.exception?.description || r.result.exceptionDetails.text) + "\n  " + expr.slice(0, 200));
     return r.result?.result?.value };

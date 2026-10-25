@@ -1,6 +1,6 @@
 // Files deleted outside Kiln: never cached by the browser, never shown, and the ways back (Recycle Bin, save back,
 // render again, remove).
-import { existsSync, unlinkSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, unlinkSync, readFileSync, writeFileSync, mkdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 const done = (k, n = 1) => k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=${n}`, 30000);
@@ -47,7 +47,7 @@ export async function renderAgain(k, t) {
 const BIN = join(tmpdir(), "kiln-test-recyclebin");
 export async function restoreFromBin(k, t) {
   await k.job("a fox", { steps: 2 }); await done(k);
-  const file = await k.ev(`lastDone().file`), path = join(k.out, file), bytes = readFileSync(path);
+  const file = await k.ev(`lastDone().file`), path = join(realpathSync.native(k.out), file), bytes = readFileSync(path);   // Windows records the long path (CI's temp folder is a short RUNNER~1 name)
   // what Explorer's delete leaves: a $R copy and a $I record of the original path (Windows 10+ format, version 2)
   const sid = join(BIN, "S-1-test"); mkdirSync(sid, { recursive: true });
   const p16 = Buffer.from(path + "\0", "utf16le"), info = Buffer.alloc(28 + p16.length);

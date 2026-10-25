@@ -1,0 +1,21 @@
+{
+  "name": "kiln",
+  "private": true,
+  "description": "Development tools only. Kiln itself needs nothing from npm: it runs from the files in app/ and server.py.",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint && stylelint \"app/**/*.css\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node tools/tests/run.mjs",
+    "privacy": "python tools/privacy_scan.py --all"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "stylelint": "17.16.0"
+  }
+}

@@ -7,7 +7,15 @@ txt2img blocks for steps x STEP_SECONDS, /progress reports steps and a live prev
     python tools/fake_forge.py            # listens on 127.0.0.1:7861
     python tools/fake_forge.py 7861 0.5   # port, seconds per step
 """
-import base64, json, random, re, struct, sys, threading, time, zlib
+import base64
+import json
+import random
+import re
+import struct
+import sys
+import threading
+import time
+import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 7861

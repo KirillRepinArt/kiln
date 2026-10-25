@@ -1,0 +1,7 @@
+app/vendor/
+app/fonts/
+node_modules/
+.venv/
+tools/tests/out/
+package-lock.json
+*.md

@@ -3,7 +3,20 @@
 Standard library only (Python 3.10+). Run:   python server.py        then open http://127.0.0.1:7870
 Settings: copy config.example.json to config.local.json and edit (that file is git-ignored).
 """
-import base64, datetime, json, os, re, struct, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request, zlib
+import base64
+import datetime
+import json
+import os
+import re
+import struct
+import subprocess
+import sys
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -454,7 +467,7 @@ def worker():
         try:
             forge("GET", "/sdapi/v1/options", timeout=5)
             forge_status.update(ok=True, error=None)
-        except Exception as e:
+        except Exception:
             forge_status.update(ok=False, error=f"Forge not reachable at {CFG['forge_url']}")
             time.sleep(3)
             continue

@@ -108,6 +108,19 @@
  */
 
 /**
+ * What the picture area shows (PV, picstate.js) — one state, changed only by events (pv(event)).
+ * @typedef {object} PictureView
+ * @property {number | null} browse  the finished picture being browsed (the Gallery)
+ * @property {{ id: number, kind: "result" | "reference" } | null} still  a picture held in Generating: the result that
+ *   just finished, or one brought back as a reference
+ * @property {boolean} promptClosed  its prompt closed with ✕ (the picture stays)
+ * @property {number | null} news    a result that landed while you held a reference
+ * @property {number | null} yielded the result that gave way to the render — back if the render stops without a picture
+ * @property {number} dir            the way you last stepped (← -1, → +1)
+ * @property {string | null} from    the tab a picture was opened from — ✕ goes back there
+ */
+
+/**
  * The layout's moment-to-moment state (not saved): what you're doing right now, and what was last applied.
  * @typedef {object} LayoutState
  * @property {boolean} overImg       the pointer is over the picture

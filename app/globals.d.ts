@@ -19,8 +19,6 @@ interface Window {
   /** the cover / privacy eye */
   toggleCover?: () => void;
   coverHeld?: () => boolean;
-  /** the URL of a job's picture */
-  fileUrl?: (j: unknown) => string | null;
   /** the theme's colour harmonics */
   HARM?: unknown;
   _cpv?: unknown;

@@ -3,7 +3,7 @@ import { $ } from "./dom.js";
 import { lay, layMorph, sizeFrame } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
-import { QS, queueSig, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
+import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
 import { S } from "./state.js";
 
 /* ======================= tabs ======================= */
@@ -42,7 +42,7 @@ export function showView(v) {
   document.querySelectorAll(".view").forEach(x => x.classList.toggle("on", x.id === "v-" + v));
   if (v === "queue") {
     if (was === "queue") renderQueue();
-    else if (renderQueueInner.sig !== queueSig()) renderQueueInner();
+    else if (queueChanged()) renderQueueInner();
   }
   /* opening it: no slide to measure for, nothing to rebuild if nothing changed */
   if (v === "loras") renderLoras();

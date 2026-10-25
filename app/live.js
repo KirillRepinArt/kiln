@@ -96,7 +96,6 @@ export async function startLive() {
     },
     true,
   );
-  window.fileUrl = urlFor;
   dn.addEventListener("mouseenter", () => clearTimeout(dnT));
   dn.addEventListener("mouseleave", () => {
     dnHideIn(2500);

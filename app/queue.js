@@ -1,40 +1,33 @@
-/* Kiln · Queue tab, peek / reuse */
-import {
-  deleteMany,
-  makeQThumb,
-  removeJob,
-  removeMany,
-  removeMissing,
-  renameFile,
-  renameJob,
-  setPaused,
-  stopJob,
-} from "./actions.js";
-import { esc, fmt, nameUI, renderAll, slugify, toast } from "./boot.js";
-import { layoutLeft } from "./cardlayout.js";
-import { copySeed, renderChips, renderPills } from "./composer.js";
-import { $ } from "./dom.js";
+// @ts-check
+/** @typedef {import("./types.js").Job} Job */
+import { deleteMany, makeQThumb, removeJob, removeMany, removeMissing, setPaused, stopJob } from "./actions.js";
+import { esc, fmt } from "./boot.js";
+import { copySeed } from "./composer.js";
+import { $, hit, qa, target } from "./dom.js";
 import { jEst, jobs, orderPending } from "./jobs.js";
+import { loadJob } from "./peek.js";
 import { PV, pv } from "./picstate.js";
-import { keepSeedUI } from "./pnginfo.js";
-import { IC, LORAS, P, S, draft, save, setDraft } from "./state.js";
+import { urlFor } from "./pictures.js";
+import { IC, S } from "./state.js";
 import { showView } from "./tabs.js";
 
+/* Kiln · Queue tab, peek / reuse */
 export function renderQueue() {
+  /** @type {Record<string, number>} */
   const before = {},
     W = $("qwrap"),
     y0 = W.scrollTop - 200,
     y1 = W.scrollTop + W.clientHeight + 200,
     R =
       "#qsRun .qi,#qsPend .qi"; /* only waiting / running rows slide, only on screen — finished ones never reorder (they jiggled) */
-  W.querySelectorAll(R).forEach(q => {
-    if (q.offsetTop > y0 && q.offsetTop < y1) before[q.dataset.id] = q.getBoundingClientRect().top;
+  qa(R, W).forEach(q => {
+    if (q.offsetTop > y0 && q.offsetTop < y1) before[String(q.dataset.id)] = q.getBoundingClientRect().top;
   });
   renderQueueInner();
   const had = Object.keys(before).length;
-  W.querySelectorAll(R).forEach(q => {
+  qa(R, W).forEach(q => {
     if (!(q.offsetTop > y0 && q.offsetTop < y1)) return;
-    const b = before[q.dataset.id];
+    const b = before[String(q.dataset.id)];
     if (b == null) {
       if (had) q.classList.add("new");
       return;
@@ -51,7 +44,9 @@ export function renderQueue() {
 }
 /* selection (finished rows): the round box, Ctrl-click, Shift-click a range; once something is selected a plain click
    adds or removes (Google Photos / Lightroom); Ctrl+A all, Esc none, Del deletes them. A bar on top acts on them */
+/** the selected finished rows (job ids) @type {Set<number>} */
 export const QS = new Set();
+/** the last row clicked while selecting (Shift-click selects from it) @type {number | null} */
 export let qsAnchor = null;
 export function renderQueueInner() {
   const run = jobs.filter(j => j.status === "running"),
@@ -60,6 +55,7 @@ export function renderQueueInner() {
   const left = pend.reduce((a, j) => a + jEst(j), 0);
   for (const id of [...QS]) if (!done.some(j => j.id === id)) QS.delete(id);
   $("qwrap").classList.toggle("selecting", QS.size > 0);
+  /** one row's markup @param {Job} j @param {"run" | "pend" | "done"} k its section */
   const item = (j, k) => `<div class="qi${j.missing ? " missing" : ""}" data-id="${j.id}" draggable="${k === "pend"}">
    ${k === "pend" ? '<span class="handle" title="Drag to reorder">⋮⋮</span>' : ""}${k === "done" ? `<span class="qck" data-ck="${j.id}" data-tip="Select (Ctrl-click · Shift-click a range)"></span>` : ""}
    <div class="th">${j.missing ? "gone" : j.status === "done" ? `<span data-tth="${j.id}"></span>` : j.status === "cancelled" ? "stopped" : k === "run" ? `<svg class="hg" viewBox="0 0 24 24" fill="none"><g class="hgg"><path d="M7 3.5h10M7 20.5h10" stroke="currentColor" stroke-width="1.6"/><path d="M8 3.5c0 4 1.6 6 4 8.5-2.4 2.5-4 4.5-4 8.5M16 3.5c0 4-1.6 6-4 8.5 2.4 2.5 4 4.5 4 8.5" stroke="currentColor" stroke-width="1.4"/><path class="st" d="M9.2 6.5h5.6c-.4 2-1.3 3.4-2.8 4.9-1.5-1.5-2.4-2.9-2.8-4.9z" fill="currentColor"/><path class="sb" d="M12 14.2c1.8 1.9 2.7 3.6 3 6H9c.3-2.4 1.2-4.1 3-6z" fill="currentColor"/></g></svg><img class="lp" data-lp="${j.id}" alt="">` : "#" + j.id}</div>
@@ -70,6 +66,7 @@ export function renderQueueInner() {
    ${k !== "done" ? `<button class="x" data-x="${j.id}" title="${k === "run" ? "Stop" : "Remove"}">${IC.x}</button>` : `<button class="x" data-rm="${j.id}" title="${j.status === "done" && !j.missing ? "Remove from the list — the file stays" : "Remove from the list"}">${IC.x}</button>`}</div>`;
   const W = $("qwrap");
   if (!$("qsRun")) W.innerHTML = '<div id="qsRun"></div><div id="qsPend"></div><div id="qsFin"></div>';
+  /** a section's markup, set only when it changed @param {string} id @param {string} html */
   const put = (id, html) => {
     const el = $(id);
     if (QSEC[id] === html) return false;
@@ -88,37 +85,42 @@ export function renderQueueInner() {
   {
     const have = new Set(done.map(j => j.id));
     for (const id of QT.keys()) if (!have.has(id)) QT.delete(id);
-    $("qwrap")
-      .querySelectorAll("[data-tth]")
-      .forEach(ph => {
-        const id = +ph.dataset.tth;
-        let im = QT.get(id);
-        if (!im) {
-          im = new Image();
-          im.className = "qt";
-          im.dataset.qt = id;
-          im.alt = "";
-          im.decoding = "async";
-          im.loading = "lazy";
-          im.onerror = () => {
-            if (im.dataset.tried) return;
-            im.dataset.tried = "1";
-            const j = jobs.find(x => x.id === id);
-            if (j) makeQThumb(j, im);
-          };
-          im.src = `/qthumbs/${id}.jpg`;
-          QT.set(id, im);
-        }
-        ph.replaceWith(im);
-      });
+    qa("[data-tth]", $("qwrap")).forEach(ph => {
+      const id = Number(ph.dataset.tth);
+      let im = QT.get(id);
+      if (!im) {
+        im = new Image();
+        im.className = "qt";
+        im.dataset.qt = id;
+        im.alt = "";
+        im.decoding = "async";
+        im.loading = "lazy";
+        im.onerror = () => {
+          if (im.dataset.tried) return;
+          im.dataset.tried = "1";
+          const j = jobs.find(x => x.id === id);
+          if (j) makeQThumb(j, im);
+        };
+        im.src = `/qthumbs/${id}.jpg`;
+        QT.set(id, im);
+      }
+      ph.replaceWith(im);
+    });
   }
-  renderQueueInner.sig = queueSig();
+  shownSig = queueSig();
 }
+/** @type {Record<string, string>} */
 const QSEC = {}; /* the last markup of each section */
 /* each finished row's thumbnail element, loaded once and moved into every rebuild of the list (a new element would load
    again: the files are never cached by the browser, so the list flashed empty on every visit) */
 const QT = new Map();
 /* what the list shows: unchanged → opening the tab rebuilds nothing */
+/* what the Queue tab shows was built for this list state */
+let shownSig = "";
+/* the list changed since the Queue tab was built */
+export function queueChanged() {
+  return shownSig !== queueSig();
+}
 export function queueSig() {
   return (
     jobs.map(j => `${j.id}:${j.status}:${j.file || ""}:${j.missing ? 1 : 0}:${j.name || ""}:${j.est || ""}`).join("|") +
@@ -128,6 +130,7 @@ export function queueSig() {
     !!window.qPaused
   );
 }
+/** @param {Job[]} done */
 function finHead(done) {
   if (QS.size) return qsBar(done);
   return `<span>Finished · ${done.length}</span><span>${done.some(j => j.missing) ? `<button id="rmMissing">Remove missing (${done.filter(j => j.missing).length})</button> ` : ""}<button id="clearDone">Clear list</button></span>`;
@@ -138,14 +141,15 @@ export function qsUpdate() {
     W = $("qwrap");
   for (const id of [...QS]) if (!done.some(j => j.id === id)) QS.delete(id);
   W.classList.toggle("selecting", QS.size > 0);
-  W.querySelectorAll(".qi").forEach(q => q.classList.toggle("sel", QS.has(+q.dataset.id)));
+  qa(".qi", W).forEach(q => q.classList.toggle("sel", QS.has(Number(q.dataset.id))));
   const h = $("qfin");
   if (h) {
     h.classList.toggle("qbar", QS.size > 0);
     h.innerHTML = finHead(done);
   }
-  renderQueueInner.sig = queueSig();
+  shownSig = queueSig();
 }
+/** @param {Job[]} done */
 function qsBar(done) {
   if (!QS.size) return "";
   const sel = done.filter(j => QS.has(j.id)),
@@ -162,6 +166,7 @@ function qsBar(done) {
 function qsFinished() {
   return jobs.filter(j => j.status === "done" || j.status === "cancelled").reverse();
 }
+/** @param {Job} j @param {boolean} range Shift: everything from the last one clicked */
 function qsClick(j, range) {
   const L = qsFinished();
   if (range && qsAnchor != null) {
@@ -198,6 +203,7 @@ const CLK = {
   t: new Intl.DateTimeFormat([], { hour: "2-digit", minute: "2-digit" }),
   d: new Intl.DateTimeFormat([], { month: "short", day: "numeric" }),
 };
+/** the time of day, with the date when it isn't today @param {number} ms */
 function clock(ms) {
   const d = new Date(ms),
     now = new Date(),
@@ -206,236 +212,33 @@ function clock(ms) {
     ? t
     : CLK.d.format(d) + " " + t;
 }
-export function browseTo(j) {
-  PV.promptClosed = false;
-  pv("browse", j);
-}
-export var justDone = null;
-export let peekJob = null;
-/* written from other files only through these */
-export function setPeekJob(j) {
-  peekJob = j;
-}
-export function setJustDone(id) {
-  justDone = id;
-}
+/** @param {number | null} id */
 export function setQsAnchor(id) {
   qsAnchor = id;
-}
-/* the peek bar only offers what would change something: no "Reuse prompt" when the prompt is already your draft;
-   "Use this seed" when only the seed differs; nothing but ✕ when it all matches */
-function sameLoras(j) {
-  const on = LORAS.filter(l => l.on),
-    jl = j.loras || [];
-  return (
-    on.length === jl.length &&
-    jl.every(x => {
-      const l = on.find(l => l.name === x.name);
-      return l && Math.abs(l.w - x.w) < 1e-6;
-    })
-  );
-}
-/* the same buttons in the same places on every picture (2026-10-19): hiding the ones that "wouldn't change anything"
-   was clever, but a bar whose buttons come and go can't be learned by the hand */
-export function peekButtons() {
-  const j = peekJob;
-  if (!j) return;
-  const pSame = (j.raw || j.prompt || "").trim() === (draft || "").trim();
-  const sSame = j.mp === S.mp && j.ar === S.ar && +j.steps === +S.steps && sameLoras(j),
-    seedSame = S.seedMode === "fixed" && +S.seed === +j.seed;
-  $("pkPrompt").style.display = "";
-  const all = $("pkAll");
-  const lbl = (lg, sm) => `<span class="lg">${lg}</span><span class="sm">${sm}</span>`; // the short form shows when the box is narrow
-  all.style.display = "";
-  all.dataset.m = "all";
-  all.innerHTML = lbl("Reuse all", "All");
-  $("pkSeed").style.display = "";
-  $("peekLbl").textContent =
-    `#${j.id}${j.status === "running" ? " · generating" : ""}${pSame && sSame && seedSame ? " · same as your draft" : ""}`;
-}
-export function loadJob(j) {
-  peekJob = j;
-  P.value = j.raw || j.prompt;
-  P.readOnly = true;
-  P.classList.add("peek");
-  P.scrollTop = 0;
-  const n = $("pname");
-  delete n.dataset.title;
-  n.value = j.name || "";
-  n.placeholder = j.status === "pending" ? "Name this job" : "Unnamed";
-  n.readOnly = !(j.status === "pending" || (j.status === "done" && j.file && !j.missing));
-  $("pnSave").classList.remove("show");
-  $("pnSave").textContent = j.status === "done" ? "Rename" : "Save name";
-  document.querySelector(".plbl").classList.toggle("donename", j.status === "done");
-  fnShow(false);
-  peekButtons();
-  $("peekbar").classList.add("show");
-  $("left").classList.add("peeking");
-  renderChips();
-  renderPills();
-  updPrompt();
-  layoutLeft();
-}
-/* Two ways out of a browse: the prompt's ✕ (or Esc in the editor) closes only the prompt — your draft comes back, the
-   picture stays, and the arrows keep the prompt closed (PV.promptClosed) until the browse ends; the picture's ✕ (or
-   Esc elsewhere) closes both (picstate.js). */
-function closePromptPeek() {
-  pv("promptClose");
-  peekHide();
-}
-/* out of the Gallery if you're in it, and your draft back in the prompt box */
-export function endPeek() {
-  if (PV.browse != null) pv("close");
-  else peekHide();
-}
-/* the prompt box shows your draft again */
-export function peekHide() {
-  if (!peekJob) return;
-  peekJob = null;
-  P.readOnly = false;
-  P.classList.remove("peek");
-  P.value = draft;
-  const n = $("pname");
-  n.value = S.pname || "";
-  n.placeholder = "Add name";
-  n.readOnly = false;
-  $("peekbar").classList.remove("show");
-  $("pnSave").classList.remove("show");
-  $("left").classList.remove("peeking");
-  document.querySelector(".plbl").classList.remove("donename", "fnon");
-  renderChips();
-  renderPills();
-  updPrompt();
-  layoutLeft();
-}
-export function saveJobName() {
-  const j = peekJob;
-  if (!j) return;
-  const v = $("pname").value.trim();
-  if (j.status === "done") {
-    $("pnSave").classList.remove("show");
-    renameFile(j, v).then(ok => {
-      if (!ok) $("pname").value = j.name || "";
-    });
-    $("pname").blur();
-    return;
-  }
-  if (j.status !== "pending") return;
-  renameJob(j, v);
-  j.name = v;
-  $("pnSave").classList.remove("show");
-}
-/* hovering a finished picture's title shows its file name in place: the title as it is on disk (lower case, dashes),
-   its number and .png on either side, and the job's #. Editing it renames the file (the series and the next number) */
-export function fnShow(on) {
-  const j = peekJob,
-    n = $("pname"),
-    l = document.querySelector(".plbl");
-  if (!j || j.status !== "done" || !j.file || document.activeElement === n || $("pnSave").classList.contains("show"))
-    on = false;
-  if (on) {
-    const m = j.file.match(/^(.*?)(-\d{3,}(?:_x[\d.]+)?)(\.png)$/i),
-      named = m && (j.name || "").trim() && slugify(j.name) === m[1];
-    $("fnPre").textContent = `#${j.id}`;
-    $("fnSuf").textContent = named ? m[2] + m[3] : ` · ${j.file}`;
-    /* up against the title's TEXT (the field is wider: a minimum width and its edit padding) */
-    const c = fnShow.c || (fnShow.c = document.createElement("canvas").getContext("2d")),
-      cs = getComputedStyle(n);
-    c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-    const tw = c.measureText(n.value || n.placeholder).width,
-      inset = Math.max(0, (n.offsetWidth - tw) / 2);
-    $("fnPre").style.marginRight = 8 - inset + "px";
-    $("fnSuf").style.marginLeft = -inset + "px";
-  } /* the title stays exactly as it is; its number and .png appear beside it */
-  l.classList.toggle("fnon", on);
-}
-export function reuse(all, seedToo) {
-  const j = peekJob;
-  const fixed = !!(seedToo || S.keepSeed);
-  if (!j) return;
-  const prev = {
-    draft,
-    S: { mp: S.mp, ar: S.ar, steps: S.steps, seedMode: S.seedMode, seed: S.seed, pname: S.pname },
-    loras: LORAS.map(l => ({ on: l.on, w: l.w })),
-  };
-  setDraft(j.raw || j.prompt);
-  if ((j.name || "").trim()) S.pname = j.name.trim();
-  /* reusing the working file, title included: the next image joins its series */
-  if (all) {
-    Object.assign(
-      S,
-      { mp: j.mp, ar: j.ar, steps: j.steps },
-      fixed ? { seedMode: "fixed", seed: j.seed } : { seedMode: "random" },
-    );
-    LORAS.forEach(l => {
-      const i = j.loras.findIndex(x => x.name === l.name);
-      l.on = i >= 0;
-      if (i >= 0) {
-        l.w = j.loras[i].w;
-        l.onAt = Date.now() + i;
-      }
-    });
-  }
-  pv("reuse");
-  peekHide();
-  save();
-  renderAll();
-  P.focus(); /* the picture stays as your reference while you edit — until Start or ✕ */
-  toast(
-    all
-      ? `Reused #${j.id} — prompt, settings and LoRAs${fixed ? ", its seed" : ", new seed"}`
-      : `Reused #${j.id}'s prompt`,
-    "Undo",
-    () => {
-      setDraft(prev.draft);
-      P.value = draft;
-      Object.assign(S, prev.S);
-      $("pname").value = S.pname || "";
-      LORAS.forEach((l, i) => Object.assign(l, prev.loras[i]));
-      save();
-      renderAll();
-      updPrompt();
-    },
-  );
-}
-export function updPrompt() {
-  nameUI();
-  const n = P.value.length;
-  $("left").classList.toggle("hastext", !!n && !peekJob);
-  $("pcount").textContent = n ? n.toLocaleString() + " chars" : "";
-  $("play").removeAttribute("title");
-  const vary = !!(peekJob && peekJob.kind !== "upscale");
-  $("play").classList.toggle("off", vary ? false : !P.value.trim() || !!peekJob);
-  $("play").classList.toggle("vary", vary);
-  $("play").dataset.tip = vary
-    ? `Vary: #${peekJob.id} again with a new seed — same prompt, settings and LoRAs; your draft stays (Ctrl+Enter)`
-    : peekJob
-      ? "Choose Reuse first"
-      : !P.value.trim()
-        ? "Write a prompt first"
-        : "Add to queue (Ctrl+Enter)";
 }
 /* drag to reorder: the dragged row itself moves in the list (no re-render while dragging — that swapped the element
    under the pointer and made the cursor flicker); it moves once the pointer crosses a row's middle, so rows don't
    ping-pong; the others slide out of the way */
-export let dragId = null,
-  dragEl = null;
+/** the waiting job being dragged @type {number | null} */
+export let dragId = null;
+/** @type {HTMLElement | null} */
+let dragEl = null;
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initQueue() {
   $("qwrap").addEventListener(
     "click",
     e => {
-      if (e.target.closest("#qsX")) {
+      if (hit(e, "#qsX")) {
         qsClear();
         return;
       }
-      if (e.target.closest("#qsAll")) {
+      if (hit(e, "#qsAll")) {
         qsFinished().forEach(j => QS.add(j.id));
         qsUpdate();
         return;
       }
-      if (e.target.closest("#qsSeries")) {
+      if (hit(e, "#qsSeries")) {
         const n = jobs.find(j => QS.has(j.id)),
           nm = ((n && n.name) || "").trim();
         qsFinished().forEach(j => {
@@ -444,24 +247,24 @@ export function initQueue() {
         qsUpdate();
         return;
       }
-      if (e.target.closest("#qsDel")) {
+      if (hit(e, "#qsDel")) {
         qsDelete();
         return;
       }
-      if (e.target.closest("#qsRemove")) {
+      if (hit(e, "#qsRemove")) {
         const ids = [...QS];
         QS.clear();
         removeMany(ids);
         renderQueue();
         return;
       }
-      const row = e.target.closest(".qi");
-      if (!row || e.target.closest("[data-rm],[data-x],.seedc")) return;
-      const j = jobs.find(x => x.id == +row.dataset.id);
+      const row = hit(e, ".qi");
+      if (!row || hit(e, "[data-rm],[data-x],.seedc")) return;
+      const j = jobs.find(x => x.id == Number(row.dataset.id));
       if (
         j &&
         (j.status === "done" || j.status === "cancelled") &&
-        (e.target.closest("[data-ck]") || e.ctrlKey || e.metaKey || e.shiftKey || QS.size)
+        (hit(e, "[data-ck]") || e.ctrlKey || e.metaKey || e.shiftKey || QS.size)
       ) {
         e.stopImmediatePropagation();
         qsClick(j, e.shiftKey);
@@ -475,7 +278,7 @@ export function initQueue() {
     e => {
       if (S.view !== "queue" || $("modal").classList.contains("show")) return;
       const a = document.activeElement;
-      if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+      if (a instanceof HTMLElement && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
         e.preventDefault();
         qsFinished().forEach(j => QS.add(j.id));
@@ -498,42 +301,42 @@ export function initQueue() {
   $("qwrap").addEventListener(
     "error",
     e => {
-      const im = e.target;
+      const im = target(e);
       if (!im.matches || !im.matches("img.qt") || im.dataset.tried) return;
       im.dataset.tried = "1";
-      const j = jobs.find(x => x.id === +im.dataset.qt);
+      const j = jobs.find(x => x.id === Number(im.dataset.qt || 0));
       if (j) makeQThumb(j, im);
     },
     true,
   );
   $("qwrap").addEventListener("click", e => {
-    const sc = e.target.closest(".seedc");
+    const sc = hit(e, ".seedc");
     if (sc) {
       e.stopPropagation();
       copySeed(sc.dataset.seed);
       return;
     }
-    if (e.target.id === "pauseQ") {
+    if (target(e).id === "pauseQ") {
       setPaused(!window.qPaused);
       return;
     }
-    if (e.target.id === "rmMissing") {
+    if (target(e).id === "rmMissing") {
       removeMissing();
       return;
     }
-    const rm = e.target.closest("[data-rm]");
+    const rm = hit(e, "[data-rm]");
     if (rm) {
-      removeJob(jobs.find(j => j.id == +rm.dataset.rm));
+      removeJob(jobs.find(j => j.id == Number(rm.dataset.rm)));
       return;
     }
-    const x = e.target.closest("[data-x]");
+    const x = hit(e, "[data-x]");
     if (x) {
-      stopJob(jobs.find(j => j.id == +x.dataset.x));
+      stopJob(jobs.find(j => j.id == Number(x.dataset.x)));
       return;
     }
-    const q = e.target.closest(".qi");
+    const q = hit(e, ".qi");
     if (!q) return;
-    const j = jobs.find(j => j.id == +q.dataset.id);
+    const j = /** @type {Job} */ (jobs.find(j => j.id == Number(q.dataset.id || 0))); // a row's job is in the list
     if (j.status === "running") {
       showView("gen");
       pv("peekRender");
@@ -547,36 +350,27 @@ export function initQueue() {
     } // finished: in the Gallery (✕ brings you back here)
     loadJob(j);
   });
-  (function () {
-    const l = document.querySelector(".plbl"),
-      n = $("pname");
-    l.addEventListener("mouseenter", () => fnShow(true));
-    l.addEventListener("mouseleave", () => fnShow(false));
-    n.addEventListener("focus", () => fnShow(false));
-  })();
-  $("pnSave").onclick = e => {
-    e.stopPropagation();
-    saveJobName();
-  };
   /* Q5: hover a finished thumbnail for a bigger look */
   (function () {
     const pop = document.createElement("div");
     pop.id = "qpop";
     document.body.appendChild(pop);
-    let t = null,
-      cur = null;
+    /** @type {number | undefined} */
+    let t;
+    /** the thumbnail the pointer is on @type {HTMLElement | null} */
+    let cur = null;
     const hide = () => {
       clearTimeout(t);
       cur = null;
       pop.classList.remove("show");
     };
     $("qwrap").addEventListener("mouseover", e => {
-      const c = e.target.closest(".qi .th canvas,.qi .th img.qt");
+      const c = hit(e, ".qi .th canvas,.qi .th img.qt");
       if (c === cur) return;
       hide();
-      if (!c || !window.fileUrl) return;
+      if (!c) return;
       cur = c;
-      const j = jobs.find(x => x.id == +(c.dataset.th || c.dataset.qt));
+      const j = jobs.find(x => x.id == Number(c.dataset.th || c.dataset.qt));
       if (!j || !j.file) return;
       t = setTimeout(() => {
         if (cur !== c) return;
@@ -584,11 +378,11 @@ export function initQueue() {
           [a, b] = (j.ar || "1:1").split(":").map(Number),
           w = a >= b ? 320 : Math.round((320 * a) / b),
           h = Math.round((w * b) / a);
-        pop.innerHTML = `<img src="${window.fileUrl(j)}" alt="">`;
+        pop.innerHTML = `<img src="${urlFor(j)}" alt="">`;
         pop.style.width = w + "px";
         pop.style.height = h + "px";
         /* never over the row you're pointing at: above it, lined up with its thumbnail; below it if there's no room above */
-        const row = c.closest(".qi").getBoundingClientRect(),
+        const row = /** @type {HTMLElement} */ (c.closest(".qi")).getBoundingClientRect(),
           P = $("qwrap").getBoundingClientRect(),
           x = Math.max(P.left + 8, Math.min(P.right - w - 8, r.left));
         let y = row.top - 8 - h;
@@ -602,58 +396,34 @@ export function initQueue() {
     $("qwrap").addEventListener("scroll", hide, { passive: true });
     $("qwrap").addEventListener("mousedown", hide);
   })();
-  $("pkPrompt").onclick = () => reuse(false);
-  $("pkAll").onclick = () => reuse(true, $("pkAll").dataset.m === "seed");
-  $("pkSeed").onclick = e => {
-    e.stopPropagation();
-    S.keepSeed = !S.keepSeed;
-    save();
-    keepSeedUI();
-  };
-  $("pkX").onclick = () => closePromptPeek();
-  P.addEventListener("keydown", e => {
-    if (!peekJob) return;
-    if (e.key === "Escape") {
-      closePromptPeek();
-      return;
-    }
-    const mod = e.ctrlKey || e.metaKey;
-    if (
-      (e.key.length === 1 && !mod && !e.altKey) ||
-      e.key === "Backspace" ||
-      e.key === "Delete" ||
-      (e.key === "Enter" && !mod) ||
-      (mod && /^[vx]$/i.test(e.key))
-    )
-      reuse(false);
-  });
   $("qwrap").addEventListener("dragstart", e => {
-    const q = e.target.closest('.qi[draggable="true"]');
+    const q = hit(e, '.qi[draggable="true"]');
     if (!q) return;
-    dragId = +q.dataset.id;
+    dragId = Number(q.dataset.id);
     dragEl = q;
     q.classList.add("drag");
-    e.dataTransfer.effectAllowed = "move";
+    const dt = /** @type {DataTransfer} */ (e.dataTransfer); // a drag event always has one
+    dt.effectAllowed = "move";
     try {
-      e.dataTransfer.setData("text/plain", String(dragId));
+      dt.setData("text/plain", String(dragId));
     } catch (_) {}
   });
   $("qwrap").addEventListener("dragover", e => {
     if (!dragEl) return;
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    const q = e.target.closest('.qi[draggable="true"]');
+    /** @type {DataTransfer} */ (e.dataTransfer).dropEffect = "move";
+    const q = hit(e, '.qi[draggable="true"]');
     if (!q || q === dragEl) return;
     const r = q.getBoundingClientRect(),
       after = e.clientY > r.top + r.height / 2;
     if (after ? q.nextElementSibling === dragEl : q.previousElementSibling === dragEl) return;
-    const rows = [...$("qwrap").querySelectorAll('.qi[draggable="true"]')],
+    const rows = qa('.qi[draggable="true"]', $("qwrap")),
       before = new Map(rows.map(x => [x, x.getBoundingClientRect().top]));
     if (after) q.after(dragEl);
     else q.before(dragEl);
     for (const x of rows) {
       if (x === dragEl) continue;
-      const d = before.get(x) - x.getBoundingClientRect().top;
+      const d = /** @type {number} */ (before.get(x)) - x.getBoundingClientRect().top;
       if (Math.abs(d) < 1) continue;
       x.style.transition = "none";
       x.style.transform = `translateY(${d}px)`;
@@ -668,8 +438,8 @@ export function initQueue() {
   });
   $("qwrap").addEventListener("dragend", () => {
     if (!dragEl) return;
-    const ids = [...$("qwrap").querySelectorAll('.qi[draggable="true"]')].map(x => +x.dataset.id);
-    orderPending(ids.map(id => jobs.find(j => j.id === id)).filter(Boolean)); // the new order, in place of the old
+    const ids = qa('.qi[draggable="true"]', $("qwrap")).map(x => Number(x.dataset.id));
+    orderPending(/** @type {Job[]} */ (ids.map(id => jobs.find(j => j.id === id)).filter(Boolean))); // the new order, in place of the old
     dragEl.classList.remove("drag");
     dragId = null;
     dragEl = null;

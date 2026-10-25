@@ -6,10 +6,10 @@ import { $ } from "./dom.js";
 import { current, doneById, jobs } from "./jobs.js";
 import { sizeFrame } from "./layout.js";
 import { api } from "./live.js";
-import { PV, browsed, onShow, picMode, pv, shownDone } from "./picstate.js";
+import { loadJob, peekJob } from "./peek.js";
+import { PV, browsed, justDone, onShow, picMode, pv, setJustDone, shownDone } from "./picstate.js";
 import { drawTo, missUI, paint, xfadeEnd } from "./pictures.js";
 import { SEC_PER_STEP, SIZES } from "./presets.js";
-import { justDone, loadJob, peekJob, setJustDone } from "./queue.js";
 import { S, draft } from "./state.js";
 import { forgeOk, forgeStarting } from "./sync.js";
 

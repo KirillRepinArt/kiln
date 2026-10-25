@@ -15,11 +15,12 @@ import { updNav } from "./browse.js";
 import { $ } from "./dom.js";
 import { current, doneById, doneList, lastDone } from "./jobs.js";
 import { sizeFrame } from "./layout.js";
+import { loadJob, peekHide, peekJob } from "./peek.js";
 import { preload, xfadeSnap } from "./pictures.js";
-import { loadJob, peekHide, peekJob, setJustDone } from "./queue.js";
 import { S } from "./state.js";
 import { showView, tabSync } from "./tabs.js";
 
+/** @type {import("./types.js").PictureView} */
 export const PV = {
   browse: null,
   still: null,
@@ -253,4 +254,9 @@ export function pvSync() {
       : current()
         ? "Close — show the render (Esc)"
         : "Close the image (Esc) — ← brings it back";
+}
+
+export var justDone = null;
+export function setJustDone(id) {
+  justDone = id;
 }

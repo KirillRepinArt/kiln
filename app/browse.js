@@ -107,3 +107,8 @@ export function initBrowse() {
     }
   });
 }
+
+export function browseTo(j) {
+  PV.promptClosed = false;
+  pv("browse", j);
+}

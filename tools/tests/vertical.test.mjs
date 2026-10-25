@@ -419,12 +419,12 @@ export async function arrowsHold(k, t) {
   await k.sleep(900);
   const f = await R(k, "#frame");
   await k.mouse(f.left + 30, f.top + f.height / 2);
-  await k.sleep(500);
-  const p0 = await R(k, ".gnav.prev");
+  // wait for the arrows' fade-in to finish (a fixed 0.5 s fell short on CI's slower machine)
   t.ok(
-    (await k.ev(`getComputedStyle(document.querySelector(".gnav.prev")).opacity`)) === "1",
+    await k.until(`getComputedStyle(document.querySelector(".gnav.prev")).opacity==="1"`, 2000, 50),
     "hovering the picture shows the arrows",
   );
+  const p0 = await R(k, ".gnav.prev");
   t.near(p0.left, f.left + 10, 2, "at the picture's edge");
   const x = p0.left + p0.width / 2,
     y = p0.top + p0.height / 2;

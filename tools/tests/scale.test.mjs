@@ -39,6 +39,7 @@ export async function scale(k, t) {
   await k.ev(`(performance.clearResourceTimings(),1)`); await k.sleep(5000);
   const polls = await k.ev(`performance.getEntriesByType("resource").filter(e=>e.name.includes("/api/state")).map(e=>e.encodedBodySize||e.transferSize)`);
   r.pollCount = polls.length; r.pollAvgKB = +(polls.reduce((a, b) => a + b, 0) / Math.max(1, polls.length) / 1024).toFixed(1);
+  r.pollMedianKB = +([...polls].sort((a, b) => a - b)[polls.length >> 1] / 1024).toFixed(1); r.fullPolls = polls.filter(b => b > 100 * 1024).length;
   // 2 · opening the Queue tab
   await k.ev(`(performance.clearResourceTimings(),1)`);
   r.queueOpenMs = await k.ev(`(()=>{const t=performance.now();showView("queue");document.body.offsetHeight;return Math.round(performance.now()-t)})()`);
@@ -60,7 +61,8 @@ export async function scale(k, t) {
   for (let i = 0; i < 60; i++) { await k.ev(`(genNav(-1),1)`); await k.sleep(60) }
   r.imgCache = await k.ev(`typeof __imgsN==="function"?__imgsN():"n/a"`);
   r.ok = true; mkdirSync(OUT, { recursive: true }); writeFileSync(join(OUT, "scale.json"), JSON.stringify(r, null, 1)); console.log("    scale:", JSON.stringify(r));
-  t.ok(r.pollAvgKB < 8, "the poll while a job renders stays light (only the running job)", r);
+  // one full list may land in the window (the refresh right after the job started — on a slow machine it arrives late)
+  t.ok(r.pollMedianKB < 8 && r.fullPolls <= 1, "the poll while a job renders stays light (only the running job)", r);
   t.ok(r.fullPngLoads <= 30, "first visit: a thumbnail is made once per row you see (not all 500)", r);
   t.ok(r.fullPngLoadsSecondVisit === 0, "after that the Queue never loads a full picture for its rows", r);
   t.ok(r.queueOpenMs < 120 && r.queueOpenMs2 < 120, "the Queue tab opens fast", r);

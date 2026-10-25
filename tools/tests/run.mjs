@@ -107,11 +107,14 @@ async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, 
   }
 }
 
-/* tiny assertion collector */
-function checker() { const fails = [], passes = []; return {
+/* tiny assertion collector. t.motion(...) is for things sampled in real time (glides, hover fades, frame counts):
+   judged on a real PC, only reported on CI — its machines have no GPU and draw a few frames a second */
+function checker() { const fails = [], passes = [], notes = []; return {
   ok(cond, what, detail) { (cond ? passes : fails).push(what + (cond || detail === undefined ? "" : `  →  ${typeof detail === "string" ? detail : JSON.stringify(detail)}`)) },
   near(a, b, tol, what) { this.ok(Math.abs(a - b) <= tol, what, { got: a, want: b, tol }) },
-  fails, passes } }
+  motion(cond, what, detail) { if (!process.env.CI) return this.ok(cond, what, detail);
+    if (!cond) notes.push(what + (detail === undefined ? "" : `  →  ${JSON.stringify(detail)}`)) },
+  fails, passes, notes } }
 
 /* arguments: an optional file-name filter and -j N */
 const args = process.argv.slice(2);
@@ -141,7 +144,7 @@ async function runOne({ file, tname, fn }) {
   finally { clearTimeout(timer); if (k) await Promise.race([k.close(), sleep(10_000)]); procs.forEach(killTree) }
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   return t.fails.length ? { ok: false, label, text: [`✗ ${label} (${secs}s)`, ...t.fails.map(x => "    ✗ " + x)].join("\n") }
-                        : { ok: true, label, text: `✓ ${label} (${secs}s, ${t.passes.length} checks)` };
+                        : { ok: true, label, text: [`✓ ${label} (${secs}s, ${t.passes.length} checks)`, ...t.notes.map(x => "    ~ not judged on CI: " + x)].join("\n") };
 }
 
 /* a pool of workers, each taking the next test off the list until it's empty. Circuit breaker: when Kiln fails to

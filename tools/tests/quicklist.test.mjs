@@ -122,8 +122,11 @@ export async function tabSwitchKeepsTabs(k, t) {
   t.ok(r.app === "none" && r.panel === "kiln-panel", "a tab switch fades only the content under the tabs (the tab bar and the prompt stay live)", r);
   t.ok(/0\.28s/.test(r.thumb), "…and the selected tab's pill slides", r);
   t.ok(r.prompt === "kiln-prompt" && /0\.42s/.test(r.tabs), "the prompt box slides as a snapshot, the tab bar glides (no jump between the tabs' widths)", r);
-  const x0 = await k.ev(`$("thumb").getBoundingClientRect().left`);
+  // positions relative to the tab bar: the bar itself glides during a switch (reading screen positions mid-glide mixed
+  // the two movements up)
+  const inBar = sel => `(document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect().left-document.querySelector(".tabs").getBoundingClientRect().left)`;
+  const x0 = await k.ev(inBar("#thumb"));
   await k.ev(`(document.querySelector('.tab[data-v="queue"]').click(),1)`); await k.sleep(120);
-  const x1 = await k.ev(`$("thumb").getBoundingClientRect().left`), x2 = await k.ev(`document.querySelector('.tab[data-v="queue"]').getBoundingClientRect().left`);
-  t.ok(x1 > x0 + 2 && x1 < x2 - 2, "mid-switch the pill is on its way (not jumped)", { x0, x1, x2 });
+  const x1 = await k.ev(inBar("#thumb")), x2 = await k.ev(inBar('.tab[data-v="queue"]'));
+  t.motion(x1 > x0 + 2 && x1 < x2 - 2, "mid-switch the pill is on its way (not jumped)", { x0, x1, x2 });
 }

@@ -273,7 +273,7 @@ export async function glowAndDip(k, t) {
   await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 }); await k.job("[fill:884422] tall", { ar: "3:4", steps: 2 }); await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
   // the top / bottom edges show the outline on hover
   await k.mouse(2, 2); await k.sleep(400); const he = await R(k, ".hedge.t"); await k.mouse(he.left + he.width / 2, he.top + 6); await k.sleep(500);
-  t.ok(+(await k.ev(`getComputedStyle($("fithint")).opacity`)) > .9, "hovering the top edge shows the outline");
+  t.motion(+(await k.ev(`getComputedStyle($("fithint")).opacity`)) > .9, "hovering the top edge shows the outline");
   await k.mouse(2, 2);
   // breathing: browsing to another shape dips the box
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`); await k.sleep(500);
@@ -321,7 +321,7 @@ export async function lateFixes(k, t) {
   // the curve: one continuous move — the box never stands still before it lands
   const r = await k.ev(`new Promise(res=>{const out=[];const t0=performance.now();genNav(-1);(function f(t){const b=$("frame").getBoundingClientRect();out.push([t-t0,b.width,b.height]);if(t-t0<600)requestAnimationFrame(f);else res(out)})(performance.now())})`);
   const mid = r.filter(x => x[0] > 120 && x[0] < 420), still = mid.filter((x, i) => i && Math.abs(x[1] - mid[i - 1][1]) < .05 && Math.abs(x[2] - mid[i - 1][2]) < .05).length;
-  t.ok(mid.length > 8 && still <= 1, "crop-then-reveal is one continuous move (no stop at the middle box)", { frames: mid.length, still });
+  t.motion(mid.length > 8 && still <= 1, "crop-then-reveal is one continuous move (no stop at the middle box)", { frames: mid.length, still });
   // the edit column reacts to hover even while its buttons are hidden
   await k.mouse(2, 2); await k.sleep(500);
   const g = await R(k, "#gtools"); await k.mouse(g.left + g.width / 2, g.top + 30); await k.sleep(400);

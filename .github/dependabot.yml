@@ -1,0 +1,24 @@
+# Dependabot: once a month, a pull request when something pinned has a newer version (CI runs on it before
+# anything is merged). Grouped: one PR per area. Only development tools and CI — Kiln itself installs nothing.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: forge-wiring
+    schedule: { interval: monthly }
+    groups:
+      actions: { patterns: ["*"] }
+
+  - package-ecosystem: npm
+    directory: /
+    target-branch: forge-wiring
+    schedule: { interval: monthly }
+    groups:
+      dev-tools: { patterns: ["*"] }
+
+  - package-ecosystem: pip
+    directory: /
+    target-branch: forge-wiring
+    schedule: { interval: monthly }
+    groups:
+      dev-tools: { patterns: ["*"] }

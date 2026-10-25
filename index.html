@@ -1,177 +1,520 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#000000">
-<meta name="color-scheme" content="dark">
-<title>Kiln</title>
-<!-- fonts ship with Kiln: it works offline and asks nothing of the internet. Satoshi is optional (its licence keeps
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark" />
+    <title>Kiln</title>
+    <!-- fonts ship with Kiln: it works offline and asks nothing of the internet. Satoshi is optional (its licence keeps
      it out of the public repo — see app/fonts/README.md) -->
-<link rel="stylesheet" href="app/fonts/fonts.css">
-<link rel="stylesheet" href="app/fonts/satoshi/satoshi.css">
-<link rel="icon" id="fav" href="data:,">
-<link rel="stylesheet" href="app/kiln.css" data-inline>
-</head>
-<body>
-<canvas id="stars"></canvas>
-<canvas id="fglow" width="64" height="80" style="display:none"></canvas>
-<div class="fithint" id="fithint"></div><div class="fithint" id="cardhint"></div>
-<div class="app">
-
-  <div class="lcol" id="lcol">
-  <div class="hsplit" id="hsplit" title="Drag to set the prompt box's largest height · double-click for auto"></div>
-  <div class="ltitle" id="ltitle"><div class="phead"><span class="plbl"><span class="nchip"><span class="fnpre" id="fnPre"></span><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60"><span class="fnsuf" id="fnSuf"></span><button class="pnsave" id="pnSave">Save name</button><button class="pnx" id="pnx" title="Clear name"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span></span></div><div class="peekbar" id="peekbar"><span id="peekLbl"></span><button id="pkPrompt"><span class="lg">Reuse prompt</span><span class="sm">Reuse</span></button><button id="pkAll"></button><button id="pkSeed" class="pkseed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button><button id="pkX" title="Back to my draft (Esc)">✕</button></div><div class="hmodes" id="hmodes"><button id="hmMatch" data-hm="match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/></svg></button><button id="hmFull" data-hm="full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
-  <section class="left" id="left">
-    <div class="vedge" id="vedge" title="Drag to resize · double-click for auto"></div>
-    <div class="pwrapT"><div class="privov" id="privov"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Private — press F9 or the eye to show</span></div><span class="pcount" id="pcount"></span><button class="pclear" id="pclear" title="Clear the prompt — Undo (or Ctrl+Z) brings it back"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none"><path d="M6 6l12 12M18 6L6 18"/></svg></button><textarea id="prompt" spellcheck="true" placeholder="Describe what you want to see…"></textarea></div>
-    <div class="controls">
-      <button class="play" id="play" title="Add to queue (Ctrl+Enter)">
-        <svg viewBox="0 0 24 24"><defs><linearGradient id="playFlow" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="0" spreadMethod="reflect"><stop offset="0" style="stop-color:var(--a1)"/><stop offset=".5" style="stop-color:var(--a2)"/><stop offset="1" style="stop-color:var(--a3)"/><animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="-48 0" dur="6s" repeatCount="indefinite"/></linearGradient><linearGradient id="playGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--a1)"/><stop offset=".55" style="stop-color:var(--a2)"/><stop offset="1" style="stop-color:var(--a3)"/></linearGradient></defs><path class="tri" d="M6.5 4.6l13 7.4-13 7.4z"/><g class="dice"><rect x="4.5" y="4.5" width="15" height="15" rx="3.2"/><circle cx="9" cy="9" r="1.35"/><circle cx="15" cy="9" r="1.35"/><circle cx="9" cy="15" r="1.35"/><circle cx="15" cy="15" r="1.35"/></g></svg>
-        <span class="ptrack"></span><span class="pring"></span><span class="badge" id="badge">0</span>
-      </button>
-      <div class="pills">
-        <button class="pill" id="pMP"><span class="val" id="vMP"></span><div class="pop" id="popMP"></div></button>
-        <button class="pill" id="pAR"><span class="val" id="vAR"></span><div class="pop" id="popAR"></div></button>
-        <button class="pill" id="pST"><span class="val" id="vST"></span><div class="pop" id="popST" style="min-width:260px"></div></button>
-        <button class="pill" id="pSD"><span class="val"><span class="il">Seed</span><span id="vSD"></span></span><div class="pop" id="popSD" style="min-width:240px"></div></button>
-        <button class="pill" id="pN"><span class="val" id="vN"></span><div class="pop" id="popN" style="min-width:260px"></div></button>
-      </div>
-    </div>
-  </section>
-  <div class="chips" id="chips"></div>
-
-  </div>
-  <div class="split" id="split" title="Drag to resize · double-click to reset"></div>
-
-  <section class="right" id="right">
-    <nav class="tabs">
-      <div class="seg" id="seg"><span class="thumb" id="thumb"></span>
-      <button class="tab" data-v="gallery">Gallery</button>
-      <button class="tab on" data-v="gen"><span class="tl"><span class="tg"><span class="trw"><span class="tring"></span></span>G</span>enerating</span></button>
-      <button class="tab" data-v="queue">Queue<span class="n" id="tabN"></span></button>
-      <button class="tab" data-v="loras">LoRAs</button>
-      <button class="tab" data-v="png">PNG Info</button></div>
-      <span class="laywrap"><button class="gear lay" id="layBtn" title="Layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 4v16"/></svg></button>
-       <div class="pop laymenu" id="layMenu"><div class="lrow"><div class="opt" data-lay="left" data-tip="Prompt on the left of the picture"><svg class="lic" viewBox="0 0 28 20" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="6" width="8" height="8" rx="1.6" fill="currentColor" stroke="none"/><rect x="12.7" y="2.7" width="13" height="14.6" rx="2"/></svg></div><div class="opt" data-lay="right" data-tip="Prompt on the right of the picture"><svg class="lic" viewBox="0 0 28 20" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="18" y="6" width="8" height="8" rx="1.6" fill="currentColor" stroke="none"/><rect x="2.3" y="2.7" width="13" height="14.6" rx="2"/></svg></div><div class="opt" data-lay="below" data-tip="Prompt below the picture"><svg class="lic" viewBox="0 0 28 20" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="6.7" y="1.7" width="14.6" height="10.6" rx="2"/><rect x="5" y="14.2" width="18" height="4.2" rx="1.4" fill="currentColor" stroke="none"/></svg></div><div class="lsep"></div><div class="opt" data-lay="reset" data-tip="Reset sizes — the default widths, centred"><svg class="lic" viewBox="0 0 28 18" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M18.5 9a4.5 4.5 0 1 1-1.5-3.4"/><path d="M18.5 3.5v3h-3"/></svg></div></div></div></span>
-      <button class="gear" id="gear" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-    </nav>
-
-    <div class="rpanel" id="rpanel">
-      <canvas id="amb" width="12" height="12"></canvas>
-      <div class="view on" id="v-gen">
-        <div class="stage" id="stage"><div class="hedges" id="hedges"><div class="hedge t" data-e="t" data-tip="Drag to limit the picture's height · double-click to remove the limit"></div><div class="hedge b" data-e="b" data-tip="Drag to limit the picture's height · double-click to remove the limit"></div><div class="hedge l" data-e="l" data-tip="Drag to resize the picture · double-click to remove the limit"></div><div class="hedge r" data-e="r" data-tip="Drag to resize the picture · double-click to remove the limit"></div></div>
-          <div class="frame" id="frame">
-            <canvas id="veil"></canvas>
-            <canvas id="embers"></canvas>
-            <canvas id="cv"></canvas><canvas id="cvx"></canvas><button class="cbtn" id="cbtn"></button>
-            <div class="idle" id="idle"><div><span id="idleT">Queue is empty</span><br><small id="idleS">Write a prompt and press ▶ (Ctrl+Enter)</small></div></div>
-            <div class="miss" id="missCard"><div class="mt">This file was deleted outside Kiln</div><div class="mf" id="missFile"></div>
-              <div class="ma"><button class="btn pri" id="mRestore">Restore from Recycle Bin</button><button class="btn pri" id="mSave">Save back</button><button class="btn" id="mAgain">Render again</button><button class="btn" id="mRemove">Remove from list</button></div>
-              <div class="mh" id="missHint"></div></div>
-            <button class="bclose" id="bclose"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <link rel="stylesheet" href="app/fonts/fonts.css" />
+    <link rel="stylesheet" href="app/fonts/satoshi/satoshi.css" />
+    <link rel="icon" id="fav" href="data:," />
+    <link rel="stylesheet" href="app/kiln.css" data-inline />
+  </head>
+  <body>
+    <canvas id="stars"></canvas>
+    <canvas id="fglow" width="64" height="80" style="display: none"></canvas>
+    <div class="fithint" id="fithint"></div><div class="fithint" id="cardhint"></div>
+    <div class="app">
+      <div class="lcol" id="lcol">
+        <div
+          class="hsplit"
+          id="hsplit"
+          title="Drag to set the prompt box's largest height · double-click for auto"
+        ></div>
+        <div class="ltitle" id="ltitle"
+          ><div class="phead"
+            ><span class="plbl"
+              ><span class="nchip"
+                ><span class="fnpre" id="fnPre"></span
+                ><input id="pname" class="pname" placeholder="Add name" spellcheck="false" maxlength="60" /><span
+                  class="fnsuf"
+                  id="fnSuf"
+                ></span
+                ><button class="pnsave" id="pnSave">Save name</button
+                ><button class="pnx" id="pnx" title="Clear name"
+                  ><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6">
+                    <path d="M6 6l12 12M18 6L6 18" /></svg></button></span></span></div
+          ><div class="peekbar" id="peekbar"
+            ><span id="peekLbl"></span
+            ><button id="pkPrompt"><span class="lg">Reuse prompt</span><span class="sm">Reuse</span></button
+            ><button id="pkAll"></button
+            ><button id="pkSeed" class="pkseed"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="5" y="11" width="14" height="9" rx="2" />
+                <path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg></button
+            ><button id="pkX" title="Back to my draft (Esc)">✕</button></div
+          ><div class="hmodes" id="hmodes"
+            ><button id="hmMatch" data-hm="match"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3" /></svg></button
+            ><button id="hmFull" data-hm="full"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg></button></div
+        ></div>
+        <section class="left" id="left">
+          <div class="vedge" id="vedge" title="Drag to resize · double-click for auto"></div>
+          <div class="pwrapT"
+            ><div class="privov" id="privov"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="5" y="11" width="14" height="9" rx="2" />
+                <path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg
+              ><span>Private — press F9 or the eye to show</span></div
+            ><span class="pcount" id="pcount"></span
+            ><button class="pclear" id="pclear" title="Clear the prompt — Undo (or Ctrl+Z) brings it back"
+              ><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none">
+                <path d="M6 6l12 12M18 6L6 18" /></svg></button
+            ><textarea id="prompt" spellcheck="true" placeholder="Describe what you want to see…"></textarea>
           </div>
-          <div class="gtools" id="gtools"><div class="side" id="sideGen"></div></div>
-        </div>
-        <div class="prog" id="prog">
-          <div class="track" id="track"><div class="fill" id="fill"></div></div>
-          <div class="meta"><span id="ptxt"></span><span class="eta" id="peta"></span><span class="pchip" id="pchip" title="Back to the render"><span class="pth" id="pth"><img id="pthImg" alt=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span id="pchipT"></span></span>
-          <button class="resume" id="resumeBtn" title="Resume the queue">Resume</button><button class="stop" id="stopBtn" title="Stop this job"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="#fff"/></svg>Stop</button></div>
-        </div>
-      </div>
-
-      <div class="view" id="v-queue">
-        <div class="qwrap" id="qwrap"></div>
-      </div>
-
-      <div class="view" id="v-loras">
-        <div class="lwrap">
-          <div class="ltop">
-            <span class="sbox"><input class="search" id="lsearch" placeholder="Search by name…"><button class="sclear" id="lsClear" title="Clear the search"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>
-            <label class="csz" title="Thumbnail size"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><input type="range" class="csize" id="csize" min="32" max="140" step="2"></label>
-            <button class="iconbtn" id="lRefresh" title="Rescan the LoRA folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg></button>
-            <label class="oneface" id="oneFace" title="Picking a face swaps out the previous one — two face LoRAs blend into one face"><span class="sw" id="ofSw"></span>One face at a time</label>
+          <div class="controls">
+            <button class="play" id="play" title="Add to queue (Ctrl+Enter)">
+              <svg viewBox="0 0 24 24">
+                <defs>
+                  <linearGradient
+                    id="playFlow"
+                    gradientUnits="userSpaceOnUse"
+                    x1="0"
+                    y1="0"
+                    x2="24"
+                    y2="0"
+                    spreadMethod="reflect"
+                  >
+                    <stop offset="0" style="stop-color: var(--a1)" />
+                    <stop offset=".5" style="stop-color: var(--a2)" />
+                    <stop offset="1" style="stop-color: var(--a3)" />
+                    <animateTransform
+                      attributeName="gradientTransform"
+                      type="translate"
+                      from="0 0"
+                      to="-48 0"
+                      dur="6s"
+                      repeatCount="indefinite"
+                    />
+                  </linearGradient>
+                  <linearGradient id="playGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" style="stop-color: var(--a1)" />
+                    <stop offset=".55" style="stop-color: var(--a2)" />
+                    <stop offset="1" style="stop-color: var(--a3)" />
+                  </linearGradient>
+                </defs>
+                <path class="tri" d="M6.5 4.6l13 7.4-13 7.4z" />
+                <g class="dice">
+                  <rect x="4.5" y="4.5" width="15" height="15" rx="3.2" />
+                  <circle cx="9" cy="9" r="1.35" />
+                  <circle cx="15" cy="9" r="1.35" />
+                  <circle cx="9" cy="15" r="1.35" />
+                  <circle cx="15" cy="15" r="1.35" />
+                </g>
+              </svg>
+              <span class="ptrack"></span><span class="pring"></span><span class="badge" id="badge">0</span>
+            </button>
+            <div class="pills">
+              <button class="pill" id="pMP"
+                ><span class="val" id="vMP"></span><div class="pop" id="popMP"></div
+              ></button>
+              <button class="pill" id="pAR"
+                ><span class="val" id="vAR"></span><div class="pop" id="popAR"></div
+              ></button>
+              <button class="pill" id="pST"
+                ><span class="val" id="vST"></span><div class="pop" id="popST" style="min-width: 260px"></div
+              ></button>
+              <button class="pill" id="pSD"
+                ><span class="val"><span class="il">Seed</span><span id="vSD"></span></span
+                ><div class="pop" id="popSD" style="min-width: 240px"></div
+              ></button>
+              <button class="pill" id="pN"
+                ><span class="val" id="vN"></span><div class="pop" id="popN" style="min-width: 260px"></div
+              ></button>
+            </div>
           </div>
-          <div class="fchips" id="fchips"></div>
-          <div class="warn" id="warn">Two face LoRAs are on — they will blend into one face rather than give you two people.</div>
+        </section>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="split" id="split" title="Drag to resize · double-click to reset"></div>
 
-          <div class="lscroll" id="lscroll"></div>
+      <section class="right" id="right">
+        <nav class="tabs">
+          <div class="seg" id="seg"
+            ><span class="thumb" id="thumb"></span>
+            <button class="tab" data-v="gallery">Gallery</button>
+            <button class="tab on" data-v="gen"
+              ><span class="tl"
+                ><span class="tg"
+                  ><span class="trw"><span class="tring"></span></span>G</span
+                >enerating</span
+              ></button
+            >
+            <button class="tab" data-v="queue">Queue<span class="n" id="tabN"></span></button>
+            <button class="tab" data-v="loras">LoRAs</button>
+            <button class="tab" data-v="png">PNG Info</button></div
+          >
+          <span class="laywrap"
+            ><button class="gear lay" id="layBtn" title="Layout"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="3" y="4" width="18" height="16" rx="3" />
+                <path d="M10 4v16" /></svg
+            ></button>
+            <div class="pop laymenu" id="layMenu"
+              ><div class="lrow"
+                ><div class="opt" data-lay="left" data-tip="Prompt on the left of the picture"
+                  ><svg class="lic" viewBox="0 0 28 20" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <rect x="2" y="6" width="8" height="8" rx="1.6" fill="currentColor" stroke="none" />
+                    <rect x="12.7" y="2.7" width="13" height="14.6" rx="2" /></svg></div
+                ><div class="opt" data-lay="right" data-tip="Prompt on the right of the picture"
+                  ><svg class="lic" viewBox="0 0 28 20" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <rect x="18" y="6" width="8" height="8" rx="1.6" fill="currentColor" stroke="none" />
+                    <rect x="2.3" y="2.7" width="13" height="14.6" rx="2" /></svg></div
+                ><div class="opt" data-lay="below" data-tip="Prompt below the picture"
+                  ><svg class="lic" viewBox="0 0 28 20" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <rect x="6.7" y="1.7" width="14.6" height="10.6" rx="2" />
+                    <rect
+                      x="5"
+                      y="14.2"
+                      width="18"
+                      height="4.2"
+                      rx="1.4"
+                      fill="currentColor"
+                      stroke="none"
+                    /></svg></div
+                ><div class="lsep"></div
+                ><div class="opt" data-lay="reset" data-tip="Reset sizes — the default widths, centred"
+                  ><svg class="lic" viewBox="0 0 28 18" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <path d="M18.5 9a4.5 4.5 0 1 1-1.5-3.4" />
+                    <path d="M18.5 3.5v3h-3" /></svg></div></div></div
+          ></span>
+          <button class="gear" id="gear" title="Settings"
+            ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="3.2" />
+              <path
+                d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+              /></svg
+          ></button>
+        </nav>
+
+        <div class="rpanel" id="rpanel">
+          <canvas id="amb" width="12" height="12"></canvas>
+          <div class="view on" id="v-gen">
+            <div class="stage" id="stage"
+              ><div class="hedges" id="hedges"
+                ><div
+                  class="hedge t"
+                  data-e="t"
+                  data-tip="Drag to limit the picture's height · double-click to remove the limit"
+                ></div
+                ><div
+                  class="hedge b"
+                  data-e="b"
+                  data-tip="Drag to limit the picture's height · double-click to remove the limit"
+                ></div
+                ><div
+                  class="hedge l"
+                  data-e="l"
+                  data-tip="Drag to resize the picture · double-click to remove the limit"
+                ></div
+                ><div
+                  class="hedge r"
+                  data-e="r"
+                  data-tip="Drag to resize the picture · double-click to remove the limit"
+                ></div
+              ></div>
+              <div class="frame" id="frame">
+                <canvas id="veil"></canvas>
+                <canvas id="embers"></canvas>
+                <canvas id="cv"></canvas><canvas id="cvx"></canvas><button class="cbtn" id="cbtn"></button>
+                <div class="idle" id="idle"
+                  ><div
+                    ><span id="idleT">Queue is empty</span><br /><small id="idleS"
+                      >Write a prompt and press ▶ (Ctrl+Enter)</small
+                    ></div
+                  ></div
+                >
+                <div class="miss" id="missCard"
+                  ><div class="mt">This file was deleted outside Kiln</div><div class="mf" id="missFile"></div>
+                  <div class="ma"
+                    ><button class="btn pri" id="mRestore">Restore from Recycle Bin</button
+                    ><button class="btn pri" id="mSave">Save back</button
+                    ><button class="btn" id="mAgain">Render again</button
+                    ><button class="btn" id="mRemove">Remove from list</button></div
+                  >
+                  <div class="mh" id="missHint"></div
+                ></div>
+                <button class="bclose" id="bclose"
+                  ><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18" /></svg
+                ></button>
+              </div>
+              <div class="gtools" id="gtools"><div class="side" id="sideGen"></div></div>
+            </div>
+            <div class="prog" id="prog">
+              <div class="track" id="track"><div class="fill" id="fill"></div></div>
+              <div class="meta"
+                ><span id="ptxt"></span><span class="eta" id="peta"></span
+                ><span class="pchip" id="pchip" title="Back to the render"
+                  ><span class="pth" id="pth"
+                    ><img id="pthImg" alt="" /><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                    >
+                      <rect x="5" y="11" width="14" height="9" rx="2" />
+                      <path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg></span
+                  ><span id="pchipT"></span
+                ></span>
+                <button class="resume" id="resumeBtn" title="Resume the queue">Resume</button
+                ><button class="stop" id="stopBtn" title="Stop this job"
+                  ><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="#fff" /></svg
+                  >Stop</button
+                ></div
+              >
+            </div>
+          </div>
+
+          <div class="view" id="v-queue">
+            <div class="qwrap" id="qwrap"></div>
+          </div>
+
+          <div class="view" id="v-loras">
+            <div class="lwrap">
+              <div class="ltop">
+                <span class="sbox"
+                  ><input class="search" id="lsearch" placeholder="Search by name…" /><button
+                    class="sclear"
+                    id="lsClear"
+                    title="Clear the search"
+                    ><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none">
+                      <path d="M6 6l12 12M18 6L6 18" /></svg></button
+                ></span>
+                <label class="csz" title="Thumbnail size"
+                  ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <rect x="4" y="4" width="7" height="7" rx="1.5" />
+                    <rect x="13" y="4" width="7" height="7" rx="1.5" />
+                    <rect x="4" y="13" width="7" height="7" rx="1.5" />
+                    <rect x="13" y="13" width="7" height="7" rx="1.5" /></svg
+                  ><input type="range" class="csize" id="csize" min="32" max="140" step="2"
+                /></label>
+                <button class="iconbtn" id="lRefresh" title="Rescan the LoRA folder"
+                  ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M20 12a8 8 0 1 1-2.6-5.9" />
+                    <path d="M20 4v4.5h-4.5" /></svg
+                ></button>
+                <label
+                  class="oneface"
+                  id="oneFace"
+                  title="Picking a face swaps out the previous one — two face LoRAs blend into one face"
+                  ><span class="sw" id="ofSw"></span>One face at a time</label
+                >
+              </div>
+              <div class="fchips" id="fchips"></div>
+              <div class="warn" id="warn"
+                >Two face LoRAs are on — they will blend into one face rather than give you two people.</div
+              >
+
+              <div class="lscroll" id="lscroll"></div>
+            </div>
+          </div>
+
+          <div class="view" id="v-png">
+            <div class="pwrap">
+              <div class="drop" id="drop"
+                >Drop a PNG here, or click to choose<br /><small
+                  >Reads the generation settings Forge stores inside the file</small
+                ><input type="file" id="file" accept="image/png" hidden
+              /></div>
+              <div class="pimg" id="pimg"><img id="pimgEl" alt="" /></div>
+              <div class="pout" id="pout"></div>
+              <div class="pact"
+                ><button class="pi-raw" id="pClear" style="display: none">Clear</button
+                ><button class="pi-raw" id="pRaw" style="display: none; margin-left: 6px">Show raw text</button
+                ><label
+                  class="oneface keepseed"
+                  id="pKeep"
+                  data-tip="On: use this image's seed. Off: a new random seed, for variations"
+                  ><span class="sw" id="pKeepSw"></span>Keep seed</label
+                ><button class="btn pri" id="pSend" disabled>Send to prompt</button></div
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal" id="modal">
+      <div class="mcard">
+        <div class="mhead"
+          ><button class="iconbtn" id="mClose" title="Close (Esc)"
+            ><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none">
+              <path d="M6 6l12 12M18 6L6 18" /></svg></button
+          ><h2>Settings</h2
+          ><div class="mact"
+            ><button class="iconbtn" id="rLayout" title="Reset layout — column width, prompt height, tab; nothing else"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="3" y="4" width="18" height="16" rx="3" />
+                <path d="M10 4v16" />
+                <path d="M14.5 10.5l2 1.5-2 1.5" /></svg></button
+            ><button
+              class="iconbtn"
+              id="rAll"
+              title="Reset everything… — prompt, name, settings, favourites, thumbnails, layout"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M4 12a8 8 0 1 0 2.6-5.9" />
+                <path d="M4 4v4.5h4.5" /></svg></button></div
+        ></div>
+        <div class="mbody">
+          <div class="fg">
+            <div class="fgh first">Model</div>
+            <label>Checkpoint</label
+            ><select data-set="ckpt"
+              ><option>krea2_turbo_fp8_scaled</option
+              ><option>krea2_turbo-Q6_K.gguf</option
+              ><option>krea2_turbo-Q4_K_M.gguf</option></select
+            >
+            <label>VAE</label
+            ><select data-set="vae"
+              ><option>qwen_image_vae</option></select
+            >
+            <label>Text encoder</label
+            ><select data-set="te"
+              ><option>qwen3vl_4b_fp8_scaled</option></select
+            >
+            <label>Sampler / schedule</label
+            ><select data-set="sampler"
+              ><option>Euler · Simple</option></select
+            >
+            <label>Shift</label><input data-set="shift" type="number" step="0.05" value="1.15" /> <label>CFG</label
+            ><input data-set="cfg" type="number" step="0.1" value="1" />
+            <div class="fgh">Output</div>
+            <label>Output folder</label><input data-set="outdir" value="outputs/kiln" /> <label>Forge URL</label
+            ><input data-set="forge" value="http://127.0.0.1:7860" /> <label>Forge's own UI</label
+            ><div class="about"
+              ><a class="btn flink2" id="forgeLink" href="http://127.0.0.1:7860" target="_blank" rel="noopener"
+                >Open Forge ↗</a
+              ></div
+            >
+            <div class="fgh" id="fghAp">Appearance</div>
+            <label>Theme</label
+            ><select id="sTheme"
+              ><option value="aurora">Aurora · northern lights</option
+              ><option value="ember">Ember</option
+              ><option value="ice">Ember → Ice</option
+              ><option value="emerald">Emerald · Matrix rain</option
+              ><option value="sunset">Sunset</option></select
+            >
+            <label>Font</label
+            ><select data-set="font" id="sFont"
+              ><option value="theme">Theme font</option
+              ><option value="Geist">Geist</option
+              ><option value="Inter">Inter</option
+              ><option value="Satoshi">Satoshi</option
+              ><option value="Manrope">Manrope</option
+              ><option value="IBM Plex Sans">IBM Plex Sans</option></select
+            >
+            <label>Material</label
+            ><select data-set="glass"
+              ><option value="on">Glass</option
+              ><option value="off">Solid</option></select
+            >
+            <div class="fgh" id="fghFx">Effects</div>
+            <label>Ambient glow</label
+            ><select data-set="glow"
+              ><option value="gen">While generating</option
+              ><option value="always">Always</option
+              ><option value="off">Off</option></select
+            >
+            <label>Embers when done</label
+            ><select data-set="embers"
+              ><option value="on">On</option
+              ><option value="off">Off</option></select
+            >
+            <label>Notify when done</label
+            ><select data-set="notify"
+              ><option value="on">On</option
+              ><option value="silent">Silent</option
+              ><option value="off">Off</option></select
+            >
+            <label>Background</label
+            ><select data-set="stars"
+              ><option value="on">On</option
+              ><option value="off">Off</option></select
+            >
+            <label>Aurora landscape</label
+            ><select data-set="landscape"
+              ><option value="off">Off · sky only</option
+              ><option value="on">On · mountains, mist and a lake</option></select
+            >
+            <div class="fgh">Cover</div>
+            <label>Cover while generating</label
+            ><select data-set="veil"
+              ><option value="full">Full</option
+              ><option value="light">Light</option
+              ><option value="off">Off</option></select
+            >
+            <label>Fast jobs (under 10 s)</label
+            ><select data-set="fastcover"
+              ><option value="cover">Cover them too</option
+              ><option value="skip">No cover</option></select
+            >
+            <div class="fgh">About</div>
+            <label>Version</label
+            ><div class="about"
+              ><span id="aboutV">Kiln</span><button class="btn" id="updBtn">Check for updates</button></div
+            >
+            <div class="updres" id="updRes"></div>
+            <label>Shortcuts</label
+            ><div class="about"
+              ><button class="btn" id="keysBtn">Keyboard shortcuts</button><span>or press ?</span></div
+            >
+          </div>
         </div>
       </div>
-
-      <div class="view" id="v-png">
-        <div class="pwrap">
-          <div class="drop" id="drop">Drop a PNG here, or click to choose<br><small>Reads the generation settings Forge stores inside the file</small><input type="file" id="file" accept="image/png" hidden></div>
-          <div class="pimg" id="pimg"><img id="pimgEl" alt=""></div>
-          <div class="pout" id="pout"></div>
-          <div class="pact"><button class="pi-raw" id="pClear" style="display:none">Clear</button><button class="pi-raw" id="pRaw" style="display:none;margin-left:6px">Show raw text</button><label class="oneface keepseed" id="pKeep" data-tip="On: use this image's seed. Off: a new random seed, for variations"><span class="sw" id="pKeepSw"></span>Keep seed</label><button class="btn pri" id="pSend" disabled>Send to prompt</button></div>
-        </div>
-      </div>
     </div>
-  </section>
-</div>
 
-<div class="modal" id="modal">
-  <div class="mcard">
-    <div class="mhead"><button class="iconbtn" id="mClose" title="Close (Esc)"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none"><path d="M6 6l12 12M18 6L6 18"/></svg></button><h2>Settings</h2><div class="mact"><button class="iconbtn" id="rLayout" title="Reset layout — column width, prompt height, tab; nothing else"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 4v16"/><path d="M14.5 10.5l2 1.5-2 1.5"/></svg></button><button class="iconbtn" id="rAll" title="Reset everything… — prompt, name, settings, favourites, thumbnails, layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v4.5h4.5"/></svg></button></div></div>
-    <div class="mbody">
-    <div class="fg">
-      <div class="fgh first">Model</div>
-      <label>Checkpoint</label><select data-set="ckpt"><option>krea2_turbo_fp8_scaled</option><option>krea2_turbo-Q6_K.gguf</option><option>krea2_turbo-Q4_K_M.gguf</option></select>
-      <label>VAE</label><select data-set="vae"><option>qwen_image_vae</option></select>
-      <label>Text encoder</label><select data-set="te"><option>qwen3vl_4b_fp8_scaled</option></select>
-      <label>Sampler / schedule</label><select data-set="sampler"><option>Euler · Simple</option></select>
-      <label>Shift</label><input data-set="shift" type="number" step="0.05" value="1.15">
-      <label>CFG</label><input data-set="cfg" type="number" step="0.1" value="1">
-      <div class="fgh">Output</div>
-      <label>Output folder</label><input data-set="outdir" value="outputs/kiln">
-      <label>Forge URL</label><input data-set="forge" value="http://127.0.0.1:7860">
-      <label>Forge's own UI</label><div class="about"><a class="btn flink2" id="forgeLink" href="http://127.0.0.1:7860" target="_blank" rel="noopener">Open Forge ↗</a></div>
-      <div class="fgh" id="fghAp">Appearance</div>
-      <label>Theme</label><select id="sTheme"><option value="aurora">Aurora · northern lights</option><option value="ember">Ember</option><option value="ice">Ember → Ice</option><option value="emerald">Emerald · Matrix rain</option><option value="sunset">Sunset</option></select>
-      <label>Font</label><select data-set="font" id="sFont"><option value="theme">Theme font</option><option value="Geist">Geist</option><option value="Inter">Inter</option><option value="Satoshi">Satoshi</option><option value="Manrope">Manrope</option><option value="IBM Plex Sans">IBM Plex Sans</option></select>
-      <label>Material</label><select data-set="glass"><option value="on">Glass</option><option value="off">Solid</option></select>
-      <div class="fgh" id="fghFx">Effects</div>
-      <label>Ambient glow</label><select data-set="glow"><option value="gen">While generating</option><option value="always">Always</option><option value="off">Off</option></select>
-      <label>Embers when done</label><select data-set="embers"><option value="on">On</option><option value="off">Off</option></select>
-      <label>Notify when done</label><select data-set="notify"><option value="on">On</option><option value="silent">Silent</option><option value="off">Off</option></select>
-      <label>Background</label><select data-set="stars"><option value="on">On</option><option value="off">Off</option></select>
-      <label>Aurora landscape</label><select data-set="landscape"><option value="off">Off · sky only</option><option value="on">On · mountains, mist and a lake</option></select>
-      <div class="fgh">Cover</div>
-      <label>Cover while generating</label><select data-set="veil"><option value="full">Full</option><option value="light">Light</option><option value="off">Off</option></select>
-      <label>Fast jobs (under 10 s)</label><select data-set="fastcover"><option value="cover">Cover them too</option><option value="skip">No cover</option></select>
-      <div class="fgh">About</div>
-      <label>Version</label><div class="about"><span id="aboutV">Kiln</span><button class="btn" id="updBtn">Check for updates</button></div>
-      <div class="updres" id="updRes"></div>
-      <label>Shortcuts</label><div class="about"><button class="btn" id="keysBtn">Keyboard shortcuts</button><span>or press ?</span></div>
-    </div>
-    </div>
-  </div>
-</div>
+    <div class="modal offline" id="offline"
+      ><div class="mcard"
+        ><h2>Kiln's server isn't running</h2
+        ><p>Start Kiln with <b>kiln.bat</b>. This page reconnects by itself as soon as the server is back.</p></div
+      ></div
+    >
+    <div class="viewer" id="viewer"
+      ><canvas id="vcv"></canvas
+      ><button class="nav prev off" data-nav="-1" title="Previous (←)"
+        ><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7" /></svg></button
+      ><button class="nav next off" data-nav="1" title="Next (→)"
+        ><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7" /></svg></button
+      ><button class="vclose" id="vclose" title="Close (Esc)"
+        ><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18" /></svg></button
+      ><div class="vzoom" id="vzoom"></div
+      ><div class="vhint"
+        >← → browse · Click: fit ↔ 100% · Wheel: zoom · Drag: pan · Double-click: open in default app · Esc: close</div
+      ></div
+    >
+    <button class="nav gnav prev off" data-nav="-1" title="Previous (←)"
+      ><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7" /></svg></button
+    ><button class="nav gnav next off" data-nav="1" title="Next (→)"
+      ><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7" /></svg
+    ></button>
+    <div class="donenote" id="donenote"
+      ><span class="dnth"><img id="dnImg" alt="" /></span><span id="dnTxt"></span
+    ></div>
+    <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastBtn"></button></div>
 
-<div class="modal offline" id="offline"><div class="mcard"><h2>Kiln's server isn't running</h2><p>Start Kiln with <b>kiln.bat</b>. This page reconnects by itself as soon as the server is back.</p></div></div>
-<div class="viewer" id="viewer"><canvas id="vcv"></canvas><button class="nav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button><button class="vclose" id="vclose" title="Close (Esc)"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="vzoom" id="vzoom"></div><div class="vhint">← → browse · Click: fit ↔ 100% · Wheel: zoom · Drag: pan · Double-click: open in default app · Esc: close</div></div>
-<button class="nav gnav prev off" data-nav="-1" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></button><button class="nav gnav next off" data-nav="1" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7"/></svg></button>
-<div class="donenote" id="donenote"><span class="dnth"><img id="dnImg" alt=""></span><span id="dnTxt"></span></div>
-<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastBtn"></button></div>
-
-<script src="app/state.js" data-bundle="core"></script>
-<script src="app/composer.js" data-bundle="core"></script>
-<script src="app/cardlayout.js" data-bundle="core"></script>
-<script src="app/stage.js" data-bundle="core"></script>
-<script src="app/picstate.js" data-bundle="core"></script>
-<script src="app/skins.js" data-bundle="core"></script>
-<script src="app/effects.js" data-bundle="core"></script>
-<script src="app/queue.js" data-bundle="core"></script>
-<script src="app/viewer.js" data-bundle="core"></script>
-<script src="app/tooltips.js" data-bundle="core"></script>
-<script src="app/loras.js" data-bundle="core"></script>
-<script src="app/pnginfo.js" data-bundle="core"></script>
-<script src="app/settings.js" data-bundle="core"></script>
-<script src="app/boot.js" data-bundle="core"></script>
-<script src="app/keys.js" data-bundle="core"></script>
-<script src="app/live.js" data-bundle="live"></script>
-<script src="app/editor.js" data-bundle="editor"></script>
-
-</body>
+    <script src="app/state.js" data-bundle="core"></script>
+    <script src="app/composer.js" data-bundle="core"></script>
+    <script src="app/cardlayout.js" data-bundle="core"></script>
+    <script src="app/stage.js" data-bundle="core"></script>
+    <script src="app/picstate.js" data-bundle="core"></script>
+    <script src="app/skins.js" data-bundle="core"></script>
+    <script src="app/effects.js" data-bundle="core"></script>
+    <script src="app/queue.js" data-bundle="core"></script>
+    <script src="app/viewer.js" data-bundle="core"></script>
+    <script src="app/tooltips.js" data-bundle="core"></script>
+    <script src="app/loras.js" data-bundle="core"></script>
+    <script src="app/pnginfo.js" data-bundle="core"></script>
+    <script src="app/settings.js" data-bundle="core"></script>
+    <script src="app/boot.js" data-bundle="core"></script>
+    <script src="app/keys.js" data-bundle="core"></script>
+    <script src="app/live.js" data-bundle="live"></script>
+    <script src="app/editor.js" data-bundle="editor"></script>
+  </body>
 </html>

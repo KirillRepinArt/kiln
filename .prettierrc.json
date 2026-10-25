@@ -2,5 +2,13 @@
   "printWidth": 120,
   "trailingComma": "all",
   "arrowParens": "avoid",
-  "quoteProps": "consistent"
+  "quoteProps": "consistent",
+  "overrides": [
+    {
+      "files": "*.html",
+      "options": {
+        "htmlWhitespaceSensitivity": "strict"
+      }
+    }
+  ]
 }

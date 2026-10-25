@@ -9,7 +9,8 @@
     "format:check": "prettier --check .",
     "test": "node tools/tests/run.mjs",
     "privacy": "python tools/privacy_scan.py --all",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "test:unit": "node --test \"tools/tests/unit/*.test.mjs\""
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

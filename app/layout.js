@@ -1,8 +1,9 @@
 /* Kiln · the page layout: the prompt and the picture area side by side or stacked, their widths and heights,
    the edges you drag, docking, and the holds that keep things still while you work */
-import { CARDMAX, applyMode, layoutLeft, lyReset, minRight, stackW, tabsW } from "./cardlayout.js";
+import { applyMode, layoutLeft, lyReset, minRight, stackW, tabsW } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { current } from "./jobs.js";
+import { CARDMAX, GAP, LISTMIN, PWMIN, fitInBox, pageGeometry, toolColumnW } from "./layoutmath.js";
 import { PV, onShow, picMode } from "./picstate.js";
 import { S, jobs, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
@@ -10,13 +11,7 @@ import { moveThumb } from "./tabs.js";
 /* a quick fade-through; the picture morphs if it's on both sides */
 
 function fitBox(el, ar, bw, bh) {
-  const [a, b] = ar.split(":").map(Number);
-  let w = bw,
-    h = (bw * b) / a;
-  if (h > bh) {
-    h = bh;
-    w = (bh * a) / b;
-  }
+  const { w, h } = fitInBox(ar, bw, bh);
   el.style.width = w + "px";
   el.style.height = h + "px";
 }
@@ -36,16 +31,10 @@ export function rowMode() {
    fill it. Edges (composer.js): the divider between them trades width (the prompt stops at its minimum); an outer edge
    follows the cursor, and on release the pair glides back to centre — the same rule as resizing the window.
    (Design agreed 2026-10-18 after the first try left a growing gap in the middle.) */
-export const LISTMIN = 660,
-  GAP = 18,
-  PWMIN = 360;
 /* the edit buttons' column beside the picture: 40 px buttons, 6 px apart and from the picture. Room is kept for as many
    columns as the picture's height needs, so none is ever cut off (the panel clips anything outside the area) */
 export function tbW(h) {
-  const n = document.querySelectorAll("#sideGen button").length || 6,
-    per = Math.max(1, Math.floor((Math.max(h, 40) + 6) / 46)),
-    cols = Math.ceil(n / per);
-  return 6 + cols * 46;
+  return toolColumnW(h, document.querySelectorAll("#sideGen button").length || 6);
 }
 /* Two remembered widths for the right side: rw = the panel width of Queue / LoRAs / PNG Info (the same for every
    picture); iw = in Generating, the largest the picture may be (null = no cap). In Generating the image area HUGS the
@@ -56,8 +45,7 @@ export function tbW(h) {
 /* widths are PREFERRED sizes in px (S.lay v:3): a window resize never grows a panel past what you chose — the extra
    goes to the margins; shrinking takes the margins first (down to MMIN), then both panels in proportion, and they come
    back when there's room (flex's "shrink, don't grow"). Shares of the window (v:2) shrank them far too early. */
-const layW = () => innerWidth - 36,
-  MMIN = 24;
+const layW = () => innerWidth - 36;
 export const layDef = () => ({ pw: 680, rw: Math.max(LISTMIN, tabsW() + 2), iw: null, v: 3 });
 export const lay = { overImg: false, navAt: 0, pressCard: false, last: null, drag: false };
 /* the picture's height: the stage minus the status row, capped in Generating by S.lay.ih (a share of that height,
@@ -89,17 +77,8 @@ export function layGeo() {
     minR = gen
       ? 420
       : minRight(); /* Generating: the tab bar may overhang a narrow picture (decided 2026-10-19); the other tabs' panel holds it */
-  let pw = Math.max(PWMIN, Math.min(L.pw, CARDMAX));
-  const want = gen ? (lay.drag ? L.iw || W : Math.min(L.iw || 1e9, hugW())) : L.rw;
-  let rw = Math.max(minR, want);
-  const room = W - GAP - 2 * MMIN; // too narrow: both give way in proportion
-  if (pw + rw > room) {
-    const k = Math.max(0, room) / (pw + rw);
-    pw = Math.max(PWMIN, pw * k);
-    rw = Math.max(minR, Math.min(rw * k, W - GAP - pw));
-  }
-  const m = Math.max(0, (W - GAP - pw - rw) / 2);
-  return { pw, rw, mL: m, mR: m, W, minR, off: 0, gen };
+  // the picture's hug width is measured only when it's used (Generating, no edge held)
+  return pageGeometry({ W, gen, drag: lay.drag, minR, hug: gen && !lay.drag ? hugW() : undefined }, L);
 }
 function layApply(g) {
   const app = document.querySelector(".app"),

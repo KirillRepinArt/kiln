@@ -13,6 +13,8 @@ if [ -n "$JS$CSS" ] && [ ! -d node_modules ]; then echo "pre-commit: linters not
 if [ -n "$JS" ] && [ -d node_modules ]; then echo "$JS" | tr '\n' '\0' | xargs -0 npx --no-install eslint || fail=1; fi
 # types: the whole app at once (a change in one file can break another's types; ~1.5 s)
 if [ -n "$JS" ] && [ -d node_modules ]; then npx --no-install tsc -p . || fail=1; fi
+# unit tests: pure logic, well under a second
+if [ -n "$JS" ]; then node --test --test-reporter=dot "tools/tests/unit/*.test.mjs" >/dev/null 2>&1 || { echo "pre-commit: unit tests fail — npm run test:unit"; fail=1; }; fi
 if [ -n "$CSS" ] && [ -d node_modules ]; then echo "$CSS" | tr '\n' '\0' | xargs -0 npx --no-install stylelint || fail=1; fi
 FMT=$(files 'app/*.js' 'app/*.css' 'tools/*.mjs' '*.js' '*.mjs' '*.json' '.github/*.yml')
 if [ -n "$FMT" ] && [ -d node_modules ]; then echo "$FMT" | tr '\n' '\0' | xargs -0 npx --no-install prettier --check || { echo "pre-commit: npm run format fixes the layout"; fail=1; }; fi

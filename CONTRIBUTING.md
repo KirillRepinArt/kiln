@@ -24,6 +24,7 @@ across files live in `app/types.js` as JSDoc; a file is checked once it starts w
 
 ## Tests
 ```
+npm run test:unit              # unit tests of pure logic (tools/tests/unit/), in milliseconds
 npm test                       # all end-to-end tests, several at a time (fake Forge + Kiln + headless Edge each)
 node tools/tests/run.mjs cover # only files whose name contains "cover"
 node tools/tests/run.mjs -j 1  # one at a time

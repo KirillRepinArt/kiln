@@ -19,6 +19,7 @@ jobs:
         with: { python-version: "3.10" }
       - run: npm ci
       - run: npm run lint
+      - run: npm run test:unit
       - run: pip install -r requirements-dev.txt
       - run: ruff check
       - run: ruff format --check

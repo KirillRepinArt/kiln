@@ -52,4 +52,29 @@
  * }} Job
  */
 
+/**
+ * Your layout sizes, saved (S.lay). Widths in px; the height caps are shares of the room (0–1).
+ * @typedef {object} LayoutPrefs
+ * @property {number} pw          the prompt's width
+ * @property {number} rw          the Queue / LoRAs / PNG Info panel's width
+ * @property {number | null} iw   Generating: the picture's width cap (null = none)
+ * @property {number | null} [ih] Generating: the picture's height cap
+ * @property {number | null} [vih] the same, in Vertical
+ * @property {number | null} [sw] Vertical: the prompt box's width (null = the picture's: Fit width)
+ * @property {number} v           the format version (3: px)
+ */
+
+/**
+ * Where the prompt and the picture area go: their widths and the margins round the pair (px).
+ * @typedef {object} Geometry
+ * @property {number} pw     the prompt's width
+ * @property {number} rw     the picture area's width
+ * @property {number} mL     the margin left of the pair
+ * @property {number} mR     the margin right of it
+ * @property {number} W      the room it was worked out for
+ * @property {number} minR   the picture area's least width
+ * @property {number} off    a shift of the whole pair (held still while you drag an outer edge)
+ * @property {boolean} gen   worked out for Generating
+ */
+
 export {};

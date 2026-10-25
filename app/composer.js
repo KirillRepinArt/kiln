@@ -2,7 +2,8 @@
 import { esc, fmt, toast } from "./boot.js";
 import { chipsH, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
-import { BAR, PWMIN, lay, layDef, layDrag, layGeo, layRelease, sizeFrame } from "./layout.js";
+import { BAR, lay, layDef, layDrag, layGeo, layRelease, sizeFrame } from "./layout.js";
+import { PWMIN } from "./layoutmath.js";
 import { renderLoras } from "./loras.js";
 import { pv } from "./picstate.js";
 import { peekButtons, peekJob, updPrompt } from "./queue.js";

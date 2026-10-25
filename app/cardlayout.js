@@ -1,6 +1,7 @@
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $ } from "./dom.js";
-import { PWMIN, lay, setDock, sizeFrame, vAlign } from "./layout.js";
+import { lay, setDock, sizeFrame, vAlign } from "./layout.js";
+import { PWMIN } from "./layoutmath.js";
 import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 
@@ -40,7 +41,6 @@ function cardNaturalH() {
   const edH = (sc ? sc.scrollHeight : P.scrollHeight) + 16;
   return Math.max(170, L.offsetHeight - w.offsetHeight + Math.max(EDMIN, edH));
 }
-export const CARDMAX = 900; // wide window: the prompt card never gets wider than this (text stops at ~76ch anyway)
 export function tabsW() {
   const k = document.querySelector(".tabs").children;
   return k.length ? Math.ceil(k[k.length - 1].getBoundingClientRect().right - k[0].getBoundingClientRect().left) : 0;

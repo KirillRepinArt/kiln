@@ -34,12 +34,12 @@ const freePort = () => new Promise(r => { const s = createServer(); s.listen(0, 
 async function waitHttp(url, ms = 15000) { const t = Date.now(); while (Date.now() - t < ms) { try { await fetch(url); return } catch (e) { await sleep(150) } } throw new Error("no answer from " + url) }
 
 /* one Kiln instance + browser page, with the helpers a test uses */
-async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, autoExit = false, before = null } = {}) {
+async function launch(name, { step = 0.6, width = 1513, height = 900, env = {}, autoExit = false, before = null } = {}, procs = []) {
   const dir = join(tmpdir(), `kiln-test-${name}-${Date.now()}`), out = join(dir, "out"), data = join(dir, "data");
   mkdirSync(out, { recursive: true }); mkdirSync(data, { recursive: true });
   if (before) await before({ out, data });   // a test can fill the queue and the output folder before Kiln starts
   const [fport, kport, dport] = [await freePort(), await freePort(), await freePort()];
-  const procs = [], log = [];
+  const log = [];
   const run = (cmd, args, env) => { const p = spawn(cmd, args, { cwd: ROOT, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
     p.stdout.on("data", d => log.push(String(d))); p.stderr.on("data", d => log.push(String(d))); procs.push(p); return p };
   // everything started from here on is stopped again if the start fails: a failed start must never leave a fake Forge,
@@ -124,13 +124,21 @@ for (const f of readdirSync(HERE).filter(f => f.endsWith(".test.mjs") && f.inclu
 }
 
 /* one test: its own Kiln, browser and folders; returns its report as text, printed in one piece */
+/* a test that runs longer than this is stuck (waiting for something that will never happen): it fails, its processes
+   are stopped and the run goes on. The slowest test takes ~45 s. */
+const TEST_LIMIT_MS = 3 * 60_000;
+
 async function runOne({ file, tname, fn }) {
-  const label = `${file} › ${tname}`, t = checker(); let k = null; const t0 = Date.now();
-  try { try { k = await launch(`${file}-${tname}`, fn.opts || {}); startFails = 0 } catch (e) { startFails++; throw e }
-    await fn(k, t);
-    t.ok(k.errors.length === 0, "no page errors", k.errors) }
+  const label = `${file} › ${tname}`, t = checker(); let k = null; const t0 = Date.now(), procs = [];
+  let timer;
+  const limit = new Promise((_, fail) => { timer = setTimeout(() => fail(new Error(`stuck: still running after ${TEST_LIMIT_MS / 60000} min`)), TEST_LIMIT_MS) });
+  try {
+    await Promise.race([limit, (async () => {
+      try { k = await launch(`${file}-${tname}`, fn.opts || {}, procs); startFails = 0 } catch (e) { startFails++; throw e }
+      await fn(k, t);
+      t.ok(k.errors.length === 0, "no page errors", k.errors) })()]) }
   catch (e) { t.fails.push("threw: " + (e.stack || e)) }
-  finally { if (k) await k.close() }
+  finally { clearTimeout(timer); if (k) await Promise.race([k.close(), sleep(10_000)]); procs.forEach(killTree) }
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   return t.fails.length ? { ok: false, label, text: [`✗ ${label} (${secs}s)`, ...t.fails.map(x => "    ✗ " + x)].join("\n") }
                         : { ok: true, label, text: `✓ ${label} (${secs}s, ${t.passes.length} checks)` };

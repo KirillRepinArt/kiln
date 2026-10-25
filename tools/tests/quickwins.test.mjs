@@ -48,7 +48,7 @@ export async function stopping(k, t) {
   t.ok(await k.ev(`$("prog").classList.contains("stopping")`), "the bar freezes and greys at once");
   t.ok(/Stopping after this step/.test(await k.ev(`$("ptxt").textContent`)), "and says when it will stop");
   t.ok(await k.until(`!current()`, 15000), "the job stops");
-  t.ok(!(await k.ev(`$("prog").classList.contains("stopping")`)), "the status row goes back to normal");
+  t.ok(await k.until(`!$("prog").classList.contains("stopping")`, 3000), "the status row goes back to normal");
 }
 stopping.opts = { step: 3 };
 

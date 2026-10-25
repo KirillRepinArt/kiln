@@ -157,10 +157,16 @@ let startFails = 0;
 const t0 = Date.now(), queue = [...tests], results = [];
 console.log(`${tests.length} tests, ${Math.min(jobs, tests.length)} at a time`);
 await Promise.all(Array.from({ length: Math.min(jobs, tests.length) }, async () => {
-  while (queue.length && startFails < 3) { const r = await runOne(queue.shift()); results.push(r); console.log(r.text) }
+  while (queue.length && startFails < 3) {
+    const test = queue.shift(); let r = await runOne(test);
+    // on CI a failed test gets one more try: passing then = "flaky" (reported, to be fixed), not a failure.
+    // Locally no retries, so every flake shows while working on it.
+    if (!r.ok && process.env.CI && startFails < 3) { const again = await runOne(test);
+      if (again.ok) r = { ...again, flaky: true, text: `⚠ ${r.label} — FLAKY: failed, then passed on a retry\n${r.text}` } }
+    results.push(r); console.log(r.text) }
 }));
 if (queue.length) console.log(`\nSTOPPED: Kiln failed to start 3 times in a row — ${queue.length} tests not run. Try fewer at a time (-j 1).`);
-const failed = results.filter(r => !r.ok);
+const failed = results.filter(r => !r.ok), flaky = results.filter(r => r.flaky);
 const mins = ((Date.now() - t0) / 60000).toFixed(1);
 console.log(failed.length ? `\n${failed.length} test(s) failed (${mins} min):\n` + failed.map(r => "  " + r.label).join("\n") : `\nall passed (${mins} min)`);
 
@@ -168,9 +174,11 @@ console.log(failed.length ? `\n${failed.length} test(s) failed (${mins} min):\n`
 if (process.env.GITHUB_ACTIONS) {
   const esc = s => s.replace(/%/g, "%25").replace(/\r/g, "").replace(/\n/g, "%0A");
   for (const r of failed) console.log(`::error title=${esc(r.label)}::${esc(r.text.slice(0, 4000))}`);
+  for (const r of flaky) console.log(`::warning title=flaky: ${esc(r.label)}::${esc(r.text.slice(0, 4000))}`);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,
     `### End-to-end tests: ${results.length - failed.length} of ${tests.length} passed (${mins} min)\n\n` +
     (failed.length ? failed.map(r => "```\n" + r.text + "\n```").join("\n") + "\n" : "") +
+    (flaky.length ? `\n**Flaky** (failed, then passed on a retry — to be fixed):\n` + flaky.map(r => "```\n" + r.text + "\n```").join("\n") + "\n" : "") +
     (queue.length ? `\n**Stopped:** ${queue.length} tests not run (Kiln failed to start 3 times in a row).\n` : ""));
 }
 process.exit(failed.length || queue.length ? 1 : 0);

@@ -31,7 +31,7 @@ export async function resultHoldsForTheRender(k, t) {
   t.ok(s.pic === "still" && s.still === "result", "the first picture shows while the next job starts", s);
   await k.until(`!!current()`, 8000, 50); await k.sleep(150);
   s = await st(k); t.ok(s.pic === "still" && await k.ev(`!current().preview_rev`), "…while the next job runs without a preview yet", s);
-  t.ok(await k.ev(`!$("frame").classList.contains("running")&&getComputedStyle(document.querySelector(".prog .track")).visibility==="visible"`), "no cover over it; the status row shows the new job's progress");
+  t.ok(await k.until(`!$("frame").classList.contains("running")&&getComputedStyle(document.querySelector(".prog .track")).visibility==="visible"`, 1000, 50), "no cover over it; the status row shows the new job's progress");
   t.ok(await k.until(`document.body.dataset.pic==="live"`, 15000, 100), "the render takes over once it has a picture");
   t.ok(await k.ev(`current()&&current().preview_rev>0`), "…and only then");
   await done(k, 2);

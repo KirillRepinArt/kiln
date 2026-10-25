@@ -375,13 +375,12 @@ export async function deleteOnwardAndNote(k, t) {
   await k.ev(`(genNav(-1),genNav(-1),genNav(1),1)`);
   await k.sleep(400); // stepping → onto the middle one
   await k.ev(`(deleteJob(browsed()),1)`);
-  await k.sleep(1200);
-  t.ok((await st(k)).browse === ids[2], "stepping →, delete: the newer one (onward)", await st(k));
+  // each step waits for its result (the delete goes through the server; a fixed wait could delete the wrong picture)
+  t.ok(await k.until(`PV.browse===${ids[2]}`, 3000, 50), "stepping →, delete: the newer one (onward)", await st(k));
   await k.ev(`(genNav(-1),1)`);
-  await k.sleep(300);
+  await k.until(`PV.browse===${ids[0]}`, 2000, 50);
   await k.ev(`(deleteJob(browsed()),1)`);
-  await k.sleep(1200);
-  t.ok((await st(k)).browse === ids[2], "stepping ←, nothing older left: the other way", await st(k));
+  t.ok(await k.until(`PV.browse===${ids[2]}`, 3000, 50), "stepping ←, nothing older left: the other way", await st(k));
   await k.ev(`(showView("queue"),1)`);
   await k.job("[fill:dcdc28] while away", { steps: 2 });
   await done(k, 2);

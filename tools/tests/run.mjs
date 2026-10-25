@@ -202,7 +202,21 @@ async function launch(
     };
     const t0 = Date.now();
     const ready = await until("!!(window.LIVE&&window._jobsReady&&LORAS.length)", 30000, 100);
-    if (!ready) throw new Error("Kiln never became ready");
+    if (!ready) {
+      // what was missing, for the report: which readiness conditions held, page errors, the last requests
+      let state = "(the page didn't answer)";
+      try {
+        state = JSON.stringify(
+          await ev(
+            `({live:!!window.LIVE,jobsReady:!!window._jobsReady,loras:typeof LORAS==="undefined"?"no kiln handle":LORAS.length,ready:document.readyState,offlineNote:!!document.querySelector("#offline.show")})`,
+          ),
+        );
+      } catch (e) {}
+      const last = requests.slice(-8).map(r => r.url.replace(url.split("?")[0], "/"));
+      throw new Error(
+        `Kiln never became ready: ${state}; errors: ${JSON.stringify(errors)}; last requests: ${last.join(" ")}`,
+      );
+    }
     const k = {
       url,
       out,

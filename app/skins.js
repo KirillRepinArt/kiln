@@ -400,21 +400,6 @@ function makeNightSky() {
     },
   };
 }
-
-/* the render screen of Aurora: a comet-mode star-trail time-lapse, after real photos (Takasaka, Yukon 2010).
-   The pole is inside the frame and the sky turns at the background's speed (one turn in ~10 min); each trail has a bright
-   head (the star now) and a tail fading behind it, lengthening with the job's progress to the photo's 28°. Stars follow
-   real statistics (a few bright, thousands faint); one bright band of orbits, a quiet centre, a fade to a floor outside.
-   Starlight shows the image: trails are brighter where the preview is bright. A meteor for each finished step, streaming
-   in from a shower's radiant just off the frame (some sporadic) with a lingering train; now and then a satellite. The
-   aurora is smeared by the exposure into a soft glow. At the finish the night layer (held at 70 % by effects.js) fades
-   slowly and the image emerges.
-   Cheap: a worker exposes the trails (culled, batched by look) into a film a little larger than the frame every 2 s;
-   in between, the film is just rotated. */
-AURORA_LAYOUTS.cam = [
-  { a: [1.05, -0.06], b: [-0.05, 0.3], sag: 0.05, len: 0.26, depth: 0.55 },
-  { a: [1.1, 0.02], b: [-0.12, 0.72], sag: 0.1, len: 0.44, depth: 1 },
-];
 /* star trails for Aurora's camera: every star's arc from its tail to its head, in SEG pieces that fade toward the tail.
    Pure (no outside state), because a worker runs it from its source text: the GPU then never has to raster thousands of
    thin arcs at once — that stalled the whole page every redraw. */
@@ -1910,4 +1895,22 @@ function mixHex(a, b, t) {
     B = parseInt(toHex(b).slice(1), 16);
   const m = s => Math.round(((A >> s) & 255) * (1 - t) + ((B >> s) & 255) * t);
   return "#" + [16, 8, 0].map(s => m(s).toString(16).padStart(2, "0")).join("");
+}
+
+/* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
+function initSkins() {
+  /* the render screen of Aurora: a comet-mode star-trail time-lapse, after real photos (Takasaka, Yukon 2010).
+   The pole is inside the frame and the sky turns at the background's speed (one turn in ~10 min); each trail has a bright
+   head (the star now) and a tail fading behind it, lengthening with the job's progress to the photo's 28°. Stars follow
+   real statistics (a few bright, thousands faint); one bright band of orbits, a quiet centre, a fade to a floor outside.
+   Starlight shows the image: trails are brighter where the preview is bright. A meteor for each finished step, streaming
+   in from a shower's radiant just off the frame (some sporadic) with a lingering train; now and then a satellite. The
+   aurora is smeared by the exposure into a soft glow. At the finish the night layer (held at 70 % by effects.js) fades
+   slowly and the image emerges.
+   Cheap: a worker exposes the trails (culled, batched by look) into a film a little larger than the frame every 2 s;
+   in between, the film is just rotated. */
+  AURORA_LAYOUTS.cam = [
+    { a: [1.05, -0.06], b: [-0.05, 0.3], sag: 0.05, len: 0.26, depth: 0.55 },
+    { a: [1.1, 0.02], b: [-0.12, 0.72], sag: 0.1, len: 0.44, depth: 1 },
+  ];
 }

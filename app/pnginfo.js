@@ -2,24 +2,6 @@
 /* ======================= PNG info (real) ======================= */
 let parsed = null;
 const drop = $("drop");
-drop.onclick = () => $("file").click();
-$("file").onchange = e => e.target.files[0] && readPng(e.target.files[0]);
-["dragenter", "dragover"].forEach(t =>
-  drop.addEventListener(t, e => {
-    e.preventDefault();
-    drop.classList.add("over");
-  }),
-);
-["dragleave", "drop"].forEach(t =>
-  drop.addEventListener(t, e => {
-    e.preventDefault();
-    drop.classList.remove("over");
-  }),
-);
-drop.addEventListener("drop", e => {
-  const f = e.dataTransfer.files[0];
-  if (f) readPng(f);
-});
 let kname = null;
 /* the series name: Kiln writes it into its PNGs (kiln_name); older Kiln files give it back from the file name (slug-NNN.png) */
 function nameFrom(f) {
@@ -121,32 +103,6 @@ function renderPngInfo(t) {
   o.innerHTML = h;
   $("pRaw").textContent = "Show raw text";
 }
-$("pClear").onclick = () => {
-  const el = $("pimgEl");
-  if (el.dataset.u) URL.revokeObjectURL(el.dataset.u);
-  el.removeAttribute("src");
-  el.dataset.u = "";
-  $("pimg").classList.remove("show");
-  const o = $("pout");
-  o.classList.remove("raw");
-  o.textContent = "";
-  o.dataset.raw = "";
-  parsed = null;
-  $("pSend").disabled = true;
-  $("pRaw").style.display = "none";
-  $("pClear").style.display = "none";
-  $("file").value = "";
-};
-$("pRaw").onclick = () => {
-  const o = $("pout");
-  if (o.classList.contains("raw")) {
-    renderPngInfo(o.dataset.raw);
-  } else {
-    o.classList.add("raw");
-    o.textContent = o.dataset.raw;
-    $("pRaw").textContent = "Show formatted";
-  }
-};
 
 function parseParams(t) {
   const i = t.search(/\n(Negative prompt:|Steps:)/);
@@ -178,66 +134,114 @@ function keepSeedUI() {
       : "Keep seed: off — Reuse all makes a variation (new random seed)";
   }
 }
-$("pKeep").onclick = e => {
-  e.preventDefault();
-  S.keepSeed = !S.keepSeed;
-  save();
-  keepSeedUI();
-};
-keepSeedUI();
-$("pSend").onclick = () => {
-  if (!parsed) return;
-  P.value = parsed.prompt;
-  setDraft(parsed.prompt);
-  if (parsed.steps) S.steps = parsed.steps;
-  if (parsed.seed && S.keepSeed) {
-    S.seed = parsed.seed;
-    S.seedMode = "fixed";
-  } else S.seedMode = "random";
-  S.set = S.set || {};
-  const setF = (k, v) => {
-    const el = document.querySelector(`[data-set="${k}"]`);
-    if (!el || v == null) return;
-    if (el.tagName === "SELECT" && ![...el.options].some(o => o.value === v)) {
-      const o = document.createElement("option");
-      o.textContent = o.value = v;
-      el.appendChild(o);
-    }
-    el.value = v;
-    S.set[k] = v;
-  };
-  if (parsed.cfg) setF("cfg", parsed.cfg);
-  if (parsed.sampler) setF("sampler", parsed.sampler + (parsed.schedule ? " · " + parsed.schedule : ""));
-  if (parsed.size) {
-    const [w, h] = parsed.size.split("x").map(Number);
-    let best = null;
-    for (const m in SIZES)
-      for (const r in SIZES[m]) {
-        const [a, b] = SIZES[m][r];
-        const d = Math.abs(a - w) + Math.abs(b - h);
-        if (!best || d < best.d) best = { m, r, d };
-      }
-    if (best) {
-      S.mp = best.m;
-      S.ar = best.r;
-    }
-  }
-  parsed.loras.forEach(pl => {
-    const l = LORAS.find(l => l.name.toLowerCase() === pl.name.toLowerCase());
-    if (l) {
-      l.on = true;
-      l.w = pl.w;
-    }
-  });
-  if (parsed.name) {
-    S.pname = parsed.name;
-    $("pname").value = S.pname;
-  }
-  save();
-  showView("gen");
-  renderAll();
-  grow();
-  toast(
-    `Loaded into the prompt${parsed.name ? ` as “${parsed.name}”` : ""} — ${S.keepSeed ? "its seed" : "new random seed"}`,
+
+/* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
+function initPnginfo() {
+  drop.onclick = () => $("file").click();
+  $("file").onchange = e => e.target.files[0] && readPng(e.target.files[0]);
+  ["dragenter", "dragover"].forEach(t =>
+    drop.addEventListener(t, e => {
+      e.preventDefault();
+      drop.classList.add("over");
+    }),
   );
-};
+  ["dragleave", "drop"].forEach(t =>
+    drop.addEventListener(t, e => {
+      e.preventDefault();
+      drop.classList.remove("over");
+    }),
+  );
+  drop.addEventListener("drop", e => {
+    const f = e.dataTransfer.files[0];
+    if (f) readPng(f);
+  });
+  $("pClear").onclick = () => {
+    const el = $("pimgEl");
+    if (el.dataset.u) URL.revokeObjectURL(el.dataset.u);
+    el.removeAttribute("src");
+    el.dataset.u = "";
+    $("pimg").classList.remove("show");
+    const o = $("pout");
+    o.classList.remove("raw");
+    o.textContent = "";
+    o.dataset.raw = "";
+    parsed = null;
+    $("pSend").disabled = true;
+    $("pRaw").style.display = "none";
+    $("pClear").style.display = "none";
+    $("file").value = "";
+  };
+  $("pRaw").onclick = () => {
+    const o = $("pout");
+    if (o.classList.contains("raw")) {
+      renderPngInfo(o.dataset.raw);
+    } else {
+      o.classList.add("raw");
+      o.textContent = o.dataset.raw;
+      $("pRaw").textContent = "Show formatted";
+    }
+  };
+  $("pKeep").onclick = e => {
+    e.preventDefault();
+    S.keepSeed = !S.keepSeed;
+    save();
+    keepSeedUI();
+  };
+  keepSeedUI();
+  $("pSend").onclick = () => {
+    if (!parsed) return;
+    P.value = parsed.prompt;
+    setDraft(parsed.prompt);
+    if (parsed.steps) S.steps = parsed.steps;
+    if (parsed.seed && S.keepSeed) {
+      S.seed = parsed.seed;
+      S.seedMode = "fixed";
+    } else S.seedMode = "random";
+    S.set = S.set || {};
+    const setF = (k, v) => {
+      const el = document.querySelector(`[data-set="${k}"]`);
+      if (!el || v == null) return;
+      if (el.tagName === "SELECT" && ![...el.options].some(o => o.value === v)) {
+        const o = document.createElement("option");
+        o.textContent = o.value = v;
+        el.appendChild(o);
+      }
+      el.value = v;
+      S.set[k] = v;
+    };
+    if (parsed.cfg) setF("cfg", parsed.cfg);
+    if (parsed.sampler) setF("sampler", parsed.sampler + (parsed.schedule ? " · " + parsed.schedule : ""));
+    if (parsed.size) {
+      const [w, h] = parsed.size.split("x").map(Number);
+      let best = null;
+      for (const m in SIZES)
+        for (const r in SIZES[m]) {
+          const [a, b] = SIZES[m][r];
+          const d = Math.abs(a - w) + Math.abs(b - h);
+          if (!best || d < best.d) best = { m, r, d };
+        }
+      if (best) {
+        S.mp = best.m;
+        S.ar = best.r;
+      }
+    }
+    parsed.loras.forEach(pl => {
+      const l = LORAS.find(l => l.name.toLowerCase() === pl.name.toLowerCase());
+      if (l) {
+        l.on = true;
+        l.w = pl.w;
+      }
+    });
+    if (parsed.name) {
+      S.pname = parsed.name;
+      $("pname").value = S.pname;
+    }
+    save();
+    showView("gen");
+    renderAll();
+    grow();
+    toast(
+      `Loaded into the prompt${parsed.name ? ` as “${parsed.name}”` : ""} — ${S.keepSeed ? "its seed" : "new random seed"}`,
+    );
+  };
+}

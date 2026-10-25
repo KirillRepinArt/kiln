@@ -73,35 +73,6 @@ function renderLoras() {
   }
   $("lscroll").innerHTML = `<div class="lgrid">${h}${!L.length ? '<div class="empty">Nothing here</div>' : ""}</div>`;
 }
-$("lsearch").oninput = () => {
-  $("lsearch").parentElement.classList.toggle("has", !!$("lsearch").value);
-  renderLoras();
-};
-$("lsClear").onclick = () => {
-  $("lsearch").value = "";
-  $("lsearch").oninput();
-  $("lsearch").focus();
-};
-$("csize").value = S.th || 48;
-document.documentElement.style.setProperty("--th", (S.th || 48) + "px");
-$("csize").addEventListener("input", e => {
-  S.th = +e.target.value;
-  document.documentElement.style.setProperty("--th", S.th + "px");
-  save();
-});
-$("fchips").onclick = e => {
-  const b = e.target.closest("[data-f]");
-  if (!b) return;
-  S.lfilter = b.dataset.f;
-  save();
-  renderLoras();
-};
-$("oneFace").onclick = e => {
-  e.preventDefault();
-  S.oneFace = !S.oneFace;
-  save();
-  renderLoras();
-};
 /* switching a LoRA on adds it to Active at the top: keep the row you clicked where it was on screen (the list
    shifts above it, not under your pointer). The anchor is its own-section row, which survives the toggle */
 function keepPlace(name, fn) {
@@ -128,67 +99,100 @@ function toggleL(l) {
   renderChips();
 }
 let clickT = null;
-$("lscroll").addEventListener("click", e => {
-  const el = e.target.closest("[data-ln]");
-  if (!el) return;
-  const l = LORAS.find(l => l.name === el.dataset.ln);
-  if (e.target.closest("[data-star]")) {
-    l.fav = !l.fav;
-    save();
+
+/* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
+function initLoras() {
+  $("lsearch").oninput = () => {
+    $("lsearch").parentElement.classList.toggle("has", !!$("lsearch").value);
     renderLoras();
-    return;
-  }
-  if (e.target.closest("input")) return;
-  if (e.target.closest("[data-rename]")) {
-    clearTimeout(clickT);
-    clickT = setTimeout(() => toggleL(l), 230);
-    return;
-  } // wait: may be a double-click rename
-  if (el.classList.contains("card") || e.target.closest("[data-tg]")) toggleL(l);
-});
-$("lscroll").addEventListener("dblclick", e => {
-  const n = e.target.closest("[data-rename]");
-  if (!n) return;
-  clearTimeout(clickT);
-  e.preventDefault();
-  const el = e.target.closest("[data-ln]");
-  const l = LORAS.find(l => l.name === el.dataset.ln);
-  const inp = document.createElement("input");
-  inp.className = "nmedit";
-  inp.value = l.display;
-  n.replaceWith(inp);
-  inp.focus();
-  inp.select();
-  inp.onclick = k => k.stopPropagation();
-  const done = () => {
-    l.display = inp.value.trim() || l.display;
-    save();
-    renderLoras();
-    renderChips();
   };
-  inp.onblur = done;
-  inp.onkeydown = k => {
-    if (k.key === "Enter") inp.blur();
-    if (k.key === "Escape") {
-      inp.value = l.display;
-      inp.blur();
+  $("lsClear").onclick = () => {
+    $("lsearch").value = "";
+    $("lsearch").oninput();
+    $("lsearch").focus();
+  };
+  $("csize").value = S.th || 48;
+  document.documentElement.style.setProperty("--th", (S.th || 48) + "px");
+  $("csize").addEventListener("input", e => {
+    S.th = +e.target.value;
+    document.documentElement.style.setProperty("--th", S.th + "px");
+    save();
+  });
+  $("fchips").onclick = e => {
+    const b = e.target.closest("[data-f]");
+    if (!b) return;
+    S.lfilter = b.dataset.f;
+    save();
+    renderLoras();
+  };
+  $("oneFace").onclick = e => {
+    e.preventDefault();
+    S.oneFace = !S.oneFace;
+    save();
+    renderLoras();
+  };
+  $("lscroll").addEventListener("click", e => {
+    const el = e.target.closest("[data-ln]");
+    if (!el) return;
+    const l = LORAS.find(l => l.name === el.dataset.ln);
+    if (e.target.closest("[data-star]")) {
+      l.fav = !l.fav;
+      save();
+      renderLoras();
+      return;
     }
-  };
-});
-$("lscroll").addEventListener("input", e => {
-  const el = e.target.closest("[data-ln]");
-  if (!el || e.target.classList.contains("nmedit")) return;
-  const l = LORAS.find(l => l.name === el.dataset.ln);
-  l.w = +e.target.value;
-  document
-    .querySelectorAll(
-      `#lscroll [data-ln="${CSS.escape(l.name)}"] input[type=range],#lscroll [data-ln="${CSS.escape(l.name)}"] input[type=number]`,
-    )
-    .forEach(i => {
-      if (i !== e.target) i.value = l.w;
-    });
-  const s = el.querySelector(".st span");
-  if (s) s.textContent = fmtW(l.w);
-  save();
-  renderChips();
-});
+    if (e.target.closest("input")) return;
+    if (e.target.closest("[data-rename]")) {
+      clearTimeout(clickT);
+      clickT = setTimeout(() => toggleL(l), 230);
+      return;
+    } // wait: may be a double-click rename
+    if (el.classList.contains("card") || e.target.closest("[data-tg]")) toggleL(l);
+  });
+  $("lscroll").addEventListener("dblclick", e => {
+    const n = e.target.closest("[data-rename]");
+    if (!n) return;
+    clearTimeout(clickT);
+    e.preventDefault();
+    const el = e.target.closest("[data-ln]");
+    const l = LORAS.find(l => l.name === el.dataset.ln);
+    const inp = document.createElement("input");
+    inp.className = "nmedit";
+    inp.value = l.display;
+    n.replaceWith(inp);
+    inp.focus();
+    inp.select();
+    inp.onclick = k => k.stopPropagation();
+    const done = () => {
+      l.display = inp.value.trim() || l.display;
+      save();
+      renderLoras();
+      renderChips();
+    };
+    inp.onblur = done;
+    inp.onkeydown = k => {
+      if (k.key === "Enter") inp.blur();
+      if (k.key === "Escape") {
+        inp.value = l.display;
+        inp.blur();
+      }
+    };
+  });
+  $("lscroll").addEventListener("input", e => {
+    const el = e.target.closest("[data-ln]");
+    if (!el || e.target.classList.contains("nmedit")) return;
+    const l = LORAS.find(l => l.name === el.dataset.ln);
+    l.w = +e.target.value;
+    document
+      .querySelectorAll(
+        `#lscroll [data-ln="${CSS.escape(l.name)}"] input[type=range],#lscroll [data-ln="${CSS.escape(l.name)}"] input[type=number]`,
+      )
+      .forEach(i => {
+        if (i !== e.target) i.value = l.w;
+      });
+    const s = el.querySelector(".st span");
+    if (s) s.textContent = fmtW(l.w);
+    save();
+    renderChips();
+  });
+}

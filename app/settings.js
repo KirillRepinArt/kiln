@@ -19,26 +19,6 @@ function applyTheme() {
   window._themeV = (window._themeV || 0) + 1;
   applyFont();
 }
-$("sTheme").value = S.theme;
-$("sTheme").onchange = e => {
-  S.theme = e.target.value;
-  applyTheme();
-  save();
-  window._cpv = Date.now() + 6000;
-  if (!current()) {
-    const p = $("prog");
-    window._dp = 1;
-    p.classList.add("show");
-    sizeFrame();
-    $("fill").style.width = "62%";
-    $("ptxt").textContent = "Theme preview";
-    $("peta").textContent = "";
-    clearTimeout(window._dpt);
-    window._dpt = setTimeout(() => {
-      window._dp = 0;
-    }, 2500);
-  }
-};
 /* "Theme font" (the default until you pick one) follows the skin: Emerald = IBM Plex Mono, its name in Courier Prime */
 function applyFont() {
   S.set = S.set || {};
@@ -54,68 +34,92 @@ function applyFont() {
   if (sel) sel.value = S.set.font;
   requestAnimationFrame(() => moveThumb(true));
 }
-$("rLayout").onclick = () => {
-  resetLayout();
-  showView("gen");
-  $("modal").classList.remove("show");
-  toast("Layout reset");
-};
-/* the Layout button by the gear: a small menu (docking joins it in Phase 2a step 2) */
-(function () {
-  const b = $("layBtn"),
-    m = $("layMenu");
-  b.onclick = e => {
-    e.stopPropagation();
-    m.classList.toggle("show");
-  };
-  document.addEventListener("click", e => {
-    if (!e.target.closest("#layMenu")) m.classList.remove("show");
-  });
-  m.addEventListener("click", e => {
-    const a = e.target.closest("[data-lay]");
-    if (!a) return;
-    m.classList.remove("show");
-    if (a.dataset.lay === "reset") {
-      resetLayout();
-      toast("Sizes reset — the default widths, centred");
-    } else setDock(a.dataset.lay);
-  });
-  window.layMenuUI = () =>
-    m.querySelectorAll("[data-lay]").forEach(o => o.classList.toggle("on", o.dataset.lay === (S.dock || "left")));
-  layMenuUI();
-  b.addEventListener("click", layMenuUI);
-})();
-$("rAll").onclick = () => {
-  if (!confirm("Reset everything? Prompt, name, settings, favourites, thumbnails and layout go back to defaults."))
-    return;
-  try {
-    localStorage.clear();
-  } catch (e) {}
-  location.reload();
-};
-S.set = S.set || {};
-document.querySelectorAll("[data-set]").forEach(el => {
-  const k = el.dataset.set;
-  if (S.set[k] != null) el.value = S.set[k];
-  else S.set[k] = el.value;
-  el.addEventListener("change", () => {
-    S.set[k] = el.value;
-    save();
-    if (k === "font") {
-      S.set.fontPicked = 1;
-      save();
-      applyFont();
-    }
-    if (k === "glass") applyGlass();
-  });
-});
 function applyGlass() {
   document.body.classList.toggle("glass", (S.set || {}).glass === "on");
 }
-$("updBtn").onclick = () => toast("The update check needs the Kiln server (kiln.bat)");
-$("keysBtn").onclick = () => openKeys();
-$("gear").onclick = () => $("modal").classList.add("show");
-$("mClose").onclick = () => $("modal").classList.remove("show");
-$("modal").onclick = e => {
-  if (e.target.id === "modal") $("modal").classList.remove("show");
-};
+
+/* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
+function initSettings() {
+  $("sTheme").value = S.theme;
+  $("sTheme").onchange = e => {
+    S.theme = e.target.value;
+    applyTheme();
+    save();
+    window._cpv = Date.now() + 6000;
+    if (!current()) {
+      const p = $("prog");
+      window._dp = 1;
+      p.classList.add("show");
+      sizeFrame();
+      $("fill").style.width = "62%";
+      $("ptxt").textContent = "Theme preview";
+      $("peta").textContent = "";
+      clearTimeout(window._dpt);
+      window._dpt = setTimeout(() => {
+        window._dp = 0;
+      }, 2500);
+    }
+  };
+  $("rLayout").onclick = () => {
+    resetLayout();
+    showView("gen");
+    $("modal").classList.remove("show");
+    toast("Layout reset");
+  };
+  /* the Layout button by the gear: a small menu (docking joins it in Phase 2a step 2) */
+  (function () {
+    const b = $("layBtn"),
+      m = $("layMenu");
+    b.onclick = e => {
+      e.stopPropagation();
+      m.classList.toggle("show");
+    };
+    document.addEventListener("click", e => {
+      if (!e.target.closest("#layMenu")) m.classList.remove("show");
+    });
+    m.addEventListener("click", e => {
+      const a = e.target.closest("[data-lay]");
+      if (!a) return;
+      m.classList.remove("show");
+      if (a.dataset.lay === "reset") {
+        resetLayout();
+        toast("Sizes reset — the default widths, centred");
+      } else setDock(a.dataset.lay);
+    });
+    window.layMenuUI = () =>
+      m.querySelectorAll("[data-lay]").forEach(o => o.classList.toggle("on", o.dataset.lay === (S.dock || "left")));
+    layMenuUI();
+    b.addEventListener("click", layMenuUI);
+  })();
+  $("rAll").onclick = () => {
+    if (!confirm("Reset everything? Prompt, name, settings, favourites, thumbnails and layout go back to defaults."))
+      return;
+    try {
+      localStorage.clear();
+    } catch (e) {}
+    location.reload();
+  };
+  S.set = S.set || {};
+  document.querySelectorAll("[data-set]").forEach(el => {
+    const k = el.dataset.set;
+    if (S.set[k] != null) el.value = S.set[k];
+    else S.set[k] = el.value;
+    el.addEventListener("change", () => {
+      S.set[k] = el.value;
+      save();
+      if (k === "font") {
+        S.set.fontPicked = 1;
+        save();
+        applyFont();
+      }
+      if (k === "glass") applyGlass();
+    });
+  });
+  $("updBtn").onclick = () => toast("The update check needs the Kiln server (kiln.bat)");
+  $("keysBtn").onclick = () => openKeys();
+  $("gear").onclick = () => $("modal").classList.add("show");
+  $("mClose").onclick = () => $("modal").classList.remove("show");
+  $("modal").onclick = e => {
+    if (e.target.id === "modal") $("modal").classList.remove("show");
+  };
+}

@@ -211,24 +211,6 @@ function thaw() {
     layoutLeft();
   }, 500);
 }
-$("left").addEventListener("pointerenter", () => {
-  lyHover = true;
-  freeze();
-});
-$("left").addEventListener("pointerleave", () => {
-  lyHover = false;
-  thaw();
-});
-$("left").addEventListener("focusin", freeze);
-$("left").addEventListener("focusout", () => {
-  if (!lyHover) thaw();
-});
-new ResizeObserver(() => layoutLeft()).observe($("lcol"));
-/* a narrow box: the Reuse bar and the size buttons in one centred row (side by side they collided) */
-new ResizeObserver(() => {
-  const T = $("ltitle");
-  T.classList.toggle("tnarrow", T.clientWidth < 560);
-}).observe($("ltitle"));
 /* the size buttons by the name: side by side, Match = the picture's height; in Vertical, Fit = the picture's width */
 const HM_H =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14M5 20h14M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/></svg>',
@@ -255,171 +237,193 @@ function updHm() {
       : "Match the image height";
   $("hmFull").dataset.tip = m === "full" ? "Back to normal height" : "Full height";
 }
-$("hmodes").addEventListener("click", e => {
-  const b = e.target.closest("[data-hm]");
-  if (!b) return;
-  if (b.dataset.hm === "match" && document.querySelector(".app.stacked")) S.vfit = !S.vfit;
-  else S.hmode = S.hmode === b.dataset.hm ? "" : b.dataset.hm;
-  save();
-  updHm();
-  lyFrozen = false;
-  layoutLeft();
-});
-updHm();
-(function () {
-  const L = $("left"),
-    T = $("ltitle"),
-    col = $("lcol");
-  let d = null;
-  const NO = "input,textarea,button,a,select,.chip,.pwrapT,.vedge,.pedge,.pop,.cwi";
-  const ghosts = ["top", "mid", "bot"].map(p => {
-    const g = document.createElement("div");
-    g.className = "ghost";
-    g.dataset.p = p;
-    col.appendChild(g);
-    return g;
+
+/* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
+function initCardlayout() {
+  $("left").addEventListener("pointerenter", () => {
+    lyHover = true;
+    freeze();
   });
-  const geo = () => {
-    const TS = parseFloat(col.style.getPropertyValue("--ts")) || 64;
-    return { TS, colH: col.clientHeight - TS, H: L.offsetHeight };
-  };
-  const nearest = (t, H, colH) =>
-    ["top", "mid", "bot"].map(p => [p, Math.abs(anchorTop(p, H, colH) - t)]).sort((a, b) => a[1] - b[1])[0][0];
-  /* dock zones: drag the prompt far to the other side, or to the bottom, and drop it there */
-  const zones = ["left", "right", "below"].map(z => {
-    const g = document.createElement("div");
-    g.className = "dockzone dz-" + z;
-    g.dataset.z = z;
-    g.innerHTML = `<span>${{ left: "Prompt on the left", right: "Prompt on the right", below: "Prompt below the picture" }[z]}</span>`;
-    document.body.appendChild(g);
-    return g;
+  $("left").addEventListener("pointerleave", () => {
+    lyHover = false;
+    thaw();
   });
-  const dockOf = () => S.dock || "left";
-  /* "below" needs the pointer well past the lowest place the card can go (yMax): moving the card to its bottom position
-    never docks it by accident — the card stops, the pointer goes on, the zone lights up */
-  function zoneAt(x, y, yMax) {
-    const W = innerWidth,
-      Hh = innerHeight,
-      cur = document.querySelector(".app.stacked") ? "below" : dockOf();
-    let z = null;
-    if (y > Math.max(Hh * 0.75, yMax + 80) && cur !== "below") z = "below";
-    else if (x < W * 0.3 && cur !== "left") z = "left";
-    else if (x > W * 0.7 && cur !== "right") z = "right";
-    return z;
-  }
-  function down(e) {
-    if (S.hmode || e.button !== 0 || e.target.closest(NO)) return;
-    e.preventDefault();
-    d = { x0: e.clientX, y0: e.clientY, t0: lyTop || 0, moved: false, stk: !!document.querySelector(".app.stacked") };
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch (_) {}
-    hint(true);
-  }
-  /* the press shows what moves: an outline round the whole block (title, box, LoRAs), like the resize outline */
-  const ch = $("cardhint");
-  let hraf = 0;
-  function hint(on) {
-    cancelAnimationFrame(hraf);
-    if (!on) {
-      ch.classList.remove("show");
-      return;
-    }
-    (function tick() {
-      const rs = [$("ltitle"), L, $("chips")].map(x => x.getBoundingClientRect()).filter(r => r.width && r.height),
-        O = 12;
-      const l = Math.min(...rs.map(r => r.left)),
-        t = Math.min(...rs.map(r => r.top)),
-        r = Math.max(...rs.map(r => r.right)),
-        b = Math.max(...rs.map(r => r.bottom));
-      Object.assign(ch.style, {
-        left: l - O + "px",
-        top: t - O + "px",
-        width: r - l + 2 * O + "px",
-        height: b - t + 2 * O + "px",
-      });
-      ch.classList.add("show");
-      hraf = requestAnimationFrame(tick);
-    })();
-  }
-  function move(e) {
-    if (!d) return;
-    if (!(e.buttons & 1)) {
-      up();
-      return;
-    }
-    const dx = e.clientX - d.x0,
-      dy = e.clientY - d.y0;
-    if (!d.moved && Math.hypot(dx, dy) < 6) return;
-    const { TS, colH, H } = geo();
-    if (!d.moved) {
-      d.moved = true;
-      lyDrag = true;
-      L.classList.add("nodur");
-      T.classList.add("nodur");
-      document.body.classList.add("cardmove");
-      zones.forEach(z => z.classList.toggle("show", z.dataset.z !== (d.stk ? "below" : dockOf())));
-      if (!d.stk)
-        ghosts.forEach(g => {
-          g.style.top = anchorTop(g.dataset.p, H, colH) + TS + "px";
-          g.style.height = H + "px";
-          g.classList.add("show");
-        });
-    }
-    d.zone = zoneAt(e.clientX, e.clientY, d.stk ? 0 : d.y0 + (colH - H - chipsH() - d.t0));
-    zones.forEach(z => z.classList.toggle("near", z.dataset.z === d.zone));
-    if (d.stk) return;
-    const t = Math.max(0, Math.min(colH - H - chipsH(), d.t0 + dy));
-    col.style.setProperty("--ltop", t + TS + "px");
-    col.style.setProperty("--chtop", t + TS + H + 10 + "px");
-    d.t = t;
-    const n = nearest(t, H, colH);
-    ghosts.forEach(g => g.classList.toggle("near", !d.zone && g.dataset.p === n));
-  }
-  function up() {
-    if (!d) return;
-    const was = d;
-    d = null;
-    hint(false);
-    if (!was.moved) return;
-    lyDrag = false;
-    L.classList.remove("nodur");
-    T.classList.remove("nodur");
-    document.body.classList.remove("cardmove");
-    ghosts.forEach(g => g.classList.remove("show", "near"));
-    zones.forEach(z => z.classList.remove("show", "near"));
-    if (was.zone) {
-      setDock(was.zone);
-      return;
-    }
-    if (was.stk) return;
-    const { colH, H } = geo();
-    S.pos = nearest(was.t, H, colH);
+  $("left").addEventListener("focusin", freeze);
+  $("left").addEventListener("focusout", () => {
+    if (!lyHover) thaw();
+  });
+  new ResizeObserver(() => layoutLeft()).observe($("lcol"));
+  /* a narrow box: the Reuse bar and the size buttons in one centred row (side by side they collided) */
+  new ResizeObserver(() => {
+    const T = $("ltitle");
+    T.classList.toggle("tnarrow", T.clientWidth < 560);
+  }).observe($("ltitle"));
+  $("hmodes").addEventListener("click", e => {
+    const b = e.target.closest("[data-hm]");
+    if (!b) return;
+    if (b.dataset.hm === "match" && document.querySelector(".app.stacked")) S.vfit = !S.vfit;
+    else S.hmode = S.hmode === b.dataset.hm ? "" : b.dataset.hm;
     save();
-    const fz = lyFrozen;
+    updHm();
     lyFrozen = false;
     layoutLeft();
-    lyFrozen = fz;
-  }
-  for (const el of [L, T]) {
-    el.addEventListener("pointerdown", down);
-    el.addEventListener("pointermove", move);
-    el.addEventListener("pointerup", up);
-    el.addEventListener("pointercancel", up);
-  }
-  // the empty space under the text belongs to the editor: a click there puts the cursor at the end
-  document.querySelector(".pwrapT").addEventListener("mousedown", e => {
-    if (!e.target.classList.contains("pwrapT")) return;
-    e.preventDefault();
-    P.focus();
-    if (window.__cm) {
-      const v = window.__cm;
-      v.dispatch({ selection: { anchor: v.state.doc.length } });
-    }
   });
-})();
-// glass mode floats the controls row over the prompt: the text needs that much room to scroll clear of it
-new ResizeObserver(() => {
-  $("left").style.setProperty("--ctrlh", $("left").querySelector(".controls").offsetHeight + "px");
-  layoutLeft();
-}).observe(document.querySelector("#left .controls"));
+  updHm();
+  (function () {
+    const L = $("left"),
+      T = $("ltitle"),
+      col = $("lcol");
+    let d = null;
+    const NO = "input,textarea,button,a,select,.chip,.pwrapT,.vedge,.pedge,.pop,.cwi";
+    const ghosts = ["top", "mid", "bot"].map(p => {
+      const g = document.createElement("div");
+      g.className = "ghost";
+      g.dataset.p = p;
+      col.appendChild(g);
+      return g;
+    });
+    const geo = () => {
+      const TS = parseFloat(col.style.getPropertyValue("--ts")) || 64;
+      return { TS, colH: col.clientHeight - TS, H: L.offsetHeight };
+    };
+    const nearest = (t, H, colH) =>
+      ["top", "mid", "bot"].map(p => [p, Math.abs(anchorTop(p, H, colH) - t)]).sort((a, b) => a[1] - b[1])[0][0];
+    /* dock zones: drag the prompt far to the other side, or to the bottom, and drop it there */
+    const zones = ["left", "right", "below"].map(z => {
+      const g = document.createElement("div");
+      g.className = "dockzone dz-" + z;
+      g.dataset.z = z;
+      g.innerHTML = `<span>${{ left: "Prompt on the left", right: "Prompt on the right", below: "Prompt below the picture" }[z]}</span>`;
+      document.body.appendChild(g);
+      return g;
+    });
+    const dockOf = () => S.dock || "left";
+    /* "below" needs the pointer well past the lowest place the card can go (yMax): moving the card to its bottom position
+    never docks it by accident — the card stops, the pointer goes on, the zone lights up */
+    function zoneAt(x, y, yMax) {
+      const W = innerWidth,
+        Hh = innerHeight,
+        cur = document.querySelector(".app.stacked") ? "below" : dockOf();
+      let z = null;
+      if (y > Math.max(Hh * 0.75, yMax + 80) && cur !== "below") z = "below";
+      else if (x < W * 0.3 && cur !== "left") z = "left";
+      else if (x > W * 0.7 && cur !== "right") z = "right";
+      return z;
+    }
+    function down(e) {
+      if (S.hmode || e.button !== 0 || e.target.closest(NO)) return;
+      e.preventDefault();
+      d = { x0: e.clientX, y0: e.clientY, t0: lyTop || 0, moved: false, stk: !!document.querySelector(".app.stacked") };
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch (_) {}
+      hint(true);
+    }
+    /* the press shows what moves: an outline round the whole block (title, box, LoRAs), like the resize outline */
+    const ch = $("cardhint");
+    let hraf = 0;
+    function hint(on) {
+      cancelAnimationFrame(hraf);
+      if (!on) {
+        ch.classList.remove("show");
+        return;
+      }
+      (function tick() {
+        const rs = [$("ltitle"), L, $("chips")].map(x => x.getBoundingClientRect()).filter(r => r.width && r.height),
+          O = 12;
+        const l = Math.min(...rs.map(r => r.left)),
+          t = Math.min(...rs.map(r => r.top)),
+          r = Math.max(...rs.map(r => r.right)),
+          b = Math.max(...rs.map(r => r.bottom));
+        Object.assign(ch.style, {
+          left: l - O + "px",
+          top: t - O + "px",
+          width: r - l + 2 * O + "px",
+          height: b - t + 2 * O + "px",
+        });
+        ch.classList.add("show");
+        hraf = requestAnimationFrame(tick);
+      })();
+    }
+    function move(e) {
+      if (!d) return;
+      if (!(e.buttons & 1)) {
+        up();
+        return;
+      }
+      const dx = e.clientX - d.x0,
+        dy = e.clientY - d.y0;
+      if (!d.moved && Math.hypot(dx, dy) < 6) return;
+      const { TS, colH, H } = geo();
+      if (!d.moved) {
+        d.moved = true;
+        lyDrag = true;
+        L.classList.add("nodur");
+        T.classList.add("nodur");
+        document.body.classList.add("cardmove");
+        zones.forEach(z => z.classList.toggle("show", z.dataset.z !== (d.stk ? "below" : dockOf())));
+        if (!d.stk)
+          ghosts.forEach(g => {
+            g.style.top = anchorTop(g.dataset.p, H, colH) + TS + "px";
+            g.style.height = H + "px";
+            g.classList.add("show");
+          });
+      }
+      d.zone = zoneAt(e.clientX, e.clientY, d.stk ? 0 : d.y0 + (colH - H - chipsH() - d.t0));
+      zones.forEach(z => z.classList.toggle("near", z.dataset.z === d.zone));
+      if (d.stk) return;
+      const t = Math.max(0, Math.min(colH - H - chipsH(), d.t0 + dy));
+      col.style.setProperty("--ltop", t + TS + "px");
+      col.style.setProperty("--chtop", t + TS + H + 10 + "px");
+      d.t = t;
+      const n = nearest(t, H, colH);
+      ghosts.forEach(g => g.classList.toggle("near", !d.zone && g.dataset.p === n));
+    }
+    function up() {
+      if (!d) return;
+      const was = d;
+      d = null;
+      hint(false);
+      if (!was.moved) return;
+      lyDrag = false;
+      L.classList.remove("nodur");
+      T.classList.remove("nodur");
+      document.body.classList.remove("cardmove");
+      ghosts.forEach(g => g.classList.remove("show", "near"));
+      zones.forEach(z => z.classList.remove("show", "near"));
+      if (was.zone) {
+        setDock(was.zone);
+        return;
+      }
+      if (was.stk) return;
+      const { colH, H } = geo();
+      S.pos = nearest(was.t, H, colH);
+      save();
+      const fz = lyFrozen;
+      lyFrozen = false;
+      layoutLeft();
+      lyFrozen = fz;
+    }
+    for (const el of [L, T]) {
+      el.addEventListener("pointerdown", down);
+      el.addEventListener("pointermove", move);
+      el.addEventListener("pointerup", up);
+      el.addEventListener("pointercancel", up);
+    }
+    // the empty space under the text belongs to the editor: a click there puts the cursor at the end
+    document.querySelector(".pwrapT").addEventListener("mousedown", e => {
+      if (!e.target.classList.contains("pwrapT")) return;
+      e.preventDefault();
+      P.focus();
+      if (window.__cm) {
+        const v = window.__cm;
+        v.dispatch({ selection: { anchor: v.state.doc.length } });
+      }
+    });
+  })();
+  // glass mode floats the controls row over the prompt: the text needs that much room to scroll clear of it
+  new ResizeObserver(() => {
+    $("left").style.setProperty("--ctrlh", $("left").querySelector(".controls").offsetHeight + "px");
+    layoutLeft();
+  }).observe(document.querySelector("#left .controls"));
+}

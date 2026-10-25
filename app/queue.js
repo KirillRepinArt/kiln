@@ -172,89 +172,6 @@ function qsDelete() {
   deleteMany(ids);
   renderQueue();
 }
-$("qwrap").addEventListener(
-  "click",
-  e => {
-    if (e.target.closest("#qsX")) {
-      qsClear();
-      return;
-    }
-    if (e.target.closest("#qsAll")) {
-      qsFinished().forEach(j => QS.add(j.id));
-      qsUpdate();
-      return;
-    }
-    if (e.target.closest("#qsSeries")) {
-      const n = jobs.find(j => QS.has(j.id)),
-        nm = ((n && n.name) || "").trim();
-      qsFinished().forEach(j => {
-        if ((j.name || "").trim() === nm) QS.add(j.id);
-      });
-      qsUpdate();
-      return;
-    }
-    if (e.target.closest("#qsDel")) {
-      qsDelete();
-      return;
-    }
-    if (e.target.closest("#qsRemove")) {
-      const ids = [...QS];
-      QS.clear();
-      if (window.removeMany) removeMany(ids);
-      renderQueue();
-      return;
-    }
-    const row = e.target.closest(".qi");
-    if (!row || e.target.closest("[data-rm],[data-x],.seedc")) return;
-    const j = jobs.find(x => x.id == +row.dataset.id);
-    if (
-      j &&
-      (j.status === "done" || j.status === "cancelled") &&
-      (e.target.closest("[data-ck]") || e.ctrlKey || e.metaKey || e.shiftKey || QS.size)
-    ) {
-      e.stopImmediatePropagation();
-      qsClick(j, e.shiftKey);
-      return;
-    }
-  },
-  true,
-);
-document.addEventListener(
-  "keydown",
-  e => {
-    if (S.view !== "queue" || $("modal").classList.contains("show")) return;
-    const a = document.activeElement;
-    if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
-      e.preventDefault();
-      qsFinished().forEach(j => QS.add(j.id));
-      qsUpdate();
-      return;
-    }
-    if (e.key === "Escape" && qsClear()) {
-      e.stopImmediatePropagation();
-      return;
-    }
-    if (e.key === "Delete" && QS.size) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      qsDelete();
-    }
-  },
-  true,
-);
-/* a row's picture the server doesn't have yet: made once from the file (live.js), then it's a small file for good */
-$("qwrap").addEventListener(
-  "error",
-  e => {
-    const im = e.target;
-    if (!im.matches || !im.matches("img.qt") || im.dataset.tried) return;
-    im.dataset.tried = "1";
-    const j = jobs.find(x => x.id === +im.dataset.qt);
-    if (j && window.makeQThumb) makeQThumb(j, im);
-  },
-  true,
-);
 /* the formatters made once: creating them per row (hundreds) was most of the Queue tab's build time */
 const CLK = {
   t: new Intl.DateTimeFormat([], { hour: "2-digit", minute: "2-digit" }),
@@ -268,52 +185,6 @@ function clock(ms) {
     ? t
     : CLK.d.format(d) + " " + t;
 }
-$("qwrap").addEventListener("click", e => {
-  const sc = e.target.closest(".seedc");
-  if (sc) {
-    e.stopPropagation();
-    copySeed(sc.dataset.seed);
-    return;
-  }
-  if (e.target.id === "pauseQ") {
-    setPaused(!window.qPaused);
-    return;
-  }
-  if (e.target.id === "rmMissing") {
-    removeMissing();
-    return;
-  }
-  const rm = e.target.closest("[data-rm]");
-  if (rm) {
-    removeJob(jobs.find(j => j.id == +rm.dataset.rm));
-    return;
-  }
-  if (e.target.id === "clearDone") {
-    setJobs(jobs.filter(j => j.status === "pending" || j.status === "running"));
-    renderAll();
-    return;
-  }
-  const x = e.target.closest("[data-x]");
-  if (x) {
-    stopJob(jobs.find(j => j.id == +x.dataset.x));
-    return;
-  }
-  const q = e.target.closest(".qi");
-  if (!q) return;
-  const j = jobs.find(j => j.id == +q.dataset.id);
-  if (j.status === "running") {
-    showView("gen");
-    pv("peekRender");
-    return;
-  }
-  if (j.status === "done") {
-    showView("gen");
-    PV.from = "queue";
-    pv("browse", j);
-    return;
-  } // finished: in the Gallery (✕ brings you back here)
-  loadJob(j);
-});
 function browseTo(j) {
   PV.promptClosed = false;
   pv("browse", j);
@@ -462,61 +333,6 @@ function fnShow(on) {
   } /* the title stays exactly as it is; its number and .png appear beside it */
   l.classList.toggle("fnon", on);
 }
-(function () {
-  const l = document.querySelector(".plbl"),
-    n = $("pname");
-  l.addEventListener("mouseenter", () => fnShow(true));
-  l.addEventListener("mouseleave", () => fnShow(false));
-  n.addEventListener("focus", () => fnShow(false));
-})();
-$("pnSave").onclick = e => {
-  e.stopPropagation();
-  saveJobName();
-};
-/* Q5: hover a finished thumbnail for a bigger look */
-(function () {
-  const pop = document.createElement("div");
-  pop.id = "qpop";
-  document.body.appendChild(pop);
-  let t = null,
-    cur = null;
-  const hide = () => {
-    clearTimeout(t);
-    cur = null;
-    pop.classList.remove("show");
-  };
-  $("qwrap").addEventListener("mouseover", e => {
-    const c = e.target.closest(".qi .th canvas,.qi .th img.qt");
-    if (c === cur) return;
-    hide();
-    if (!c || !window.fileUrl) return;
-    cur = c;
-    const j = jobs.find(x => x.id == +(c.dataset.th || c.dataset.qt));
-    if (!j || !j.file) return;
-    t = setTimeout(() => {
-      if (cur !== c) return;
-      const r = c.getBoundingClientRect(),
-        [a, b] = (j.ar || "1:1").split(":").map(Number),
-        w = a >= b ? 320 : Math.round((320 * a) / b),
-        h = Math.round((w * b) / a);
-      pop.innerHTML = `<img src="${fileUrl(j)}" alt="">`;
-      pop.style.width = w + "px";
-      pop.style.height = h + "px";
-      /* never over the row you're pointing at: above it, lined up with its thumbnail; below it if there's no room above */
-      const row = c.closest(".qi").getBoundingClientRect(),
-        P = $("qwrap").getBoundingClientRect(),
-        x = Math.max(P.left + 8, Math.min(P.right - w - 8, r.left));
-      let y = row.top - 8 - h;
-      if (y < P.top + 4) y = row.bottom + 8;
-      if (y + h > innerHeight - 8) y = Math.max(8, row.top - 8 - h);
-      pop.style.transform = `translate(${x}px,${y}px)`;
-      pop.classList.add("show");
-    }, 350);
-  });
-  $("qwrap").addEventListener("mouseleave", hide);
-  $("qwrap").addEventListener("scroll", hide, { passive: true });
-  $("qwrap").addEventListener("mousedown", hide);
-})();
 function reuse(all, seedToo) {
   const j = peekJob;
   const fixed = !!(seedToo || S.keepSeed);
@@ -566,31 +382,6 @@ function reuse(all, seedToo) {
     },
   );
 }
-$("pkPrompt").onclick = () => reuse(false);
-$("pkAll").onclick = () => reuse(true, $("pkAll").dataset.m === "seed");
-$("pkSeed").onclick = e => {
-  e.stopPropagation();
-  S.keepSeed = !S.keepSeed;
-  save();
-  keepSeedUI();
-};
-$("pkX").onclick = () => closePromptPeek();
-P.addEventListener("keydown", e => {
-  if (!peekJob) return;
-  if (e.key === "Escape") {
-    closePromptPeek();
-    return;
-  }
-  const mod = e.ctrlKey || e.metaKey;
-  if (
-    (e.key.length === 1 && !mod && !e.altKey) ||
-    e.key === "Backspace" ||
-    e.key === "Delete" ||
-    (e.key === "Enter" && !mod) ||
-    (mod && /^[vx]$/i.test(e.key))
-  )
-    reuse(false);
-});
 function updPrompt() {
   if (window.nameUI) nameUI();
   const n = P.value.length;
@@ -613,53 +404,266 @@ function updPrompt() {
    ping-pong; the others slide out of the way */
 let dragId = null,
   dragEl = null;
-$("qwrap").addEventListener("dragstart", e => {
-  const q = e.target.closest('.qi[draggable="true"]');
-  if (!q) return;
-  dragId = +q.dataset.id;
-  dragEl = q;
-  q.classList.add("drag");
-  e.dataTransfer.effectAllowed = "move";
-  try {
-    e.dataTransfer.setData("text/plain", String(dragId));
-  } catch (_) {}
-});
-$("qwrap").addEventListener("dragover", e => {
-  if (!dragEl) return;
-  e.preventDefault();
-  e.dataTransfer.dropEffect = "move";
-  const q = e.target.closest('.qi[draggable="true"]');
-  if (!q || q === dragEl) return;
-  const r = q.getBoundingClientRect(),
-    after = e.clientY > r.top + r.height / 2;
-  if (after ? q.nextElementSibling === dragEl : q.previousElementSibling === dragEl) return;
-  const rows = [...$("qwrap").querySelectorAll('.qi[draggable="true"]')],
-    before = new Map(rows.map(x => [x, x.getBoundingClientRect().top]));
-  if (after) q.after(dragEl);
-  else q.before(dragEl);
-  for (const x of rows) {
-    if (x === dragEl) continue;
-    const d = before.get(x) - x.getBoundingClientRect().top;
-    if (Math.abs(d) < 1) continue;
-    x.style.transition = "none";
-    x.style.transform = `translateY(${d}px)`;
-    requestAnimationFrame(() => {
-      x.style.transition = "transform .34s cubic-bezier(.4,0,.2,1)";
-      x.style.transform = "";
+
+/* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
+function initQueue() {
+  $("qwrap").addEventListener(
+    "click",
+    e => {
+      if (e.target.closest("#qsX")) {
+        qsClear();
+        return;
+      }
+      if (e.target.closest("#qsAll")) {
+        qsFinished().forEach(j => QS.add(j.id));
+        qsUpdate();
+        return;
+      }
+      if (e.target.closest("#qsSeries")) {
+        const n = jobs.find(j => QS.has(j.id)),
+          nm = ((n && n.name) || "").trim();
+        qsFinished().forEach(j => {
+          if ((j.name || "").trim() === nm) QS.add(j.id);
+        });
+        qsUpdate();
+        return;
+      }
+      if (e.target.closest("#qsDel")) {
+        qsDelete();
+        return;
+      }
+      if (e.target.closest("#qsRemove")) {
+        const ids = [...QS];
+        QS.clear();
+        if (window.removeMany) removeMany(ids);
+        renderQueue();
+        return;
+      }
+      const row = e.target.closest(".qi");
+      if (!row || e.target.closest("[data-rm],[data-x],.seedc")) return;
+      const j = jobs.find(x => x.id == +row.dataset.id);
+      if (
+        j &&
+        (j.status === "done" || j.status === "cancelled") &&
+        (e.target.closest("[data-ck]") || e.ctrlKey || e.metaKey || e.shiftKey || QS.size)
+      ) {
+        e.stopImmediatePropagation();
+        qsClick(j, e.shiftKey);
+        return;
+      }
+    },
+    true,
+  );
+  document.addEventListener(
+    "keydown",
+    e => {
+      if (S.view !== "queue" || $("modal").classList.contains("show")) return;
+      const a = document.activeElement;
+      if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        qsFinished().forEach(j => QS.add(j.id));
+        qsUpdate();
+        return;
+      }
+      if (e.key === "Escape" && qsClear()) {
+        e.stopImmediatePropagation();
+        return;
+      }
+      if (e.key === "Delete" && QS.size) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        qsDelete();
+      }
+    },
+    true,
+  );
+  /* a row's picture the server doesn't have yet: made once from the file (live.js), then it's a small file for good */
+  $("qwrap").addEventListener(
+    "error",
+    e => {
+      const im = e.target;
+      if (!im.matches || !im.matches("img.qt") || im.dataset.tried) return;
+      im.dataset.tried = "1";
+      const j = jobs.find(x => x.id === +im.dataset.qt);
+      if (j && window.makeQThumb) makeQThumb(j, im);
+    },
+    true,
+  );
+  $("qwrap").addEventListener("click", e => {
+    const sc = e.target.closest(".seedc");
+    if (sc) {
+      e.stopPropagation();
+      copySeed(sc.dataset.seed);
+      return;
+    }
+    if (e.target.id === "pauseQ") {
+      setPaused(!window.qPaused);
+      return;
+    }
+    if (e.target.id === "rmMissing") {
+      removeMissing();
+      return;
+    }
+    const rm = e.target.closest("[data-rm]");
+    if (rm) {
+      removeJob(jobs.find(j => j.id == +rm.dataset.rm));
+      return;
+    }
+    if (e.target.id === "clearDone") {
+      setJobs(jobs.filter(j => j.status === "pending" || j.status === "running"));
+      renderAll();
+      return;
+    }
+    const x = e.target.closest("[data-x]");
+    if (x) {
+      stopJob(jobs.find(j => j.id == +x.dataset.x));
+      return;
+    }
+    const q = e.target.closest(".qi");
+    if (!q) return;
+    const j = jobs.find(j => j.id == +q.dataset.id);
+    if (j.status === "running") {
+      showView("gen");
+      pv("peekRender");
+      return;
+    }
+    if (j.status === "done") {
+      showView("gen");
+      PV.from = "queue";
+      pv("browse", j);
+      return;
+    } // finished: in the Gallery (✕ brings you back here)
+    loadJob(j);
+  });
+  (function () {
+    const l = document.querySelector(".plbl"),
+      n = $("pname");
+    l.addEventListener("mouseenter", () => fnShow(true));
+    l.addEventListener("mouseleave", () => fnShow(false));
+    n.addEventListener("focus", () => fnShow(false));
+  })();
+  $("pnSave").onclick = e => {
+    e.stopPropagation();
+    saveJobName();
+  };
+  /* Q5: hover a finished thumbnail for a bigger look */
+  (function () {
+    const pop = document.createElement("div");
+    pop.id = "qpop";
+    document.body.appendChild(pop);
+    let t = null,
+      cur = null;
+    const hide = () => {
+      clearTimeout(t);
+      cur = null;
+      pop.classList.remove("show");
+    };
+    $("qwrap").addEventListener("mouseover", e => {
+      const c = e.target.closest(".qi .th canvas,.qi .th img.qt");
+      if (c === cur) return;
+      hide();
+      if (!c || !window.fileUrl) return;
+      cur = c;
+      const j = jobs.find(x => x.id == +(c.dataset.th || c.dataset.qt));
+      if (!j || !j.file) return;
+      t = setTimeout(() => {
+        if (cur !== c) return;
+        const r = c.getBoundingClientRect(),
+          [a, b] = (j.ar || "1:1").split(":").map(Number),
+          w = a >= b ? 320 : Math.round((320 * a) / b),
+          h = Math.round((w * b) / a);
+        pop.innerHTML = `<img src="${fileUrl(j)}" alt="">`;
+        pop.style.width = w + "px";
+        pop.style.height = h + "px";
+        /* never over the row you're pointing at: above it, lined up with its thumbnail; below it if there's no room above */
+        const row = c.closest(".qi").getBoundingClientRect(),
+          P = $("qwrap").getBoundingClientRect(),
+          x = Math.max(P.left + 8, Math.min(P.right - w - 8, r.left));
+        let y = row.top - 8 - h;
+        if (y < P.top + 4) y = row.bottom + 8;
+        if (y + h > innerHeight - 8) y = Math.max(8, row.top - 8 - h);
+        pop.style.transform = `translate(${x}px,${y}px)`;
+        pop.classList.add("show");
+      }, 350);
     });
-  }
-});
-$("qwrap").addEventListener("drop", e => {
-  if (dragEl) e.preventDefault();
-});
-$("qwrap").addEventListener("dragend", () => {
-  if (!dragEl) return;
-  const ids = [...$("qwrap").querySelectorAll('.qi[draggable="true"]')].map(x => +x.dataset.id);
-  const pend = ids.map(id => jobs.find(j => j.id === id)).filter(Boolean);
-  let k = 0;
-  setJobs(jobs.map(j => (j.status === "pending" && pend.includes(j) ? pend[k++] : j))); // the new order, in place of the old
-  dragEl.classList.remove("drag");
-  dragId = null;
-  dragEl = null;
-  renderQueue();
-});
+    $("qwrap").addEventListener("mouseleave", hide);
+    $("qwrap").addEventListener("scroll", hide, { passive: true });
+    $("qwrap").addEventListener("mousedown", hide);
+  })();
+  $("pkPrompt").onclick = () => reuse(false);
+  $("pkAll").onclick = () => reuse(true, $("pkAll").dataset.m === "seed");
+  $("pkSeed").onclick = e => {
+    e.stopPropagation();
+    S.keepSeed = !S.keepSeed;
+    save();
+    keepSeedUI();
+  };
+  $("pkX").onclick = () => closePromptPeek();
+  P.addEventListener("keydown", e => {
+    if (!peekJob) return;
+    if (e.key === "Escape") {
+      closePromptPeek();
+      return;
+    }
+    const mod = e.ctrlKey || e.metaKey;
+    if (
+      (e.key.length === 1 && !mod && !e.altKey) ||
+      e.key === "Backspace" ||
+      e.key === "Delete" ||
+      (e.key === "Enter" && !mod) ||
+      (mod && /^[vx]$/i.test(e.key))
+    )
+      reuse(false);
+  });
+  $("qwrap").addEventListener("dragstart", e => {
+    const q = e.target.closest('.qi[draggable="true"]');
+    if (!q) return;
+    dragId = +q.dataset.id;
+    dragEl = q;
+    q.classList.add("drag");
+    e.dataTransfer.effectAllowed = "move";
+    try {
+      e.dataTransfer.setData("text/plain", String(dragId));
+    } catch (_) {}
+  });
+  $("qwrap").addEventListener("dragover", e => {
+    if (!dragEl) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const q = e.target.closest('.qi[draggable="true"]');
+    if (!q || q === dragEl) return;
+    const r = q.getBoundingClientRect(),
+      after = e.clientY > r.top + r.height / 2;
+    if (after ? q.nextElementSibling === dragEl : q.previousElementSibling === dragEl) return;
+    const rows = [...$("qwrap").querySelectorAll('.qi[draggable="true"]')],
+      before = new Map(rows.map(x => [x, x.getBoundingClientRect().top]));
+    if (after) q.after(dragEl);
+    else q.before(dragEl);
+    for (const x of rows) {
+      if (x === dragEl) continue;
+      const d = before.get(x) - x.getBoundingClientRect().top;
+      if (Math.abs(d) < 1) continue;
+      x.style.transition = "none";
+      x.style.transform = `translateY(${d}px)`;
+      requestAnimationFrame(() => {
+        x.style.transition = "transform .34s cubic-bezier(.4,0,.2,1)";
+        x.style.transform = "";
+      });
+    }
+  });
+  $("qwrap").addEventListener("drop", e => {
+    if (dragEl) e.preventDefault();
+  });
+  $("qwrap").addEventListener("dragend", () => {
+    if (!dragEl) return;
+    const ids = [...$("qwrap").querySelectorAll('.qi[draggable="true"]')].map(x => +x.dataset.id);
+    const pend = ids.map(id => jobs.find(j => j.id === id)).filter(Boolean);
+    let k = 0;
+    setJobs(jobs.map(j => (j.status === "pending" && pend.includes(j) ? pend[k++] : j))); // the new order, in place of the old
+    dragEl.classList.remove("drag");
+    dragId = null;
+    dragEl = null;
+    renderQueue();
+  });
+}

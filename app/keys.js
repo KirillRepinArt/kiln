@@ -16,47 +16,51 @@ const MOUSE = [
   ["Hover the image", "Peek under the cover (not with privacy on)"],
   ["The eye on the image", "Privacy on / off"],
 ];
-(function () {
-  const m = document.createElement("div");
-  m.className = "modal keys";
-  m.id = "keys";
-  const rows = (L, keys) =>
-    L.map(
-      ([k, t]) =>
-        `<div class="kk">${
-          keys
-            ? k
-                .split(" ")
-                .map(x => `<kbd>${esc(x)}</kbd>`)
-                .join(" ")
-            : esc(k)
-        }</div><div class="kt">${esc(t)}</div>`,
-    ).join("");
-  m.innerHTML = `<div class="mcard"><div class="mhead"><button class="iconbtn" data-close title="Close (Esc)">${IC.x}</button><h2>Keyboard shortcuts</h2></div>
+
+/* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
+function initKeys() {
+  (function () {
+    const m = document.createElement("div");
+    m.className = "modal keys";
+    m.id = "keys";
+    const rows = (L, keys) =>
+      L.map(
+        ([k, t]) =>
+          `<div class="kk">${
+            keys
+              ? k
+                  .split(" ")
+                  .map(x => `<kbd>${esc(x)}</kbd>`)
+                  .join(" ")
+              : esc(k)
+          }</div><div class="kt">${esc(t)}</div>`,
+      ).join("");
+    m.innerHTML = `<div class="mcard"><div class="mhead"><button class="iconbtn" data-close title="Close (Esc)">${IC.x}</button><h2>Keyboard shortcuts</h2></div>
   <div class="mbody"><div class="kgrid">${rows(KEYS, true)}</div><div class="fgh">Mouse</div><div class="kgrid mouse">${rows(MOUSE)}</div></div></div>`;
-  document.body.appendChild(m);
-  window.openKeys = () => {
-    $("modal").classList.remove("show");
-    m.classList.add("show");
-  };
-  const close = () => m.classList.remove("show");
-  m.addEventListener("click", e => {
-    if (e.target === m || e.target.closest("[data-close]")) close();
-  });
-  document.addEventListener(
-    "keydown",
-    e => {
-      if (m.classList.contains("show") && e.key === "Escape") {
-        e.stopPropagation();
-        close();
-        return;
-      }
-      if (e.key !== "?" || e.ctrlKey || e.altKey) return;
-      const a = document.activeElement;
-      if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
-      e.preventDefault();
-      m.classList.contains("show") ? close() : openKeys();
-    },
-    true,
-  );
-})();
+    document.body.appendChild(m);
+    window.openKeys = () => {
+      $("modal").classList.remove("show");
+      m.classList.add("show");
+    };
+    const close = () => m.classList.remove("show");
+    m.addEventListener("click", e => {
+      if (e.target === m || e.target.closest("[data-close]")) close();
+    });
+    document.addEventListener(
+      "keydown",
+      e => {
+        if (m.classList.contains("show") && e.key === "Escape") {
+          e.stopPropagation();
+          close();
+          return;
+        }
+        if (e.key !== "?" || e.ctrlKey || e.altKey) return;
+        const a = document.activeElement;
+        if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+        e.preventDefault();
+        m.classList.contains("show") ? close() : openKeys();
+      },
+      true,
+    );
+  })();
+}

@@ -62,23 +62,6 @@ function renderAll() {
   if (S.view === "queue") renderQueue();
   if (S.view === "loras") renderLoras();
 }
-$("pname").value = S.pname || "";
-$("pname").addEventListener("input", e => {
-  if (peekJob) {
-    $("pnSave").classList.toggle("show", e.target.value.trim() !== (peekJob.name || "").trim());
-    return;
-  } /* a waiting job's name: saved with its button */
-  S.pname = e.target.value;
-  save();
-  nameUI();
-});
-$("pnx").onclick = () => {
-  $("pname").value = "";
-  S.pname = "";
-  save();
-  nameUI();
-  $("pname").focus();
-};
 let nnT = null;
 function slugify(n) {
   return (
@@ -121,28 +104,49 @@ function nameUI() {
   l.classList.toggle("hasname", !!S.pname.trim());
   l.classList.toggle("dimname", !!S.pname.trim() && !P.value.trim());
 }
-$("pname").addEventListener("keydown", e => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    if (peekJob && $("pnSave").classList.contains("show")) {
-      saveJobName();
+
+/* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
+function initBoot() {
+  $("pname").value = S.pname || "";
+  $("pname").addEventListener("input", e => {
+    if (peekJob) {
+      $("pnSave").classList.toggle("show", e.target.value.trim() !== (peekJob.name || "").trim());
       return;
+    } /* a waiting job's name: saved with its button */
+    S.pname = e.target.value;
+    save();
+    nameUI();
+  });
+  $("pnx").onclick = () => {
+    $("pname").value = "";
+    S.pname = "";
+    save();
+    nameUI();
+    $("pname").focus();
+  };
+  $("pname").addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (peekJob && $("pnSave").classList.contains("show")) {
+        saveJobName();
+        return;
+      }
+      P.focus();
     }
-    P.focus();
-  }
-});
-if (matchMedia("(prefers-reduced-motion: reduce)").matches)
-  document.querySelector("#playFlow animateTransform")?.remove();
-applyMode();
-$("left").classList.add("nodur");
-setTimeout(() => $("left").classList.remove("nodur"), 400);
-applyFont();
-applyGlass();
-applyPH();
-updPrompt();
-applyTheme();
-S.view = "gen";
-showView("gen");
-renderAll();
-grow();
-syncH();
+  });
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches)
+    document.querySelector("#playFlow animateTransform")?.remove();
+  applyMode();
+  $("left").classList.add("nodur");
+  setTimeout(() => $("left").classList.remove("nodur"), 400);
+  applyFont();
+  applyGlass();
+  applyPH();
+  updPrompt();
+  applyTheme();
+  S.view = "gen";
+  showView("gen");
+  renderAll();
+  grow();
+  syncH();
+}

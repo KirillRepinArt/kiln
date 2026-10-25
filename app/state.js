@@ -89,14 +89,7 @@ function setJobs(list) {
 }
 function setDraft(text) {
   draft = text;
-}
-try {
-  const sv = JSON.parse(localStorage.getItem("kiln_state") || "{}");
-  Object.assign(S, sv.S || {});
-  draft = sv.draft || "";
-  delete S.demo;
-  delete S.ncount;
-} catch (e) {} /* settings of the removed demo mode */
+} /* settings of the removed demo mode */
 /* LoRA entries are merged, never replaced: a LoRA this page doesn't know right now (none at start-up, before
    Forge's list arrives; a LoRA moved away for a while) keeps its saved name, weight and star. Replacing the list once
    wiped every renamed LoRA (2026-10-18). */
@@ -125,7 +118,6 @@ function save() {
 }
 const $ = id => document.getElementById(id);
 const P = $("prompt");
-P.value = draft || "";
 
 /* ======================= icons ======================= */
 const IC = {
@@ -156,4 +148,16 @@ function sideButtons(el, getJob) {
     if (b.dataset.a === "thumb") setThumbs(getJob());
   };
 } /* the other buttons: live.js */
-sideButtons($("sideGen"), () => shownDone());
+
+/* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
+function initState() {
+  try {
+    const sv = JSON.parse(localStorage.getItem("kiln_state") || "{}");
+    Object.assign(S, sv.S || {});
+    draft = sv.draft || "";
+    delete S.demo;
+    delete S.ncount;
+  } catch (e) {}
+  P.value = draft || "";
+  sideButtons($("sideGen"), () => shownDone());
+}

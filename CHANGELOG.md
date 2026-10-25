@@ -2,6 +2,14 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
+## Unreleased — v0.7 (structure: the whole app reorganised, behaviour unchanged)
+
+- **Development safety net** (nothing changes for users): every commit is checked by a privacy scan (personal paths,
+  e-mail addresses, pictures with a prompt inside, private words kept outside the repo — commit messages too) and by
+  linters (ESLint, Stylelint, Ruff); CI runs the linters, the privacy scan and the end-to-end tests on every push; the
+  tests run several at a time. Setup in CONTRIBUTING.md.
+- Fixed a test that could never fail (a regular expression with control characters in it).
+
 ## v0.6 — 2026-10-25 (queue at scale)
 
 - **Fast with hundreds of pictures:** while a job renders Kiln asks the server only for its progress (at 500 jobs each

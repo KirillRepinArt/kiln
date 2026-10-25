@@ -63,3 +63,37 @@ export function pageGeometry(m, L) {
   const margin = Math.max(0, (W - GAP - pw - rw) / 2);
   return { pw, rw, mL: margin, mR: margin, W, minR, off: 0, gen };
 }
+
+/**
+ * Vertical: the picture area's column — no wider than a 16:9 picture at the height it has (plus its button column each
+ * side), never narrower than the tab bar or the prompt box, never wider than the window.
+ * @param {number} full the window's room
+ * @param {number} minR the tab bar's least width
+ * @param {number} promptW the prompt box's width
+ * @param {number} picH the picture's height
+ * @param {number} tb the button column's width at that height
+ */
+export function stackColumnW(full, minR, promptW, picH, tb) {
+  return Math.round(Math.min(full, Math.max(minR, promptW, (picH * 16) / 9 + 2 * tb)));
+}
+
+/**
+ * Where the picture goes in its area: picture + button column as one group, centred; the column on the side away
+ * from the prompt. Vertical: the picture itself on the centre line (its column hangs in the margin).
+ * @param {object} a
+ * @param {number} a.areaW the area's width
+ * @param {number} a.areaH the area's height
+ * @param {number} a.w the picture's width
+ * @param {number} a.h the picture's height
+ * @param {number} a.tb the button column's width
+ * @param {number} a.row the room kept for the row under the picture (the status bar)
+ * @param {number | null | undefined} a.heldTop a top / bottom edge held: the top stays put
+ * @param {boolean} a.stacked Vertical
+ * @param {boolean} a.toolsLeft the button column on the left (prompt on the right)
+ */
+export function framePlacement({ areaW, areaH, w, h, tb, row, heldTop, stacked, toolsLeft }) {
+  const top = heldTop != null ? heldTop : Math.max(0, (areaH - h - row) / 2);
+  const g0 = Math.max(0, Math.floor((areaW - w - tb) / 2));
+  const left = stacked ? Math.floor((areaW - w) / 2) : toolsLeft ? g0 + tb : g0;
+  return { top, left, toolsX: toolsLeft ? left - tb : left + w };
+}

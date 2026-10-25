@@ -3,7 +3,17 @@
 import { applyMode, layoutLeft, lyReset, minRight, stackW, tabsW } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { current } from "./jobs.js";
-import { CARDMAX, GAP, LISTMIN, PWMIN, fitInBox, pageGeometry, toolColumnW } from "./layoutmath.js";
+import {
+  CARDMAX,
+  GAP,
+  LISTMIN,
+  PWMIN,
+  fitInBox,
+  framePlacement,
+  pageGeometry,
+  stackColumnW,
+  toolColumnW,
+} from "./layoutmath.js";
 import { PV, onShow, picMode } from "./picstate.js";
 import { S, jobs, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
@@ -245,11 +255,9 @@ export function sizeFrame() {
   {
     const rt = $("right");
     if (stk) {
-      const hh = picH(),
-        full = app.clientWidth - 36;
-      const cap = Math.max(minRight(), typeof stackW === "function" ? stackW() : 0, (hh * 16) / 9 + 2 * tbW(hh));
-      rt.style.width = Math.round(Math.min(full, cap)) + "px";
-      sizeFrame.colW = Math.round(Math.min(full, cap));
+      const hh = picH();
+      sizeFrame.colW = stackColumnW(app.clientWidth - 36, minRight(), stackW(), hh, tbW(hh));
+      rt.style.width = sizeFrame.colW + "px";
     } else {
       if (rt.style.width) rt.style.width = "";
       sizeFrame.colW = 0;
@@ -274,16 +282,20 @@ export function sizeFrame() {
   /* the picture's canvas is drawn at the box's FINAL size and centred in it: the box may glide to a new shape (its
     edges clip the picture, like a container transform) without the canvas being stretched on the way */
   /* Vertical keeps the column's room on both sides */
-  let top = Math.max(0, (st.height - h - BAR) / 2);
-  if (lay.vtop != null) top = lay.vtop; /* a held top / bottom edge: the other edge stays put */
-  /* picture + toolbar as one group, centred in the area; the toolbar on the side away from the prompt */
+  /* a held top / bottom edge (lay.vtop): the other edge stays put. The button column goes on the side away from the
+    prompt; Vertical: the picture itself on the centre line (the prompt box and the tab bar are centred there too) */
   const tbLeft = !stk && document.querySelector(".app").classList.contains("pright"),
-    g0 = Math.max(0, Math.floor((SW - w - TB) / 2)),
-    left = stk
-      ? Math.floor((SW - w) / 2)
-      : tbLeft
-        ? g0 + TB
-        : g0; /* Vertical: the picture itself on the centre line (the prompt box and the tab bar are centred there too); its column hangs in the margin */
+    { top, left, toolsX } = framePlacement({
+      areaW: SW,
+      areaH: st.height,
+      w,
+      h,
+      tb: TB,
+      row: BAR,
+      heldTop: lay.vtop,
+      stacked: stk,
+      toolsLeft: tbLeft,
+    });
   if (!morph) {
     f.style.left = left + "px";
     f.style.top = top + "px";
@@ -292,7 +304,7 @@ export function sizeFrame() {
   const gt = $("gtools");
   if (gt) {
     gt.style.top = top + "px";
-    gt.style.left = (tbLeft ? left - TB : left + w) + "px";
+    gt.style.left = toolsX + "px";
     gt.style.width = TB + "px";
     gt.style.height = Math.max(40, h) + "px";
     gt.classList.toggle("lefty", tbLeft);

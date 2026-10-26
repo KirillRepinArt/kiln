@@ -129,14 +129,15 @@ export async function pressOutline(k, t) {
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
   await k.sleep(250);
   const h = await k.rect("#cardhint"),
-    tr = await k.rect("#ltitle"),
-    L = await k.rect("#left");
+    L = await k.rect("#left"),
+    O = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--outline-out"))`);
   t.ok(await k.ev(`$("cardhint").classList.contains("show")`), "pressing the box: the outline shows");
-  t.ok(h.top <= tr.top - 8 && h.bottom >= L.bottom + 8, "round the whole block: the title, the box and the LoRAs", {
-    h,
-    tr,
-    L,
-  });
+  const off = [L.top - h.top, L.left - h.left, h.right - L.right, h.bottom - L.bottom];
+  t.ok(
+    off.every(d => Math.abs(d - O) <= 1),
+    "round the plate (the box), one outline gap outside it on every side (the outline rule, 2026-10-27)",
+    { off, O },
+  );
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
   await k.sleep(100);
   t.ok(await k.ev(`!$("cardhint").classList.contains("show")`), "letting go: it goes");

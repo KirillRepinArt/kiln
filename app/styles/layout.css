@@ -261,23 +261,13 @@
   z-index: 0;
   pointer-events: none;
   opacity: 0;
-  border: 1px dashed var(--white-28);
-  border-radius: calc(var(--r-panel) + var(--r-12));
+  border: var(--outline);
+  border-radius: calc(var(--r-panel) + var(--outline-out));
   transition: opacity var(--t-400) ease var(--t-300) !important;
 }
 .fithint.show {
   opacity: 1;
   transition: opacity var(--t-200) ease 0s !important;
-}
-/* Queue / LoRAs / PNG Info: the whole panel is what an edge sizes */
-.right.edgehint:has(.rpanel.paneled)::before {
-  content: "";
-  position: absolute;
-  inset: var(--space-16) 0 0 0;
-  border: 1px dashed var(--white-18);
-  border-radius: var(--r-panel);
-  pointer-events: none;
-  z-index: 7;
 }
 /* Vertical: the picture area's empty boxes let the pointer through. The prompt column is shifted up under them (the
    even gaps), and they come later in the page, so they took the title's clicks ("the title isn't editable") */

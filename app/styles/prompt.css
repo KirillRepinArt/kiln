@@ -473,14 +473,21 @@ textarea#prompt.peek {
 body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
   margin-bottom: calc(var(--ctrlh, var(--space-16)) + var(--space-1));
 } /* the scrollbar keeps its room only while the text overflows (editor.js) */
+/* the text sits --inset-box from the box's outer edge on every side, measured to the letters: the 1 px border counts,
+   and the first line is trimmed to its capitals (text-box), so the top isn't the line's empty leading */
 .pwrapT .cm-content {
-  padding: var(--space-7) 0 var(--space-3) 0;
+  padding: calc(var(--inset-box) - var(--space-px)) 0 var(--space-3) 0;
+  text-box: trim-start cap alphabetic;
   caret-color: var(--white);
   font-size: var(--fs-15);
 }
 .pwrapT .cm-line {
-  padding: 0 var(--space-4) 0 var(--space-7);
-} /* with the editor's 12 px margin: 28 px on the right too */ /* the text fills the box: you set its width yourself */
+  padding: 0 calc(var(--inset-box) - var(--space-3) - var(--space-px)) 0 calc(var(--inset-box) - var(--space-px));
+} /* right: with the editor's 12 px margin and the border */
+/* overflowing: the scrollbar takes its width out of the right margin, so the text column doesn't move */
+.pwrapT.ovf .cm-line {
+  padding-right: calc(var(--inset-box) - var(--space-3) - var(--space-px) - var(--scrollbar));
+}
 .pwrapT .cm-cursor {
   border-left: 2px solid var(--white);
 }

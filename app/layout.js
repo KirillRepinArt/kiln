@@ -428,15 +428,17 @@ let lrT; // the window-resize class's timer
 
 /* start-up wiring: the holds (pointer over the picture, a press in the prompt), the edges' outline, window resize (called from main.js, in order) */
 export function initLayout() {
-  /* the resize outline: drawn on the page's bottom layer (fixed, under every panel, so nothing clips it), 12 px round
-   the picture, following it every frame while an edge is hovered or held */
+  /* the resize outline: drawn on the page's bottom layer (fixed, under every panel, so nothing clips it), one outline
+   gap round what the edge sizes — the picture in Generating, the panel in Queue / LoRAs / PNG Info — following it
+   every frame while an edge is hovered or held */
   (function () {
     const fh = $("fithint"),
       rt = $("right");
     let on = false;
     let offAt = 0;
     function tick() {
-      const want = rt.classList.contains("edgehint") && S.view === "gen";
+      const paneled = !!document.querySelector(".rpanel.paneled"),
+        want = rt.classList.contains("edgehint") && (S.view === "gen" || paneled);
       if (want) offAt = 0;
       else if (!offAt) {
         offAt = performance.now();
@@ -446,8 +448,8 @@ export function initLayout() {
         on = false;
         return;
       } /* it fades out late and slowly (CSS): keep it on the picture meanwhile */
-      const r = $("frame").getBoundingClientRect(),
-        O = 12;
+      const r = (paneled ? $("rpanel") : $("frame")).getBoundingClientRect(),
+        O = SPACE.outline;
       fh.style.left = r.left - O + "px";
       fh.style.top = r.top - O + "px";
       fh.style.width = r.width + 2 * O + "px";

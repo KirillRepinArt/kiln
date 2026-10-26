@@ -43,6 +43,14 @@
   --gap-area: var(--space-5); /* between areas: the window's edge, the prompt column ↔ the picture area */
   --gap-part: var(--space-3); /* an area and its own parts: the tab bar ↔ the picture ↔ its status row */
   --gap-tight: var(--space-2); /* attached to a box: the LoRA chips under the prompt, the picture's edit buttons */
+  /* text inside a box: this far from the box's outer edge to the letters, on every side (2026-10-27) */
+  --inset-box: var(--space-7);
+  /* OUTLINES — one rule: something you move or resize = a dashed line one part gap OUTSIDE its plate, the corners
+     concentric; a place to drop = a plate with the line one part gap INSIDE (the scripts read --outline-out too) */
+  --outline-out: var(--gap-part);
+  --drop-inset: var(--gap-part);
+  --outline: 1px dashed var(--white-28);
+  --scrollbar: 15px; /* the scrollbars' width (base.css): the prompt keeps its text column when one appears */
   --r-panel: 24px;
   /* CORNERS — beside --r-panel (24, the panels) and --r-pill (fully round): today's values, named by size */
   --r-2: 2px;

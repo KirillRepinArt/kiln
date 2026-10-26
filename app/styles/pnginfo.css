@@ -10,17 +10,29 @@
 .rpanel.paneled .pwrap {
   padding: var(--space-5);
 }
+/* a place to drop: a plate with the dashed line inset (the outline rule) */
 .drop {
-  border: 2px dashed var(--grey-35);
-  border-radius: var(--r-16);
+  position: relative;
+  background: var(--white-3);
+  border-radius: var(--r-panel);
   padding: var(--space-7);
   text-align: center;
   color: var(--muted);
   cursor: pointer;
 }
+.drop::after {
+  content: "";
+  position: absolute;
+  inset: var(--drop-inset);
+  border: var(--outline);
+  border-radius: calc(var(--r-panel) - var(--drop-inset));
+  pointer-events: none;
+}
 .drop.over {
-  border-color: var(--white-70);
   color: var(--text);
+}
+.drop.over::after {
+  border-color: var(--white-70);
 }
 .pwrap:has(.pout:empty) .drop {
   flex: 1;

@@ -313,7 +313,8 @@ export function initCardlayout() {
       } catch (_) {}
       hint(true);
     }
-    /* the press shows what moves: an outline round the whole block (title, box, LoRAs), like the resize outline */
+    /* the press shows what moves: an outline round the plate (the box; its name and LoRAs move with it), like the
+       resize outline and the snap positions */
     const ch = $("cardhint");
     let hraf = 0;
     /** @param {boolean} on */
@@ -324,8 +325,8 @@ export function initCardlayout() {
         return;
       }
       (function tick() {
-        const rs = [$("ltitle"), L, $("chips")].map(x => x.getBoundingClientRect()).filter(r => r.width && r.height),
-          O = 12;
+        const rs = [L.getBoundingClientRect()],
+          O = SPACE.outline;
         const l = Math.min(...rs.map(r => r.left)),
           t = Math.min(...rs.map(r => r.top)),
           r = Math.max(...rs.map(r => r.right)),

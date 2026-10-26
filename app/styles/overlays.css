@@ -187,8 +187,8 @@
   right: 0;
   width: min(100%, var(--cw, 680px));
   border-radius: var(--r-panel);
-  outline: 1px dashed var(--white-16);
-  outline-offset: 12px;
+  outline: var(--outline);
+  outline-offset: var(--outline-out);
   pointer-events: none;
   opacity: 0;
   transition:
@@ -242,9 +242,9 @@
 .dockzone::after {
   content: "";
   position: absolute;
-  inset: var(--space-3);
-  border: 1.5px dashed currentColor;
-  border-radius: var(--r-15);
+  inset: var(--drop-inset);
+  border: 1px dashed currentColor;
+  border-radius: calc(var(--r-panel) - var(--drop-inset)); /* concentric */
   opacity: 0.5;
   pointer-events: none;
   transition:

@@ -23,10 +23,12 @@ import { initSkins } from "./skins.js";
 import { initState } from "./state.js";
 import { initTabs } from "./tabs.js";
 import { installTestBridge } from "./testing.js";
+import { initTokens } from "./tokens.js";
 import { initTooltips } from "./tooltips.js";
 import { initViewer } from "./viewer.js";
 
 if (new URLSearchParams(location.search).has("test")) installTestBridge(); // the e2e tests' way in
+initTokens(); // the spacing the layout maths uses, from the stylesheet
 initState();
 migrateLayoutPrefs(); // saved layouts of older versions → today's
 initPills();

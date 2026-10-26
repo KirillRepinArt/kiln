@@ -5,6 +5,7 @@ import { lay, minRight, setDock, sizeFrame, vAlign } from "./layout.js";
 import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement, promptSlotH } from "./layoutmath.js";
 import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
+import { SPACE } from "./tokens.js";
 
 /* ======================= prompt card layout =======================
    Centred on the image's vertical centre while there's room. While the editor is focused or the pointer is over
@@ -47,8 +48,8 @@ export function applyMode() {
   // switch to narrow below 980 px (or a tall window); back to wide only above 1020 px, so dragging near the edge doesn't flicker
   const narrow =
     was && a.dataset.narrow === "1"
-      ? innerWidth < 1020 || innerWidth / innerHeight < 1.2 || innerWidth - 54 < 400 + minRight()
-      : innerWidth < 980 || innerWidth / innerHeight < 1.15 || innerWidth - 54 < 360 + minRight();
+      ? innerWidth < 1020 || innerWidth / innerHeight < 1.2 || innerWidth - 3 * SPACE.area < 400 + minRight()
+      : innerWidth < 980 || innerWidth / innerHeight < 1.15 || innerWidth - 3 * SPACE.area < 360 + minRight();
   a.dataset.narrow = narrow ? "1" : "";
   const st =
     narrow ||
@@ -80,7 +81,7 @@ export function applyMode() {
 /* Vertical: the prompt box's width — yours (S.lay.sw, set with its side edges), or the picture's (Fit width), never
    narrower than the box's minimum or wider than the window */
 export function stackW() {
-  const max = innerWidth - 36,
+  const max = innerWidth - 2 * SPACE.area,
     pic = typeof lay !== "undefined" && lay.target && lay.target.w;
   const w = S.vfit && pic ? pic : (S.lay && S.lay.sw) || 760;
   return Math.round(Math.max(Math.min(PWMIN, max), Math.min(max, w)));
@@ -91,7 +92,7 @@ function cardMinH() {
 }
 export function chipsH() {
   const c = $("chips");
-  return c.childElementCount ? c.offsetHeight + 10 : 0;
+  return c.childElementCount ? c.offsetHeight + SPACE.tight : 0;
 } // the row always shows ("LoRA +") // the chip row under the box, and its gap
 export function layoutLeft() {
   if (card.drag) return;
@@ -124,7 +125,7 @@ export function layoutLeft() {
     col.style.setProperty("--ltop", TS + "px");
     requestAnimationFrame(vAlign);
     col.style.setProperty("--lh", H + "px");
-    col.style.setProperty("--chtop", TS + H + 10 + "px");
+    col.style.setProperty("--chtop", TS + H + SPACE.tight + "px");
     if (chg) requestAnimationFrame(sizeFrame);
     return;
   }
@@ -154,7 +155,7 @@ export function layoutLeft() {
     card.bottom = top + H + CH;
     col.style.setProperty("--ltop", top + TS + "px");
     col.style.setProperty("--lh", H + "px");
-    col.style.setProperty("--chtop", top + TS + H + 10 + "px");
+    col.style.setProperty("--chtop", top + TS + H + SPACE.tight + "px");
     return;
   }
   // the box and its chip row are placed as one group (the text's height is measured only when it's used)
@@ -173,7 +174,7 @@ export function layoutLeft() {
   card.top = top;
   col.style.setProperty("--ltop", top + TS + "px");
   col.style.setProperty("--lh", H + "px");
-  col.style.setProperty("--chtop", top + TS + H + 10 + "px");
+  col.style.setProperty("--chtop", top + TS + H + SPACE.tight + "px");
 }
 function freeze() {
   clearTimeout(card.thawTimer);
@@ -370,7 +371,7 @@ export function initCardlayout() {
       if (m.stk) return;
       const t = Math.max(0, Math.min(colH - H - chipsH(), m.t0 + dy));
       col.style.setProperty("--ltop", t + TS + "px");
-      col.style.setProperty("--chtop", t + TS + H + 10 + "px");
+      col.style.setProperty("--chtop", t + TS + H + SPACE.tight + "px");
       m.t = t;
       const n = nearest(t, H, colH);
       ghosts.forEach(g => g.classList.toggle("near", !m.zone && g.dataset.p === n));

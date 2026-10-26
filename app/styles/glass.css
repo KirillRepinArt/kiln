@@ -283,14 +283,14 @@ body.glass .left .controls {
   z-index: 2;
 }
 body.glass .left .pwrapT .cm-scroller {
-  padding-bottom: calc(var(--ctrlh, 64px) - 6px);
+  padding-bottom: calc(var(--ctrlh, var(--space-16)) - var(--space-2));
 } /* the text runs on under the glass controls, almost to the box's edge */
 body.glass .left .pwrapT .cm-editor {
   margin-bottom: 0;
 }
 /* the character count sits at the box's top (its own header strip), beside the ✕ */
 body.glass .left .privov {
-  bottom: var(--ctrlh, 64px);
+  bottom: var(--ctrlh, var(--space-16));
 }
 /* main actions (Start, Send to prompt, Reuse all, Save name): tinted glass — the theme gradient, see-through, with
    the glass's light edge. Nothing to queue / a job running: Start is plain thin glass */
@@ -323,7 +323,7 @@ body.glass .pnsave {
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.14),
     0 2px 8px rgba(0, 0, 0, 0.25);
-  padding: 4px 12px;
+  padding: var(--space-1) var(--space-3);
 }
 body.glass .btn.pri:hover,
 body.glass .peekbar #pkAll:hover {

@@ -6,7 +6,6 @@ import { $ } from "./dom.js";
 import { current, jobs } from "./jobs.js";
 import {
   CARDMAX,
-  GAP,
   LISTMIN,
   PWMIN,
   fitInBox,
@@ -19,6 +18,7 @@ import {
 import { PV, onShow, picMode } from "./picstate.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
+import { SPACE, pairGap } from "./tokens.js";
 
 /* Kiln · the page layout: the prompt and the picture area side by side or stacked, their widths and heights,
    the edges you drag, docking, and the holds that keep things still while you work */
@@ -30,7 +30,9 @@ function fitBox(el, ar, bw, bh) {
   el.style.width = w + "px";
   el.style.height = h + "px";
 }
-export const BAR = 66; // the status block under the picture: 12 + track 10 + 7 + status row 36; a caption: 6 + row 36 + 4; nothing: 24
+/* the status block under the picture: the part gap + track 10 + 7 + status row 36 (a caption: 6 + row 36 + 4;
+   nothing: 24) */
+export const BAR = () => SPACE.part + 10 + 7 + 36;
 /* what the row under the picture is: "bar" (rendering, or a paused queue), "cap" (a finished picture's caption), "none" */
 export function rowMode() {
   if (S.view !== "gen") return "bar";
@@ -61,7 +63,7 @@ export function tbW(h) {
 /* widths are PREFERRED sizes in px (S.lay v:3): a window resize never grows a panel past what you chose — the extra
    goes to the margins; shrinking takes the margins first (down to MMIN), then both panels in proportion, and they come
    back when there's room (flex's "shrink, don't grow"). Shares of the window (v:2) shrank them far too early. */
-const layW = () => innerWidth - 36;
+const layW = () => innerWidth - 2 * SPACE.area; /* the window less its edge on each side */
 /* the tab bar's width, as laid out now */
 export function tabsW() {
   const k = /** @type {HTMLElement} */ (document.querySelector(".tabs")).children;
@@ -102,7 +104,7 @@ export const lay = {
 /* the picture's height: the stage minus the status row, capped in Generating by S.lay.ih (a share of that height,
    set with the image area's top / bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
 function picH() {
-  const full = $("stage").getBoundingClientRect().height - BAR;
+  const full = $("stage").getBoundingClientRect().height - BAR();
   if (lay.vh) return Math.min(full, lay.vh);
   const ih = S.lay && (document.querySelector(".app.stacked") ? S.lay.vih : S.lay.ih);
   return S.view === "gen" && ih ? Math.max(200, Math.min(full, ih * full)) : full;
@@ -130,10 +132,9 @@ function layApply(g) {
     st = app.style,
     px = (/** @type {number} */ v) => Math.round(v * 10) / 10 + "px";
   const mL = Math.max(0, g.mL + (g.off || 0)),
-    mR = Math.max(0, g.W - GAP - g.pw - g.rw - mL);
+    mR = Math.max(0, g.W - pairGap() - g.pw - g.rw - mL);
   st.setProperty("--mL", px(mL));
   st.setProperty("--pw", px(g.pw));
-  st.setProperty("--gap", px(GAP));
   st.setProperty("--rw", px(g.rw));
   st.setProperty("--mR", px(mR));
   st.setProperty("--cw", px(g.pw));
@@ -148,8 +149,8 @@ function layNow() {
   if (lay.vh) return lay.last; // a top / bottom edge held: the width waits for the release
   if (lay.pressCard || document.querySelector("#left .pop.show")) {
     g.pw = lay.last.pw;
-    g.rw = Math.max(g.minR, Math.min(g.rw, g.W - GAP - g.pw)); /* the prompt keeps its place and its width */
-    g.mL = g.mR = Math.max(0, (g.W - GAP - g.pw - g.rw) / 2);
+    g.rw = Math.max(g.minR, Math.min(g.rw, g.W - pairGap() - g.pw)); /* the prompt keeps its place and its width */
+    g.mL = g.mR = Math.max(0, (g.W - pairGap() - g.pw - g.rw) / 2);
     g.off = lay.last.mL - g.mL;
     return g;
   }
@@ -175,16 +176,16 @@ export function layDrag(edge, g0, dx) {
   if (edge === "po") {
     const pw = Math.max(PWMIN, Math.min(CARDMAX, g0.pw + g0.mL, g0.pw - dx));
     g.pw = pw;
-    const W2 = g.W - GAP - g.pw - g.rw;
+    const W2 = g.W - pairGap() - g.pw - g.rw;
     g.off = g0.mL - (pw - g0.pw) - W2 / 2;
   }
   if (edge === "ro") {
     const rw = Math.max(g0.minR, Math.min(g0.rw + g0.mR, g0.rw + dx));
     g.rw = rw;
-    const W2 = g.W - GAP - g.pw - g.rw;
+    const W2 = g.W - pairGap() - g.pw - g.rw;
     g.off = g0.mL - W2 / 2;
   }
-  g.mL = g.mR = Math.max(0, (g.W - GAP - g.pw - g.rw) / 2);
+  g.mL = g.mR = Math.max(0, (g.W - pairGap() - g.pw - g.rw) / 2);
   const L = /** @type {LayoutPrefs} */ (S.lay); // made by layGeo before any drag
   L.pw = g.pw;
   if (g0.gen) L.iw = g.rw;
@@ -199,16 +200,16 @@ function layDragR(edge, g0, dx) {
   if (edge === "po") {
     const pw = Math.max(PWMIN, Math.min(CARDMAX, g0.pw + g0.mR, g0.pw - dx));
     g.pw = pw;
-    const W2 = g.W - GAP - g.pw - g.rw;
+    const W2 = g.W - pairGap() - g.pw - g.rw;
     g.off = g0.mL - W2 / 2;
   }
   if (edge === "ro") {
     const rw = Math.max(g0.minR, Math.min(g0.rw + g0.mL, g0.rw + dx));
     g.rw = rw;
-    const W2 = g.W - GAP - g.pw - g.rw;
+    const W2 = g.W - pairGap() - g.pw - g.rw;
     g.off = g0.mL - (rw - g0.rw) - W2 / 2;
   } /* dx arrives mirrored: leftwards grows it */
-  g.mL = g.mR = Math.max(0, (g.W - GAP - g.pw - g.rw) / 2);
+  g.mL = g.mR = Math.max(0, (g.W - pairGap() - g.pw - g.rw) / 2);
   const L = /** @type {LayoutPrefs} */ (S.lay); // made by layGeo before any drag
   L.pw = g.pw;
   if (g0.gen) L.iw = g.rw;
@@ -293,7 +294,7 @@ export function sizeFrame() {
     const rt = $("right");
     if (stk) {
       const hh = picH();
-      lay.colW = stackColumnW(app.clientWidth - 36, minRight(), stackW(), hh, tbW(hh));
+      lay.colW = stackColumnW(app.clientWidth - 2 * SPACE.area, minRight(), stackW(), hh, tbW(hh));
       rt.style.width = lay.colW + "px";
     } else {
       if (rt.style.width) rt.style.width = "";
@@ -328,7 +329,7 @@ export function sizeFrame() {
       w,
       h,
       tb: TB,
-      row: BAR,
+      row: BAR(),
       heldTop: lay.vtop,
       stacked: stk,
       toolsLeft: tbLeft,
@@ -347,7 +348,7 @@ export function sizeFrame() {
     gt.classList.toggle("lefty", tbLeft);
   }
   /* where the picture is going (not where it is mid-glide): the prompt's vertical anchors use this */
-  lay.target = { top: st.top + top, h, bottom: st.top + top + h + BAR - 1, w };
+  lay.target = { top: st.top + top, h, bottom: st.top + top + h + BAR() - 1, w };
   /* the area's outer handle sits on the picture's outer edge in Generating (the edge you see), not past the button column */
   {
     const ro = /** @type {HTMLElement} */ (document.querySelector(".pedge.ro"));
@@ -387,7 +388,7 @@ export function sizeFrame() {
   const pr = $("prog");
   pr.style.left = left + sx + "px";
   pr.style.width = w + "px";
-  pr.style.top = top + h + (BAR === 66 ? 12 : 6) + "px";
+  pr.style.top = top + h + SPACE.part + "px";
   pr.style.setProperty("--tw", w + "px");
   requestAnimationFrame(layoutLeft);
 }
@@ -412,7 +413,7 @@ export function vAlign() {
     colTop = col.getBoundingClientRect().top - cur,
     TS = parseFloat(col.style.getPropertyValue("--ts")) || 64;
   const fromBottom = T.getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top,
-    pn = colTop + 4 + (TS - 10) - fromBottom; /* the name row: top 4, height TS-10, its content at the bottom */
+    pn = colTop + 4 + (TS - 4 - SPACE.tight) - fromBottom; /* the name row: top 4, ending a tight gap above the box */
   const dy = Math.round(Math.min(0, lay.vB + A - pn));
   if (String(dy) !== col.dataset.dy) {
     col.dataset.dy = String(dy);

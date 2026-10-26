@@ -3,11 +3,11 @@
   position: absolute;
   inset: 0;
   overflow: auto;
-  padding: 4px 2px 18px;
+  padding: var(--space-1) var(--space-hair) var(--space-5);
 }
 .rpanel.paneled .qwrap {
-  inset: 12px;
-  padding: 6px;
+  inset: var(--space-3);
+  padding: var(--space-2);
   border-radius: 12px;
 }
 .qsec {
@@ -15,24 +15,24 @@
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  margin: 14px 8px 8px;
+  margin: var(--space-4) var(--space-2) var(--space-2);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 .qsec:first-child {
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 .qsec > span:last-child:not(:first-child) {
   display: flex;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .qsec button {
   font-size: 11.5px;
   letter-spacing: 0;
   text-transform: none;
   color: var(--muted);
-  padding: 3px 9px;
+  padding: var(--space-1) var(--space-2);
   border-radius: 999px;
   background: var(--raised);
 }
@@ -46,11 +46,11 @@
 .qi {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3);
   border-radius: 14px;
   background: var(--raised);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
   cursor: pointer;
 }
 .qi:hover {
@@ -208,10 +208,13 @@ body.glass .qi.sel .qck {
     0 0 0 1px color-mix(in oklab, var(--a1) 70%, #fff);
 }
 .qi.sel .qck::after {
+  /* the tick's own drawing (a rotated corner), not spacing */
+  /* stylelint-disable declaration-property-value-disallowed-list */
   content: "";
   position: absolute;
   left: 5.5px;
   top: 2.5px;
+  /* stylelint-enable declaration-property-value-disallowed-list */
   width: 5px;
   height: 9px;
   border: solid var(--ink);
@@ -227,7 +230,7 @@ body.glass .qi.sel .qck {
   z-index: 5;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   border-radius: 14px;
   background: var(--raised2);
   font-size: 13px;
@@ -235,8 +238,8 @@ body.glass .qi.sel .qck {
 }
 .qsec.qfin {
   min-height: 44px;
-  margin: 14px 0 8px;
-  padding: 0 7px 0 8px;
+  margin: var(--space-4) 0 var(--space-2);
+  padding: 0 var(--space-2) 0 var(--space-2);
   border-radius: 14px;
   transition:
     background 0.15s,
@@ -245,10 +248,10 @@ body.glass .qi.sel .qck {
 .qsec.qbar {
   letter-spacing: 0;
   text-transform: none;
-  padding-left: 14px;
+  padding-left: var(--space-4);
 } /* while selecting, the Finished header is the action row (it sticks)*/
 .qbar .qn {
-  margin-right: 6px;
+  margin-right: var(--space-2);
   font-size: 12px;
   font-weight: 500;
   text-transform: uppercase;
@@ -260,14 +263,14 @@ body.glass .qi.sel .qck {
 }
 .qbar {
   flex-wrap: wrap;
-  row-gap: 6px;
+  row-gap: var(--space-2);
 }
 .qbar .qn b {
   color: var(--text);
   font-weight: 600;
 }
 .qbar button {
-  padding: 5px 12px;
+  padding: var(--space-1) var(--space-3);
   border-radius: 999px;
   background: var(--raised);
   font-size: 12.5px;
@@ -317,7 +320,7 @@ body.glass .qi.sel .qck {
   height: 4px;
   border-radius: 2px;
   background: #1a1a1c;
-  margin-top: 6px;
+  margin-top: var(--space-2);
   overflow: hidden;
 }
 .qi .mini i {
@@ -354,11 +357,11 @@ body.glass .qi.sel .qck {
 .empty {
   color: var(--faint);
   text-align: center;
-  padding: 40px 10px;
+  padding: var(--space-10) var(--space-3);
   font-size: 14px;
 }
 #qwrap .empty {
-  padding: 10px 12px 14px;
+  padding: var(--space-3) var(--space-3) var(--space-4);
   font-size: 13px;
   text-align: left;
 } /* "Nothing queued": one quiet line after Up next */

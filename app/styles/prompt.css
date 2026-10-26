@@ -5,9 +5,9 @@
   position: absolute;
   right: 0;
   width: min(100%, var(--cw, 680px));
-  top: calc(var(--ltop, 0px) - var(--ts, 64px) + 4px);
-  height: calc(var(--ts, 64px) - 10px);
-  padding: 0 26px;
+  top: calc(var(--ltop, 0px) - var(--ts, var(--space-16)) + var(--space-1));
+  height: calc(var(--ts, 64px) - var(--space-1) - var(--gap-tight)); /* ends one tight gap above the box */
+  padding: 0 var(--space-7);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -60,7 +60,7 @@
   letter-spacing: -0.01em;
   color: #f2f2f2;
   text-align: center;
-  padding: 2px 6px;
+  padding: var(--space-hair) var(--space-2);
   margin-left: 0;
   border-radius: 6px;
 }
@@ -81,7 +81,7 @@
   box-shadow: none;
 }
 .ltitle .plbl .pname:not([readonly]) {
-  padding: 2px 12px;
+  padding: var(--space-hair) var(--space-3);
   transition:
     background 0.15s,
     box-shadow 0.15s;
@@ -152,7 +152,7 @@
 }
 .fnpre {
   right: 100%;
-  margin-right: 8px;
+  margin-right: var(--space-2);
   transform: translate(8px, -50%);
   letter-spacing: 0.02em;
 }
@@ -171,8 +171,8 @@
 }
 .pnsave {
   display: none;
-  margin-left: 6px;
-  padding: 3px 10px;
+  margin-left: var(--space-2);
+  padding: var(--space-1) var(--space-3);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
@@ -187,10 +187,10 @@
 .peekbar {
   display: none;
   align-items: center;
-  gap: 6px;
-  padding: 5px 5px 5px 12px;
-  margin-top: 12px;
-  margin-bottom: 3px;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  margin-top: var(--space-3);
+  margin-bottom: 0; /* the name row already ends one tight gap above the box */
   max-width: calc(100% - 136px);
   border-radius: 999px;
   background: #2c2c31;
@@ -204,13 +204,13 @@
 }
 .peekbar > span {
   color: var(--muted);
-  margin-right: 4px;
+  margin-right: var(--space-1);
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
 }
 .peekbar button {
-  padding: 5px 11px;
+  padding: var(--space-1) var(--space-3);
   border-radius: 999px;
   background: #3a3a40;
   font-size: 12.5px;
@@ -225,7 +225,7 @@
 }
 .peekbar .pkseed {
   min-width: 32px;
-  padding: 5px 9px;
+  padding: var(--space-1) var(--space-2);
   display: grid;
   place-items: center;
   color: var(--muted);
@@ -256,10 +256,10 @@
 /* the size buttons at the name row's right: Match the picture's height · Full height (Vertical: Fit the width) */
 .hmodes {
   position: absolute;
-  right: 22px;
-  bottom: 6px;
+  right: var(--space-6);
+  bottom: var(--space-2);
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
   z-index: 4;
   opacity: 0;
   transition: opacity 0.15s;
@@ -297,7 +297,7 @@
   justify-content: center;
   align-content: flex-end;
   align-items: center;
-  column-gap: 8px;
+  column-gap: var(--space-2);
 }
 .ltitle.tnarrow:has(.peekbar.show) .phead {
   flex-basis: 100%;
@@ -307,8 +307,8 @@
 }
 .ltitle.tnarrow:has(.peekbar.show) .hmodes {
   position: static;
-  margin-top: 12px;
-  margin-bottom: 3px;
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-1);
   opacity: 1;
 }
 
@@ -376,8 +376,8 @@ textarea#prompt {
   background: transparent;
   border: 0;
   outline: 0;
-  padding: 28px 16px 10px 28px;
-  margin: 0 12px 8px 0;
+  padding: var(--space-7) var(--space-4) var(--space-3) var(--space-7);
+  margin: 0 var(--space-3) var(--space-2) 0;
   line-height: 1.62;
   overflow: auto;
 }
@@ -392,7 +392,7 @@ textarea#prompt.peek {
   flex: 0 1 auto;
   min-height: 108px;
   max-height: 100%;
-  margin: 0 12px 8px 0;
+  margin: 0 var(--space-3) var(--space-2) 0;
   outline: 0 !important;
   background: transparent;
   font: inherit;
@@ -458,18 +458,18 @@ textarea#prompt.peek {
   scrollbar-gutter: stable;
 }
 .pwrapT .cm-scroller::-webkit-scrollbar-track {
-  margin: 32px 0 10px;
+  margin: var(--space-8) 0 var(--space-3);
 } /* starts just under the ✕ (which ends where the text starts, 28 px) */
 body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
-  margin-bottom: calc(var(--ctrlh, 64px) + 4px);
+  margin-bottom: calc(var(--ctrlh, var(--space-16)) + var(--space-1));
 } /* the scrollbar keeps its room only while the text overflows (editor.js) */
 .pwrapT .cm-content {
-  padding: 28px 0 10px 0;
+  padding: var(--space-7) 0 var(--space-3) 0;
   caret-color: #fff;
   font-size: 15px;
 }
 .pwrapT .cm-line {
-  padding: 0 16px 0 28px;
+  padding: 0 var(--space-4) 0 var(--space-7);
 } /* with the editor's 12 px margin: 28 px on the right too */ /* the text fills the box: you set its width yourself */
 .pwrapT .cm-cursor {
   border-left: 2px solid #fff;
@@ -506,13 +506,13 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: #8a8a92;
-  padding-top: 6px !important;
+  padding-top: var(--space-2) !important;
 } /* !important: over .cm-line's size and padding */
 .cm-variant {
   background: #2c2c33;
   border-radius: 6px;
   box-shadow: 0 0 0 1px #3c3c44;
-  padding: 0 2px;
+  padding: 0 var(--space-hair);
 }
 .cm-vbar {
   color: #6f6f78;
@@ -521,14 +521,14 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
   background: #2a2a30;
   border-radius: 6px;
   color: #bdbdc6;
-  padding: 0 3px;
+  padding: 0 var(--space-1);
   box-shadow: 0 0 0 1px #3a3a42;
 }
 /* the character count, while you type */
 .pcount {
   position: absolute;
-  right: 50px;
-  top: 8px;
+  right: var(--space-12);
+  top: var(--space-2);
   height: 20px;
   line-height: 20px;
   z-index: 3;
@@ -550,7 +550,7 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
   z-index: 5;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--space-3);
   color: var(--muted);
   font-size: 13.5px;
   border-radius: inherit;
@@ -574,8 +574,8 @@ body.private .pcount {
 /* the prompt's ✕ Clear: top right of the box while it has text and you're over it */
 .pclear {
   position: absolute;
-  top: 8px;
-  right: 24px;
+  top: var(--space-2);
+  right: var(--space-6);
   z-index: 3;
   width: 20px;
   height: 20px;

@@ -31,7 +31,7 @@ import { closeShown, closeViewer, openViewer } from "./viewer.js";
 export function installTestBridge() {
   const props = {
     $: { get: () => $ },
-    BAR: { get: () => BAR },
+    BAR: { get: () => BAR() },
     LORAS: { get: () => LORAS },
     P: { get: () => P },
     PV: { get: () => PV },

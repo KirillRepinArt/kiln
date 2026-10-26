@@ -2,18 +2,18 @@
 .pwrap {
   position: absolute;
   inset: 0;
-  padding: 4px 2px 18px;
+  padding: var(--space-1) var(--space-hair) var(--space-5);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 .rpanel.paneled .pwrap {
-  padding: 18px;
+  padding: var(--space-5);
 }
 .drop {
   border: 2px dashed #3d3d42;
   border-radius: 16px;
-  padding: 26px;
+  padding: var(--space-7);
   text-align: center;
   color: var(--muted);
   cursor: pointer;
@@ -33,7 +33,7 @@
   overflow: auto;
   background: #161618;
   border-radius: 14px;
-  padding: 18px 20px;
+  padding: var(--space-5) var(--space-5);
   font-size: 14px;
   color: #cfcfd4;
 }
@@ -49,12 +49,12 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: #8a8a92;
-  margin: 2px 0 8px;
+  margin: var(--space-hair) 0 var(--space-2);
 }
 .pi-p {
   line-height: 1.62;
   color: #e6e6ea;
-  margin-bottom: 18px;
+  margin-bottom: var(--space-5);
 }
 .pi-p .ln {
   min-height: 1.62em;
@@ -68,7 +68,7 @@
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: #8a8a92;
-  padding-top: 6px;
+  padding-top: var(--space-2);
 }
 .pi-p .ln.cmt {
   color: #6c6c74;
@@ -80,7 +80,7 @@
 .pi-grid {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 6px 18px;
+  gap: var(--space-2) var(--space-5);
   font-size: 13px;
 }
 .pi-grid dt {
@@ -112,7 +112,7 @@
 }
 .pact {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   justify-content: flex-end;
 }
 #pClear {
@@ -123,15 +123,15 @@
   font-size: 12px;
   color: var(--muted);
   background: var(--raised);
-  padding: 4px 10px;
+  padding: var(--space-1) var(--space-3);
   border-radius: 999px;
 }
 .pact .keepseed {
   margin-right: auto;
-  margin-left: 10px;
+  margin-left: var(--space-3);
 }
 .btn {
-  padding: 9px 16px;
+  padding: var(--space-2) var(--space-4);
   border-radius: 999px;
   background: var(--raised);
   font-size: 14px;

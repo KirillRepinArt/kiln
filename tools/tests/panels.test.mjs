@@ -128,19 +128,23 @@ const box = async k => {
   return { pl: Math.round(L.left), pr: Math.round(L.right), rl: Math.round(Rr.left), rr: Math.round(Rr.right) };
 };
 
-const centred = b => Math.abs(b.pl - 18 - (1700 - 18 - b.rr)) <= 2;
-const b0ok = a => a.rl - a.pr === 18 && centred(a);
+let AREA = 20; // the area gap (prompt ↔ picture, the window's edge): each test reads it from the page's tokens
+const readArea = async k =>
+  (AREA = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area"))`));
+const centred = b => Math.abs(b.pl - AREA - (1700 - AREA - b.rr)) <= 2;
+const b0ok = a => a.rl - a.pr === AREA && centred(a);
 export async function dividerAndEdges(k, t) {
+  await readArea(k);
   await viewport(k, 1700, 950);
   await k.ev(`(showView("queue"),1)`);
   await settle(k);
   let a = await box(k);
-  t.ok(b0ok(a), "default: a centred pair with an 18 px gap", a);
+  t.ok(b0ok(a), "default: a centred pair, the area gap between", a);
   await drag(k, ".pedge.ri", -100);
   await k.sleep(500);
   let b = await box(k);
   t.ok(
-    b.rr - b.rl === a.rr - a.rl + 100 && b.pr - b.pl === a.pr - a.pl - 100 && b.rl - b.pr === 18 && centred(b),
+    b.rr - b.rl === a.rr - a.rl + 100 && b.pr - b.pl === a.pr - a.pl - 100 && b.rl - b.pr === AREA && centred(b),
     "dragging the image area's left edge: it grows exactly as much as the prompt shrinks; still centred",
     { a, b },
   );
@@ -152,12 +156,12 @@ export async function dividerAndEdges(k, t) {
   await drag(k, ".pedge.pi", 150);
   await k.sleep(500);
   b = await box(k);
-  t.ok(b.pr - b.pl === a.pr - a.pl + 150 && b.rl - b.pr === 18, "the prompt's right edge is the same divider", {
+  t.ok(b.pr - b.pl === a.pr - a.pl + 150 && b.rl - b.pr === AREA, "the prompt's right edge is the same divider", {
     a,
     b,
   });
   a = b;
-  const room = Math.max(10, Math.min(80, 1700 - 18 - a.rr - 4)); // as far as the free space allows
+  const room = Math.max(10, Math.min(80, 1700 - AREA - a.rr - 4)); // as far as the free space allows
   const h = await R(k, ".pedge.ro"),
     x = h.left + h.width / 2,
     y = h.top + 200;
@@ -187,7 +191,7 @@ export async function dividerAndEdges(k, t) {
     { a, b },
   );
   a = b;
-  const room2 = Math.max(10, Math.min(60, a.pl - 18 - 4));
+  const room2 = Math.max(10, Math.min(60, a.pl - AREA - 4));
   await drag(k, ".pedge.po", -room2);
   await k.sleep(500);
   b = await box(k);
@@ -210,6 +214,7 @@ export async function dividerAndEdges(k, t) {
 }
 
 export async function windowResize(k, t) {
+  await readArea(k);
   await viewport(k, 1700, 950);
   await k.ev(`(showView("queue"),1)`);
   await settle(k);
@@ -218,7 +223,7 @@ export async function windowResize(k, t) {
   await settle(k);
   const b = await box(k);
   t.ok(
-    b.pr - b.pl === a.pr - a.pl && b.rr - b.rl === a.rr - a.rl && b.rl - b.pr === 18,
+    b.pr - b.pl === a.pr - a.pl && b.rr - b.rl === a.rr - a.rl && b.rl - b.pr === AREA,
     "a wider window: the panels keep your widths (the margins grow)",
     { a, b },
   );
@@ -233,7 +238,10 @@ export async function windowResize(k, t) {
   await settle(k);
   const d = await box(k);
   t.ok(
-    d.pl - 18 <= 26 && Math.abs(d.pl - 18 - (1250 - 18 - d.rr)) <= 2 && d.rl - d.pr === 18 && d.pr - d.pl < a.pr - a.pl,
+    d.pl - AREA <= 26 &&
+      Math.abs(d.pl - AREA - (1250 - AREA - d.rr)) <= 2 &&
+      d.rl - d.pr === AREA &&
+      d.pr - d.pl < a.pr - a.pl,
     "too narrow: the margins go down to ~24 px (less only at the panels' minimums), then both panels shrink",
     d,
   );
@@ -244,6 +252,7 @@ export async function windowResize(k, t) {
 }
 
 export async function resetAndDoubleClick(k, t) {
+  await readArea(k);
   await viewport(k, 1700, 950);
   await k.ev(`(showView("queue"),1)`);
   await settle(k);
@@ -279,8 +288,8 @@ export async function resetAndDoubleClick(k, t) {
   t.ok(
     Math.abs(r.pr - r.pl - 680) <= 1 &&
       Math.abs(r.rr - r.rl - 660) <= 1 &&
-      r.rl - r.pr === 18 &&
-      Math.abs(r.pl - 18 - (1700 - 18 - r.rr)) <= 2,
+      r.rl - r.pr === AREA &&
+      Math.abs(r.pl - AREA - (1700 - AREA - r.rr)) <= 2,
     "Layout → Reset: the default sizes for this window, centred",
     r,
   );
@@ -295,6 +304,7 @@ const gapToPic = async k => {
 };
 
 export async function hugsThePicture(k, t) {
+  await readArea(k);
   await viewport(k, 1700, 950);
   await k.mouse(2, 2);
   await k.job("[fill:dc2828] portrait", { ar: "3:4", steps: 2 });
@@ -304,8 +314,8 @@ export async function hugsThePicture(k, t) {
   await k.sleep(900);
   const wide = (await R(k, "#frame")).width;
   t.ok(
-    Math.abs((await gapToPic(k)) - 18) <= 1,
-    "a landscape picture: the prompt sits 18 px from it",
+    Math.abs((await gapToPic(k)) - AREA) <= 1,
+    "a landscape picture: the prompt sits one area gap from it",
     await gapToPic(k),
   );
   await k.ev(`(document.activeElement.blur(),genNav(-1),updNav(),1)`);
@@ -313,8 +323,8 @@ export async function hugsThePicture(k, t) {
   const narrow = (await R(k, "#frame")).width;
   t.ok(narrow < wide - 200, "flipping to the portrait one: the area narrows to it", { wide, narrow });
   t.ok(
-    Math.abs((await gapToPic(k)) - 18) <= 1,
-    "…and the prompt still sits 18 px from the picture (no gap in the middle)",
+    Math.abs((await gapToPic(k)) - AREA) <= 1,
+    "…and the prompt still sits one area gap from the picture (no gap in the middle)",
     await gapToPic(k),
   );
   const fr = await R(k, "#right"),
@@ -401,6 +411,7 @@ export async function capInGenerating(k, t) {
 
 /* step 3: the picture's height limit; the arrows at mid-height */
 export async function heightLimit(k, t) {
+  await readArea(k);
   await viewport(k, 1700, 950);
   await k.mouse(2, 2);
   await k.job("[fill:dc2828] portrait", { ar: "3:4", steps: 2 });
@@ -439,7 +450,7 @@ export async function heightLimit(k, t) {
     h: f1.height,
     bar,
   });
-  const want = 18 + Math.max(0, (420 - f1.width - 52) / 2); // in Generating the area only stops at 420 px (the tab bar may overhang a narrow picture)
+  const want = AREA + Math.max(0, (420 - f1.width - 56) / 2); // 56: the edit buttons' column // in Generating the area only stops at 420 px (the tab bar may overhang a narrow picture)
   t.ok(
     Math.abs(f1.width / f1.height - 0.75) < 0.01 && Math.abs((await gapToPic(k)) - want) <= 1.5,
     "its width follows (3:4); the prompt hugs it",

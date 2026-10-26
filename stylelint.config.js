@@ -1,6 +1,6 @@
 // Stylelint: catches real mistakes in the CSS (unknown properties, typos in colours, duplicated declarations).
-// Later steps add more: the formatter pass (step 3) and the design-token rule — no raw colours or sizes outside the
-// tokens file (step 7).
+// Design tokens (v0.7 step 7): spacing comes from the scale in app/styles/tokens.css — a raw px value in a spacing
+// property is an error (0 is fine; 1 and 2 px are --space-px / --space-hair). More token rules follow.
 export default {
   ignoreFiles: ["app/vendor/**", "app/fonts/**"],
   rules: {
@@ -30,5 +30,9 @@ export default {
     "no-duplicate-at-import-rules": true,
     "no-invalid-double-slash-comments": true,
     "block-no-empty": true,
+    "declaration-property-value-disallowed-list": {
+      "/^(padding|margin|gap|row-gap|column-gap|inset)/": ["/(^|[^\\w.-])[1-9][\\d.]*px/"],
+      "/^(top|left|right|bottom)$/": ["/(^|[^\\w.-])[1-9][\\d.]*px/"],
+    },
   },
 };

@@ -3,8 +3,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--space-2);
+  margin-bottom: var(--gap-part);
   height: 52px;
   transition:
     width var(--lay-t) var(--lay-e),
@@ -23,16 +23,16 @@
 .seg {
   position: relative;
   display: flex;
-  gap: 2px;
-  padding: 4px;
+  gap: var(--space-hair);
+  padding: var(--space-1);
   border-radius: var(--r-pill);
   background: var(--panel);
   border: 1px solid #26262a;
 }
 .seg .thumb {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
+  top: var(--space-1);
+  bottom: var(--space-1);
   left: 0;
   width: 0;
   border-radius: var(--r-pill);
@@ -49,10 +49,10 @@
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-1);
   flex: none;
   height: 40px;
-  padding: 0 18px;
+  padding: 0 var(--space-5);
   border-radius: var(--r-pill);
   white-space: nowrap;
   font-size: 15px;
@@ -70,7 +70,7 @@
   font-weight: 600;
   color: var(--muted);
   position: relative;
-  top: -5px;
+  top: calc(var(--space-1) * -1);
   line-height: 1;
 }
 .tab .n:empty {
@@ -96,7 +96,7 @@
   top: 50%;
   width: 24px;
   height: 24px;
-  margin: -12px 0 0 -12px;
+  margin: calc(var(--space-3) * -1) 0 0 calc(var(--space-3) * -1);
   z-index: -1;
   -webkit-mask: var(--ko, linear-gradient(#000 0 0)) 0 0/100% 100% no-repeat;
   mask: var(--ko, linear-gradient(#000 0 0)) 0 0/100% 100% no-repeat;
@@ -127,7 +127,7 @@ body.jobrun .tab .trw {
   background: #a7adb2;
 } /* a step darker than the label, a touch brighter on the selected pill */
 .gear {
-  margin-left: 4px;
+  margin-left: var(--space-1);
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -149,23 +149,23 @@ body.jobrun .tab .trw {
   display: inline-flex;
 }
 .laymenu {
-  top: 52px;
+  top: var(--space-12);
   bottom: auto;
   left: auto;
   right: 0;
   transform-origin: top right;
   min-width: 0;
-  padding: 6px;
+  padding: var(--space-2);
 }
 .laymenu .lrow {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-hair);
 }
 .laymenu .lrow .opt {
   width: auto;
   gap: 0;
-  padding: 8px 9px;
+  padding: var(--space-2) var(--space-2);
   justify-content: center;
   align-items: center;
   border-radius: 10px;
@@ -189,7 +189,7 @@ body.jobrun .tab .trw {
 .laymenu .lrow .lsep {
   width: 1px;
   height: 22px;
-  margin: 0 4px;
+  margin: 0 var(--space-1);
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -223,6 +223,11 @@ body.jobrun .tab .trw {
     opacity 0.22s var(--ease),
     transform 0.22s var(--ease),
     visibility 0s linear 0.22s;
+}
+/* without a panel (Generating, the Gallery) the panel's 1 px border is transparent: the view covers it, so the picture
+   sits exactly one area gap from the prompt and one part gap under the tabs — where a panel's visible edge sits */
+.rpanel:not(.paneled) > .view {
+  inset: calc(var(--space-px) * -1);
 }
 .view.on {
   visibility: visible;

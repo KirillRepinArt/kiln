@@ -44,8 +44,8 @@
 .mhead {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px 12px;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   flex: none;
 }
@@ -58,7 +58,7 @@
 }
 .mhead .mact {
   display: flex;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .mhead .iconbtn svg {
   width: 17px;
@@ -66,12 +66,12 @@
 }
 .mbody {
   overflow: auto;
-  padding: 16px 24px 22px;
+  padding: var(--space-4) var(--space-6) var(--space-6);
 }
 .fg {
   display: grid;
   grid-template-columns: 150px 1fr;
-  gap: 4px 14px;
+  gap: var(--space-1) var(--space-4);
   align-items: center;
   font-size: 14px;
 }
@@ -83,7 +83,7 @@
   background: transparent;
   border: 1px solid transparent;
   border-radius: 8px;
-  padding: 6px 8px;
+  padding: var(--space-2) var(--space-2);
   width: 100%;
   color: #f2f2f2;
   transition:
@@ -93,7 +93,7 @@
 .fg select {
   appearance: none;
   -webkit-appearance: none;
-  padding-right: 26px;
+  padding-right: var(--space-7);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8a92' fill='none' stroke-width='1.4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 9px center;
@@ -122,8 +122,8 @@
   letter-spacing: 0.1em;
   color: #8a8a92;
   border-top: 1px solid #2c2c31;
-  padding-top: 14px;
-  margin-top: 8px;
+  padding-top: var(--space-4);
+  margin-top: var(--space-2);
 }
 .fgh.first {
   border-top: 0;
@@ -132,13 +132,13 @@
 }
 .about {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   align-items: center;
   flex-wrap: wrap;
 }
 .about span {
   color: var(--muted);
-  margin-right: 4px;
+  margin-right: var(--space-1);
 }
 .updres {
   grid-column: 1/-1;
@@ -151,7 +151,7 @@
 }
 .updres code {
   background: rgba(255, 255, 255, 0.08);
-  padding: 1px 5px;
+  padding: var(--space-px) var(--space-1);
   border-radius: 5px;
 }
 .updres a {
@@ -161,12 +161,12 @@
   width: min(520px, 92vw);
 }
 .keys .fgh {
-  margin: 16px 0 10px;
+  margin: var(--space-4) 0 var(--space-3);
 }
 .kgrid {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 9px 18px;
+  gap: var(--space-2) var(--space-5);
   align-items: center;
   font-size: 14px;
 }
@@ -180,7 +180,7 @@
 kbd {
   display: inline-block;
   min-width: 24px;
-  padding: 2px 7px;
+  padding: var(--space-hair) var(--space-2);
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.08);
   box-shadow:
@@ -198,10 +198,10 @@ kbd {
   font-weight: 600;
   letter-spacing: 0.12em;
   color: #c9ccd0;
-  padding-top: 18px;
-  margin-top: 10px;
+  padding-top: var(--space-5);
+  margin-top: var(--space-3);
 }
 .fgh.first {
-  padding-top: 2px;
+  padding-top: var(--space-hair);
   margin-top: 0;
 }

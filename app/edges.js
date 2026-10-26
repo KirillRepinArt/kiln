@@ -9,6 +9,7 @@ import { BAR, lay, layDef, layDrag, layGeo, layRelease, prefs, sizeFrame } from 
 import { PWMIN } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
+import { SPACE } from "./tokens.js";
 
 /* start-up wiring: every edge you drag, and the edit buttons' hover (called from main.js, in order) */
 export function initEdges() {
@@ -51,7 +52,7 @@ export function initEdges() {
         col.style.setProperty("--chtop", TS + vH + 10 + "px");
         return;
       }
-      const max = /** @type {HTMLElement} */ ($("left").parentElement).getBoundingClientRect().height - 36;
+      const max = /** @type {HTMLElement} */ ($("left").parentElement).getBoundingClientRect().height - 2 * SPACE.area;
       S.pph = Math.max(240, Math.min(max, Math.round(h0 + e.clientY - y0)));
       applyPH();
     });
@@ -231,7 +232,7 @@ export function initEdges() {
           w0: f.offsetWidth,
           h0: f.offsetHeight,
           t0: f.offsetTop,
-          full: $("stage").getBoundingClientRect().height - BAR,
+          full: $("stage").getBoundingClientRect().height - BAR(),
         };
         document.body.classList.add("vresizing", "laydrag");
         $("right").classList.add("edgehint");
@@ -322,7 +323,7 @@ export function initEdges() {
           return;
         }
         const dx = ev.clientX - d.x0,
-          max = innerWidth - 36;
+          max = innerWidth - 2 * SPACE.area;
         const w = Math.max(Math.min(PWMIN, max), Math.min(max, d.w0 + (side === "r" ? dx : -dx)));
         S.vfit = false;
         S.lay = S.lay || layDef();

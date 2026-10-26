@@ -23,6 +23,26 @@
   --ink: #140b00;
   --grad: linear-gradient(135deg in oklch, var(--a1), var(--a2) 55%, var(--a3));
   --flow: linear-gradient(90deg in oklch, var(--a1), var(--a2), var(--a3), var(--a2), var(--a1));
+  /* SPACING — one scale for every gap, inset and offset: the 4-pt grid (decided 2026-10-27). Every step is a whole
+     number of screen pixels at 100 / 125 / 150 / 200 % Windows scaling, and neighbouring steps look clearly different.
+     1 and 2 px are for hairlines and optical nudges only. */
+  --space-px: 1px;
+  --space-hair: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  /* the hierarchy: what belongs together sits closer than what's merely next to it (the scripts read these too) */
+  --gap-area: var(--space-5); /* between areas: the window's edge, the prompt column ↔ the picture area */
+  --gap-part: var(--space-3); /* an area and its own parts: the tab bar ↔ the picture ↔ its status row */
+  --gap-tight: var(--space-2); /* attached to a box: the LoRA chips under the prompt, the picture's edit buttons */
   --r-panel: 24px;
   --r-pill: 999px;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);

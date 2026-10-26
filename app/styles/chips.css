@@ -3,7 +3,7 @@
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
 }
 #lcol > .chips {
   position: absolute;
@@ -12,7 +12,7 @@
   top: var(--chtop, 0px);
   justify-content: flex-start;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   transition:
     top var(--lay-t) var(--lay-e),
     width var(--lay-t) var(--lay-e),
@@ -34,8 +34,8 @@ body.cardmove #lcol > .chips {
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 6px 4px 10px;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
   border-radius: var(--r-pill);
   background: var(--raised);
   font-size: 12.5px;
@@ -64,7 +64,7 @@ body.cardmove #lcol > .chips {
   font-weight: 600;
   color: #fff;
   cursor: ew-resize;
-  padding: 0 3px;
+  padding: 0 var(--space-1);
   border-radius: 5px;
   font-variant-numeric: tabular-nums;
 }
@@ -79,7 +79,7 @@ body.cardmove #lcol > .chips {
   color: #fff;
   font: inherit;
   font-weight: 600;
-  padding: 0 3px;
+  padding: 0 var(--space-1);
   outline: 0;
 }
 .chip .cx {
@@ -102,11 +102,11 @@ body.cardmove #lcol > .chips {
   font-size: 12px;
   letter-spacing: 0.02em;
   color: #8f959a;
-  margin: 0 6px 0 12px;
+  margin: 0 var(--space-2) 0 var(--space-3);
   user-select: none;
 } /* LoRA / LoRAs, spelled as written */
 .chipadd {
-  padding: 4px 11px;
+  padding: var(--space-1) var(--space-3);
   color: #cfd3d6;
   font-weight: 600;
 }
@@ -114,7 +114,7 @@ body.cardmove #lcol > .chips {
   color: #fff;
 }
 .chipmore {
-  padding: 4px 10px;
+  padding: var(--space-1) var(--space-3);
   font-weight: 600;
   color: #d6d6da;
 }

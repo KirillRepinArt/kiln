@@ -668,10 +668,10 @@ export async function lateFixes(k, t) {
   await k.sleep(400);
   t.ok(await k.ev(`$("stage").classList.contains("tools")`), "hovering the edit buttons' column shows them");
   await k.mouse(2, 2);
-  // the Reuse bar sits ~9 px above the box
+  // the Reuse bar sits one tight gap (8 px) above the box: attached to it
   const pb = await R(k, "#peekbar"),
     L = await R(k, "#left");
-  t.near(L.top - pb.bottom, 9, 2, "the Reuse bar ~9 px above the prompt box", { gap: L.top - pb.bottom });
+  t.near(L.top - pb.bottom, 8, 1, "the Reuse bar one tight gap above the prompt box", { gap: L.top - pb.bottom });
   // Vertical: a side edge scales the picture
   await k.ev(`(endPeek(),setDock("below"),1)`);
   await k.until(`!document.body.classList.contains("laysnap")`, 4000, 50);

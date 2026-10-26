@@ -1,4 +1,5 @@
 // Unit tests for the layout's maths (app/layoutmath.js): no browser, just numbers — run with `npm run test:unit`.
+import { pairGap } from "../../../app/tokens.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -12,7 +13,6 @@ import {
   cardAnchorTop,
   cardHeightMode,
   cardPlacement,
-  GAP,
   MMIN,
   PWMIN,
   CARDMAX,
@@ -27,9 +27,10 @@ test("a picture fits its box: the side that hits first decides", () => {
 });
 
 test("the edit buttons' column grows a column when the picture is too short for them", () => {
-  assert.equal(toolColumnW(600, 6), 52); // tall: one column (6 + 46)
-  assert.equal(toolColumnW(100, 6), 144); // two buttons per column → three columns
-  assert.equal(toolColumnW(20, 6), 282); // never less than one button per column
+  // 40 px buttons, the tight gap (8) between them and from the picture
+  assert.equal(toolColumnW(600, 6), 56); // tall: one column (8 + 48)
+  assert.equal(toolColumnW(100, 6), 152); // two buttons per column → three columns
+  assert.equal(toolColumnW(20, 6), 296); // never less than one button per column
 });
 
 test("a wide window: your widths as set, the pair centred with even margins", () => {
@@ -37,7 +38,7 @@ test("a wide window: your widths as set, the pair centred with even margins", ()
   assert.equal(g.pw, 680);
   assert.equal(g.rw, 660);
   near(g.mL, g.mR, "the margins are even");
-  near(g.mL + g.pw + GAP + g.rw + g.mR, 1477, "everything adds up to the window");
+  near(g.mL + g.pw + pairGap() + g.rw + g.mR, 1477, "everything adds up to the window");
 });
 
 test("the prompt card never gets wider than CARDMAX", () => {

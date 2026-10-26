@@ -4,12 +4,12 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 8px;
-  padding: 8px 16px 16px 16px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4) var(--space-4) var(--space-4);
 }
 .pills {
   display: flex;
-  gap: 5px;
+  gap: var(--space-1);
   flex-wrap: wrap;
   justify-content: flex-start;
   flex: 0 1 auto;
@@ -19,7 +19,7 @@
   position: relative;
   flex: 0 0 auto;
   height: 38px;
-  padding: 0 12px;
+  padding: 0 var(--space-3);
   border-radius: var(--r-pill);
   background: transparent;
   display: flex;
@@ -45,14 +45,14 @@
 .pill .il {
   color: var(--muted);
   font-weight: 400;
-  margin-right: 6px;
+  margin-right: var(--space-2);
 }
 @container (max-width:560px) {
   .pill .w {
     display: none;
   }
   .pill {
-    padding: 0 11px;
+    padding: 0 var(--space-3);
   }
 }
 @container (max-width:470px) {
@@ -105,7 +105,7 @@
 .play svg {
   width: 20px;
   height: 20px;
-  margin-left: 2px;
+  margin-left: var(--space-hair);
 }
 .play svg path {
   fill: var(--play-fill);
@@ -173,11 +173,11 @@
 /* the queue count on Start's corner: you add to the queue there, so the number goes up where you click */
 .badge {
   position: absolute;
-  top: -8px;
-  right: -10px;
+  top: calc(var(--space-2) * -1);
+  right: calc(var(--space-3) * -1);
   min-width: 22px;
   height: 20px;
-  padding: 0 6px;
+  padding: 0 var(--space-2);
   border-radius: 999px;
   display: none;
   place-items: center;
@@ -199,7 +199,7 @@
 /* pop-ups over the pills */
 .pop {
   position: absolute;
-  bottom: 58px;
+  bottom: var(--space-16);
   left: 0;
   transform-origin: bottom left;
   visibility: hidden;
@@ -212,7 +212,7 @@
   background: #232326;
   border: 1px solid #3a3a3f;
   border-radius: 16px;
-  padding: 8px;
+  padding: var(--space-2);
   min-width: 160px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   z-index: 40;
@@ -232,9 +232,9 @@
 .pop .opt {
   display: flex;
   justify-content: space-between;
-  gap: 14px;
+  gap: var(--space-4);
   width: 100%;
-  padding: 7px 10px;
+  padding: var(--space-2) var(--space-3);
   border-radius: 10px;
   font-size: 14px;
   cursor: pointer;
@@ -252,23 +252,23 @@
 .pop .row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px;
+  gap: var(--space-2);
+  padding: var(--space-2);
 }
 .pop input[type="number"] {
   width: 64px;
   background: var(--raised);
   border: 1px solid #3a3a3f;
   border-radius: 10px;
-  padding: 6px 8px;
+  padding: var(--space-2) var(--space-2);
 }
 .pop .hint {
-  padding: 2px 8px 4px;
+  padding: var(--space-hair) var(--space-2) var(--space-1);
   color: var(--muted);
   font-size: 12px;
 }
 .qb {
-  padding: 5px 11px;
+  padding: var(--space-1) var(--space-3);
   border-radius: 999px;
   background: var(--raised);
   font-size: 13px;
@@ -284,7 +284,7 @@
 .rgrid {
   display: grid;
   grid-template-columns: repeat(4, 72px);
-  gap: 6px;
+  gap: var(--space-2);
 }
 .rt {
   height: 84px;
@@ -293,8 +293,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 5px;
-  padding: 8px 4px 6px;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-1) var(--space-2);
   cursor: pointer;
   border: 1px solid transparent;
 }
@@ -374,8 +374,8 @@ body.glass .play.gen svg path {
 .play.gen .badge.show::before {
   content: "";
   position: absolute;
-  inset: -3px;
-  padding: 2px;
+  inset: calc(var(--space-1) * -1);
+  padding: var(--space-hair);
   border-radius: inherit;
   pointer-events: none;
   background: conic-gradient(#fff calc(var(--p) * 360deg), rgba(255, 255, 255, 0.18) 0);
@@ -391,8 +391,8 @@ body.glass .play.gen svg path {
 .play.gen .badge.show {
   min-width: 22px;
   height: 22px;
-  top: -9px;
-  right: -11px;
+  top: calc(var(--space-2) * -1);
+  right: calc(var(--space-3) * -1);
 }
 @media (prefers-reduced-motion: reduce) {
   .play.gen {

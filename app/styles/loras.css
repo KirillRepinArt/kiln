@@ -4,16 +4,16 @@
   inset: 0;
   display: flex;
   flex-direction: column;
-  padding: 4px 2px 16px;
+  padding: var(--space-1) var(--space-hair) var(--space-4);
 }
 .rpanel.paneled .lwrap {
-  padding: 16px 18px;
+  padding: var(--space-4) var(--space-5);
 }
 .ltop {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: var(--space-3);
 }
 .ltop #lRefresh {
   flex: none;
@@ -23,13 +23,13 @@
   background: var(--raised);
   border: 1px solid #3a3a40;
   border-radius: 999px;
-  padding: 9px 16px;
+  padding: var(--space-2) var(--space-4);
   outline: 0;
 }
 .csz {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   color: var(--muted);
   flex: none;
 }
@@ -44,7 +44,7 @@
 .oneface {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: 12.5px;
   color: var(--muted);
   cursor: pointer;
@@ -63,8 +63,8 @@
 .sw::after {
   content: "";
   position: absolute;
-  top: 3px;
-  left: 3px;
+  top: var(--space-1);
+  left: var(--space-1);
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -75,17 +75,17 @@
   background: #0a84ff;
 }
 .sw.on::after {
-  left: 17px;
+  left: var(--space-4);
   background: #fff;
 }
 .fchips {
   display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
   flex-wrap: wrap;
 }
 .fchips button {
-  padding: 5px 12px;
+  padding: var(--space-1) var(--space-3);
   border-radius: 999px;
   background: var(--raised);
   font-size: 13px;
@@ -100,8 +100,8 @@
   color: #ffcf8a;
   background: #2e2618;
   border-radius: 12px;
-  padding: 7px 12px;
-  margin-bottom: 10px;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
   display: none;
 }
 .warn.show {
@@ -110,14 +110,14 @@
 .lscroll {
   overflow: auto;
   flex: 1;
-  padding-right: 2px;
+  padding-right: var(--space-hair);
 }
 /* one row format with the thumbnail in front: name (+ tags) and the switch on top, the weight under the name */
 .lgrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, min(100%, var(--liw)));
   justify-content: center;
-  column-gap: 16px;
+  column-gap: var(--space-4);
 }
 .lgrid .lsec,
 .lgrid .empty,
@@ -129,21 +129,21 @@
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  margin: 4px 4px 8px;
+  margin: var(--space-1) var(--space-1) var(--space-2);
 }
 .lgrid .lnone {
   font-size: 12.5px;
   color: var(--faint);
-  padding: 2px 4px 10px;
+  padding: var(--space-hair) var(--space-1) var(--space-3);
 }
 .li {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   min-width: 0;
-  padding: 8px 10px;
+  padding: var(--space-2) var(--space-3);
   border-radius: 14px;
-  margin-bottom: 2px;
+  margin-bottom: var(--space-hair);
   background: transparent;
   transition: background var(--dur);
 }
@@ -164,15 +164,15 @@
 }
 .li .nm small {
   display: inline;
-  margin-left: 6px;
+  margin-left: var(--space-2);
   color: var(--muted);
   font-size: 11.5px;
 }
 .li .tag {
   font-size: 10px;
   color: var(--muted);
-  margin-left: 8px;
-  padding: 1px 6px;
+  margin-left: var(--space-2);
+  padding: var(--space-px) var(--space-2);
   border: 1px solid #45454b;
   border-radius: 999px;
   vertical-align: 1px;
@@ -182,7 +182,7 @@
   background: var(--raised);
   border: 1px solid #3a3a40;
   border-radius: 8px;
-  padding: 3px 6px;
+  padding: var(--space-1) var(--space-2);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
@@ -191,13 +191,13 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--space-1);
 }
 .l1,
 .l2 {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   min-width: 0;
 }
 .l1 .nm {
@@ -253,7 +253,7 @@
   background: #1c1c1e;
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 6px;
-  padding: 1px 5px;
+  padding: var(--space-px) var(--space-1);
   font-size: 13px;
 }
 .flash {
@@ -277,13 +277,13 @@
 .sbox .search {
   flex: 1;
   min-width: 0;
-  padding-right: 38px;
+  padding-right: var(--space-10);
 }
 .sclear {
   position: absolute;
-  right: 6px;
+  right: var(--space-2);
   top: 50%;
-  margin-top: -13px;
+  margin-top: calc(var(--space-3) * -1);
   width: 26px;
   height: 26px;
   border-radius: 50%;

@@ -37,6 +37,7 @@ async function drag(k, sel, dx) {
 }
 
 export async function presets(k, t) {
+  const AREA = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area"))`); // between the prompt and the picture
   await viewport(k, 1700, 950);
   await k.mouse(2, 2);
   await k.sleep(600);
@@ -45,13 +46,13 @@ export async function presets(k, t) {
     Rr = await R(k, "#right");
   t.ok(
     L.left > Rr.right &&
-      Math.round(L.left - Rr.right) === 18 &&
+      Math.round(L.left - Rr.right) === AREA &&
       Math.abs((await R(k, "#lcol")).top - Rr.top) < 2 &&
       Rr.bottom <= 950,
-    "Horizontal · prompt on the right: right of the picture, same row, 18 px gap",
+    "Horizontal · prompt on the right: right of the picture, same row, the area gap",
     { L: L.left, R: [Rr.right, Rr.top, Rr.bottom] },
   );
-  t.ok(Math.abs(Rr.left - 18 - (1700 - 18 - L.right)) <= 3, "the pair is centred");
+  t.ok(Math.abs(Rr.left - AREA - (1700 - AREA - L.right)) <= 3, "the pair is centred");
   t.ok(
     await k.ev(`document.querySelector('#layMenu [data-lay="right"]').classList.contains("on")`),
     "the menu ticks the current preset",
@@ -59,7 +60,7 @@ export async function presets(k, t) {
   await k.ev(`(showView("queue"),1)`);
   await k.sleep(500);
   const a = Math.round((await R(k, "#right")).width),
-    room = Math.min(60, Math.round((await R(k, "#right")).left) - 18 - 4);
+    room = Math.min(60, Math.round((await R(k, "#right")).left) - AREA - 4);
   await drag(k, ".pedge.ro", -room);
   await k.mouse(2, 2);
   await k.sleep(500);
@@ -70,7 +71,7 @@ export async function presets(k, t) {
     { a, b, room },
   );
   const pw0 = Math.round((await R(k, "#left")).width),
-    room2 = Math.min(50, 1700 - 18 - Math.round((await R(k, "#left")).right) - 4);
+    room2 = Math.min(50, 1700 - AREA - Math.round((await R(k, "#left")).right) - 4);
   await drag(k, ".pedge.po", room2);
   await k.mouse(2, 2);
   await k.sleep(500);

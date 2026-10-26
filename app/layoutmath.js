@@ -1,9 +1,9 @@
 // @ts-check
 /* Kiln · the layout's maths: plain numbers in, plain numbers out — nothing here reads or touches the page, so every
    rule can be unit-tested (tools/tests/unit/layoutmath.test.mjs). layout.js measures the page, asks these, applies. */
+import { SPACE, pairGap } from "./tokens.js";
 
-export const GAP = 18, // between the prompt and the picture area
-  MMIN = 24, // the least margin each side of the pair
+export const MMIN = 24, // the least margin each side of the pair
   PWMIN = 360, // the prompt's least width
   CARDMAX = 900, // wide window: the prompt card never gets wider than this (text stops at ~76ch anyway)
   LISTMIN = 660; // the default width of the Queue / LoRAs / PNG Info panel
@@ -32,9 +32,10 @@ export function fitInBox(ar, bw, bh) {
  * @param {number} n how many buttons
  */
 export function toolColumnW(h, n) {
-  const per = Math.max(1, Math.floor((Math.max(h, 40) + 6) / 46)),
+  const t = SPACE.tight,
+    per = Math.max(1, Math.floor((Math.max(h, 40) + t) / (40 + t))),
     cols = Math.ceil(n / per);
-  return 6 + cols * 46;
+  return t + cols * (40 + t);
 }
 
 /**
@@ -54,13 +55,13 @@ export function pageGeometry(m, L) {
   let pw = Math.max(PWMIN, Math.min(L.pw, CARDMAX));
   const want = gen ? (drag ? L.iw || W : Math.min(L.iw || 1e9, m.hug ?? 9999)) : L.rw;
   let rw = Math.max(minR, want);
-  const room = W - GAP - 2 * MMIN;
+  const room = W - pairGap() - 2 * MMIN;
   if (pw + rw > room) {
     const k = Math.max(0, room) / (pw + rw);
     pw = Math.max(PWMIN, pw * k);
-    rw = Math.max(minR, Math.min(rw * k, W - GAP - pw));
+    rw = Math.max(minR, Math.min(rw * k, W - pairGap() - pw));
   }
-  const margin = Math.max(0, (W - GAP - pw - rw) / 2);
+  const margin = Math.max(0, (W - pairGap() - pw - rw) / 2);
   return { pw, rw, mL: margin, mR: margin, W, minR, off: 0, gen };
 }
 

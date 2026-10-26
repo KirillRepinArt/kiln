@@ -8,13 +8,13 @@
   grid-template-rows: minmax(0, 1fr);
   height: 100vh;
   margin: 0 auto;
-  padding: 18px;
+  padding: var(--gap-area);
   align-items: stretch;
-  grid-template-columns: var(--mL, 1fr) var(--pw, 680px) var(--gap, 18px) var(--rw, 660px) var(--mR, 1fr);
+  grid-template-columns: var(--mL, 1fr) var(--pw, 680px) var(--gap-area) var(--rw, 660px) var(--mR, 1fr);
   transition: grid-template-columns var(--lay-t) var(--lay-e);
 }
 .app.pright {
-  grid-template-columns: var(--mL, 1fr) var(--rw, 660px) var(--gap, 18px) var(--pw, 680px) var(--mR, 1fr);
+  grid-template-columns: var(--mL, 1fr) var(--rw, 660px) var(--gap-area) var(--pw, 680px) var(--mR, 1fr);
 }
 .app.stacked {
   grid-template-columns: 1fr;
@@ -65,7 +65,7 @@
 .app.stacked .lcol {
   order: 2;
   height: var(--lch, 320px);
-  margin-top: 6px;
+  margin-top: var(--space-2);
 }
 .app.stacked #lcol {
   pointer-events: none;
@@ -102,33 +102,33 @@
   touch-action: none;
 }
 .pedge.po {
-  left: -8px;
+  left: calc(var(--space-2) * -1);
 }
 .pedge.pi {
-  right: -8px;
+  right: calc(var(--space-2) * -1);
 }
 .pedge.ro {
-  right: -8px;
+  right: calc(var(--space-2) * -1);
 }
 .pedge.ri {
-  left: -12px;
+  left: calc(var(--space-3) * -1);
   width: 16px;
 } /* the band reaches the picture's outline */
 .app.pright .pedge.po {
   left: auto;
-  right: -8px;
+  right: calc(var(--space-2) * -1);
 }
 .app.pright .pedge.pi {
   right: auto;
-  left: -8px;
+  left: calc(var(--space-2) * -1);
 }
 .app.pright .pedge.ri {
   left: auto;
-  right: -12px;
+  right: calc(var(--space-3) * -1);
 }
 .app.pright .pedge.ro {
   right: auto;
-  left: -8px;
+  left: calc(var(--space-2) * -1);
 }
 .app.stacked .pedge {
   display: none;
@@ -144,10 +144,10 @@
   touch-action: none;
 }
 .sedge.l {
-  left: -8px;
+  left: calc(var(--space-2) * -1);
 }
 .sedge.r {
-  right: -8px;
+  right: calc(var(--space-2) * -1);
 }
 .app.stacked .sedge {
   display: block;
@@ -171,10 +171,10 @@
   touch-action: none;
 }
 .hedge.t {
-  top: -12px;
+  top: calc(var(--space-3) * -1);
 }
 .hedge.b {
-  bottom: -8px;
+  bottom: calc(var(--space-2) * -1);
 }
 .hedge.l,
 .hedge.r {
@@ -186,11 +186,11 @@
   cursor: ew-resize;
 }
 .hedge.l {
-  left: -12px;
+  left: calc(var(--space-3) * -1);
   right: auto;
 }
 .hedge.r {
-  right: -12px;
+  right: calc(var(--space-3) * -1);
   left: auto;
 }
 .app.stacked .hedge.l,
@@ -199,9 +199,9 @@
 } /* Vertical: side edges on the picture */
 .vedge {
   position: absolute;
-  left: 30px;
-  right: 30px;
-  bottom: -7px;
+  left: var(--space-8);
+  right: var(--space-8);
+  bottom: calc(var(--space-2) * -1);
   height: 14px;
   cursor: ns-resize;
   touch-action: none;
@@ -214,17 +214,17 @@
   left: 50%;
   width: 46px;
   height: 4px;
-  margin-left: -23px;
+  margin-left: calc(var(--space-6) * -1);
   border-radius: 2px;
   background: #8a8a92;
   opacity: 0;
   transition: opacity 0.15s;
 }
 .vedge::after {
-  top: 5px;
+  top: var(--space-1);
 }
 .hsplit::after {
-  top: 6px;
+  top: var(--space-2);
 }
 .vedge:hover::after,
 .vedge.drag::after,
@@ -246,7 +246,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: -10px;
+  top: calc(var(--space-3) * -1);
   height: 8px;
   cursor: ns-resize;
   z-index: 6;
@@ -273,7 +273,7 @@
 .right.edgehint:has(.rpanel.paneled)::before {
   content: "";
   position: absolute;
-  inset: 64px 0 0 0;
+  inset: var(--space-16) 0 0 0;
   border: 1px dashed rgba(255, 255, 255, 0.18);
   border-radius: var(--r-panel);
   pointer-events: none;

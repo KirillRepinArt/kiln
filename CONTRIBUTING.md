@@ -4,6 +4,10 @@ Kiln runs from plain files: the server in `server/` (Python 3.10+, standard libr
 page in `index.html` + `app/`.
 Nothing here is needed to *use* Kiln — this is the setup for changing it.
 
+Start with `docs/ARCHITECTURE.md` (how the parts fit), `docs/decisions/` (why it's built this way — add a record when
+you make a decision like these), and `docs/CUSTOMIZING.md` (the look). Third-party code and fonts, with their
+licences: `THIRD-PARTY.md`.
+
 ## One-time setup
 ```
 npm install                                   # ESLint, Stylelint, Prettier (dev only, into node_modules/)

@@ -184,7 +184,8 @@ shift 1.15. Меняются в ⚙ Настройках. Модель, VAE и �
 **Папки LoRA.** Kiln берёт список LoRA из Forge. Кладите LoRA лиц в подпапку `people` (или `faces`, `characters`),
 стили — в `style`; названия папок настраиваются в `config.local.json`.
 
-**Разработка.** Запустите `python tools/fake_forge.py` и направьте Kiln на него (`KILN_FORGE_URL=http://127.0.0.1:7861 python -m server`),
+**Разработка.** Как устроен Kiln: `docs/ARCHITECTURE.md`; почему так: `docs/decisions/`; как в нём работать: `CONTRIBUTING.md`.
+Запустите `python tools/fake_forge.py` и направьте Kiln на него (`KILN_FORGE_URL=http://127.0.0.1:7861 python -m server`),
 чтобы прогнать весь путь без видеокарты. `node tools/tests/run.mjs` запускает сквозные тесты (Node 22+, Edge или Chrome): каждый
 тест поднимает свой фейковый Forge, Kiln и браузер без окна. Изменения — в `CHANGELOG.md`.
 

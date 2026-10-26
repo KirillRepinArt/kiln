@@ -1,3 +1,4 @@
+// @ts-check
 /* Kiln · skins: a theme sets the accent colours, the idle background and the cover over a young generation.
    Aurora = northern lights; Emerald = code: a sparse cold code background and an old phosphor monitor as the render
    screen. The other themes keep the starfield and the light bands. Everything is cheap on purpose (the GPU is busy
@@ -21,12 +22,14 @@ export function skinName(name) {
 export function skin() {
   return SKINS[/** @type {keyof typeof SKINS} */ (skinName(S.theme))];
 }
+/** @param {string} c any CSS colour */
 export function toHex(c) {
   if (/^#[0-9a-f]{6}$/i.test(c)) return c;
-  const d = document.createElement("canvas").getContext("2d");
+  const d = /** @type {CanvasRenderingContext2D} */ (document.createElement("canvas").getContext("2d"));
   d.fillStyle = c;
   return d.fillStyle;
 }
+/** @param {string} hex @param {number} a */
 export function rgba(hex, a) {
   const n = parseInt(toHex(hex).slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
@@ -34,14 +37,17 @@ export function rgba(hex, a) {
 /* harmonic colours: from the theme's main colour, in OKLCH (perceptual: equal lightness looks equally bright) —
    a neighbour hue on the cooler side, the complement, the triad, and a calm "cool" tone for controls. Used 60-30-10:
    tinted neutrals, the theme colour, tiny accents. */
+/** @param {number} c */
 function _lin(c) {
   c /= 255;
   return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 }
+/** @param {number} x */
 function _gam(x) {
   x = x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(Math.max(0, x), 1 / 2.4) - 0.055;
   return Math.round(Math.max(0, Math.min(1, x)) * 255);
 }
+/** @param {string} hex */
 function hex2oklch(hex) {
   const n = parseInt(toHex(hex).slice(1), 16),
     r = _lin((n >> 16) & 255),
@@ -55,6 +61,7 @@ function hex2oklch(hex) {
     B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * q;
   return [L, Math.hypot(A, B), ((Math.atan2(B, A) * 180) / Math.PI + 360) % 360];
 }
+/** @param {number} L @param {number} C @param {number} h */
 function _rgb(L, C, h) {
   const A = C * Math.cos((h * Math.PI) / 180),
     B = C * Math.sin((h * Math.PI) / 180);
@@ -67,6 +74,7 @@ function _rgb(L, C, h) {
     -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * q,
   ];
 }
+/** @param {number} L @param {number} C @param {number} h */
 function oklch2hex(L, C, h) {
   for (let i = 0; i < 30 && _rgb(L, C, h).some(v => v < -0.001 || v > 1.001); i++) C *= 0.9; // keep it inside sRGB by easing the chroma
   return (
@@ -76,9 +84,11 @@ function oklch2hex(L, C, h) {
       .join("")
   );
 }
+/** @param {string} hex the theme colour */
 export function harmonics(hex) {
   const [L, C, h] = hex2oklch(hex),
-    f = (dh, cm = 1, l = L) => oklch2hex(l, C * cm, (((h + dh) % 360) + 360) % 360);
+    f = (/** @type {number} */ dh, cm = 1, l = L) => oklch2hex(l, C * cm, (((h + dh) % 360) + 360) % 360);
+  /** @param {number} d */
   const toBlue = d => {
     const df = ((((250 - h) % 360) + 540) % 360) - 180;
     return Math.sign(df || 1) * Math.min(Math.abs(df), d);
@@ -96,11 +106,13 @@ export function themeCols() {
    Near curtains are big and bright, far ones thin and high. Colour by altitude: green base, a whitish hot edge, mint,
    magenta, faint red at the top. Mostly calm — every minute or two a surge brightens along the curtain while the rays
    dance faster. Drawn at 1/5–1/6 size and scaled up (the scaling is the softness). */
+/** @param {number} i @param {number} j */
 const _hash = (i, j) => {
   let n = (Math.imul(i, 374761393) + Math.imul(j, 668265263)) | 0;
   n = Math.imul(n ^ (n >>> 13), 1274126177);
   return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
 };
+/** @param {number} x @param {number} y */
 function vnoise(x, y) {
   const xi = Math.floor(x),
     yi = Math.floor(y),
@@ -114,39 +126,42 @@ function vnoise(x, y) {
     d = _hash(xi + 1, yi + 1);
   return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
 }
+/** @param {number} x @param {number} y */
 function fbm(x, y) {
   return 0.55 * vnoise(x, y) + 0.3 * vnoise(x * 2.1 + 5.2, y * 2.1 + 1.3) + 0.15 * vnoise(x * 4.3 + 9.7, y * 4.3 + 7.1);
 }
-const AURORA_LAYOUTS = {
-  // arc ends (fractions of width / height), how much the arc bows, ray length, depth (1 = near)
-  sky: [
-    { a: [1.03, -0.03], b: [-0.03, 0.32], sag: 0.05, len: 0.17, depth: 0.45 },
-    { a: [1.1, 0.12], b: [-0.1, 0.7], sag: 0.1, len: 0.36, depth: 1 },
-  ],
-  frame: [
-    { a: [1.05, 0.08], b: [-0.05, 0.45], sag: 0.06, len: 0.3, depth: 0.6 },
-    { a: [1.1, 0.18], b: [-0.1, 0.64], sag: 0.08, len: 0.44, depth: 1 },
-  ],
-};
+const AURORA_LAYOUTS =
+  /** @type {Record<string, { a: number[], b: number[], sag: number, len: number, depth: number }[]>} */ ({
+    // arc ends (fractions of width / height), how much the arc bows, ray length, depth (1 = near)
+    sky: [
+      { a: [1.03, -0.03], b: [-0.03, 0.32], sag: 0.05, len: 0.17, depth: 0.45 },
+      { a: [1.1, 0.12], b: [-0.1, 0.7], sag: 0.1, len: 0.36, depth: 1 },
+    ],
+    frame: [
+      { a: [1.05, 0.08], b: [-0.05, 0.45], sag: 0.06, len: 0.3, depth: 0.6 },
+      { a: [1.1, 0.18], b: [-0.1, 0.64], sag: 0.08, len: 0.44, depth: 1 },
+    ],
+  });
 export function makeAurora() {
   const off = document.createElement("canvas"),
-    o = off.getContext("2d"),
+    o = /** @type {CanvasRenderingContext2D} */ (off.getContext("2d")),
     soft = document.createElement("canvas"),
-    sf = soft.getContext("2d");
-  let ray = null,
-    glow = null,
+    sf = /** @type {CanvasRenderingContext2D} */ (soft.getContext("2d"));
+  let ray = /** @type {HTMLCanvasElement} set by strips() before the first draw */ (/** @type {unknown} */ (null)),
+    glow = /** @type {HTMLCanvasElement} */ (/** @type {unknown} */ (null)),
     key = "",
     tt = 0,
-    lastT = null,
-    surgeAt = null,
-    nextSurge = null;
+    lastT = /** @type {number | null} */ (null),
+    surgeAt = /** @type {number | null} */ (null),
+    nextSurge = /** @type {number | null} */ (null);
+  /** @param {string[]} c the theme's colours */
   function strips(c) {
     const red = mixHex(c[2], "#ff3355", 0.5),
       hot = mixHex(c[0], "#ffffff", 0.4);
     const r = document.createElement("canvas");
     r.width = 1;
     r.height = 256;
-    let g = r.getContext("2d"),
+    let g = /** @type {CanvasRenderingContext2D} */ (r.getContext("2d")),
       gr = g.createLinearGradient(0, 0, 0, 256);
     gr.addColorStop(0, rgba(red, 0));
     gr.addColorStop(0.12, rgba(red, 0.09));
@@ -162,7 +177,7 @@ export function makeAurora() {
     const w = document.createElement("canvas");
     w.width = 1;
     w.height = 128;
-    g = w.getContext("2d");
+    g = /** @type {CanvasRenderingContext2D} */ (w.getContext("2d"));
     gr = g.createLinearGradient(0, 0, 0, 128);
     gr.addColorStop(0, rgba(c[0], 0));
     gr.addColorStop(0.6, rgba(c[0], 0.5));
@@ -172,6 +187,7 @@ export function makeAurora() {
     return [r, w];
   }
   return {
+    /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} T @param {string[]} cols @param {Record<string, any>} op */
     draw(ctx, W, H, T, cols, op) {
       const sc = op.scale || 6,
         w = Math.max(40, Math.round(W / sc)),
@@ -276,10 +292,11 @@ export function makeAurora() {
    still lake below that mirrors the sky, softened. */
 export function makeNightSky() {
   const aur = makeAurora();
-  let stars = [],
-    ridge = [],
+  let stars = /** @type {any[]} */ ([]),
+    ridge = /** @type {number[]} */ ([]),
     key = "";
   return {
+    /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} t @param {number} d @param {string[]} cols @param {Record<string, any>} op */
     draw(ctx, W, H, t, d, cols, op) {
       const k = W + "x" + H;
       if (k !== key) {
@@ -378,6 +395,7 @@ export function makeNightSky() {
         ctx.restore();
       }
       // the near ridge, and its reflection
+      /** @param {number} i */
       const peak = i => HY - H * (0.015 + ridge[i] * 0.13);
       ctx.save();
       ctx.fillStyle = "#010203";
@@ -407,12 +425,16 @@ export function makeNightSky() {
 /* star trails for Aurora's camera: every star's arc from its tail to its head, in SEG pieces that fade toward the tail.
    Pure (no outside state), because a worker runs it from its source text: the GPU then never has to raster thousands of
    thin arcs at once — that stalled the whole page every redraw. */
+/** @param {CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D} g the page's canvas, or the worker's
+ * @param {any[]} B the stars' batches @param {any} P the pole and the sky's turn @param {number} W @param {number} H
+ * @param {number} M @param {number} d @param {number} sp @param {number} th @param {number} SEG */
 function exposeTrails(g, B, P, W, H, M, d, sp, th, SEG) {
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, W + 2 * M, H + 2 * M);
   g.setTransform(1, 0, 0, 1, M, M);
   g.globalCompositeOperation = "lighter";
   g.lineCap = "butt"; /* square ends: a tail's pieces meet without overlapping */
+  /** @param {number} r @param {number} a */
   const inF = (r, a) => {
     const x = P.px + r * Math.cos(a),
       y = P.py + r * Math.sin(a);
@@ -453,10 +475,19 @@ function exposeTrails(g, B, P, W, H, M, d, sp, th, SEG) {
 }
 /* the worker: software raster on its own thread (willReadFrequently), the result handed back as an ImageBitmap */
 function trailsWorker() {
-  let B, P, W, H, M, d, cv, g;
+  /** @type {any} set by the page's messages */
+  let B,
+    /** @type {any} */ P,
+    /** @type {any} */ W,
+    /** @type {any} */ H,
+    /** @type {any} */ M,
+    /** @type {any} */ d,
+    /** @type {any} */ cv,
+    /** @type {any} */ g;
+  /** @param {ImageBitmap} bm */
   const px = bm => {
     const c = new OffscreenCanvas(bm.width, bm.height),
-      x = c.getContext("2d", { willReadFrequently: true });
+      x = /** @type {OffscreenCanvasRenderingContext2D} */ (c.getContext("2d", { willReadFrequently: true }));
     x.drawImage(bm, 0, 0);
     bm.close();
     return x.getImageData(0, 0, c.width, c.height).data;
@@ -484,47 +515,47 @@ function trailsWorker() {
       const q = px(m.lum),
         L = new Float32Array(q.length / 4);
       for (let i = 0; i < L.length; i++) L[i] = (q[i * 4] * 0.3 + q[i * 4 + 1] * 0.59 + q[i * 4 + 2] * 0.11) / 255; // the preview's light and dark
-      postMessage({ lum: L, nc: m.nc, nr: m.nr }, [L.buffer]);
+      /** @type {any} */ (postMessage)({ lum: L, nc: m.nc, nr: m.nr }, [L.buffer]);
       return;
     }
     if (m.init) {
       ({ B, P, W, H, M, d } = m.init);
       cv = new OffscreenCanvas(W + 2 * M, H + 2 * M);
-      g = cv.getContext("2d", { willReadFrequently: true });
+      g = /** @type {OffscreenCanvasRenderingContext2D} */ (cv.getContext("2d", { willReadFrequently: true }));
       return;
     }
     exposeTrails(g, B, P, W, H, M, d, m.sp, m.th, m.seg);
     const bm = cv.transferToImageBitmap();
-    postMessage({ gen: m.gen, th: m.th, bm }, [bm]);
+    /** @type {any} */ (postMessage)({ gen: m.gen, th: m.th, bm }, [bm]);
   };
 }
 export function makeCamera() {
   const aur = makeAurora(),
     lit = document.createElement("canvas"),
-    lc = lit.getContext("2d");
+    lc = /** @type {CanvasRenderingContext2D} */ (lit.getContext("2d"));
   const grain = document.createElement("canvas"),
-    gg = grain.getContext("2d"),
+    gg = /** @type {CanvasRenderingContext2D} */ (grain.getContext("2d")),
     sm = document.createElement("canvas"),
-    smc = sm.getContext("2d"),
+    smc = /** @type {CanvasRenderingContext2D} */ (sm.getContext("2d")),
     sm2 = document.createElement("canvas"),
-    sm2c = sm2.getContext("2d");
+    sm2c = /** @type {CanvasRenderingContext2D} */ (sm2.getContext("2d"));
   const mask = document.createElement("canvas"),
-    mc = mask.getContext("2d"),
+    mc = /** @type {CanvasRenderingContext2D} */ (mask.getContext("2d")),
     lum = document.createElement("canvas"),
-    lu = lum.getContext("2d", { willReadFrequently: true });
+    lu = /** @type {CanvasRenderingContext2D} */ (lum.getContext("2d", { willReadFrequently: true }));
   const OMEGA = 0.0104,
     SPAN = 0.49,
     SEG = 8,
     AE_LEVEL = 0.36; // rad/s as the background sky; 28°
   /* the film, a little larger than the frame so stars turning in from the edge are already there: re-exposed every 2 s by
     a worker, shown rotated by however far the sky has turned since */
-  let film = null,
+  let film = /** @type {any} the worker's ImageBitmap, or the page's own canvas */ (null),
     M = 0,
     pending = false,
     gen = 0,
-    wk = null,
-    fb = null,
-    prev = null,
+    wk = /** @type {Worker | null} */ (null),
+    fb = /** @type {HTMLCanvasElement | null} */ (null),
+    prev = /** @type {any} */ (null),
     prevTh = 0,
     fresh = false,
     xfT = -1e9,
@@ -569,23 +600,23 @@ export function makeCamera() {
   } catch (e) {
     wk = null;
   } // no worker: expose on the page (slower)
-  let batches = [],
+  let batches = /** @type {any[]} */ ([]),
     sk = "",
-    pat = null,
+    pat = /** @type {CanvasPattern | null} */ (null),
     filmT = -1e9,
     filmTh = 0,
     span = 0,
     P = { px: 0, py: 0 },
-    meteors = [],
-    sat = null,
-    satAt = null,
-    lastStep = null,
+    meteors = /** @type {any[]} */ ([]),
+    sat = /** @type {any} */ (null),
+    satAt = /** @type {number | null} */ (null),
+    lastStep = /** @type {number | null} */ (null),
     maskT = -1e9,
     hasMask = false,
-    lt = null,
-    mt = null,
-    mcur = null,
-    mimg = null,
+    lt = /** @type {number | null} */ (null),
+    mt = /** @type {Float32Array} built with the mask; null again when it's dropped */ (/** @type {unknown} */ (null)),
+    mcur = /** @type {Float32Array | null} */ (null),
+    mimg = /** @type {ImageData} built with the mask */ (/** @type {unknown} */ (null)),
     ae = 1,
     aeT = -1e9;
   grain.width = grain.height = 160;
@@ -597,16 +628,18 @@ export function makeCamera() {
   }
   gg.putImageData(id, 0, 0);
   const TINT = ["#dfe8ff", "#f4f6ff", "#ffffff", "#ffe2c4", "#cddcff"],
-    ss = (a, b, x) => {
+    ss = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number} */ x) => {
       const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
       return t * t * (3 - 2 * t);
     };
+  /** @param {number} W @param {number} H @param {number} d */
   function build(W, H, d) {
     const px = W * 0.6,
       py = H * 0.15,
       R = Math.hypot(Math.max(px, W - px), Math.max(py, H - py)) + 8 * d,
       map = new Map();
     P = { px, py };
+    /** @param {number} r @param {number} f @param {boolean} [fine] */
     const add = (r, f, fine) => {
       const q = r / R;
       const cap = (0.2 + 0.7 * ss(0.1, 0.42, q)) * (0.5 + 0.5 * ss(0.015, 0.08, q)),
@@ -642,6 +675,7 @@ export function makeCamera() {
     batches = [...map.values()].sort((a, b) => a.a - b.a);
   }
   /* starlight shows the image: an alpha mask from the preview's light and dark (tiny, scaled up soft) */
+  /** @param {ArrayLike<number>} L @param {number} nc @param {number} nr @param {number} res */
   function setMask(L, nc, nr, res) {
     if (!mimg || mimg.width !== nc || mimg.height !== nr) {
       mask.width = nc;
@@ -653,6 +687,7 @@ export function makeCamera() {
     for (let i = 0; i < nc * nr; i++) mt[i] = 1 - res * 0.65 * (1 - Math.min(1, 1.5 * L[i])); // dark parts down to ~45 %, bright parts full
     if (!mcur) mcur = Float32Array.from(mt);
   }
+  /** @param {any} src a picture (canvas or bitmap) @param {number} W @param {number} H @param {number} res */
   function sampleMask(src, W, H, res) {
     if (!src || src.width < 8) return;
     const nc = 40,
@@ -662,7 +697,7 @@ export function makeCamera() {
         lumBusy = true;
         lumRes = res;
         createImageBitmap(src, { resizeWidth: nc, resizeHeight: nr, resizeQuality: "medium" }).then(
-          b => wk.postMessage({ lum: b, nc, nr }, [b]),
+          b => /** @type {Worker} */ (wk).postMessage({ lum: b, nc, nr }, [b]),
           () => (lumBusy = false),
         );
       }
@@ -676,6 +711,7 @@ export function makeCamera() {
     for (let i = 0; i < L.length; i++) L[i] = (q[i * 4] * 0.3 + q[i * 4 + 1] * 0.59 + q[i * 4 + 2] * 0.11) / 255;
     setMask(L, nc, nr, res);
   }
+  /** @param {number} dt */
   function easeMask(dt) {
     if (!mcur) return false;
     const k = Math.min(1, dt / 1500),
@@ -689,6 +725,7 @@ export function makeCamera() {
     mc.putImageData(mimg, 0, 0);
     return true;
   }
+  /** @param {number} W @param {number} H @param {number} d @param {number} t */
   function meteor(W, H, d, t) {
     const D = Math.hypot(W, H);
     let x, y, dx, dy, L;
@@ -715,6 +752,7 @@ export function makeCamera() {
     meteors.push({ x, y, dx, dy, len: L, t0: t, dur: 650 + (900 * L) / D, w: (1.3 + Math.random() * 0.9) * d });
     lastMet = Math.max(lastMet, t);
   }
+  /** @param {CanvasRenderingContext2D} ctx @param {number} t @param {number} d @param {number} str @param {any[]} [list] */
   function drawMeteors(ctx, t, d, str, list) {
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
@@ -770,6 +808,7 @@ export function makeCamera() {
     ctx.restore();
     return out;
   }
+  /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} t @param {number} d @param {number} str */
   function drawSat(ctx, W, H, t, d, str) {
     if (satAt == null) satAt = t + 60000 + Math.random() * 60000;
     if (!sat && t > satAt) {
@@ -814,17 +853,18 @@ export function makeCamera() {
     ctx.restore();
   }
   let lastMet = -1e9,
-    heroes = [];
+    heroes = /** @type {{ r: number, a: number, c: string, w: number }[]} */ ([]);
   /* the finish, a crescendo: for ~1.4 s the sky spins up (ease-in, the trails smearing into rings) and the aurora flares; at
     the peak a soft exposure flash; effects.js then dissolves the night in ~0.9 s and the image is there. Deterministic —
     it starts when the job is done, never on a guess of when it will be. The counter stops, the dot goes out. */
   const RAMP = 1400;
-  let finT = null,
-    fin = null,
+  let finT = /** @type {number | null} */ (null),
+    fin = /** @type {{ th: number, age: number, span: number, pr: number } | null} */ (null),
     live = { th: 0, age: 0, span: 0, pr: 0 },
     spinA = 0,
     spinW = 0;
   return {
+    /** @param {number} t */
     finish(t) {
       finT = t;
       fin = null;
@@ -832,6 +872,7 @@ export function makeCamera() {
     },
     /* the peak's soft exposure flash: its own layer (effects.js draws it above the cover) so it runs its full course after
      the night has cleared — the sky is gone under it, then it hands over to the clean image */
+    /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} t @param {string[]} cols */
     drawFlash(ctx, W, H, t, cols) {
       if (finT == null) return;
       const r = t - finT - RAMP,
@@ -854,12 +895,13 @@ export function makeCamera() {
       lastStep = null;
       meteors = [];
       hasMask = false;
-      mt = mcur = null;
+      mt = /** @type {any} */ (mcur = null);
       ae = 1;
       finT = null;
       fin = null;
       spinA = spinW = 0;
     },
+    /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} t @param {number} d @param {string[]} cols @param {Record<string, any>} st */
     draw(ctx, W, H, t, d, cols, st) {
       const k = W + "x" + H;
       if (k !== sk) {
@@ -884,7 +926,7 @@ export function makeCamera() {
         sky = st.sky != null ? st.sky : t / 1000,
         th = OMEGA * sky;
       const fz = finT != null && t >= finT,
-        ramp = fz ? Math.min(1, (t - finT) / RAMP) : 0,
+        ramp = fz ? Math.min(1, (t - /** @type {number} */ (finT)) / RAMP) : 0,
         acc = ramp * ramp * ramp;
       if (fz) {
         if (!fin) fin = { ...live };
@@ -897,10 +939,14 @@ export function makeCamera() {
       if (fz)
         str *= Math.max(
           0,
-          1 - Math.max(0, t - finT - RAMP) / 450,
+          1 - Math.max(0, t - /** @type {number} */ (finT) - RAMP) / 450,
         ); /* at the peak the flash consumes the sky: gone in ~0.45 s */
       const want = SPAN * Math.min(1, pr / 0.9);
-      span = fz ? fin.span : filmT < -1e8 ? want : span + (want - span) * Math.min(1, dt / 2500);
+      span = fz
+        ? /** @type {{ span: number }} */ (fin).span
+        : filmT < -1e8
+          ? want
+          : span + (want - span) * Math.min(1, dt / 2500);
       if (!fz) live = { th, age, span, pr }; // eases: a step finishing early or late doesn't jolt the trails
       if (!fz && st.step != null && lastStep != null && st.step > lastStep) meteor(W, H, d, t);
       if (st.step != null) lastStep = st.step; // a meteor for each finished step
@@ -915,7 +961,18 @@ export function makeCamera() {
           }
           fb.width = W + 2 * M;
           fb.height = H + 2 * M;
-          exposeTrails(fb.getContext("2d"), batches, P, W, H, M, d, span, th, SEG);
+          exposeTrails(
+            /** @type {CanvasRenderingContext2D} */ (fb.getContext("2d")),
+            batches,
+            P,
+            W,
+            H,
+            M,
+            d,
+            span,
+            th,
+            SEG,
+          );
           film = fb;
           filmTh = th;
         }
@@ -929,6 +986,7 @@ export function makeCamera() {
         if (prev.close) prev.close();
         prev = null;
       }
+      /** @param {CanvasImageSource} img @param {number} a @param {number} ang */
       const put = (img, a, ang) => {
         lc.save();
         lc.globalAlpha = Math.min(1, a);
@@ -950,7 +1008,7 @@ export function makeCamera() {
       } // the new film cross-fades in over 0.6 s
       const res = ss(0.12, 0.6, pr);
       if (st.noImg) {
-        mt = mcur = null;
+        mt = /** @type {any} */ (mcur = null);
         hasMask = false;
       } else {
         if (t - maskT > 400) {
@@ -994,7 +1052,7 @@ export function makeCamera() {
         aeT = t;
         aeBusy = true; // auto-exposure, like the camera it is, metered on the highlights (worker)
         createImageBitmap(sm, { resizeWidth: 64, resizeHeight: 80, resizeQuality: "medium" }).then(
-          b => wk.postMessage({ ae: b }, [b]),
+          b => /** @type {Worker} */ (wk).postMessage({ ae: b }, [b]),
           () => (aeBusy = false),
         );
       }
@@ -1044,7 +1102,7 @@ export function makeCamera() {
       ctx.globalAlpha = 0.07 * str;
       if (!pat) pat = ctx.createPattern(grain, "repeat");
       ctx.translate((Math.random() * 160) | 0, (Math.random() * 160) | 0);
-      ctx.fillStyle = pat;
+      ctx.fillStyle = /** @type {CanvasPattern} */ (pat);
       ctx.fillRect(-160, -160, W + 320, H + 320);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalCompositeOperation = "source-over";
@@ -1077,22 +1135,22 @@ export function makeCamera() {
    1/5 size, the edge from two fixed band shapes cut by a lobe-lit tint, so a frame is a handful of image draws. */
 export function makeHalo() {
   const so = document.createElement("canvas"),
-    sx = so.getContext("2d"),
+    sx = /** @type {CanvasRenderingContext2D} */ (so.getContext("2d")),
     sb = document.createElement("canvas"),
-    sbx = sb.getContext("2d");
+    sbx = /** @type {CanvasRenderingContext2D} */ (sb.getContext("2d"));
   const swN = document.createElement("canvas"),
     swW = document.createElement("canvas"),
     swT = document.createElement("canvas"),
     swT2 = document.createElement("canvas"),
     ts = document.createElement("canvas");
-  let sstrip = null,
+  let sstrip = /** @type {ReturnType<typeof strip>} built on the first draw */ (/** @type {unknown} */ (null)),
     key = "",
-    spts = null,
+    spts = /** @type {ReturnType<typeof perimeter>} */ (/** @type {unknown} */ (null)),
     pk = "",
-    lastT = null,
+    lastT = /** @type {number | null} */ (null),
     fT = 0,
     swKey = "",
-    rimPts = null,
+    rimPts = /** @type {ReturnType<typeof perimeter>} */ (/** @type {unknown} */ (null)),
     rk = "";
   /* normalised: the lobes stay evenly spaced and turn round the border together (each with a small wobble of its own), and
     their pulses are staggered (golden-ratio phases), so there is always light on every side and never a moment when all dip */
@@ -1107,12 +1165,13 @@ export function makeHalo() {
     d: 0.7 + Math.random() * 0.3,
   }));
   let spin = 0;
+  /** @param {string[]} c the theme's colours */
   function strip(c) {
     const red = mixHex(c[2], "#ff3355", 0.45),
       s = document.createElement("canvas");
     s.width = 1;
     s.height = 256;
-    const g = s.getContext("2d"),
+    const g = /** @type {CanvasRenderingContext2D} */ (s.getContext("2d")),
       gr = g.createLinearGradient(0, 0, 0, 256); // base (y=256) at the edge, a long smooth fall-off
     /* ambient light, not a second edge: less saturated (toward a dark teal), and dimmer right at the edge so the hot edge
      keeps a darker margin to pop against; its mass sits a little further out */
@@ -1129,16 +1188,17 @@ export function makeHalo() {
     return s;
   }
   /* points round the rounded rectangle: position, outward normal, side weight (the bottom shorter), position along it */
+  /** @param {number} x0 @param {number} y0 @param {number} w @param {number} h @param {number} rr @param {number} step */
   function perimeter(x0, y0, w, h, rr, step) {
     const p = [],
       L = 2 * (w + h - 4 * rr) + 2 * Math.PI * rr;
     let s = 0;
-    const seg = [
+    const seg = /** @type {[number, number, number, number, number, "t" | "r" | "b" | "l"][]} */ ([
       [x0 + rr, y0, 1, 0, w - 2 * rr, "t"],
       [x0 + w, y0 + rr, 0, 1, h - 2 * rr, "r"],
       [x0 + w - rr, y0 + h, -1, 0, w - 2 * rr, "b"],
       [x0, y0 + h - rr, 0, -1, h - 2 * rr, "l"],
-    ];
+    ]);
     const corners = [
       [x0 + w - rr, y0 + rr, -Math.PI / 2],
       [x0 + w - rr, y0 + h - rr, 0],
@@ -1146,7 +1206,12 @@ export function makeHalo() {
       [x0 + rr, y0 + rr, Math.PI],
     ];
     const wt = { t: 0.7, r: 0.8, b: 0.45, l: 0.8 },
-      nxt = ["r", "b", "l", "t"]; /* the top quieter too: the tab bar sits right above it */
+      nxt = /** @type {("t" | "r" | "b" | "l")[]} */ ([
+        "r",
+        "b",
+        "l",
+        "t",
+      ]); /* the top quieter too: the tab bar sits right above it */
     for (let i = 0; i < 4; i++) {
       const [sx0, sy0, dx, dy, len, side] = seg[i];
       for (let d = 0; d < len; d += step)
@@ -1170,6 +1235,7 @@ export function makeHalo() {
     return p;
   }
   /* how lit the border is at s: the lobes, each pulsing */
+  /** @param {number} s */
   const field = s => {
     let v = 0;
     for (const p of patches) {
@@ -1184,6 +1250,7 @@ export function makeHalo() {
   }; // a soft knee: stacked lobes never light the whole edge at full
   return {
     /* the bloom, around a frame at X,Y (FW×FH) in ctx's pixels, reaching op.reach out */
+    /** @param {CanvasRenderingContext2D} ctx @param {number} X @param {number} Y @param {number} FW @param {number} FH @param {number} T @param {string[]} cols @param {Record<string, any>} op */
     draw(ctx, X, Y, FW, FH, T, cols, op) {
       fT = T;
       const P = op.reach,
@@ -1234,6 +1301,7 @@ export function makeHalo() {
     },
     /* the edge: two fixed inverse-square bands (narrow, wide), drawn once per size; each frame a lobe-lit tint picks the
      wide one where a lobe is bright and the narrow one where it is dim. Starts half a pixel under the image: no gap. */
+    /** @param {CanvasRenderingContext2D} ctx @param {number} X @param {number} Y @param {number} FW @param {number} FH @param {string[]} cols @param {Record<string, any>} op */
     edge(ctx, X, Y, FW, FH, cols, op) {
       const W1 = op.narrow,
         W2 = op.wide,
@@ -1247,12 +1315,13 @@ export function makeHalo() {
           c.width = bw;
           c.height = bh;
         }
+        /** @param {number} d @param {number} w */
         const F = (d, w) => 1 / (1 + Math.pow(d / ((1.15 * w) / 7), 2));
         for (const [c, w] of [
           [swN, W1],
           [swW, W2],
         ]) {
-          const g = c.getContext("2d");
+          const g = /** @type {CanvasRenderingContext2D} */ (c.getContext("2d"));
           g.clearRect(0, 0, bw, bh);
           g.strokeStyle = "#fff";
           g.lineWidth = 0.6;
@@ -1276,8 +1345,9 @@ export function makeHalo() {
         ts.width = sw;
         ts.height = sh;
       }
+      /** @param {HTMLCanvasElement} c @param {string} col @param {(w: number) => number} pick */
       const tint = (c, col, pick) => {
-        const t = ts.getContext("2d");
+        const t = /** @type {CanvasRenderingContext2D} */ (ts.getContext("2d"));
         t.clearRect(0, 0, sw, sh);
         t.lineCap = "round";
         t.lineWidth = M / 2;
@@ -1300,15 +1370,16 @@ export function makeHalo() {
           t.stroke();
         }
         t.globalAlpha = 1; /* round dots at 1/4 size: smooth, no wedges at corners */
-        const g = c.getContext("2d");
+        const g = /** @type {CanvasRenderingContext2D} */ (c.getContext("2d"));
         g.globalCompositeOperation = "source-over";
         g.clearRect(0, 0, bw, bh);
         g.imageSmoothingEnabled = true;
         g.imageSmoothingQuality = "high";
         g.drawImage(ts, 0, 0, bw, bh);
       };
+      /** @param {HTMLCanvasElement} c @param {CanvasImageSource} m */
       const cut = (c, m) => {
-        const g = c.getContext("2d");
+        const g = /** @type {CanvasRenderingContext2D} */ (c.getContext("2d"));
         g.globalCompositeOperation = "destination-in";
         g.drawImage(m, 0, 0);
         g.globalCompositeOperation = "source-over";
@@ -1330,6 +1401,7 @@ export function makeHalo() {
    Inspired by the film's rain, not copied: the glyphs are drawn here from straight strokes on a 4×6 grid
    (blocky, half of them mirrored), so the set is ours to ship. */
 const GLYPHS = (() => {
+  /** @param {string} s */
   const P = s =>
     s.split(";").map(l =>
       l
@@ -1385,6 +1457,7 @@ const GLYPHS = (() => {
     "1.6 5.4,2.4 5.4",
     "1 0,1 1.2;3 0,3 1.2",
   ];
+  /** @param {number[][][]} g */
   const mir = g => g.map(l => l.map(([x, y]) => [4 - x, y]));
   return kana
     .map(P)
@@ -1393,6 +1466,7 @@ const GLYPHS = (() => {
 })();
 
 /* an atlas: every glyph pre-drawn with its glow, in the trail colour and the head colour; cells are drawn from it */
+/** @param {number} cs @param {string} trail @param {string} head @param {number} glowT @param {number} glowH */
 function glyphAtlas(cs, trail, head, glowT, glowH) {
   const pad = Math.ceil(cs * 0.45),
     cw = cs + pad * 2,
@@ -1401,7 +1475,7 @@ function glyphAtlas(cs, trail, head, glowT, glowH) {
   const a = document.createElement("canvas");
   a.width = cw * n;
   a.height = ch * 2;
-  const g = a.getContext("2d");
+  const g = /** @type {CanvasRenderingContext2D} */ (a.getContext("2d"));
   g.lineCap = "square";
   g.lineJoin = "miter";
   const sx = (cs * 0.62) / 4,
@@ -1432,13 +1506,14 @@ function glyphAtlas(cs, trail, head, glowT, glowH) {
    near one. Size sets depth: speed, blur and brightness. It answers the app quietly: almost still and dimming when idle,
    livelier and drifting toward the render window while a job runs, one wave of light when an image lands. */
 export function makeCodeBg() {
-  let at = null,
-    at2 = null,
+  let at = /** @type {ReturnType<typeof glyphAtlas>} built on the first draw */ (/** @type {unknown} */ (null)),
+    at2 = /** @type {ReturnType<typeof glyphAtlas>} */ (/** @type {unknown} */ (null)),
     key = "",
-    streams = [],
+    streams = /** @type {any[]} */ ([]),
     fatT = 0,
-    events = [],
+    events = /** @type {any[]} */ ([]),
     evT = 8000 + Math.random() * 12000;
+  /** @param {number} W @param {number} H @param {number} d @param {boolean} run @param {number} fx @param {boolean} fat @param {boolean} [first] */
   const spawn = (W, H, d, run, fx, fat, first) => {
     const r = Math.random(),
       s = (fat ? 54 + Math.random() * 46 : 7 + Math.pow(r, 3) * 26) * d;
@@ -1466,6 +1541,7 @@ export function makeCodeBg() {
     };
   };
   return {
+    /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} t @param {number} dt @param {number} d @param {string[]} cols @param {Record<string, any>} st */
     draw(ctx, W, H, t, dt, d, cols, st) {
       const k = cols[2] + cols[0];
       if (k !== key) {
@@ -1503,7 +1579,7 @@ export function makeCodeBg() {
           ev.at.shift();
           const o = spawn(W, H, d, false, 0, false, false);
           o.x = ev.x + (Math.random() - 0.5) * ev.w;
-          o.ev = 1;
+          /** @type {any} */ (o).ev = 1;
           streams.push(o);
         }
         if (!ev.at.length) events.splice(i, 1);
@@ -1596,28 +1672,31 @@ export function makeCodeBg() {
    the clean image. */
 export function makeCRT() {
   const scr = document.createElement("canvas"),
-    s = scr.getContext("2d"),
+    s = /** @type {CanvasRenderingContext2D} */ (scr.getContext("2d")),
     ovl = document.createElement("canvas"),
-    o = ovl.getContext("2d");
+    o = /** @type {CanvasRenderingContext2D} */ (ovl.getContext("2d"));
   const lumC = document.createElement("canvas"),
-    lc = lumC.getContext("2d", { willReadFrequently: true });
-  let at = null,
+    lc = /** @type {CanvasRenderingContext2D} */ (lumC.getContext("2d", { willReadFrequently: true }));
+  let at = /** @type {ReturnType<typeof glyphAtlas>} built by layout() before the first draw */ (
+      /** @type {unknown} */ (null)
+    ),
     key = "",
-    cols = [],
+    cols = /** @type {any[]} */ ([]),
     nc = 0,
     nr = 0,
     cs = 0,
     chh = 0,
-    glyph = null,
-    hunt = null,
+    glyph = /** @type {Uint8Array} */ (/** @type {unknown} */ (null)),
+    hunt = /** @type {Float32Array} */ (/** @type {unknown} */ (null)),
     acc = 0,
     on = -1,
-    lum = null,
+    lum = /** @type {Float32Array | null} */ (null),
     lumT = 0,
     ow = 0,
     oh = 0,
-    gl = null,
+    gl = /** @type {any} */ (null),
     glT = 0;
+  /** @param {number} W @param {number} H @param {number} d @param {string[]} c3 */
   function layout(W, H, d, c3) {
     cs = Math.round(13 * d);
     chh = Math.round(cs * 1.18);
@@ -1631,6 +1710,7 @@ export function makeCRT() {
     cols = [];
     for (let i = 0; i < nc; i++) cols.push(newCol(true));
   }
+  /** @param {number} res */
   const lenFor = res => {
     const r = Math.random();
     return Math.max(
@@ -1644,6 +1724,7 @@ export function makeCRT() {
       ),
     );
   }; // short bursts, long runs
+  /** @param {boolean} [first] */
   const newCol = first => ({
     h: first ? -1e9 : -Math.random() * nr * 0.5,
     v: Math.random() < 0.05 ? 34 + Math.random() * 12 : 5 + Math.random() * 24,
@@ -1651,6 +1732,7 @@ export function makeCRT() {
     last: -1,
   });
   const rnd = () => (Math.random() * GLYPHS.length) | 0;
+  /** @param {number} W @param {number} H @param {number} d */
   function overlay(W, H, d) {
     if (ow === W && oh === H) return;
     ow = ovl.width = W;
@@ -1672,6 +1754,7 @@ export function makeCRT() {
     o.fillStyle = r;
     o.fillRect(0, 0, W, H);
   } // glass reflection
+  /** @param {any} src a picture (canvas or bitmap) */
   function sample(src) {
     if (!src || src.width < 8) return;
     lumC.width = nc;
@@ -1682,6 +1765,7 @@ export function makeCRT() {
     for (let i = 0; i < nc * nr; i++) lum[i] = (p[i * 4] * 0.3 + p[i * 4 + 1] * 0.59 + p[i * 4 + 2] * 0.11) / 255;
   }
   /* glitches: rare and short — a block of cells scrambles with a flash, a band of rows tears sideways, or a few columns drop out */
+  /** @param {number} t */
   function glitch(t) {
     const k = Math.random();
     if (k < 0.45)
@@ -1710,6 +1794,7 @@ export function makeCRT() {
       };
   }
   return {
+    /** @param {number} t */
     powerOn(t) {
       on = t;
       cols.forEach(c => Object.assign(c, newCol(true)));
@@ -1717,6 +1802,7 @@ export function makeCRT() {
       gl = null;
       glT = t + 4000 + Math.random() * 5000;
     },
+    /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} t @param {number} dt @param {number} d @param {string[]} c3 @param {Record<string, any>} st */
     draw(ctx, W, H, t, dt, d, c3, st) {
       const k = W + "x" + H + c3[0];
       if (k !== key) {
@@ -1868,6 +1954,7 @@ export function makeCRT() {
       ctx.drawImage(ovl, 0, 0);
       ctx.restore();
     },
+    /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} p @param {number} d @param {string[]} c3 */
     sweep(ctx, W, H, p, d, c3) {
       overlay(W, H, d);
       const y = H * (1 - Math.pow(1 - p, 2.2)),
@@ -1893,10 +1980,11 @@ export function makeCRT() {
     },
   };
 }
+/** @param {string} a @param {string} b @param {number} t */
 export function mixHex(a, b, t) {
   const A = parseInt(toHex(a).slice(1), 16),
     B = parseInt(toHex(b).slice(1), 16);
-  const m = s => Math.round(((A >> s) & 255) * (1 - t) + ((B >> s) & 255) * t);
+  const m = (/** @type {number} */ s) => Math.round(((A >> s) & 255) * (1 - t) + ((B >> s) & 255) * t);
   return "#" + [16, 8, 0].map(s => m(s).toString(16).padStart(2, "0")).join("");
 }
 

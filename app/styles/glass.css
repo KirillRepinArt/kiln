@@ -255,7 +255,7 @@ body.glass .modal:not(.show) {
   transition: none;
 }
 body.glass .fg select option {
-  background: #1d2120;
+  background: var(--glass-option);
 }
 body.glass .fg select:hover,
 body.glass .fg input:not([readonly]):hover {

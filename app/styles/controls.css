@@ -26,7 +26,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: #cdcdcd;
+  color: var(--grey-85);
   font-weight: 500;
   transition:
     color var(--dur),
@@ -64,10 +64,10 @@
   pointer-events: none;
 }
 .left.peeking .pill {
-  color: #8b9095;
+  color: var(--grey-64);
 }
 .left.peeking .pill .il {
-  color: #686d72;
+  color: var(--grey-53);
 }
 .left.peeking #pN {
   display: none;
@@ -209,8 +209,8 @@
     opacity var(--dur) var(--ease),
     transform var(--dur) var(--ease),
     visibility 0s linear var(--dur);
-  background: #232326;
-  border: 1px solid #3a3a3f;
+  background: var(--grey-27);
+  border: 1px solid var(--grey-35);
   border-radius: var(--r-16);
   padding: var(--space-2);
   min-width: 160px;
@@ -258,7 +258,7 @@
 .pop input[type="number"] {
   width: 64px;
   background: var(--raised);
-  border: 1px solid #3a3a3f;
+  border: 1px solid var(--grey-35);
   border-radius: var(--r-10);
   padding: var(--space-2) var(--space-2);
 }
@@ -278,7 +278,7 @@
 }
 .qb.on {
   background: var(--white);
-  color: #111;
+  color: var(--grey-18);
   font-weight: 600;
 }
 .rgrid {
@@ -305,7 +305,7 @@
   border-color: var(--white-85);
 }
 .rt .shape {
-  border: 2px solid #8a8a90;
+  border: 2px solid var(--grey-64);
   border-radius: var(--r-4);
 }
 .rt.on .shape {

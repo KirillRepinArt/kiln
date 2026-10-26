@@ -27,7 +27,7 @@
   padding: var(--space-1);
   border-radius: var(--r-pill);
   background: var(--panel);
-  border: 1px solid #26262a;
+  border: 1px solid var(--grey-27);
 }
 .seg .thumb {
   position: absolute;
@@ -36,7 +36,7 @@
   left: 0;
   width: 0;
   border-radius: var(--r-pill);
-  background: #3a3a3f;
+  background: var(--grey-35);
   box-shadow:
     inset 0 1px 0 var(--white-8),
     0 1px 3px var(--black-40);
@@ -58,7 +58,7 @@
   font-size: var(--fs-15);
   font-weight: 500;
   letter-spacing: -0.01em;
-  color: #cdcdcd;
+  color: var(--grey-85);
   transition: color var(--dur) var(--ease);
 }
 .tab:hover,
@@ -121,10 +121,10 @@ body.jobrun .tab .trw {
   mask-composite: add, intersect;
 }
 .tab:not(.on) .tring {
-  background: #8e9499;
+  background: var(--grey-66);
 }
 .tab.on .tring {
-  background: #a7adb2;
+  background: var(--grey-74);
 } /* a step darker than the label, a touch brighter on the selected pill */
 .gear {
   margin-left: var(--space-1);
@@ -179,7 +179,7 @@ body.jobrun .tab .trw {
   height: 20px;
   flex: none;
   margin-right: 0;
-  color: #9aa0a6;
+  color: var(--grey-69);
   align-self: center;
 }
 .laymenu .opt.on .lic,
@@ -210,7 +210,7 @@ body.jobrun .tab .trw {
 .rpanel.paneled {
   overflow: hidden;
   background: var(--panel);
-  border-color: #26262a;
+  border-color: var(--grey-27);
   border-radius: var(--r-panel);
 }
 .view {
@@ -257,8 +257,8 @@ body.jobrun .tab .trw {
 } /* the panel's wash of the picture's colours */
 /* the Generating ring: clearly darker than the letters in front of it */
 .tab:not(.on) .tring {
-  background: #8e9499;
+  background: var(--grey-66);
 }
 .tab.on .tring {
-  background: #a7adb2;
+  background: var(--grey-74);
 } /* the lighter greys: the knockout keeps them off the letters */

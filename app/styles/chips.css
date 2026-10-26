@@ -39,14 +39,14 @@ body.cardmove #lcol > .chips {
   border-radius: var(--r-pill);
   background: var(--raised);
   font-size: var(--fs-12-5);
-  color: #d6d6da;
+  color: var(--grey-88);
   cursor: default;
 }
 .chip:hover {
   background: var(--raised2);
 }
 .chip.face {
-  background: #34343a;
+  background: var(--grey-33);
 }
 .chip[draggable="true"] {
   cursor: grab;
@@ -69,12 +69,12 @@ body.cardmove #lcol > .chips {
   font-variant-numeric: tabular-nums;
 }
 .chip .cw:hover {
-  background: #3a3a40;
+  background: var(--grey-35);
 }
 .chip .cwi {
   width: 46px;
-  background: #1c1c1e;
-  border: 1px solid #4a4a52;
+  background: var(--grey-23);
+  border: 1px solid var(--grey-41);
   border-radius: var(--r-5);
   color: var(--white);
   font: inherit;
@@ -91,7 +91,7 @@ body.cardmove #lcol > .chips {
   color: var(--muted);
 }
 .chip .cx:hover {
-  background: #4a4a50;
+  background: var(--grey-39);
   color: var(--white);
 }
 .chip .cx svg {
@@ -101,13 +101,13 @@ body.cardmove #lcol > .chips {
 .chiplbl {
   font-size: var(--fs-12);
   letter-spacing: 0.02em;
-  color: #8f959a;
+  color: var(--grey-66);
   margin: 0 var(--space-2) 0 var(--space-3);
   user-select: none;
 } /* LoRA / LoRAs, spelled as written */
 .chipadd {
   padding: var(--space-1) var(--space-3);
-  color: #cfd3d6;
+  color: var(--grey-88);
   font-weight: 600;
 }
 .chipadd:hover {
@@ -116,7 +116,7 @@ body.cardmove #lcol > .chips {
 .chipmore {
   padding: var(--space-1) var(--space-3);
   font-weight: 600;
-  color: #d6d6da;
+  color: var(--grey-88);
 }
 .chips.peek .chip {
   opacity: 0.68;

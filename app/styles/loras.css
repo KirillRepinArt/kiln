@@ -21,7 +21,7 @@
 .search {
   flex: 1;
   background: var(--raised);
-  border: 1px solid #3a3a40;
+  border: 1px solid var(--grey-35);
   border-radius: var(--r-pill);
   padding: var(--space-2) var(--space-4);
   outline: 0;
@@ -54,7 +54,7 @@
   width: 34px;
   height: 20px;
   border-radius: var(--r-10);
-  background: #45454a;
+  background: var(--grey-39);
   position: relative;
   transition: background var(--t-150);
   flex: none;
@@ -68,7 +68,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #ddd;
+  background: var(--grey-90);
   transition: left var(--t-150);
 }
 .sw.on {
@@ -92,13 +92,13 @@
   color: var(--muted);
 }
 .fchips button.on {
-  background: #36363b;
+  background: var(--grey-33);
   color: var(--white);
 }
 .warn {
   font-size: var(--fs-12-5);
   color: var(--c-caution);
-  background: #2e2618;
+  background: var(--c-caution-bg);
   border-radius: var(--r-12);
   padding: var(--space-2) var(--space-3);
   margin-bottom: var(--space-3);
@@ -148,13 +148,13 @@
   transition: background var(--dur);
 }
 .li:hover {
-  background: #26262a;
+  background: var(--grey-27);
 }
 .li.on {
-  background: #232327;
+  background: var(--grey-27);
 }
 .li.on:hover {
-  background: #2a2a2f;
+  background: var(--grey-30);
 }
 .li .nm {
   overflow: hidden;
@@ -173,14 +173,14 @@
   color: var(--muted);
   margin-left: var(--space-2);
   padding: var(--space-px) var(--space-2);
-  border: 1px solid #45454b;
+  border: 1px solid var(--grey-39);
   border-radius: var(--r-pill);
   vertical-align: 1px;
 }
 .li input[type="number"] {
   width: 56px;
   background: var(--raised);
-  border: 1px solid #3a3a40;
+  border: 1px solid var(--grey-35);
   border-radius: var(--r-8);
   padding: var(--space-1) var(--space-2);
   font-size: var(--fs-13);
@@ -238,7 +238,7 @@
   display: grid;
   place-items: center;
   font-size: var(--fs-14);
-  color: #777;
+  color: var(--grey-57);
 }
 .l2 .star {
   width: 22px;
@@ -250,7 +250,7 @@
 }
 .nmedit {
   width: 100%;
-  background: #1c1c1e;
+  background: var(--grey-23);
   border: 1px solid var(--white-60);
   border-radius: var(--r-6);
   padding: var(--space-px) var(--space-1);

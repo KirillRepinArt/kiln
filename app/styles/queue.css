@@ -83,7 +83,7 @@
   width: 46px;
   height: 46px;
   border-radius: var(--r-10);
-  background: #222;
+  background: var(--grey-27);
   flex: none;
   overflow: hidden;
   display: grid;
@@ -274,11 +274,11 @@ body.glass .qi.sel .qck {
   border-radius: var(--r-pill);
   background: var(--raised);
   font-size: var(--fs-12-5);
-  color: #e6e6ea;
+  color: var(--grey-93);
   white-space: nowrap;
 }
 .qbar button:hover {
-  background: #45454a;
+  background: var(--grey-39);
 }
 .qbar .qdel {
   background: color-mix(in oklab, var(--c-danger) 32%, var(--raised));
@@ -319,7 +319,7 @@ body.glass .qi.sel .qck {
 .qi .mini {
   height: 4px;
   border-radius: var(--r-2);
-  background: #1a1a1c;
+  background: var(--grey-20);
   margin-top: var(--space-2);
   overflow: hidden;
 }
@@ -338,7 +338,7 @@ body.glass .qi.sel .qck {
   color: var(--muted);
 }
 .qi .x:hover {
-  background: #45454a;
+  background: var(--grey-39);
   color: var(--text);
 }
 .qi .x svg {
@@ -379,7 +379,7 @@ body.glass .qi.sel .qck {
   box-shadow:
     0 18px 50px var(--black-55),
     0 0 0 1px var(--white-10);
-  background: #0b0b0e;
+  background: var(--grey-15);
 }
 #qpop.show {
   opacity: 1;

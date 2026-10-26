@@ -216,7 +216,7 @@
   height: 4px;
   translate: -50% 0; /* centred on the edge (a centring offset, not spacing) */
   border-radius: var(--r-2);
-  background: #8a8a92;
+  background: var(--grey-64);
   opacity: 0;
   transition: opacity var(--t-150);
 }

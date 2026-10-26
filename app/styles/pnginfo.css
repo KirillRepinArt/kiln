@@ -11,7 +11,7 @@
   padding: var(--space-5);
 }
 .drop {
-  border: 2px dashed #3d3d42;
+  border: 2px dashed var(--grey-35);
   border-radius: var(--r-16);
   padding: var(--space-7);
   text-align: center;
@@ -31,11 +31,11 @@
 .pout {
   flex: 1;
   overflow: auto;
-  background: #161618;
+  background: var(--grey-20);
   border-radius: var(--r-14);
   padding: var(--space-5) var(--space-5);
   font-size: var(--fs-14);
-  color: #cfcfd4;
+  color: var(--grey-85);
 }
 .pout.raw {
   white-space: pre-wrap;
@@ -48,12 +48,12 @@
   font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #8a8a92;
+  color: var(--grey-64);
   margin: var(--space-hair) 0 var(--space-2);
 }
 .pi-p {
   line-height: 1.62;
-  color: #e6e6ea;
+  color: var(--grey-93);
   margin-bottom: var(--space-5);
 }
 .pi-p .ln {
@@ -67,15 +67,15 @@
   font-size: var(--fs-11-5);
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  color: #8a8a92;
+  color: var(--grey-64);
   padding-top: var(--space-2);
 }
 .pi-p .ln.cmt {
-  color: #6c6c74;
+  color: var(--grey-53);
   font-style: italic;
 }
 .pi-neg {
-  color: #a8a8b0;
+  color: var(--grey-74);
 }
 .pi-grid {
   display: grid;
@@ -84,11 +84,11 @@
   font-size: var(--fs-13);
 }
 .pi-grid dt {
-  color: #8a8a92;
+  color: var(--grey-64);
 }
 .pi-grid dd {
   margin: 0;
-  color: #e6e6ea;
+  color: var(--grey-93);
   word-break: break-word;
   font-variant-numeric: tabular-nums;
 }

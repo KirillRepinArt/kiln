@@ -85,7 +85,7 @@
   border-radius: var(--r-8);
   padding: var(--space-2) var(--space-2);
   width: 100%;
-  color: #f2f2f2;
+  color: var(--grey-96);
   transition:
     background var(--t-150),
     border-color var(--t-150);
@@ -100,17 +100,17 @@
 }
 .fg select:hover,
 .fg input:hover {
-  background-color: #26262a;
+  background-color: var(--grey-27);
 }
 .fg select:focus,
 .fg input:focus {
   outline: 0;
-  border-color: #3a3a40;
-  background-color: #1f1f22;
+  border-color: var(--grey-35);
+  background-color: var(--grey-23);
 }
 .fg select option {
-  background: #232326;
-  color: #f2f2f2;
+  background: var(--grey-27);
+  color: var(--grey-96);
 }
 .fg input[readonly] {
   color: var(--muted);
@@ -120,8 +120,8 @@
   font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #8a8a92;
-  border-top: 1px solid #2c2c31;
+  color: var(--grey-64);
+  border-top: 1px solid var(--grey-30);
   padding-top: var(--space-4);
   margin-top: var(--space-2);
 }
@@ -197,7 +197,7 @@ kbd {
   font-size: var(--fs-12);
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: #c9ccd0;
+  color: var(--grey-85);
   padding-top: var(--space-5);
   margin-top: var(--space-3);
 }

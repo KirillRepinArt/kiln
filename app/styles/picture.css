@@ -9,11 +9,11 @@
   border-radius: var(--r-panel);
   overflow: hidden;
   background: transparent;
-  outline: 1px solid #1d1d22;
+  outline: 1px solid var(--grey-23);
   outline-offset: -1px;
 }
 .frame.has {
-  background: #07070a;
+  background: var(--grey-13);
   outline: 1px solid var(--white-7);
   outline-offset: -1px;
 }
@@ -109,7 +109,7 @@ body:not(.laydrag) .stage .frame:not(.morph) {
   z-index: 1;
   display: grid;
   place-items: center;
-  color: #7a7a82;
+  color: var(--grey-58);
   font-size: var(--fs-14);
   text-align: center;
   pointer-events: none;
@@ -117,7 +117,7 @@ body:not(.laydrag) .stage .frame:not(.morph) {
 #idleT,
 #idleS {
   font-size: var(--fs-15);
-  color: #a4a8ad;
+  color: var(--grey-74);
 }
 /* the missing-file card (a file deleted outside Kiln): no picture, just the ways back */
 .miss {
@@ -376,7 +376,7 @@ body.norow .prog {
   position: relative;
   height: 10px;
   border-radius: var(--r-pill);
-  background: #1c1c1e;
+  background: var(--grey-23);
   overflow: hidden;
 }
 .prog:not(.run) .track,
@@ -415,7 +415,7 @@ body.norow .prog {
   height: 36px;
   font-size: var(--fs-13);
   font-weight: 500;
-  color: #cdcdcd;
+  color: var(--grey-85);
   white-space: nowrap;
 }
 body[data-pic="still"] .prog.run .meta,
@@ -442,7 +442,7 @@ body[data-pic="still"] .prog.run .meta,
   background: var(--raised);
   font-size: var(--fs-13-5);
   font-weight: 500;
-  color: #e6e6ea;
+  color: var(--grey-93);
 }
 .prog .stop {
   display: none;
@@ -456,7 +456,7 @@ body[data-pic="still"] .prog.run .meta,
   height: 11px;
 }
 .prog .stop:hover {
-  background: #45454a;
+  background: var(--grey-39);
 }
 .prog.run .stop {
   display: inline-flex;

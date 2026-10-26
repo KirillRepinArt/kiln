@@ -141,6 +141,35 @@
   --black-60: rgba(0, 0, 0, 0.6);
   --black-70: rgba(0, 0, 0, 0.7);
   --black-90: rgba(0, 0, 0, 0.9);
+  /* GREYS — one ramp, named by perceived lightness (OKLab L × 100: 0 = black, 100 = white). Shades closer than the eye
+     can tell apart were merged (2026-10-27): 59 greys → these 25. */
+  --grey-13: #07070a;
+  --grey-15: #0b0b0e;
+  --grey-18: #111111;
+  --grey-20: #15171a;
+  --grey-23: #1c1c1e;
+  --grey-27: #26262a;
+  --grey-30: #2c2c31;
+  --grey-33: #34343a;
+  --grey-35: #3a3a40;
+  --grey-39: #45454a;
+  --grey-41: #4a4a52;
+  --grey-45: #55555c;
+  --grey-53: #6c6c74;
+  --grey-57: #77777e;
+  --grey-58: #7a7a82;
+  --grey-64: #8a8a92;
+  --grey-66: #8e9499;
+  --grey-69: #9a9aa2;
+  --grey-74: #a7adb2;
+  --grey-79: #b6bcc0;
+  --grey-85: #cdcdcd;
+  --grey-88: #d6d6da;
+  --grey-90: #dddddd;
+  --grey-93: #e6e6ea;
+  --grey-96: #f2f2f2;
+  --c-caution-bg: #2e2618; /* behind a caution note (warm) */
+  --glass-option: #1d2120; /* a dropdown's list in glass */
   /* the few real colours, by role */
   --c-danger: #e0605a; /* a destructive action (the Queue's Delete) */
   --c-warn: #e0a060; /* a missing file */

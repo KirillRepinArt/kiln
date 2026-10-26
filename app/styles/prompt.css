@@ -58,22 +58,22 @@
   font-size: var(--fs-24);
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: #f2f2f2;
+  color: var(--grey-96);
   text-align: center;
   padding: var(--space-hair) var(--space-2);
   margin-left: 0;
   border-radius: var(--r-6);
 }
 .pname::placeholder {
-  color: #55555c;
+  color: var(--grey-45);
   font-weight: 500;
 }
 .pname:hover {
-  background: #26262a;
+  background: var(--grey-27);
 }
 .pname:focus {
-  background: #26262a;
-  box-shadow: inset 0 0 0 1px #3a3a40;
+  background: var(--grey-27);
+  box-shadow: inset 0 0 0 1px var(--grey-35);
 }
 .plbl.hasname .pname:hover,
 .plbl.hasname .pname:focus {
@@ -87,13 +87,13 @@
     box-shadow var(--t-150);
 }
 .plbl.dimname .pname {
-  color: #9a9aa2;
+  color: var(--grey-69);
 }
 .ltitle .plbl.peekname .pname {
-  color: #77777e;
+  color: var(--grey-57);
 } /* an old picture's name: greyed */
 .ltitle .plbl.peekname .pname:not([readonly]):focus {
-  color: #f2f2f2;
+  color: var(--grey-96);
 }
 /* a finished picture's title: as it is — no plate at rest or on hover, only while you edit it */
 .ltitle .plbl.donename .pname:not(:focus),
@@ -115,7 +115,7 @@
   transition: opacity var(--t-150);
 }
 .pnx:hover {
-  background: #3a3a40;
+  background: var(--grey-35);
   color: var(--white);
 }
 .pnx svg {
@@ -140,7 +140,7 @@
   top: 50%;
   pointer-events: none;
   opacity: 0;
-  color: #6f747a;
+  color: var(--grey-57);
   font-size: var(--fs-24);
   font-weight: 500;
   white-space: nowrap;
@@ -193,8 +193,8 @@
   margin-bottom: 0; /* the name row already ends one tight gap above the box */
   max-width: calc(100% - 136px);
   border-radius: var(--r-pill);
-  background: #2c2c31;
-  border: 1px solid #3a3a40;
+  background: var(--grey-30);
+  border: 1px solid var(--grey-35);
   font-size: var(--fs-12-5);
   white-space: nowrap;
   z-index: 3;
@@ -212,15 +212,15 @@
 .peekbar button {
   padding: var(--space-1) var(--space-3);
   border-radius: var(--r-pill);
-  background: #3a3a40;
+  background: var(--grey-35);
   font-size: var(--fs-12-5);
 }
 .peekbar button:hover {
-  background: #4a4a52;
+  background: var(--grey-41);
 }
 .peekbar #pkAll {
   background: var(--white);
-  color: #111;
+  color: var(--grey-18);
   font-weight: 600;
 }
 .peekbar .pkseed {
@@ -281,8 +281,8 @@
   color: var(--white);
 }
 .hmodes button.on {
-  background: #f2f2f2;
-  color: #111;
+  background: var(--grey-96);
+  color: var(--grey-18);
 }
 .hmodes svg {
   width: 16px;
@@ -323,7 +323,7 @@
   flex-direction: column;
   padding-top: 0;
   background: var(--panel);
-  border: 1px solid #34343a;
+  border: 1px solid var(--grey-33);
   border-radius: var(--r-panel);
   container-type: inline-size;
   transition:
@@ -382,7 +382,7 @@ textarea#prompt {
   overflow: auto;
 }
 textarea#prompt.peek {
-  color: #b6bcc0;
+  color: var(--grey-79);
 }
 .pwrapT.cm-on textarea#prompt {
   display: none;
@@ -492,11 +492,11 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
   color: var(--faint);
 }
 .pwrapT .cm-editor.peek .cm-content {
-  color: #b6bcc0;
+  color: var(--grey-79);
 }
 /* prompt structure (editor.js marks it; PNG Info reuses the classes) */
 .cm-ln-comment {
-  color: #6c6c74;
+  color: var(--grey-53);
   font-style: italic;
 }
 .cm-ln-list {
@@ -507,7 +507,7 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
   width: 2em;
   margin-right: 0.4em;
   text-align: right;
-  color: #6f6f78;
+  color: var(--grey-53);
   text-indent: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -515,24 +515,24 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
   font-size: var(--fs-11-5) !important;
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  color: #8a8a92;
+  color: var(--grey-64);
   padding-top: var(--space-2) !important;
 } /* !important: over .cm-line's size and padding */
 .cm-variant {
-  background: #2c2c33;
+  background: var(--grey-30);
   border-radius: var(--r-6);
-  box-shadow: 0 0 0 1px #3c3c44;
+  box-shadow: 0 0 0 1px var(--grey-35);
   padding: 0 var(--space-hair);
 }
 .cm-vbar {
-  color: #6f6f78;
+  color: var(--grey-53);
 }
 .cm-lora {
-  background: #2a2a30;
+  background: var(--grey-30);
   border-radius: var(--r-6);
-  color: #bdbdc6;
+  color: var(--grey-79);
   padding: 0 var(--space-1);
-  box-shadow: 0 0 0 1px #3a3a42;
+  box-shadow: 0 0 0 1px var(--grey-35);
 }
 /* the character count, while you type */
 .pcount {

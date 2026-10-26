@@ -6,6 +6,7 @@ import tempfile
 import unittest
 import zlib
 from pathlib import Path
+from typing import ClassVar
 
 from server import images, naming, timings
 from server.backends.forge import bare, lora_folders, same_paths
@@ -383,6 +384,26 @@ class Launcher(TempDirs):
         self.assertIn("--app=http://127.0.0.1:7870", cmd)
         self.assertIn("--no-proxy-server", cmd)
         self.assertTrue(any(a.startswith("--user-data-dir=") for a in cmd))
+
+
+class NetworkCalls(unittest.TestCase):
+    """Nothing the server does reaches outside the machine unasked: only three places make requests at all."""
+
+    ALLOWED: ClassVar[dict[str, str]] = {
+        "backends/forge.py": "the image generator, at the address in the settings (local)",
+        "updates.py": "the update check — only when you press Check for updates",
+        "launch.py": "the launcher asking 127.0.0.1 who's there (/api/hello)",
+    }
+    CALLS = ("OPENER.open(", "urlopen(", "http.client", "create_connection(", ".connect((")
+
+    def test_only_these_files_make_requests(self) -> None:
+        root = Path(__file__).resolve().parents[3] / "server"
+        found = {
+            f.relative_to(root).as_posix()
+            for f in root.rglob("*.py")
+            if any(c in f.read_text(encoding="utf-8") for c in self.CALLS)
+        }
+        self.assertEqual(found, set(self.ALLOWED), "a new place making requests: check where it goes, then list it")
 
 
 if __name__ == "__main__":

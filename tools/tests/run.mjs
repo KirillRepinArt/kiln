@@ -159,7 +159,12 @@ async function launch(
       if (d.method === "Runtime.consoleAPICalled" && d.params.type === "error")
         errors.push("console.error " + d.params.args.map(a => a.value ?? a.description).join(" "));
       if (d.method === "Network.requestWillBeSent") {
-        requests.push({ url: d.params.request.url, type: d.params.type, id: d.params.requestId });
+        requests.push({
+          url: d.params.request.url,
+          type: d.params.type,
+          id: d.params.requestId,
+          initiator: d.params.initiator,
+        });
       }
       if (d.method === "Network.loadingFailed") {
         const r = requests.find(x => x.id === d.params.requestId);
@@ -335,7 +340,12 @@ function checker() {
     },
     motion(cond, what, detail) {
       if (!process.env.CI) return this.ok(cond, what, detail);
-      if (!cond) notes.push(what + (detail === undefined ? "" : `  →  ${JSON.stringify(detail)}`));
+      if (!cond)
+        notes.push("not judged on CI: " + what + (detail === undefined ? "" : `  →  ${JSON.stringify(detail)}`));
+    },
+    /* something worth knowing that isn't a check (shown under the test's line) */
+    note(what) {
+      notes.push(what);
     },
     fails,
     passes,
@@ -408,10 +418,7 @@ async function runOne({ file, tname, fn }) {
     : {
         ok: true,
         label,
-        text: [
-          `✓ ${label} (${secs}s, ${t.passes.length} checks)`,
-          ...t.notes.map(x => "    ~ not judged on CI: " + x),
-        ].join("\n"),
+        text: [`✓ ${label} (${secs}s, ${t.passes.length} checks)`, ...t.notes.map(x => "    ~ " + x)].join("\n"),
       };
 }
 

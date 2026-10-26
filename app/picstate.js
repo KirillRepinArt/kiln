@@ -15,8 +15,9 @@ import { updNav } from "./browse.js";
 import { $ } from "./dom.js";
 import { current, doneById, doneList, lastDone } from "./jobs.js";
 import { sizeFrame } from "./layout.js";
-import { loadJob, peekHide, peekJob } from "./peek.js";
+import { loadJob, peekHide } from "./peek.js";
 import { preload, xfadeSnap } from "./pictures.js";
+import { peekJob } from "./prompt.js";
 import { S } from "./state.js";
 import { showView, tabSync } from "./tabs.js";
 

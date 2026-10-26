@@ -1,13 +1,14 @@
 /* Kiln · queue actions sent to the server: add, Vary, stop, remove, delete (with Undo), rename, pause, reorder */
-import { renderAll, slugify, toast } from "./boot.js";
+import { renderAll, toast } from "./boot.js";
 import { $ } from "./dom.js";
 import { models } from "./forge.js";
 import { doneList, dropJobs, jobs } from "./jobs.js";
 import { api } from "./live.js";
-import { peekHide, peekJob } from "./peek.js";
+import { peekHide } from "./peek.js";
 import { PV, pv, pvPrune } from "./picstate.js";
 import { imgs, urlFor } from "./pictures.js";
 import { SIZES } from "./presets.js";
+import { peekJob, slugify } from "./prompt.js";
 import { expandVariants, stripComments } from "./prompttext.js";
 import { LORAS, P, S, save } from "./state.js";
 import { forgeOk, fullNextPoll, poll } from "./sync.js";

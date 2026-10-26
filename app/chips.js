@@ -1,9 +1,11 @@
+// @ts-check
 /* Kiln · the LoRA chips under the prompt box: wrapping (+N), clicking, scrubbing a weight, dragging to reorder */
 import { esc } from "./boot.js";
 import { layoutLeft } from "./cardlayout.js";
-import { $ } from "./dom.js";
+import { $, hit, q, qa } from "./dom.js";
 import { renderLoras } from "./loras.js";
-import { peekButtons, peekJob } from "./peek.js";
+import { peekButtons } from "./peek.js";
+import { peekJob } from "./prompt.js";
 import { IC, LORAS, S, save } from "./state.js";
 import { showView } from "./tabs.js";
 
@@ -49,7 +51,7 @@ export function renderChips() {
 function capChips() {
   const box = $("chips");
   box.querySelector(".chipmore")?.remove();
-  const cs = [...box.querySelectorAll(".chip[data-n]")];
+  const cs = qa(".chip[data-n]", box);
   cs.forEach(c => (c.hidden = false));
   const rows = [...new Set(cs.map(c => c.offsetTop))].sort((a, b) => a - b);
   if (rows.length <= 2) return;
@@ -67,15 +69,14 @@ function capChips() {
   more.textContent = "+" + hid.length;
   const vis = cs.filter(c => !c.hidden);
   while (more.offsetTop > lim && vis.length) {
-    const c = vis.pop();
+    const c = /** @type {HTMLElement} */ (vis.pop()); // the loop runs while vis has some
     c.hidden = true;
     hid.unshift(c);
     more.textContent = "+" + hid.length;
   }
-  more.dataset.tip =
-    "Show all · " +
-    hid.map(c => c.querySelector(".cn").textContent + " " + c.querySelector(".cw").textContent).join(", ");
+  more.dataset.tip = "Show all · " + hid.map(c => q(".cn", c).textContent + " " + q(".cw", c).textContent).join(", ");
 }
+/** a weight as shown: 2 decimals at most, no trailing zeros @param {number | string} w */
 export function fmtW(w) {
   return (+w).toFixed(2).replace(/\.?0+$/, "");
 }
@@ -92,7 +93,7 @@ export function initChips() {
     }).observe($("chips"));
   })();
   $("chips").onclick = e => {
-    const c = e.target.closest(".chip");
+    const c = hit(e, ".chip");
     if (!c) return;
     if (c.classList.contains("chipadd")) {
       showView("loras");
@@ -104,8 +105,8 @@ export function initChips() {
       return;
     }
     if (peekJob) return;
-    const l = LORAS.find(l => l.name === c.dataset.n);
-    if (e.target.closest(".cx")) {
+    const l = /** @type {import("./types.js").Lora} */ (LORAS.find(l => l.name === c.dataset.n)); // a chip is drawn from the list
+    if (hit(e, ".cx")) {
       l.on = false;
       save();
       renderChips();
@@ -114,7 +115,7 @@ export function initChips() {
     }
     S.lfilter = l.folder === "people" ? "people" : "all";
     showView("loras");
-    const el = document.querySelector(`[data-ln="${l.name}"]`);
+    const el = q(`[data-ln="${l.name}"]`);
     if (el) {
       el.scrollIntoView({ block: "center" });
       el.classList.remove("flash");
@@ -125,9 +126,17 @@ export function initChips() {
   /* chip weights: drag to scrub, wheel to nudge, click to type */
   (function () {
     const box = $("chips");
+    /** a weight being scrubbed: its chip, the LoRA, where the pointer started, the weight then, whether it moved
+     * @type {{ el: HTMLElement, l: import("./types.js").Lora, x: number, w0: number, moved: boolean } | null} */
     let drag = null;
-    const lor = el => LORAS.find(l => l.name === el.closest(".chip").dataset.n);
+    /** the LoRA of a chip's part @param {HTMLElement} el */
+    const lor = el =>
+      /** @type {import("./types.js").Lora} */ (
+        LORAS.find(l => l.name === /** @type {HTMLElement} */ (el.closest(".chip")).dataset.n)
+      );
+    /** a LoRA's weight range: people 0…2, the rest −3…3 @param {import("./types.js").Lora} l */
     const lim = l => (l.folder === "people" ? [0, 2] : [-3, 3]);
+    /** @param {import("./types.js").Lora} l @param {number} w @param {HTMLElement} [el] its weight label */
     function setW(l, w, el) {
       const [a, b] = lim(l);
       l.w = Math.round(Math.max(a, Math.min(b, w)) * 100) / 100;
@@ -136,7 +145,7 @@ export function initChips() {
       if (S.view === "loras") renderLoras();
     }
     box.addEventListener("pointerdown", e => {
-      const el = e.target.closest(".cw");
+      const el = hit(e, ".cw");
       if (!el) return;
       e.preventDefault();
       el.setPointerCapture(e.pointerId);
@@ -159,7 +168,7 @@ export function initChips() {
       d.el.replaceWith(inp);
       inp.focus();
       inp.select();
-      const done = ok => {
+      const done = (/** @type {boolean} */ ok) => {
         if (ok) {
           const v = parseFloat(inp.value.replace(",", "."));
           if (!isNaN(v)) setW(d.l, v);
@@ -176,7 +185,7 @@ export function initChips() {
     box.addEventListener(
       "wheel",
       e => {
-        const el = e.target.closest(".cw");
+        const el = hit(e, ".cw");
         if (!el) return;
         e.preventDefault();
         const l = lor(el);
@@ -187,7 +196,7 @@ export function initChips() {
     box.addEventListener(
       "click",
       e => {
-        if (e.target.closest(".cw,.cwi")) e.stopImmediatePropagation();
+        if (hit(e, ".cw,.cwi")) e.stopImmediatePropagation();
       },
       true,
     );
@@ -195,44 +204,46 @@ export function initChips() {
   /* drag a chip to reorder: it moves in place, the others slide aside; the order is kept (onAt), so it sticks */
   (function () {
     const box = $("chips");
+    /** the chip being dragged @type {HTMLElement | null} */
     let dragEl = null,
       noDrag = false;
     box.addEventListener(
       "pointerdown",
       e => {
-        noDrag = !!e.target.closest(".cw,.cx,.cwi");
+        noDrag = !!hit(e, ".cw,.cx,.cwi");
       },
       true,
     ); // the weight and ✕ keep their own gestures
     box.addEventListener("dragstart", e => {
-      const c = e.target.closest(".chip[data-n]");
+      const c = hit(e, ".chip[data-n]");
       if (!c || noDrag || (typeof peekJob !== "undefined" && peekJob)) {
         e.preventDefault();
         return;
       }
       dragEl = c;
       c.classList.add("dragging");
-      e.dataTransfer.effectAllowed = "move";
+      const dt = /** @type {DataTransfer} */ (e.dataTransfer); // a drag event always has one
+      dt.effectAllowed = "move";
       try {
-        e.dataTransfer.setData("text/plain", c.dataset.n);
+        dt.setData("text/plain", String(c.dataset.n));
       } catch (_) {}
     });
     box.addEventListener("dragover", e => {
       if (!dragEl) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      const q = e.target.closest(".chip[data-n]");
+      /** @type {DataTransfer} */ (e.dataTransfer).dropEffect = "move";
+      const q = hit(e, ".chip[data-n]");
       if (!q || q === dragEl) return;
       const r = q.getBoundingClientRect(),
         after = e.clientX > r.left + r.width / 2;
       if (after ? q.nextElementSibling === dragEl : q.previousElementSibling === dragEl) return;
-      const all = [...box.querySelectorAll(".chip[data-n]")],
+      const all = qa(".chip[data-n]", box),
         before = new Map(all.map(x => [x, x.getBoundingClientRect()]));
       if (after) q.after(dragEl);
       else q.before(dragEl);
       for (const x of all) {
         if (x === dragEl) continue;
-        const b = before.get(x),
+        const b = /** @type {DOMRect} */ (before.get(x)),
           n = x.getBoundingClientRect(),
           dx = b.left - n.left,
           dy = b.top - n.top;
@@ -252,7 +263,7 @@ export function initChips() {
       if (!dragEl) return;
       dragEl.classList.remove("dragging");
       const t = Date.now();
-      [...box.querySelectorAll(".chip[data-n]")].forEach((c, i) => {
+      qa(".chip[data-n]", box).forEach((c, i) => {
         const l = LORAS.find(l => l.name === c.dataset.n);
         if (l) l.onAt = t + i;
       });

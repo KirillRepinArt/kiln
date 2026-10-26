@@ -6,11 +6,12 @@ import { $ } from "./dom.js";
 import { current, doneById, jobs } from "./jobs.js";
 import { sizeFrame } from "./layout.js";
 import { api } from "./live.js";
-import { loadJob, peekJob } from "./peek.js";
+import { loadJob } from "./peek.js";
 import { PV, browsed, justDone, onShow, picMode, pv, setJustDone, shownDone } from "./picstate.js";
 import { drawTo, missUI, paint, xfadeEnd } from "./pictures.js";
 import { SEC_PER_STEP, SIZES } from "./presets.js";
-import { S, draft } from "./state.js";
+import { draft, peekJob } from "./prompt.js";
+import { S } from "./state.js";
 import { forgeOk, forgeStarting } from "./sync.js";
 
 /* ---------- progress: real steps, smooth glide in between, live preview ---------- */

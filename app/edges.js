@@ -1,10 +1,11 @@
+// @ts-check
 /* Kiln · the edges you drag: the prompt box's height, Vertical's slot line and side edges, the panels' widths, the
    picture's top / bottom edges — and the edit buttons beside the picture showing on hover. The sizes they set are in
    S.lay (layout.js does the maths and applies them) */
 import { toast } from "./boot.js";
 import { applyPH, chipsH, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
-import { $ } from "./dom.js";
-import { BAR, lay, layDef, layDrag, layGeo, layRelease, sizeFrame } from "./layout.js";
+import { $, q, qa } from "./dom.js";
+import { BAR, lay, layDef, layDrag, layGeo, layRelease, prefs, sizeFrame } from "./layout.js";
 import { PWMIN } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
@@ -28,7 +29,7 @@ export function initEdges() {
       $("left").classList.add("nodur");
       y0 = e.clientY;
       h0 = $("left").getBoundingClientRect().height;
-      stk = !!document.querySelector(".app.stacked");
+      stk = !!q(".app.stacked");
       if (stk) {
         lay.vbDrag = true;
         vH = h0;
@@ -50,7 +51,7 @@ export function initEdges() {
         col.style.setProperty("--chtop", TS + vH + 10 + "px");
         return;
       }
-      const max = $("left").parentElement.getBoundingClientRect().height - 36;
+      const max = /** @type {HTMLElement} */ ($("left").parentElement).getBoundingClientRect().height - 36;
       S.pph = Math.max(240, Math.min(max, Math.round(h0 + e.clientY - y0)));
       applyPH();
     });
@@ -73,7 +74,7 @@ export function initEdges() {
       save();
     });
     g.addEventListener("dblclick", () => {
-      if (document.querySelector(".app.stacked")) {
+      if (q(".app.stacked")) {
         S.sch = 0;
         save();
         layoutLeft();
@@ -124,6 +125,7 @@ export function initEdges() {
    (a strip on each side of the gap, both the same boundary), ro = the image area's outer edge. Double-click: that
    panel back to its default width (the divider: both). */
   (function () {
+    /** an edge handle @param {HTMLElement} parent @param {string} e which edge @param {string} cls @param {string} tip */
     const mk = (parent, e, cls, tip) => {
       const h = document.createElement("div");
       h.className = "pedge " + cls;
@@ -141,14 +143,19 @@ export function initEdges() {
       mk($("right"), "dv", "ri", D_TIP),
       mk($("right"), "ro", "ro", R_TIP),
     ];
+    /** a panel edge being dragged: which, where the pointer started, the geometry then @type {{ e: "dv" | "po" | "ro", x0: number, g0: import("./types.js").Geometry } | null} */
     let d = null;
     for (const h of hs) {
       h.addEventListener("pointerdown", ev => {
-        if (document.querySelector(".app.stacked") || ev.button !== 0) return;
+        if (q(".app.stacked") || ev.button !== 0) return;
         ev.preventDefault();
         ev.stopPropagation();
         h.setPointerCapture(ev.pointerId); /* not the card's move gesture */
-        d = { e: h.dataset.e, x0: ev.clientX, g0: Object.assign({}, lay.last || layGeo(), { gen: S.view === "gen" }) };
+        d = {
+          e: /** @type {"dv" | "po" | "ro"} */ (h.dataset.e),
+          x0: ev.clientX,
+          g0: Object.assign({}, lay.last || layGeo(), { gen: S.view === "gen" }),
+        };
         lay.drag = true;
         h.classList.add("drag");
         document.body.classList.add("resizing", "laydrag");
@@ -183,10 +190,10 @@ export function initEdges() {
       h.addEventListener("pointercancel", up);
       h.addEventListener("dblclick", () => {
         const df = layDef();
-        if (h.dataset.e !== "ro") S.lay.pw = df.pw;
+        if (h.dataset.e !== "ro") prefs().pw = df.pw;
         if (h.dataset.e !== "po") {
-          if (S.view === "gen") S.lay.iw = null;
-          else S.lay.rw = df.rw;
+          if (S.view === "gen") prefs().iw = null;
+          else prefs().rw = df.rw;
         }
         save();
         layRelease();
@@ -203,8 +210,10 @@ export function initEdges() {
   /* the image area's top and bottom edges (Generating, side by side): the largest height the picture may be. The edge
    follows the cursor and the other one holds still; on release it all glides into place (height → width → centring). */
   (function () {
+    /** the picture's edge being dragged: which, where it started, the picture's size and top then, the room it has
+     * @type {{ e: string, x0: number, y0: number, w0: number, h0: number, t0: number, full: number } | null} */
     let d = null;
-    document.querySelectorAll(".hedge").forEach(h => {
+    qa(".hedge").forEach(h => {
       h.addEventListener("pointerenter", () => $("right").classList.add("edgehint"));
       h.addEventListener("pointerleave", () => {
         if (!d) $("right").classList.remove("edgehint");
@@ -216,7 +225,7 @@ export function initEdges() {
         h.setPointerCapture(ev.pointerId); /* Vertical too (its own limit) */
         const f = $("frame");
         d = {
-          e: h.dataset.e,
+          e: /** @type {string} */ (h.dataset.e),
           x0: ev.clientX,
           y0: ev.clientY,
           w0: f.offsetWidth,
@@ -241,7 +250,7 @@ export function initEdges() {
         const nh = Math.max(200, Math.min(d.full, want));
         lay.vh = nh;
         lay.vtop = side ? d.t0 + (d.h0 - nh) / 2 : d.e === "b" ? d.t0 : d.t0 + (d.h0 - nh);
-        S.lay[document.querySelector(".app.stacked") ? "vih" : "ih"] = nh / d.full;
+        prefs()[q(".app.stacked") ? "vih" : "ih"] = nh / d.full;
         sizeFrame();
       });
       const up = () => {
@@ -249,8 +258,8 @@ export function initEdges() {
         d = null;
         lay.vh = null;
         lay.vtop = null;
-        if (S.lay.ih > 0.995) S.lay.ih = null;
-        if (S.lay.vih > 0.995) S.lay.vih = null;
+        if ((prefs().ih ?? 0) > 0.995) prefs().ih = null; // no cap: the same as before (no)
+        if ((prefs().vih ?? 0) > 0.995) prefs().vih = null;
         document.body.classList.remove("vresizing", "laydrag");
         $("right").classList.remove("edgehint");
         save();
@@ -259,7 +268,7 @@ export function initEdges() {
       h.addEventListener("pointerup", up);
       h.addEventListener("pointercancel", up);
       h.addEventListener("dblclick", () => {
-        S.lay[document.querySelector(".app.stacked") ? "vih" : "ih"] = null;
+        prefs()[q(".app.stacked") ? "vih" : "ih"] = null;
         save();
         sizeFrame();
       });
@@ -268,7 +277,8 @@ export function initEdges() {
   /* the edit buttons appear while the pointer is over the picture or the column beside it (one zone, so you never chase
    them) and stay ~300 ms after it leaves, so a diagonal path doesn't lose them */
   (function () {
-    let t = null;
+    /** @type {number | undefined} */
+    let t;
     const on = () => {
         clearTimeout(t);
         $("stage").classList.add("tools");
@@ -281,7 +291,7 @@ export function initEdges() {
           document.body.classList.remove("navs");
         }, 300);
       };
-    for (const el of [$("frame"), $("gtools"), ...document.querySelectorAll(".gnav")]) {
+    for (const el of [$("frame"), $("gtools"), ...qa(".gnav")]) {
       el.addEventListener("pointerenter", on);
       el.addEventListener("pointerleave", off);
     }
@@ -289,6 +299,8 @@ export function initEdges() {
   (function () {
     const L = $("left"),
       col = $("lcol");
+    /** a Vertical side edge being dragged: which side, where the pointer started, the box's width then
+     * @type {{ side: string, x0: number, w0: number } | null} */
     let d = null;
     for (const side of ["l", "r"]) {
       const h = document.createElement("div");
@@ -296,7 +308,7 @@ export function initEdges() {
       h.dataset.tip = "Drag to resize the prompt box · double-click for its default width";
       L.appendChild(h);
       h.addEventListener("pointerdown", ev => {
-        if (!document.querySelector(".app.stacked") || ev.button !== 0) return;
+        if (!q(".app.stacked") || ev.button !== 0) return;
         ev.preventDefault();
         ev.stopPropagation();
         h.setPointerCapture(ev.pointerId);
@@ -314,7 +326,7 @@ export function initEdges() {
         const w = Math.max(Math.min(PWMIN, max), Math.min(max, d.w0 + (side === "r" ? dx : -dx)));
         S.vfit = false;
         S.lay = S.lay || layDef();
-        S.lay.sw = w;
+        prefs().sw = w;
         col.style.setProperty("--sw", w + "px");
         col.style.setProperty("--soff", ((side === "r" ? 1 : -1) * (w - d.w0)) / 2 + "px");
       }); /* the other edge stays put */
@@ -330,7 +342,7 @@ export function initEdges() {
       h.addEventListener("pointerup", up);
       h.addEventListener("pointercancel", up);
       h.addEventListener("dblclick", () => {
-        if (S.lay) S.lay.sw = null;
+        if (S.lay) prefs().sw = null;
         S.vfit = false;
         save();
         updHm();

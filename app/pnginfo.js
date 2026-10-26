@@ -2,7 +2,8 @@
 import { esc, renderAll, toast } from "./boot.js";
 import { $ } from "./dom.js";
 import { SIZES } from "./presets.js";
-import { LORAS, P, S, save, setDraft } from "./state.js";
+import { setDraft } from "./prompt.js";
+import { LORAS, P, S, save } from "./state.js";
 import { showView } from "./tabs.js";
 
 /* ======================= PNG info (real) ======================= */

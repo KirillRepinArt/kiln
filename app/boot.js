@@ -4,8 +4,9 @@ import { renderChips } from "./chips.js";
 import { $ } from "./dom.js";
 import { jobs } from "./jobs.js";
 import { renderLoras } from "./loras.js";
-import { peekJob, saveJobName, updPrompt } from "./peek.js";
+import { saveJobName, updPrompt } from "./peek.js";
 import { renderPills } from "./pills.js";
+import { nameUI, peekJob } from "./prompt.js";
 import { renderQueue } from "./queue.js";
 import { applyFont, applyGlass, applyTheme } from "./settings.js";
 import { P, S, save } from "./state.js";
@@ -73,48 +74,6 @@ export function renderAll() {
   renderChips();
   if (S.view === "queue") renderQueue();
   if (S.view === "loras") renderLoras();
-}
-let nnT = null;
-export function slugify(n) {
-  return (
-    n
-      .toLowerCase()
-      .replace(/[^\p{L}\p{N}_]+/gu, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 60) || "kiln"
-  );
-} // same rule as server.py
-function nameTip(file) {
-  $("pname").dataset.tip = file
-    ? `Names the image files · next: ${file}`
-    : "Optional — names the image files (name-001.png, name-002.png…). Without a name: date and seed";
-}
-function nextHint() {
-  const n = (S.pname || "").trim();
-  if (!n) {
-    nameTip(null);
-    return;
-  }
-  clearTimeout(nnT);
-  nnT = setTimeout(
-    () =>
-      fetch("/api/nextname?name=" + encodeURIComponent(n))
-        .then(r => r.json())
-        .then(d => nameTip(d.file))
-        .catch(() => {}),
-    250,
-  );
-}
-export function nameUI() {
-  const l = document.querySelector(".plbl");
-  l.classList.toggle("peekname", !!peekJob);
-  if (peekJob) {
-    $("pname").dataset.tip = "";
-    return;
-  } /* its file name shows beside it on hover */
-  nextHint();
-  l.classList.toggle("hasname", !!S.pname.trim());
-  l.classList.toggle("dimname", !!S.pname.trim() && !P.value.trim());
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */

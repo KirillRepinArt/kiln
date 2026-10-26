@@ -2,6 +2,7 @@
 import { $ } from "./dom.js";
 import { setThumbs } from "./forge.js";
 import { shownDone } from "./picstate.js";
+import { draft, setDraft } from "./prompt.js";
 
 /* LoRA names → what the list shows: people LoRAs named krea2_<name>_v<N>… become "Name" + their version tags */
 export function parseName(file, folder) {
@@ -20,6 +21,7 @@ export function parseName(file, folder) {
     tags: "",
   };
 }
+/** @type {import("./types.js").Lora[]} */
 export const LORAS = []; /* filled from Forge's LoRA list (live.js loadModels) — never saved before that arrives */
 
 /* ======================= state ======================= */
@@ -38,12 +40,7 @@ export const S = {
   theme: "ice",
   oneFace: true,
   lfilter: "all",
-};
-export let draft = "";
-/* other files replace the draft only through this: a module's variables can be assigned only inside it */
-export function setDraft(text) {
-  draft = text;
-} /* settings of the removed demo mode */
+}; /* settings of the removed demo mode */
 /* LoRA entries are merged, never replaced: a LoRA this page doesn't know right now (none at start-up, before
    Forge's list arrives; a LoRA moved away for a while) keeps its saved name, weight and star. Replacing the list once
    wiped every renamed LoRA (2026-10-18). */
@@ -76,7 +73,8 @@ export function save() {
     );
   } catch (e) {}
 }
-export const P = $("prompt");
+/** the prompt's text area (CodeMirror sits over it; it keeps the text in step) */
+export const P = /** @type {HTMLTextAreaElement} */ ($("prompt"));
 
 /* ======================= icons ======================= */
 export const IC = {
@@ -113,7 +111,7 @@ export function initState() {
   try {
     const sv = JSON.parse(localStorage.getItem("kiln_state") || "{}");
     Object.assign(S, sv.S || {});
-    draft = sv.draft || "";
+    setDraft(sv.draft || "");
     delete S.demo;
     delete S.ncount;
   } catch (e) {}

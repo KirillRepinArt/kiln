@@ -5,10 +5,10 @@ import { $ } from "./dom.js";
 import { onJobDone } from "./effects.js";
 import { forgeMsg, loadModels, models, refreshUp } from "./forge.js";
 import { current, jobs, lastDone, replaceJobs } from "./jobs.js";
-import { peekJob, setPeekJob } from "./peek.js";
 import { PV, pv, pvPrune } from "./picstate.js";
 import { SEC_PER_STEP } from "./presets.js";
 import { forgetNextEstimate } from "./progress.js";
+import { peekJob, setPeekJob } from "./prompt.js";
 import { dragId } from "./queue.js";
 import { S, save } from "./state.js";
 

@@ -109,6 +109,24 @@
  */
 
 /**
+ * A LoRA in your library (LORAS, state.js): Forge's list, with what you set on it (saved: the name you gave it, its
+ * weight, on/off, the star, when you used it).
+ * @typedef {object} Lora
+ * @property {string} name      its name in Forge
+ * @property {string} folder    its category folder ("people", "style", "utility" …)
+ * @property {string} display   the name shown (yours, or one made from the file name)
+ * @property {string} tags      version / trainer tags shown under it
+ * @property {number} w         its weight
+ * @property {boolean} on       in the prompt's chips
+ * @property {number} onAt      when it was switched on (the chips' order)
+ * @property {boolean} recipe
+ * @property {string} note      its subfolder / the name inside the file
+ * @property {boolean} fav      starred
+ * @property {number} used      when it was last used (ms)
+ * @property {string | null} thumb  its thumbnail (server URL or data URL)
+ */
+
+/**
  * What the picture area shows (PV, picstate.js) — one state, changed only by events (pv(event)).
  * @typedef {object} PictureView
  * @property {number | null} browse  the finished picture being browsed (the Gallery)

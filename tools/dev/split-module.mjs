@@ -103,7 +103,12 @@ const strip = n =>
         )
       : n;
 const J = x => JSON.stringify(strip(x));
-const now = f => espree.parse(readFileSync(f, "utf8"), OPTS).body.map(decl).filter(Boolean);
+// app imports are left out when checking: until fix-imports runs, a destination may still import a name it now declares
+const now = f =>
+  espree
+    .parse(readFileSync(f, "utf8").replace(/^import \{[^}]*\} from "\.\/[^"]+";\n+/gm, ""), OPTS)
+    .body.map(decl)
+    .filter(Boolean);
 let bad = 0;
 for (const st of ast.body) {
   const n = nameOf(st);

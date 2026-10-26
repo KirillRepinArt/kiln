@@ -1,13 +1,16 @@
+// @ts-check
 /* Kiln · the pills under the prompt: size, ratio, steps, seed, count — their pop-ups, sliders and steppers */
 import { fmt, toast } from "./boot.js";
-import { $ } from "./dom.js";
+import { $, field, hit, qa, target, targetField } from "./dom.js";
 import { sizeFrame } from "./layout.js";
-import { peekJob } from "./peek.js";
 import { pv } from "./picstate.js";
 import { RATIOS, SEC_PER_STEP, SIZES } from "./presets.js";
+import { peekJob } from "./prompt.js";
 import { IC, S, save } from "./state.js";
 
 /* ======================= pills ======================= */
+/** a pop-up's slider row + number box + quick picks @param {string} id @param {number} min @param {number} max
+ * @param {number} val @param {number[]} quick @param {string} hint */
 function slider(id, min, max, val, quick, hint) {
   return `<div class="row"><input type="range" id="${id}R" min="${min}" max="${max}" value="${val}" style="flex:1"><input type="number" id="${id}N" min="1" max="${max * 2}" value="${val}"></div>
   <div class="row" style="justify-content:space-between">${quick.map(q => `<button class="qb ${q === val ? "on" : ""}" data-q="${q}">${q}</button>`).join("")}</div><div class="hint" id="${id}H">${hint}</div>`;
@@ -62,15 +65,17 @@ export function renderPills() {
   sizeFrame();
 }
 export function closePops() {
-  document.querySelectorAll(".pop.show").forEach(p => {
+  qa(".pop.show").forEach(p => {
     p.classList.remove("show");
-    p.parentElement.classList.remove("open");
+    /** @type {HTMLElement} */ (p.parentElement).classList.remove("open");
   });
   renderPills();
 }
+/** a size or shape changed: the picture area reshapes @param {boolean} ch */
 function staleIf(ch) {
   if (ch) pv("shape");
 }
+/** the pills: button, its pop-up, what choosing a value does @type {[string, string, (v: string) => void][]} */
 const PILLS = [
   [
     "pMP",
@@ -90,8 +95,9 @@ const PILLS = [
   ],
   ["pST", "popST", v => (S.steps = +v)],
   ["pN", "popN", v => (S.n = +v)],
-  ["pSD", "popSD", v => (S.seedMode = v)],
+  ["pSD", "popSD", v => (S.seedMode = /** @type {"random" | "fixed"} */ (v))], // the options are those two
 ];
+/** @param {number | string | null | undefined} s */
 export function copySeed(s) {
   if (s == null || s === "") return;
   navigator.clipboard.writeText(String(s)).then(
@@ -99,6 +105,7 @@ export function copySeed(s) {
     () => toast("Couldn't copy the seed"),
   );
 }
+/** v rounded, kept within a … b (a when it isn't a number) @param {number} v @param {number} a @param {number} b */
 function clamp(v, a, b) {
   return Math.max(a, Math.min(b, Math.round(v) || a));
 }
@@ -111,17 +118,17 @@ export function initPills() {
         copySeed(peekJob.seed);
         return;
       } // an old job: the seed pill copies its seed
-      if (e.target.closest(".pop") && !e.target.closest(".opt,.rt,.qb")) return;
-      const o = e.target.closest(".opt,.rt");
+      if (hit(e, ".pop") && !hit(e, ".opt,.rt,.qb")) return;
+      const o = hit(e, ".opt,.rt");
       if (o) {
-        set(o.dataset.v);
+        set(/** @type {string} */ (o.dataset.v)); // every option carries its value
         save();
         closePops();
         return;
       }
-      const q = e.target.closest(".qb");
+      const q = hit(e, ".qb");
       if (q) {
-        set(q.dataset.q);
+        set(/** @type {string} */ (q.dataset.q));
         save();
         pop.classList.remove("show");
         renderPills();
@@ -137,11 +144,11 @@ export function initPills() {
     });
   });
   document.addEventListener("click", e => {
-    if (e.target.closest("#seedCopy")) {
+    if (hit(e, "#seedCopy")) {
       copySeed(S.seed);
       return;
     }
-    if (e.target.closest("#dice")) {
+    if (hit(e, "#dice")) {
       S.seed = Math.floor(Math.random() * 4294967295);
       S.seedMode = "fixed";
       save();
@@ -149,36 +156,37 @@ export function initPills() {
       $("popSD").classList.add("show");
       return;
     }
-    if (!e.target.isConnected || e.target.closest(".pill")) return;
+    if (!target(e).isConnected || hit(e, ".pill")) return;
     closePops();
   });
   document.addEventListener("input", e => {
-    const id = e.target.id;
+    const id = target(e).id;
     if (id === "stR" || id === "stN") {
-      S.steps = clamp(+e.target.value, 1, 60);
-      $(id === "stR" ? "stN" : "stR").value = S.steps;
+      S.steps = clamp(+targetField(e).value, 1, 60);
+      field(id === "stR" ? "stN" : "stR").value = String(S.steps);
       $("vST").innerHTML = S.steps + '<span class="w"> Steps</span>';
       $("stH").textContent = stepsHint();
       save();
     }
     if (id === "cnR" || id === "cnN") {
-      S.n = clamp(+e.target.value, 1, 100);
-      $(id === "cnR" ? "cnN" : "cnR").value = S.n;
+      S.n = clamp(+targetField(e).value, 1, 100);
+      field(id === "cnR" ? "cnN" : "cnR").value = String(S.n);
       $("vN").textContent = "×" + S.n;
       $("cnH").textContent = countHint();
       save();
     }
     if (id === "seedIn") {
-      S.seed = +e.target.value || 0;
+      S.seed = +targetField(e).value || 0;
       S.seedMode = "fixed";
       $("vSD").textContent = "Fixed";
       save();
     }
   });
-  [
+  /** @type {[string, (d: number) => number][]} the steppers: the wheel over a pill nudges its value */
+  ([
     ["pST", d => (S.steps = clamp(S.steps + d, 1, 60))],
     ["pN", d => (S.n = clamp(S.n + d, 1, 100))],
-  ].forEach(([id, f]) =>
+  ]).forEach(([id, f]) =>
     $(id).addEventListener(
       "wheel",
       e => {

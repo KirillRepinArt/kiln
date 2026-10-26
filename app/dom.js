@@ -16,3 +16,9 @@ export const qa = (sel, root = document) => /** @type {HTMLElement[]} */ ([...ro
 /* the element matching `sel` that an event hit — its target or the nearest one round it (null: none) */
 /** @param {Event} e @param {string} sel @returns {HTMLElement | null} */
 export const hit = (e, sel) => /** @type {HTMLElement | null} */ (target(e).closest(sel));
+/* a form field by id — an <input>, <textarea> or <select> (index.html): its value, read-only state, placeholder … */
+/** @param {string} id @returns {HTMLInputElement} */
+export const field = id => /** @type {HTMLInputElement} */ (document.getElementById(id));
+/* the form field an event happened on (an input / change event of a field) */
+/** @param {Event} e @returns {HTMLInputElement} */
+export const targetField = e => /** @type {HTMLInputElement} */ (e.target);

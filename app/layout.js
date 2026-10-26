@@ -71,6 +71,11 @@ export function tabsW() {
 export function minRight() {
   return Math.max(420, tabsW() + 2);
 }
+/* your sizes, as the layout keeps them — it makes them (from the defaults) the first time it lays out, at start-up,
+   so anything you can drag finds them there */
+export function prefs() {
+  return /** @type {LayoutPrefs} */ (S.lay);
+}
 /* saved layouts of older versions → today's (once, at start-up: main.js) */
 export function migrateLayoutPrefs() {
   S.lay = upgradeLayoutPrefs(S.lay, layW());

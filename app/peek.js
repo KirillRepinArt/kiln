@@ -1,28 +1,26 @@
+// @ts-check
 /* Kiln · the prompt peek: a job's prompt shown in the box (a finished picture's, a waiting job's), the Reuse bar,
    saving a waiting job's name, Start as Vary while a prompt is shown */
 import { renameFile, renameJob } from "./actions.js";
-import { nameUI, renderAll, slugify, toast } from "./boot.js";
+import { renderAll, toast } from "./boot.js";
 import { layoutLeft } from "./cardlayout.js";
 import { renderChips } from "./chips.js";
-import { $ } from "./dom.js";
+import { $, field, q } from "./dom.js";
 import { PV, pv } from "./picstate.js";
 import { renderPills } from "./pills.js";
 import { keepSeedUI } from "./pnginfo.js";
-import { LORAS, P, S, draft, save, setDraft } from "./state.js";
+import { draft, nameUI, peekJob, setDraft, setPeekJob, slugify } from "./prompt.js";
+import { LORAS, P, S, save } from "./state.js";
 
-export let peekJob = null;
-/* written from other files only through these */
-export function setPeekJob(j) {
-  peekJob = j;
-}
 /* the peek bar only offers what would change something: no "Reuse prompt" when the prompt is already your draft;
    "Use this seed" when only the seed differs; nothing but ✕ when it all matches */
+/** @param {import("./types.js").Job} j */
 function sameLoras(j) {
   const on = LORAS.filter(l => l.on),
     jl = j.loras || [];
   return (
     on.length === jl.length &&
-    jl.every(x => {
+    jl.every((/** @type {import("./types.js").LoraUse} */ x) => {
       const l = on.find(l => l.name === x.name);
       return l && Math.abs(l.w - x.w) < 1e-6;
     })
@@ -38,7 +36,8 @@ export function peekButtons() {
     seedSame = S.seedMode === "fixed" && +S.seed === +j.seed;
   $("pkPrompt").style.display = "";
   const all = $("pkAll");
-  const lbl = (lg, sm) => `<span class="lg">${lg}</span><span class="sm">${sm}</span>`; // the short form shows when the box is narrow
+  const lbl = (/** @type {string} */ lg, /** @type {string} */ sm) =>
+    `<span class="lg">${lg}</span><span class="sm">${sm}</span>`; // the short form shows when the box is narrow
   all.style.display = "";
   all.dataset.m = "all";
   all.innerHTML = lbl("Reuse all", "All");
@@ -46,20 +45,21 @@ export function peekButtons() {
   $("peekLbl").textContent =
     `#${j.id}${j.status === "running" ? " · generating" : ""}${pSame && sSame && seedSame ? " · same as your draft" : ""}`;
 }
+/** show a job's prompt in the box @param {import("./types.js").Job} j */
 export function loadJob(j) {
-  peekJob = j;
+  setPeekJob(j);
   P.value = j.raw || j.prompt;
   P.readOnly = true;
   P.classList.add("peek");
   P.scrollTop = 0;
-  const n = $("pname");
+  const n = field("pname");
   delete n.dataset.title;
   n.value = j.name || "";
   n.placeholder = j.status === "pending" ? "Name this job" : "Unnamed";
   n.readOnly = !(j.status === "pending" || (j.status === "done" && j.file && !j.missing));
   $("pnSave").classList.remove("show");
   $("pnSave").textContent = j.status === "done" ? "Rename" : "Save name";
-  document.querySelector(".plbl").classList.toggle("donename", j.status === "done");
+  q(".plbl").classList.toggle("donename", j.status === "done");
   fnShow(false);
   peekButtons();
   $("peekbar").classList.add("show");
@@ -84,18 +84,18 @@ export function endPeek() {
 /* the prompt box shows your draft again */
 export function peekHide() {
   if (!peekJob) return;
-  peekJob = null;
+  setPeekJob(null);
   P.readOnly = false;
   P.classList.remove("peek");
   P.value = draft;
-  const n = $("pname");
+  const n = field("pname");
   n.value = S.pname || "";
   n.placeholder = "Add name";
   n.readOnly = false;
   $("peekbar").classList.remove("show");
   $("pnSave").classList.remove("show");
   $("left").classList.remove("peeking");
-  document.querySelector(".plbl").classList.remove("donename", "fnon");
+  q(".plbl").classList.remove("donename", "fnon");
   renderChips();
   renderPills();
   updPrompt();
@@ -104,13 +104,13 @@ export function peekHide() {
 export function saveJobName() {
   const j = peekJob;
   if (!j) return;
-  const v = $("pname").value.trim();
+  const v = field("pname").value.trim();
   if (j.status === "done") {
     $("pnSave").classList.remove("show");
     renameFile(j, v).then(ok => {
-      if (!ok) $("pname").value = j.name || "";
+      if (!ok) field("pname").value = j.name || "";
     });
-    $("pname").blur();
+    field("pname").blur();
     return;
   }
   if (j.status !== "pending") return;
@@ -120,19 +120,24 @@ export function saveJobName() {
 }
 /* hovering a finished picture's title shows its file name in place: the title as it is on disk (lower case, dashes),
    its number and .png on either side, and the job's #. Editing it renames the file (the series and the next number) */
+/** a 2D context for measuring the title's text (made once) @type {CanvasRenderingContext2D | undefined} */
+let measureCtx;
+/** @param {boolean} on */
 export function fnShow(on) {
   const j = peekJob,
-    n = $("pname"),
-    l = document.querySelector(".plbl");
+    n = field("pname"),
+    l = q(".plbl");
   if (!j || j.status !== "done" || !j.file || document.activeElement === n || $("pnSave").classList.contains("show"))
     on = false;
-  if (on) {
+  if (on && j && j.file) {
     const m = j.file.match(/^(.*?)(-\d{3,}(?:_x[\d.]+)?)(\.png)$/i),
       named = m && (j.name || "").trim() && slugify(j.name) === m[1];
     $("fnPre").textContent = `#${j.id}`;
     $("fnSuf").textContent = named ? m[2] + m[3] : ` · ${j.file}`;
     /* up against the title's TEXT (the field is wider: a minimum width and its edit padding) */
-    const c = fnShow.c || (fnShow.c = document.createElement("canvas").getContext("2d")),
+    const c =
+        measureCtx ||
+        (measureCtx = /** @type {CanvasRenderingContext2D} */ (document.createElement("canvas").getContext("2d"))),
       cs = getComputedStyle(n);
     c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
     const tw = c.measureText(n.value || n.placeholder).width,
@@ -142,6 +147,7 @@ export function fnShow(on) {
   } /* the title stays exactly as it is; its number and .png appear beside it */
   l.classList.toggle("fnon", on);
 }
+/** your draft becomes this job's prompt (all: and its settings, LoRAs, series) @param {boolean} all @param {boolean} [seedToo] */
 export function reuse(all, seedToo) {
   const j = peekJob;
   const fixed = !!(seedToo || S.keepSeed);
@@ -183,7 +189,7 @@ export function reuse(all, seedToo) {
       setDraft(prev.draft);
       P.value = draft;
       Object.assign(S, prev.S);
-      $("pname").value = S.pname || "";
+      field("pname").value = S.pname || "";
       LORAS.forEach((l, i) => Object.assign(l, prev.loras[i]));
       save();
       renderAll();
@@ -201,7 +207,7 @@ export function updPrompt() {
   $("play").classList.toggle("off", vary ? false : !P.value.trim() || !!peekJob);
   $("play").classList.toggle("vary", vary);
   $("play").dataset.tip = vary
-    ? `Vary: #${peekJob.id} again with a new seed — same prompt, settings and LoRAs; your draft stays (Ctrl+Enter)`
+    ? `Vary: #${/** @type {import("./types.js").Job} */ (peekJob).id} again with a new seed — same prompt, settings and LoRAs; your draft stays (Ctrl+Enter)`
     : peekJob
       ? "Choose Reuse first"
       : !P.value.trim()
@@ -212,8 +218,8 @@ export function updPrompt() {
    from main.js, right after initQueue) */
 export function initPeek() {
   (function () {
-    const l = document.querySelector(".plbl"),
-      n = $("pname");
+    const l = q(".plbl"),
+      n = field("pname");
     l.addEventListener("mouseenter", () => fnShow(true));
     l.addEventListener("mouseleave", () => fnShow(false));
     n.addEventListener("focus", () => fnShow(false));

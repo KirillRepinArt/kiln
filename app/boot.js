@@ -57,7 +57,7 @@ function toastPlace(at) {
 /** @type {number | undefined} */
 let tt;
 /** a message; with btn + fn, a button (Undo …); at = under that tab
- * @param {string} m @param {string} [btn] @param {() => void} [fn] @param {string} [at] */
+ * @param {string} m @param {string} [btn] @param {(() => void) | null} [fn] @param {string} [at] */
 export function toast(m, btn, fn, at) {
   $("toastMsg").textContent = m;
   toastPlace(at);

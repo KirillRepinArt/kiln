@@ -27,6 +27,7 @@
  * @property {number} h
  * @property {number} steps
  * @property {number} seed
+ * @property {string} [as_file]  render again: back under this file name, if it's free
  * @property {LoraUse[]} loras
  * @property {string} [checkpoint]
  * @property {string[]} [modules]  VAE / text encoder files
@@ -109,6 +110,16 @@
  * @property {number} [ph]           an old saved prompt height (dropped when the layout applies)
  * @property {Record<string, any>} [set]  Settings dialog choices (theme parts, cover, model, sampler, upscaler …;
  *                                      mostly strings — fontPicked is a 1)
+ */
+
+/**
+ * What the image generator offers, as the server sends it (GET /api/models, server/catalog.py).
+ * @typedef {object} Models
+ * @property {string[]} checkpoints
+ * @property {{ name: string, file: string }[]} modules  VAEs and text encoders
+ * @property {string[]} upscalers
+ * @property {{ name: string, folder: string, category: string, internal: string, thumb: string | null }[]} loras
+ * @property {{ sd_model_checkpoint?: string, forge_additional_modules?: string[] }} current  what it has loaded
  */
 
 /**

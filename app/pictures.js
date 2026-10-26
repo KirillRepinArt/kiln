@@ -1,3 +1,4 @@
+// @ts-check
 /* Kiln · pictures: the real files and the live previews — loading, the small cache, drawing them on a canvas,
    the cross-fade between two, the missing-file card */
 import { $ } from "./dom.js";
@@ -6,8 +7,12 @@ import { shownDone } from "./picstate.js";
 import { S } from "./state.js";
 
 /* ---------- images: real files and live previews, cached ---------- */
-export const imgs = new Map(),
+export const imgs =
+    /** @type {Map<string | null, { i: HTMLImageElement, p: Promise<HTMLImageElement | null> }>} the decoded pictures, by URL (null: no file — never found) */ (
+      new Map()
+    ),
   IMAX = 16; /* the pictures used last (the cache used to keep every picture you'd seen, decoded) */
+/** a picture, decoding (from the cache when it's there) @param {string} url */
 export function img(url) {
   let e = imgs.get(url);
   if (e) {
@@ -26,15 +31,17 @@ export function img(url) {
   };
   i.src = url;
   imgs.set(url, e);
-  while (imgs.size > IMAX) imgs.delete(imgs.keys().next().value);
+  while (imgs.size > IMAX) imgs.delete(/** @type {string} */ (imgs.keys().next().value)); // the oldest
   return e;
 }
 export function __imgsN() {
   return imgs.size;
 }
+/** @param {import("./types.js").Job} j @returns {string | null} */
 export function urlFor(j) {
   return j.file ? `/files/${encodeURIComponent(j.file)}?j=${j.id}` : null;
 }
+/** @param {HTMLCanvasElement} cv @param {HTMLImageElement} im @param {boolean} natural at the picture's own size (the viewer) */
 export function drawTo(cv, im, natural) {
   const dpr = devicePixelRatio || 1,
     iw = im.naturalWidth,
@@ -44,21 +51,21 @@ export function drawTo(cv, im, natural) {
       cv.width = iw;
       cv.height = ih;
     }
-    const c = cv.getContext("2d");
+    const c = /** @type {CanvasRenderingContext2D} */ (cv.getContext("2d"));
     c.drawImage(im, 0, 0);
     return;
   }
   // the canvas takes its box's shape; the image keeps its own (a preview of another shape never gets stretched)
   const fd = cv.id === "cv" && $("frame").dataset,
-    cw = (fd && +fd.tw) || cv.clientWidth || 300,
-    ch = (fd && +fd.th) || cv.clientHeight || Math.round((cw * ih) / iw);
+    cw = (fd && +(/** @type {string} */ (fd.tw))) || cv.clientWidth || 300,
+    ch = (fd && +(/** @type {string} */ (fd.th))) || cv.clientHeight || Math.round((cw * ih) / iw);
   const W = Math.max(64, Math.round(cw * dpr)),
     H = Math.max(64, Math.round(ch * dpr));
   if (cv.width !== W || cv.height !== H) {
     cv.width = W;
     cv.height = H;
   }
-  const c = cv.getContext("2d");
+  const c = /** @type {CanvasRenderingContext2D} */ (cv.getContext("2d"));
   c.imageSmoothingQuality = "high";
   c.clearRect(0, 0, W, H);
   const k = cv.id === "cv" ? Math.min(W / iw, H / ih) : Math.max(W / iw, H / ih);
@@ -69,22 +76,24 @@ export function drawTo(cv, im, natural) {
     and a file that's gone says so */
 /* switching pictures: the one on show is copied to an overlay (#cvx) at its own size and fades out once the next is
     drawn — never an empty frame in between (Photos / Lightroom). The neighbours are decoded ahead (preload) */
+/** @param {HTMLCanvasElement} cv @param {number} id */
 function xfadeFrom(cv, id) {
-  const x = $("cvx");
+  const x = /** @type {HTMLCanvasElement & { _t?: number }} */ ($("cvx"));
   if (!x || x.dataset.wait || cv.id !== "cv" || cv.width < 2 || !cv.dataset.shown || cv.dataset.shown === String(id))
     return; /* already taken (xfadeSnap, before the box changed) */
   x.width = cv.width;
   x.height = cv.height;
-  x.getContext("2d").drawImage(cv, 0, 0);
+  /** @type {CanvasRenderingContext2D} */ (x.getContext("2d")).drawImage(cv, 0, 0);
   x.style.width = cv.style.width;
   x.style.height = cv.style.height;
   x.style.transition = "none";
   x.style.opacity = "1";
   x.dataset.wait = "1";
 }
+/** @param {HTMLCanvasElement} cv @param {number} id */
 function xfadeGo(cv, id) {
   if (cv.id !== "cv") return;
-  cv.dataset.shown = id;
+  cv.dataset.shown = /** @type {any} */ (id);
   cv.dataset.cw = cv.style.width;
   cv.dataset.ch = cv.style.height;
   const x = $("cvx");
@@ -102,12 +111,12 @@ function xfadeGo(cv, id) {
 /* any other change of what's on show (leaving the Gallery, ✕, the render taking over): the picture fades out the same
     way — over whatever comes next (a render's first preview), or at once if nothing does (a clean screen) */
 export function xfadeSnap() {
-  const cv = $("cv"),
-    x = $("cvx");
+  const cv = /** @type {HTMLCanvasElement} */ ($("cv")),
+    x = /** @type {HTMLCanvasElement & { _t?: number }} */ ($("cvx"));
   if (!x || cv.width < 2) return;
   x.width = cv.width;
   x.height = cv.height;
-  x.getContext("2d").drawImage(cv, 0, 0);
+  /** @type {CanvasRenderingContext2D} */ (x.getContext("2d")).drawImage(cv, 0, 0);
   x.style.width = cv.style.width;
   x.style.height = cv.style.height;
   x.style.transition = "none";
@@ -124,6 +133,7 @@ export function xfadeEnd() {
   x.style.transition = "";
   x.style.opacity = "0";
 }
+/** @param {import("./types.js").Job} j */
 export function preload(j) {
   const u = urlFor(j);
   if (!u || j.missing) return;
@@ -132,18 +142,19 @@ export function preload(j) {
     e.i.decode().catch(() => {});
   } catch (_) {}
 }
+/** a finished picture onto a canvas (the frame's, the viewer's) @param {HTMLCanvasElement} cv @param {import("./types.js").Job} j */
 export function paint(cv, j) {
   const u = urlFor(j);
   if (!u) return;
   xfadeFrom(cv, j.id);
   if (j.missing) {
-    cv.dataset.want = j.id;
-    if (cv.id === "cv") missing(cv, j);
+    cv.dataset.want = /** @type {any} */ (j.id);
+    if (cv.id === "cv") missing(cv);
     return;
   }
   const e = img(u),
     nat = cv.id === "vcv";
-  cv.dataset.want = j.id;
+  cv.dataset.want = /** @type {any} */ (j.id);
   if (e.i.complete && e.i.naturalWidth) {
     drawTo(cv, e.i, nat);
     xfadeGo(cv, j.id);
@@ -160,22 +171,23 @@ export function paint(cv, j) {
       xfadeGo(cv, j.id);
     } else {
       imgs.delete(u);
-      missing(cv, j);
+      missing(cv);
       xfadeGo(cv, j.id);
     }
   });
 }
+/** the missing-file card's dark ground, at the box's size @param {HTMLCanvasElement} cv */
 export function missing(cv) {
   const dpr = devicePixelRatio || 1,
     fd = cv.id === "cv" && $("frame").dataset,
-    W = Math.max(64, Math.round(((fd && +fd.tw) || cv.clientWidth || 300) * dpr)),
+    W = Math.max(64, Math.round(((fd && +(/** @type {string} */ (fd.tw))) || cv.clientWidth || 300) * dpr)),
     H = Math.max(
       64,
-      Math.round(((fd && +fd.th) || cv.clientHeight || 300) * dpr),
+      Math.round(((fd && +(/** @type {string} */ (fd.th))) || cv.clientHeight || 300) * dpr),
     ); /* the box's target size (it may be mid-glide) */
   cv.width = W;
   cv.height = H;
-  const c = cv.getContext("2d");
+  const c = /** @type {CanvasRenderingContext2D} */ (cv.getContext("2d"));
   c.fillStyle = "#0b0b0e";
   c.fillRect(0, 0, W, H);
 } /* the words and the ways back are on the card (#missCard) */
@@ -183,6 +195,7 @@ export function missing(cv) {
 /** a missing file in the Recycle Bin, by job id: true found, false not there, null still looking */
 /** @type {Record<number, boolean | null>} */
 export const inBin = {};
+/** @param {import("./types.js").Job | null | undefined} d */
 export function missUI(d) {
   const on = !!(d && d.missing && S.view === "gen");
   $("frame").classList.toggle("missing", on);

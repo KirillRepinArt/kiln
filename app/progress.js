@@ -126,7 +126,7 @@ export function frame() {
         const jid = j.id;
         i.onload = () => {
           if (+(/** @type {string} */ ($("cv").dataset.j)) === jid && picMode() === "live") {
-            drawTo($("cv"), i, false);
+            drawTo(/** @type {HTMLCanvasElement} */ ($("cv")), i, false);
             xfadeEnd();
           }
           lastPrev = r;
@@ -197,7 +197,7 @@ export function frame() {
           setTimeout(() => f.classList.remove("reveal"), 1200);
           setJustDone(null);
         }
-        paint($("cv"), d);
+        paint(/** @type {HTMLCanvasElement} */ ($("cv")), d);
       }
       $("frame").classList.add("has");
       $("idle").style.display = "none";

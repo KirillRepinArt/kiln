@@ -21,7 +21,7 @@ export function openViewer(j) {
   const [w, h] = SIZES[j.mp][j.ar];
   V.w = w;
   V.h = h;
-  const cv = $("vcv");
+  const cv = /** @type {HTMLCanvasElement} */ ($("vcv"));
   paint(cv, j);
   cv.style.width = w + "px";
   cv.style.height = h + "px";

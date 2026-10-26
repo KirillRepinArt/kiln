@@ -305,7 +305,7 @@ export function initQueue() {
       if (!im.matches || !im.matches("img.qt") || im.dataset.tried) return;
       im.dataset.tried = "1";
       const j = jobs.find(x => x.id === Number(im.dataset.qt || 0));
-      if (j) makeQThumb(j, im);
+      if (j) makeQThumb(j, /** @type {HTMLImageElement} */ (im)); // the error came from an <img>
     },
     true,
   );

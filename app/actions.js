@@ -1,3 +1,4 @@
+// @ts-check
 /* Kiln · queue actions sent to the server: add, Vary, stop, remove, delete (with Undo), rename, pause, reorder */
 import { renderAll, toast } from "./boot.js";
 import { $ } from "./dom.js";
@@ -17,6 +18,7 @@ import { V, closeViewer, openViewer } from "./viewer.js";
 /* ---------- queue actions -> server ---------- */
 /* Start in the Gallery = Vary: the picture on show again — its prompt, settings, LoRAs and series — with a new seed.
    Your draft isn't touched, and you stay where you are (Midjourney's Vary; Reuse is for editing first) */
+/** @param {import("./types.js").Job} j */
 export async function vary(j) {
   if (j.kind === "upscale") {
     toast("Variations come from generated pictures, not upscales");
@@ -85,17 +87,22 @@ export async function addJobs() {
   if (!forgeOk) setTimeout(() => toast("Queued — Forge isn't running yet, jobs start when it is"), 2300);
   poll();
 }
+/** @param {import("./types.js").Job | null | undefined} j */
 export async function stopJob(j) {
   if (!j) return;
   if (j.status === "running") j.stopping = true;
   await api(`/api/jobs/${j.id}/cancel`, {});
   poll();
 }
+/** @param {import("./types.js").Job} j */
 export function openInApp(j) {
   return api("/api/open", { id: j.id });
 }
+/** the queue thumbnails still to make: the job, and the <img> waiting for it
+ * @type {[import("./types.js").Job, HTMLImageElement | undefined][]} */
 const qtq = [];
 let qtBusy = false;
+/** @param {import("./types.js").Job | null | undefined} j @param {HTMLImageElement} [el] */
 export function makeQThumb(j, el) {
   if (!j || j.missing || !j.file || j.status !== "done" || qtq.some(x => x[0].id === j.id)) return;
   qtq.push([j, el]);
@@ -121,16 +128,26 @@ async function qtNext() {
             i.decoding = "async";
             i.onload = () => r(i);
             i.onerror = () => r(null);
-            i.src = urlFor(j);
+            i.src = /** @type {string} */ (urlFor(j));
           }); /* not via the cache: hundreds of thumbnails mustn't push the pictures you browse out of it */
     if (im) {
       const Z = 120,
         c = document.createElement("canvas");
       c.width = c.height = Z;
       const s = Math.min(im.naturalWidth, im.naturalHeight);
-      c.getContext("2d").drawImage(im, (im.naturalWidth - s) / 2, (im.naturalHeight - s) / 2, s, s, 0, 0, Z, Z);
+      /** @type {CanvasRenderingContext2D} */ (c.getContext("2d")).drawImage(
+        im,
+        (im.naturalWidth - s) / 2,
+        (im.naturalHeight - s) / 2,
+        s,
+        s,
+        0,
+        0,
+        Z,
+        Z,
+      );
       const data = c.toDataURL("image/jpeg", 0.82);
-      const t = el || document.querySelector(`img.qt[data-qt="${j.id}"]`);
+      const t = el || /** @type {HTMLImageElement | null} */ (document.querySelector(`img.qt[data-qt="${j.id}"]`));
       if (t) t.src = data;
       await api("/api/qthumb", { id: j.id, data });
     }
@@ -138,8 +155,9 @@ async function qtNext() {
   setTimeout(qtNext, 0);
 }
 /* several at once: one Undo for all (Delete), or off the list (cancelled rows, missing files) */
+/** @param {Iterable<number>} ids */
 export async function deleteMany(ids) {
-  const L = [...ids].map(id => jobs.find(j => j.id === id)).filter(Boolean),
+  const L = /** @type {import("./types.js").Job[]} */ ([...ids].map(id => jobs.find(j => j.id === id)).filter(Boolean)),
     del = L.filter(j => j.status === "done" && j.file && !j.missing),
     rm = L.filter(j => !del.includes(j));
   await Promise.all(
@@ -157,6 +175,7 @@ export async function deleteMany(ids) {
   });
   poll();
 }
+/** @param {Iterable<number>} ids */
 export async function removeMany(ids) {
   await Promise.all([...ids].map(id => api(`/api/jobs/${id}/remove`, {})));
   dropJobs(ids);
@@ -170,6 +189,7 @@ export let dnT = /** @type {number | undefined} */ (/** @type {unknown} */ (null
   dnN = 0,
   dnId = /** @type {number | null} */ (null);
 /* the finished note goes away after ms (restarted by each call) */
+/** @param {number} ms */
 export function dnHideIn(ms) {
   clearTimeout(dnT);
   dnT = setTimeout(dnHide, ms);
@@ -180,20 +200,22 @@ export function dnHide() {
   dn.classList.remove("show");
   dnN = 0;
 }
+/** @param {import("./types.js").Job} j */
 export function doneNote(j) {
   dnN = dn.classList.contains("show") ? dnN + 1 : 1;
   dnId = j.id;
   $("dnTxt").textContent = dnN > 1 ? `${dnN} finished · the last #${j.id}` : `#${j.id} finished`;
-  const im = $("dnImg");
+  const im = /** @type {HTMLImageElement} */ ($("dnImg"));
   if (S.privacy) im.removeAttribute("src");
-  else im.src = urlFor(j);
+  else im.src = /** @type {string} */ (urlFor(j));
   dn.classList.toggle("priv", !!S.privacy);
-  const r = document.querySelector('.tab[data-v="gen"]').getBoundingClientRect();
+  const r = /** @type {Element} */ (document.querySelector('.tab[data-v="gen"]')).getBoundingClientRect();
   dn.style.left = Math.round(r.left + r.width / 2) + "px";
   dn.style.top = Math.round(r.bottom + 10) + "px";
   dn.classList.add("show");
   dnHideIn(6000);
 }
+/** @param {import("./types.js").Job | null | undefined} j */
 export async function removeJob(j) {
   if (!j) return;
   await api(`/api/jobs/${j.id}/remove`, {});
@@ -203,6 +225,7 @@ export async function removeMissing() {
   await api("/api/remove-missing", {});
   poll();
 }
+/** @param {boolean} p */
 export async function setPaused(p) {
   await api("/api/pause", { paused: p });
   window.qPaused = p;
@@ -210,6 +233,7 @@ export async function setPaused(p) {
   poll();
   toast(p ? "Queue paused — the current image finishes, nothing new starts" : "Queue resumed");
 }
+/** @param {import("./types.js").Job} j @param {string} n the series name */
 export async function renameFile(j, n) {
   let r;
   try {
@@ -232,6 +256,7 @@ export async function renameFile(j, n) {
   poll();
   return true;
 }
+/** @param {import("./types.js").Job} j @param {string} n */
 export async function renameJob(j, n) {
   await api(`/api/jobs/${j.id}/name`, { name: n });
   toast(
@@ -240,6 +265,7 @@ export async function renameJob(j, n) {
   poll();
 }
 /* Q1: delete = to the Recycle Bin, with Undo (the server waits 12 s before it really goes) */
+/** @param {import("./types.js").Job | null | undefined} j */
 export async function deleteJob(j) {
   if (!j) return;
   const L = doneList(),
@@ -268,6 +294,7 @@ export async function deleteJob(j) {
   poll();
 } /* the running job's chip: back to the render */
 /* browsing: the status row is the picture's caption — its number, file, shape and size (click: its prompt) */
+/** @param {import("./types.js").Job | null | undefined} b */
 export function capTxt(b) {
   if (!b) return;
   const sp = b.spec || {},
@@ -277,6 +304,7 @@ export function capTxt(b) {
   if ($("ptxt").textContent !== t) $("ptxt").textContent = t;
   $("peta").textContent = "";
 }
+/** an edit button on a picture @param {string | undefined} a its data-a @param {import("./types.js").Job | null | undefined} j */
 export function act(a, j) {
   if (!j) return;
   if (a === "open") return api("/api/open", { id: j.id });

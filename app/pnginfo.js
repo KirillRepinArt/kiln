@@ -1,26 +1,34 @@
+// @ts-check
 /* Kiln · PNG Info tab */
 import { esc, renderAll, toast } from "./boot.js";
-import { $ } from "./dom.js";
+import { $, targetField } from "./dom.js";
 import { SIZES } from "./presets.js";
 import { setDraft } from "./prompt.js";
 import { LORAS, P, S, save } from "./state.js";
 import { showView } from "./tabs.js";
 
 /* ======================= PNG info (real) ======================= */
-export let parsed = null;
+/** what a PNG's generation settings say (parseParams), and its series name (nameFrom)
+ * @typedef {{ prompt: string, steps: number | null, seed: number | null, size: string | null,
+ *   loras: { name: string, w: number }[], cfg: string | null, sampler: string | null, schedule: string | null,
+ *   name?: string }} PngParams */
+/** the PNG on show's settings (null: none loaded) */
+export let parsed = /** @type {PngParams | null} */ (null);
 export const drop = $("drop");
-let kname = null;
+let kname = /** @type {string | null} the name Kiln wrote into the file (kiln_name) */ (null);
 /* the series name: Kiln writes it into its PNGs (kiln_name); older Kiln files give it back from the file name (slug-NNN.png) */
+/** @param {File} f */
 export function nameFrom(f) {
   if (kname) return kname;
   const m = (f.name || "").match(/^(.+?)-\d{3,}(?:_x[\d.]+)?\.png$/i);
   return m && !/^kiln-\d{8}-\d{6}$|^\d+$/.test(m[1]) ? m[1].replace(/-/g, " ") : "";
 }
+/** @param {File} f */
 export async function readPng(f) {
   kname = null;
   try {
     const u = URL.createObjectURL(f);
-    const el = $("pimgEl");
+    const el = /** @type {HTMLImageElement} */ ($("pimgEl"));
     if (el.dataset.u) URL.revokeObjectURL(el.dataset.u);
     el.dataset.u = u;
     el.src = u;
@@ -62,18 +70,19 @@ export async function readPng(f) {
   }
   if (!txt) {
     $("pout").textContent = "No generation settings found in this PNG.";
-    $("pSend").disabled = true;
+    /** @type {HTMLButtonElement} */ ($("pSend")).disabled = true;
     return;
   }
   $("pout").dataset.raw = txt;
   parsed = parseParams(txt);
   parsed.name = nameFrom(f);
   renderPngInfo(txt);
-  $("pSend").disabled = false;
+  /** @type {HTMLButtonElement} */ ($("pSend")).disabled = false;
   $("pRaw").style.display = "";
 }
 
 /* ---------- PNG Info: prompt rendered like the editor + settings table ---------- */
+/** a prompt line, drawn like the editor draws it @param {string} t */
 function piLine(t) {
   const e = esc(t)
     .replace(/&lt;lora:([^&]*?)&gt;/g, '<span class="cm-lora">&lt;lora:$1&gt;</span>')
@@ -84,7 +93,9 @@ function piLine(t) {
   if (/^\s*[^\s:][^:]{0,28}:\s*$/.test(t)) return `<div class="ln lbl">${e}</div>`;
   return `<div class="ln">${e || "&nbsp;"}</div>`;
 }
+/** the settings line → [name, value] pairs @param {string} line */
 function piParams(line) {
+  /** @type {string[][]} */
   const out = [];
   const re = /\s*([^:,]+?):\s*("(?:[^"\\]|\\.)*"|[^,]*)(?:,|$)/g;
   let m;
@@ -93,6 +104,7 @@ function piParams(line) {
   }
   return out;
 }
+/** @param {string} t the PNG's parameters text */
 function renderPngInfo(t) {
   const o = $("pout");
   o.classList.remove("raw");
@@ -111,18 +123,19 @@ function renderPngInfo(t) {
   $("pRaw").textContent = "Show raw text";
 }
 
+/** @param {string} t @returns {PngParams} */
 function parseParams(t) {
   const i = t.search(/\n(Negative prompt:|Steps:)/);
   const prompt = (i >= 0 ? t.slice(0, i) : t).trim();
-  const g = k => {
+  const g = (/** @type {string} */ k) => {
     const m = t.match(new RegExp(k + ":\\s*([^,\\n]+)"));
     return m ? m[1].trim() : null;
   };
   const loras = [...prompt.matchAll(/<lora:([^:>]+):([-\d.]+)>/g)].map(m => ({ name: m[1], w: +m[2] }));
   return {
     prompt: prompt.replace(/<lora:[^>]+>/g, "").trim(),
-    steps: +g("Steps") || null,
-    seed: +g("Seed") || null,
+    steps: +(/** @type {any} */ (g("Steps"))) || null, // missing: +null = 0 → null
+    seed: +(/** @type {any} */ (g("Seed"))) || null,
     size: g("Size"),
     loras,
     cfg: g("CFG scale"),
@@ -145,7 +158,8 @@ export function keepSeedUI() {
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initPnginfo() {
   drop.onclick = () => $("file").click();
-  $("file").onchange = e => e.target.files[0] && readPng(e.target.files[0]);
+  $("file").onchange = e =>
+    /** @type {FileList} */ (targetField(e).files)[0] && readPng(/** @type {FileList} */ (targetField(e).files)[0]);
   ["dragenter", "dragover"].forEach(t =>
     drop.addEventListener(t, e => {
       e.preventDefault();
@@ -159,11 +173,11 @@ export function initPnginfo() {
     }),
   );
   drop.addEventListener("drop", e => {
-    const f = e.dataTransfer.files[0];
+    const f = /** @type {DataTransfer} */ (e.dataTransfer).files[0];
     if (f) readPng(f);
   });
   $("pClear").onclick = () => {
-    const el = $("pimgEl");
+    const el = /** @type {HTMLImageElement} */ ($("pimgEl"));
     if (el.dataset.u) URL.revokeObjectURL(el.dataset.u);
     el.removeAttribute("src");
     el.dataset.u = "";
@@ -173,18 +187,18 @@ export function initPnginfo() {
     o.textContent = "";
     o.dataset.raw = "";
     parsed = null;
-    $("pSend").disabled = true;
+    /** @type {HTMLButtonElement} */ ($("pSend")).disabled = true;
     $("pRaw").style.display = "none";
     $("pClear").style.display = "none";
-    $("file").value = "";
+    /** @type {HTMLInputElement} */ ($("file")).value = "";
   };
   $("pRaw").onclick = () => {
     const o = $("pout");
     if (o.classList.contains("raw")) {
-      renderPngInfo(o.dataset.raw);
+      renderPngInfo(/** @type {string} */ (o.dataset.raw));
     } else {
       o.classList.add("raw");
-      o.textContent = o.dataset.raw;
+      o.textContent = /** @type {string} */ (o.dataset.raw);
       $("pRaw").textContent = "Show formatted";
     }
   };
@@ -205,8 +219,9 @@ export function initPnginfo() {
       S.seedMode = "fixed";
     } else S.seedMode = "random";
     S.set = S.set || {};
+    /** a Settings field: the PNG's value (a menu gets it added if it hasn't it) @param {string} k @param {string} v */
     const setF = (k, v) => {
-      const el = document.querySelector(`[data-set="${k}"]`);
+      const el = /** @type {HTMLSelectElement | null} */ (document.querySelector(`[data-set="${k}"]`));
       if (!el || v == null) return;
       if (el.tagName === "SELECT" && ![...el.options].some(o => o.value === v)) {
         const o = document.createElement("option");
@@ -214,7 +229,7 @@ export function initPnginfo() {
         el.appendChild(o);
       }
       el.value = v;
-      S.set[k] = v;
+      /** @type {Record<string, any>} */ (S.set)[k] = v;
     };
     if (parsed.cfg) setF("cfg", parsed.cfg);
     if (parsed.sampler) setF("sampler", parsed.sampler + (parsed.schedule ? " · " + parsed.schedule : ""));
@@ -241,7 +256,7 @@ export function initPnginfo() {
     });
     if (parsed.name) {
       S.pname = parsed.name;
-      $("pname").value = S.pname;
+      /** @type {HTMLInputElement} */ ($("pname")).value = S.pname;
     }
     save();
     showView("gen");

@@ -1,4 +1,5 @@
-/* CodeMirror 6 prompt editor, bundled in app/vendor/codemirror.js (works offline). If it can't load, the plain
+// @ts-check
+/* Kiln · the prompt editor: CodeMirror 6, bundled in app/vendor/codemirror.js (works offline). If it can't load, the plain
    textarea stays. */
 import { addJobs } from "./actions.js";
 import { layoutLeft } from "./cardlayout.js";
@@ -26,10 +27,14 @@ export async function startEditor() {
       historyKeymap,
       defaultKeymap,
     } = cm;
-    const ta = document.getElementById("prompt"),
-      wrap = ta.parentElement;
-    const proto = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
-    const roProto = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "readOnly");
+    const ta = /** @type {HTMLTextAreaElement} */ (document.getElementById("prompt")),
+      wrap = /** @type {HTMLElement} */ (ta.parentElement);
+    const proto = /** @type {PropertyDescriptor & { get: () => any, set: (v: any) => void }} the textarea's own */ (
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")
+    );
+    const roProto = /** @type {PropertyDescriptor & { get: () => any, set: (v: any) => void }} the textarea's own */ (
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "readOnly")
+    );
     const ro = new Compartment();
     let syncing = false;
     let rfq = 0;
@@ -45,6 +50,7 @@ export async function startEditor() {
     const LIST = /^(\s*)(\d+[.)]|[-*•])\s+/,
       LABEL = /^\s*[A-Za-zА-Яа-яЁё][\w \-/&А-Яа-яЁё]{0,28}:\s*$/,
       COMMENT = /^\s*\/\//;
+    /** the decorations for the visible lines @param {any} view a CodeMirror EditorView (no type declarations) */
     function build(view) {
       const b = new RangeSetBuilder();
       for (const { from, to } of view.visibleRanges) {
@@ -85,17 +91,20 @@ export async function startEditor() {
     }
     const deco = ViewPlugin.fromClass(
       class {
+        /** @param {any} v */
         constructor(v) {
           this.decorations = build(v);
         }
+        /** @param {any} u */
         update(u) {
           if (u.docChanged || u.viewportChanged) this.decorations = build(u.view);
         }
       },
-      { decorations: v => v.decorations },
+      { decorations: (/** @type {any} */ v) => v.decorations },
     );
 
     /* Ctrl+/ toggles // on the selected lines */
+    /** @param {any} view */
     function toggleLineComment(view) {
       const s = view.state;
       const lines = new Set();
@@ -159,7 +168,7 @@ export async function startEditor() {
             ...historyKeymap,
             ...defaultKeymap.filter(k => k.key !== "Mod-Enter"),
           ]),
-          EditorView.updateListener.of(u => {
+          EditorView.updateListener.of((/** @type {any} */ u) => {
             if (u.docChanged && !syncing) {
               proto.set.call(ta, u.state.doc.toString());
               ta.dispatchEvent(new Event("input"));
@@ -168,7 +177,7 @@ export async function startEditor() {
             if (u.docChanged || u.heightChanged || u.geometryChanged) requestAnimationFrame(ovf);
           }),
           EditorView.domEventHandlers({
-            keydown: (e, v) => {
+            keydown: (/** @type {KeyboardEvent} */ e, /** @type {any} */ v) => {
               if (!ta.readOnly) return false;
               if (e.key === "Escape") {
                 ta.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
@@ -240,7 +249,7 @@ export async function startEditor() {
     /* the card animates its size (ratio change, browsing): measure again once it has settled, or a stale height leaves a
     scrollbar showing until the next keystroke */
     {
-      let t = null;
+      let t = /** @type {number | undefined} */ (/** @type {unknown} */ (null));
       new ResizeObserver(() => {
         clearTimeout(t);
         t = setTimeout(() => view.requestMeasure(), 120);

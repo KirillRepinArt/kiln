@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any
 from . import images
 from .errors import ApiError
 from .jobqueue import public
-from .page import build_page
+from .page import build_page, styles_signature
 from .updates import VERSION, check_update
 
 if TYPE_CHECKING:
@@ -159,6 +159,7 @@ class Handler(BaseHTTPRequestHandler):
                         "forge": k.backend.status,
                         "stats": k.timings.stats,
                         "paused": q.flags["paused"],
+                        "styles": styles_signature(k.paths.root),
                     },
                 )
             return self.reply(
@@ -171,6 +172,7 @@ class Handler(BaseHTTPRequestHandler):
                     "out_dir": str(k.paths.out),
                     "version": VERSION,
                     "paused": q.flags["paused"],
+                    "styles": styles_signature(k.paths.root),
                 },
             )
 

@@ -169,7 +169,7 @@ The queue shows which variant each job got, so a good result can be traced back.
 - Closing the Kiln window stops the server once the queue is done.
 - Forge's own UI: Settings → Output → Open Forge.
 - Four skins: Aurora (northern lights), Embers, Matrix (code rain), Starscape — each its colours and its own
-  background, cover and finish; how each looks is a small file in `app/styles/themes/`. Fonts: Geist, Inter, Manrope,
+  background, cover and finish; how each looks is a small file in `app/styles/themes/` (see `docs/CUSTOMIZING.md`). Fonts: Geist, Inter, Manrope,
   IBM Plex Sans, Satoshi (optional, see Offline).
 
 ## How it works

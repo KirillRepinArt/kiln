@@ -5,6 +5,7 @@ import { $ } from "./dom.js";
 import { onJobDone } from "./effects.js";
 import { forgeMsg, loadModels, models, refreshUp } from "./forge.js";
 import { current, jobs, lastDone, replaceJobs } from "./jobs.js";
+import { checkStyles } from "./livestyles.js";
 import { PV, pv, pvPrune } from "./picstate.js";
 import { SEC_PER_STEP } from "./presets.js";
 import { forgetNextEstimate } from "./progress.js";
@@ -61,6 +62,7 @@ export async function poll() {
     forgeMsg("Kiln server not reachable");
     return;
   }
+  checkStyles(s.styles); // a style file was saved: take it in place
   forgeOk = s.forge.ok;
   forgeStarting = !!s.forge.starting;
   if (window.qPaused !== !!s.paused) {

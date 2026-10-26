@@ -13,6 +13,7 @@ from server.config import Paths, load_config
 from server.errors import ApiError
 from server.jobqueue import JobQueue, public
 from server.lifecycle import window_gone
+from server.page import styles_signature
 from server.pictures import Pictures
 from server.updates import version_key
 
@@ -269,6 +270,21 @@ class Misc(unittest.TestCase):
         self.assertTrue(window_gone(t, t - 5, t - 4), "goodbye 4 s ago, no poll since")
         self.assertFalse(window_gone(t, t - 1, t - 4), "a poll after the goodbye: a reload")
         self.assertFalse(window_gone(t, t - 5, t - 2), "goodbye only 2 s ago")
+
+    def test_styles_signature_changes_on_save(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            css = Path(d, "app", "styles", "themes")
+            css.mkdir(parents=True)
+            f = css / "a.css"
+            f.write_text("a{}")
+            s1 = styles_signature(Path(d), now=100.0)
+            self.assertEqual(styles_signature(Path(d), now=100.5), s1, "looked at once a second at most")
+            import os
+
+            os.utime(f, ns=(f.stat().st_atime_ns, f.stat().st_mtime_ns + 10**9))
+            self.assertNotEqual(styles_signature(Path(d), now=101.5), s1, "a save changes it")
+            (css / "b.css").write_text("b{}")
+            self.assertTrue(styles_signature(Path(d), now=103.0).startswith("2."), "a new file counts too")
 
     def test_version_key(self) -> None:
         self.assertEqual(version_key("v0.6"), (0, 6, 0))

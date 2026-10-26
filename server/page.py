@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 
@@ -26,3 +27,21 @@ def build_page(root: Path) -> bytes:
         1,
     )
     return page.encode("utf-8")
+
+
+class _Seen:
+    """The last fingerprint and when it was taken."""
+
+    t = 0.0
+    sig = ""
+
+
+def styles_signature(root: Path, now: float | None = None) -> str:
+    """A fingerprint of the style files (how many, and the newest save) — it changes the moment you save one, so the
+    page swaps the styles in place (live style reload). Looked at no more than once a second."""
+    now = time.monotonic() if now is None else now
+    if now - _Seen.t >= 1 or not _Seen.sig:
+        files = list((root / "app" / "styles").rglob("*.css"))
+        newest = max((f.stat().st_mtime_ns for f in files), default=0)
+        _Seen.t, _Seen.sig = now, f"{len(files)}.{newest}"
+    return _Seen.sig

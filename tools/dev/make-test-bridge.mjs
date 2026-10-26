@@ -21,6 +21,7 @@ for (const f of readdirSync("app").filter(f => f.endsWith(".js"))) {
 const ALIAS = {
   lyFrozen: { get: "card.frozen", uses: ["card", "lyUnfreeze"] },
   lyTop: { get: "card.top", uses: ["card"] },
+  BAR: { get: "BAR()", uses: ["BAR"] }, // a function since the spacing tokens (the part gap is read from the CSS)
 };
 const names = JSON.parse(readFileSync("tools/dev/bridge-names.json", "utf8")).filter(n => owner[n] || ALIAS[n]);
 // what a test may assign, and how the owner takes it

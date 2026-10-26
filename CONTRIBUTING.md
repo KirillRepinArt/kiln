@@ -19,6 +19,11 @@ git config core.hooksPath .githooks           # the checks below run before ever
 - **Linters and formatting** on the files you're committing: ESLint (JavaScript), Stylelint (CSS), Ruff (Python),
   Prettier and `ruff format` (layout). `npm run format` / `.venv\Scripts\ruff format` fix the layout for you.
 
+## The look
+Every colour, gap, corner, type size and timing is a named token in `app/styles/tokens.css`; each skin is a file in
+`app/styles/themes/`. `docs/CUSTOMIZING.md` explains them, and how to add a skin. Saved style changes show in a running Kiln
+without a reload.
+
 ## Types
 The page is plain JavaScript; TypeScript only *checks* it (`npm run typecheck`, also in the hook and CI). Shapes shared
 across files live in `app/types.js` as JSDoc; a file is checked once it starts with `// @ts-check` (adopted file by file).

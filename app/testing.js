@@ -12,6 +12,7 @@ import { up } from "./forge.js";
 import { current, doneList, jobs, lastDone, replaceJobs } from "./jobs.js";
 import { BAR, lay, setDock, sizeFrame, tbW } from "./layout.js";
 import { api, st } from "./live.js";
+import { checkStyles } from "./livestyles.js";
 import { renderLoras } from "./loras.js";
 import { endPeek, fnShow, loadJob, peekHide, reuse, updPrompt } from "./peek.js";
 import { PV, browsed, justDone, pvSync, setJustDone } from "./picstate.js";
@@ -45,6 +46,7 @@ export function installTestBridge() {
     blockSaves: { get: () => blockSaves },
     browseTo: { get: () => browseTo },
     browsed: { get: () => browsed },
+    checkStyles: { get: () => checkStyles },
     chipsH: { get: () => chipsH },
     closePops: { get: () => closePops },
     closeShown: { get: () => closeShown },

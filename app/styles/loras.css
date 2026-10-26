@@ -283,7 +283,7 @@
   position: absolute;
   right: var(--space-2);
   top: 50%;
-  margin-top: calc(var(--space-3) * -1);
+  translate: 0 -50%; /* centred on its top: 50% (a centring offset, not spacing) */
   width: 26px;
   height: 26px;
   border-radius: 50%;

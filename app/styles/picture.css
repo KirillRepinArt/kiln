@@ -297,7 +297,7 @@ body.private .frame:hover .cbtn {
   top: 50%;
   width: 40px;
   height: 40px;
-  margin-top: calc(var(--space-5) * -1);
+  translate: 0 -50%; /* centred on its top: 50% (a centring offset, not spacing) */
   border-radius: 50%;
   background: rgba(12, 12, 14, 0.72);
   backdrop-filter: blur(6px);

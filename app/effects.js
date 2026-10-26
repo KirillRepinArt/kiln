@@ -1,3 +1,4 @@
+// @ts-check
 /* Kiln · starfield, ambient glow + title/favicon, notifications, veil + embers */
 import { fmt } from "./boot.js";
 import { $ } from "./dom.js";
@@ -9,23 +10,23 @@ import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 
 /* ambient glow + window title + favicon progress ring (throttled) */
-const amb = $("amb"),
-  ambC = amb.getContext("2d"),
+const amb = /** @type {HTMLCanvasElement} */ ($("amb")),
+  ambC = /** @type {CanvasRenderingContext2D} */ (amb.getContext("2d")),
   favC = document.createElement("canvas");
 
 /* the Generating ring's knockout: the word's own glyphs, stroked ~1.25 px wider, cut out of the ring's holder — done
    once per font, size and screen scale, not per frame */
 function ringKnockout() {
-  const w = document.querySelector('.tab[data-v="gen"] .trw'),
+  const w = /** @type {HTMLElement | null} */ (document.querySelector('.tab[data-v="gen"] .trw')),
     tl = w && w.closest(".tl");
   if (!w || !document.body.classList.contains("jobrun")) return;
   const r = w.getBoundingClientRect();
   if (!r.width) return;
-  const gt = w.parentElement.lastChild,
+  const gt = /** @type {ChildNode} */ (/** @type {HTMLElement} */ (w.parentElement).lastChild),
     rg = document.createRange();
   rg.selectNodeContents(gt);
   const gr = rg.getBoundingClientRect();
-  const cs = getComputedStyle(tl),
+  const cs = getComputedStyle(/** @type {Element} */ (tl)),
     dpr = devicePixelRatio || 1,
     font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`,
     key = [font, cs.letterSpacing, dpr, Math.round((gr.left - r.left) * 10), Math.round((gr.top - r.top) * 10)].join(
@@ -36,7 +37,7 @@ function ringKnockout() {
   const c = document.createElement("canvas");
   c.width = Math.ceil(r.width * dpr);
   c.height = Math.ceil(r.height * dpr);
-  const g = c.getContext("2d");
+  const g = /** @type {CanvasRenderingContext2D} */ (c.getContext("2d"));
   g.scale(dpr, dpr);
   g.fillStyle = "#000";
   g.fillRect(0, 0, r.width, r.height);
@@ -50,8 +51,8 @@ function ringKnockout() {
     x = gr.left - r.left;
   g.lineWidth = 4;
   g.lineJoin = "round";
-  g.strokeText(tl.textContent, x, y);
-  g.fillText(tl.textContent, x, y);
+  g.strokeText(/** @type {string} */ (/** @type {Element} */ (tl).textContent), x, y);
+  g.fillText(/** @type {string} */ (/** @type {Element} */ (tl).textContent), x, y);
   w.style.setProperty("--ko", `url(${c.toDataURL()})`);
 }
 export function status() {
@@ -74,7 +75,7 @@ export function status() {
     !(j && skin().cover === "camera") &&
     !$("frame").classList.contains("held") &&
     (j || (gm === "always" && shownDone()))
-      ? $("cv")
+      ? /** @type {HTMLCanvasElement} */ ($("cv"))
       : null; /* Aurora has its frame glow instead */
   if (src && src.width) {
     ambC.imageSmoothingQuality = "high";
@@ -83,7 +84,7 @@ export function status() {
   } else amb.classList.remove("on");
   let p = null;
   {
-    const gt = document.querySelector('.tab[data-v="gen"]');
+    const gt = /** @type {HTMLElement | null} */ (document.querySelector('.tab[data-v="gen"]'));
     if (document.body.classList.contains("jobrun") !== !!j) {
       document.body.classList.toggle("jobrun", !!j);
       requestAnimationFrame(() => moveThumb(true));
@@ -91,7 +92,7 @@ export function status() {
     if (gt) {
       if (j) {
         const q = jobProgress(j);
-        document.documentElement.style.setProperty("--p", Math.max(0.02, Math.min(1, q.p || 0)));
+        document.documentElement.style.setProperty("--p", /** @type {any} */ (Math.max(0.02, Math.min(1, q.p || 0))));
         gt.dataset.tip = `Rendering #${j.id} · step ${Math.min(j.step + 1, j.steps)}/${j.steps}${q.left != null ? ` · ~${fmt(q.left)} left` : ""}`;
       } else gt.dataset.tip = "The image being made";
     }
@@ -105,16 +106,16 @@ export function status() {
     if (j) {
       const q = jobProgress(j),
         v = Math.max(0.02, Math.min(1, q.p || 0)),
-        was = +pl.dataset.pj || 0;
+        was = +(/** @type {string} */ (pl.dataset.pj)) || 0;
       if (was !== j.id) {
-        const rg = pl.querySelector(".pring");
-        pl.dataset.pj = j.id;
+        const rg = /** @type {HTMLElement} */ (pl.querySelector(".pring"));
+        pl.dataset.pj = /** @type {any} */ (j.id);
         rg.style.transition = "none";
-        pl.style.setProperty("--p", v);
+        pl.style.setProperty("--p", /** @type {any} */ (v));
         void rg.offsetWidth;
         rg.style.transition = "";
       } /* a new job starts from empty, not by sweeping back */
-      else pl.style.setProperty("--p", v);
+      else pl.style.setProperty("--p", /** @type {any} */ (v));
     }
   }
   if (j) {
@@ -122,7 +123,7 @@ export function status() {
     p = q.p;
     document.title = `${Math.min(j.step + 1, j.steps)}/${j.steps}${q.left != null ? ` · ~${fmt(q.left)}` : ""}${pend ? ` · +${pend}` : ""} — Kiln`;
   } else document.title = pend ? `${window.qPaused ? "Paused · " : ""}${pend} queued — Kiln` : "Kiln";
-  const c = favC.getContext("2d");
+  const c = /** @type {CanvasRenderingContext2D} */ (favC.getContext("2d"));
   c.clearRect(0, 0, 64, 64);
   const cs = getComputedStyle(document.documentElement);
   const g = c.createLinearGradient(0, 0, 64, 64);
@@ -147,7 +148,7 @@ export function status() {
     c.closePath();
     c.fill();
   }
-  $("fav").href = favC.toDataURL("image/png");
+  /** @type {HTMLLinkElement} */ ($("fav")).href = favC.toDataURL("image/png");
 }
 let notifAsked = false;
 export function askNotify() {
@@ -159,6 +160,7 @@ export function askNotify() {
 }
 /* notifications are neutral: never the prompt, the name or a picture (they end up in the Windows notification centre) */
 let doneRun = 0;
+/** @param {import("./types.js").Job} j */
 export function onJobDone(j) {
   if (window.emberBurst && PV.still && PV.still.id === j.id) window.emberBurst();
   /* the finish plays on the result you see, never over another picture */
@@ -181,22 +183,22 @@ export function initEffects() {
   /* app background, set by the skin: starfield (three parallax layers, gentle twinkle, a rare shooting star),
    northern lights over a dimmer starfield, or sparse cold code. Redrawn at ~30 fps. */
   (function () {
-    const cv = $("stars"),
-      c = cv.getContext("2d");
+    const cv = /** @type {HTMLCanvasElement} */ ($("stars")),
+      c = /** @type {CanvasRenderingContext2D} */ (cv.getContext("2d"));
     const R = Math.random;
     let W = 0,
       H = 0,
-      stars = [],
-      shoot = null,
+      stars = /** @type {{ x: number, y: number, l: number, r: number, p: number, s: number }[]} */ ([]),
+      shoot = /** @type {{ x: number, y: number, vx: number, vy: number, life: number } | null} */ (null),
       lastDraw = 0,
       was = "",
-      bcols = null,
+      bcols = /** @type {any} the theme's colours, for the skins */ (null),
       bcT = 0;
     const night = makeNightSky(),
       code = makeCodeBg();
     let lastIn = performance.now(),
       dimV = 1,
-      holes = [],
+      holes = /** @type {{ x: number, y: number, w: number, h: number }[]} what the code rain flows round */ ([]),
       holeT = 0;
     const HOLES = "#ltitle .phead,#ltitle .peekbar.show,#prog .meta,#idle>div";
     ["pointermove", "keydown", "wheel"].forEach(ev =>
@@ -223,6 +225,7 @@ export function initEffects() {
         });
       }
     }
+    /** @param {number} t */
     function draw(t) {
       const idle = ((S.set || {}).stars || "on") !== "off";
       cv.classList.toggle("on", idle);
@@ -242,7 +245,7 @@ export function initEffects() {
         lastDraw = t;
         if (!bcols || bcT !== window._themeV) {
           bcols = themeCols();
-          bcT = window._themeV;
+          bcT = /** @type {number} */ (window._themeV);
         }
         c.clearRect(0, 0, W, H);
         const d = devicePixelRatio || 1;
@@ -326,7 +329,8 @@ export function initEffects() {
           }
         }
         c.globalAlpha = 1;
-      } else if (W && !cv.classList.contains("on") && getComputedStyle(cv).opacity < 0.02) c.clearRect(0, 0, W, H);
+      } else if (W && !cv.classList.contains("on") && /** @type {any} */ (getComputedStyle(cv).opacity) < 0.02)
+        c.clearRect(0, 0, W, H);
       requestAnimationFrame(draw);
     }
     requestAnimationFrame(draw);
@@ -334,7 +338,7 @@ export function initEffects() {
   favC.width = favC.height = 64;
   document.fonts &&
     document.fonts.ready.then(() => {
-      const w = document.querySelector(".trw");
+      const w = /** @type {HTMLElement | null} */ (document.querySelector(".trw"));
       if (w) delete w.dataset.ko;
     });
   setInterval(status, 400);
@@ -343,17 +347,19 @@ export function initEffects() {
    and emerges as progress grows (hover the image to peek through). EMBERS: a short burst when a job finishes. */
   (function () {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const vc = $("veil"),
-      v = vc.getContext("2d"),
-      ec = $("embers"),
-      e = ec.getContext("2d");
+    const vc = /** @type {HTMLCanvasElement} */ ($("veil")),
+      v = /** @type {CanvasRenderingContext2D} */ (vc.getContext("2d")),
+      ec = /** @type {HTMLCanvasElement} */ ($("embers")),
+      e = /** @type {CanvasRenderingContext2D} */ (ec.getContext("2d"));
     let W = 0,
       H = 0,
       last = 0,
       str = 0,
       hover = false,
-      sparks = [],
-      embers = [],
+      sparks = /** @type {{ x: number, y: number, s: number, v: number, ph: number, tw: number, c: string }[]} */ ([]),
+      embers =
+        /** @type {{ x: number, y: number, vx: number, vy: number, life: number, max: number, r: number, c: string, ph: number,
+         *   g?: boolean, sc?: string }[]} (g / sc: Aurora's crisp stars, set on first draw) */ ([]),
       burst = 0,
       burstMax = 2400,
       embersHalf = false,
@@ -361,7 +367,7 @@ export function initEffects() {
       colT = 0;
     const crt = makeCRT(),
       cam = makeCamera();
-    let crtJob = null,
+    let crtJob = /** @type {number | string | null} the exposure on show: a job, a preview, "held" */ (null),
       sweepT = 0,
       nstr = 0,
       fadeT = 0,
@@ -371,13 +377,13 @@ export function initEffects() {
       haloT = 0,
       fadeDur = 0,
       finStr = 0;
-    const fg = $("fglow"),
-      fgc = fg.getContext("2d"),
+    const fg = /** @type {HTMLCanvasElement} */ ($("fglow")),
+      fgc = /** @type {CanvasRenderingContext2D} */ (fg.getContext("2d")),
       halo = makeHalo();
     const dith = document.createElement("canvas");
     dith.width = dith.height = 64;
     {
-      const g = dith.getContext("2d"),
+      const g = /** @type {CanvasRenderingContext2D} */ (dith.getContext("2d")),
         d = g.createImageData(64, 64);
       for (let i = 0; i < d.data.length; i += 4) {
         const v = (Math.random() * 255) | 0;
@@ -388,6 +394,7 @@ export function initEffects() {
     }
     const HOLD = 0.7,
       FADE = 5000; /* Aurora: the night layer holds at 70 % from mid-job, then fades slowly after the finish */
+    /** @param {number} a @param {number} b @param {number} x */
     const smooth = (a, b, x) => {
       const q = Math.max(0, Math.min(1, (x - a) / (b - a)));
       return q * q * (3 - 2 * q);
@@ -396,10 +403,11 @@ export function initEffects() {
       el.addEventListener("pointerenter", () => (hover = true));
       el.addEventListener("pointerleave", () => (hover = false));
     }
+    /** a soft round dot of a colour @param {string} color @param {number} size */
     function sprite(color, size) {
       const c = document.createElement("canvas");
       c.width = c.height = size;
-      const g = c.getContext("2d");
+      const g = /** @type {CanvasRenderingContext2D} */ (c.getContext("2d"));
       const r = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
       r.addColorStop(0, color);
       r.addColorStop(0.18, color + "cc");
@@ -409,15 +417,16 @@ export function initEffects() {
       g.fillRect(0, 0, size, size);
       return c;
     }
+    /** @type {Record<string, HTMLCanvasElement>} the dots, by colour (a1 a2 a3 w comp) */
     let spr = {};
     function sprites() {
       const cs = getComputedStyle(document.documentElement);
       cols = ["--a1", "--a2", "--a3"].map((k, i) => cs.getPropertyValue(k).trim() || cols[i]);
-      const hex = c => {
+      const hex = (/** @type {string} */ c) => {
         if (/^#[0-9a-f]{6}$/i.test(c)) return c;
-        const d = document.createElement("canvas").getContext("2d");
+        const d = /** @type {CanvasRenderingContext2D} */ (document.createElement("canvas").getContext("2d"));
         d.fillStyle = c;
-        return d.fillStyle;
+        return /** @type {string} */ (d.fillStyle);
       };
       spr = {
         a1: sprite(hex(cols[0]), 64),
@@ -520,6 +529,7 @@ export function initEffects() {
       },
       true,
     ); /* works while typing in the prompt */
+    /** @param {number} t @param {number} dt @param {string | undefined} cover0 @param {boolean} [force] draw now */
     function haloFrame(t, dt, cover0, force) {
       /* Aurora's halo: the image box glows (skins.js makeHalo). On while a job runs, fading out with the night layer after
      the finish. A step's meteor makes it respond, the finish a little more — always with a soft rise (~0.4 s) and fall,
@@ -543,7 +553,7 @@ export function initEffects() {
           if (force || t - haloT >= (t - finishAt < 2200 ? 14 : 48)) {
             haloT = t; /* full frame rate while the finish runs */
             const gi = cam.glowInfo(),
-              env = (ms, dec) =>
+              env = (/** @type {number} */ ms, /** @type {number} */ dec) =>
                 ms < 0 ? 0 : ms < 400 ? (x => x * x * (3 - 2 * x))(ms / 400) : Math.exp(-(ms - 400) / dec),
               boost =
                 0.3 * env(t - gi.met, 1300) +
@@ -591,7 +601,7 @@ export function initEffects() {
             halo.edge(fgc, X, Y, FW, FH, hc, { radius: rad, alpha: k, boost, narrow: 3 * dp, wide: 20 * dp });
             fgc.globalCompositeOperation = "source-atop";
             fgc.globalAlpha = 0.05;
-            fgc.fillStyle = fgc.createPattern(dith, "repeat");
+            fgc.fillStyle = /** @type {CanvasPattern} */ (fgc.createPattern(dith, "repeat"));
             fgc.fillRect(0, 0, cw, ch); // a whisper of grain: no banding on near-black
             fgc.globalCompositeOperation = "destination-out";
             fgc.globalAlpha = 1;
@@ -639,6 +649,7 @@ export function initEffects() {
     }
     /* a layout switch captures the new layout at once: the halo has to be there already (stage.js layMorph) */
     window.haloNow = () => haloFrame(performance.now(), 0, skin().cover, true);
+    /** @param {number} t */
     function draw(t) {
       const dt = Math.min(50, t - last || 16),
         dtr = Math.min(1000, t - last || 16);
@@ -646,7 +657,7 @@ export function initEffects() {
       /* dtr: real time, so the cover's fades keep their speed when the page runs slow (the GPU busy loading a model) */
       if (colT !== window._themeV) {
         sprites();
-        colT = window._themeV;
+        colT = /** @type {number} */ (window._themeV);
       }
       const b = vc.getBoundingClientRect(),
         d = devicePixelRatio || 1;
@@ -666,7 +677,11 @@ export function initEffects() {
         fr0.classList.toggle("held", held);
         if (held && !j) CV.t0 = Date.now() - 20000;
       }
-      const fast = (S.set || {}).fastcover === "skip" && j && j.est > 0 && j.est < 10; // Settings → Cover: no cover on quick jobs
+      const fast =
+        (S.set || {}).fastcover === "skip" &&
+        j &&
+        /** @type {number} */ (j.est) > 0 &&
+        /** @type {number} */ (j.est) < 10; // Settings → Cover: no cover on quick jobs
       if (cover0 === "crt" || cover0 === "camera") {
         const k =
           j && picMode() === "live"
@@ -749,14 +764,12 @@ export function initEffects() {
       } // after the finish: a slow fade, slow at first
       nstr += (tN - nstr) * Math.min(1, dtr / 260);
       if (nstr < 0.002 || (shownClean() && !held && !(Date.now() < (window._cpv || 0)))) nstr = 0;
-      document
-        .getElementById("frame")
-        .style.setProperty(
-          "--vf",
-          str
-            ? `blur(${(24 * str).toFixed(1)}px) brightness(${(1 - 0.45 * str).toFixed(3)}) saturate(${(1 - 0.4 * str).toFixed(3)})`
-            : "none",
-        );
+      /** @type {HTMLElement} */ (document.getElementById("frame")).style.setProperty(
+        "--vf",
+        str
+          ? `blur(${(24 * str).toFixed(1)}px) brightness(${(1 - 0.45 * str).toFixed(3)}) saturate(${(1 - 0.4 * str).toFixed(3)})`
+          : "none",
+      );
       v.clearRect(0, 0, W, H);
       if ((cover0 === "camera" ? nstr : str) > 0 && W) {
         const T = t / 1000;
@@ -899,12 +912,12 @@ export function initEffects() {
             const s = Math.max(1, p.r * (p.g ? 1.15 : 0.75)),
               tw = a * (0.6 + 0.4 * Math.sin(p.life / 140 + p.ph * 3));
             e.globalAlpha = tw;
-            e.fillStyle = p.sc;
+            e.fillStyle = /** @type {string} */ (p.sc); // set above, on its first draw
             e.fillRect(Math.round(p.x - s / 2), Math.round(p.y - s / 2), Math.ceil(s), Math.ceil(s));
             if (p.g) {
               const L = s * 3.2;
               e.globalAlpha = tw * 0.55;
-              e.strokeStyle = p.sc;
+              e.strokeStyle = /** @type {string} */ (p.sc);
               e.lineWidth = Math.max(0.6, d * 0.6);
               e.beginPath();
               e.moveTo(p.x - L, p.y);

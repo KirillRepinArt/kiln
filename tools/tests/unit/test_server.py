@@ -16,7 +16,7 @@ from server.instance import InstanceLock, bind_first, read_instance, write_insta
 from server.jobqueue import JobQueue, public
 from server.launch import browser_command, find_browser, profile_dir, running_port
 from server.lifecycle import window_gone
-from server.page import styles_signature
+from server.page import build_page, styles_signature
 from server.pictures import Pictures
 from server.updates import version_key
 
@@ -273,6 +273,24 @@ class Misc(unittest.TestCase):
         self.assertTrue(window_gone(t, t - 5, t - 4), "goodbye 4 s ago, no poll since")
         self.assertFalse(window_gone(t, t - 1, t - 4), "a poll after the goodbye: a reload")
         self.assertFalse(window_gone(t, t - 5, t - 2), "goodbye only 2 s ago")
+
+    def test_satoshi_installed_or_not(self) -> None:
+        import shutil
+
+        repo = Path(__file__).resolve().parents[3]
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            shutil.copy(repo / "index.html", root / "index.html")
+            (root / "app").mkdir()
+            page = build_page(root).decode()
+            self.assertNotIn("satoshi/satoshi.css", page, "not installed: no link to a missing file")
+            self.assertIn("Satoshi — not installed", page)
+            self.assertIn('value="Satoshi" disabled', page)
+            (root / "app" / "fonts" / "satoshi").mkdir(parents=True)
+            (root / "app" / "fonts" / "satoshi" / "satoshi.css").write_text("/* */")
+            page = build_page(root).decode()
+            self.assertIn("satoshi/satoshi.css", page, "installed: as before")
+            self.assertIn('<option value="Satoshi">Satoshi</option', page)
 
     def test_styles_signature_changes_on_save(self) -> None:
         with tempfile.TemporaryDirectory() as d:

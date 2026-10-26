@@ -190,7 +190,8 @@ its own fake Forge, Kiln and a headless browser. Changes are listed in `CHANGELO
 
 **Offline.** Kiln asks nothing of the internet: its fonts (`app/fonts/`) and the prompt editor
 (`app/vendor/codemirror.js`) ship with it. Satoshi is the one font that can't be included — its licence doesn't
-allow a public repository; `app/fonts/README.md` says how to add your own copy (without it, Kiln uses Geist).
+allow a public repository; `app/fonts/README.md` says how to add your own copy (without it, Kiln uses Geist and
+Settings shows Satoshi as not installed).
 
 ## Design notes
 

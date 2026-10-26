@@ -14,6 +14,8 @@ def build_page(root: Path) -> bytes:
     page = (root / "index.html").read_text(encoding="utf-8")
     app = root / "app"
     page = page.replace('class="modal offline show"', 'class="modal offline"', 1)
+    if not (app / "fonts" / "satoshi" / "satoshi.css").is_file():
+        page = without_satoshi(page)
     # every module listed up front, so the browser fetches them all at once instead of discovering the imports one
     # layer at a time (main.js → its imports → theirs …); types.js is for the checker only
     preload = "".join(
@@ -27,6 +29,20 @@ def build_page(root: Path) -> bytes:
         1,
     )
     return page.encode("utf-8")
+
+
+SATOSHI_LINK = '    <link rel="stylesheet" href="app/fonts/satoshi/satoshi.css" />\n'
+SATOSHI_OPTION = '<option value="Satoshi">Satoshi</option'
+SATOSHI_MISSING = (
+    '<option value="Satoshi" disabled title="Satoshi\'s licence keeps it out of Kiln\'s public download: add your own '
+    'copy to app/fonts/satoshi/ (app/fonts/README.md says how)">Satoshi — not installed</option'
+)
+
+
+def without_satoshi(page: str) -> str:
+    """Satoshi is optional (its licence keeps it out of the public repo; each install adds its own copy). Not there:
+    no link to a stylesheet that isn't there (it was a 404 on every start), and the font menu says so."""
+    return page.replace(SATOSHI_LINK, "", 1).replace(SATOSHI_OPTION, SATOSHI_MISSING, 1)
 
 
 class _Seen:

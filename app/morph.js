@@ -1,3 +1,4 @@
+// @ts-check
 /* Kiln · the picture's crop-and-reveal when its shape changes: one continuous move on its own timeline */
 import { $ } from "./dom.js";
 
@@ -14,12 +15,14 @@ const MORPH = {
   T: 520,
 }; /* k: the middle box is a little smaller than the largest that fits — the path curves inward (an iris closing a touch past what's needed); inside the old picture, so never a hole */
 /* cubic-bezier easing as a function (for the frame's own timeline below) */
+/** @param {number} x1 @param {number} y1 @param {number} x2 @param {number} y2 @returns {(x: number) => number} */
 function bez(x1, y1, x2, y2) {
-  const A = (a, b) => 1 - 3 * b + 3 * a,
-    B = (a, b) => 3 * b - 6 * a,
-    C = a => 3 * a,
-    f = (t, a, b) => ((A(a, b) * t + B(a, b)) * t + C(a)) * t,
-    d = (t, a, b) => 3 * A(a, b) * t * t + 2 * B(a, b) * t + C(a);
+  /** @typedef {(a: number, b: number) => number} AB @typedef {(t: number, a: number, b: number) => number} TAB */
+  const A = /** @type {AB} */ ((a, b) => 1 - 3 * b + 3 * a),
+    B = /** @type {AB} */ ((a, b) => 3 * b - 6 * a),
+    C = (/** @type {number} */ a) => 3 * a,
+    f = /** @type {TAB} */ ((t, a, b) => ((A(a, b) * t + B(a, b)) * t + C(a)) * t),
+    d = /** @type {TAB} */ ((t, a, b) => 3 * A(a, b) * t * t + 2 * B(a, b) * t + C(a));
   return x => {
     if (x <= 0) return 0;
     if (x >= 1) return 1;
@@ -42,11 +45,18 @@ const eCrop = bez(
    morph written in the panel's coordinates drifted with it — lopsided. Each frame the box is placed on screen and the
    panel's current offset taken off. The target is read from the frame's data (sizeFrame keeps it there while a morph
    runs, so a re-layout mid-way just updates where it lands) */
+/** @param {{ w: number, h: number, l: number, t: number }} o where the picture was (its old box, in its panel) */
 export function frameMorph(o) {
   const f = $("frame"),
     x = $("cvx");
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const T0 = () => ({ w: +f.dataset.tw, h: +f.dataset.th, l: +f.dataset.tl, t: +f.dataset.tt }),
+  /** the target box sizeFrame keeps on the frame (data-tw/th/tl/tt) */
+  const T0 = () => ({
+      w: +(/** @type {string} */ (f.dataset.tw)),
+      h: +(/** @type {string} */ (f.dataset.th)),
+      l: +(/** @type {string} */ (f.dataset.tl)),
+      t: +(/** @type {string} */ (f.dataset.tt)),
+    }),
     n0 = T0();
   if (!(n0.w > 0 && n0.h > 0 && o.w > 0 && o.h > 0)) return;
   const st0 = $("stage").getBoundingClientRect(),
@@ -64,8 +74,8 @@ export function frameMorph(o) {
     T = MORPH.T,
     k1 = 0.12,
     k2 = 0.36,
-    px = v => v + "px";
-  cancelAnimationFrame(frameMorph.raf);
+    px = (/** @type {number} */ v) => v + "px";
+  cancelAnimationFrame(/** @type {any} */ (frameMorph).raf); // the running morph, kept on the function
   f.style.setProperty("--ow", px(o.w));
   f.style.setProperty("--oh", px(o.h));
   f.style.setProperty("--nw", px(n0.w));
@@ -96,14 +106,15 @@ export function frameMorph(o) {
     f.style.setProperty("--nh", px(n.h));
     const u = eCrop(Math.min(1, e / T)),
       N = { l: st.left + n.l, t: st.top + n.t, w: n.w, h: n.h },
-      q = (a, b, c) => (1 - u) * (1 - u) * a + 2 * u * (1 - u) * b + u * u * c;
+      q = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number} */ c) =>
+        (1 - u) * (1 - u) * a + 2 * u * (1 - u) * b + u * u * c;
     const B = { l: q(O.l, M.l, N.l), t: q(O.t, M.t, N.t), w: q(O.w, M.w, N.w), h: q(O.h, M.h, N.h) };
     if (e < T) {
       f.style.left = px(B.l - st.left);
       f.style.top = px(B.t - st.top);
       f.style.width = px(B.w);
       f.style.height = px(B.h);
-      frameMorph.raf = requestAnimationFrame(step);
+      /** @type {any} */ (frameMorph).raf = requestAnimationFrame(step);
     } else {
       f.classList.remove("morph");
       f.style.left = px(n.l);

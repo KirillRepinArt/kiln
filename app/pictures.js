@@ -180,6 +180,8 @@ export function missing(cv) {
   c.fillRect(0, 0, W, H);
 } /* the words and the ways back are on the card (#missCard) */
 /* the missing-file card: what can bring it back, best first */
+/** a missing file in the Recycle Bin, by job id: true found, false not there, null still looking */
+/** @type {Record<number, boolean | null>} */
 export const inBin = {};
 export function missUI(d) {
   const on = !!(d && d.missing && S.view === "gen");

@@ -1,8 +1,9 @@
+// @ts-check
 /* Kiln · progress: real steps, a smooth glide in between, the live preview, the frame loop */
 import { capTxt, stopJob } from "./actions.js";
 import { fmt } from "./boot.js";
 import { browseStatus } from "./browse.js";
-import { $ } from "./dom.js";
+import { $, hit } from "./dom.js";
 import { current, doneById, jobs } from "./jobs.js";
 import { sizeFrame } from "./layout.js";
 import { api } from "./live.js";
@@ -18,6 +19,7 @@ import { forgeOk, forgeStarting } from "./sync.js";
 let lastPrev = 0,
   prevLoading = false;
 /* countdown from the history-based total; if the first step came late compared with history, stretch it */
+/** @param {import("./types.js").Job} j */
 function remaining(j) {
   if (!j.est || !j.started) return null;
   const el = (Date.now() - j.started) / 1000;
@@ -31,6 +33,7 @@ function remaining(j) {
 } // overdue: fall back to step timing
 /* before the first step: a word in Kiln's spirit, with the real state small beside it */
 const WORDS = ["Stoking the kiln", "Kindling", "Warming up", "Simmering", "Firing up", "Tempering", "Gathering embers"];
+/** @param {string} h */
 function setTxt(h) {
   const el = $("ptxt");
   if (el.innerHTML !== h) el.innerHTML = h;
@@ -106,12 +109,12 @@ export function frame() {
       const f = $("frame");
       f.classList.add("has");
       $("idle").style.display = "none";
-      if (+$("cv").dataset.j !== j.id) {
-        $("cv").dataset.j = j.id;
+      if (+(/** @type {string} */ ($("cv").dataset.j)) !== j.id) {
+        $("cv").dataset.j = /** @type {any} */ (j.id);
         $("cv").dataset.d = "";
         $("cv").dataset.want = "";
         lastPrev = 0;
-        const c = $("cv");
+        const c = /** @type {HTMLCanvasElement} */ ($("cv"));
         c.width = 1;
         c.height = 1;
         sizeFrame();
@@ -122,7 +125,7 @@ export function frame() {
         const i = new Image();
         const jid = j.id;
         i.onload = () => {
-          if (+$("cv").dataset.j === jid && picMode() === "live") {
+          if (+(/** @type {string} */ ($("cv").dataset.j)) === jid && picMode() === "live") {
             drawTo($("cv"), i, false);
             xfadeEnd();
           }
@@ -136,11 +139,11 @@ export function frame() {
         i.src = `/api/preview/${j.id}?r=${r}`;
       }
     }
-    const mini = document.querySelector(`.qi[data-id="${j.id}"] .mini i`);
+    const mini = /** @type {HTMLElement | null} */ (document.querySelector(`.qi[data-id="${j.id}"] .mini i`));
     if (mini) mini.style.width = p * 100 + "%";
-    const lp = document.querySelector(`img[data-lp="${j.id}"]`);
-    if (lp && j.preview_rev && lp.dataset.r != j.preview_rev) {
-      lp.dataset.r = j.preview_rev;
+    const lp = /** @type {HTMLImageElement | null} */ (document.querySelector(`img[data-lp="${j.id}"]`));
+    if (lp && j.preview_rev && /** @type {any} */ (lp.dataset.r) != j.preview_rev) {
+      lp.dataset.r = /** @type {any} */ (j.preview_rev);
       lp.src = `/api/preview/${j.id}?r=${j.preview_rev}`;
     } /* Q6: the render, small, in its queue row */
   } else if (!window._dp) {
@@ -181,8 +184,8 @@ export function frame() {
   if (picMode() !== "live") {
     const d = onShow();
     if (d && S.view === "gen") {
-      if ($("cv").dataset.d != d.id || $("cv").dataset.m !== String(!!d.missing)) {
-        $("cv").dataset.d = d.id;
+      if (/** @type {any} */ ($("cv").dataset.d) != d.id || $("cv").dataset.m !== String(!!d.missing)) {
+        $("cv").dataset.d = /** @type {any} */ (d.id);
         $("cv").dataset.m = String(!!d.missing);
         $("cv").dataset.j = "";
         sizeFrame();
@@ -194,14 +197,14 @@ export function frame() {
           setTimeout(() => f.classList.remove("reveal"), 1200);
           setJustDone(null);
         }
-        paint($("cv"), d, 1);
+        paint($("cv"), d);
       }
       $("frame").classList.add("has");
       $("idle").style.display = "none";
     } else if (!d) {
       $("frame").classList.remove("has");
       $("idle").style.display = "";
-      const c = $("cv");
+      const c = /** @type {HTMLCanvasElement} */ ($("cv"));
       if (c.width > 1) {
         c.width = 1;
         c.height = 1;
@@ -215,6 +218,7 @@ export function frame() {
   requestAnimationFrame(frame);
 } /* the frame loop: progress, the live preview, the picture on show */
 
+/** how far a job is (0–1) and the seconds left (null: not known yet) @param {import("./types.js").Job} j */
 export function jobProgress(j) {
   const per = Math.max(1, SEC_PER_STEP[j.mp] || 60) * 1000;
   const part = j.steps && j._ss ? Math.min((Date.now() - j._ss) / per, 0.95) : 0;
@@ -238,12 +242,12 @@ export function jobProgress(j) {
 export function initStatusRow() {
   $("stopBtn").onclick = () => stopJob(current());
   $("prog").addEventListener("click", e => {
-    if (e.target.closest(".stop,.resume")) return;
+    if (hit(e, ".stop,.resume")) return;
     const m = picMode();
     if (m === "browse") {
       if (PV.promptClosed) {
         PV.promptClosed = false;
-        loadJob(browsed());
+        loadJob(/** @type {import("./types.js").Job} */ (browsed())); // browsing: there is one
       }
       return;
     }

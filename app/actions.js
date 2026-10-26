@@ -166,9 +166,9 @@ export async function removeMany(ids) {
 }
 /* a picture finished while you weren't watching Generating: a small card slides out under the Generating tab (where
     its ring was); click = the picture in the Gallery. ~6 s, held while you're on it; several in a row = one card */
-export let dnT = null,
+export let dnT = /** @type {number | undefined} */ (/** @type {unknown} */ (null)),
   dnN = 0,
-  dnId = null;
+  dnId = /** @type {number | null} */ (null);
 /* the finished note goes away after ms (restarted by each call) */
 export function dnHideIn(ms) {
   clearTimeout(dnT);

@@ -111,8 +111,8 @@ export async function loadModels(refresh) {
   return true;
 }
 // settings: read-only server facts + upscaler choice
-export const fg = document.querySelector(".mcard .fg");
-export const fu = fg.querySelector('[data-set="forge"]');
+export const fg = /** @type {HTMLElement} */ (document.querySelector(".mcard .fg"));
+export const fu = /** @type {HTMLInputElement} */ (fg.querySelector('[data-set="forge"]'));
 export const up = document.createElement("select");
 export const upl = document.createElement("label");
 export const us = document.createElement("select");

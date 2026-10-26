@@ -1,9 +1,10 @@
+// @ts-check
 /* ======================= the app's connection to its server =======================
-   Everything that talks to server.py: the queue, pictures, previews, LoRAs and models. Without the server (opened
+   Everything that talks to Kiln's server: the queue, pictures, previews, LoRAs and models. Without the server (opened
    as a file, or server.py stopped) a note says so, and the page reloads by itself once the server answers. */
 import { act, dn, dnHide, dnHideIn, dnId, dnT, removeJob, setPaused } from "./actions.js";
 import { esc, toast } from "./boot.js";
-import { $ } from "./dom.js";
+import { $, hit, target } from "./dom.js";
 import { fg, fu, fx, loadModels, models, rb, refreshUp, rescanLoras, up, upl, us, usl } from "./forge.js";
 import { doneById, replaceJobs } from "./jobs.js";
 import { PV, pv, shownDone } from "./picstate.js";
@@ -13,7 +14,10 @@ import { S, save } from "./state.js";
 import { poll } from "./sync.js";
 import { showView, tabGo } from "./tabs.js";
 
+/** @type {any} the server's first answer (server/web.py get_state) */
 export let st;
+/** a request to Kiln's server: GET, or POST with b as JSON; resolves to the answer @param {string} p @param {object} [b]
+ * @returns {Promise<any>} */
 export const api = (p, b) =>
   fetch(
     p,
@@ -58,7 +62,7 @@ export async function startLive() {
     const c = document.createElement("canvas");
     c.width = e.i.naturalWidth;
     c.height = e.i.naturalHeight;
-    c.getContext("2d").drawImage(e.i, 0, 0);
+    /** @type {CanvasRenderingContext2D} */ (c.getContext("2d")).drawImage(e.i, 0, 0);
     const r = await api(`/api/jobs/${d.id}/saveback`, { data: c.toDataURL("image/png") });
     toast(r.error || `Saved back as ${d.file}`);
     imgs.delete(urlFor(d));
@@ -79,7 +83,9 @@ export async function startLive() {
   };
   $("qwrap").addEventListener("drop", () => {}, true);
   $("qwrap").addEventListener("dragend", () => {
-    const ids = [...document.querySelectorAll('.qi[draggable="true"]')].map(q => +q.dataset.id);
+    const ids = [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.qi[draggable="true"]'))].map(
+      q => +(/** @type {string} */ (q.dataset.id)),
+    );
     window._rp = true;
     api("/api/reorder", { ids }).finally(() => {
       window._rp = false;
@@ -89,7 +95,7 @@ export async function startLive() {
   $("qwrap").addEventListener(
     "click",
     e => {
-      if (e.target.id === "clearDone") {
+      if (target(e).id === "clearDone") {
         e.stopImmediatePropagation();
         api("/api/clear", {}).then(poll);
       }
@@ -114,11 +120,13 @@ export async function startLive() {
     e.stopPropagation();
     setPaused(false);
   };
-  for (const [el, get] of [[$("sideGen"), () => shownDone()]]) {
+  for (const [el, get] of /** @type {[HTMLElement, () => import("./types.js").Job | null][]} */ ([
+    [$("sideGen"), () => shownDone()],
+  ])) {
     el.addEventListener(
       "click",
       e => {
-        const b = e.target.closest("button");
+        const b = hit(e, "button");
         if (!b || b.dataset.a === "thumb") return;
         e.stopImmediatePropagation();
         act(b.dataset.a, get());
@@ -126,8 +134,8 @@ export async function startLive() {
       true,
     );
   }
-  fg.querySelector('[data-set="outdir"]').value = st.out_dir;
-  fg.querySelector('[data-set="outdir"]').readOnly = true;
+  /** @type {HTMLInputElement} */ (fg.querySelector('[data-set="outdir"]')).value = st.out_dir;
+  /** @type {HTMLInputElement} */ (fg.querySelector('[data-set="outdir"]')).readOnly = true;
   fu.readOnly = true;
   fu.title = "Set in config.local.json";
   up.dataset.set = "upscaler";
@@ -138,7 +146,7 @@ export async function startLive() {
   for (const el of [upl, up, usl, us]) fg.insertBefore(el, fx); /* at the end of Output, above Appearance */
   for (const el of [up, us]) {
     el.addEventListener("change", () => {
-      S.set[el.dataset.set] = el.value;
+      /** @type {Record<string, any>} */ (S.set)[/** @type {string} */ (el.dataset.set)] = el.value;
       save();
     });
   }
@@ -153,14 +161,15 @@ export async function startLive() {
     rb.classList.remove("spin");
     toast("Models and LoRAs refreshed");
   };
-  document.querySelector(".mcard .mact").prepend(rb);
+  /** @type {Element} */ (document.querySelector(".mcard .mact")).prepend(rb);
   /* About: the version, and a manual update check — the only time Kiln goes online, and only when you ask */
   $("aboutV").textContent = "Kiln " + (st.version || "");
   $("updBtn").onclick = async () => {
-    const b = $("updBtn"),
+    const b = /** @type {HTMLButtonElement} */ ($("updBtn")),
       o = $("updRes");
     b.disabled = true;
     o.textContent = "Checking GitHub…";
+    /** @type {any} the server's answer */
     let r;
     try {
       r = await api("/api/update-check", {});
@@ -175,7 +184,9 @@ export async function startLive() {
         : `You have the latest version (v${esc(r.current)}).`;
   };
   $("lRefresh").onclick = () => rescanLoras(true);
-  document.querySelector('.tab[data-v="loras"]').addEventListener("click", () => rescanLoras(false));
+  /** @type {Element} */ (document.querySelector('.tab[data-v="loras"]')).addEventListener("click", () =>
+    rescanLoras(false),
+  );
   requestAnimationFrame(frame);
   /* ---------- go ---------- */
   addEventListener("pagehide", () => navigator.sendBeacon("/api/bye"));

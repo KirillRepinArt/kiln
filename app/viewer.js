@@ -1,7 +1,8 @@
+// @ts-check
 /* Kiln · full-size viewer, clicking the image */
 import { deleteJob, openInApp } from "./actions.js";
 import { updNav } from "./browse.js";
-import { $ } from "./dom.js";
+import { $, hit, target } from "./dom.js";
 import { lay, rowMode, sizeFrame } from "./layout.js";
 import { onShow, picMode, pv, pvSync } from "./picstate.js";
 import { paint } from "./pictures.js";
@@ -13,6 +14,7 @@ import { tabSync } from "./tabs.js";
 /** the full-size viewer: the picture on show, its zoom and pan, its fitted size
  * @type {{ job: import("./types.js").Job | null, s: number, tx: number, ty: number, fit: number, w: number, h: number }} */
 export const V = { job: null, s: 1, tx: 0, ty: 0, fit: 1, w: 0, h: 0 };
+/** @param {import("./types.js").Job | null | undefined} j */
 export function openViewer(j) {
   if (!j || j.status !== "done") return;
   V.job = j;
@@ -20,7 +22,7 @@ export function openViewer(j) {
   V.w = w;
   V.h = h;
   const cv = $("vcv");
-  paint(cv, j, 1);
+  paint(cv, j);
   cv.style.width = w + "px";
   cv.style.height = h + "px";
   $("viewer").classList.add("show");
@@ -36,6 +38,7 @@ function vClamp() {
   V.tx = sw <= innerWidth ? (innerWidth - sw) / 2 : Math.min(0, Math.max(innerWidth - sw, V.tx));
   V.ty = sh <= innerHeight ? (innerHeight - sh) / 2 : Math.min(0, Math.max(innerHeight - sh, V.ty));
 }
+/** the zoom and the pan @param {number} s @param {number} tx @param {number} ty */
 function vSet(s, tx, ty) {
   V.s = s;
   V.tx = tx;
@@ -45,6 +48,7 @@ function vSet(s, tx, ty) {
   $("vzoom").textContent = Math.round(V.s * 100) + "%";
   $("viewer").classList.toggle("zoomed", V.s > V.fit + 0.001);
 }
+/** zoom to ns, keeping the point (cx, cy) where it is @param {number} ns @param {number} cx @param {number} cy */
 function vZoomAt(ns, cx, cy) {
   ns = Math.max(V.fit, Math.min(4, ns));
   vSet(ns, cx - (cx - V.tx) * (ns / V.s), cy - (cy - V.ty) * (ns / V.s));
@@ -63,9 +67,9 @@ export function closeShown() {
 export function initViewer() {
   (function () {
     const el = $("viewer");
-    let down = null,
+    let down = /** @type {{ x: number, y: number, tx: number, ty: number, img: boolean } | null} */ (null),
       moved = false,
-      clickT = null;
+      clickT = /** @type {number | undefined} */ (/** @type {unknown} */ (null));
     el.addEventListener(
       "wheel",
       e => {
@@ -75,8 +79,8 @@ export function initViewer() {
       { passive: false },
     );
     el.addEventListener("pointerdown", e => {
-      if (e.target.closest(".vclose,.nav")) return;
-      down = { x: e.clientX, y: e.clientY, tx: V.tx, ty: V.ty, img: e.target.id === "vcv" };
+      if (hit(e, ".vclose,.nav")) return;
+      down = { x: e.clientX, y: e.clientY, tx: V.tx, ty: V.ty, img: target(e).id === "vcv" };
       moved = false;
       el.setPointerCapture(e.pointerId);
     });
@@ -115,10 +119,11 @@ export function initViewer() {
   })();
   /* click the finished image (Generating view and queue overlay) */
   (function () {
-    let t = null;
+    let t = /** @type {number | undefined} */ (/** @type {unknown} */ (null));
+    /** @param {HTMLElement} el @param {() => import("./types.js").Job | null | undefined} getJob */
     function bind(el, getJob) {
-      el.addEventListener("click", e => {
-        if (e.target.closest(".side,.nav,.bclose,.cbtn,.miss") || el.classList.contains("held")) return;
+      el.addEventListener("click", (/** @type {Event} */ e) => {
+        if (hit(e, ".side,.nav,.bclose,.cbtn,.miss") || el.classList.contains("held")) return;
         if (picMode() === "live" && S.view === "gen") {
           pv("peekRender");
           return;
@@ -129,8 +134,8 @@ export function initViewer() {
         clearTimeout(t);
         t = setTimeout(() => openViewer(j), 230);
       });
-      el.addEventListener("dblclick", e => {
-        if (e.target.closest(".side,.nav,.bclose,.cbtn,.miss") || el.classList.contains("held")) return;
+      el.addEventListener("dblclick", (/** @type {Event} */ e) => {
+        if (hit(e, ".side,.nav,.bclose,.cbtn,.miss") || el.classList.contains("held")) return;
         const j = getJob();
         if (!j || j.status !== "done" || j.missing) return;
         clearTimeout(t);
@@ -151,7 +156,7 @@ export function initViewer() {
   };
   document.addEventListener("keydown", e => {
     if (e.key !== "Delete" || e.ctrlKey || e.altKey) return;
-    const a = document.activeElement;
+    const a = /** @type {HTMLElement | null} */ (document.activeElement);
     if (
       (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) ||
       $("modal").classList.contains("show")

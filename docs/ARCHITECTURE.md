@@ -70,7 +70,7 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
 - **Shared:** `dom.js` (typed element helpers), `state.js` (settings, saved in the browser), `presets.js`, `types.js`
   (the data shapes, for the type checker), `testing.js` (the tests' handle, only with `?test`).
 
-Types: JSDoc in the files, checked by TypeScript (`tsc`, a dev tool) file by file as they're marked `// @ts-check`.
+Types: JSDoc in the files, checked by TypeScript (`tsc`, a dev tool, strict) — every file in `app/` except `vendor/`.
 
 ## Tests and checks
 

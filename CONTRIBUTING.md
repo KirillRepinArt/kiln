@@ -30,7 +30,8 @@ without a reload.
 
 ## Types
 The page is plain JavaScript; TypeScript only *checks* it (`npm run typecheck`, also in the hook and CI). Shapes shared
-across files live in `app/types.js` as JSDoc; a file is checked once it starts with `// @ts-check` (adopted file by file).
+across files live in `app/types.js` as JSDoc. Every file in `app/` starts with `// @ts-check` — a new one must too (a
+unit test fails otherwise; `checkJs` stays off so the vendored CodeMirror isn't checked).
 The server is typed Python, checked by mypy in strict mode (`.venv\Scripts\python -m mypy`, also in the hook and CI).
 
 ## Tests

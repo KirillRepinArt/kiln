@@ -33,7 +33,7 @@ export function lyReset() {
 export function lyUnfreeze() {
   card.frozen = false;
 }
-const EDMIN = 108; /* the editor's least height (kiln.css .cm-editor min-height: its header row + a few lines) */
+const EDMIN = 108; /* the editor's least height (styles/prompt.css .cm-editor min-height: its header row + a few lines) */
 function cardNaturalH() {
   const L = $("left"),
     w = q(".pwrapT", L);

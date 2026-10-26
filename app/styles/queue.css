@@ -1,0 +1,389 @@
+/* ======================= Queue ======================= */
+.qwrap {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 4px 2px 18px;
+}
+.rpanel.paneled .qwrap {
+  inset: 12px;
+  padding: 6px;
+  border-radius: 12px;
+}
+.qsec {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin: 14px 8px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.qsec:first-child {
+  margin-top: 4px;
+}
+.qsec > span:last-child:not(:first-child) {
+  display: flex;
+  gap: 6px;
+}
+.qsec button {
+  font-size: 11.5px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--raised);
+}
+.qsec button:hover {
+  color: var(--text);
+}
+.qsec .paused {
+  color: var(--a1);
+  font-weight: 600;
+}
+.qi {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--raised);
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.qi:hover {
+  background: var(--raised2);
+}
+.qi.drag {
+  opacity: 0.4;
+}
+.qi.new {
+  animation: qin 0.35s var(--ease);
+}
+@keyframes qin {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.qi .handle {
+  color: var(--faint);
+  cursor: grab;
+  width: 20px;
+  text-align: center;
+  flex: none;
+} /* the same slot as the selection circle: edge → it → thumbnail, 12 px each */
+.qi .th {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  background: #222;
+  flex: none;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: var(--faint);
+  font-size: 11px;
+}
+.qi .th canvas,
+.qi .th img.lp,
+.qi .th img.qt {
+  width: 100%;
+  height: 100%;
+}
+.qi .th img.lp,
+.qi .th img.qt {
+  object-fit: cover;
+  display: block;
+}
+.qi .th img.qt:not([src]) {
+  visibility: hidden;
+}
+.qi .th .hg {
+  display: none;
+  width: 24px;
+  height: 24px;
+  color: var(--muted);
+}
+.qi .th:has(img.lp:not([src])) .hg {
+  display: block;
+}
+.qi .th img.lp:not([src]) {
+  display: none;
+}
+.hg .hgg {
+  transform-origin: 12px 12px;
+  animation: hgflip 2.6s infinite;
+}
+.hg .st {
+  transform-origin: 12px 11.4px;
+  animation: hgtop 2.6s infinite linear;
+}
+.hg .sb {
+  transform-origin: 12px 20.2px;
+  animation: hgbot 2.6s infinite linear;
+}
+@keyframes hgflip {
+  0%,
+  78% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(180deg);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.3, 1);
+  }
+}
+@keyframes hgtop {
+  0% {
+    transform: scaleY(1);
+  }
+  75%,
+  100% {
+    transform: scaleY(0);
+  }
+}
+@keyframes hgbot {
+  0% {
+    transform: scaleY(0);
+  }
+  75%,
+  100% {
+    transform: scaleY(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hg .hgg,
+  .hg .st,
+  .hg .sb {
+    animation: none;
+  }
+}
+/* only the rows on screen are laid out and painted (hundreds of finished pictures) */
+#qsFin .qi {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 68px;
+} /* the finished rows only: a rebuilt waiting row measured at the estimate made the rows below it jump */
+/* selection: a round box at the row's start — on hover, or always while something is selected */
+.qck {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.38);
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    border-color 0.15s;
+  cursor: pointer;
+}
+.qi:hover .qck,
+.qwrap.selecting .qck {
+  opacity: 1;
+}
+.qi.sel .qck {
+  background: var(--a1);
+  border-color: var(--a1);
+}
+body.glass .qck {
+  border: 0;
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.06), var(--cool, #9ab) 14%);
+  -webkit-backdrop-filter: blur(8px) saturate(1.6);
+  backdrop-filter: blur(8px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.16);
+} /* thin glass, like every control */
+body.glass .qi.sel .qck {
+  background: var(--a1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 1px color-mix(in oklab, var(--a1) 70%, #fff);
+}
+.qi.sel .qck::after {
+  content: "";
+  position: absolute;
+  left: 5.5px;
+  top: 2.5px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--ink);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.qi.sel {
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--a1) 75%, transparent);
+}
+.qbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 14px;
+  background: var(--raised2);
+  font-size: 13px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.qsec.qfin {
+  min-height: 44px;
+  margin: 14px 0 8px;
+  padding: 0 7px 0 8px;
+  border-radius: 14px;
+  transition:
+    background 0.15s,
+    padding 0.15s;
+} /* the same height selecting or not: the rows never move */
+.qsec.qbar {
+  letter-spacing: 0;
+  text-transform: none;
+  padding-left: 14px;
+} /* while selecting, the Finished header is the action row (it sticks)*/
+.qbar .qn {
+  margin-right: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+}
+.qbar .qgap {
+  flex: 1;
+}
+.qbar {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+.qbar .qn b {
+  color: var(--text);
+  font-weight: 600;
+}
+.qbar button {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--raised);
+  font-size: 12.5px;
+  color: #e6e6ea;
+  white-space: nowrap;
+}
+.qbar button:hover {
+  background: #45454a;
+}
+.qbar .qdel {
+  background: color-mix(in oklab, #e0605a 32%, var(--raised));
+  color: #fff;
+}
+.qbar .qdel:hover {
+  background: color-mix(in oklab, #e0605a 48%, var(--raised));
+}
+.qbar .qx {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+.qbar .qx svg {
+  width: 12px;
+  height: 12px;
+}
+.qi .body {
+  flex: 1;
+  min-width: 0;
+}
+.qi .p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+.qi .meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.qi .meta.times {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.qi .mini {
+  height: 4px;
+  border-radius: 2px;
+  background: #1a1a1c;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.qi .mini i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg in oklch, var(--a1), var(--a3));
+}
+.qi .x {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.qi .x:hover {
+  background: #45454a;
+  color: var(--text);
+}
+.qi .x svg {
+  width: 14px;
+  height: 14px;
+}
+.qi.missing > :not(.x) {
+  opacity: 0.5;
+} /* the row fades, its ✕ (remove from the list) stays clear */
+.qi.missing .th {
+  font-size: 10.5px;
+}
+.qi .gone {
+  color: #e0a060;
+}
+.empty {
+  color: var(--faint);
+  text-align: center;
+  padding: 40px 10px;
+  font-size: 14px;
+}
+#qwrap .empty {
+  padding: 10px 12px 14px;
+  font-size: 13px;
+  text-align: left;
+} /* "Nothing queued": one quiet line after Up next */
+/* the bigger look on hovering a finished thumbnail: above its row (below if there's no room), never over it */
+#qpop {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  border-radius: 14px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: #0b0b0e;
+}
+#qpop.show {
+  opacity: 1;
+}
+#qpop img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}

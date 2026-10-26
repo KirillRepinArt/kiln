@@ -1,0 +1,150 @@
+/* ======================= PNG Info ======================= */
+.pwrap {
+  position: absolute;
+  inset: 0;
+  padding: 4px 2px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rpanel.paneled .pwrap {
+  padding: 18px;
+}
+.drop {
+  border: 2px dashed #3d3d42;
+  border-radius: 16px;
+  padding: 26px;
+  text-align: center;
+  color: var(--muted);
+  cursor: pointer;
+}
+.drop.over {
+  border-color: rgba(255, 255, 255, 0.7);
+  color: var(--text);
+}
+.pwrap:has(.pout:empty) .drop {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+} /* nothing loaded: the whole panel is the drop target */
+.pout {
+  flex: 1;
+  overflow: auto;
+  background: #161618;
+  border-radius: 14px;
+  padding: 18px 20px;
+  font-size: 14px;
+  color: #cfcfd4;
+}
+.pout.raw {
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+.pout:empty {
+  display: none;
+}
+.pi-h {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #8a8a92;
+  margin: 2px 0 8px;
+}
+.pi-p {
+  line-height: 1.62;
+  color: #e6e6ea;
+  margin-bottom: 18px;
+}
+.pi-p .ln {
+  min-height: 1.62em;
+}
+.pi-p .ln.list {
+  padding-left: 2.4em;
+  text-indent: -2.4em;
+}
+.pi-p .ln.lbl {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #8a8a92;
+  padding-top: 6px;
+}
+.pi-p .ln.cmt {
+  color: #6c6c74;
+  font-style: italic;
+}
+.pi-neg {
+  color: #a8a8b0;
+}
+.pi-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 18px;
+  font-size: 13px;
+}
+.pi-grid dt {
+  color: #8a8a92;
+}
+.pi-grid dd {
+  margin: 0;
+  color: #e6e6ea;
+  word-break: break-word;
+  font-variant-numeric: tabular-nums;
+}
+.pimg {
+  display: none;
+  justify-content: center;
+  flex: none;
+  max-height: 38%;
+  min-height: 0;
+}
+.pimg.show {
+  display: flex;
+}
+.pimg img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 12px;
+  object-fit: contain;
+  outline: 1px solid rgba(255, 255, 255, 0.07);
+  outline-offset: -1px;
+}
+.pact {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+#pClear {
+  margin-left: 0;
+  margin-right: auto;
+}
+.pi-raw {
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--raised);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.pact .keepseed {
+  margin-right: auto;
+  margin-left: 10px;
+}
+.btn {
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--raised);
+  font-size: 14px;
+}
+.btn:hover {
+  background: var(--raised2);
+}
+.btn.pri {
+  background: var(--grad);
+  color: var(--ink);
+  font-weight: 600;
+}
+.btn[disabled] {
+  opacity: 0.4;
+  pointer-events: none;
+}

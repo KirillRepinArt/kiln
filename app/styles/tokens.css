@@ -1,0 +1,45 @@
+/* Kiln · the styles. index.html loads these files in this order (the order matters where rules meet):
+   tokens · base · layout · prompt · controls · chips · tabs · picture · queue · loras · pnginfo · dialogs · overlays ·
+   glass · skins · motion. One rule per thing, grouped by part of the screen.
+   States are classes JS sets (body.glass / .private / .jobrun…, .app.stacked / .pright, .frame.has / .held…).
+   !important is kept only where a rule must beat an inline style or every other rule (cursor and transition
+   switches while you drag, the morph); each one says why. */
+/* ======================= tokens ======================= */
+:root {
+  --bg: #000000;
+  --text: #ededed;
+  --muted: #9a9a9f;
+  --faint: #5e5e64;
+  --sel: #ffffff;
+  /* the greys lean a few percent toward the theme, so a skin feels whole (--tw = strength) */
+  --tw: 6%;
+  --panel: color-mix(in oklab, #1c1c1e, var(--a1) var(--tw));
+  --raised: color-mix(in oklab, #2a2a2d, var(--a1) var(--tw));
+  --raised2: color-mix(in oklab, #343438, var(--a1) var(--tw));
+  --line: color-mix(in oklab, #333338, var(--a1) var(--tw));
+  --a1: #ff8a00;
+  --a2: #ff5e8a;
+  --a3: #3fe0f0;
+  --ink: #140b00;
+  --grad: linear-gradient(135deg in oklch, var(--a1), var(--a2) 55%, var(--a3));
+  --flow: linear-gradient(90deg in oklch, var(--a1), var(--a2), var(--a3), var(--a2), var(--a1));
+  --r-panel: 24px;
+  --r-pill: 999px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur: 0.2s;
+  /* every layout glide: Material 3's emphasized decelerate — most of the way in the first third, then a long soft
+     settle. One curve for all the pieces that move together, or they'd drift apart mid-move */
+  --lay-t: 0.42s;
+  --lay-e: cubic-bezier(0.05, 0.7, 0.1, 1);
+  /* the layout switch (Left / Right / Vertical): the picture morphs on this */
+  --sw-t: 440ms;
+  --sw-e: cubic-bezier(0.3, 0, 0, 1);
+  --liw: calc(
+    var(--th, 48px) + 250px
+  ); /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
+}
+@property --p {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}

@@ -1,0 +1,28 @@
+/* ======================= skins ======================= */
+/* glass thickness per theme: Aurora's sky is bright, so its glass is thicker and gathers less light than Emerald's */
+body.skin-aurora {
+  --gta: 0.48;
+  --gtk: 0.52;
+  --gtb: 1.35;
+}
+/* Emerald: the title in Courier Prime, glowing faintly, spaced like a title card; the Generating ring as twelve 30°
+   segments that light up one by one in the theme's green — a terminal readout that ticks, not sweeps */
+body.skin-emerald .ltitle .pname {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 14px color-mix(in oklab, var(--a1) 45%, transparent);
+}
+body.skin-emerald .tab .tring {
+  background: var(--a1);
+  transition: none;
+  -webkit-mask:
+    radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.6px)),
+    conic-gradient(#000 calc(round(down, var(--p) * 12, 1) * 30deg), rgba(0, 0, 0, 0.2) 0),
+    repeating-conic-gradient(#000 0 25deg, transparent 25deg 30deg);
+  -webkit-mask-composite: source-in, source-in;
+  mask:
+    radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.6px)),
+    conic-gradient(#000 calc(round(down, var(--p) * 12, 1) * 30deg), rgba(0, 0, 0, 0.2) 0),
+    repeating-conic-gradient(#000 0 25deg, transparent 25deg 30deg);
+  mask-composite: intersect, intersect;
+}

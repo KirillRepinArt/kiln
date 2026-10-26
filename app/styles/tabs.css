@@ -1,0 +1,259 @@
+/* ======================= tabs ======================= */
+.tabs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  height: 52px;
+  transition:
+    width var(--lay-t) var(--lay-e),
+    transform var(--lay-t) var(--lay-e);
+}
+.right .tabs {
+  align-self: flex-start;
+  max-width: none;
+  position: relative;
+  z-index: 4;
+}
+.app.stacked .right .tabs {
+  align-self: center;
+  width: auto !important;
+} /* !important: over the inline width sizeFrame gives it side by side */
+.seg {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--panel);
+  border: 1px solid #26262a;
+}
+.seg .thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 0;
+  border-radius: var(--r-pill);
+  background: #3a3a3f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+  transition:
+    left 0.28s var(--ease),
+    width 0.28s var(--ease);
+}
+.tab {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #cdcdcd;
+  transition: color var(--dur) var(--ease);
+}
+.tab:hover,
+.tab.on {
+  color: #fff;
+}
+.tab .n {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  position: relative;
+  top: -5px;
+  line-height: 1;
+}
+.tab .n:empty {
+  display: none;
+}
+/* the running job's progress as a ring round the G of Generating, behind the letters (the word is its stacking layer):
+   a hairline circle shows at once that a job runs (the App Store / Safari download pattern), the solid arc grows over
+   it. One element: the mask is hairline ∪ (thick ring ∩ the progress slice) */
+.tab .tl {
+  position: relative;
+  isolation: isolate;
+}
+.tab .tg {
+  position: relative;
+  display: inline-block;
+}
+/* its holder carries a knockout (effects.js): the letters in front, grown ~1.25 px, cut out of the ring — a map label's
+   halo, so the ring never touches a glyph */
+.tab .trw {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  z-index: -1;
+  -webkit-mask: var(--ko, linear-gradient(#000 0 0)) 0 0/100% 100% no-repeat;
+  mask: var(--ko, linear-gradient(#000 0 0)) 0 0/100% 100% no-repeat;
+}
+body.jobrun .tab .trw {
+  display: block;
+}
+.tab .tring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transition: --p 0.45s linear;
+  -webkit-mask:
+    radial-gradient(farthest-side, transparent calc(100% - 1.6px), rgba(0, 0, 0, 0.5) calc(100% - 1.2px)),
+    conic-gradient(#000 calc(var(--p) * 360deg), transparent 0),
+    radial-gradient(farthest-side, transparent calc(100% - 3.4px), #000 calc(100% - 3px));
+  -webkit-mask-composite: source-over, source-in;
+  mask:
+    radial-gradient(farthest-side, transparent calc(100% - 1.6px), rgba(0, 0, 0, 0.5) calc(100% - 1.2px)),
+    conic-gradient(#000 calc(var(--p) * 360deg), transparent 0),
+    radial-gradient(farthest-side, transparent calc(100% - 3.4px), #000 calc(100% - 3px));
+  mask-composite: add, intersect;
+}
+.tab:not(.on) .tring {
+  background: #8e9499;
+}
+.tab.on .tring {
+  background: #a7adb2;
+} /* a step darker than the label, a touch brighter on the selected pill */
+.gear {
+  margin-left: 4px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.gear:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+.gear svg {
+  width: 22px;
+  height: 22px;
+}
+/* the Layout button and its menu: one row of diagrams */
+.laywrap {
+  position: relative;
+  display: inline-flex;
+}
+.laymenu {
+  top: 52px;
+  bottom: auto;
+  left: auto;
+  right: 0;
+  transform-origin: top right;
+  min-width: 0;
+  padding: 6px;
+}
+.laymenu .lrow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.laymenu .lrow .opt {
+  width: auto;
+  gap: 0;
+  padding: 8px 9px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.laymenu .lrow .opt.on {
+  background: rgba(255, 255, 255, 0.12);
+}
+.laymenu .opt .lic {
+  width: 28px;
+  height: 20px;
+  flex: none;
+  margin-right: 0;
+  color: #9aa0a6;
+  align-self: center;
+}
+.laymenu .opt.on .lic,
+.laymenu .opt:hover .lic {
+  color: #fff;
+}
+.laymenu .lrow .lsep {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ======================= the panel under the tabs ======================= */
+.rpanel {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: visible;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0;
+  transition:
+    background 0.25s var(--ease),
+    border-color 0.25s var(--ease),
+    box-shadow 0.25s var(--ease);
+} /* Generating: no panel, nothing clips the edge handles */
+.rpanel.paneled {
+  overflow: hidden;
+  background: var(--panel);
+  border-color: #26262a;
+  border-radius: var(--r-panel);
+}
+.view {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.22s var(--ease),
+    transform 0.22s var(--ease),
+    visibility 0s linear 0.22s;
+}
+.view.on {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.22s var(--ease),
+    transform 0.22s var(--ease),
+    visibility 0s;
+}
+#amb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  image-rendering: auto;
+  filter: saturate(1.25) brightness(0.85);
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+  transition: opacity 1.2s var(--ease);
+}
+#amb.on {
+  opacity: 0.32;
+} /* the panel's wash of the picture's colours */
+/* the Generating ring: clearly darker than the letters in front of it */
+.tab:not(.on) .tring {
+  background: #8e9499;
+}
+.tab.on .tring {
+  background: #a7adb2;
+} /* the lighter greys: the knockout keeps them off the letters */

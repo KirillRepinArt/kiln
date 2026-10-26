@@ -1,0 +1,159 @@
+/* ======================= motion =======================
+   Drags and window resizes follow the pointer directly: these switches turn every transition off (and set the
+   cursor) while they last — !important, they must win over everything */
+body.resizing,
+body.resizing * {
+  cursor: ew-resize !important;
+  user-select: none;
+}
+body.vresizing,
+body.vresizing * {
+  cursor: ns-resize !important;
+  user-select: none;
+}
+body.cardmove,
+body.cardmove * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+body.liveresize *,
+body.liveresize *::before,
+body.liveresize *::after {
+  transition: none !important;
+}
+body.laydrag * {
+  transition: none !important;
+}
+body.laysnap *,
+body.laysnap *::before,
+body.laysnap *::after {
+  transition: none !important;
+} /* a layout switch is captured where it ends */
+/* a layout switch (Left / Right / Vertical) is a View Transition: the picture is the same object, so it MOVES to its
+   new place and size (a shared-element morph, Material's container transform); everything else fades out, then back
+   in a beat after the picture leads, clearing from a slight blur. The names exist only during a switch: a named
+   element is a backdrop root, so the glass couldn't see the sky */
+html.laymorph .app {
+  view-transition-name: kiln-app;
+}
+html.laymorph .view.on #frame {
+  view-transition-name: kiln-pic;
+}
+html.laymorph #fglow {
+  visibility: visible;
+  view-transition-name: kiln-glow;
+} /* the glow travels with the picture */
+html.laymorph #fglow[style*="display: none"] {
+  view-transition-name: none;
+}
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(kiln-app) {
+  animation: none;
+}
+::view-transition-old(kiln-app) {
+  animation: kfadeout 120ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(kiln-app) {
+  animation: kfadein2 300ms cubic-bezier(0, 0, 0.2, 1) 170ms both;
+}
+::view-transition-group(kiln-pic) {
+  animation-duration: var(--sw-t);
+  animation-timing-function: var(--sw-e);
+  z-index: 2;
+}
+::view-transition-old(kiln-pic),
+::view-transition-new(kiln-pic) {
+  animation-duration: var(--sw-t);
+  animation-timing-function: var(--sw-e);
+  height: 100%;
+}
+::view-transition-group(kiln-glow) {
+  animation-duration: var(--sw-t);
+  animation-timing-function: var(--sw-e);
+  z-index: 1;
+  mix-blend-mode: screen;
+}
+::view-transition-old(kiln-glow),
+::view-transition-new(kiln-glow) {
+  animation-duration: var(--sw-t);
+  animation-timing-function: var(--sw-e);
+  height: 100%;
+}
+/* tab switches: only the content under the tabs fades through; the tab bar and the prompt stay as they are (live), and
+   the selected tab's pill slides to its new place — a fade of the whole app read as the page reloading (2026-10-25) */
+html.tabmorph .app {
+  view-transition-name: none;
+}
+html.tabmorph .rpanel {
+  view-transition-name: kiln-panel;
+}
+::view-transition-group(kiln-panel) {
+  animation-duration: 0.65s;
+  animation-timing-function: var(--lay-e);
+  overflow: clip;
+  border-radius: var(--r-panel);
+} /* the box morphs to the new size, like the Gallery's frame */
+::view-transition-old(kiln-panel),
+::view-transition-new(kiln-panel) {
+  object-fit: none;
+  object-position: 50% 0;
+  height: 100%;
+} /* the panel changes width: its snapshot must not stretch (it read as a zoom) */
+html.tabmorph #lcol {
+  view-transition-name: kiln-prompt;
+} /* the prompt box slides to its new place as a snapshot: no glass re-blurred per frame (that lagged with Forge on the GPU) */
+::view-transition-group(kiln-prompt) {
+  animation-duration: 0.65s;
+  animation-timing-function: var(--lay-e);
+}
+::view-transition-old(kiln-prompt),
+::view-transition-new(kiln-prompt) {
+  height: 100%;
+}
+html.tabmorph body.laysnap .tabs {
+  transition:
+    width var(--lay-t) var(--lay-e),
+    transform var(--lay-t) var(--lay-e) !important;
+} /* the tab bar glides live (small) */
+html.tabmorph::view-transition-old(kiln-panel) {
+  animation: kfadeout 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+html.tabmorph::view-transition-new(kiln-panel) {
+  animation: kfadein 320ms cubic-bezier(0, 0, 0.2, 1) 100ms both;
+}
+html.tabmorph body.laysnap .seg .thumb {
+  transition:
+    left 0.28s var(--ease),
+    width 0.28s var(--ease) !important;
+} /* !important: over the switch's glide stop */
+html.tabmorph::view-transition-group(kiln-pic) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+html.tabmorph::view-transition-old(kiln-pic),
+html.tabmorph::view-transition-new(kiln-pic) {
+  animation-duration: 200ms;
+}
+@keyframes kfadeout {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes kfadein {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+@keyframes kfadein2 {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+    filter: blur(4px);
+  }
+}

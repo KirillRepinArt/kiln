@@ -1,0 +1,496 @@
+/* ======================= the picture (Generating) ======================= */
+.stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.frame {
+  position: absolute;
+  border-radius: var(--r-panel);
+  overflow: hidden;
+  background: transparent;
+  outline: 1px solid #1d1d22;
+  outline-offset: -1px;
+}
+.frame.has {
+  background: #07070a;
+  outline: 1px solid rgba(255, 255, 255, 0.07);
+  outline-offset: -1px;
+}
+/* position and size glide (stage.js sizeFrame); the canvas is drawn at the box's final size, so it never stretches.
+   A crop-and-reveal (.morph) moves the box itself, frame by frame */
+body:not(.laydrag) .stage .frame:not(.morph) {
+  transition:
+    top var(--lay-t) var(--lay-e),
+    left var(--lay-t) var(--lay-e),
+    width var(--lay-t) var(--lay-e),
+    height var(--lay-t) var(--lay-e);
+}
+.frame.reveal {
+  animation: develop 1.1s var(--ease);
+}
+@keyframes develop {
+  0% {
+    filter: brightness(1.35) saturate(1.2);
+  }
+  100% {
+    filter: none;
+  }
+}
+.frame.clickable {
+  cursor: zoom-in;
+}
+.frame.held,
+.frame.missing {
+  cursor: default;
+}
+.frame canvas {
+  display: block;
+}
+/* the picture's canvas fills the box (cover): while the box glides to another shape, no corner is ever empty. #cvx is
+   the picture on show, copied, fading out over the next one (live.js) */
+#cv,
+#cvx {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#cv {
+  z-index: 1;
+  filter: var(--vf, none);
+}
+#cvx {
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* the crop-and-reveal: both pictures at their own final size, centred; the frame is the only thing that moves */
+.frame.morph #cvx {
+  width: var(--ow);
+  height: var(--oh);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.frame.morph #cv {
+  width: var(--nw);
+  height: var(--nh);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+/* privacy: the picture is hidden outright (never a blur: a blur still shows shapes and skin tones) */
+.frame.held #cv,
+.frame.held #cvx {
+  visibility: hidden;
+}
+#veil,
+#embers {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+#veil {
+  z-index: 2;
+}
+#embers {
+  z-index: 3;
+}
+/* the empty frame: what's next and how long */
+.idle {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  color: #7a7a82;
+  font-size: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+#idleT,
+#idleS {
+  font-size: 15px;
+  color: #a4a8ad;
+}
+/* the missing-file card (a file deleted outside Kiln): no picture, just the ways back */
+.miss {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+.frame.missing .miss {
+  display: flex;
+}
+.miss .mt {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.miss .mf {
+  font-size: 12.5px;
+  color: var(--muted);
+  word-break: break-all;
+}
+.miss .ma {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+.miss .mh {
+  font-size: 12.5px;
+  color: var(--faint);
+  max-width: 340px;
+}
+/* buttons on the picture: the eye (privacy) top right, ✕ top left */
+.cbtn,
+.bclose {
+  position: absolute;
+  top: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(12, 12, 14, 0.72);
+  backdrop-filter: blur(6px);
+  display: none;
+  place-items: center;
+  z-index: 6;
+}
+.cbtn {
+  right: 10px;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+.bclose {
+  left: 10px;
+  transition: background 0.15s;
+}
+.cbtn svg {
+  width: 20px;
+  height: 20px;
+}
+.bclose svg {
+  width: 16px;
+  height: 16px;
+}
+.cbtn:hover,
+.bclose:hover {
+  background: rgba(40, 40, 44, 0.9);
+}
+.frame.has .cbtn,
+body.private .cbtn {
+  display: grid;
+}
+.frame.has:hover .cbtn {
+  opacity: 1;
+}
+.frame.held .cbtn {
+  opacity: 0.55;
+}
+.frame.held:hover .cbtn {
+  opacity: 1;
+}
+.frame.has .cbtn.lit {
+  opacity: 0.7;
+}
+.frame.has:hover .cbtn.lit {
+  opacity: 1;
+}
+body.private .cbtn {
+  opacity: 0.7;
+}
+body.private .frame:hover .cbtn {
+  opacity: 1;
+}
+.frame.missing .cbtn {
+  display: none;
+}
+.frame.browsing .bclose,
+.frame.clearable:hover .bclose {
+  display: grid;
+}
+/* the edit buttons: a column OUTSIDE the picture, on the side away from the prompt; shown on hover of the picture or the
+   column (one zone, composer.js), hidden when they can't act (empty, rendering, private, file gone). A short picture
+   wraps the column outward. The column itself is part of the hover zone; its buttons take clicks once shown */
+.gtools {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
+  padding-left: 6px;
+  opacity: 0;
+  pointer-events: auto;
+  transition:
+    opacity 0.15s,
+    top var(--lay-t) var(--lay-e),
+    left var(--lay-t) var(--lay-e);
+}
+.gtools.lefty {
+  align-content: flex-end;
+  flex-wrap: wrap-reverse;
+  padding-left: 0;
+  padding-right: 6px;
+}
+.stage.tools .gtools {
+  opacity: 1;
+}
+.rpanel.paneled .gtools,
+.stage:has(.frame.running) .gtools,
+.stage:has(.frame.held) .gtools,
+.stage:has(.frame.missing) .gtools,
+.stage:has(.frame:not(.has)) .gtools {
+  display: none;
+}
+.gtools .side {
+  display: contents;
+}
+.side button {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(12, 12, 14, 0.72);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  opacity: 0.85;
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+.side button:hover {
+  background: rgba(40, 40, 44, 0.9);
+  opacity: 1;
+}
+.stage.tools .gtools .side button {
+  pointer-events: auto;
+}
+.gtools button svg {
+  width: 19px;
+  height: 19px;
+}
+/* the arrows: on the picture (a fixed layer stage.js places every frame; the one you click holds while you're on it),
+   and in the full-size viewer */
+.nav {
+  position: absolute;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  border-radius: 50%;
+  background: rgba(12, 12, 14, 0.72);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  z-index: 6;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+.nav.prev {
+  left: 10px;
+}
+.nav.next {
+  right: 10px;
+}
+.nav svg {
+  width: 18px;
+  height: 18px;
+}
+.nav:hover {
+  background: rgba(40, 40, 44, 0.9);
+}
+.nav.off {
+  pointer-events: none;
+}
+.viewer:hover .nav:not(.off) {
+  opacity: 1;
+}
+.gnav {
+  position: fixed;
+  margin-top: 0;
+  z-index: 20;
+}
+.gnav.glide {
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    left var(--lay-t) var(--lay-e),
+    top var(--lay-t) var(--lay-e);
+} /* only the one you let go of glides */
+body.navs .gnav:not(.off) {
+  opacity: 1;
+}
+body:has(.rpanel.paneled) .gnav,
+body:has(.frame.missing) .gnav,
+body:has(.modal.show) .gnav,
+body:has(.viewer.show) .gnav {
+  display: none;
+}
+
+/* ======================= the status row under the picture =======================
+   The bar only while you watch the render; an empty Generating has no row (body.norow), the frame says what's next */
+.prog {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 300px;
+  display: none;
+  flex-direction: column;
+  gap: 7px;
+  z-index: 1;
+  transition:
+    top var(--lay-t) var(--lay-e),
+    left var(--lay-t) var(--lay-e),
+    width var(--lay-t) var(--lay-e);
+}
+.prog.show {
+  display: flex;
+}
+body.norow .prog {
+  visibility: hidden;
+}
+.prog .track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: #1c1c1e;
+  overflow: hidden;
+}
+.prog:not(.run) .track,
+.prog.bgjob .track {
+  visibility: hidden;
+}
+.prog .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.prog .fill::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--tw, 600px);
+  background: var(--flow);
+  background-size: 200% 100%;
+  animation: flow 6s linear infinite;
+}
+@keyframes flow {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.prog .meta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #cdcdcd;
+  white-space: nowrap;
+}
+body[data-pic="still"] .prog.run .meta,
+.prog.showp .meta {
+  cursor: pointer;
+} /* click: the render (behind a still), or the prompt you closed */
+.prog .meta .eta {
+  margin-left: auto;
+  color: var(--muted);
+}
+#ptxt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+#ptxt .sub {
+  color: var(--muted);
+  font-weight: 400;
+}
+.prog .stop,
+.prog .resume {
+  height: 36px;
+  border-radius: 999px;
+  background: var(--raised);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #e6e6ea;
+}
+.prog .stop {
+  display: none;
+  align-items: center;
+  gap: 7px;
+  padding: 0 15px 0 12px;
+  transition: background 0.15s;
+}
+.prog .stop svg {
+  width: 11px;
+  height: 11px;
+}
+.prog .stop:hover {
+  background: #45454a;
+}
+.prog.run .stop {
+  display: inline-flex;
+}
+.prog .resume {
+  display: none;
+  padding: 0 15px;
+}
+.prog.paused:not(.run) .resume {
+  display: inline-flex;
+  align-items: center;
+}
+.prog.bgjob .eta,
+.prog.bgjob .stop {
+  display: none;
+}
+/* stopping: the bar freezes and greys; Forge stops between steps */
+.prog.stopping .fill {
+  filter: grayscale(1) brightness(0.7);
+}
+.prog.stopping .fill::before {
+  animation-play-state: paused;
+}
+.prog.stopping .stop {
+  opacity: 0.45;
+  pointer-events: none;
+}
+/* the privacy eye on the empty frame too: it also hides the prompt, the name and the LoRAs */
+.cbtn {
+  display: grid;
+}
+.frame:hover .cbtn {
+  opacity: 1;
+}
+.frame.missing .cbtn {
+  display: none;
+}

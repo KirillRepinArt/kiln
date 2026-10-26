@@ -1,0 +1,412 @@
+/* ======================= backgrounds ======================= */
+#stars {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1.2s var(--ease);
+  pointer-events: none;
+  z-index: 0;
+}
+#stars.on {
+  opacity: 1;
+}
+#fglow {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+} /* Aurora's halo round the picture (skins.js makeHalo) */
+
+/* ======================= glass: the material the UI is made of =======================
+   Settings → Material (Solid is the alternative). Three thicknesses: regular (prompt box, tab bar, Reuse bar, pop-ups,
+   toasts, tooltips) gathers the background's light; thick (panels full of text) frosts more; thin (every control and
+   row) is a light capsule. Glass that holds glass of its own carries it on a ::before layer, not on itself: in
+   Chromium an element with a backdrop-filter becomes the backdrop of its children, so glass inside glass could not blur
+   what is really under it (the prompt under a pop-up, the text under the pills). */
+body.glass .left,
+body.glass .rpanel.paneled,
+body.glass .mcard,
+body.glass .seg,
+body.glass .peekbar {
+  background: transparent;
+  isolation: isolate;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+body.glass .ltitle .peekbar,
+body.glass .mcard {
+  position: relative;
+}
+body.glass .left::before,
+body.glass .rpanel.paneled::before,
+body.glass .mcard::before,
+body.glass .seg::before,
+body.glass .peekbar::before,
+body.glass .pill::before,
+body.glass .play::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -1;
+  pointer-events: none;
+}
+/* regular */
+body.glass .left::before,
+body.glass .seg::before,
+body.glass .peekbar::before,
+body.glass .frame:not(.has)::before {
+  background: color-mix(in oklab, rgba(18, 20, 22, var(--gta, 0.28)), var(--a1) 6%);
+  -webkit-backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
+  backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+body.glass .pop,
+body.glass .toast,
+body.glass #tip,
+body.glass .donenote,
+body.glass .qbar {
+  background: color-mix(in oklab, rgba(26, 28, 32, 0.42), var(--a1) 6%);
+  border-color: rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(20px) saturate(1.9) brightness(1.15);
+  backdrop-filter: blur(20px) saturate(1.9) brightness(1.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 12px 36px rgba(0, 0, 0, 0.4);
+}
+/* the gear and the Layout button sit in the tab bar's row over the bright sky: the tab bar's regular glass */
+body.glass .gear {
+  background: color-mix(in oklab, rgba(18, 20, 22, var(--gta, 0.28)), var(--a1) 6%);
+  -webkit-backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
+  backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+body.glass .gear:hover {
+  background: color-mix(in oklab, rgba(44, 48, 50, var(--gta, 0.28)), var(--a1) 8%);
+  color: var(--text);
+}
+/* nothing to show: the picture area is regular glass, the background's light blurred behind it */
+body.glass .frame:not(.has) {
+  outline-color: rgba(255, 255, 255, 0.12);
+}
+body.glass .frame:not(.has)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+/* thick */
+body.glass .rpanel.paneled::before,
+body.glass .mcard::before {
+  background: color-mix(in oklab, rgba(16, 18, 20, var(--gtk, 0.3)), var(--a1) 5%);
+  -webkit-backdrop-filter: blur(16px) saturate(2.2) brightness(var(--gtb, 2.1));
+  backdrop-filter: blur(16px) saturate(2.2) brightness(var(--gtb, 2.1));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+body.glass .left,
+body.glass .rpanel.paneled,
+body.glass .mcard {
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+body.glass .seg .thumb {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+/* thin: controls (the pills and Start carry theirs on ::before, so their pop-ups can blur the prompt too) */
+body.glass .pill,
+body.glass .play {
+  isolation: isolate;
+}
+body.glass .pill::before,
+body.glass .play::before {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.045), var(--cool, #9ab) 14%);
+  -webkit-backdrop-filter: blur(10px) saturate(1.7);
+  backdrop-filter: blur(10px) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+body.glass .pill:hover,
+body.glass .pill.open {
+  background: transparent;
+}
+body.glass .pill:hover::before,
+body.glass .pill.open::before,
+body.glass .play.gen:hover::before {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.15), var(--cool, #9ab) 18%);
+}
+body.glass .qb:not(.on),
+body.glass .btn:not(.pri),
+body.glass .peekbar button:not(#pkAll),
+body.glass .qsec button,
+body.glass .prog .stop,
+body.glass .prog .resume,
+body.glass .chip,
+body.glass .fchips button:not(.on),
+body.glass .iconbtn,
+body.glass .pi-raw,
+body.glass .hmodes button:not(.on),
+body.glass .qi .x,
+body.glass .search {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.08), var(--cool, #9ab) 16%);
+  -webkit-backdrop-filter: blur(12px) saturate(1.7);
+  backdrop-filter: blur(12px) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.17),
+    0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+body.glass .btn:not(.pri):hover,
+body.glass .chip:hover,
+body.glass .prog .stop:hover,
+body.glass .qb:not(.on):hover,
+body.glass .iconbtn:hover,
+body.glass .fchips button:not(.on):hover,
+body.glass .hmodes button:not(.on):hover,
+body.glass .qi .x:hover,
+body.glass .peekbar button:not(#pkAll):hover {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.16), var(--cool, #9ab) 18%);
+}
+body.glass .hmodes button:not(.on),
+body.glass .qi .x {
+  background: transparent;
+  box-shadow: none;
+} /* icon-only: no capsule at rest */
+body.glass .hmodes button:not(.on):hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.17);
+}
+/* the buttons on the picture (no hover change in glass: the glass is the button) */
+body.glass .side button,
+body.glass .side button:hover,
+body.glass .nav,
+body.glass .nav:hover,
+body.glass .bclose,
+body.glass .bclose:hover,
+body.glass .vclose,
+body.glass .cbtn {
+  background: rgba(20, 22, 24, 0.38);
+  -webkit-backdrop-filter: blur(18px) saturate(1.7);
+  backdrop-filter: blur(18px) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+body.glass .cbtn:hover {
+  background: rgba(44, 48, 50, 0.5);
+}
+/* thin rows inside thick panels */
+body.glass .qi {
+  background: color-mix(in oklab, rgba(12, 14, 14, 0.5), var(--a1) 4%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+body.glass .qi:hover {
+  background: color-mix(in oklab, rgba(40, 44, 44, 0.5), var(--a1) 6%);
+}
+body.glass .li {
+  background: color-mix(in oklab, rgba(12, 14, 14, 0.3), var(--a1) 3%);
+}
+body.glass .li:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+body.glass .li.on {
+  background: rgba(255, 255, 255, 0.05);
+}
+body.glass .pout {
+  background: rgba(0, 0, 0, 0.22);
+}
+body.glass .drop {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+/* tabs switch at once: a fading view is partly transparent, and Chromium turns off the glass inside anything partly
+   transparent, so the blur popped in only after the fade */
+body.glass .view {
+  opacity: 1;
+  transform: none;
+  transition: visibility 0s;
+}
+/* Settings: appears at once (a fading dialog would switch its glass off until the fade ends); only the dark overlay eases in */
+body.glass .modal {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0);
+  transition:
+    background-color 0.22s var(--ease),
+    visibility 0s linear 0.22s;
+}
+body.glass .modal.show {
+  background: rgba(0, 0, 0, 0.55);
+  transition:
+    background-color 0.22s var(--ease),
+    visibility 0s;
+}
+body.glass .modal:not(.show) {
+  transition: none;
+}
+body.glass .fg select option {
+  background: #1d2120;
+}
+body.glass .fg select:hover,
+body.glass .fg input:not([readonly]):hover {
+  background-color: color-mix(in oklab, rgba(255, 255, 255, 0.08), var(--cool, #9ab) 16%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+body.glass .fg select:focus,
+body.glass .fg input:not([readonly]):focus {
+  background-color: color-mix(in oklab, rgba(255, 255, 255, 0.11), var(--cool, #9ab) 18%);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+body.glass .fg input[readonly]:hover {
+  background-color: transparent;
+}
+/* the pill row floats over the bottom of the glass box: the prompt scrolls under it, fading and blurring (Liquid
+   Glass's scroll-edge effect); the last line can always scroll clear of it */
+body.glass .left .controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+}
+body.glass .left .pwrapT .cm-scroller {
+  padding-bottom: calc(var(--ctrlh, 64px) - 6px);
+} /* the text runs on under the glass controls, almost to the box's edge */
+body.glass .left .pwrapT .cm-editor {
+  margin-bottom: 0;
+}
+/* the character count sits at the box's top (its own header strip), beside the ✕ */
+body.glass .left .privov {
+  bottom: var(--ctrlh, 64px);
+}
+/* main actions (Start, Send to prompt, Reuse all, Save name): tinted glass — the theme gradient, see-through, with
+   the glass's light edge. Nothing to queue / a job running: Start is plain thin glass */
+body.glass .btn.pri,
+body.glass .peekbar #pkAll,
+body.glass .play:not(.off),
+body.glass .pnsave {
+  background: linear-gradient(
+    135deg in oklch,
+    color-mix(in oklab, var(--a1) 80%, transparent),
+    color-mix(in oklab, var(--a2) 72%, transparent) 55%,
+    color-mix(in oklab, var(--a3) 66%, transparent)
+  );
+  -webkit-backdrop-filter: blur(14px) saturate(1.8);
+  backdrop-filter: blur(14px) saturate(1.8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 2px 8px rgba(0, 0, 0, 0.25);
+}
+body.glass .btn.pri,
+body.glass .peekbar #pkAll {
+  position: relative;
+  color: var(--ink);
+  font-weight: 600;
+}
+body.glass .pnsave {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 2px 8px rgba(0, 0, 0, 0.25);
+  padding: 4px 12px;
+}
+body.glass .btn.pri:hover,
+body.glass .peekbar #pkAll:hover {
+  filter: brightness(1.1) saturate(1.05);
+}
+body.glass .play {
+  background: transparent;
+}
+body.glass .play:not(.off)::before {
+  display: none;
+}
+body.glass .play.gen,
+body.glass .play.gen:not(.off):hover {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+body.glass .play.gen::before {
+  display: block;
+}
+/* the queue count on Start: clear glass, so the number reads over the button's edge */
+body.glass .badge {
+  background: rgba(255, 255, 255, 0.03);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.5);
+  backdrop-filter: blur(1.5px) saturate(1.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.14);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+}
+/* the name plate: editing a name (your draft's, or a waiting job's in its peek) sits on a thin glass plate like the
+   pills; a waiting job's name shows a faint plate at rest, so you can tell it's editable */
+body.glass .ltitle .plbl.peekname .pname:not([readonly]) {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.04), var(--cool, #9ab) 10%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+}
+body.glass .ltitle .plbl .pname:not([readonly]):hover,
+body.glass .ltitle .plbl .pname:not([readonly]):focus {
+  border-radius: 14px;
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.07), var(--cool, #9ab) 14%);
+  -webkit-backdrop-filter: blur(12px) saturate(1.7);
+  backdrop-filter: blur(12px) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.09);
+}
+body.glass .ltitle .plbl .pname:not([readonly]):focus {
+  background: color-mix(in oklab, rgba(255, 255, 255, 0.1), var(--cool, #9ab) 16%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 6px 18px rgba(0, 0, 0, 0.25);
+}
+body.glass .ltitle .plbl.donename .pname:not(:focus),
+body.glass .ltitle .plbl.donename .pname:not(:focus):hover {
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* Start while a job runs, in glass: the flowing gradient as tinted glass (after the glass rules for Start, which it
+   overrides) */
+body.glass .play.gen,
+body.glass .play.gen:not(.off):hover {
+  background: linear-gradient(
+    90deg in oklch,
+    color-mix(in oklab, var(--a1) 80%, transparent),
+    color-mix(in oklab, var(--a2) 72%, transparent),
+    color-mix(in oklab, var(--a3) 66%, transparent),
+    color-mix(in oklab, var(--a2) 72%, transparent),
+    color-mix(in oklab, var(--a1) 80%, transparent)
+  );
+  background-size: 200% 100%;
+  -webkit-backdrop-filter: blur(14px) saturate(1.8);
+  backdrop-filter: blur(14px) saturate(1.8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 2px 8px rgba(0, 0, 0, 0.25);
+}
+body.glass .play.gen::before {
+  display: none;
+}

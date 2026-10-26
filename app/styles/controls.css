@@ -1,0 +1,401 @@
+/* ======================= controls: the pills and Start ======================= */
+/* one inset (16 px) left, bottom and right; pills and Start share their bottom edge; pill text lines up with the prompt */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 16px 16px 16px;
+}
+.pills {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.pill {
+  position: relative;
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--r-pill);
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #cdcdcd;
+  font-weight: 500;
+  transition:
+    color var(--dur),
+    background var(--dur);
+}
+.pill:hover,
+.pill.open {
+  color: var(--text);
+  background: var(--raised);
+}
+.pill .val {
+  font-size: 15px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.pill .il {
+  color: var(--muted);
+  font-weight: 400;
+  margin-right: 6px;
+}
+@container (max-width:560px) {
+  .pill .w {
+    display: none;
+  }
+  .pill {
+    padding: 0 11px;
+  }
+}
+@container (max-width:470px) {
+  .pill .il {
+    display: none;
+  }
+}
+.left.peeking .pills {
+  pointer-events: none;
+}
+.left.peeking .pill {
+  color: #8b9095;
+}
+.left.peeking .pill .il {
+  color: #686d72;
+}
+.left.peeking #pN {
+  display: none;
+}
+.left.peeking #pSD {
+  pointer-events: auto;
+  cursor: copy;
+} /* an old picture's seed pill copies its seed */
+/* Start: the theme gradient with a dark triangle; nothing to queue — plain, a grey triangle; while a job runs — plain,
+   the triangle in the progress bar's flowing gradient (the same colours and pace) */
+.play {
+  position: relative;
+  order: 2;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--raised);
+  --play-fill: url(#playGrad);
+  transition:
+    transform 0.12s,
+    filter 0.12s;
+}
+.play:not(.off) {
+  background: var(--grad);
+}
+.play:not(.off):hover {
+  filter: brightness(1.1) saturate(1.05);
+}
+.play.off {
+  cursor: not-allowed;
+}
+.play svg {
+  width: 20px;
+  height: 20px;
+  margin-left: 2px;
+}
+.play svg path {
+  fill: var(--play-fill);
+  transition:
+    fill 0.2s,
+    opacity 0.2s,
+    transform 0.25s var(--lay-e);
+}
+/* in the Gallery Start is Vary (a new seed): the triangle turns into the die from the Seed pop-up */
+.play svg .tri {
+  transform-origin: 12px 12px;
+}
+.play .dice {
+  opacity: 0;
+  transform: scale(0.6) rotate(-30deg);
+  transform-origin: 12px 12px;
+  transition:
+    opacity 0.2s,
+    transform 0.3s var(--lay-e);
+}
+.play .dice rect {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.play .dice circle {
+  fill: var(--ink);
+}
+.play.vary .dice {
+  opacity: 1;
+  transform: none;
+}
+.play.gen .dice rect {
+  stroke: #fff;
+}
+.play.gen .dice circle {
+  fill: #fff;
+}
+.play.vary svg .tri {
+  opacity: 0;
+  transform: scale(0.6);
+}
+.play svg {
+  transition:
+    margin 0.25s var(--lay-e),
+    transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.play:not(.off):hover svg {
+  transform: scale(1.2);
+}
+.play.vary svg {
+  margin-left: 0;
+} /* the triangle sits 2 px right (optical centre); the die doesn't */
+.play.off svg path {
+  fill: var(--muted);
+}
+.play:not(.off) svg path {
+  fill: var(--ink);
+}
+.play.gen,
+.play.gen:not(.off):hover {
+  background: var(--raised);
+  filter: none;
+}
+/* the queue count on Start's corner: you add to the queue there, so the number goes up where you click */
+.badge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: none;
+  place-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #fff;
+  background: transparent;
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.9),
+    0 0 8px rgba(0, 0, 0, 0.7);
+}
+.badge.show {
+  display: grid;
+}
+.play .ptrack,
+.play .pring {
+  display: none;
+} /* the old progress ring on Start (retired 2026-10-19) */
+/* pop-ups over the pills */
+.pop {
+  position: absolute;
+  bottom: 58px;
+  left: 0;
+  transform-origin: bottom left;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease),
+    visibility 0s linear var(--dur);
+  background: #232326;
+  border: 1px solid #3a3a3f;
+  border-radius: 16px;
+  padding: 8px;
+  min-width: 160px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  z-index: 40;
+  text-align: left;
+  color: var(--text);
+  cursor: default;
+}
+.pop.show {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease),
+    visibility 0s;
+}
+.pop .opt {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.pop .opt:hover {
+  background: var(--raised2);
+}
+.pop .opt.on {
+  color: #fff;
+  font-weight: 600;
+}
+.pop .opt small {
+  color: var(--muted);
+}
+.pop .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+}
+.pop input[type="number"] {
+  width: 64px;
+  background: var(--raised);
+  border: 1px solid #3a3a3f;
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+.pop .hint {
+  padding: 2px 8px 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.qb {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--raised);
+  font-size: 13px;
+}
+.qb:hover {
+  background: var(--raised2);
+}
+.qb.on {
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+}
+.rgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 72px);
+  gap: 6px;
+}
+.rt {
+  height: 84px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  padding: 8px 4px 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.rt:hover {
+  background: var(--raised2);
+}
+.rt.on {
+  border-color: rgba(255, 255, 255, 0.85);
+}
+.rt .shape {
+  border: 2px solid #8a8a90;
+  border-radius: 4px;
+}
+.rt.on .shape {
+  border-color: #fff;
+}
+.rt .t {
+  font-size: 12.5px;
+  line-height: 1;
+}
+.rt .px {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1;
+}
+.iconbtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--raised);
+}
+.iconbtn:hover {
+  background: var(--raised2);
+}
+.iconbtn svg {
+  width: 18px;
+  height: 18px;
+}
+.iconbtn.spin svg {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.seedc {
+  cursor: copy;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.22);
+}
+.seedc:hover {
+  color: var(--text);
+} /* seeds you can copy */
+/* Start while a job runs: the progress bar's flowing gradient over the whole button, the triangle glowing white; a ring
+   round the queue count fills with the job's progress */
+.play.gen,
+.play.gen:not(.off):hover {
+  background: var(--flow);
+  background-size: 200% 100%;
+  animation: flow 6s linear infinite;
+  filter: none;
+}
+.play.gen.off {
+  filter: saturate(0.55) brightness(0.75);
+}
+/* the triangle: bright while working (dark when idle) */
+.play.gen svg path,
+body.glass .play.gen svg path {
+  fill: #fff;
+}
+.play.gen svg {
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.75))
+    drop-shadow(0 0 9px color-mix(in oklab, var(--a2) 70%, transparent));
+}
+.play.gen .badge.show::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  padding: 2px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(#fff calc(var(--p) * 360deg), rgba(255, 255, 255, 0.18) 0);
+  transition: --p 0.45s linear;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+.play.gen .badge.show {
+  min-width: 22px;
+  height: 22px;
+  top: -9px;
+  right: -11px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .play.gen {
+    animation: none;
+  }
+}

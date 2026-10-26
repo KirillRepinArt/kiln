@@ -1,0 +1,606 @@
+/* ======================= prompt column: the name row =======================
+   The title over the box (theme title font), the file name round it on hover, the Reuse bar when you look at an old
+   picture. layoutLeft() sets --ltop / --ts / --lh / --chtop. */
+.ltitle {
+  position: absolute;
+  right: 0;
+  width: min(100%, var(--cw, 680px));
+  top: calc(var(--ltop, 0px) - var(--ts, 64px) + 4px);
+  height: calc(var(--ts, 64px) - 10px);
+  padding: 0 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  container-type: inline-size;
+  transition:
+    top var(--lay-t) var(--lay-e),
+    height var(--lay-t) var(--lay-e),
+    width var(--lay-t) var(--lay-e),
+    transform var(--lay-t) var(--lay-e);
+}
+.phead {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  flex: none;
+}
+.plbl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.nchip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  transition: background 0.15s;
+  min-width: 0;
+}
+.pname {
+  flex: 0 1 auto;
+  field-sizing: content;
+  min-width: 9ch;
+  max-width: 100%;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  font-family: var(--font-title, inherit);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 2px 6px;
+  margin-left: 0;
+  border-radius: 6px;
+}
+.pname::placeholder {
+  color: #55555c;
+  font-weight: 500;
+}
+.pname:hover {
+  background: #26262a;
+}
+.pname:focus {
+  background: #26262a;
+  box-shadow: inset 0 0 0 1px #3a3a40;
+}
+.plbl.hasname .pname:hover,
+.plbl.hasname .pname:focus {
+  background: transparent;
+  box-shadow: none;
+}
+.ltitle .plbl .pname:not([readonly]) {
+  padding: 2px 12px;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
+}
+.plbl.dimname .pname {
+  color: #9a9aa2;
+}
+.ltitle .plbl.peekname .pname {
+  color: #77777e;
+} /* an old picture's name: greyed */
+.ltitle .plbl.peekname .pname:not([readonly]):focus {
+  color: #f2f2f2;
+}
+/* a finished picture's title: as it is — no plate at rest or on hover, only while you edit it */
+.ltitle .plbl.donename .pname:not(:focus),
+.ltitle .plbl.donename .pname:not(:focus):hover {
+  background: transparent;
+  box-shadow: none;
+  cursor: text;
+}
+.pnx {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: none;
+  place-items: center;
+  color: var(--muted);
+  flex: none;
+  margin-left: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.pnx:hover {
+  background: #3a3a40;
+  color: #fff;
+}
+.pnx svg {
+  width: 9px;
+  height: 9px;
+}
+.plbl.hasname .pnx {
+  display: grid;
+}
+.plbl.peekname .pnx {
+  display: none;
+}
+.ltitle:hover .plbl.hasname .pnx {
+  opacity: 1;
+}
+/* the file name round the title (hover a finished picture's title): its number and .png appear beside it, fading in
+   and drifting out of the title (queue.js fnShow sets their margins) */
+.fnpre,
+.fnsuf {
+  display: inline;
+  position: absolute;
+  top: 50%;
+  pointer-events: none;
+  opacity: 0;
+  color: #6f747a;
+  font-size: 24px;
+  font-weight: 500;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  font-family: var(--font-title, inherit);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.fnpre {
+  right: 100%;
+  margin-right: 8px;
+  transform: translate(8px, -50%);
+  letter-spacing: 0.02em;
+}
+.fnsuf {
+  left: 100%;
+  margin-left: 0;
+  transform: translate(-8px, -50%);
+}
+.plbl.fnon .fnpre,
+.plbl.fnon .fnsuf {
+  opacity: 1;
+  transform: translate(0, -50%);
+  transition:
+    opacity 0.45s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.pnsave {
+  display: none;
+  margin-left: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--grad);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.pnsave.show {
+  display: inline-block;
+}
+/* the Reuse bar: the row above the box, centred, its ends clear of the size buttons; ~9 px over the box */
+.peekbar {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 5px 5px 12px;
+  margin-top: 12px;
+  margin-bottom: 3px;
+  max-width: calc(100% - 136px);
+  border-radius: 999px;
+  background: #2c2c31;
+  border: 1px solid #3a3a40;
+  font-size: 12.5px;
+  white-space: nowrap;
+  z-index: 3;
+}
+.peekbar.show {
+  display: flex;
+}
+.peekbar > span {
+  color: var(--muted);
+  margin-right: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.peekbar button {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #3a3a40;
+  font-size: 12.5px;
+}
+.peekbar button:hover {
+  background: #4a4a52;
+}
+.peekbar #pkAll {
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+}
+.peekbar .pkseed {
+  min-width: 32px;
+  padding: 5px 9px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.peekbar .pkseed svg {
+  width: 15px;
+  height: 15px;
+}
+.peekbar .pkseed.on {
+  color: var(--a1);
+}
+.peekbar .sm {
+  display: none;
+}
+@container (max-width:470px) {
+  .ltitle #peekLbl {
+    display: none;
+  }
+}
+@container (max-width:340px) {
+  .ltitle .peekbar .lg {
+    display: none;
+  }
+  .ltitle .peekbar .sm {
+    display: inline;
+  }
+}
+/* the size buttons at the name row's right: Match the picture's height · Full height (Vertical: Fit the width) */
+.hmodes {
+  position: absolute;
+  right: 22px;
+  bottom: 6px;
+  display: flex;
+  gap: 4px;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+#lcol:hover .hmodes,
+.hmodes.on {
+  opacity: 1;
+}
+.hmodes button {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.hmodes button:hover {
+  background: var(--raised2);
+  color: #fff;
+}
+.hmodes button.on {
+  background: #f2f2f2;
+  color: #111;
+}
+.hmodes svg {
+  width: 16px;
+  height: 16px;
+}
+.app.stacked #hmFull {
+  display: none;
+}
+.ltitle.tnarrow:has(.peekbar.show) {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-end;
+  align-items: center;
+  column-gap: 8px;
+}
+.ltitle.tnarrow:has(.peekbar.show) .phead {
+  flex-basis: 100%;
+}
+.ltitle.tnarrow .peekbar {
+  max-width: none;
+}
+.ltitle.tnarrow:has(.peekbar.show) .hmodes {
+  position: static;
+  margin-top: 12px;
+  margin-bottom: 3px;
+  opacity: 1;
+}
+
+/* ======================= prompt box ======================= */
+.left {
+  position: absolute;
+  right: 0;
+  width: min(100%, var(--cw, 680px));
+  top: var(--ltop, 0px);
+  height: var(--lh, auto);
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+  background: var(--panel);
+  border: 1px solid #34343a;
+  border-radius: var(--r-panel);
+  container-type: inline-size;
+  transition:
+    top var(--lay-t) var(--lay-e),
+    height var(--lay-t) var(--lay-e),
+    width var(--lay-t) var(--lay-e),
+    transform var(--lay-t) var(--lay-e);
+}
+.left.nodur,
+.ltitle.nodur {
+  transition: none;
+}
+.app.stacked .left,
+.app.stacked .ltitle {
+  right: auto;
+  left: 50%;
+  width: min(100%, var(--sw, 760px));
+  transform: translateX(calc(-50% + var(--soff, 0px)));
+}
+.app.pright .left,
+.app.pright .ltitle,
+.app.pright .ghost,
+.app.pright #lcol > .chips {
+  right: auto;
+  left: 0;
+}
+/* side by side: grab the empty parts of the box (or the name row) to move it — top / middle / bottom */
+.app:not(.stacked) .left,
+.app:not(.stacked) .ltitle {
+  cursor: grab;
+}
+.app:not(.stacked) .left.hm,
+.app:not(.stacked) .ltitle.hm {
+  cursor: default;
+}
+.pwrapT {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  cursor: text;
+}
+textarea#prompt {
+  field-sizing: content;
+  flex: 1 1 auto;
+  min-height: 200px;
+  resize: none;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  padding: 28px 16px 10px 28px;
+  margin: 0 12px 8px 0;
+  line-height: 1.62;
+  overflow: auto;
+}
+textarea#prompt.peek {
+  color: #b6bcc0;
+}
+.pwrapT.cm-on textarea#prompt {
+  display: none;
+}
+/* CodeMirror (editor.js) — these sit beside CodeMirror's own injected styles, so they keep their specificity */
+.pwrapT .cm-editor {
+  flex: 0 1 auto;
+  min-height: 108px;
+  max-height: 100%;
+  margin: 0 12px 8px 0;
+  outline: 0 !important;
+  background: transparent;
+  font: inherit;
+} /* !important: CodeMirror's focus outline */
+@property --ft {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+@property --fb {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+.pwrapT .cm-scroller {
+  overflow: auto;
+  font-family: inherit;
+  line-height: 1.62;
+  transition:
+    --ft 0.2s,
+    --fb 0.2s;
+  -webkit-mask-image: linear-gradient(transparent 0, #000 var(--ft), #000 calc(100% - var(--fb)), transparent 100%);
+  mask-image: linear-gradient(transparent 0, #000 var(--ft), #000 calc(100% - var(--fb)), transparent 100%);
+}
+.pwrapT.scrolled .cm-scroller {
+  --ft: 28px;
+}
+.pwrapT.more .cm-scroller {
+  --fb: 28px;
+} /* the fade is the inset: the 28 px margin stays a margin while the text scrolls through it */ /* text fades at an edge only where there's more of it */
+/* …and slides under a gradual blur there first (the glass "scroll edge"): a thin layer whose blur ramps up toward the edge */
+.pwrapT::before,
+.pwrapT::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 28px;
+  z-index: 1;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(0px);
+  backdrop-filter: blur(0px);
+  transition:
+    backdrop-filter 0.2s,
+    -webkit-backdrop-filter 0.2s;
+}
+.pwrapT::before {
+  top: 0;
+  -webkit-mask-image: linear-gradient(#000, transparent);
+  mask-image: linear-gradient(#000, transparent);
+}
+.pwrapT::after {
+  bottom: 0;
+  -webkit-mask-image: linear-gradient(transparent, #000);
+  mask-image: linear-gradient(transparent, #000);
+}
+.pwrapT.scrolled::before,
+.pwrapT.more::after {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.pwrapT.ovf .cm-scroller {
+  scrollbar-gutter: stable;
+}
+.pwrapT .cm-scroller::-webkit-scrollbar-track {
+  margin: 32px 0 10px;
+} /* starts just under the ✕ (which ends where the text starts, 28 px) */
+body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
+  margin-bottom: calc(var(--ctrlh, 64px) + 4px);
+} /* the scrollbar keeps its room only while the text overflows (editor.js) */
+.pwrapT .cm-content {
+  padding: 28px 0 10px 0;
+  caret-color: #fff;
+  font-size: 15px;
+}
+.pwrapT .cm-line {
+  padding: 0 16px 0 28px;
+} /* with the editor's 12 px margin: 28 px on the right too */ /* the text fills the box: you set its width yourself */
+.pwrapT .cm-cursor {
+  border-left: 2px solid #fff;
+}
+.pwrapT .cm-selectionBackground,
+.pwrapT .cm-focused .cm-selectionBackground {
+  background: color-mix(in oklab, var(--an, #7890ff) 36%, transparent) !important;
+} /* !important: CodeMirror's own selection colour */
+.pwrapT .cm-placeholder {
+  color: var(--faint);
+}
+.pwrapT .cm-editor.peek .cm-content {
+  color: #b6bcc0;
+}
+/* prompt structure (editor.js marks it; PNG Info reuses the classes) */
+.cm-ln-comment {
+  color: #6c6c74;
+  font-style: italic;
+}
+.cm-ln-list {
+  text-indent: -2.4em;
+}
+.cm-marker {
+  display: inline-block;
+  width: 2em;
+  margin-right: 0.4em;
+  text-align: right;
+  color: #6f6f78;
+  text-indent: 0;
+  font-variant-numeric: tabular-nums;
+}
+.cm-ln-label {
+  font-size: 11.5px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #8a8a92;
+  padding-top: 6px !important;
+} /* !important: over .cm-line's size and padding */
+.cm-variant {
+  background: #2c2c33;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px #3c3c44;
+  padding: 0 2px;
+}
+.cm-vbar {
+  color: #6f6f78;
+}
+.cm-lora {
+  background: #2a2a30;
+  border-radius: 6px;
+  color: #bdbdc6;
+  padding: 0 3px;
+  box-shadow: 0 0 0 1px #3a3a42;
+}
+/* the character count, while you type */
+.pcount {
+  position: absolute;
+  right: 50px;
+  top: 8px;
+  height: 20px;
+  line-height: 20px;
+  z-index: 3;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.pwrapT:focus-within .pcount {
+  opacity: 1;
+}
+/* privacy on: the prompt, the name and the LoRA chips are hidden; the box stays, with a lock */
+.privov {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13.5px;
+  border-radius: inherit;
+  cursor: default;
+}
+.privov svg {
+  width: 18px;
+  height: 18px;
+}
+body.private .privov {
+  display: flex;
+}
+body.private .pwrapT .cm-editor,
+body.private .pwrapT textarea,
+body.private .ltitle .nchip,
+body.private .chips,
+body.private .peekbar,
+body.private .pcount {
+  visibility: hidden;
+}
+/* the prompt's ✕ Clear: top right of the box while it has text and you're over it */
+.pclear {
+  position: absolute;
+  top: 8px;
+  right: 24px;
+  z-index: 3;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+.pclear svg {
+  width: 11px;
+  height: 11px;
+}
+.left.hastext:hover .pclear {
+  opacity: 1;
+  pointer-events: auto;
+}
+.pclear:hover {
+  background: var(--raised2);
+  color: #fff;
+}
+body.private .pclear {
+  visibility: hidden;
+}

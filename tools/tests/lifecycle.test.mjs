@@ -1,7 +1,7 @@
 // The server stops when the Kiln window closes — and only then (a throttled background page must not look closed).
 const alive = async k => {
   try {
-    await fetch(`http://127.0.0.1:${k.kport}/app/kiln.css`);
+    await fetch(`http://127.0.0.1:${k.kport}/app/styles/tokens.css`);
     return true;
   } catch (e) {
     return false;

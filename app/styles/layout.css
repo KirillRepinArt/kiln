@@ -1,0 +1,295 @@
+/* ======================= app layout =======================
+   Side by side: the prompt and the picture area are one centred pair (stage.js layGeo sets the widths and margins);
+   Vertical (.stacked): the picture on top, the prompt under it; .pright mirrors the pair. */
+.app {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+  margin: 0 auto;
+  padding: 18px;
+  align-items: stretch;
+  grid-template-columns: var(--mL, 1fr) var(--pw, 680px) var(--gap, 18px) var(--rw, 660px) var(--mR, 1fr);
+  transition: grid-template-columns var(--lay-t) var(--lay-e);
+}
+.app.pright {
+  grid-template-columns: var(--mL, 1fr) var(--rw, 660px) var(--gap, 18px) var(--pw, 680px) var(--mR, 1fr);
+}
+.app.stacked {
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.app > .lcol,
+.app > .right {
+  position: relative;
+}
+.app > .lcol {
+  grid-column: 2;
+}
+.app > .split {
+  grid-column: 3;
+}
+.app > .right {
+  grid-column: 4;
+}
+.app.pright > .lcol {
+  grid-column: 4;
+}
+.app.pright > .right {
+  grid-column: 2;
+}
+.app.stacked > * {
+  grid-column: 1/-1;
+}
+/* side by side everything sits in row 1: auto-placement can't go back left, so with the prompt on the right the
+   picture area would wrap onto a second row */
+.app:not(.stacked) > .lcol,
+.app:not(.stacked) > .split,
+.app:not(.stacked) > .right {
+  grid-row: 1;
+}
+.split {
+  position: relative;
+  touch-action: none;
+  pointer-events: none;
+  cursor: default;
+} /* the gap between the panels (its edges are .pedge) */
+.app.stacked .split {
+  display: none;
+}
+.lcol {
+  min-height: 0;
+  min-width: 0;
+}
+.app.stacked .lcol {
+  order: 2;
+  height: var(--lch, 320px);
+  margin-top: 6px;
+}
+.app.stacked #lcol {
+  pointer-events: none;
+}
+.app.stacked #lcol > * {
+  pointer-events: auto;
+} /* its empty parts let the pointer through to the picture's edges */
+.right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.app.stacked .right {
+  order: 1;
+}
+.app.stacked > .right {
+  justify-self: center;
+  max-width: 100%;
+  transition: width var(--lay-t) var(--lay-e);
+} /* Vertical: a centred column (stage.js sets its width) */
+
+/* ======================= edges (drag to resize) =======================
+   .pedge: the panels' vertical edges (po = the prompt's outer edge, pi/ri = the divider, ro = the picture area's outer
+   edge); .sedge: the prompt box's sides in Vertical; .hedge: the picture's own edges; .vedge / .hsplit: the prompt's
+   height. No grip bars: the outline (.fithint) and the cursor are the signal. */
+.pedge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  z-index: 8;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.pedge.po {
+  left: -8px;
+}
+.pedge.pi {
+  right: -8px;
+}
+.pedge.ro {
+  right: -8px;
+}
+.pedge.ri {
+  left: -12px;
+  width: 16px;
+} /* the band reaches the picture's outline */
+.app.pright .pedge.po {
+  left: auto;
+  right: -8px;
+}
+.app.pright .pedge.pi {
+  right: auto;
+  left: -8px;
+}
+.app.pright .pedge.ri {
+  left: auto;
+  right: -12px;
+}
+.app.pright .pedge.ro {
+  right: auto;
+  left: -8px;
+}
+.app.stacked .pedge {
+  display: none;
+}
+.sedge {
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  z-index: 8;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.sedge.l {
+  left: -8px;
+}
+.sedge.r {
+  right: -8px;
+}
+.app.stacked .sedge {
+  display: block;
+}
+.hedges {
+  position: absolute;
+  pointer-events: none;
+  z-index: 7;
+}
+.rpanel.paneled .hedges {
+  display: none;
+}
+/* the grab strips cover the space between the picture and its outline (Fitts: the target you're shown is the target) */
+.hedge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 16px;
+  cursor: ns-resize;
+  pointer-events: auto;
+  touch-action: none;
+}
+.hedge.t {
+  top: -12px;
+}
+.hedge.b {
+  bottom: -8px;
+}
+.hedge.l,
+.hedge.r {
+  display: none;
+  top: 0;
+  bottom: 0;
+  height: auto;
+  width: 16px;
+  cursor: ew-resize;
+}
+.hedge.l {
+  left: -12px;
+  right: auto;
+}
+.hedge.r {
+  right: -12px;
+  left: auto;
+}
+.app.stacked .hedge.l,
+.app.stacked .hedge.r {
+  display: block;
+} /* Vertical: side edges on the picture */
+.vedge {
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  bottom: -7px;
+  height: 14px;
+  cursor: ns-resize;
+  touch-action: none;
+  z-index: 6;
+}
+.vedge::after,
+.hsplit::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 46px;
+  height: 4px;
+  margin-left: -23px;
+  border-radius: 2px;
+  background: #8a8a92;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.vedge::after {
+  top: 5px;
+}
+.hsplit::after {
+  top: 6px;
+}
+.vedge:hover::after,
+.vedge.drag::after,
+.hsplit:hover::after,
+.hsplit.drag::after {
+  opacity: 1;
+}
+.left.hm .vedge {
+  display: none;
+}
+#lcol.vbdrag > .chips {
+  transition: none;
+} /* Vertical: the chips follow the dragged bottom edge directly */
+.hsplit {
+  display: none;
+}
+.app.stacked .hsplit {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 8px;
+  cursor: ns-resize;
+  z-index: 6;
+  touch-action: none;
+} /* stage.js places it above the title */
+/* the resize outline: on the page's bottom layer (above the sky, under the panels), 12 px round the picture
+   (stage.js places it every frame). Hover intent: in quickly, out late and slowly, so sweeping across an edge never
+   makes it blink. !important: these two transitions outrank the motion switches below on purpose */
+.fithint {
+  position: fixed;
+  display: block;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  border: 1px dashed rgba(255, 255, 255, 0.28);
+  border-radius: calc(var(--r-panel) + 12px);
+  transition: opacity 0.4s ease 0.3s !important;
+}
+.fithint.show {
+  opacity: 1;
+  transition: opacity 0.2s ease 0s !important;
+}
+/* Queue / LoRAs / PNG Info: the whole panel is what an edge sizes */
+.right.edgehint:has(.rpanel.paneled)::before {
+  content: "";
+  position: absolute;
+  inset: 64px 0 0 0;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: var(--r-panel);
+  pointer-events: none;
+  z-index: 7;
+}
+/* Vertical: the picture area's empty boxes let the pointer through. The prompt column is shifted up under them (the
+   even gaps), and they come later in the page, so they took the title's clicks ("the title isn't editable") */
+.app.stacked > .right,
+.app.stacked .rpanel:not(.paneled),
+.app.stacked #v-gen,
+.app.stacked .stage {
+  pointer-events: none;
+}
+.app.stacked .right > .tabs,
+.app.stacked .rpanel.paneled,
+.app.stacked #v-gen > .prog,
+.app.stacked .stage > .frame {
+  pointer-events: auto;
+}

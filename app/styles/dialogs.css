@@ -1,0 +1,207 @@
+/* ======================= dialogs: Settings, the shortcut sheet ======================= */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.22s var(--ease),
+    visibility 0s linear 0.22s;
+}
+.modal.show {
+  visibility: visible;
+  opacity: 1;
+  transition:
+    opacity 0.22s var(--ease),
+    visibility 0s;
+}
+/* a fixed header (✕ where it sits elsewhere in Kiln, the title, icon actions); only the content scrolls */
+.mcard {
+  width: min(560px, 92vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+}
+.modal .mcard {
+  transform: scale(0.97);
+  transition: transform 0.22s var(--ease);
+}
+.modal.show .mcard {
+  transform: none;
+}
+.modal:not(.show) .mcard {
+  transition: none;
+} /* closing is instant (re-blurring glass on every frame of a shrink lagged) */
+.mhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex: none;
+}
+.mhead h2 {
+  margin: 0;
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.mhead .mact {
+  display: flex;
+  gap: 6px;
+}
+.mhead .iconbtn svg {
+  width: 17px;
+  height: 17px;
+}
+.mbody {
+  overflow: auto;
+  padding: 16px 24px 22px;
+}
+.fg {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 4px 14px;
+  align-items: center;
+  font-size: 14px;
+}
+.fg label {
+  color: var(--muted);
+}
+.fg select,
+.fg input {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 8px;
+  width: 100%;
+  color: #f2f2f2;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.fg select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8a92' fill='none' stroke-width='1.4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+.fg select:hover,
+.fg input:hover {
+  background-color: #26262a;
+}
+.fg select:focus,
+.fg input:focus {
+  outline: 0;
+  border-color: #3a3a40;
+  background-color: #1f1f22;
+}
+.fg select option {
+  background: #232326;
+  color: #f2f2f2;
+}
+.fg input[readonly] {
+  color: var(--muted);
+}
+.fgh {
+  grid-column: 1/-1;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #8a8a92;
+  border-top: 1px solid #2c2c31;
+  padding-top: 14px;
+  margin-top: 8px;
+}
+.fgh.first {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+.about {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.about span {
+  color: var(--muted);
+  margin-right: 4px;
+}
+.updres {
+  grid-column: 1/-1;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.updres:empty {
+  display: none;
+}
+.updres code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+.updres a {
+  color: var(--a3);
+}
+.keys .mcard {
+  width: min(520px, 92vw);
+}
+.keys .fgh {
+  margin: 16px 0 10px;
+}
+.kgrid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 9px 18px;
+  align-items: center;
+  font-size: 14px;
+}
+.kgrid .kt {
+  color: var(--muted);
+}
+.kgrid.mouse .kk {
+  color: var(--text);
+  font-size: 13px;
+}
+kbd {
+  display: inline-block;
+  min-width: 24px;
+  padding: 2px 7px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  font:
+    500 12.5px var(--font, Inter),
+    system-ui;
+  text-align: center;
+  color: var(--text);
+}
+/* Settings: section names you can find at a glance */
+.fgh {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #c9ccd0;
+  padding-top: 18px;
+  margin-top: 10px;
+}
+.fgh.first {
+  padding-top: 2px;
+  margin-top: 0;
+}

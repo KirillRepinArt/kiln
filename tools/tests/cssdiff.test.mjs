@@ -1,8 +1,8 @@
 // CSS refactor check: does a stylesheet rewrite change anything you can see?
 //
-//   KILN_CSS_REF=path/to/old-kiln.css node tools/tests/run.mjs cssdiff
+//   KILN_CSS_REF=path/to/old.css node tools/tests/run.mjs cssdiff
 //
-// The page is served with today's app/kiln.css. In a series of states (empty, rendering, a finished picture, the
+// The page gets today's styles (app/styles/*.css in index.html's order, as one <style>). In a series of states (empty, rendering, a finished picture, the
 // Gallery, each tab, dialogs, pop-ups, privacy, the missing-file card…, under every theme, both materials and every
 // layout) it reads the computed style of every element and pseudo-element, swaps the <style> for the reference CSS,
 // reads them again — in the same instant, on the same DOM — and lists every difference. :hover / :focus / :active
@@ -18,7 +18,7 @@ const REF = process.env.KILN_CSS_REF;
 
 /* the page side: snapshots and the comparison (one synchronous call, so no frame runs between the two reads) */
 const LIB = String.raw`(()=>{
- const st=[...document.querySelectorAll("style")].find(s=>s.textContent.includes("--lay-t")||s.dataset.kiln);st.dataset.kiln="1";
+ const links=[...document.querySelectorAll('link[rel="stylesheet"][href*="app/styles/"]')];let st=document.querySelector("style[data-kiln]");if(!st){st=document.createElement("style");st.dataset.kiln="1";st.textContent=window.__new;links.at(-1).after(st);links.forEach(l=>l.disabled=true)}
  const NEW=st.textContent;
  const off=document.createElement("style");off.textContent="*,*::before,*::after,*::placeholder{transition:none!important}";
  const PS=["","::before","::after","::placeholder"],kebab=p=>p.replace(/[A-Z]/g,c=>"-"+c.toLowerCase());
@@ -96,12 +96,22 @@ async function forceOff(k, ids) {
   for (const id of ids || []) await k.send("CSS.forcePseudoState", { nodeId: id, forcedPseudoClasses: [] });
 }
 
+/* today's styles, one text: the files index.html links from app/styles/, in its order */
+function todaysCss() {
+  const app = join(HERE, "..", "..");
+  const html = readFileSync(join(app, "index.html"), "utf8");
+  return [...html.matchAll(/href="(app\/styles\/[\w-]+\.css)"/g)]
+    .map(m => readFileSync(join(app, m[1]), "utf8"))
+    .join("\n");
+}
+
 export async function cssdiff(k, t) {
   if (!REF) {
-    t.ok(true, "skipped — set KILN_CSS_REF to the reference kiln.css");
+    t.ok(true, "skipped — set KILN_CSS_REF to the reference CSS");
     return;
   }
-  await k.ev(`window.__ref=${JSON.stringify(readFileSync(REF, "utf8"))};1`);
+  await k.ev(`(window.__ref=${JSON.stringify(readFileSync(REF, "utf8"))}, 1)`);
+  await k.ev(`(window.__new=${JSON.stringify(todaysCss())}, 1)`);
   await k.ev(LIB);
   await k.send("DOM.enable");
   await k.send("CSS.enable");

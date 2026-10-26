@@ -14,7 +14,7 @@
 }
 .frame.has {
   background: #07070a;
-  outline: 1px solid rgba(255, 255, 255, 0.07);
+  outline: 1px solid var(--white-7);
   outline-offset: -1px;
 }
 /* position and size glide (stage.js sizeFrame); the canvas is drawn at the box's final size, so it never stretches.
@@ -27,7 +27,7 @@ body:not(.laydrag) .stage .frame:not(.morph) {
     height var(--lay-t) var(--lay-e);
 }
 .frame.reveal {
-  animation: develop 1.1s var(--ease);
+  animation: develop var(--t-1100) var(--ease);
 }
 @keyframes develop {
   0% {
@@ -66,7 +66,7 @@ body:not(.laydrag) .stage .frame:not(.morph) {
   z-index: 1;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--t-200) var(--e-standard);
 }
 /* the crop-and-reveal: both pictures at their own final size, centred; the frame is the only thing that moves */
 .frame.morph #cvx {
@@ -110,13 +110,13 @@ body:not(.laydrag) .stage .frame:not(.morph) {
   display: grid;
   place-items: center;
   color: #7a7a82;
-  font-size: 14px;
+  font-size: var(--fs-14);
   text-align: center;
   pointer-events: none;
 }
 #idleT,
 #idleS {
-  font-size: 15px;
+  font-size: var(--fs-15);
   color: #a4a8ad;
 }
 /* the missing-file card (a file deleted outside Kiln): no picture, just the ways back */
@@ -136,12 +136,12 @@ body:not(.laydrag) .stage .frame:not(.morph) {
   display: flex;
 }
 .miss .mt {
-  font-size: 16px;
+  font-size: var(--fs-16);
   font-weight: 600;
   color: var(--text);
 }
 .miss .mf {
-  font-size: 12.5px;
+  font-size: var(--fs-12-5);
   color: var(--muted);
   word-break: break-all;
 }
@@ -153,7 +153,7 @@ body:not(.laydrag) .stage .frame:not(.morph) {
   margin-top: var(--space-2);
 }
 .miss .mh {
-  font-size: 12.5px;
+  font-size: var(--fs-12-5);
   color: var(--faint);
   max-width: 340px;
 }
@@ -164,7 +164,7 @@ body:not(.laydrag) .stage .frame:not(.morph) {
   top: var(--space-3);
   width: 40px;
   height: 40px;
-  border-radius: 14px;
+  border-radius: var(--r-14);
   background: rgba(12, 12, 14, 0.72);
   backdrop-filter: blur(6px);
   display: none;
@@ -175,12 +175,12 @@ body:not(.laydrag) .stage .frame:not(.morph) {
   right: var(--space-3);
   opacity: 0;
   transition:
-    opacity 0.15s,
-    background 0.15s;
+    opacity var(--t-150),
+    background var(--t-150);
 }
 .bclose {
   left: var(--space-3);
-  transition: background 0.15s;
+  transition: background var(--t-150);
 }
 .cbtn svg {
   width: 20px;
@@ -241,7 +241,7 @@ body.private .frame:hover .cbtn {
   opacity: 0;
   pointer-events: auto;
   transition:
-    opacity 0.15s,
+    opacity var(--t-150),
     top var(--lay-t) var(--lay-e),
     left var(--lay-t) var(--lay-e);
 }
@@ -268,7 +268,7 @@ body.private .frame:hover .cbtn {
   position: relative;
   width: 40px;
   height: 40px;
-  border-radius: 14px;
+  border-radius: var(--r-14);
   background: rgba(12, 12, 14, 0.72);
   backdrop-filter: blur(6px);
   display: grid;
@@ -276,8 +276,8 @@ body.private .frame:hover .cbtn {
   opacity: 0.85;
   pointer-events: none;
   transition:
-    opacity 0.15s,
-    background 0.15s;
+    opacity var(--t-150),
+    background var(--t-150);
 }
 .side button:hover {
   background: rgba(40, 40, 44, 0.9);
@@ -306,8 +306,8 @@ body.private .frame:hover .cbtn {
   z-index: 6;
   opacity: 0;
   transition:
-    opacity 0.15s,
-    background 0.15s;
+    opacity var(--t-150),
+    background var(--t-150);
 }
 .nav.prev {
   left: var(--space-3);
@@ -335,8 +335,8 @@ body.private .frame:hover .cbtn {
 }
 .gnav.glide {
   transition:
-    opacity 0.15s,
-    background 0.15s,
+    opacity var(--t-150),
+    background var(--t-150),
     left var(--lay-t) var(--lay-e),
     top var(--lay-t) var(--lay-e);
 } /* only the one you let go of glides */
@@ -375,7 +375,7 @@ body.norow .prog {
 .prog .track {
   position: relative;
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #1c1c1e;
   overflow: hidden;
 }
@@ -397,7 +397,7 @@ body.norow .prog {
   width: var(--tw, 600px);
   background: var(--flow);
   background-size: 200% 100%;
-  animation: flow 6s linear infinite;
+  animation: flow var(--t-6000) linear infinite;
 }
 @keyframes flow {
   from {
@@ -413,7 +413,7 @@ body.norow .prog {
   align-items: center;
   gap: var(--space-3);
   height: 36px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 500;
   color: #cdcdcd;
   white-space: nowrap;
@@ -438,9 +438,9 @@ body[data-pic="still"] .prog.run .meta,
 .prog .stop,
 .prog .resume {
   height: 36px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--raised);
-  font-size: 13.5px;
+  font-size: var(--fs-13-5);
   font-weight: 500;
   color: #e6e6ea;
 }
@@ -449,7 +449,7 @@ body[data-pic="still"] .prog.run .meta,
   align-items: center;
   gap: var(--space-2);
   padding: 0 var(--space-4) 0 var(--space-3);
-  transition: background 0.15s;
+  transition: background var(--t-150);
 }
 .prog .stop svg {
   width: 11px;

@@ -12,14 +12,14 @@
 }
 .drop {
   border: 2px dashed #3d3d42;
-  border-radius: 16px;
+  border-radius: var(--r-16);
   padding: var(--space-7);
   text-align: center;
   color: var(--muted);
   cursor: pointer;
 }
 .drop.over {
-  border-color: rgba(255, 255, 255, 0.7);
+  border-color: var(--white-70);
   color: var(--text);
 }
 .pwrap:has(.pout:empty) .drop {
@@ -32,20 +32,20 @@
   flex: 1;
   overflow: auto;
   background: #161618;
-  border-radius: 14px;
+  border-radius: var(--r-14);
   padding: var(--space-5) var(--space-5);
-  font-size: 14px;
+  font-size: var(--fs-14);
   color: #cfcfd4;
 }
 .pout.raw {
   white-space: pre-wrap;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .pout:empty {
   display: none;
 }
 .pi-h {
-  font-size: 11px;
+  font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: #8a8a92;
@@ -64,7 +64,7 @@
   text-indent: -2.4em;
 }
 .pi-p .ln.lbl {
-  font-size: 11.5px;
+  font-size: var(--fs-11-5);
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: #8a8a92;
@@ -81,7 +81,7 @@
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: var(--space-2) var(--space-5);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .pi-grid dt {
   color: #8a8a92;
@@ -105,9 +105,9 @@
 .pimg img {
   max-width: 100%;
   max-height: 100%;
-  border-radius: 12px;
+  border-radius: var(--r-12);
   object-fit: contain;
-  outline: 1px solid rgba(255, 255, 255, 0.07);
+  outline: 1px solid var(--white-7);
   outline-offset: -1px;
 }
 .pact {
@@ -120,11 +120,11 @@
   margin-right: auto;
 }
 .pi-raw {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--muted);
   background: var(--raised);
   padding: var(--space-1) var(--space-3);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .pact .keepseed {
   margin-right: auto;
@@ -132,9 +132,9 @@
 }
 .btn {
   padding: var(--space-2) var(--space-4);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--raised);
-  font-size: 14px;
+  font-size: var(--fs-14);
 }
 .btn:hover {
   background: var(--raised2);

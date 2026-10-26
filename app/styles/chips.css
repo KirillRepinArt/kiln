@@ -38,7 +38,7 @@ body.cardmove #lcol > .chips {
   padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
   border-radius: var(--r-pill);
   background: var(--raised);
-  font-size: 12.5px;
+  font-size: var(--fs-12-5);
   color: #d6d6da;
   cursor: default;
 }
@@ -62,10 +62,10 @@ body.cardmove #lcol > .chips {
 }
 .chip .cw {
   font-weight: 600;
-  color: #fff;
+  color: var(--white);
   cursor: ew-resize;
   padding: 0 var(--space-1);
-  border-radius: 5px;
+  border-radius: var(--r-5);
   font-variant-numeric: tabular-nums;
 }
 .chip .cw:hover {
@@ -75,8 +75,8 @@ body.cardmove #lcol > .chips {
   width: 46px;
   background: #1c1c1e;
   border: 1px solid #4a4a52;
-  border-radius: 5px;
-  color: #fff;
+  border-radius: var(--r-5);
+  color: var(--white);
   font: inherit;
   font-weight: 600;
   padding: 0 var(--space-1);
@@ -92,14 +92,14 @@ body.cardmove #lcol > .chips {
 }
 .chip .cx:hover {
   background: #4a4a50;
-  color: #fff;
+  color: var(--white);
 }
 .chip .cx svg {
   width: 10px;
   height: 10px;
 }
 .chiplbl {
-  font-size: 12px;
+  font-size: var(--fs-12);
   letter-spacing: 0.02em;
   color: #8f959a;
   margin: 0 var(--space-2) 0 var(--space-3);
@@ -111,7 +111,7 @@ body.cardmove #lcol > .chips {
   font-weight: 600;
 }
 .chipadd:hover {
-  color: #fff;
+  color: var(--white);
 }
 .chipmore {
   padding: var(--space-1) var(--space-3);

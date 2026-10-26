@@ -16,13 +16,13 @@ body.skin-emerald .tab .tring {
   background: var(--a1);
   transition: none;
   -webkit-mask:
-    radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.6px)),
-    conic-gradient(#000 calc(round(down, var(--p) * 12, 1) * 30deg), rgba(0, 0, 0, 0.2) 0),
-    repeating-conic-gradient(#000 0 25deg, transparent 25deg 30deg);
+    radial-gradient(farthest-side, transparent calc(100% - 3px), var(--black) calc(100% - 2.6px)),
+    conic-gradient(var(--black) calc(round(down, var(--p) * 12, 1) * 30deg), var(--black-20) 0),
+    repeating-conic-gradient(var(--black) 0 25deg, transparent 25deg 30deg);
   -webkit-mask-composite: source-in, source-in;
   mask:
-    radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.6px)),
-    conic-gradient(#000 calc(round(down, var(--p) * 12, 1) * 30deg), rgba(0, 0, 0, 0.2) 0),
-    repeating-conic-gradient(#000 0 25deg, transparent 25deg 30deg);
+    radial-gradient(farthest-side, transparent calc(100% - 3px), var(--black) calc(100% - 2.6px)),
+    conic-gradient(var(--black) calc(round(down, var(--p) * 12, 1) * 30deg), var(--black-20) 0),
+    repeating-conic-gradient(var(--black) 0 25deg, transparent 25deg 30deg);
   mask-composite: intersect, intersect;
 }

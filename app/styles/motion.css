@@ -56,10 +56,10 @@ html.laymorph #fglow[style*="display: none"] {
   animation: none;
 }
 ::view-transition-old(kiln-app) {
-  animation: kfadeout 120ms cubic-bezier(0.4, 0, 1, 1) both;
+  animation: kfadeout var(--t-120) var(--e-accel) both;
 }
 ::view-transition-new(kiln-app) {
-  animation: kfadein2 300ms cubic-bezier(0, 0, 0.2, 1) 170ms both;
+  animation: kfadein2 var(--t-300) var(--e-decel) var(--t-170) both;
 }
 ::view-transition-group(kiln-pic) {
   animation-duration: var(--sw-t);
@@ -93,7 +93,7 @@ html.tabmorph .rpanel {
   view-transition-name: kiln-panel;
 }
 ::view-transition-group(kiln-panel) {
-  animation-duration: 0.65s;
+  animation-duration: var(--t-650);
   animation-timing-function: var(--lay-e);
   overflow: clip;
   border-radius: var(--r-panel);
@@ -108,7 +108,7 @@ html.tabmorph #lcol {
   view-transition-name: kiln-prompt;
 } /* the prompt box slides to its new place as a snapshot: no glass re-blurred per frame (that lagged with Forge on the GPU) */
 ::view-transition-group(kiln-prompt) {
-  animation-duration: 0.65s;
+  animation-duration: var(--t-650);
   animation-timing-function: var(--lay-e);
 }
 ::view-transition-old(kiln-prompt),
@@ -121,23 +121,23 @@ html.tabmorph body.laysnap .tabs {
     transform var(--lay-t) var(--lay-e) !important;
 } /* the tab bar glides live (small) */
 html.tabmorph::view-transition-old(kiln-panel) {
-  animation: kfadeout 180ms cubic-bezier(0.4, 0, 1, 1) both;
+  animation: kfadeout var(--t-180) var(--e-accel) both;
 }
 html.tabmorph::view-transition-new(kiln-panel) {
-  animation: kfadein 320ms cubic-bezier(0, 0, 0.2, 1) 100ms both;
+  animation: kfadein var(--t-320) var(--e-decel) var(--t-100) both;
 }
 html.tabmorph body.laysnap .seg .thumb {
   transition:
-    left 0.28s var(--ease),
-    width 0.28s var(--ease) !important;
+    left var(--t-280) var(--ease),
+    width var(--t-280) var(--ease) !important;
 } /* !important: over the switch's glide stop */
 html.tabmorph::view-transition-group(kiln-pic) {
-  animation-duration: 260ms;
-  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  animation-duration: var(--t-260);
+  animation-timing-function: var(--e-emph);
 }
 html.tabmorph::view-transition-old(kiln-pic),
 html.tabmorph::view-transition-new(kiln-pic) {
-  animation-duration: 200ms;
+  animation-duration: var(--t-200);
 }
 @keyframes kfadeout {
   to {

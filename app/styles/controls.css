@@ -38,7 +38,7 @@
   background: var(--raised);
 }
 .pill .val {
-  font-size: 15px;
+  font-size: var(--fs-15);
   line-height: 1.1;
   white-space: nowrap;
 }
@@ -90,8 +90,8 @@
   background: var(--raised);
   --play-fill: url(#playGrad);
   transition:
-    transform 0.12s,
-    filter 0.12s;
+    transform var(--t-120),
+    filter var(--t-120);
 }
 .play:not(.off) {
   background: var(--grad);
@@ -110,9 +110,9 @@
 .play svg path {
   fill: var(--play-fill);
   transition:
-    fill 0.2s,
-    opacity 0.2s,
-    transform 0.25s var(--lay-e);
+    fill var(--t-200),
+    opacity var(--t-200),
+    transform var(--t-250) var(--lay-e);
 }
 /* in the Gallery Start is Vary (a new seed): the triangle turns into the die from the Seed pop-up */
 .play svg .tri {
@@ -123,8 +123,8 @@
   transform: scale(0.6) rotate(-30deg);
   transform-origin: 12px 12px;
   transition:
-    opacity 0.2s,
-    transform 0.3s var(--lay-e);
+    opacity var(--t-200),
+    transform var(--t-300) var(--lay-e);
 }
 .play .dice rect {
   fill: none;
@@ -139,10 +139,10 @@
   transform: none;
 }
 .play.gen .dice rect {
-  stroke: #fff;
+  stroke: var(--white);
 }
 .play.gen .dice circle {
-  fill: #fff;
+  fill: var(--white);
 }
 .play.vary svg .tri {
   opacity: 0;
@@ -150,8 +150,8 @@
 }
 .play svg {
   transition:
-    margin 0.25s var(--lay-e),
-    transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+    margin var(--t-250) var(--lay-e),
+    transform var(--t-450) var(--e-quick);
 }
 .play:not(.off):hover svg {
   transform: scale(1.2);
@@ -178,16 +178,16 @@
   min-width: 22px;
   height: 20px;
   padding: 0 var(--space-2);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   display: none;
   place-items: center;
-  font-size: 11.5px;
+  font-size: var(--fs-11-5);
   font-weight: 600;
-  color: #fff;
+  color: var(--white);
   background: transparent;
   text-shadow:
-    0 0 3px rgba(0, 0, 0, 0.9),
-    0 0 8px rgba(0, 0, 0, 0.7);
+    0 0 3px var(--black-90),
+    0 0 8px var(--black-70);
 }
 .badge.show {
   display: grid;
@@ -211,10 +211,10 @@
     visibility 0s linear var(--dur);
   background: #232326;
   border: 1px solid #3a3a3f;
-  border-radius: 16px;
+  border-radius: var(--r-16);
   padding: var(--space-2);
   min-width: 160px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 12px 40px var(--black-55);
   z-index: 40;
   text-align: left;
   color: var(--text);
@@ -235,15 +235,15 @@
   gap: var(--space-4);
   width: 100%;
   padding: var(--space-2) var(--space-3);
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: var(--r-10);
+  font-size: var(--fs-14);
   cursor: pointer;
 }
 .pop .opt:hover {
   background: var(--raised2);
 }
 .pop .opt.on {
-  color: #fff;
+  color: var(--white);
   font-weight: 600;
 }
 .pop .opt small {
@@ -259,25 +259,25 @@
   width: 64px;
   background: var(--raised);
   border: 1px solid #3a3a3f;
-  border-radius: 10px;
+  border-radius: var(--r-10);
   padding: var(--space-2) var(--space-2);
 }
 .pop .hint {
   padding: var(--space-hair) var(--space-2) var(--space-1);
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 .qb {
   padding: var(--space-1) var(--space-3);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--raised);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .qb:hover {
   background: var(--raised2);
 }
 .qb.on {
-  background: #fff;
+  background: var(--white);
   color: #111;
   font-weight: 600;
 }
@@ -288,7 +288,7 @@
 }
 .rt {
   height: 84px;
-  border-radius: 12px;
+  border-radius: var(--r-12);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -302,28 +302,28 @@
   background: var(--raised2);
 }
 .rt.on {
-  border-color: rgba(255, 255, 255, 0.85);
+  border-color: var(--white-85);
 }
 .rt .shape {
   border: 2px solid #8a8a90;
-  border-radius: 4px;
+  border-radius: var(--r-4);
 }
 .rt.on .shape {
-  border-color: #fff;
+  border-color: var(--white);
 }
 .rt .t {
-  font-size: 12.5px;
+  font-size: var(--fs-12-5);
   line-height: 1;
 }
 .rt .px {
-  font-size: 10px;
+  font-size: var(--fs-10);
   color: var(--muted);
   line-height: 1;
 }
 .iconbtn {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: var(--r-10);
   display: grid;
   place-items: center;
   background: var(--raised);
@@ -336,7 +336,7 @@
   height: 18px;
 }
 .iconbtn.spin svg {
-  animation: spin 1s linear infinite;
+  animation: spin var(--t-1000) linear infinite;
 }
 @keyframes spin {
   to {
@@ -345,7 +345,7 @@
 }
 .seedc {
   cursor: copy;
-  border-bottom: 1px dotted rgba(255, 255, 255, 0.22);
+  border-bottom: 1px dotted var(--white-22);
 }
 .seedc:hover {
   color: var(--text);
@@ -356,7 +356,7 @@
 .play.gen:not(.off):hover {
   background: var(--flow);
   background-size: 200% 100%;
-  animation: flow 6s linear infinite;
+  animation: flow var(--t-6000) linear infinite;
   filter: none;
 }
 .play.gen.off {
@@ -365,11 +365,10 @@
 /* the triangle: bright while working (dark when idle) */
 .play.gen svg path,
 body.glass .play.gen svg path {
-  fill: #fff;
+  fill: var(--white);
 }
 .play.gen svg {
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.75))
-    drop-shadow(0 0 9px color-mix(in oklab, var(--a2) 70%, transparent));
+  filter: drop-shadow(0 0 3px var(--white-75)) drop-shadow(0 0 9px color-mix(in oklab, var(--a2) 70%, transparent));
 }
 .play.gen .badge.show::before {
   content: "";
@@ -378,15 +377,15 @@ body.glass .play.gen svg path {
   padding: var(--space-hair);
   border-radius: inherit;
   pointer-events: none;
-  background: conic-gradient(#fff calc(var(--p) * 360deg), rgba(255, 255, 255, 0.18) 0);
-  transition: --p 0.45s linear;
+  background: conic-gradient(var(--white) calc(var(--p) * 360deg), var(--white-18) 0);
+  transition: --p var(--t-450) linear;
   -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
+    linear-gradient(var(--black) 0 0) content-box,
+    linear-gradient(var(--black) 0 0);
   -webkit-mask-composite: xor;
   mask:
-    linear-gradient(#000 0 0) content-box exclude,
-    linear-gradient(#000 0 0);
+    linear-gradient(var(--black) 0 0) content-box exclude,
+    linear-gradient(var(--black) 0 0);
 }
 .play.gen .badge.show {
   min-width: 22px;

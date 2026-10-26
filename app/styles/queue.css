@@ -8,10 +8,10 @@
 .rpanel.paneled .qwrap {
   inset: var(--space-3);
   padding: var(--space-2);
-  border-radius: 12px;
+  border-radius: var(--r-12);
 }
 .qsec {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1.2px;
@@ -28,12 +28,12 @@
   gap: var(--space-2);
 }
 .qsec button {
-  font-size: 11.5px;
+  font-size: var(--fs-11-5);
   letter-spacing: 0;
   text-transform: none;
   color: var(--muted);
   padding: var(--space-1) var(--space-2);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--raised);
 }
 .qsec button:hover {
@@ -48,7 +48,7 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-3);
-  border-radius: 14px;
+  border-radius: var(--r-14);
   background: var(--raised);
   margin-bottom: var(--space-2);
   cursor: pointer;
@@ -60,7 +60,7 @@
   opacity: 0.4;
 }
 .qi.new {
-  animation: qin 0.35s var(--ease);
+  animation: qin var(--t-350) var(--ease);
 }
 @keyframes qin {
   from {
@@ -82,14 +82,14 @@
 .qi .th {
   width: 46px;
   height: 46px;
-  border-radius: 10px;
+  border-radius: var(--r-10);
   background: #222;
   flex: none;
   overflow: hidden;
   display: grid;
   place-items: center;
   color: var(--faint);
-  font-size: 11px;
+  font-size: var(--fs-11);
 }
 .qi .th canvas,
 .qi .th img.lp,
@@ -119,15 +119,15 @@
 }
 .hg .hgg {
   transform-origin: 12px 12px;
-  animation: hgflip 2.6s infinite;
+  animation: hgflip var(--t-2600) infinite;
 }
 .hg .st {
   transform-origin: 12px 11.4px;
-  animation: hgtop 2.6s infinite linear;
+  animation: hgtop var(--t-2600) infinite linear;
 }
 .hg .sb {
   transform-origin: 12px 20.2px;
-  animation: hgbot 2.6s infinite linear;
+  animation: hgbot var(--t-2600) infinite linear;
 }
 @keyframes hgflip {
   0%,
@@ -136,7 +136,7 @@
   }
   100% {
     transform: rotate(180deg);
-    animation-timing-function: cubic-bezier(0.6, 0, 0.3, 1);
+    animation-timing-function: var(--e-swing);
   }
 }
 @keyframes hgtop {
@@ -176,12 +176,12 @@
   height: 20px;
   border-radius: 50%;
   flex: none;
-  border: 1.5px solid rgba(255, 255, 255, 0.38);
+  border: 1.5px solid var(--white-38);
   opacity: 0;
   transition:
-    opacity 0.15s,
-    background 0.15s,
-    border-color 0.15s;
+    opacity var(--t-150),
+    background var(--t-150),
+    border-color var(--t-150);
   cursor: pointer;
 }
 .qi:hover .qck,
@@ -194,18 +194,18 @@
 }
 body.glass .qck {
   border: 0;
-  background: color-mix(in oklab, rgba(255, 255, 255, 0.06), var(--cool, #9ab) 14%);
+  background: color-mix(in oklab, var(--white-6), var(--cool) 14%);
   -webkit-backdrop-filter: blur(8px) saturate(1.6);
   backdrop-filter: blur(8px) saturate(1.6);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 0 0 1px rgba(255, 255, 255, 0.16);
+    inset 0 1px 0 var(--white-22),
+    0 0 0 1px var(--white-16);
 } /* thin glass, like every control */
 body.glass .qi.sel .qck {
   background: var(--a1);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 0 0 1px color-mix(in oklab, var(--a1) 70%, #fff);
+    inset 0 1px 0 var(--white-35),
+    0 0 0 1px color-mix(in oklab, var(--a1) 70%, var(--white));
 }
 .qi.sel .qck::after {
   /* the tick's own drawing (a rotated corner), not spacing */
@@ -231,19 +231,19 @@ body.glass .qi.sel .qck {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  border-radius: 14px;
+  border-radius: var(--r-14);
   background: var(--raised2);
-  font-size: 13px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  font-size: var(--fs-13);
+  box-shadow: 0 6px 18px var(--black-35);
 }
 .qsec.qfin {
   min-height: 44px;
   margin: var(--space-4) 0 var(--space-2);
   padding: 0 var(--space-2) 0 var(--space-2);
-  border-radius: 14px;
+  border-radius: var(--r-14);
   transition:
-    background 0.15s,
-    padding 0.15s;
+    background var(--t-150),
+    padding var(--t-150);
 } /* the same height selecting or not: the rows never move */
 .qsec.qbar {
   letter-spacing: 0;
@@ -252,7 +252,7 @@ body.glass .qi.sel .qck {
 } /* while selecting, the Finished header is the action row (it sticks)*/
 .qbar .qn {
   margin-right: var(--space-2);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 1.2px;
@@ -271,9 +271,9 @@ body.glass .qi.sel .qck {
 }
 .qbar button {
   padding: var(--space-1) var(--space-3);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--raised);
-  font-size: 12.5px;
+  font-size: var(--fs-12-5);
   color: #e6e6ea;
   white-space: nowrap;
 }
@@ -281,11 +281,11 @@ body.glass .qi.sel .qck {
   background: #45454a;
 }
 .qbar .qdel {
-  background: color-mix(in oklab, #e0605a 32%, var(--raised));
-  color: #fff;
+  background: color-mix(in oklab, var(--c-danger) 32%, var(--raised));
+  color: var(--white);
 }
 .qbar .qdel:hover {
-  background: color-mix(in oklab, #e0605a 48%, var(--raised));
+  background: color-mix(in oklab, var(--c-danger) 48%, var(--raised));
 }
 .qbar .qx {
   width: 30px;
@@ -306,19 +306,19 @@ body.glass .qi.sel .qck {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 14px;
+  font-size: var(--fs-14);
 }
 .qi .meta {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--muted);
 }
 .qi .meta.times {
-  font-size: 11.5px;
+  font-size: var(--fs-11-5);
   color: var(--faint);
 }
 .qi .mini {
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--r-2);
   background: #1a1a1c;
   margin-top: var(--space-2);
   overflow: hidden;
@@ -332,7 +332,7 @@ body.glass .qi.sel .qck {
 .qi .x {
   width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: var(--r-10);
   display: grid;
   place-items: center;
   color: var(--muted);
@@ -349,20 +349,20 @@ body.glass .qi.sel .qck {
   opacity: 0.5;
 } /* the row fades, its ✕ (remove from the list) stays clear */
 .qi.missing .th {
-  font-size: 10.5px;
+  font-size: var(--fs-10-5);
 }
 .qi .gone {
-  color: #e0a060;
+  color: var(--c-warn);
 }
 .empty {
   color: var(--faint);
   text-align: center;
   padding: var(--space-10) var(--space-3);
-  font-size: 14px;
+  font-size: var(--fs-14);
 }
 #qwrap .empty {
   padding: var(--space-3) var(--space-3) var(--space-4);
-  font-size: 13px;
+  font-size: var(--fs-13);
   text-align: left;
 } /* "Nothing queued": one quiet line after Up next */
 /* the bigger look on hovering a finished thumbnail: above its row (below if there's no room), never over it */
@@ -371,14 +371,14 @@ body.glass .qi.sel .qck {
   left: 0;
   top: 0;
   z-index: 60;
-  border-radius: 14px;
+  border-radius: var(--r-14);
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--t-150);
   box-shadow:
-    0 18px 50px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+    0 18px 50px var(--black-55),
+    0 0 0 1px var(--white-10);
   background: #0b0b0e;
 }
 #qpop.show {

@@ -38,11 +38,11 @@
   border-radius: var(--r-pill);
   background: #3a3a3f;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 1px 3px rgba(0, 0, 0, 0.4);
+    inset 0 1px 0 var(--white-8),
+    0 1px 3px var(--black-40);
   transition:
-    left 0.28s var(--ease),
-    width 0.28s var(--ease);
+    left var(--t-280) var(--ease),
+    width var(--t-280) var(--ease);
 }
 .tab {
   position: relative;
@@ -55,7 +55,7 @@
   padding: 0 var(--space-5);
   border-radius: var(--r-pill);
   white-space: nowrap;
-  font-size: 15px;
+  font-size: var(--fs-15);
   font-weight: 500;
   letter-spacing: -0.01em;
   color: #cdcdcd;
@@ -63,10 +63,10 @@
 }
 .tab:hover,
 .tab.on {
-  color: #fff;
+  color: var(--white);
 }
 .tab .n {
-  font-size: 11px;
+  font-size: var(--fs-11);
   font-weight: 600;
   color: var(--muted);
   position: relative;
@@ -98,8 +98,8 @@
   height: 24px;
   margin: calc(var(--space-3) * -1) 0 0 calc(var(--space-3) * -1);
   z-index: -1;
-  -webkit-mask: var(--ko, linear-gradient(#000 0 0)) 0 0/100% 100% no-repeat;
-  mask: var(--ko, linear-gradient(#000 0 0)) 0 0/100% 100% no-repeat;
+  -webkit-mask: var(--ko, linear-gradient(var(--black) 0 0)) 0 0/100% 100% no-repeat;
+  mask: var(--ko, linear-gradient(var(--black) 0 0)) 0 0/100% 100% no-repeat;
 }
 body.jobrun .tab .trw {
   display: block;
@@ -108,16 +108,16 @@ body.jobrun .tab .trw {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  transition: --p 0.45s linear;
+  transition: --p var(--t-450) linear;
   -webkit-mask:
-    radial-gradient(farthest-side, transparent calc(100% - 1.6px), rgba(0, 0, 0, 0.5) calc(100% - 1.2px)),
-    conic-gradient(#000 calc(var(--p) * 360deg), transparent 0),
-    radial-gradient(farthest-side, transparent calc(100% - 3.4px), #000 calc(100% - 3px));
+    radial-gradient(farthest-side, transparent calc(100% - 1.6px), var(--black-50) calc(100% - 1.2px)),
+    conic-gradient(var(--black) calc(var(--p) * 360deg), transparent 0),
+    radial-gradient(farthest-side, transparent calc(100% - 3.4px), var(--black) calc(100% - 3px));
   -webkit-mask-composite: source-over, source-in;
   mask:
-    radial-gradient(farthest-side, transparent calc(100% - 1.6px), rgba(0, 0, 0, 0.5) calc(100% - 1.2px)),
-    conic-gradient(#000 calc(var(--p) * 360deg), transparent 0),
-    radial-gradient(farthest-side, transparent calc(100% - 3.4px), #000 calc(100% - 3px));
+    radial-gradient(farthest-side, transparent calc(100% - 1.6px), var(--black-50) calc(100% - 1.2px)),
+    conic-gradient(var(--black) calc(var(--p) * 360deg), transparent 0),
+    radial-gradient(farthest-side, transparent calc(100% - 3.4px), var(--black) calc(100% - 3px));
   mask-composite: add, intersect;
 }
 .tab:not(.on) .tring {
@@ -168,11 +168,11 @@ body.jobrun .tab .trw {
   padding: var(--space-2) var(--space-2);
   justify-content: center;
   align-items: center;
-  border-radius: 10px;
+  border-radius: var(--r-10);
   white-space: nowrap;
 }
 .laymenu .lrow .opt.on {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--white-12);
 }
 .laymenu .opt .lic {
   width: 28px;
@@ -184,13 +184,13 @@ body.jobrun .tab .trw {
 }
 .laymenu .opt.on .lic,
 .laymenu .opt:hover .lic {
-  color: #fff;
+  color: var(--white);
 }
 .laymenu .lrow .lsep {
   width: 1px;
   height: 22px;
   margin: 0 var(--space-1);
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--white-12);
 }
 
 /* ======================= the panel under the tabs ======================= */
@@ -203,9 +203,9 @@ body.jobrun .tab .trw {
   border: 1px solid transparent;
   border-radius: 0;
   transition:
-    background 0.25s var(--ease),
-    border-color 0.25s var(--ease),
-    box-shadow 0.25s var(--ease);
+    background var(--t-250) var(--ease),
+    border-color var(--t-250) var(--ease),
+    box-shadow var(--t-250) var(--ease);
 } /* Generating: no panel, nothing clips the edge handles */
 .rpanel.paneled {
   overflow: hidden;
@@ -220,9 +220,9 @@ body.jobrun .tab .trw {
   opacity: 0;
   transform: translateY(4px);
   transition:
-    opacity 0.22s var(--ease),
-    transform 0.22s var(--ease),
-    visibility 0s linear 0.22s;
+    opacity var(--t-220) var(--ease),
+    transform var(--t-220) var(--ease),
+    visibility 0s linear var(--t-220);
 }
 /* without a panel (Generating, the Gallery) the panel's 1 px border is transparent: the view covers it, so the picture
    sits exactly one area gap from the prompt and one part gap under the tabs — where a panel's visible edge sits */
@@ -234,8 +234,8 @@ body.jobrun .tab .trw {
   opacity: 1;
   transform: none;
   transition:
-    opacity 0.22s var(--ease),
-    transform 0.22s var(--ease),
+    opacity var(--t-220) var(--ease),
+    transform var(--t-220) var(--ease),
     visibility 0s;
 }
 #amb {
@@ -248,9 +248,9 @@ body.jobrun .tab .trw {
   opacity: 0;
   image-rendering: auto;
   filter: saturate(1.25) brightness(0.85);
-  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
-  mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
-  transition: opacity 1.2s var(--ease);
+  -webkit-mask-image: radial-gradient(closest-side, var(--black) 55%, transparent 100%);
+  mask-image: radial-gradient(closest-side, var(--black) 55%, transparent 100%);
+  transition: opacity var(--t-1200) var(--ease);
 }
 #amb.on {
   opacity: 0.32;

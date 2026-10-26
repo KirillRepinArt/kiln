@@ -2,21 +2,21 @@
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--black-60);
   display: grid;
   place-items: center;
   z-index: 100;
   visibility: hidden;
   opacity: 0;
   transition:
-    opacity 0.22s var(--ease),
-    visibility 0s linear 0.22s;
+    opacity var(--t-220) var(--ease),
+    visibility 0s linear var(--t-220);
 }
 .modal.show {
   visibility: visible;
   opacity: 1;
   transition:
-    opacity 0.22s var(--ease),
+    opacity var(--t-220) var(--ease),
     visibility 0s;
 }
 /* a fixed header (✕ where it sits elsewhere in Kiln, the title, icon actions); only the content scrolls */
@@ -33,7 +33,7 @@
 }
 .modal .mcard {
   transform: scale(0.97);
-  transition: transform 0.22s var(--ease);
+  transition: transform var(--t-220) var(--ease);
 }
 .modal.show .mcard {
   transform: none;
@@ -46,13 +46,13 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-4) var(--space-4) var(--space-3);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--white-6);
   flex: none;
 }
 .mhead h2 {
   margin: 0;
   flex: 1;
-  font-size: 18px;
+  font-size: var(--fs-18);
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -73,7 +73,7 @@
   grid-template-columns: 150px 1fr;
   gap: var(--space-1) var(--space-4);
   align-items: center;
-  font-size: 14px;
+  font-size: var(--fs-14);
 }
 .fg label {
   color: var(--muted);
@@ -82,13 +82,13 @@
 .fg input {
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--r-8);
   padding: var(--space-2) var(--space-2);
   width: 100%;
   color: #f2f2f2;
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background var(--t-150),
+    border-color var(--t-150);
 }
 .fg select {
   appearance: none;
@@ -117,7 +117,7 @@
 }
 .fgh {
   grid-column: 1/-1;
-  font-size: 11px;
+  font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: #8a8a92;
@@ -142,7 +142,7 @@
 }
 .updres {
   grid-column: 1/-1;
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: var(--muted);
   line-height: 1.5;
 }
@@ -150,9 +150,9 @@
   display: none;
 }
 .updres code {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--white-8);
   padding: var(--space-px) var(--space-1);
-  border-radius: 5px;
+  border-radius: var(--r-5);
 }
 .updres a {
   color: var(--a3);
@@ -168,24 +168,24 @@
   grid-template-columns: auto 1fr;
   gap: var(--space-2) var(--space-5);
   align-items: center;
-  font-size: 14px;
+  font-size: var(--fs-14);
 }
 .kgrid .kt {
   color: var(--muted);
 }
 .kgrid.mouse .kk {
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 kbd {
   display: inline-block;
   min-width: 24px;
   padding: var(--space-hair) var(--space-2);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--r-7);
+  background: var(--white-8);
   box-shadow:
-    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
-    0 0 0 1px rgba(255, 255, 255, 0.08);
+    inset 0 -1px 0 var(--white-12),
+    0 0 0 1px var(--white-8);
   font:
     500 12.5px var(--font, Inter),
     system-ui;
@@ -194,7 +194,7 @@ kbd {
 }
 /* Settings: section names you can find at a glance */
 .fgh {
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   letter-spacing: 0.12em;
   color: #c9ccd0;

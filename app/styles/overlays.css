@@ -2,13 +2,13 @@
 .viewer {
   position: fixed;
   inset: 0;
-  background: #000;
+  background: var(--black);
   z-index: 150;
   visibility: hidden;
   opacity: 0;
   transition:
-    opacity 0.2s var(--ease),
-    visibility 0s linear 0.2s;
+    opacity var(--t-200) var(--ease),
+    visibility 0s linear var(--t-200);
   overflow: hidden;
   cursor: zoom-in;
 }
@@ -16,7 +16,7 @@
   visibility: visible;
   opacity: 1;
   transition:
-    opacity 0.2s var(--ease),
+    opacity var(--t-200) var(--ease),
     visibility 0s;
 }
 .viewer.zoomed {
@@ -38,7 +38,7 @@
   left: var(--space-4);
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--r-12);
   background: rgba(40, 40, 44, 0.8);
   display: grid;
   place-items: center;
@@ -52,19 +52,19 @@
   position: absolute;
   top: var(--space-6);
   right: var(--space-5);
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: #cdcdcd;
   font-variant-numeric: tabular-nums;
   background: rgba(40, 40, 44, 0.8);
   padding: var(--space-1) var(--space-3);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .vhint {
   position: absolute;
   bottom: var(--space-4);
   left: 50%;
   transform: translateX(-50%);
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: #77777e;
   white-space: nowrap;
 }
@@ -76,10 +76,10 @@
   background: #232326;
   border: 1px solid #3a3a3f;
   padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
-  border-radius: 999px;
-  font-size: 13.5px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-13-5);
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity var(--t-200);
   pointer-events: none;
   z-index: 200;
   display: flex;
@@ -100,10 +100,10 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-1) var(--space-4) var(--space-1) var(--space-1);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #232326;
   border: 1px solid #3a3a3f;
-  font-size: 13.5px;
+  font-size: var(--fs-13-5);
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
@@ -111,10 +111,10 @@
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, -8px) scale(0.96);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 36px var(--black-40);
   transition:
-    opacity 0.2s,
-    transform 0.35s var(--lay-e);
+    opacity var(--t-200),
+    transform var(--t-350) var(--lay-e);
 }
 .donenote.show {
   opacity: 1;
@@ -141,9 +141,9 @@
 }
 .toast button {
   padding: var(--space-1) var(--space-3);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--raised2);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .toast button:empty {
   display: none;
@@ -156,15 +156,15 @@
   background: #2c2c31;
   border: 1px solid #3a3a40;
   color: #e6e6ea;
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 1.35;
   padding: var(--space-1) var(--space-2);
-  border-radius: 8px;
+  border-radius: var(--r-8);
   max-width: 280px;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.12s;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  transition: opacity var(--t-120);
+  box-shadow: 0 8px 24px var(--black-50);
 }
 #tip.show {
   opacity: 1;
@@ -187,19 +187,19 @@
   right: 0;
   width: min(100%, var(--cw, 680px));
   border-radius: var(--r-panel);
-  outline: 1px dashed rgba(255, 255, 255, 0.16);
+  outline: 1px dashed var(--white-16);
   outline-offset: 12px;
   pointer-events: none;
   opacity: 0;
   transition:
-    opacity 0.15s,
-    border-color 0.15s;
+    opacity var(--t-150),
+    border-color var(--t-150);
 }
 .ghost.show {
   opacity: 1;
 }
 .ghost.near {
-  outline-color: rgba(255, 255, 255, 0.5);
+  outline-color: var(--white-50);
 }
 /* the drop zones condense in: outline, tint and (in glass) the blur grow from nothing while the zone settles from 97 %;
    the reverse when you let go. Never by opacity — Chromium switches the glass off inside anything partly transparent */
@@ -211,25 +211,25 @@
   justify-content: center;
   pointer-events: none;
   border: 0;
-  border-radius: 24px;
+  border-radius: var(--r-panel);
   background: transparent;
   color: transparent;
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: 500;
   transform: scale(0.97);
   transition:
-    background 0.22s var(--lay-e),
-    border-color 0.22s var(--lay-e),
-    color 0.22s var(--lay-e),
-    backdrop-filter 0.3s var(--lay-e),
-    box-shadow 0.3s var(--lay-e),
-    transform 0.3s var(--lay-e),
-    display 0.3s allow-discrete;
+    background var(--t-220) var(--lay-e),
+    border-color var(--t-220) var(--lay-e),
+    color var(--t-220) var(--lay-e),
+    backdrop-filter var(--t-300) var(--lay-e),
+    box-shadow var(--t-300) var(--lay-e),
+    transform var(--t-300) var(--lay-e),
+    display var(--t-300) allow-discrete;
 }
 .dockzone.show {
   display: flex;
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(255, 255, 255, 0.55);
+  background: var(--white-3);
+  color: var(--white-55);
   transform: none;
 }
 @starting-style {
@@ -244,12 +244,12 @@
   position: absolute;
   inset: var(--space-3);
   border: 1.5px dashed currentColor;
-  border-radius: 15px;
+  border-radius: var(--r-15);
   opacity: 0.5;
   pointer-events: none;
   transition:
-    border-color 0.15s,
-    opacity 0.15s;
+    border-color var(--t-150),
+    opacity var(--t-150);
 } /* the line inset on the plate, like PNG Info's drop area */
 .dockzone.near::after {
   border-color: color-mix(in oklab, var(--a1) 80%, transparent);
@@ -257,7 +257,7 @@
 }
 .dockzone.near {
   background: color-mix(in oklab, var(--a1) 14%, transparent);
-  color: #fff;
+  color: var(--white);
 }
 .dockzone.dz-left {
   left: var(--space-3);
@@ -284,8 +284,8 @@ body.glass .dockzone {
 }
 body.glass .dockzone.show {
   background: color-mix(in oklab, rgba(18, 20, 22, var(--gta, 0.28)), var(--a1) 6%);
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  border-color: var(--white-18);
+  box-shadow: inset 0 1px 0 var(--white-14);
   -webkit-backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
   backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
 }

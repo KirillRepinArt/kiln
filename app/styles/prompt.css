@@ -24,7 +24,7 @@
   justify-content: center;
   align-items: center;
   padding: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-12-5);
   color: var(--muted);
   flex: none;
 }
@@ -41,8 +41,8 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  transition: background 0.15s;
+  border-radius: var(--r-pill);
+  transition: background var(--t-150);
   min-width: 0;
 }
 .pname {
@@ -55,14 +55,14 @@
   outline: 0;
   font: inherit;
   font-family: var(--font-title, inherit);
-  font-size: 24px;
+  font-size: var(--fs-24);
   font-weight: 600;
   letter-spacing: -0.01em;
   color: #f2f2f2;
   text-align: center;
   padding: var(--space-hair) var(--space-2);
   margin-left: 0;
-  border-radius: 6px;
+  border-radius: var(--r-6);
 }
 .pname::placeholder {
   color: #55555c;
@@ -83,8 +83,8 @@
 .ltitle .plbl .pname:not([readonly]) {
   padding: var(--space-hair) var(--space-3);
   transition:
-    background 0.15s,
-    box-shadow 0.15s;
+    background var(--t-150),
+    box-shadow var(--t-150);
 }
 .plbl.dimname .pname {
   color: #9a9aa2;
@@ -112,11 +112,11 @@
   flex: none;
   margin-left: 0;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--t-150);
 }
 .pnx:hover {
   background: #3a3a40;
-  color: #fff;
+  color: var(--white);
 }
 .pnx svg {
   width: 9px;
@@ -141,14 +141,14 @@
   pointer-events: none;
   opacity: 0;
   color: #6f747a;
-  font-size: 24px;
+  font-size: var(--fs-24);
   font-weight: 500;
   white-space: nowrap;
   letter-spacing: -0.01em;
   font-family: var(--font-title, inherit);
   transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
+    opacity var(--t-200) ease,
+    transform var(--t-200) ease;
 }
 .fnpre {
   right: 100%;
@@ -166,15 +166,15 @@
   opacity: 1;
   transform: translate(0, -50%);
   transition:
-    opacity 0.45s cubic-bezier(0.2, 0.7, 0.2, 1),
-    transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+    opacity var(--t-450) var(--e-quick),
+    transform var(--t-550) var(--e-quick);
 }
 .pnsave {
   display: none;
   margin-left: var(--space-2);
   padding: var(--space-1) var(--space-3);
-  border-radius: 999px;
-  font-size: 12px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-12);
   font-weight: 600;
   background: var(--grad);
   color: var(--ink);
@@ -192,10 +192,10 @@
   margin-top: var(--space-3);
   margin-bottom: 0; /* the name row already ends one tight gap above the box */
   max-width: calc(100% - 136px);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #2c2c31;
   border: 1px solid #3a3a40;
-  font-size: 12.5px;
+  font-size: var(--fs-12-5);
   white-space: nowrap;
   z-index: 3;
 }
@@ -211,15 +211,15 @@
 }
 .peekbar button {
   padding: var(--space-1) var(--space-3);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #3a3a40;
-  font-size: 12.5px;
+  font-size: var(--fs-12-5);
 }
 .peekbar button:hover {
   background: #4a4a52;
 }
 .peekbar #pkAll {
-  background: #fff;
+  background: var(--white);
   color: #111;
   font-weight: 600;
 }
@@ -262,7 +262,7 @@
   gap: var(--space-1);
   z-index: 4;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--t-150);
 }
 #lcol:hover .hmodes,
 .hmodes.on {
@@ -271,14 +271,14 @@
 .hmodes button {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: var(--r-8);
   display: grid;
   place-items: center;
   color: var(--muted);
 }
 .hmodes button:hover {
   background: var(--raised2);
-  color: #fff;
+  color: var(--white);
 }
 .hmodes button.on {
   background: #f2f2f2;
@@ -412,10 +412,20 @@ textarea#prompt.peek {
   font-family: inherit;
   line-height: 1.62;
   transition:
-    --ft 0.2s,
-    --fb 0.2s;
-  -webkit-mask-image: linear-gradient(transparent 0, #000 var(--ft), #000 calc(100% - var(--fb)), transparent 100%);
-  mask-image: linear-gradient(transparent 0, #000 var(--ft), #000 calc(100% - var(--fb)), transparent 100%);
+    --ft var(--t-200),
+    --fb var(--t-200);
+  -webkit-mask-image: linear-gradient(
+    transparent 0,
+    var(--black) var(--ft),
+    var(--black) calc(100% - var(--fb)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    transparent 0,
+    var(--black) var(--ft),
+    var(--black) calc(100% - var(--fb)),
+    transparent 100%
+  );
 }
 .pwrapT.scrolled .cm-scroller {
   --ft: 28px;
@@ -436,18 +446,18 @@ textarea#prompt.peek {
   -webkit-backdrop-filter: blur(0px);
   backdrop-filter: blur(0px);
   transition:
-    backdrop-filter 0.2s,
-    -webkit-backdrop-filter 0.2s;
+    backdrop-filter var(--t-200),
+    -webkit-backdrop-filter var(--t-200);
 }
 .pwrapT::before {
   top: 0;
-  -webkit-mask-image: linear-gradient(#000, transparent);
-  mask-image: linear-gradient(#000, transparent);
+  -webkit-mask-image: linear-gradient(var(--black), transparent);
+  mask-image: linear-gradient(var(--black), transparent);
 }
 .pwrapT::after {
   bottom: 0;
-  -webkit-mask-image: linear-gradient(transparent, #000);
-  mask-image: linear-gradient(transparent, #000);
+  -webkit-mask-image: linear-gradient(transparent, var(--black));
+  mask-image: linear-gradient(transparent, var(--black));
 }
 .pwrapT.scrolled::before,
 .pwrapT.more::after {
@@ -465,18 +475,18 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
 } /* the scrollbar keeps its room only while the text overflows (editor.js) */
 .pwrapT .cm-content {
   padding: var(--space-7) 0 var(--space-3) 0;
-  caret-color: #fff;
-  font-size: 15px;
+  caret-color: var(--white);
+  font-size: var(--fs-15);
 }
 .pwrapT .cm-line {
   padding: 0 var(--space-4) 0 var(--space-7);
 } /* with the editor's 12 px margin: 28 px on the right too */ /* the text fills the box: you set its width yourself */
 .pwrapT .cm-cursor {
-  border-left: 2px solid #fff;
+  border-left: 2px solid var(--white);
 }
 .pwrapT .cm-selectionBackground,
 .pwrapT .cm-focused .cm-selectionBackground {
-  background: color-mix(in oklab, var(--an, #7890ff) 36%, transparent) !important;
+  background: color-mix(in oklab, var(--an) 36%, transparent) !important;
 } /* !important: CodeMirror's own selection colour */
 .pwrapT .cm-placeholder {
   color: var(--faint);
@@ -502,7 +512,7 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
   font-variant-numeric: tabular-nums;
 }
 .cm-ln-label {
-  font-size: 11.5px !important;
+  font-size: var(--fs-11-5) !important;
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: #8a8a92;
@@ -510,7 +520,7 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
 } /* !important: over .cm-line's size and padding */
 .cm-variant {
   background: #2c2c33;
-  border-radius: 6px;
+  border-radius: var(--r-6);
   box-shadow: 0 0 0 1px #3c3c44;
   padding: 0 var(--space-hair);
 }
@@ -519,7 +529,7 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
 }
 .cm-lora {
   background: #2a2a30;
-  border-radius: 6px;
+  border-radius: var(--r-6);
   color: #bdbdc6;
   padding: 0 var(--space-1);
   box-shadow: 0 0 0 1px #3a3a42;
@@ -532,11 +542,11 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
   height: 20px;
   line-height: 20px;
   z-index: 3;
-  font-size: 11.5px;
+  font-size: var(--fs-11-5);
   font-variant-numeric: tabular-nums;
   color: var(--faint);
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity var(--t-200);
   pointer-events: none;
 }
 .pwrapT:focus-within .pcount {
@@ -552,7 +562,7 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
   justify-content: center;
   gap: var(--space-3);
   color: var(--muted);
-  font-size: 13.5px;
+  font-size: var(--fs-13-5);
   border-radius: inherit;
   cursor: default;
 }
@@ -586,8 +596,8 @@ body.private .pcount {
   opacity: 0;
   pointer-events: none;
   transition:
-    opacity 0.15s,
-    background 0.15s;
+    opacity var(--t-150),
+    background var(--t-150);
 }
 .pclear svg {
   width: 11px;
@@ -599,7 +609,7 @@ body.private .pcount {
 }
 .pclear:hover {
   background: var(--raised2);
-  color: #fff;
+  color: var(--white);
 }
 body.private .pclear {
   visibility: hidden;

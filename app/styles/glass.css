@@ -62,7 +62,7 @@ body.glass .left::before,
 body.glass .seg::before,
 body.glass .peekbar::before,
 body.glass .frame:not(.has)::before {
-  background: color-mix(in oklab, rgba(18, 20, 22, var(--gta, 0.28)), var(--a1) 6%);
+  background: color-mix(in oklab, rgba(var(--glass-regular), var(--gta, 0.28)), var(--a1) 6%);
   -webkit-backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
   backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
   box-shadow:
@@ -74,7 +74,7 @@ body.glass .toast,
 body.glass #tip,
 body.glass .donenote,
 body.glass .qbar {
-  background: color-mix(in oklab, rgba(26, 28, 32, 0.42), var(--a1) 6%);
+  background: color-mix(in oklab, var(--glass-bar), var(--a1) 6%);
   border-color: var(--white-14);
   -webkit-backdrop-filter: blur(20px) saturate(1.9) brightness(1.15);
   backdrop-filter: blur(20px) saturate(1.9) brightness(1.15);
@@ -84,7 +84,7 @@ body.glass .qbar {
 }
 /* the gear and the Layout button sit in the tab bar's row over the bright sky: the tab bar's regular glass */
 body.glass .gear {
-  background: color-mix(in oklab, rgba(18, 20, 22, var(--gta, 0.28)), var(--a1) 6%);
+  background: color-mix(in oklab, rgba(var(--glass-regular), var(--gta, 0.28)), var(--a1) 6%);
   -webkit-backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
   backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
   box-shadow:
@@ -93,7 +93,7 @@ body.glass .gear {
     0 0 0 1px var(--white-10);
 }
 body.glass .gear:hover {
-  background: color-mix(in oklab, rgba(44, 48, 50, var(--gta, 0.28)), var(--a1) 8%);
+  background: color-mix(in oklab, rgba(var(--glass-regular-hover), var(--gta, 0.28)), var(--a1) 8%);
   color: var(--text);
 }
 /* nothing to show: the picture area is regular glass, the background's light blurred behind it */
@@ -111,7 +111,7 @@ body.glass .frame:not(.has)::before {
 /* thick */
 body.glass .rpanel.paneled::before,
 body.glass .mcard::before {
-  background: color-mix(in oklab, rgba(16, 18, 20, var(--gtk, 0.3)), var(--a1) 5%);
+  background: color-mix(in oklab, rgba(var(--glass-thick), var(--gtk, 0.3)), var(--a1) 5%);
   -webkit-backdrop-filter: blur(16px) saturate(2.2) brightness(var(--gtb, 2.1));
   backdrop-filter: blur(16px) saturate(2.2) brightness(var(--gtb, 2.1));
   box-shadow: inset 0 1px 0 var(--white-12);
@@ -197,7 +197,7 @@ body.glass .bclose,
 body.glass .bclose:hover,
 body.glass .vclose,
 body.glass .cbtn {
-  background: rgba(20, 22, 24, 0.38);
+  background: var(--glass-control);
   -webkit-backdrop-filter: blur(18px) saturate(1.7);
   backdrop-filter: blur(18px) saturate(1.7);
   box-shadow:
@@ -205,18 +205,18 @@ body.glass .cbtn {
     0 0 0 1px var(--white-10);
 }
 body.glass .cbtn:hover {
-  background: rgba(44, 48, 50, 0.5);
+  background: rgba(var(--glass-regular-hover), 0.5);
 }
 /* thin rows inside thick panels */
 body.glass .qi {
-  background: color-mix(in oklab, rgba(12, 14, 14, 0.5), var(--a1) 4%);
+  background: color-mix(in oklab, rgba(var(--glass-row), 0.5), var(--a1) 4%);
   box-shadow: inset 0 1px 0 var(--white-7);
 }
 body.glass .qi:hover {
-  background: color-mix(in oklab, rgba(40, 44, 44, 0.5), var(--a1) 6%);
+  background: color-mix(in oklab, rgba(var(--glass-row-hover), 0.5), var(--a1) 6%);
 }
 body.glass .li {
-  background: color-mix(in oklab, rgba(12, 14, 14, 0.3), var(--a1) 3%);
+  background: color-mix(in oklab, rgba(var(--glass-row), 0.3), var(--a1) 3%);
 }
 body.glass .li:hover {
   background: var(--white-6);

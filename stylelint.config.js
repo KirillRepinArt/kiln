@@ -1,6 +1,7 @@
 // Stylelint: catches real mistakes in the CSS (unknown properties, typos in colours, duplicated declarations).
-// Design tokens (v0.7 step 7): spacing comes from the scale in app/styles/tokens.css — a raw px value in a spacing
-// property is an error (0 is fine; 1 and 2 px are --space-px / --space-hair). More token rules follow.
+// Design tokens (v0.7 step 7): every colour, spacing step, corner, type size and duration lives in
+// app/styles/tokens.css. Anywhere else a raw one is an error — use the token (0 is fine; 1 and 2 px of spacing are
+// --space-px / --space-hair). rgba(var(--glass-…), opacity) is fine: the colour is the token.
 export default {
   ignoreFiles: ["app/vendor/**", "app/fonts/**"],
   rules: {
@@ -33,6 +34,19 @@ export default {
     "declaration-property-value-disallowed-list": {
       "/^(padding|margin|gap|row-gap|column-gap|inset)/": ["/(^|[^\\w.-])[1-9][\\d.]*px/"],
       "/^(top|left|right|bottom)$/": ["/(^|[^\\w.-])[1-9][\\d.]*px/"],
+      "/radius$/": ["/(^|[^\\w.-])[1-9][\\d.]*px/"],
+      "font-size": ["/(^|[^\\w.-])[1-9][\\d.]*px/"],
+      "/^font$/": ["/(^|[^\\w.-])[1-9][\\d.]*px/"],
+      "/^(transition|animation)(-duration|-delay)?$/": ["/(^|[^\\w.-])(\\d*\\.)?\\d*[1-9]\\d*m?s\\b/"],
+      "/^(?!--)/": ["/rgba?\\(\\s*\\d/", "/hsla?\\(/"],
     },
+    "color-no-hex": true,
   },
+  overrides: [
+    {
+      // the one place the raw values live
+      files: ["app/styles/tokens.css"],
+      rules: { "color-no-hex": null, "declaration-property-value-disallowed-list": null },
+    },
+  ],
 };

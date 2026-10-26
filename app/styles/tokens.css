@@ -170,6 +170,17 @@
   --grey-96: #f2f2f2;
   --c-caution-bg: #2e2618; /* behind a caution note (warm) */
   --glass-option: #1d2120; /* a dropdown's list in glass */
+  /* GLASS — the material's tints (channels: the opacity comes from the theme's --gta / --gtk or the rule) */
+  --glass-regular: 18, 20, 22; /* regular glass: the empty frame, the gear, the dock zones */
+  --glass-regular-hover: 44, 48, 50; /* regular glass under the pointer */
+  --glass-thick: 16, 18, 20; /* thick glass: dialogs */
+  --glass-row: 12, 14, 14; /* a Queue / LoRAs row in glass */
+  --glass-row-hover: 40, 44, 44; /* a Queue row under the pointer */
+  --glass-bar: rgba(26, 28, 32, 0.42); /* the Queue's selection bar in glass */
+  --glass-control: rgba(20, 22, 24, 0.38); /* the privacy eye in glass */
+  --on-picture: rgba(12, 12, 14, 0.72); /* a button over a picture: ✕, the arrows */
+  --on-picture-hover: rgba(40, 40, 44, 0.9); /* …under the pointer */
+  --viewer-button: rgba(40, 40, 44, 0.8); /* the full-size viewer's buttons */
   /* the few real colours, by role */
   --c-danger: #e0605a; /* a destructive action (the Queue's Delete) */
   --c-warn: #e0a060; /* a missing file */

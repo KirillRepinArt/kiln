@@ -165,7 +165,7 @@ body:not(.laydrag) .stage .frame:not(.morph) {
   width: 40px;
   height: 40px;
   border-radius: var(--r-14);
-  background: rgba(12, 12, 14, 0.72);
+  background: var(--on-picture);
   backdrop-filter: blur(6px);
   display: none;
   place-items: center;
@@ -192,7 +192,7 @@ body:not(.laydrag) .stage .frame:not(.morph) {
 }
 .cbtn:hover,
 .bclose:hover {
-  background: rgba(40, 40, 44, 0.9);
+  background: var(--on-picture-hover);
 }
 .frame.has .cbtn,
 body.private .cbtn {
@@ -269,7 +269,7 @@ body.private .frame:hover .cbtn {
   width: 40px;
   height: 40px;
   border-radius: var(--r-14);
-  background: rgba(12, 12, 14, 0.72);
+  background: var(--on-picture);
   backdrop-filter: blur(6px);
   display: grid;
   place-items: center;
@@ -280,7 +280,7 @@ body.private .frame:hover .cbtn {
     background var(--t-150);
 }
 .side button:hover {
-  background: rgba(40, 40, 44, 0.9);
+  background: var(--on-picture-hover);
   opacity: 1;
 }
 .stage.tools .gtools .side button {
@@ -299,7 +299,7 @@ body.private .frame:hover .cbtn {
   height: 40px;
   translate: 0 -50%; /* centred on its top: 50% (a centring offset, not spacing) */
   border-radius: 50%;
-  background: rgba(12, 12, 14, 0.72);
+  background: var(--on-picture);
   backdrop-filter: blur(6px);
   display: grid;
   place-items: center;
@@ -320,7 +320,7 @@ body.private .frame:hover .cbtn {
   height: 18px;
 }
 .nav:hover {
-  background: rgba(40, 40, 44, 0.9);
+  background: var(--on-picture-hover);
 }
 .nav.off {
   pointer-events: none;

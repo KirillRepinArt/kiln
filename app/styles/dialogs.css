@@ -187,7 +187,7 @@ kbd {
     inset 0 -1px 0 var(--white-12),
     0 0 0 1px var(--white-8);
   font:
-    500 12.5px var(--font, Inter),
+    500 var(--fs-12-5) var(--font, Inter),
     system-ui;
   text-align: center;
   color: var(--text);

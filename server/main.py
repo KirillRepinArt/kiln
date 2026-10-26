@@ -14,6 +14,7 @@ from typing import Any
 from .backends import Backend, make_backend
 from .catalog import Catalog
 from .config import CFG, Paths
+from .instance import InstanceLock, bind_first, read_instance, write_instance
 from .jobqueue import JobQueue
 from .lifecycle import Window, watchdog
 from .pictures import Pictures
@@ -82,6 +83,15 @@ def main() -> None:
     k = create(CFG)
     k.paths.make_dirs()
     setup_logging(k.paths)
+    lock = InstanceLock(k.paths.data / "kiln.lock")
+    if not lock.acquire():  # another Kiln has this data folder: two would both run the queue
+        other = read_instance(k.paths.data) or {}
+        log.info(
+            "Kiln is already running for %s (port %s) — not starting a second one.",
+            k.paths.data,
+            other.get("port", "?"),
+        )
+        sys.exit(3)
     k.queue.load()
     k.pictures.tidy()
     k.timings.load(k.queue.jobs)
@@ -89,10 +99,12 @@ def main() -> None:
     k.worker.start()
     threading.Thread(target=k.backend.watch, daemon=True).start()
     threading.Thread(target=watchdog, args=(k.cfg, k.window, k.queue, k.backend.stop), daemon=True).start()
-    srv = KilnServer((CFG["host"], CFG["port"]), k)
-    log.info(
-        "Kiln on http://%s:%s  ·  Forge: %s  ·  images → %s", CFG["host"], CFG["port"], CFG["forge_url"], k.paths.out
-    )
+    srv, _ = bind_first(lambda port: KilnServer((CFG["host"], port), k), int(CFG["port"]))
+    port = srv.server_address[1]
+    if port != CFG["port"]:
+        log.info("Port %s is taken by something else — using %s.", CFG["port"], port)
+    write_instance(k.paths.data, int(port))
+    log.info("Kiln on http://%s:%s  ·  Forge: %s  ·  images → %s", CFG["host"], port, CFG["forge_url"], k.paths.out)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

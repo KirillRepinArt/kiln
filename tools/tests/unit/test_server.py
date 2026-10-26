@@ -11,6 +11,7 @@ from server import images, naming, timings
 from server.backends.forge import bare, lora_folders, same_paths
 from server.config import Paths, load_config
 from server.errors import ApiError
+from server.instance import InstanceLock, bind_first, read_instance, write_instance
 from server.jobqueue import JobQueue, public
 from server.lifecycle import window_gone
 from server.page import styles_signature
@@ -301,6 +302,49 @@ class Misc(unittest.TestCase):
         p = Paths.from_config({"output_dir": "/pics", "data_dir": "d"}, Path("/prog").resolve())
         self.assertEqual(p.queue_file, Path("/prog").resolve() / "d" / "queue.json")
         self.assertEqual(p.out, Path("/pics").resolve())
+
+
+class Instance(TempDirs):
+    def test_one_kiln_per_data_folder(self) -> None:
+        a, b = InstanceLock(self.paths.data / "kiln.lock"), InstanceLock(self.paths.data / "kiln.lock")
+        self.assertTrue(a.acquire())
+        self.assertFalse(b.acquire(), "a second Kiln on the same data folder is refused")
+        a.release()
+        self.assertTrue(b.acquire(), "…and allowed once the first has gone")
+        b.release()
+
+    def test_the_next_free_port(self) -> None:
+        taken = {7870, 7871}
+
+        def make(port: int) -> str:
+            if port in taken:
+                raise OSError("in use")
+            return f"server on {port}"
+
+        self.assertEqual(bind_first(make, 7870), ("server on 7872", 7872))
+
+    def test_a_port_is_never_shared(self) -> None:
+        """Python's HTTP server sets "reuse address", which on Windows lets a second one share the port silently."""
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        from server.web import KilnServer
+
+        first = KilnServer(("127.0.0.1", 0), None)  # type: ignore[arg-type]
+        port = first.server_address[1]
+        try:
+            with self.assertRaises(OSError, msg="a second Kiln on the same port"):
+                KilnServer(("127.0.0.1", port), None).server_close()  # type: ignore[arg-type]
+            with self.assertRaises(OSError, msg="any other server asking to share it"):
+                ThreadingHTTPServer(("127.0.0.1", port), BaseHTTPRequestHandler).server_close()
+        finally:
+            first.server_close()
+
+    def test_instance_file(self) -> None:
+        self.assertIsNone(read_instance(self.paths.data))
+        write_instance(self.paths.data, 7874)
+        self.assertEqual(read_instance(self.paths.data)["port"], 7874)  # type: ignore[index]
+        (self.paths.data / "instance.json").write_text("{ broken")
+        self.assertIsNone(read_instance(self.paths.data))
 
 
 if __name__ == "__main__":

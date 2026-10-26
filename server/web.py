@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any
 
 from . import images
 from .errors import ApiError
+from .instance import exclusive
 from .jobqueue import public
 from .page import build_page, styles_signature
 from .updates import VERSION, check_update
@@ -43,9 +44,16 @@ Routes = tuple[tuple[re.Pattern[str], str], ...]  # (path pattern, Handler metho
 
 
 class KilnServer(ThreadingHTTPServer):
+    # on Windows "reuse address" lets a second server share the port silently: claim it exclusively instead
+    allow_reuse_address = os.name != "nt"
+
     def __init__(self, address: tuple[str, int], kiln: Kiln) -> None:
         super().__init__(address, Handler)
         self.kiln = kiln
+
+    def server_bind(self) -> None:
+        exclusive(self.socket)
+        super().server_bind()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -175,6 +183,10 @@ class Handler(BaseHTTPRequestHandler):
                     "styles": styles_signature(k.paths.root),
                 },
             )
+
+    def get_hello(self) -> dict[str, Any]:
+        """Who answers on this port: the launcher checks it's Kiln, and for which data folder, before using it."""
+        return {"app": "kiln", "version": VERSION, "data": str(self.k.paths.data), "pid": os.getpid()}
 
     def get_next_name(self) -> dict[str, Any]:
         """The file name the next picture of a series will get (the hint under the name line)."""
@@ -321,6 +333,7 @@ GET_ROUTES = _routes(
     ("/thumbs/(.*)", "get_lora_thumb"),
     ("/qthumbs/(.*)", "get_queue_thumb"),
     ("/api/state", "get_state"),
+    ("/api/hello", "get_hello"),
     ("/api/nextname", "get_next_name"),
     ("/api/preview/(.*)", "get_preview"),
     ("/api/models", "get_models"),

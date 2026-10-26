@@ -23,6 +23,8 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check
       - run: ruff format --check
+      - run: mypy
+      - run: python -m unittest discover -s tools/tests/unit
       - run: python tools/privacy_scan.py --all
 
   e2e:

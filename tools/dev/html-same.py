@@ -85,7 +85,7 @@ a, b = tree(old), tree(new)
 if a == b:
     print(f"same  {f}  ({old.count(chr(10))} → {new.count(chr(10))} lines, {len(a)} nodes)")
     sys.exit(0)
-for i, (x, y) in enumerate(zip(a, b)):
+for i, (x, y) in enumerate(zip(a, b, strict=False)):
     if x != y:
         print(f"DIFFERENT at node {i}:\n  before: {a[max(0, i - 2) : i + 3]}\n  after:  {b[max(0, i - 2) : i + 3]}")
         break

@@ -16,7 +16,7 @@ if exist config.local.json (
 
 rem Start the server unless something already answers on the port.
 powershell -NoProfile -Command "$c=New-Object Net.Sockets.TcpClient; try{$c.Connect('127.0.0.1',%PORT%);exit 0}catch{exit 1}finally{$c.Dispose()}"
-if errorlevel 1 start "Kiln server" /min %PY% -u server.py
+if errorlevel 1 start "Kiln server" /min %PY% -u -m server
 
 rem Wait until the server answers (first start can take a few seconds), up to ~20 s.
 powershell -NoProfile -Command "for($i=0;$i -lt 40;$i++){$c=New-Object Net.Sockets.TcpClient;try{$c.Connect('127.0.0.1',%PORT%);exit 0}catch{Start-Sleep -Milliseconds 500}finally{$c.Dispose()}};exit 1"
@@ -32,7 +32,7 @@ if exist "%EDGE%" (
   rem Own Edge instance: separate profile (so the flags apply even if Edge is already open) and no proxy,
   rem so VPN clients that hijack the system proxy can't block 127.0.0.1.
   rem Spell-check languages for the prompt editor go into that profile first (config: "spellcheck").
-  %PY% server.py --seed-edge "%LOCALAPPDATA%\Kiln\Edge" >nul 2>nul
+  %PY% -m server --seed-edge "%LOCALAPPDATA%\Kiln\Edge" >nul 2>nul
   start "" "%EDGE%" --user-data-dir="%LOCALAPPDATA%\Kiln\Edge" --no-proxy-server --force-dark-mode --no-first-run --no-default-browser-check --app=http://127.0.0.1:%PORT% --window-size=1400,900
 ) else (
   start "" http://127.0.0.1:%PORT%

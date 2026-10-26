@@ -1,4 +1,4 @@
-// Without its server (opened as a file, or server.py stopped) Kiln says so — no fake demo, no dead controls.
+// Without its server (opened as a file, or its server stopped) Kiln says so — no fake demo, no dead controls.
 // Opened as a file, the note is in the HTML itself (ES modules don't load from a file); served, the server hides it.
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";

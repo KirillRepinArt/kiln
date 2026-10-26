@@ -23,5 +23,9 @@ if [ -n "$PYF" ]; then
   if [ -n "$RUFF" ]; then echo "$PYF" | tr '\n' '\0' | xargs -0 "$RUFF" check || fail=1
     echo "$PYF" | tr '\n' '\0' | xargs -0 "$RUFF" format --check || fail=1
   else echo "pre-commit: ruff not installed — see CONTRIBUTING.md (skipping Python checks)"; fi
+  # the server's types (the whole package: a change in one module can break another's) and its unit tests (~1 s)
+  if "$PY" -c "import mypy" 2>/dev/null; then "$PY" -m mypy || fail=1
+  else echo "pre-commit: mypy not installed — see CONTRIBUTING.md (skipping the server's type check)"; fi
+  "$PY" -m unittest discover -s tools/tests/unit >/dev/null 2>&1 || { echo "pre-commit: server unit tests fail — npm run test:server"; fail=1; }
 fi
 [ $fail -eq 0 ] || { echo "pre-commit: fix the problems above, then commit again."; exit 1; }

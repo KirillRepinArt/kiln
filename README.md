@@ -172,7 +172,7 @@ The queue shows which variant each job got, so a good result can be traced back.
 
 ## How it works
 
-`server.py` (Python standard library only) owns the queue — saved in `data/queue.json`, so it survives restarts —
+The server (`server/`, Python standard library only) owns the queue — saved in `data/queue.json`, so it survives restarts —
 and feeds Forge one job at a time; Forge's own UI keeps working alongside. Images go to `outputs/` with the
 generation settings embedded, so PNG Info (Kiln's or Forge's) can read them back. Model and module choices in
 ⚙ Settings default to whatever Forge has loaded; pick others and Kiln switches before the job runs.
@@ -181,7 +181,7 @@ The interface is `index.html` plus plain files in `app/` (CSS and scripts), no b
 **LoRA folders.** Kiln reads your LoRAs from Forge. Put face LoRAs in a `people` (or `faces`, `characters`)
 subfolder and styles in `style`; the folder names are configurable in `config.local.json`.
 
-**Development.** Run `python tools/fake_forge.py` and point Kiln at it (`KILN_FORGE_URL=http://127.0.0.1:7861 python server.py`) to exercise the whole pipeline
+**Development.** Run `python tools/fake_forge.py` and point Kiln at it (`KILN_FORGE_URL=http://127.0.0.1:7861 python -m server`) to exercise the whole pipeline
 without a GPU. `node tools/tests/run.mjs` runs the end-to-end tests (Node 22+, Edge or Chrome): each test starts
 its own fake Forge, Kiln and a headless browser. Changes are listed in `CHANGELOG.md`.
 

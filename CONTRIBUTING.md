@@ -1,13 +1,14 @@
 # Working on Kiln
 
-Kiln runs from plain files: `server.py` (Python 3.10+, standard library) and the page in `index.html` + `app/`.
+Kiln runs from plain files: the server in `server/` (Python 3.10+, standard library; `python -m server`) and the
+page in `index.html` + `app/`.
 Nothing here is needed to *use* Kiln — this is the setup for changing it.
 
 ## One-time setup
 ```
 npm install                                   # ESLint, Stylelint, Prettier (dev only, into node_modules/)
 python -m venv .venv
-.venv\Scripts\python -m pip install -r requirements-dev.txt   # Ruff (Python linter), into .venv/
+.venv\Scripts\python -m pip install -r requirements-dev.txt   # Ruff (linter) + mypy (types), into .venv/
 git config core.hooksPath .githooks           # the checks below run before every commit
 ```
 
@@ -21,16 +22,24 @@ git config core.hooksPath .githooks           # the checks below run before ever
 ## Types
 The page is plain JavaScript; TypeScript only *checks* it (`npm run typecheck`, also in the hook and CI). Shapes shared
 across files live in `app/types.js` as JSDoc; a file is checked once it starts with `// @ts-check` (adopted file by file).
+The server is typed Python, checked by mypy in strict mode (`.venv\Scripts\python -m mypy`, also in the hook and CI).
 
 ## Tests
 ```
-npm run test:unit              # unit tests of pure logic (tools/tests/unit/), in milliseconds
+npm run test:unit              # unit tests of the page's pure logic (tools/tests/unit/*.mjs), in milliseconds
+npm run test:server            # unit tests of the server (tools/tests/unit/test_*.py), well under a second
 npm test                       # all end-to-end tests, several at a time (fake Forge + Kiln + headless Edge each)
 node tools/tests/run.mjs cover # only files whose name contains "cover"
 node tools/tests/run.mjs -j 1  # one at a time
 ```
 Every new behaviour gets a test in `tools/tests/`. CI (`.github/workflows/ci.yml`) runs the linters, the privacy scan
 and the tests on every push.
+
+## The server
+`server/__init__.py` lists its modules and what each one does. The image generator sits behind one interface
+(`server/backends/base.py`); Forge Neo is `backends/forge.py`. A server refactor is proven with
+`python tools/dev/api-same.py <old checkout> old.json`, then the same on the new code: both servers answer a fixed
+script of API calls against the fake Forge, and the two recordings must match.
 
 ## By hand
 `npm run lint` · `.venv\Scripts\ruff check` · `npm run privacy` (scans every tracked file).

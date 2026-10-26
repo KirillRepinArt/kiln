@@ -5,8 +5,18 @@ target-version = "py310"
 line-length = 120
 
 [tool.ruff.lint]
-# Correctness first: pyflakes (F), real syntax/indentation errors (E9/E7/E4), import order (I), Python upgrades (UP).
-# Raised as the server is split into a package (ROADMAP v0.7 step 6): bugbear (B), blind excepts (BLE), bandit (S).
-select = ["F", "E4", "E7", "E9", "I", "UP"]
-# E731 (a lambda given a name) and E741 (one-letter names like l) need renames, not formatting: the server package (step 6).
-ignore = ["E731", "E741"]
+# pyflakes (F), real syntax/indentation errors (E9/E7/E4), import order (I), Python upgrades (UP), likely bugs
+# (bugbear B), broad excepts (BLE: each one that stays says why), security (bandit S: subprocess / URL calls say why),
+# Ruff's own (RUF).
+select = ["F", "E4", "E7", "E9", "I", "UP", "B", "BLE", "S", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tools/**" = ["S", "BLE"]  # development tools and tests: they start processes and swallow on purpose
+
+[tool.mypy]
+# The server's types, checked like the page's (tsc): strict, for Windows (Kiln's platform; the Windows-only calls
+# are then checked rather than ignored). `.venv\Scripts\python -m mypy`
+files = ["server"]
+python_version = "3.10"
+platform = "win32"
+strict = true

@@ -60,15 +60,15 @@ def png(w, h, seed, blur=0.0, fill=None):
     if fill:
         c1 = c2 = [int(fill[i : i + 2], 16) for i in (0, 2, 4)]
     if blur:
-        mid = [(a + b) // 2 for a, b in zip(c1, c2)]
-        c1 = [int(a * (1 - blur) + m * blur) for a, m in zip(c1, mid)]
-        c2 = [int(b * (1 - blur) + m * blur) for b, m in zip(c2, mid)]
+        mid = [(a + b) // 2 for a, b in zip(c1, c2, strict=True)]
+        c1 = [int(a * (1 - blur) + m * blur) for a, m in zip(c1, mid, strict=True)]
+        c2 = [int(b * (1 - blur) + m * blur) for b, m in zip(c2, mid, strict=True)]
     rows = bytearray()
     for y in range(h):
         rows.append(0)
         for x in range(w):
             t = (x / max(1, w - 1) + y / max(1, h - 1)) / 2
-            rows += bytes(int(a + (b - a) * t) for a, b in zip(c1, c2))
+            rows += bytes(int(a + (b - a) * t) for a, b in zip(c1, c2, strict=True))
 
     def chunk(tag, data):
         return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)

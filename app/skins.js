@@ -4,15 +4,22 @@
    generating): pre-drawn glyphs and patterns, low resolution where softness is the look, ~30 fps. */
 import { S } from "./state.js";
 
+/* what each skin DOES (its effects); how it looks is its token file, app/styles/themes/<name>.css */
 const SKINS = {
-  ice: { bg: "stars", cover: "bands" },
-  sunset: { bg: "stars", cover: "bands" },
-  ember: { bg: "stars", cover: "bands" },
   aurora: { bg: "aurora", cover: "camera" },
-  emerald: { bg: "code", cover: "crt", font: "IBM Plex Mono", title: "Courier Prime" },
+  embers: { bg: "stars", cover: "bands" },
+  matrix: { bg: "code", cover: "crt" },
+  starscape: { bg: "stars", cover: "bands" },
 };
+export const DEFAULT_SKIN = "starscape";
+/* the skins of before the cleanup (2026-10-27) → the nearest one now */
+const RENAMED = { ice: "starscape", sunset: "embers", ember: "embers", emerald: "matrix" };
+/** a saved theme name → a skin that exists @param {string} [name] */
+export function skinName(name) {
+  return name && name in SKINS ? name : (name && RENAMED[/** @type {keyof typeof RENAMED} */ (name)]) || DEFAULT_SKIN;
+}
 export function skin() {
-  return SKINS[S.theme] || SKINS.ice;
+  return SKINS[/** @type {keyof typeof SKINS} */ (skinName(S.theme))];
 }
 export function toHex(c) {
   if (/^#[0-9a-f]{6}$/i.test(c)) return c;

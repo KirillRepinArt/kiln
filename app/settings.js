@@ -3,27 +3,19 @@ import { toast } from "./boot.js";
 import { $ } from "./dom.js";
 import { current } from "./jobs.js";
 import { resetLayout, setDock, sizeFrame } from "./layout.js";
-import { harmonics, skin } from "./skins.js";
+import { harmonics, skinName } from "./skins.js";
 import { S, save } from "./state.js";
 import { moveThumb, showView } from "./tabs.js";
 
 /* ======================= settings / themes ======================= */
-const THEMES = {
-  ice: ["#FF8A00", "#FF5E8A", "#3FE0F0", "#140b00"],
-  sunset: ["#FFB020", "#FF3D7F", "#8B5CF6", "#16060d"],
-  aurora: ["#3CF29F", "#86F0DD", "#C46BFF", "#03140e"],
-  ember: ["#E8361C", "#FF8A00", "#FFD166", "#1a0500"],
-  emerald: ["#00E676", "#76FF03", "#B9F6CA", "#00140a"],
-};
+/* a skin's colours live in its token file (app/styles/themes/): switching sets data-skin on <html>, then the harmonic
+   colours are worked out from the theme colour the stylesheet now gives */
 export function applyTheme() {
-  const t = THEMES[S.theme] || THEMES.ice;
-  const r = document.documentElement.style;
-  ["--a1", "--a2", "--a3", "--ink"].forEach((k, i) => r.setProperty(k, t[i]));
-  const hm = harmonics(t[0]);
+  const root = document.documentElement;
+  root.dataset.skin = skinName(S.theme);
+  const hm = harmonics(getComputedStyle(root).getPropertyValue("--a1").trim());
   window.HARM = hm;
-  for (const k in hm) r.setProperty("--" + k, hm[k]);
-  [...document.body.classList].filter(c => c.startsWith("skin-")).forEach(c => document.body.classList.remove(c));
-  document.body.classList.add("skin-" + (S.theme || "ice"));
+  for (const k in hm) root.style.setProperty("--" + k, hm[k]);
   window._themeV = (window._themeV || 0) + 1;
   applyFont();
 }
@@ -31,12 +23,14 @@ export function applyTheme() {
 export function applyFont() {
   S.set = S.set || {};
   if (!S.set.fontPicked) S.set.font = "theme";
-  const sk = skin(),
+  const cs = getComputedStyle(document.documentElement),
+    skinFont = cs.getPropertyValue("--skin-font").trim(),
+    skinTitle = cs.getPropertyValue("--skin-title").trim(),
     th = S.set.font === "theme",
-    f = th ? sk.font || "Geist" : S.set.font,
+    f = th ? skinFont || "Geist" : S.set.font,
     rs = document.documentElement.style;
   rs.setProperty("--font", `"${f}"`);
-  if (th && sk.title) rs.setProperty("--font-title", `"${sk.title}"`);
+  if (th && skinTitle) rs.setProperty("--font-title", `"${skinTitle}"`);
   else rs.removeProperty("--font-title");
   const sel = document.getElementById("sFont");
   if (sel) sel.value = S.set.font;
@@ -48,6 +42,7 @@ export function applyGlass() {
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initSettings() {
+  S.theme = skinName(S.theme); // a saved skin from before the cleanup → the nearest one
   $("sTheme").value = S.theme;
   $("sTheme").onchange = e => {
     S.theme = e.target.value;

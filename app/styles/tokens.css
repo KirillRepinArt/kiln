@@ -17,10 +17,7 @@
   --raised: color-mix(in oklab, #2a2a2d, var(--a1) var(--tw));
   --raised2: color-mix(in oklab, #343438, var(--a1) var(--tw));
   --line: color-mix(in oklab, #333338, var(--a1) var(--tw));
-  --a1: #ff8a00;
-  --a2: #ff5e8a;
-  --a3: #3fe0f0;
-  --ink: #140b00;
+  /* the theme's colours --a1 --a2 --a3 --ink: in its skin file (themes/) */
   --grad: linear-gradient(135deg in oklch, var(--a1), var(--a2) 55%, var(--a3));
   --flow: linear-gradient(90deg in oklch, var(--a1), var(--a2), var(--a3), var(--a2), var(--a1));
   /* SPACING — one scale for every gap, inset and offset: the 4-pt grid (decided 2026-10-27). Every step is a whole

@@ -44,8 +44,8 @@ export default {
   },
   overrides: [
     {
-      // the one place the raw values live
-      files: ["app/styles/tokens.css"],
+      // where the raw values live: the tokens, and each skin's own
+      files: ["app/styles/tokens.css", "app/styles/themes/*.css"],
       rules: { "color-no-hex": null, "declaration-property-value-disallowed-list": null },
     },
   ],

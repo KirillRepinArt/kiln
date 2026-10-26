@@ -37,7 +37,7 @@ export const S = {
   seed: 123456789,
   n: 1,
   view: "gen",
-  theme: "ice",
+  theme: "starscape",
   oneFace: true,
   lfilter: "all",
 }; /* settings of the removed demo mode */

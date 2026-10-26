@@ -1,0 +1,10 @@
+/* Kiln · skin: Embers. A skin = these tokens (the theme's colours and anything only it changes) + its effects in
+   skins.js (the background, the cover over a young picture, the finish). index.html sets data-skin on <html>. */
+/* fire: red through orange to a pale gold (its own effect — sparks rising from a kiln's glow — comes later; until then
+   the starfield and the bands) */
+:root[data-skin="embers"] {
+  --a1: #e8361c;
+  --a2: #ff8a00;
+  --a3: #ffd166;
+  --ink: #1a0500;
+}

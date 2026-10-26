@@ -1,0 +1,13 @@
+/* Kiln · skin: Aurora. A skin = these tokens (the theme's colours and anything only it changes) + its effects in
+   skins.js (the background, the cover over a young picture, the finish). index.html sets data-skin on <html>. */
+/* northern lights: green, a pale turquoise, violet */
+:root[data-skin="aurora"] {
+  --a1: #3cf29f;
+  --a2: #86f0dd;
+  --a3: #c46bff;
+  --ink: #03140e;
+  /* its sky is bright, so its glass is thicker and gathers less light than the other skins' */
+  --gta: 0.48;
+  --gtk: 0.52;
+  --gtb: 1.35;
+}

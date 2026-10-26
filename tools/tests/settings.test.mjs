@@ -39,3 +39,23 @@ export async function offline(k, t) {
   t.ok(await k.ev(`!!document.querySelector(".cm-editor")`), "the CodeMirror editor is up");
   t.ok(await k.ev(`document.fonts.check('15px "Geist"')`), "Geist is available");
 }
+
+// The skins cleanup (2026-10-27): four skins; a skin saved before it comes back as the nearest one now.
+export async function oldSkinsMigrate(k, t) {
+  const skins = await k.ev(`[...$("sTheme").options].map(o=>o.value).join(",")`);
+  t.ok(skins === "aurora,embers,matrix,starscape", "four skins: Aurora, Embers, Matrix, Starscape", skins);
+  for (const [old, now] of [
+    ["sunset", "embers"],
+    ["ember", "embers"],
+    ["ice", "starscape"],
+    ["emerald", "matrix"],
+    ["no-such-skin", "starscape"],
+  ]) {
+    await k.ev(
+      `(()=>{const s=JSON.parse(localStorage.getItem("kiln_state")||"{}");s.S=Object.assign(s.S||{},{theme:${JSON.stringify(old)}});localStorage.setItem("kiln_state",JSON.stringify(s));return 1})()`,
+    );
+    await k.reload();
+    const got = await k.ev(`[S.theme,document.documentElement.dataset.skin,$("sTheme").value].join(",")`);
+    t.ok(got === [now, now, now].join(","), `a saved "${old}" → ${now} (setting, page, menu)`, got);
+  }
+}

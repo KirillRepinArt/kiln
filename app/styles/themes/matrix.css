@@ -1,18 +1,22 @@
-/* ======================= skins ======================= */
-/* glass thickness per theme: Aurora's sky is bright, so its glass is thicker and gathers less light than Emerald's */
-body.skin-aurora {
-  --gta: 0.48;
-  --gtk: 0.52;
-  --gtb: 1.35;
+/* Kiln · skin: Matrix. A skin = these tokens (the theme's colours and anything only it changes) + its effects in
+   skins.js (the background, the cover over a young picture, the finish). index.html sets data-skin on <html>. */
+/* code rain: phosphor greens; the text in IBM Plex Mono, the title in Courier Prime ("Theme font" in Settings) */
+:root[data-skin="matrix"] {
+  --a1: #00e676;
+  --a2: #76ff03;
+  --a3: #b9f6ca;
+  --ink: #00140a;
+  --skin-font: IBM Plex Mono;
+  --skin-title: Courier Prime;
 }
-/* Emerald: the title in Courier Prime, glowing faintly, spaced like a title card; the Generating ring as twelve 30°
-   segments that light up one by one in the theme's green — a terminal readout that ticks, not sweeps */
-body.skin-emerald .ltitle .pname {
+/* the title glowing faintly, spaced like a title card */
+[data-skin="matrix"] .ltitle .pname {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-shadow: 0 0 14px color-mix(in oklab, var(--a1) 45%, transparent);
 }
-body.skin-emerald .tab .tring {
+/* the Generating ring as twelve 30° segments lighting up one by one — a terminal readout that ticks, not sweeps */
+[data-skin="matrix"] .tab .tring {
   background: var(--a1);
   transition: none;
   -webkit-mask:

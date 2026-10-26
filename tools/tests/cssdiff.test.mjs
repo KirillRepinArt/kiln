@@ -100,7 +100,7 @@ async function forceOff(k, ids) {
 function todaysCss() {
   const app = join(HERE, "..", "..");
   const html = readFileSync(join(app, "index.html"), "utf8");
-  return [...html.matchAll(/href="(app\/styles\/[\w-]+\.css)"/g)]
+  return [...html.matchAll(/href="(app\/styles\/[\w/-]+\.css)"/g)]
     .map(m => readFileSync(join(app, m[1]), "utf8"))
     .join("\n");
 }
@@ -297,7 +297,7 @@ export async function cssdiff(k, t) {
   await go(`endPeek();S.lay.pw=680;sizeFrame();layoutLeft()`);
   await k.sleep(800);
   // themes × materials
-  for (const th of ["aurora", "emerald", "ice", "ember", "sunset"])
+  for (const th of ["aurora", "embers", "matrix", "starscape"])
     for (const g of ["on", "off"]) {
       await k.theme(th);
       await k.setting("glass", g);
@@ -308,7 +308,7 @@ export async function cssdiff(k, t) {
       await check(`${th} ${g} private`, { pseudo: false });
       await go(`toggleCover()`);
     }
-  await k.theme("ice");
+  await k.theme("starscape");
   await k.setting("glass", "on");
   // a narrow window (auto-stacked), and reduced motion
   await k.send("Emulation.setDeviceMetricsOverride", { width: 880, height: 860, deviceScaleFactor: 1, mobile: false });

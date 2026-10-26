@@ -1,0 +1,9 @@
+/* Kiln · skin: Starscape. A skin = these tokens (the theme's colours and anything only it changes) + its effects in
+   skins.js (the background, the cover over a young picture, the finish). index.html sets data-skin on <html>. */
+/* the default: a slow starfield and drifting light bands; warm orange through pink to a cold cyan */
+:root[data-skin="starscape"] {
+  --a1: #ff8a00;
+  --a2: #ff5e8a;
+  --a3: #3fe0f0;
+  --ink: #140b00; /* text on the theme colour */
+}

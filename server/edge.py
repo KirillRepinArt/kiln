@@ -1,4 +1,4 @@
-"""Kiln's own Edge profile (kiln.bat opens Kiln in it): spell-check languages for the prompt editor."""
+"""Kiln's own browser profile (the launcher opens Kiln in it): spell-check languages for the prompt editor."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def seed_spellcheck(profile: str, langs: Sequence[str]) -> None:
-    """Add Kiln's spell-check languages to its Edge profile (kiln.bat runs this before opening Edge)."""
+    """Add Kiln's spell-check languages to its browser profile (Edge / Chrome / Chromium: the same Preferences file)."""
     pref = Path(profile) / "Default" / "Preferences"
     try:
         p = json.loads(pref.read_text(encoding="utf-8")) if pref.exists() else {}

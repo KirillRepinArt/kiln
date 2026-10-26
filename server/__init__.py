@@ -16,7 +16,9 @@ The modules, from the bottom up (each one only uses the ones above it):
     worker     takes the next job, has the backend render it, saves the picture
     lifecycle  is a Kiln window still open? stop when it closed and the queue is done
     page, web  the page (index.html + app/) and the HTTP API
+    instance   one Kiln per data folder (a lock), a port of its own (data/instance.json), /api/hello
     main       puts it all together; __main__ is `python -m server`
+    launch     `python -m server --launch` (kiln.bat): find or start the server, open Kiln's window
 """
 
 from .config import CFG

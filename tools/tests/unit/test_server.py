@@ -13,6 +13,7 @@ from server.config import Paths, load_config
 from server.errors import ApiError
 from server.instance import InstanceLock, bind_first, read_instance, write_instance
 from server.jobqueue import JobQueue, public
+from server.launch import browser_command, find_browser, profile_dir, running_port
 from server.lifecycle import window_gone
 from server.page import styles_signature
 from server.pictures import Pictures
@@ -345,6 +346,43 @@ class Instance(TempDirs):
         self.assertEqual(read_instance(self.paths.data)["port"], 7874)  # type: ignore[index]
         (self.paths.data / "instance.json").write_text("{ broken")
         self.assertIsNone(read_instance(self.paths.data))
+
+
+class Launcher(TempDirs):
+    def test_finds_the_kiln_for_this_data_folder(self) -> None:
+        def fetch(answer: dict | None):
+            return lambda url: answer
+
+        self.assertIsNone(running_port(self.paths, "127.0.0.1", fetch({"app": "kiln"})), "no instance file: none")
+        write_instance(self.paths.data, 7871)
+        mine = {"app": "kiln", "data": str(self.paths.data)}
+        self.assertEqual(running_port(self.paths, "127.0.0.1", fetch(mine)), 7871)
+        other_app = {"app": "something else", "data": str(self.paths.data)}
+        self.assertIsNone(running_port(self.paths, "127.0.0.1", fetch(other_app)), "another program on the port")
+        other_kiln = {"app": "kiln", "data": "D:/another/data"}
+        self.assertIsNone(running_port(self.paths, "127.0.0.1", fetch(other_kiln)), "a Kiln for another folder")
+        self.assertIsNone(running_port(self.paths, "127.0.0.1", fetch(None)), "nothing answers (a stale file)")
+
+    def test_browser_order(self) -> None:
+        env = {"ProgramFiles": "C:/PF", "ProgramFiles(x86)": "C:/PF86", "LOCALAPPDATA": "C:/LA"}
+
+        def only(*names: str):
+            return lambda p: any(n in p.as_posix() for n in names)
+
+        self.assertEqual(find_browser(env, only("Edge", "Chrome"))[0], "Edge")  # type: ignore[index]
+        self.assertEqual(find_browser(env, only("Google/Chrome"))[0], "Chrome")  # type: ignore[index]
+        self.assertEqual(find_browser(env, only("Chromium"))[0], "Chromium")  # type: ignore[index]
+        self.assertIsNone(find_browser(env, only("nothing")), "none: the default browser")
+        self.assertEqual(find_browser({**env, "KILN_BROWSER": "X:/b.exe"}, only())[1], Path("X:/b.exe"))  # type: ignore[index]
+
+    def test_the_window(self) -> None:
+        env = {"LOCALAPPDATA": "C:/LA"}
+        self.assertEqual(profile_dir("Edge", env), Path("C:/LA/Kiln/Edge"), "Edge keeps kiln.bat's old profile")
+        self.assertEqual(profile_dir("Chrome", env), Path("C:/LA/Kiln/Chrome"))
+        cmd = browser_command(("Edge", Path("C:/e.exe")), "http://127.0.0.1:7870", Path("C:/LA/Kiln/Edge"))
+        self.assertIn("--app=http://127.0.0.1:7870", cmd)
+        self.assertIn("--no-proxy-server", cmd)
+        self.assertTrue(any(a.startswith("--user-data-dir=") for a in cmd))
 
 
 if __name__ == "__main__":

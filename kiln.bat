@@ -1,5 +1,7 @@
 @echo off
-rem Kiln launcher: starts the local server (if it isn't running) and opens Kiln in its own Edge window.
+rem Kiln launcher: finds Python, then Kiln does the rest (server\launch.py) — uses the Kiln already running for this
+rem data folder or starts one (its log in a minimized "Kiln server" window), and opens Kiln in its own window:
+rem Edge, else Chrome / Chromium, else your default browser.
 setlocal
 cd /d "%~dp0"
 
@@ -8,32 +10,12 @@ set NO_PROXY=*
 set no_proxy=*
 
 where py >nul 2>nul && (set "PY=py -3") || (set "PY=python")
-
-set PORT=7870
-if exist config.local.json (
-  for /f "usebackq delims=" %%p in (`%PY% -c "import json;print(int(json.load(open('config.local.json',encoding='utf-8')).get('port',7870)))" 2^>nul`) do set PORT=%%p
-)
-
-rem Start the server unless something already answers on the port.
-powershell -NoProfile -Command "$c=New-Object Net.Sockets.TcpClient; try{$c.Connect('127.0.0.1',%PORT%);exit 0}catch{exit 1}finally{$c.Dispose()}"
-if errorlevel 1 start "Kiln server" /min %PY% -u -m server
-
-rem Wait until the server answers (first start can take a few seconds), up to ~20 s.
-powershell -NoProfile -Command "for($i=0;$i -lt 40;$i++){$c=New-Object Net.Sockets.TcpClient;try{$c.Connect('127.0.0.1',%PORT%);exit 0}catch{Start-Sleep -Milliseconds 500}finally{$c.Dispose()}};exit 1"
+%PY% --version >nul 2>nul
 if errorlevel 1 (
-  echo Kiln server did not start - see the "Kiln server" window for the error.
+  echo Kiln needs Python 3.10 or newer: https://www.python.org/downloads/
   pause
   exit /b 1
 )
 
-set "EDGE=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
-if not exist "%EDGE%" set "EDGE=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
-if exist "%EDGE%" (
-  rem Own Edge instance: separate profile (so the flags apply even if Edge is already open) and no proxy,
-  rem so VPN clients that hijack the system proxy can't block 127.0.0.1.
-  rem Spell-check languages for the prompt editor go into that profile first (config: "spellcheck").
-  %PY% -m server --seed-edge "%LOCALAPPDATA%\Kiln\Edge" >nul 2>nul
-  start "" "%EDGE%" --user-data-dir="%LOCALAPPDATA%\Kiln\Edge" --no-proxy-server --force-dark-mode --no-first-run --no-default-browser-check --app=http://127.0.0.1:%PORT% --window-size=1400,900
-) else (
-  start "" http://127.0.0.1:%PORT%
-)
+%PY% -m server --launch
+if errorlevel 1 pause

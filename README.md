@@ -26,7 +26,8 @@ PATH”* in the installer). Kiln itself has nothing to install.
 1. **Turn on Forge's API.** In Forge's `webui-user.bat`, add `--api` to `COMMANDLINE_ARGS`, for example
    `set COMMANDLINE_ARGS=--api`. Start Forge once and make sure it works on its own.
 2. **Get Kiln.** On this page: **Code → Download ZIP**, unzip anywhere (or `git clone`).
-3. **Double-click `kiln.bat`.** It starts the Kiln server and opens Kiln in its own Edge window.
+3. **Double-click `kiln.bat`.** It starts the Kiln server (or finds the one already running) and opens Kiln in its own
+   window: Edge, else Chrome or Chromium, else your default browser.
    No Edge? It opens in your default browser instead.
 4. **Write a prompt, press ▶** (or `Ctrl+Enter`). Keep writing the next one while it renders.
 

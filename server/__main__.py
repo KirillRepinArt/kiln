@@ -1,12 +1,12 @@
-"""`python -m server` starts Kiln's server; `python -m server --seed-edge <profile>` is kiln.bat's helper."""
+"""`python -m server` runs Kiln's server; `python -m server --launch` is the launcher kiln.bat runs (server/launch.py)."""
 
 import sys
 
-from .config import CFG
-from .edge import seed_spellcheck
-from .main import main
+if sys.argv[1:] == ["--launch"]:
+    from .launch import launch
 
-if len(sys.argv) == 3 and sys.argv[1] == "--seed-edge":
-    seed_spellcheck(sys.argv[2], CFG.get("spellcheck") or [])
+    sys.exit(launch())
 else:
+    from .main import main
+
     main()

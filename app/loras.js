@@ -1,15 +1,16 @@
+// @ts-check
 /* Kiln · LoRA library tab */
 import { esc } from "./boot.js";
 import { fmtW, renderChips } from "./chips.js";
-import { $ } from "./dom.js";
+import { $, hit, target, targetField } from "./dom.js";
 import { LORAS, S, save } from "./state.js";
 
 /* ======================= LoRA library ======================= */
-const FTIP = {
+const FTIP = /** @type {Record<string, string>} */ ({
   people: "Faces: LoRAs in a people, faces, characters or persons folder",
   style: "Style: LoRAs in a style folder",
   utility: "Utility: LoRAs in any other folder — the folder names are set in config.local.json",
-};
+});
 const FILTERS = [
   ["all", "All"],
   ["people", "Faces"],
@@ -18,16 +19,18 @@ const FILTERS = [
   ["fav", "★ Favorites"],
   ["recent", "Recent"],
 ];
+/** @param {string} n */
 function initials(n) {
   return n.slice(0, 2).toUpperCase();
 }
+/** a colour from the name (a LoRA without a picture) @param {string} n */
 function hue(n) {
   let h = 0;
   for (const c of n) h = (h * 31 + c.charCodeAt(0)) % 360;
   return h;
 }
 export function renderLoras() {
-  const q = $("lsearch").value.toLowerCase().trim();
+  const q = /** @type {HTMLInputElement} */ ($("lsearch")).value.toLowerCase().trim();
   $("fchips").innerHTML = FILTERS.map(
     ([k, t]) =>
       `<button class="${S.lfilter === k ? "on" : ""}" data-f="${k}"${FTIP[k] ? ` data-tip="${FTIP[k]}"` : ""}>${t}</button>`,
@@ -39,6 +42,7 @@ export function renderLoras() {
   else if (S.lfilter !== "all") L = L.filter(l => l.folder === S.lfilter);
   $("warn").classList.toggle("show", LORAS.filter(l => l.on && l.folder === "people").length > 1);
   const on = LORAS.filter(l => l.on).sort((a, b) => (a.onAt || 0) - (b.onAt || 0));
+  /** @param {import("./types.js").Lora} l @param {unknown} [act] truthy: the row in Active (top) */
   const row = (l, act) => {
     const [a, b] = l.folder === "people" ? [0, 2] : [-3, 3];
     return `<div class="li ${l.on ? "on" : ""}" data-ln="${l.name}"${act ? " data-act" : ""}>
@@ -48,7 +52,11 @@ export function renderLoras() {
    <div class="l2"><input type="range" min="${a}" max="${b}" step="0.05" value="${l.w}"><input type="number" min="${a}" max="${b}" step="0.05" value="${l.w}">
     <button class="star ${l.fav ? "on" : ""}" data-star title="Favorite">★</button></div></div></div>`;
   };
-  const srt = g => (S.lfilter === "recent" ? g : g.sort((a, b) => b.fav - a.fav || a.display.localeCompare(b.display)));
+  /** favourites first, then A–Z (Recent keeps its own order) @param {import("./types.js").Lora[]} g */
+  const srt = g =>
+    S.lfilter === "recent"
+      ? g
+      : g.sort((a, b) => /** @type {any} */ (b.fav) - /** @type {any} */ (a.fav) || a.display.localeCompare(b.display));
   const G = [
       ["people", "Faces"],
       ["style", "Style"],
@@ -80,6 +88,7 @@ export function renderLoras() {
 }
 /* switching a LoRA on adds it to Active at the top: keep the row you clicked where it was on screen (the list
    shifts above it, not under your pointer). The anchor is its own-section row, which survives the toggle */
+/** @param {string} name @param {() => void} fn */
 function keepPlace(name, fn) {
   const sc = $("lscroll"),
     q = () => sc.querySelector(`.li[data-ln="${CSS.escape(name)}"]:not([data-act])`),
@@ -87,8 +96,9 @@ function keepPlace(name, fn) {
     t = a && a.getBoundingClientRect().top;
   fn();
   const b = q();
-  if (a && b) sc.scrollTop += b.getBoundingClientRect().top - t;
+  if (a && b) sc.scrollTop += b.getBoundingClientRect().top - /** @type {number} */ (t);
 }
+/** @param {import("./types.js").Lora} l */
 function toggleL(l) {
   if (!l.on && l.folder === "people" && S.oneFace)
     LORAS.forEach(o => {
@@ -103,30 +113,33 @@ function toggleL(l) {
   keepPlace(l.name, renderLoras);
   renderChips();
 }
-let clickT = null;
+let clickT = /** @type {number | undefined} */ (/** @type {unknown} */ (null));
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initLoras() {
   $("lsearch").oninput = () => {
-    $("lsearch").parentElement.classList.toggle("has", !!$("lsearch").value);
+    /** @type {HTMLElement} */ ($("lsearch").parentElement).classList.toggle(
+      "has",
+      !!(/** @type {HTMLInputElement} */ ($("lsearch")).value),
+    );
     renderLoras();
   };
   $("lsClear").onclick = () => {
-    $("lsearch").value = "";
-    $("lsearch").oninput();
+    /** @type {HTMLInputElement} */ ($("lsearch")).value = "";
+    /** @type {() => void} */ ($("lsearch").oninput)();
     $("lsearch").focus();
   };
-  $("csize").value = S.th || 48;
+  /** @type {HTMLInputElement} */ ($("csize")).value = /** @type {any} */ (S.th || 48);
   document.documentElement.style.setProperty("--th", (S.th || 48) + "px");
   $("csize").addEventListener("input", e => {
-    S.th = +e.target.value;
+    S.th = +targetField(e).value;
     document.documentElement.style.setProperty("--th", S.th + "px");
     save();
   });
   $("fchips").onclick = e => {
-    const b = e.target.closest("[data-f]");
+    const b = hit(e, "[data-f]");
     if (!b) return;
-    S.lfilter = b.dataset.f;
+    S.lfilter = /** @type {string} */ (b.dataset.f);
     save();
     renderLoras();
   };
@@ -137,30 +150,30 @@ export function initLoras() {
     renderLoras();
   };
   $("lscroll").addEventListener("click", e => {
-    const el = e.target.closest("[data-ln]");
+    const el = hit(e, "[data-ln]");
     if (!el) return;
-    const l = LORAS.find(l => l.name === el.dataset.ln);
-    if (e.target.closest("[data-star]")) {
+    const l = /** @type {import("./types.js").Lora} */ (LORAS.find(l => l.name === el.dataset.ln));
+    if (hit(e, "[data-star]")) {
       l.fav = !l.fav;
       save();
       renderLoras();
       return;
     }
-    if (e.target.closest("input")) return;
-    if (e.target.closest("[data-rename]")) {
+    if (hit(e, "input")) return;
+    if (hit(e, "[data-rename]")) {
       clearTimeout(clickT);
       clickT = setTimeout(() => toggleL(l), 230);
       return;
     } // wait: may be a double-click rename
-    if (el.classList.contains("card") || e.target.closest("[data-tg]")) toggleL(l);
+    if (el.classList.contains("card") || hit(e, "[data-tg]")) toggleL(l);
   });
   $("lscroll").addEventListener("dblclick", e => {
-    const n = e.target.closest("[data-rename]");
+    const n = hit(e, "[data-rename]");
     if (!n) return;
     clearTimeout(clickT);
     e.preventDefault();
-    const el = e.target.closest("[data-ln]");
-    const l = LORAS.find(l => l.name === el.dataset.ln);
+    const el = /** @type {HTMLElement} */ (hit(e, "[data-ln]"));
+    const l = /** @type {import("./types.js").Lora} */ (LORAS.find(l => l.name === el.dataset.ln));
     const inp = document.createElement("input");
     inp.className = "nmedit";
     inp.value = l.display;
@@ -184,17 +197,17 @@ export function initLoras() {
     };
   });
   $("lscroll").addEventListener("input", e => {
-    const el = e.target.closest("[data-ln]");
-    if (!el || e.target.classList.contains("nmedit")) return;
-    const l = LORAS.find(l => l.name === el.dataset.ln);
-    l.w = +e.target.value;
-    document
-      .querySelectorAll(
+    const el = hit(e, "[data-ln]");
+    if (!el || target(e).classList.contains("nmedit")) return;
+    const l = /** @type {import("./types.js").Lora} */ (LORAS.find(l => l.name === el.dataset.ln));
+    l.w = +targetField(e).value;
+    /** @type {NodeListOf<HTMLInputElement>} */ (
+      document.querySelectorAll(
         `#lscroll [data-ln="${CSS.escape(l.name)}"] input[type=range],#lscroll [data-ln="${CSS.escape(l.name)}"] input[type=number]`,
       )
-      .forEach(i => {
-        if (i !== e.target) i.value = l.w;
-      });
+    ).forEach(i => {
+      if (i !== e.target) i.value = /** @type {any} */ (l.w);
+    });
     const s = el.querySelector(".st span");
     if (s) s.textContent = fmtW(l.w);
     save();

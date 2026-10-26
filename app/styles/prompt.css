@@ -542,12 +542,21 @@ body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
   box-shadow: 0 0 0 1px var(--grey-35);
 }
 /* the character count, while you type */
+/* the prompt's top margin holds the character count and the ✕ (Clear): both centred in that margin — half the inset
+   from the box's outer edge, measured optically (the count trimmed to its capitals, the ✕ on its glyph) — and lined up
+   on the text column: the ✕'s glyph ends where the text does, the count one tight gap before it. Positions count from
+   inside the box's 1 px border */
+.left {
+  --pc-btn: 20px; /* the ✕'s round button */
+  --pc-glyph: 7px; /* …and the ✕ inside it (its icon cropped to the mark, so this is the ✕ you see) */
+}
 .pcount {
   position: absolute;
-  right: var(--space-12);
-  top: var(--space-2);
-  height: 20px;
-  line-height: 20px;
+  right: calc(var(--inset-box) + var(--pc-glyph) + var(--gap-tight) - var(--space-px));
+  top: calc(var(--inset-box) / 2 - var(--space-px));
+  translate: 0 -50%;
+  line-height: 1;
+  text-box: trim-both cap alphabetic;
   z-index: 3;
   font-size: var(--fs-11-5);
   font-variant-numeric: tabular-nums;
@@ -591,11 +600,12 @@ body.private .pcount {
 /* the prompt's ✕ Clear: top right of the box while it has text and you're over it */
 .pclear {
   position: absolute;
-  top: var(--space-2);
-  right: var(--space-6);
+  top: calc(var(--inset-box) / 2 - var(--space-px));
+  right: calc(var(--inset-box) - var(--space-px) - (var(--pc-btn) - var(--pc-glyph)) / 2);
+  translate: 0 -50%;
   z-index: 3;
-  width: 20px;
-  height: 20px;
+  width: var(--pc-btn);
+  height: var(--pc-btn);
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -607,8 +617,8 @@ body.private .pcount {
     background var(--t-150);
 }
 .pclear svg {
-  width: 11px;
-  height: 11px;
+  width: var(--pc-glyph);
+  height: var(--pc-glyph);
 }
 .left.hastext:hover .pclear {
   opacity: 1;

@@ -10,6 +10,8 @@ import { S } from "./state.js";
 import { tabSync } from "./tabs.js";
 
 /* ======================= full-size viewer ======================= */
+/** the full-size viewer: the picture on show, its zoom and pan, its fitted size
+ * @type {{ job: import("./types.js").Job | null, s: number, tx: number, ty: number, fit: number, w: number, h: number }} */
 export const V = { job: null, s: 1, tx: 0, ty: 0, fit: 1, w: 0, h: 0 };
 export function openViewer(j) {
   if (!j || j.status !== "done") return;

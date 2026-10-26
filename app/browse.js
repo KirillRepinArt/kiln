@@ -1,5 +1,6 @@
+// @ts-check
 /* Kiln · stepping through finished pictures: the arrows, ← / →, and the status line while browsing */
-import { $ } from "./dom.js";
+import { $, hit } from "./dom.js";
 import { doneList } from "./jobs.js";
 import { lay } from "./layout.js";
 import { frameMorph } from "./morph.js";
@@ -7,6 +8,8 @@ import { PV, browsed, onShow, picMode, pv } from "./picstate.js";
 import { S } from "./state.js";
 import { V, openViewer } from "./viewer.js";
 
+/** a step through the pictures in Generating / the Gallery @param {number} dir -1 / 1 @param {boolean} [dry] only ask
+ * whether there is one */
 export function genNav(dir, dry) {
   const m = picMode(),
     cur = onShow(),
@@ -28,6 +31,7 @@ export function genNav(dir, dry) {
   }
   return true;
 }
+/** the same in the full-size viewer @param {number} dir -1 / 1 @param {boolean} [dry] */
 export function vNav(dir, dry) {
   const L = doneList(),
     i = L.findIndex(x => x.id === (V.job && V.job.id)),
@@ -36,11 +40,14 @@ export function vNav(dir, dry) {
   if (!dry) openViewer(t);
   return true;
 }
+/** @param {Element} el an arrow: the viewer's or the picture's */
 export function navFn(el) {
   return el.closest("#viewer") ? vNav : genNav;
 }
 export function updNav() {
-  document.querySelectorAll(".nav").forEach(b => b.classList.toggle("off", !navFn(b)(+b.dataset.nav, true)));
+  /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".nav")).forEach(b =>
+    b.classList.toggle("off", !navFn(b)(+(/** @type {string} */ (b.dataset.nav)), true)),
+  );
 } /* the render's prompt: click the render itself (the status line doubled it) */
 export function browseStatus() {
   const b = browsed(),
@@ -54,7 +61,7 @@ export function initBrowse() {
    glides), but while you're clicking through with them they hold their place on SCREEN (Photos / Lightroom: navigation
    never runs away from the pointer); ~1 s after the last click they glide to the new picture's edges */
   (function () {
-    const [pv, nx] = document.querySelectorAll(".gnav");
+    const [pv, nx] = /** @type {NodeListOf<HTMLElement & { _t?: number }>} */ (document.querySelectorAll(".gnav"));
     /* the arrow you clicked stays exactly where it is for as long as your pointer is on it (click as fast as you like);
     move off it and it slides to the picture's edge. The other one follows the picture at once. Keys don't hold anything */
     for (const el of [pv, nx])
@@ -70,10 +77,10 @@ export function initBrowse() {
       if (document.body.classList.contains("navs")) {
         const r = $("frame").getBoundingClientRect(),
           y = Math.round(r.top + r.height / 2 - 20) + "px";
-        for (const [el, x] of [
+        for (const [el, x] of /** @type {[HTMLElement, string][]} */ ([
           [pv, Math.round(r.left + 10) + "px"],
           [nx, Math.round(r.right - 50) + "px"],
-        ])
+        ]))
           if (el !== lay.navHold && (el.style.left !== x || el.style.top !== y)) {
             el.style.left = x;
             el.style.top = y;
@@ -86,18 +93,18 @@ export function initBrowse() {
   document.addEventListener(
     "click",
     e => {
-      const b = e.target.closest(".nav");
+      const b = hit(e, ".nav");
       if (!b) return;
       e.stopPropagation();
       if (b.classList.contains("gnav")) lay.navHold = b;
-      navFn(b)(+b.dataset.nav);
+      navFn(b)(+(/** @type {string} */ (b.dataset.nav)));
       updNav();
     },
     true,
   );
   document.addEventListener("keydown", e => {
     if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
-    const a = document.activeElement;
+    const a = /** @type {HTMLElement | null} */ (document.activeElement);
     if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
     if ($("modal").classList.contains("show")) return;
     const f = $("viewer").classList.contains("show") ? vNav : S.view === "gen" ? genNav : null;
@@ -108,6 +115,7 @@ export function initBrowse() {
   });
 }
 
+/** @param {import("./types.js").Job} j */
 export function browseTo(j) {
   PV.promptClosed = false;
   pv("browse", j);

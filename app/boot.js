@@ -1,7 +1,8 @@
+// @ts-check
 /* Kiln · helpers and start-up */
 import { applyMode, applyPH } from "./cardlayout.js";
 import { renderChips } from "./chips.js";
-import { $ } from "./dom.js";
+import { $, targetField } from "./dom.js";
 import { jobs } from "./jobs.js";
 import { renderLoras } from "./loras.js";
 import { saveJobName, updPrompt } from "./peek.js";
@@ -13,19 +14,25 @@ import { P, S, save } from "./state.js";
 import { moveThumb, showView } from "./tabs.js";
 
 /* ======================= misc ======================= */
+/** seconds → "m:ss" ("1h 5m" past an hour) @param {number} s */
 export function fmt(s) {
   s = Math.round(s);
   const m = Math.floor(s / 60),
     r = s % 60;
   return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}:${String(r).padStart(2, "0")}`;
 }
+/** text made safe to put in HTML @param {unknown} s */
 export function esc(s) {
-  return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  return String(s).replace(
+    /[&<>"]/g,
+    c => /** @type {Record<string, string>} */ ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+  );
 }
+/** @param {string} [at] a tab (data-v): the message goes under it */
 function toastPlace(at) {
   const el = $("toast").style;
   if (at) {
-    const r = document.querySelector(`.tab[data-v="${at}"]`).getBoundingClientRect();
+    const r = /** @type {Element} */ (document.querySelector(`.tab[data-v="${at}"]`)).getBoundingClientRect();
     Object.assign(el, {
       left: Math.round(r.left + r.width / 2) + "px",
       right: "auto",
@@ -47,7 +54,10 @@ function toastPlace(at) {
   if (T.top - 18 >= innerHeight - low - 18) Object.assign(el, { top: "24px", bottom: "auto" });
   else Object.assign(el, { top: "auto", bottom: "24px" });
 }
+/** @type {number | undefined} */
 let tt;
+/** a message; with btn + fn, a button (Undo …); at = under that tab
+ * @param {string} m @param {string} [btn] @param {() => void} [fn] @param {string} [at] */
 export function toast(m, btn, fn, at) {
   $("toastMsg").textContent = m;
   toastPlace(at);
@@ -66,9 +76,9 @@ export function syncH() {
 }
 export function renderAll() {
   const n = jobs.filter(j => j.status === "pending" || j.status === "running").length;
-  $("badge").textContent = n;
+  $("badge").textContent = /** @type {any} */ (n); // the number, as text
   $("badge").classList.toggle("show", n > 0);
-  $("tabN").textContent = n || "";
+  $("tabN").textContent = /** @type {any} */ (n || "");
   requestAnimationFrame(() => moveThumb(true));
   renderPills();
   renderChips();
@@ -78,18 +88,18 @@ export function renderAll() {
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initBoot() {
-  $("pname").value = S.pname || "";
+  /** @type {HTMLInputElement} */ ($("pname")).value = S.pname || "";
   $("pname").addEventListener("input", e => {
     if (peekJob) {
-      $("pnSave").classList.toggle("show", e.target.value.trim() !== (peekJob.name || "").trim());
+      $("pnSave").classList.toggle("show", targetField(e).value.trim() !== (peekJob.name || "").trim());
       return;
     } /* a waiting job's name: saved with its button */
-    S.pname = e.target.value;
+    S.pname = targetField(e).value;
     save();
     nameUI();
   });
   $("pnx").onclick = () => {
-    $("pname").value = "";
+    /** @type {HTMLInputElement} */ ($("pname")).value = "";
     S.pname = "";
     save();
     nameUI();

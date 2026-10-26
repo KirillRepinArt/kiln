@@ -1,6 +1,7 @@
+// @ts-check
 /* Kiln · settings, themes */
 import { toast } from "./boot.js";
-import { $ } from "./dom.js";
+import { $, hit, target, targetField } from "./dom.js";
 import { current } from "./jobs.js";
 import { resetLayout, setDock, sizeFrame } from "./layout.js";
 import { harmonics, skinName } from "./skins.js";
@@ -15,7 +16,7 @@ export function applyTheme() {
   root.dataset.skin = skinName(S.theme);
   const hm = harmonics(getComputedStyle(root).getPropertyValue("--a1").trim());
   window.HARM = hm;
-  for (const k in hm) root.style.setProperty("--" + k, hm[k]);
+  for (const k in hm) root.style.setProperty("--" + k, /** @type {Record<string, string>} */ (hm)[k]);
   window._themeV = (window._themeV || 0) + 1;
   applyFont();
 }
@@ -32,7 +33,7 @@ export function applyFont() {
   rs.setProperty("--font", `"${f}"`);
   if (th && skinTitle) rs.setProperty("--font-title", `"${skinTitle}"`);
   else rs.removeProperty("--font-title");
-  const sel = document.getElementById("sFont");
+  const sel = /** @type {HTMLSelectElement | null} */ (document.getElementById("sFont"));
   if (sel) sel.value = S.set.font;
   requestAnimationFrame(() => moveThumb(true));
 }
@@ -43,9 +44,9 @@ export function applyGlass() {
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initSettings() {
   S.theme = skinName(S.theme); // a saved skin from before the cleanup → the nearest one
-  $("sTheme").value = S.theme;
+  /** @type {HTMLSelectElement} */ ($("sTheme")).value = S.theme;
   $("sTheme").onchange = e => {
-    S.theme = e.target.value;
+    S.theme = targetField(e).value;
     applyTheme();
     save();
     window._cpv = Date.now() + 6000;
@@ -78,19 +79,21 @@ export function initSettings() {
       m.classList.toggle("show");
     };
     document.addEventListener("click", e => {
-      if (!e.target.closest("#layMenu")) m.classList.remove("show");
+      if (!hit(e, "#layMenu")) m.classList.remove("show");
     });
     m.addEventListener("click", e => {
-      const a = e.target.closest("[data-lay]");
+      const a = hit(e, "[data-lay]");
       if (!a) return;
       m.classList.remove("show");
       if (a.dataset.lay === "reset") {
         resetLayout();
         toast("Sizes reset — the default widths, centred");
-      } else setDock(a.dataset.lay);
+      } else setDock(/** @type {"left" | "right" | "below"} */ (a.dataset.lay)); // index.html's data-lay
     });
     window.layMenuUI = () =>
-      m.querySelectorAll("[data-lay]").forEach(o => o.classList.toggle("on", o.dataset.lay === (S.dock || "left")));
+      /** @type {NodeListOf<HTMLElement>} */ (m.querySelectorAll("[data-lay]")).forEach(o =>
+        o.classList.toggle("on", o.dataset.lay === (S.dock || "left")),
+      );
     window.layMenuUI();
     b.addEventListener("click", window.layMenuUI);
   })();
@@ -103,15 +106,15 @@ export function initSettings() {
     location.reload();
   };
   S.set = S.set || {};
-  document.querySelectorAll("[data-set]").forEach(el => {
-    const k = el.dataset.set;
-    if (S.set[k] != null) el.value = S.set[k];
-    else S.set[k] = el.value;
+  /** @type {NodeListOf<HTMLInputElement>} */ (document.querySelectorAll("[data-set]")).forEach(el => {
+    const k = /** @type {string} */ (el.dataset.set);
+    if (/** @type {Record<string, any>} */ (S.set)[k] != null) el.value = /** @type {Record<string, any>} */ (S.set)[k];
+    else /** @type {Record<string, any>} */ (S.set)[k] = el.value;
     el.addEventListener("change", () => {
-      S.set[k] = el.value;
+      /** @type {Record<string, any>} */ (S.set)[k] = el.value;
       save();
       if (k === "font") {
-        S.set.fontPicked = 1;
+        /** @type {Record<string, any>} */ (S.set).fontPicked = 1;
         save();
         applyFont();
       }
@@ -119,10 +122,10 @@ export function initSettings() {
     });
   });
   $("updBtn").onclick = () => toast("The update check needs the Kiln server (kiln.bat)");
-  $("keysBtn").onclick = () => window.openKeys();
+  $("keysBtn").onclick = () => /** @type {() => void} */ (window.openKeys)();
   $("gear").onclick = () => $("modal").classList.add("show");
   $("mClose").onclick = () => $("modal").classList.remove("show");
   $("modal").onclick = e => {
-    if (e.target.id === "modal") $("modal").classList.remove("show");
+    if (target(e).id === "modal") $("modal").classList.remove("show");
   };
 }

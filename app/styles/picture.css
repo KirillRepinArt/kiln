@@ -330,7 +330,7 @@ body.private .frame:hover .cbtn {
 }
 .gnav {
   position: fixed;
-  margin-top: 0;
+  translate: none; /* placed exactly by browse.js: not centred by the .nav rule */
   z-index: 20;
 }
 .gnav.glide {

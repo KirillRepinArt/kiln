@@ -76,7 +76,8 @@ export async function selecting(k, t) {
   await k.sleep(200);
   t.ok((await sel(k)).length === 6, "Ctrl+A: every finished picture", await sel(k));
   await key(k, "Delete");
-  await k.sleep(1200);
+  // six delete requests: wait for the list and the toast, not a fixed time (a busy CI runner took longer than 1.2 s)
+  await k.until(`doneList().length===0 && $("toastBtn").textContent==="Undo"`, 8000, 100);
   t.ok(await k.ev(`doneList().length===0`), "Del: all of them to the Recycle Bin…");
   t.ok(
     /6 moved to the Recycle Bin/.test(await k.ev(`$("toastMsg").textContent`)) &&

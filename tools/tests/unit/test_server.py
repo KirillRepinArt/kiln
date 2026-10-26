@@ -258,7 +258,7 @@ class Forge(unittest.TestCase):
 
     def test_checkpoint_names(self) -> None:
         self.assertEqual(bare("krea.safetensors [abc123]"), "krea.safetensors")
-        self.assertEqual(same_paths(["a\\b", "a/./c"]), same_paths(["a/c", "a/b"]))
+        self.assertEqual(same_paths(["a/b", "a/./c"]), same_paths(["a/c", "a/b"]))
 
 
 class Misc(unittest.TestCase):

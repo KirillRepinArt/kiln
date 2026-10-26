@@ -1,3 +1,4 @@
+// @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $ } from "./dom.js";
 import { lay, layMorph, sizeFrame } from "./layout.js";
@@ -7,8 +8,9 @@ import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./
 import { S } from "./state.js";
 
 /* ======================= tabs ======================= */
+/** @param {boolean} [instant] no glide (start-up, a font change) */
 export function moveThumb(instant) {
-  const t = document.querySelector(".tab.on"),
+  const t = /** @type {HTMLElement | null} */ (document.querySelector(".tab.on")),
     th = $("thumb");
   if (!t) return;
   if (instant) th.style.transition = "none";
@@ -19,6 +21,7 @@ export function moveThumb(instant) {
     th.style.transition = "";
   }
 }
+/** @param {import("./types.js").Settings["view"]} v */
 export function showView(v) {
   const was = S.view;
   if (was !== v) {
@@ -31,8 +34,8 @@ export function showView(v) {
       }
     } // the prompt box (and its peek) is left as it is
     if (was === "loras") {
-      $("lsearch").value = "";
-      $("lsearch").parentElement.classList.remove("has");
+      /** @type {HTMLInputElement} */ ($("lsearch")).value = "";
+      /** @type {HTMLElement} */ ($("lsearch").parentElement).classList.remove("has");
       $("lscroll").scrollTop = 0;
     }
   }
@@ -50,15 +53,19 @@ export function showView(v) {
 }
 /* Gallery isn't a page of its own (yet): it's the name for browsing finished pictures in the picture view — the
    state ← and the arrows already put you in. Clicking it opens the last finished picture; Generating = the live view */
+/** @param {boolean} [force] */
 export function tabSync(force) {
   const v = S.view === "gen" && browsed() ? "gallery" : S.view;
-  if (!force && tabSync.v === v) return;
-  tabSync.v = v;
-  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.v === v));
+  if (!force && /** @type {any} */ (tabSync).v === v) return; // the tab last lit, kept on the function
+  /** @type {any} */ (tabSync).v = v;
+  /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".tab")).forEach(t =>
+    t.classList.toggle("on", t.dataset.v === v),
+  );
   moveThumb();
 }
 /* a tab switch is navigation, not a layout edit: the new tab is laid out at once (no glide — on a GPU busy with Forge,
    0.4 s of glass re-blurring the sky per frame was the lag, 2026-10-19), and the layout is measured once per click */
+/** @param {() => void} fn */
 export function tabGo(fn) {
   const run = () => {
     lay.frameDefer = true;
@@ -79,11 +86,11 @@ export function tabGo(fn) {
 
 /* start-up wiring: the tab bar's clicks; the pill's place once the fonts have loaded (called from main.js, in order) */
 export function initTabs() {
-  document.querySelectorAll(".tab").forEach(
+  /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".tab")).forEach(
     t =>
       (t.onclick = () =>
         tabGo(() => {
-          const v = t.dataset.v;
+          const v = /** @type {import("./types.js").Settings["view"]} */ (t.dataset.v); // index.html's data-v
           PV.from = null;
           if (v === "gallery") {
             if (S.view !== "gen") showView("gen");

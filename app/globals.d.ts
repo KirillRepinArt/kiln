@@ -20,13 +20,18 @@ interface Window {
   toggleCover?: () => void;
   coverHeld?: () => boolean;
   /** the theme's colour harmonics */
-  HARM?: unknown;
-  _cpv?: unknown;
-  _dp?: unknown;
-  _dpt?: unknown;
-  _themeV?: unknown;
+  HARM?: Record<string, string>;
+  /** until when (ms) a changed cover shows on the idle frame */
+  _cpv?: number;
+  /** the status row's preview of a change is on */
+  _dp?: number;
+  /** its timer */
+  _dpt?: number;
+  /** counts theme changes (the effects redraw their sprites) */
+  _themeV?: number;
   _bgWave?: number;
-  _rp?: unknown;
+  /** a new queue order is on its way to the server: keep the local one */
+  _rp?: boolean;
   /** the prompt's CodeMirror view (app/vendor has no type declarations) */
   __cm?: any;
   /** test mode only (?test): the end-to-end tests' handle (app/testing.js) */

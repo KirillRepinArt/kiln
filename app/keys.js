@@ -1,6 +1,7 @@
+// @ts-check
 /* Kiln · keyboard shortcuts sheet: "?" anywhere outside a text field, or Settings → About */
 import { esc } from "./boot.js";
-import { $ } from "./dom.js";
+import { $, hit } from "./dom.js";
 import { IC } from "./state.js";
 
 const KEYS = [
@@ -27,6 +28,7 @@ export function initKeys() {
     const m = document.createElement("div");
     m.className = "modal keys";
     m.id = "keys";
+    /** @param {string[][]} L @param {boolean} [keys] */
     const rows = (L, keys) =>
       L.map(
         ([k, t]) =>
@@ -48,7 +50,7 @@ export function initKeys() {
     };
     const close = () => m.classList.remove("show");
     m.addEventListener("click", e => {
-      if (e.target === m || e.target.closest("[data-close]")) close();
+      if (e.target === m || hit(e, "[data-close]")) close();
     });
     document.addEventListener(
       "keydown",
@@ -59,10 +61,10 @@ export function initKeys() {
           return;
         }
         if (e.key !== "?" || e.ctrlKey || e.altKey) return;
-        const a = document.activeElement;
+        const a = /** @type {HTMLElement | null} */ (document.activeElement);
         if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
         e.preventDefault();
-        m.classList.contains("show") ? close() : window.openKeys();
+        m.classList.contains("show") ? close() : /** @type {() => void} */ (window.openKeys)();
       },
       true,
     );

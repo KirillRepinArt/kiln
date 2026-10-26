@@ -1,3 +1,4 @@
+// @ts-check
 /* Kiln · what the picture area shows: one state, one place that changes it (ux-review/11-picture-states.md)
    Generating shows LIVE (the render under its cover), a STILL (a finished picture: the result that just landed, or a
    reference you brought there yourself) or EMPTY; the Gallery is BROWSE(k). Rules, in order:
@@ -90,6 +91,7 @@ function snapOut() {
   if (S.view === "gen" && $("frame").classList.contains("has")) xfadeSnap();
 }
 /* into the Gallery at k: the prompt box peeks its prompt (unless you closed the prompt while browsing) */
+/** @param {import("./types.js").Job | null | undefined} j */
 function browseSet(j) {
   if (!j) return;
   if (PV.browse !== j.id) snapOut();
@@ -113,6 +115,13 @@ function browseEnd() {
   PV.promptClosed = false;
   if (peekJob) peekHide();
 }
+/**
+ * Something happened that may change what the picture area shows (the table: ux-review/11-picture-states.md).
+ * @typedef {"done" | "preview" | "close" | "toRender" | "start" | "shape" | "gallery" | "generating" | "browse" |
+ *   "reuse" | "promptClose" | "peekRender" | "deleted"} PictureEvent
+ * @param {PictureEvent} ev
+ * @param {any} [arg] what it carries: the job ("done", "browse"), "arrow" ("close"), { job, next } ("deleted")
+ */
 export function pv(ev, arg) {
   const run = current();
   switch (ev) {
@@ -257,7 +266,9 @@ export function pvSync() {
         : "Close the image (Esc) — ← brings it back";
 }
 
+/** @type {number | null} */
 export var justDone = null;
+/** @param {number | null} id */
 export function setJustDone(id) {
   justDone = id;
 }

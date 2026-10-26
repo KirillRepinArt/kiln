@@ -1,10 +1,12 @@
+// @ts-check
 /* Kiln · data, state, icons, image hover buttons */
-import { $ } from "./dom.js";
+import { $, hit } from "./dom.js";
 import { setThumbs } from "./forge.js";
 import { shownDone } from "./picstate.js";
 import { draft, setDraft } from "./prompt.js";
 
 /* LoRA names → what the list shows: people LoRAs named krea2_<name>_v<N>… become "Name" + their version tags */
+/** @param {string} file @param {string} folder */
 export function parseName(file, folder) {
   const m = file.match(/^krea2_([a-z0-9]+)_v(\d+)(?:_(large|small))?(?:_(onetrainer|aitoolkit|kohya))?$/i);
   if (folder === "people" && m) {
@@ -52,6 +54,7 @@ export function blockSaves() {
 export function save() {
   if (savesBlocked) return;
   try {
+    /** @type {any[]} what's saved (LoRAs this page doesn't know right now are kept) */
     let old = [];
     try {
       old = JSON.parse(localStorage.getItem("kiln_state") || "{}").loras || [];
@@ -91,6 +94,7 @@ export const IC = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 12.5h9l1-12.5M10 11v5.5M14 11v5.5"/></svg>',
   dice: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="#fff"/><circle cx="15" cy="15" r="1.2" fill="#fff"/><circle cx="15" cy="9" r="1.2" fill="#fff"/><circle cx="9" cy="15" r="1.2" fill="#fff"/></svg>',
 };
+/** @param {HTMLElement} el @param {() => import("./types.js").Job | null | undefined} getJob */
 function sideButtons(el, getJob) {
   el.innerHTML = `<button data-tip="Send to img2img" data-a="i2i">${IC.i2i}</button>
   <button data-tip="Upscale" data-a="up">${IC.up}</button>
@@ -99,7 +103,7 @@ function sideButtons(el, getJob) {
   <button data-tip="Use as LoRA thumbnail" data-a="thumb">${IC.thumb}</button>
   <button data-tip="Delete (Del) — to the Recycle Bin" data-a="del">${IC.trash}</button>`;
   el.onclick = e => {
-    const b = e.target.closest("button");
+    const b = hit(e, "button");
     if (!b) return;
     e.stopPropagation();
     if (b.dataset.a === "thumb") setThumbs(getJob());
@@ -112,8 +116,8 @@ export function initState() {
     const sv = JSON.parse(localStorage.getItem("kiln_state") || "{}");
     Object.assign(S, sv.S || {});
     setDraft(sv.draft || "");
-    delete S.demo;
-    delete S.ncount;
+    delete (/** @type {any} */ (S).demo); // settings of the removed demo mode
+    delete (/** @type {any} */ (S).ncount);
   } catch (e) {}
   P.value = draft || "";
   sideButtons($("sideGen"), () => shownDone());

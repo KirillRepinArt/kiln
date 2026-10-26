@@ -3,11 +3,42 @@
 //   node tools/dev/ast-same.mjs . HEAD app/stage.js ...
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
 
-const [repo, rev, ...files] = process.argv.slice(2);
-const require = createRequire(join(repo, "package.json"));
+// --helpers: the dom.js helpers are pure casts — target(e) is e.target, targetField(e) is e.target, hit(e, s) is
+// e.target.closest(s) — so a file that switched to them (typing it) compares as the code it was; their imports aside
+const args = process.argv.slice(2);
+const HELPERS = args.includes("--helpers");
+const [repo, rev, ...files] = args.filter(a => a !== "--helpers");
+const id = name => ({ type: "Identifier", name });
+const member = (object, name) => ({
+  type: "MemberExpression",
+  object,
+  property: id(name),
+  computed: false,
+  optional: false,
+});
+function helpers(n) {
+  if (Array.isArray(n)) return n.map(helpers);
+  if (!n || typeof n !== "object") return n;
+  const o = Object.fromEntries(Object.entries(n).map(([k, v]) => [k, helpers(v)]));
+  if (o.type === "CallExpression" && o.callee?.type === "Identifier") {
+    const [a, b] = o.arguments;
+    if (["target", "targetField"].includes(o.callee.name) && o.arguments.length === 1) return member(a, "target");
+    if (o.callee.name === "hit" && o.arguments.length === 2)
+      return {
+        type: "CallExpression",
+        callee: member(member(a, "target"), "closest"),
+        arguments: [b],
+        optional: false,
+      };
+  }
+  if (o.type === "Program")
+    o.body = o.body.filter(s => !(s.type === "ImportDeclaration" && s.source.value === "./dom.js"));
+  return o;
+}
+const require = createRequire(resolve(repo, "package.json")); // an absolute path: Node 24 refuses a relative one
 const espree = require("espree");
 const SKIP = new Set(["start", "end", "loc", "range", "raw"]);
 const strip = n =>
@@ -24,7 +55,8 @@ const strip = n =>
 const parse = src => {
   for (const sourceType of ["script", "module"]) {
     try {
-      return strip(espree.parse(src, { ecmaVersion: "latest", sourceType }));
+      const tree = espree.parse(src, { ecmaVersion: "latest", sourceType });
+      return strip(HELPERS ? helpers(tree) : tree);
     } catch (e) {
       if (sourceType === "module") throw e;
     }

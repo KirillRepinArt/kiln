@@ -1,3 +1,4 @@
+// @ts-check
 /* Kiln · the server's job list → the page's: polling, what changed, a finished job's moment */
 import { doneNote, makeQThumb } from "./actions.js";
 import { renderAll, toast } from "./boot.js";
@@ -14,6 +15,7 @@ import { dragId } from "./queue.js";
 import { S, save } from "./state.js";
 
 /* ---------- server job -> UI job ---------- */
+/** @param {any} s a job as the server sends it (server/jobqueue.py) @returns {import("./types.js").Job} */
 function toUI(s) {
   const sp = s.spec || {};
   return Object.assign({}, sp, {
@@ -55,6 +57,7 @@ export function fullNextPoll() {
   sig = "";
 }
 export async function poll() {
+  /** @type {any} the server's answer (server/web.py get_state) */
   let s;
   try {
     s = await (await fetch("/api/state" + (since ? "?since=" + since : ""))).json();
@@ -98,16 +101,16 @@ export async function poll() {
       return;
     } /* out of step: the full list next */
     const n = jobs.filter(j => j.status === "pending" || j.status === "running").length;
-    $("badge").textContent = n;
+    $("badge").textContent = /** @type {any} */ (n); // the number, as text
     $("badge").classList.toggle("show", n > 0);
-    $("tabN").textContent = n || "";
+    $("tabN").textContent = /** @type {any} */ (n || "");
     setTimeout(poll, current() ? 700 : 1800);
     return;
   }
   since = s.sig || "";
   const prev = new Map(jobs.map(j => [j.id, j]));
   replaceJobs(
-    s.jobs.map(x => {
+    s.jobs.map((/** @type {any} */ x) => {
       const u = toUI(x),
         o = prev.get(u.id);
       if (o && o.status === "running" && u.status === "running") {
@@ -139,7 +142,7 @@ export async function poll() {
     window._jobsReady = true;
     if (d && S.clearedId !== d.id) PV.still = { id: d.id, kind: "result" }; // the last result, unless you had closed it
     if (S.seenDone != null) {
-      const n = jobs.filter(x => x.status === "done" && x.id > S.seenDone).length;
+      const n = jobs.filter(x => x.status === "done" && x.id > /** @type {number} */ (S.seenDone)).length;
       if (n) setTimeout(() => toast(`${n} image${n > 1 ? "s" : ""} finished while Kiln was closed`), 1200);
     }
   }
@@ -151,7 +154,7 @@ export async function poll() {
     }
   }
   firstPoll = false;
-  if (peekJob) setPeekJob(jobs.find(j => j.id === peekJob.id) || peekJob);
+  if (peekJob) setPeekJob(jobs.find(j => j.id === /** @type {import("./types.js").Job} */ (peekJob).id) || peekJob);
   pvPrune();
   const ns = jobs.map(j => `${j.id}:${j.status}:${j.file}:${j.missing ? 1 : 0}:${j.name || ""}`).join("|");
   if (ns !== sig) {
@@ -159,9 +162,9 @@ export async function poll() {
     renderAll();
   } else {
     const n = jobs.filter(j => j.status === "pending" || j.status === "running").length;
-    $("badge").textContent = n;
+    $("badge").textContent = /** @type {any} */ (n); // the number, as text
     $("badge").classList.toggle("show", n > 0);
-    $("tabN").textContent = n || "";
+    $("tabN").textContent = /** @type {any} */ (n || "");
   }
   setTimeout(poll, current() ? 700 : 1800);
 }

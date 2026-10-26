@@ -38,6 +38,7 @@
 
 /**
  * A job as the page holds it: the server's job with its spec spread in, times in ms.
+ * The page's own, never sent: _ss = when the step on show started (ms), _lastStep = which step that was.
  * @typedef {JobSpec & {
  *   id: number,
  *   kind: "txt2img" | "upscale",
@@ -49,6 +50,7 @@
  *   started?: number, finished?: number, created?: number,
  *   spec: JobSpec,
  *   warm: boolean, stopping: boolean, missing: boolean,
+ *   _ss?: number, _lastStep?: number,
  * }} Job
  */
 
@@ -105,7 +107,8 @@
  * @property {number} [th]           the LoRA chips' thumbnail size
  * @property {number} [lw]           an old saved prompt width (before S.lay)
  * @property {number} [ph]           an old saved prompt height (dropped when the layout applies)
- * @property {Record<string, string>} [set]  Settings dialog choices (theme parts, cover, model, sampler, upscaler …)
+ * @property {Record<string, any>} [set]  Settings dialog choices (theme parts, cover, model, sampler, upscaler …;
+ *                                      mostly strings — fontPicked is a 1)
  */
 
 /**
@@ -136,7 +139,7 @@
  * @property {number | null} news    a result that landed while you held a reference
  * @property {number | null} yielded the result that gave way to the render — back if the render stops without a picture
  * @property {number} dir            the way you last stepped (← -1, → +1)
- * @property {string | null} from    the tab a picture was opened from — ✕ goes back there
+ * @property {Settings["view"] | null} from  the tab a picture was opened from — ✕ goes back there
  */
 
 /**

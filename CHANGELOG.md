@@ -2,6 +2,23 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
+## Unreleased — v0.7.1 (a pass of small fixes and features)
+
+- **A picture you're looking at stays** when you change size or ratio: it goes with ✕, an arrow or Start; the new
+  shape shows on the ratio pill, and on the empty frame once the picture is gone.
+- **A shown picture's prompt is modeless:** change anything — type, pick a size, ratio or steps, touch a LoRA chip —
+  and the picture becomes your draft (its prompt, series, settings and LoRAs, a random seed); Undo puts yours back. The
+  Reuse bar is gone, so the title never jumps.
+- **The name line reads like a file's tab:** `#12 Harbour-001.png ×`, always shown and centred. ✕ closes the prompt
+  (Esc too). In a narrow box `.png` goes first, then the #, then the number, then the title shortens.
+- **Gallery:** with its prompt closed, **Show prompt** under the picture brings it back.
+- **The seed lock** lives in the Seed pill's pop-up, beside the die and copy: unlocked = a random seed each job (the
+  default), locked = this one (the pill shows it with a lock). "Fixed" is gone.
+- **Queue reorder:** pick the row up — it lifts and follows the pointer (no see-through copy), its footprint travels
+  through the list, letting go settles it in, Esc puts it back.
+- **Tab switches:** the tab bar glides straight to its new place (it used to leap sideways, then slide back), at the
+  prompt column's pace.
+
 ## v0.7 — 2026-10-27 (structure: the whole app reorganised)
 
 Mostly under the hood: Kiln works as before, and is now built to grow (ComfyUI, the Library, thousands of pictures).

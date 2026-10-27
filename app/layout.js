@@ -420,7 +420,10 @@ export function sizeFrame() {
     const gen = S.view === "gen";
     const room = Math.max(0, (SW - tabsW()) / 2),
       dx = gen && !stk ? Math.max(-room, Math.min(room, Math.round(left + w / 2 - SW / 2))) : 0;
-    tb.style.transform = gen && (top > 0 || dx) ? `translate(${dx}px,${Math.round(Math.max(0, top))}px)` : "";
+    tb.dataset.dx = String(dx);
+    /* a crop-and-reveal carries the bar on the picture's moving top edge (morph.js), and lands it on this target */
+    if (!$("frame").classList.contains("morph"))
+      tb.style.transform = gen && (top > 0 || dx) ? `translate(${dx}px,${Math.round(Math.max(0, top))}px)` : "";
   }
   const sx = 0;
   const pr = $("prog");

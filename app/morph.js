@@ -100,6 +100,13 @@ export function frameMorph(o) {
     };
   }
   /* the old box on screen, where the morph started (the panel may glide under it from here on) */
+  /* the tab bar sits on the picture's top edge: during the morph it rides that edge frame by frame (its own glide ran
+     ahead and crossed over the picture, the user's note 2026-10-27) */
+  const tb = /** @type {HTMLElement | null} */ (document.querySelector(".tabs"));
+  if (tb) {
+    tb.style.setProperty("transition", "none", "important");
+    if (tb.style.transform) tb.style.transform = `translate(${tb.dataset.dx || 0}px,${Math.round(Math.max(0, o.t))}px)`;
+  }
   const st0 = $("stage").getBoundingClientRect(),
     O = [E0[0] + st0.left, E0[1] + st0.top, E0[2] + st0.left, E0[3] + st0.top];
   (function step(now) {
@@ -111,13 +118,17 @@ export function frameMorph(o) {
     const N = [n.l + st.left, n.t + st.top, n.l + n.w + st.left, n.t + n.h + st.top],
       pA = A ? eA(Math.min(1, e / A)) : 1,
       pB = B ? eB(Math.min(1, Math.max(0, e - A - S) / B)) : 1,
-      /* each edge on its own step: in = during the crop, out = during the reveal */
-      Bx = O.map((v, i) => v + (N[i] - v) * (dirIn[i] ? pA : pB));
+      /* each edge on its own step: in = during the crop, out = during the reveal; an edge that keeps its place in the
+         area rides the area as it glides (the area hugs the picture: holding such an edge where it was on screen left
+         it behind, then it caught up during the reveal — a second shrink, 2026-10-27) */
+      Bx = O.map((v, i) => v + (N[i] - v) * (!moves[i] ? 1 : dirIn[i] ? pA : pB));
     if (e < T) {
       f.style.left = px(Bx[0] - st.left);
       f.style.top = px(Bx[1] - st.top);
       f.style.width = px(Bx[2] - Bx[0]);
       f.style.height = px(Bx[3] - Bx[1]);
+      if (tb && tb.style.transform)
+        tb.style.transform = `translate(${tb.dataset.dx || 0}px,${Math.round(Math.max(0, Bx[1] - st.top))}px)`;
       /** @type {any} */ (frameMorph).raf = requestAnimationFrame(step);
     } else {
       f.classList.remove("morph");
@@ -125,6 +136,11 @@ export function frameMorph(o) {
       f.style.top = px(n.t);
       f.style.width = px(n.w);
       f.style.height = px(n.h);
+      if (tb) {
+        if (tb.style.transform)
+          tb.style.transform = `translate(${tb.dataset.dx || 0}px,${Math.round(Math.max(0, n.t))}px)`;
+        tb.style.removeProperty("transition");
+      }
     }
   })(t0);
 }

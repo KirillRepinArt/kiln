@@ -647,18 +647,17 @@ export async function lateFixes(k, t) {
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.mouse(2, 2);
   await k.sleep(1000);
-  // the curve: one continuous move — the box never stands still before it lands
+  // per edge (2026-10-27): each side moves one way only, never back — the old curve dipped past the target and came back
   const r = await k.ev(
-    `new Promise(res=>{const out=[];const t0=performance.now();genNav(-1);(function f(t){const b=$("frame").getBoundingClientRect();out.push([t-t0,b.width,b.height]);if(t-t0<600)requestAnimationFrame(f);else res(out)})(performance.now())})`,
+    `new Promise(res=>{const out=[];const t0=performance.now();genNav(-1);(function f(t){const b=$("frame").getBoundingClientRect();out.push([t-t0,b.width,b.height]);if(t-t0<700)requestAnimationFrame(f);else res(out)})(performance.now())})`,
   );
-  const mid = r.filter(x => x[0] > 120 && x[0] < 420),
-    still = mid.filter(
-      (x, i) => i && Math.abs(x[1] - mid[i - 1][1]) < 0.05 && Math.abs(x[2] - mid[i - 1][2]) < 0.05,
-    ).length;
-  t.motion(mid.length > 8 && still <= 1, "crop-then-reveal is one continuous move (no stop at the middle box)", {
-    frames: mid.length,
-    still,
-  });
+  const oneWay = (/** @type {number[]} */ v) =>
+    v.every((x, i) => !i || x >= v[i - 1] - 0.5) || v.every((x, i) => !i || x <= v[i - 1] + 0.5);
+  t.motion(
+    r.length > 8 && oneWay(r.map(x => x[1])) && oneWay(r.map(x => x[2])),
+    "crop-then-reveal: the width and the height each move one way only",
+    { frames: r.length, w: r.map(x => Math.round(x[1])), h: r.map(x => Math.round(x[2])) },
+  );
   // the edit column reacts to hover even while its buttons are hidden
   await k.mouse(2, 2);
   await k.sleep(500);
@@ -767,3 +766,32 @@ export async function morphKeepsTheHeight(k, t) {
   t.motion(Math.max(...tops) - Math.min(...tops) < 1.5, "nor the top edge", [Math.min(...tops), Math.max(...tops)]);
 }
 morphKeepsTheHeight.opts = { step: 0.05, width: 1800, height: 1000 };
+
+/* the tab bar rides the picture's top edge through a crop-and-reveal (2026-10-27, the user: "tab drops faster than the
+   pic is contracting, tab ends up over it during the transition"): the gap between them holds every frame */
+export async function tabBarRidesTheMorph(k, t) {
+  await k.job("[fill:446688] square", { ar: "1:1", steps: 1 });
+  await k.job("[fill:884422] wide", { ar: "16:9", steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  await k.mouse(2, 2);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(1000);
+  for (const dir of [-1, 1]) {
+    const s =
+      await k.ev(`new Promise(res=>{const f=$("frame"),tb=document.querySelector(".tabs"),o=[],t0=performance.now();
+      (function s(){o.push([Math.round(f.getBoundingClientRect().top-tb.getBoundingClientRect().bottom),f.classList.contains("morph")]);
+      if(performance.now()-t0<1100)requestAnimationFrame(s);else res(o)})();genNav(${dir})})`);
+    const gaps = s.map(x => x[0]);
+    t.ok(
+      s.some(x => x[1]),
+      `${dir < 0 ? "wide → square" : "square → wide"}: a crop-and-reveal runs`,
+    );
+    t.motion(
+      Math.max(...gaps) - Math.min(...gaps) <= 1 && Math.min(...gaps) > 0,
+      "…and the bar keeps its gap to the picture's top every frame",
+      { min: Math.min(...gaps), max: Math.max(...gaps), first: gaps.slice(0, 12) },
+    );
+    await k.sleep(600);
+  }
+}
+tabBarRidesTheMorph.opts = { step: 0.05, width: 1800, height: 1000 };

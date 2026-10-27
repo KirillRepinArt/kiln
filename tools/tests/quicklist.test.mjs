@@ -325,3 +325,35 @@ export async function tabSwitchKeepsTabs(k, t) {
     x2 = await k.ev(inBar('.tab[data-v="queue"]'));
   t.motion(x1 > x0 + 2 && x1 < x2 - 2, "mid-switch the pill is on its way (not jumped)", { x0, x1, x2 });
 }
+
+/* a tab switch: the tab bar goes straight from where it was to its new place — it used to leap sideways with its column,
+   then slide back (2026-10-26, the user's note). Sampled per frame: no step bigger than a glide's */
+export async function tabBarNoTeleport(k, t) {
+  await k.job("[fill:446688] one", { steps: 2, ar: "3:4" });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  const trip = to =>
+    k.ev(`new Promise(res=>{
+      const xs=[],t0=performance.now(),x=()=>document.querySelector(".seg").getBoundingClientRect().left;
+      xs.push(x());
+      document.querySelector('.tab[data-v="${to}"]').click();
+      (function f(){xs.push(x());if(performance.now()-t0<1200)requestAnimationFrame(f);else res(xs)})();
+    })`);
+  for (const dock of ["left", "right"]) {
+    await k.ev(`(setDock("${dock}"),1)`);
+    await k.mouse(2, 2);
+    await k.sleep(1500);
+    for (const to of ["queue", "gen"]) {
+      const xs = await trip(to),
+        steps = xs.slice(1).map((x, i) => Math.abs(x - xs[i])),
+        jump = Math.max(...steps),
+        total = Math.abs(xs[xs.length - 1] - xs[0]);
+      t.motion(jump <= Math.max(12, total * 0.35), `prompt ${dock}, to ${to}: the tab bar glides, no leap`, {
+        jump,
+        total,
+        first: xs.slice(0, 5).map(Math.round),
+      });
+      await k.sleep(400);
+    }
+  }
+}
+tabBarNoTeleport.opts = { step: 0.05 };

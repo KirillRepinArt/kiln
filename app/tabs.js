@@ -1,6 +1,6 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
-import { $ } from "./dom.js";
+import { $, q } from "./dom.js";
 import { lay, layMorph, sizeFrame } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
@@ -67,6 +67,8 @@ export function tabSync(force) {
    0.4 s of glass re-blurring the sky per frame was the lag, 2026-10-19), and the layout is measured once per click */
 /** @param {() => void} fn */
 export function tabGo(fn) {
+  const seg = $("seg"),
+    x0 = seg.getBoundingClientRect().left;
   const run = () => {
     lay.frameDefer = true;
     try {
@@ -78,10 +80,33 @@ export function tabGo(fn) {
         sizeFrame();
       }
     }
+    flipTabs(x0);
   };
   document.documentElement.classList.add("tabmorph");
   layMorph(run);
   setTimeout(() => document.documentElement.classList.remove("tabmorph"), 900);
+}
+
+/* the tab bar through a tab switch (FLIP: measure, apply, invert, play): the column it sits in jumps to its new place (a
+   switch lays out at once), while the bar's own offset over the picture glides — together it leapt sideways, then slid
+   back (2026-10-26, the user's note). Now it's put back where it was on screen and glides from there straight to its
+   new place, the selected pill sliding inside it */
+/** @param {number} x0 where the bar's pill row was (screen px) */
+function flipTabs(x0) {
+  const tb = q(".tabs"),
+    want = tb.style.transform;
+  tb.style.setProperty("transition", "none", "important"); // over the switch's own glide rule (motion.css)
+  const dx = Math.round(x0 - $("seg").getBoundingClientRect().left);
+  if (Math.abs(dx) < 1) {
+    tb.style.removeProperty("transition");
+    return;
+  }
+  tb.style.transform = `translateX(${dx}px) ${want}`;
+  void tb.offsetWidth;
+  requestAnimationFrame(() => {
+    tb.style.removeProperty("transition");
+    tb.style.transform = want;
+  });
 }
 
 /* start-up wiring: the tab bar's clicks; the pill's place once the fonts have loaded (called from main.js, in order) */

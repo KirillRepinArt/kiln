@@ -50,7 +50,7 @@ export function renderPills() {
     $("pMP").dataset.tip = pw ? `${v.mp} MP · ${pw}×${ph} px at ${v.ar}` : "Image size (megapixels)";
   }
   $("vAR").innerHTML = v.ar + '<span class="w"> Ratio</span>';
-  $("vST").innerHTML = v.steps + '<span class="w"> Steps</span>';
+  $("vST").innerHTML = v.steps + `<span class="w"> ${v.steps === 1 ? "Step" : "Steps"}</span>`;
   $("vSD").innerHTML = pk ? esc(String(v.seed)) : v.locked ? `${v.seed}<span class="lk">${LOCK}</span>` : "Random";
   $("vN").textContent = "×" + v.n;
   $("popMP").innerHTML = ["0.5", "1.0", "1.5", "2.0"]
@@ -194,7 +194,7 @@ export function initPills() {
     if (id === "stR" || id === "stN") {
       S.steps = clamp(+targetField(e).value, 1, 60);
       field(id === "stR" ? "stN" : "stR").value = String(S.steps);
-      $("vST").innerHTML = S.steps + '<span class="w"> Steps</span>';
+      $("vST").innerHTML = S.steps + `<span class="w"> ${S.steps === 1 ? "Step" : "Steps"}</span>`;
       $("stH").textContent = stepsHint();
       save();
     }

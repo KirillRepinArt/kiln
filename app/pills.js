@@ -8,6 +8,7 @@ import { RATIOS, SEC_PER_STEP, SIZES } from "./presets.js";
 import { editFirst } from "./peek.js";
 import { peekJob } from "./prompt.js";
 import { IC, S, save } from "./state.js";
+import { SPACE } from "./tokens.js";
 
 /* ======================= pills ======================= */
 /** a pop-up's slider row + number box + quick picks @param {string} id @param {number} min @param {number} max
@@ -73,6 +74,27 @@ export function renderPills() {
   $("popSD").innerHTML =
     `<div class="row"><input type="number" id="seedIn" class="${v.locked ? "" : "unused"}" value="${v.seed}" style="width:140px" title="${v.locked ? "Every job uses this seed" : "Not in use — a random seed each job (lock it, type one or roll the die)"}"><button class="iconbtn" id="dice" title="A new random seed (locks it)">${IC.dice}</button><button class="iconbtn lockb${v.locked ? " on" : ""}" id="seedLock" title="${v.locked ? "Locked: every job uses this seed — click for a random one each job" : "Lock: use this seed for every job"}">${LOCK}</button><button class="iconbtn" id="seedCopy" title="Copy the seed">${IC.copy}</button></div>`;
   sizeFrame();
+}
+/* a pill's menu opens above it, starting at its left edge — and stays fully on screen (the user, 2026-10-27: in a narrow
+   prompt box the Ratio menu went off the side): shifted sideways to keep the window's margin, below the pill when there
+   isn't room above */
+/** @param {HTMLElement} pop */
+function fitPop(pop) {
+  pop.style.removeProperty("--popx");
+  pop.classList.remove("below");
+  const pill = /** @type {HTMLElement} */ (pop.parentElement).getBoundingClientRect(),
+    w = pop.offsetWidth,
+    m = SPACE.area,
+    over = pill.left + w - (innerWidth - m),
+    dx = over > 0 ? -over : 0;
+  pop.style.setProperty("--popx", Math.max(m - pill.left, dx) + "px");
+  if (pill.top - pop.offsetHeight - SPACE.tight < m) pop.classList.add("below");
+}
+/** @param {HTMLElement} pop @param {string} pill */
+function showPop(pop, pill) {
+  pop.classList.add("show");
+  $(pill).classList.add("open");
+  fitPop(pop);
 }
 export function closePops() {
   qa(".pop.show").forEach(p => {
@@ -140,15 +162,12 @@ export function initPills() {
         save();
         pop.classList.remove("show");
         renderPills();
-        pop.classList.add("show");
+        showPop(pop, b);
         return;
       }
       const was = pop.classList.contains("show");
       closePops();
-      if (!was) {
-        pop.classList.add("show");
-        $(b).classList.add("open");
-      }
+      if (!was) showPop(pop, b);
     });
   });
   document.addEventListener("click", e => {
@@ -165,8 +184,7 @@ export function initPills() {
       } else S.seedMode = S.seedMode === "fixed" ? "random" : "fixed";
       save();
       renderPills();
-      $("popSD").classList.add("show");
-      $("pSD").classList.add("open");
+      showPop($("popSD"), "pSD");
       return;
     }
     if (hit(e, "#dice")) {
@@ -175,8 +193,7 @@ export function initPills() {
       S.seedMode = "fixed";
       save();
       renderPills();
-      $("popSD").classList.add("show");
-      $("pSD").classList.add("open");
+      showPop($("popSD"), "pSD");
       return;
     }
     if (!target(e).isConnected || hit(e, ".pill")) return;

@@ -203,7 +203,7 @@
 .pop {
   position: absolute;
   bottom: var(--space-16);
-  left: 0;
+  left: var(--popx, 0); /* kept on screen (pills.js fitPop) */
   transform-origin: bottom left;
   visibility: hidden;
   opacity: 0;
@@ -222,6 +222,11 @@
   text-align: left;
   color: var(--text);
   cursor: default;
+}
+.pop.below {
+  bottom: auto;
+  top: var(--space-12);
+  transform-origin: top left;
 }
 .pop.show {
   visibility: visible;

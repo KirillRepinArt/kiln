@@ -467,3 +467,29 @@ export async function galleryToPreviewIsClean(k, t) {
   t.ok(r.fit === "cover", "the changing box crops the pictures, never squeezes them", r.fit);
 }
 galleryToPreviewIsClean.opts = { step: 0.6 };
+
+/* menus stay fully on screen (the user, 2026-10-27: "ratio pill menu — in a narrow prompt box, the menu goes off the
+   screen"): every pill's menu, opened in a narrow window, sits inside it with the window's margin */
+export async function menusStayOnScreen(k, t) {
+  for (const w of [640, 900]) {
+    await k.send("Emulation.setDeviceMetricsOverride", { width: w, height: 760, deviceScaleFactor: 1, mobile: false });
+    await k.ev(`(dispatchEvent(new Event("resize")),1)`);
+    await k.sleep(1200);
+    for (const id of ["MP", "AR", "ST", "SD", "N"]) {
+      await k.ev(`(document.getElementById("p${id}").click(),1)`);
+      await k.until(`document.getElementById("pop${id}").classList.contains("show")`, 2000);
+      await k.sleep(250);
+      const r = await k.ev(
+        `(()=>{const b=document.getElementById("pop${id}").getBoundingClientRect();return {l:Math.round(b.left),r:Math.round(b.right),t:Math.round(b.top),b:Math.round(b.bottom),W:innerWidth,H:innerHeight}})()`,
+      );
+      t.ok(
+        r.l >= 19 && r.r <= r.W - 19 && r.t >= 0 && r.b <= r.H,
+        `${w} px wide: the ${id} menu is fully on screen`,
+        r,
+      );
+      await k.ev(`(document.body.click(),1)`);
+      await k.sleep(300);
+    }
+  }
+}
+menusStayOnScreen.opts = { width: 640, height: 760 };

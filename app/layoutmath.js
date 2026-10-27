@@ -201,3 +201,25 @@ export function cardPlacement({ colH, CH, pph, naturalH, pos, frozen, prevTop, p
   }
   return { top, H, bottom };
 }
+
+/* cubic-bezier easing as a function (for motion run frame by frame: the crop-and-reveal, the prompt column's slide) */
+/** @param {number} x1 @param {number} y1 @param {number} x2 @param {number} y2 @returns {(x: number) => number} */
+export function bez(x1, y1, x2, y2) {
+  /** @typedef {(a: number, b: number) => number} AB @typedef {(t: number, a: number, b: number) => number} TAB */
+  const A = /** @type {AB} */ ((a, b) => 1 - 3 * b + 3 * a),
+    B = /** @type {AB} */ ((a, b) => 3 * b - 6 * a),
+    C = (/** @type {number} */ a) => 3 * a,
+    f = /** @type {TAB} */ ((t, a, b) => ((A(a, b) * t + B(a, b)) * t + C(a)) * t),
+    d = /** @type {TAB} */ ((t, a, b) => 3 * A(a, b) * t * t + 2 * B(a, b) * t + C(a));
+  return x => {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    let t = x;
+    for (let i = 0; i < 6; i++) {
+      const g = d(t, x1, x2);
+      if (Math.abs(g) < 1e-6) break;
+      t -= (f(t, x1, x2) - x) / g;
+    }
+    return f(t, y1, y2);
+  };
+}

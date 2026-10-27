@@ -859,3 +859,52 @@ export async function tabBarStaysOverThePicture(k, t) {
     await k.sleep(900);
   }
 }
+
+/* the prompt column's place has one owner (2026-10-28): the Vertical shift + a tab switch's slide, written in one place.
+   A switch's own animation froze the shift it started with and made vAlign measure the column mid-slide: on a fast
+   Gallery → Queue → Gallery the shift ran away (-77 → -196 px) and the column jumped 170 px, ending 119 px too high until
+   something re-laid the page. Each case, per frame: no jump; then, with no input since, it rests where a fresh layout
+   puts it, with even gaps round the picture */
+const COL = ms => `new Promise(res=>{const o=[],t0=performance.now(),c=$("lcol");
+  (function s(){o.push(c.getBoundingClientRect().top);if(performance.now()-t0<${ms})requestAnimationFrame(s);else res(o)})()})`;
+export async function columnOneOwner(k, t) {
+  await k.ev(`(setDock("below"),1)`);
+  for (const [c, ar] of [
+    ["446688", "3:4"],
+    ["aa7733", "16:9"],
+  ])
+    await k.job(`[fill:${c}] p`, { ar, steps: 1 });
+  await done(k, 2);
+  await k.mouse(2, 2);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(1500);
+  const tab = v => `document.querySelector('.tab[data-v="${v}"]').click()`,
+    gaps = `(()=>{const s=document.querySelector(".seg").getBoundingClientRect(),f=$("frame").getBoundingClientRect(),p=$("prog").getBoundingClientRect(),n=$("pname").getBoundingClientRect(),run=!document.body.classList.contains("norow");return{above:Math.round(f.top-s.bottom),below:Math.round(n.top-(run?p.bottom:f.bottom))}})()`,
+    place = `({dy:$("lcol").dataset.dy||"0",top:Math.round($("lcol").getBoundingClientRect().top)})`;
+  const cases = [
+    ["Gallery → Queue", [tab("queue")], "queue"],
+    ["Queue → Gallery", [tab("gallery")], "gallery"],
+    ["Gallery → Queue → Gallery, fast", [tab("queue"), 150, tab("gallery")], "gallery"],
+    ["…again, a little later", [tab("queue"), 300, tab("gallery")], "gallery"],
+  ];
+  for (const [what, steps, end] of cases) {
+    const watch = k.ev(COL(1300));
+    for (const st of steps) typeof st === "number" ? await k.sleep(st) : await k.ev(`(${st},1)`);
+    const tops = await watch,
+      jump = Math.max(...tops.map((y, i) => (i ? Math.abs(y - tops[i - 1]) : 0)));
+    t.motion(jump <= 30, `${what}: the column glides, no jump`, { jump: Math.round(jump) });
+    await k.sleep(400);
+    const a = await k.ev(place);
+    await k.ev(`(sizeFrame(),1)`);
+    await k.sleep(100);
+    const b = await k.ev(place);
+    t.ok(a.dy === b.dy && Math.abs(a.top - b.top) <= 1, `${what}: it rests where a fresh layout puts it`, { a, b });
+    if (end === "gallery")
+      t.ok(
+        Math.abs((await k.ev(gaps)).above - (await k.ev(gaps)).below) <= 2,
+        `${what}: …with even gaps round the picture`,
+        await k.ev(gaps),
+      );
+  }
+}
+columnOneOwner.opts = { width: 1872, height: 1080, step: 0.05 };

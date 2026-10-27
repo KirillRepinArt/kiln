@@ -10,6 +10,7 @@ import {
   CARDMAX,
   LISTMIN,
   PWMIN,
+  bez,
   fitInBox,
   framePlacement,
   pageGeometry,
@@ -424,7 +425,7 @@ export function vAlign() {
   if (!document.querySelector(".app.stacked") || lay.vB == null) {
     if (col.dataset.dy) {
       delete col.dataset.dy;
-      col.style.transform = "";
+      colShift(0);
     }
     return;
   }
@@ -432,18 +433,63 @@ export function vAlign() {
     tbs = /** @type {HTMLElement} */ (document.querySelector(".tabs")),
     T = $("ltitle"),
     A = 12 + (tbs.getBoundingClientRect().bottom - seg.getBoundingClientRect().bottom);
-  const cur = parseFloat(col.dataset.dy || "0"),
-    colTop = col.getBoundingClientRect().top - cur,
+  const colTop = col.getBoundingClientRect().top - colY, // where it is laid out: without the shift and any slide on it
     TS = parseFloat(col.style.getPropertyValue("--ts")) || 64;
   const fromBottom = T.getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top,
     pn = colTop + 4 + (TS - 4 - SPACE.tight) - fromBottom; /* the name row: top 4, ending a tight gap above the box */
   const dy = Math.round(Math.min(0, lay.vB + A - pn));
   if (String(dy) !== col.dataset.dy) {
     col.dataset.dy = String(dy);
-    col.style.transform = dy ? `translateY(${dy}px)` : "";
+    colShift(dy);
   }
   $("hsplit").style.top = pn - colTop - 10 + "px";
 } /* the prompt-slot line: just above the title, clear of the picture's bottom edge */
+/* ---------- the prompt column's place has ONE owner (2026-10-28) ----------
+   Its transform = the Vertical shift (vAlign, the even gaps) + what is left of a tab switch's slide, written here
+   only. Two writers used to set it: vAlign's inline style, and a switch's own animation that froze the shift it started
+   with for 650 ms (a re-shift meanwhile showed only at the end, as a jump) and made vAlign measure the column mid-slide */
+const COL_SLIDE = 650,
+  colEase = bez(0.05, 0.7, 0.1, 1); // the plate's glide: the column lands with it
+let colDy = 0, // the Vertical shift
+  slX = 0, // the slide: how far from its place it started, and when
+  slY = 0,
+  slT0 = 0,
+  colX = 0, // the offset written last (taken off a measurement to find where the column is laid out)
+  colY = 0,
+  colRaf = 0;
+/** how much of the slide is still to go, 1 → 0 @param {number} now */
+function slideLeft(now) {
+  return slT0 ? 1 - colEase(Math.min(1, (now - slT0) / COL_SLIDE)) : 0;
+}
+function colApply() {
+  colRaf = 0;
+  const k = slideLeft(performance.now()),
+    x = Math.round(slX * k),
+    y = colDy + Math.round(slY * k),
+    t = x || y ? `translate(${x}px, ${y}px)` : "",
+    col = $("lcol");
+  colX = x;
+  colY = y;
+  if (col.style.transform !== t) col.style.transform = t;
+  if (k > 0) colRaf = requestAnimationFrame(colApply);
+  else slT0 = 0;
+}
+/** the Vertical shift (vAlign) @param {number} dy */
+function colShift(dy) {
+  colDy = dy;
+  if (!colRaf) colApply(); // mid-slide the next frame has it
+}
+/** a tab switch moved the column's place: it slides there from where it was on screen (measured before the switch —
+ * mid-slide too, so a fast second switch carries on from there). Its place is worked out here, from the layout and the
+ * shift: measured through the running slide's offset, a new shift got lost (a 63 px jump) @param {DOMRect} was */
+export function slideCol(was) {
+  const r = $("lcol").getBoundingClientRect();
+  slX = Math.round(was.left - (r.left - colX));
+  slY = Math.round(was.top - (r.top - colY + colDy));
+  slT0 = slX || slY ? performance.now() : 0;
+  cancelAnimationFrame(colRaf);
+  colApply();
+}
 // live resize: everything follows the window edge directly; animations return ~150 ms after the last resize event
 
 /** @type {number | undefined} */

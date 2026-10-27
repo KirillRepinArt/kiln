@@ -1,6 +1,7 @@
 // @ts-check
 /* Kiln · the picture's crop-and-reveal when its shape changes: each axis moves once, on its own step */
 import { $ } from "./dom.js";
+import { bez } from "./layoutmath.js";
 import { plateFollow, plateSync } from "./plate.js";
 
 /* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design; per axis since 2026-10-27). Both
@@ -17,27 +18,6 @@ const MORPH = {
   b: 280, // the reveal (decelerating out of it)
   one: 320, // only a crop, or only a reveal: one move, eased at both ends
 };
-/* cubic-bezier easing as a function (for the frame's own timeline below) */
-/** @param {number} x1 @param {number} y1 @param {number} x2 @param {number} y2 @returns {(x: number) => number} */
-function bez(x1, y1, x2, y2) {
-  /** @typedef {(a: number, b: number) => number} AB @typedef {(t: number, a: number, b: number) => number} TAB */
-  const A = /** @type {AB} */ ((a, b) => 1 - 3 * b + 3 * a),
-    B = /** @type {AB} */ ((a, b) => 3 * b - 6 * a),
-    C = (/** @type {number} */ a) => 3 * a,
-    f = /** @type {TAB} */ ((t, a, b) => ((A(a, b) * t + B(a, b)) * t + C(a)) * t),
-    d = /** @type {TAB} */ ((t, a, b) => 3 * A(a, b) * t * t + 2 * B(a, b) * t + C(a));
-  return x => {
-    if (x <= 0) return 0;
-    if (x >= 1) return 1;
-    let t = x;
-    for (let i = 0; i < 6; i++) {
-      const g = d(t, x1, x2);
-      if (Math.abs(g) < 1e-6) break;
-      t -= (f(t, x1, x2) - x) / g;
-    }
-    return f(t, y1, y2);
-  };
-}
 /* Material's emphasized curves: into the swap accelerating, out of it decelerating — with the swap between, it reads as
    one move; a lone crop or reveal is eased at both ends */
 const eIn = bez(0.3, 0, 0.8, 0.15),

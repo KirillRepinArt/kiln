@@ -1,7 +1,7 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $ } from "./dom.js";
-import { lay, layMorph, morphReady, sizeFrame } from "./layout.js";
+import { lay, layMorph, morphReady, sizeFrame, slideCol } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { current } from "./jobs.js";
 import { PV, browsed, onShow, picMode, pv } from "./picstate.js";
@@ -84,10 +84,9 @@ export function tabGo(fn) {
         sizeFrame();
       }
     }
-    const lc1 = $("lcol").getBoundingClientRect();
     morphReady().then(() => {
       plateMorph(from);
-      slideLcol(lc0, lc1);
+      slideCol(lc0); // the column slides from where it was, as the real thing (FLIP) — its glass stays live
     });
     /* the picture travels across a switch only when it's the SAME picture on both sides; otherwise (the Gallery's
        picture and the render, or no picture yet) the old one fades where it is and the new one fades in — it grew into
@@ -110,22 +109,6 @@ function picKey() {
   if (d) return "done:" + d.id;
   const j = current();
   return picMode() === "live" && j && j.preview_rev ? "render:" + j.id : null;
-}
-
-/* live plate: the prompt column slides from where it was as the real thing (FLIP), its glass live — a snapshot of it
-   went clear like the panel's */
-/** @param {DOMRect} r0 where the column was @param {DOMRect} r1 where the switch put it */
-function slideLcol(r0, r1) {
-  const lc = $("lcol"),
-    dx = Math.round(r0.left - r1.left),
-    dy = Math.round(r0.top - r1.top);
-  if (!dx && !dy) return;
-  const base = getComputedStyle(lc).transform,
-    rest = base === "none" ? "" : base;
-  lc.animate([{ transform: `translate(${dx}px, ${dy}px) ${rest}` }, { transform: rest || "none" }], {
-    duration: 650,
-    easing: "cubic-bezier(0.05, 0.7, 0.1, 1)",
-  });
 }
 
 /* start-up wiring: the tab bar's clicks; the pill's place once the fonts have loaded (called from main.js, in order) */

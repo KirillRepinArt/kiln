@@ -149,6 +149,11 @@ class Handler(BaseHTTPRequestHandler):
         self.file(self.k.paths.qthumbs, name)
 
     # ------------------------------------------------------------ GET: the API
+    def get_library(self) -> None:
+        """The picture index: how many pictures it holds, and whether it's catching up (Settings → Privacy)."""
+        lib = self.k.library
+        return self.reply(200, {"pictures": lib.count(), "scanning": lib.scanning})
+
     def get_state(self) -> None:
         """The page's poll. ?since=<signature it has>: the same → only the running job's progress (the light poll)."""
         k, q = self.k, self.k.queue
@@ -286,6 +291,11 @@ class Handler(BaseHTTPRequestHandler):
         self.k.queue.reorder(b.get("ids", []))
         return {"ok": True}
 
+    def post_library_clear(self, b: dict[str, Any]) -> dict[str, Any]:
+        """Forget the picture index; it rebuilds from the pictures in the background (nothing is lost)."""
+        self.k.library.clear()
+        return {"ok": True}
+
     def post_clear(self, b: dict[str, Any]) -> dict[str, Any]:
         return {"ok": True, "cleared": self.k.queue.clear_finished()}
 
@@ -339,6 +349,7 @@ GET_ROUTES = _routes(
     ("/api/nextname", "get_next_name"),
     ("/api/preview/(.*)", "get_preview"),
     ("/api/models", "get_models"),
+    ("/api/library", "get_library"),
 )
 
 POST_ROUTES = _routes(
@@ -356,6 +367,7 @@ POST_ROUTES = _routes(
     ("/api/remove-missing", "post_remove_missing"),
     ("/api/reorder", "post_reorder"),
     ("/api/clear", "post_clear"),
+    ("/api/library/clear", "post_library_clear"),
     ("/api/unclear", "post_unclear"),
     ("/api/open", "post_open"),
     ("/api/reveal", "post_reveal"),

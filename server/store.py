@@ -1,5 +1,5 @@
 """data/kiln.db: one SQLite file for what Kiln keeps — the job list, the job and series numbers, the timings, the pause
-flag (and, from v0.7b's next step, the index of your pictures).
+flag, and the index of your pictures (library.py).
 
 Why a database: a JSON file is rewritten whole on every change (the job list was ~1 MB at 500 jobs), and a crash
 mid-write can empty it (2026-10-27). SQLite writes only what changed, in transactions that survive a crash or a power
@@ -43,7 +43,36 @@ def _v1(con: sqlite3.Connection) -> None:
     con.execute("CREATE INDEX jobs_pos ON jobs (pos)")
 
 
-MIGRATIONS: list[Callable[[sqlite3.Connection], None]] = [_v1]  # MIGRATIONS[n] takes the schema from n to n + 1
+def _v2(con: sqlite3.Connection) -> None:
+    """The index of your pictures (library.py): one row per file in the output folder, with a full-text index over
+    prompt, series and LoRAs (kept in step by triggers); kind = image / video, so nothing assumes PNG-only."""
+    con.execute(
+        "CREATE TABLE pictures (id INTEGER PRIMARY KEY, path TEXT NOT NULL UNIQUE, kind TEXT NOT NULL,"
+        " size INTEGER NOT NULL, mtime REAL NOT NULL, w INTEGER, h INTEGER, kiln_id TEXT, series TEXT, prompt TEXT,"
+        " negative TEXT, params TEXT, settings TEXT, loras TEXT, seed INTEGER, steps INTEGER, model TEXT,"
+        " created REAL NOT NULL)"
+    )
+    for col in ("kiln_id", "series", "created"):
+        con.execute(f"CREATE INDEX pictures_{col} ON pictures ({col})")
+    con.execute(
+        "CREATE VIRTUAL TABLE pictures_fts USING fts5(prompt, series, loras, content='pictures', content_rowid='id')"
+    )
+    con.execute(
+        "CREATE TRIGGER pictures_ai AFTER INSERT ON pictures BEGIN INSERT INTO pictures_fts (rowid, prompt, series,"
+        " loras) VALUES (new.id, new.prompt, new.series, new.loras); END"
+    )
+    con.execute(
+        "CREATE TRIGGER pictures_ad AFTER DELETE ON pictures BEGIN INSERT INTO pictures_fts (pictures_fts, rowid,"
+        " prompt, series, loras) VALUES ('delete', old.id, old.prompt, old.series, old.loras); END"
+    )
+    con.execute(
+        "CREATE TRIGGER pictures_au AFTER UPDATE ON pictures BEGIN INSERT INTO pictures_fts (pictures_fts, rowid,"
+        " prompt, series, loras) VALUES ('delete', old.id, old.prompt, old.series, old.loras); INSERT INTO"
+        " pictures_fts (rowid, prompt, series, loras) VALUES (new.id, new.prompt, new.series, new.loras); END"
+    )
+
+
+MIGRATIONS: list[Callable[[sqlite3.Connection], None]] = [_v1, _v2]  # MIGRATIONS[n] takes the schema from n to n + 1
 
 
 class Store:

@@ -164,6 +164,22 @@ export async function startLive() {
   /** @type {Element} */ (document.querySelector(".mcard .mact")).prepend(rb);
   /* About: the version, and a manual update check — the only time Kiln goes online, and only when you ask */
   $("aboutV").textContent = "Kiln " + (st.version || "");
+  /* Settings → Privacy: the picture index (server/library.py) — what it holds, and Clear (it rebuilds from the
+     pictures' own text, so nothing is lost) */
+  const libStat = () =>
+    api("/api/library")
+      .then(r => {
+        $("libStat").textContent =
+          `${r.pictures.toLocaleString("en-US")} picture${r.pictures === 1 ? "" : "s"} indexed` +
+          (r.scanning ? " · updating…" : "");
+      })
+      .catch(() => {});
+  $("gear").addEventListener("click", libStat);
+  $("libClear").onclick = () =>
+    api("/api/library/clear", {}).then(() => {
+      toast("Picture index cleared — rebuilding from your pictures");
+      setTimeout(libStat, 400);
+    });
   $("updBtn").onclick = async () => {
     const b = /** @type {HTMLButtonElement} */ ($("updBtn")),
       o = $("updRes");

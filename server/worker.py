@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+import uuid
 from pathlib import Path
 
 from . import durable, images
@@ -104,7 +105,10 @@ class Worker:
         with self.queue.lock:
             free = again.endswith(".png") and not (self.paths.out / again).exists()
             name = again if free else self.pictures.next_filename(sp.get("name", ""), r.seed, take=True)
+        if images.is_png(img):  # a hidden id: the Library recognises the picture after a move or rename (library.py)
+            img = images.add_text(img, "kiln_id", uuid.uuid4().hex)
         durable.write_bytes(self.paths.out / name, img)  # a crash mid-save left a picture of zeros
+        self.pictures.indexed(self.paths.out / name)
         with self.queue.lock:
             job.update(file=name, seed_used=r.seed, infotext=r.infotext)
         return "done"
@@ -115,7 +119,11 @@ class Worker:
         image = src.read_bytes()
         scale = sp.get("scale", 2)
         out = src.with_name(f"{src.stem}_x{scale}.png")
-        durable.write_bytes(out, self.backend.upscale(image, sp["upscaler"], scale))
+        big = self.backend.upscale(image, sp["upscaler"], scale)
+        if images.is_png(big):
+            big = images.add_text(images.drop_text(big, "kiln_id"), "kiln_id", uuid.uuid4().hex)
+        durable.write_bytes(out, big)
+        self.pictures.indexed(out)
         with self.queue.lock:
             job["file"] = out.name
         return "done"

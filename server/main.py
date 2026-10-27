@@ -16,6 +16,7 @@ from .catalog import Catalog
 from .config import CFG, Paths
 from .instance import InstanceLock, bind_first, read_instance, write_instance
 from .jobqueue import JobQueue
+from .library import Library
 from .lifecycle import Window, watchdog
 from .pictures import Pictures
 from .timings import Timings
@@ -36,6 +37,7 @@ class Kiln:
     queue: JobQueue
     timings: Timings
     pictures: Pictures
+    library: Library
     backend: Backend
     catalog: Catalog
     worker: Worker
@@ -46,7 +48,8 @@ def create(cfg: Mapping[str, Any]) -> Kiln:
     paths = Paths.from_config(cfg)
     queue = JobQueue(paths)
     timings = Timings(paths)
-    pictures = Pictures(paths, queue)
+    library = Library(paths, queue.store)
+    pictures = Pictures(paths, queue, library)
     backend = make_backend(cfg)
     return Kiln(
         cfg=cfg,
@@ -54,6 +57,7 @@ def create(cfg: Mapping[str, Any]) -> Kiln:
         queue=queue,
         timings=timings,
         pictures=pictures,
+        library=library,
         backend=backend,
         catalog=Catalog(cfg, paths, backend),
         worker=Worker(paths, queue, backend, timings, pictures),
@@ -95,6 +99,7 @@ def main() -> None:
     k.queue.load()
     k.pictures.tidy()
     k.timings.load(k.queue.jobs)
+    k.library.start()  # the picture index catches up with the folder in the background
     k.backend.start()
     k.worker.start()
     threading.Thread(target=k.backend.watch, daemon=True).start()

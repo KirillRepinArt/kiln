@@ -1,14 +1,16 @@
 """Unit tests of the server's own logic (no Forge, no browser): `python -m unittest discover -s tools/tests/unit`."""
 
 import json
+import os
 import struct
 import tempfile
+import time
 import unittest
 import zlib
 from pathlib import Path
 from typing import ClassVar
 
-from server import images, naming, timings
+from server import images, library, naming, timings
 from server.backends.forge import bare, lora_folders, same_paths
 from server.config import Paths, load_config
 from server.errors import ApiError
@@ -488,3 +490,110 @@ class NetworkCalls(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+PARAMS = (
+    "a quiet harbour at dusk, film grain <lora:detail:0.8>\nNegative prompt: blurry\n"
+    "Steps: 4, Sampler: Euler, CFG scale: 1.0, Seed: 12345, Size: 1x1, Model: krea2_turbo"
+)
+
+
+class PictureIndex(TempDirs):
+    def setUp(self) -> None:
+        super().setUp()
+        self.lib = library.Library(self.paths, Store.open(self.paths))
+
+    def png(self, rel: str, params: str = PARAMS, series: str = "Harbour") -> Path:
+        f = self.paths.out / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        data = images.add_text(images.add_text(tiny_png(), "parameters", params), "kiln_name", series)
+        f.write_bytes(images.add_text(data, "kiln_id", "abc123"))
+        return f
+
+    def rows(self) -> dict[str, tuple]:
+        con = self.lib.store.con
+        return {
+            r[0]: r[1:] for r in con.execute("SELECT path, kind, w, h, series, prompt, seed, kiln_id FROM pictures")
+        }
+
+    def test_reads_a_png_without_its_pixels(self) -> None:
+        w, h, texts = library.png_meta(self.png("a.png"))
+        self.assertEqual((w, h), (1, 1))
+        self.assertEqual(texts["kiln_name"], "Harbour")
+        self.assertTrue(texts["parameters"].startswith("a quiet harbour"))
+
+    def test_parameters(self) -> None:
+        p = library.parse_parameters(PARAMS)
+        self.assertEqual(p["prompt"], "a quiet harbour at dusk, film grain")
+        self.assertEqual(p["negative"], "blurry")
+        self.assertEqual(p["loras"], [{"name": "detail", "w": 0.8}])
+        self.assertEqual(p["settings"]["Seed"], "12345")
+        other = library.parse_parameters('{"prompt": "made elsewhere"}')  # another tool's layout: kept whole
+        self.assertEqual((other["prompt"], other["settings"]), ('{"prompt": "made elsewhere"}', {}))
+
+    def test_a_scan_indexes_the_folder_and_its_folders(self) -> None:
+        self.png("harbour-001.png")
+        self.png("Harbour/harbour-002.png")
+        (self.paths.out / "photo.jpg").write_bytes(b"\xff\xd8\xff")
+        (self.paths.out / "clip.mp4").write_bytes(b"\0" * 16)
+        (self.paths.out / "notes.txt").write_text("not a picture")
+        self.assertEqual(self.lib.scan(), 4)
+        r = self.rows()
+        self.assertEqual(sorted(r), ["Harbour/harbour-002.png", "clip.mp4", "harbour-001.png", "photo.jpg"])
+        self.assertEqual(
+            r["harbour-001.png"], ("image", 1, 1, "Harbour", "a quiet harbour at dusk, film grain", 12345, "abc123")
+        )
+        self.assertEqual(r["clip.mp4"][0], "video")  # a media kind from the start: not PNG-only
+        self.assertEqual(r["photo.jpg"][4:6], (None, None))  # no text: still indexed
+
+    def test_a_rescan_reads_only_what_changed(self) -> None:
+        a = self.png("a.png")
+        self.png("b.png")
+        self.lib.scan()
+        self.assertEqual(self.lib.scan(), 0)  # nothing new: no file read
+        a.write_bytes(images.add_text(tiny_png(), "parameters", "a lighthouse\nSteps: 4, Seed: 9"))
+        os.utime(a, (time.time() + 5, time.time() + 5))
+        (self.paths.out / "b.png").unlink()
+        self.assertEqual(self.lib.scan(), 2)  # one changed, one gone
+        self.assertEqual(list(self.rows()), ["a.png"])
+        self.assertEqual(self.rows()["a.png"][4], "a lighthouse")
+
+    def test_search_by_words(self) -> None:
+        self.png("a.png")
+        self.png("b.png", "a red cup on a table\nSteps: 4, Seed: 1", "Cup")
+        self.lib.scan()
+        con = self.lib.store.con
+        hit = con.execute(
+            "SELECT path FROM pictures WHERE id IN (SELECT rowid FROM pictures_fts WHERE pictures_fts MATCH 'harbour')"
+        ).fetchall()
+        self.assertEqual(hit, [("a.png",)])
+        self.lib.index_file(self.paths.out / "a.png")
+        (self.paths.out / "a.png").unlink()
+        self.lib.index_file(self.paths.out / "a.png")  # gone: its row, and its words, go too
+        self.assertEqual(
+            con.execute("SELECT COUNT(*) FROM pictures_fts WHERE pictures_fts MATCH 'harbour'").fetchone()[0], 0
+        )
+
+    def test_clear_rebuilds_from_the_pictures(self) -> None:
+        self.png("a.png")
+        self.lib.scan()
+        with self.lib.store.tx() as c:
+            c.execute("DELETE FROM pictures")
+        self.assertEqual(self.lib.count(), 0)
+        self.lib.scan()
+        self.assertEqual(self.lib.count(), 1)  # nothing lost: the pictures carry their own text
+
+
+class PicturesKeepTheIndex(PicturesOnDisk):
+    def setUp(self) -> None:
+        super().setUp()
+        self.lib = library.Library(self.paths, self.q.store)
+        self.pics.library = self.lib
+        self.lib.scan()
+
+    def test_delete_and_undo_follow_in_the_index(self) -> None:
+        self.assertEqual(self.lib.count(), 1)
+        self.pics.act(self.jid, "delete")
+        self.assertEqual(self.lib.count(), 0)
+        self.pics.act(self.jid, "undelete")
+        self.assertEqual(self.lib.count(), 1)

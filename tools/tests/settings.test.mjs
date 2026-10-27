@@ -59,3 +59,23 @@ export async function oldSkinsMigrate(k, t) {
     t.ok(got === [now, now, now].join(","), `a saved "${old}" → ${now} (setting, page, menu)`, got);
   }
 }
+
+/* Settings → Privacy: the picture index (v0.7b) — how many pictures it holds, and Clear (it rebuilds from the pictures'
+   own text, so nothing is lost) */
+export async function pictureIndexInSettings(k, t) {
+  await k.job("a cup", { steps: 1 });
+  await k.until(`jobs.some(j=>j.status==="done")`, 20000);
+  await k.sleep(500);
+  await k.ev(`($("gear").click(),1)`);
+  t.ok(
+    await k.until(`/^1 picture indexed/.test($("libStat").textContent)`, 5000),
+    "a render is in the index at once",
+    await k.ev(`$("libStat").textContent`),
+  );
+  await k.ev(`($("libClear").click(),1)`);
+  t.ok(await k.until(`/cleared/.test($("toastMsg").textContent)`, 3000), "Clear says it rebuilds");
+  t.ok(
+    await k.until(`/^1 picture indexed/.test($("libStat").textContent)`, 5000),
+    "…and it does, from the picture itself",
+  );
+}

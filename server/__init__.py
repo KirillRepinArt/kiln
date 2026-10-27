@@ -12,6 +12,7 @@ The modules, from the bottom up (each one only uses the ones above it):
     timings    how long a job will take, from your own finished runs
     jobqueue   the job list: saved to data/queue.json, one lock, a revision the page polls against
     recyclebin the Windows Recycle Bin: send a file there, find one in it
+    library    the index of your pictures: one row per file in the output folder, from the pictures' own text
     pictures   finished pictures on disk: delete with undo, rename, put back, thumbnails, open in Explorer
     backends/  the image generator behind an interface (base.py) + the Forge Neo adapter (forge.py)
     catalog    what the generator offers (checkpoints, LoRAs, upscalers), cached

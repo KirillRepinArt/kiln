@@ -14,14 +14,22 @@ from . import durable, images, naming, recyclebin
 from .config import Paths
 from .errors import ApiError
 from .jobqueue import FINISHED, Job, JobQueue
+from .library import Library
 
 UNDO_SECONDS = 12  # a deleted picture waits in data/trash this long, then goes to the Recycle Bin
 
 
 class Pictures:
-    def __init__(self, paths: Paths, queue: JobQueue) -> None:
+    def __init__(self, paths: Paths, queue: JobQueue, library: Library | None = None) -> None:
         self.paths = paths
         self.queue = queue
+        self.library = library
+
+    def indexed(self, *files: Path) -> None:
+        """These files changed (written, moved, gone): their rows in the picture index follow."""
+        if self.library:
+            for f in files:
+                self.library.index_file(f)
 
     def next_filename(self, name: str, seed: Any, take: bool = False) -> str:
         """The next file name of a series (see naming.next_filename); hold the queue's lock when taking one."""
@@ -63,12 +71,14 @@ class Pictures:
                 self.paths.trash.mkdir(parents=True, exist_ok=True)
                 if src.exists():
                     src.replace(self.paths.trash / j["file"])
+                self.indexed(src)
                 j["status"] = "deleted"
                 threading.Timer(UNDO_SECONDS, self.finish_delete, [jid]).start()
             elif act == "undelete" and j["status"] == "deleted":
                 t = self.paths.trash / j["file"]
                 if t.exists():
                     t.replace(self.paths.out / j["file"])
+                self.indexed(self.paths.out / j["file"])
                 j["status"] = "done"
             else:
                 raise ApiError(409, f"can't {act} a {j['status']} job")
@@ -117,6 +127,7 @@ class Pictures:
                 (out / new).unlink()
                 raise ApiError(409, "the file is open in another app — close it and try again") from None
             old = j["file"]
+            self.indexed(src, out / new)
             j["file"] = new
             j["spec"]["name"] = name
             j["name"] = name
@@ -153,6 +164,7 @@ class Pictures:
             hit[0].unlink()
         except OSError:
             pass
+        self.indexed(dest)
         return {"ok": True}
 
     def save_back(self, jid: int, data_url: str) -> dict[str, Any]:
@@ -169,6 +181,7 @@ class Pictures:
         if (j.get("spec") or {}).get("name", "").strip():
             img = images.add_text(img, "kiln_name", j["spec"]["name"].strip())
         durable.write_bytes(dest, img)
+        self.indexed(dest)
         return {"ok": True}
 
     def forget_missing(self) -> None:

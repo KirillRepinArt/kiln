@@ -225,7 +225,12 @@ export async function peekModeless(k, t) {
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.sleep(800);
   t.ok(!(await k.ev(`!!document.getElementById("peekbar")`)), "no bar above the box");
-  t.near((await k.rect("#pname")).top, y0, 1, "the title stays where it was");
+  t.near((await k.rect("#pname")).top, y0, 1, "the title stays at its height");
+  const g = await k.ev(`(()=>{const c=document.querySelector(".nchip").getBoundingClientRect(),t=$("ltitle"),
+    r=t.getBoundingClientRect(),p=parseFloat(getComputedStyle(t).paddingLeft);
+    return{pre:$("fnPre").textContent,shown:getComputedStyle($("fnPre")).display!=="none",d:(c.left+c.right)/2-(r.left+r.right)/2}})()`);
+  t.ok(g.pre.startsWith("#") && g.shown, "its # is there without hovering", g);
+  t.ok(Math.abs(g.d) < 3, "the line (#, title, file name, ✕) centred as one group", g);
   const line = await k.ev(`({suf:$("fnSuf").textContent,x:getComputedStyle($("pkX")).display,
     gap:$("pkX").getBoundingClientRect().left-$("fnSuf").getBoundingClientRect().right})`);
   t.ok(line.suf === "-001.png" && line.x !== "none", "after the title: its number and .png, then ✕", line);
@@ -281,13 +286,13 @@ export async function narrowNameLine(k, t) {
   await k.sleep(1200);
   const r = await k.ev(`(()=>{const x=$("pkX").getBoundingClientRect(),h=$("hmodes").getBoundingClientRect(),
     n=$("pname").getBoundingClientRect();return{gap:h.left-x.right,x:getComputedStyle($("pkX")).display,
-    nosuf:document.querySelector(".plbl").classList.contains("nosuf"),noext:document.querySelector(".plbl").classList.contains("noext"),sameRow:Math.abs((x.top+x.bottom)/2-(n.top+n.bottom)/2)<3}})()`);
+    nosuf:document.querySelector(".plbl").classList.contains("nosuf"),noext:document.querySelector(".plbl").classList.contains("noext"),nopre:document.querySelector(".plbl").classList.contains("nopre"),sameRow:Math.abs((x.top+x.bottom)/2-(n.top+n.bottom)/2)<3}})()`);
   t.ok(
     r.x !== "none" && r.gap >= 11.5 && r.sameRow,
     "✕ stays, on the title's line, a part gap from the size buttons",
     r,
   );
-  t.ok(r.noext && r.nosuf, "the file name gave way before the title: .png first, then the number", r);
+  t.ok(r.noext && r.nopre && r.nosuf, "gave way before the title: .png, the #, then the number", r);
   await k.shot("narrow-name-line");
 }
 

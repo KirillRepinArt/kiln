@@ -257,6 +257,10 @@
 .iconbtn.lockb.on {
   color: var(--a1);
 }
+/* unlocked: the number isn't in use (each job gets a random one) — greyed until you lock it */
+.pop input.unused {
+  color: var(--faint);
+}
 .pop .opt small {
   color: var(--muted);
 }

@@ -199,10 +199,10 @@ export async function cssdiff(k, t) {
   await check("peek pending");
   await go(`$("pname").value="Renamed";$("pname").dispatchEvent(new Event("input"))`);
   await check("peek pending rename", { pseudo: false });
-  await go(`endPeek();browseTo(lastDone());fnShow(true)`);
+  await go(`endPeek();browseTo(lastDone())`);
   await settle();
   await check("gallery filename", { pseudo: false });
-  await go(`fnShow(false);endPeek()`);
+  await go(`endPeek()`);
   // pop-ups, menus, dialogs, toasts, tooltips
   for (const [name, js] of [
     ["pop ratio", `$("pAR").click()`],

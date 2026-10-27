@@ -71,8 +71,7 @@ export function renderPills() {
   /* the seed, the die, the lock, copy (as in Forge's own seed field: the number with its buttons beside it). Unlocked: a
      random seed each job; locked: this one (×N counts up from it) */
   $("popSD").innerHTML =
-    `<div class="row"><input type="number" id="seedIn" value="${v.seed}" style="width:140px"><button class="iconbtn" id="dice" title="A new random seed (locks it)">${IC.dice}</button><button class="iconbtn lockb${v.locked ? " on" : ""}" id="seedLock" title="${v.locked ? "Locked: every job uses this seed — click for a random one each job" : "Lock: use this seed for every job"}">${LOCK}</button><button class="iconbtn" id="seedCopy" title="Copy the seed">${IC.copy}</button></div>
-   <div class="hint">${v.locked ? "Locked · every job uses this seed" : "Unlocked · a random seed for each job"}</div>`;
+    `<div class="row"><input type="number" id="seedIn" class="${v.locked ? "" : "unused"}" value="${v.seed}" style="width:140px" title="${v.locked ? "Every job uses this seed" : "Not in use — a random seed each job (lock it, type one or roll the die)"}"><button class="iconbtn" id="dice" title="A new random seed (locks it)">${IC.dice}</button><button class="iconbtn lockb${v.locked ? " on" : ""}" id="seedLock" title="${v.locked ? "Locked: every job uses this seed — click for a random one each job" : "Lock: use this seed for every job"}">${LOCK}</button><button class="iconbtn" id="seedCopy" title="Copy the seed">${IC.copy}</button></div>`;
   sizeFrame();
 }
 export function closePops() {
@@ -211,6 +210,7 @@ export function initPills() {
       S.seedMode = "fixed"; // a number you typed: locked
       $("vSD").innerHTML = `${S.seed}<span class="lk">${LOCK}</span>`;
       /** @type {HTMLElement} */ ($("seedLock")).classList.add("on");
+      $("seedIn").classList.remove("unused");
       save();
     }
   });

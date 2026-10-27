@@ -28,7 +28,6 @@ export function loadJob(j) {
   $("pnSave").classList.remove("show");
   $("pnSave").textContent = j.status === "done" ? "Rename" : "Save name";
   q(".plbl").classList.toggle("donename", j.status === "done");
-  fnShow(false);
   $("left").classList.add("peeking");
   $("left").classList.toggle("peekfix", j.kind === "upscale"); // an upscale's settings aren't yours to change
   renderChips();
@@ -62,7 +61,7 @@ export function peekHide() {
   n.readOnly = false;
   $("pnSave").classList.remove("show");
   $("left").classList.remove("peeking", "peekfix");
-  q(".plbl").classList.remove("donename", "fnon");
+  q(".plbl").classList.remove("donename");
   renderChips();
   renderPills();
   updPrompt();
@@ -86,10 +85,11 @@ export function saveJobName() {
   j.name = v;
   $("pnSave").classList.remove("show");
 }
-/* The name line while a job's prompt is shown reads like a file's tab: its title as it is, then (a finished picture) its
-   number and .png, greyed, then ✕ — the way out of this prompt. Both sit outside the title, so the title never moves,
-   and they're there for as long as the prompt is shown: nothing to hunt for. Hovering the title adds its job # on the
-   left. Editing the title renames the file (the series and the next number) */
+/* The name line while a job's prompt is shown reads like a file's tab, all of it at once and centred as one group:
+   #12 · the title · its number and .png, greyed · ✕ (the way out of this prompt). Nothing comes and goes on hover, and
+   nothing to hunt for. A narrow box: the line keeps a part gap from the size buttons (box controls, not this prompt's)
+   and gives way in order — ".png" (every file is one), the #, the number, then the title shortens; ✕ always stays; the
+   group centres again after each cut. Editing the title renames the file (the series and the next number) */
 /** a 2D context for measuring the title's text (made once) @type {CanvasRenderingContext2D | undefined} */
 let measureCtx;
 /** the title's text width, as drawn (the field is wider: a minimum width and its edit padding) */
@@ -106,51 +106,50 @@ function titleInset() {
     (n.offsetWidth - c.measureText(n.value || n.placeholder).width) / 2,
   );
 }
-/** hover: the job's # beside the title @param {boolean} on */
-export function fnShow(on) {
-  const j = peekJob;
-  if (!j || document.activeElement === field("pname")) on = false;
-  if (on && j) {
-    $("fnPre").textContent = `#${j.id}`;
-    $("fnPre").style.marginRight = SPACE.tight - titleInset() + "px";
-  }
-  q(".plbl").classList.toggle("fnon", on);
-}
-/* the file name and ✕ after the title, up against its text. A narrow box: they keep a part gap from the size buttons
-   (box controls, not this prompt's) — giving way in order: ".png" (every file is one), then the number, then the title
-   shortens; ✕ always stays */
 export function fnLayout() {
   const j = peekJob,
     n = field("pname"),
     l = q(".plbl"),
+    pre = $("fnPre"),
     suf = $("fnSuf"),
     end = $("fnEnd");
   n.style.maxWidth = "";
   n.style.minWidth = "";
-  l.classList.remove("noext", "nosuf");
+  l.classList.remove("noext", "nopre", "nosuf");
   if (!j) return;
   const file = j.status === "done" && j.file ? j.file : "",
     m = file.match(/^(.*?)(-\d{3,}(?:_x[\d.]+)?)(\.png)$/i),
     named = m && (j.name || "").trim() && slugify(j.name) === m[1],
     stem = file.replace(/\.png$/i, ""),
     ext = file.slice(stem.length);
+  pre.textContent = `#${j.id}`;
   suf.innerHTML = file
     ? `<span class="fnnum">${esc(named && m ? m[2] : ` · ${stem}`)}</span><span class="fnext">${esc(ext)}</span>`
     : "";
+  /* up against the title's text, not its field (the field is wider: a minimum width, its edit padding) */
   const place = () => {
-    const shown = !!file && !l.classList.contains("nosuf");
-    end.style.marginLeft = (shown ? 0 : SPACE.tight) - titleInset() + "px";
+    const inset = titleInset(),
+      sufShown = !!file && !l.classList.contains("nosuf");
+    pre.style.marginRight = SPACE.tight - inset + "px";
+    end.style.marginLeft = (sufShown ? 0 : SPACE.tight) - inset + "px";
   };
   place();
-  const limit = $("hmodes").getBoundingClientRect().left - SPACE.part,
-    over = () => end.getBoundingClientRect().right - limit;
-  for (const step of file ? ["noext", "nosuf"] : []) {
+  const group = q(".nchip"),
+    over = () => {
+      const g = group.getBoundingClientRect(),
+        lt = $("ltitle").getBoundingClientRect(),
+        left = lt.left + (parseFloat(getComputedStyle($("ltitle")).paddingLeft) || 0),
+        right = $("hmodes").getBoundingClientRect().left - SPACE.part;
+      return Math.max(g.right - right, left - g.left);
+    };
+  for (const step of ["noext", "nopre", "nosuf"]) {
     if (over() <= 0) break;
+    if (step !== "nopre" && !file) continue;
     l.classList.add(step);
     place();
   }
-  /* the title gives way at both ends (it's centred). A few rounds: once it's shorter than its text, the field's own
-     spare width (which the file name used to hug into) is gone too */
+  /* the title gives way at both ends (the group is centred). A few rounds: once it's shorter than its text, the field's
+     own spare width (which the # and the file name hugged into) is gone too */
   for (let i = 0, o = over(); o > 0.5 && i < 4; i++, o = over()) {
     n.style.minWidth = "0";
     n.style.maxWidth = Math.max(48, n.offsetWidth - 2 * o) + "px";
@@ -223,11 +222,7 @@ export function updPrompt() {
    right after initQueue) */
 export function initPeek() {
   (function () {
-    const l = q(".plbl"),
-      n = field("pname");
-    l.addEventListener("mouseenter", () => fnShow(true));
-    l.addEventListener("mouseleave", () => fnShow(false));
-    n.addEventListener("focus", () => fnShow(false));
+    const n = field("pname");
     n.addEventListener("input", () => peekJob && fnLayout()); // renaming: the file name and ✕ follow the title
     new ResizeObserver(() => peekJob && fnLayout()).observe($("ltitle"));
     document.fonts && document.fonts.ready.then(() => peekJob && fnLayout());

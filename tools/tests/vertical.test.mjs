@@ -478,12 +478,11 @@ export async function simpleRename(k, t) {
   const f0 = await k.ev(`lastDone().file`);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.sleep(600);
-  await k.ev(`(document.querySelector(".plbl").dispatchEvent(new MouseEvent("mouseenter")),1)`);
   t.ok(
     await k.ev(
-      `$("fnPre").textContent==="#"+lastDone().id&&$("pname").value==="Castle"&&$("fnSuf").textContent==="-001.png"&&document.querySelector(".plbl").classList.contains("fnon")`,
+      `$("fnPre").textContent==="#"+lastDone().id&&$("pname").value==="Castle"&&$("fnSuf").textContent==="-001.png"`,
     ),
-    "a shown picture's title: as it is, its number and .png beside it; hovering adds its #",
+    "a shown picture's name line: its #, the title, its number and .png",
     [await k.ev(`$("fnPre").textContent`), await k.ev(`$("pname").value`), await k.ev(`$("fnSuf").textContent`)],
   );
   t.ok(

@@ -15,7 +15,7 @@ import { BAR, lay, setDock, sizeFrame, tbW } from "./layout.js";
 import { api, st } from "./live.js";
 import { checkStyles } from "./livestyles.js";
 import { renderLoras } from "./loras.js";
-import { editFirst, endPeek, fnLayout, fnShow, loadJob, peekHide, reuse, updPrompt } from "./peek.js";
+import { editFirst, endPeek, fnLayout, loadJob, peekHide, reuse, updPrompt } from "./peek.js";
 import { PV, browsed, justDone, pvSync, setJustDone } from "./picstate.js";
 import { __imgsN, img, missing } from "./pictures.js";
 import { closePops, renderPills } from "./pills.js";
@@ -55,7 +55,6 @@ export function installTestBridge() {
     editFirst: { get: () => editFirst },
     endPeek: { get: () => endPeek },
     fnLayout: { get: () => fnLayout },
-    fnShow: { get: () => fnShow },
     frame: { get: () => frame },
     genNav: { get: () => genNav },
     img: { get: () => img },

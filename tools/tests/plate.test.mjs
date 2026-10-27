@@ -175,3 +175,50 @@ export async function aroundFollowsTheFrame(k, t) {
   }
 }
 aroundFollowsTheFrame.opts = { step: 0.05 };
+
+/* the picture frame's box has one owner (2026-10-28, framebox.js): the layout gives the goal, a crop-and-reveal drives
+   it, nothing else writes it. Before, the layout's CSS glide, the crop-and-reveal and a "put the old values back"
+   took turns by flags. In motions that overlap, every frame: the box on screen is the one its owner wrote (no second
+   writer, no CSS glide underneath), it never jumps, and it lands where the layout wants it */
+const FRAME = ms => `new Promise(res=>{const f=$("frame"),o=[],t0=performance.now();
+  (function s(){const c=getComputedStyle(f),b=frameBox(),box=[c.left,c.top,c.width,c.height].map(parseFloat);
+    o.push({box,own:b?[b.l,b.t,b.w,b.h]:null});if(performance.now()-t0<${ms})requestAnimationFrame(s);else res(o)})()})`;
+export async function frameOneOwner(k, t) {
+  for (const [c, ar] of [
+    ["446688", "3:4"],
+    ["aa7733", "16:9"],
+    ["338844", "1:1"],
+  ])
+    await k.job(`[fill:${c}] p`, { ar, steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=3`, 40000);
+  await k.mouse(2, 2);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(1500);
+  const size = (w, h) =>
+    k.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: false });
+  const cases = [
+    ["a step, the window resized mid-way", [`genNav(-1)`, 150, [1400, 860]]],
+    ["a step, a tab switch mid-way", [`genNav(-1)`, 150, `document.querySelector('.tab[data-v="gen"]').click()`]],
+    [
+      "two fast steps",
+      [`document.querySelector('.tab[data-v="gallery"]').click()`, 900, `genNav(1)`, 100, `genNav(1)`],
+    ],
+    ["the window resized back, then a step mid-glide", [[1513, 900], 60, `genNav(-1)`]],
+  ];
+  for (const [what, steps] of cases) {
+    const watch = k.ev(FRAME(1400));
+    for (const st of steps)
+      typeof st === "number" ? await k.sleep(st) : Array.isArray(st) ? await size(...st) : await k.ev(`(${st},1)`);
+    const o = await watch;
+    const off = Math.max(...o.filter(x => x.own).map(x => Math.max(...x.box.map((v, i) => Math.abs(v - x.own[i]))))),
+      jump = Math.max(...o.map((x, i) => (i ? Math.max(...x.box.map((v, j) => Math.abs(v - o[i - 1].box[j]))) : 0)));
+    t.ok(off <= 0.5, `${what}: the box on screen is the one its owner wrote, every frame`, { off });
+    if (!/tab switch/.test(what)) t.motion(jump <= 120, `${what}: …it never jumps`, { jump: Math.round(jump) }); // a switch jumps under its View Transition, on purpose
+    await k.sleep(300);
+    const end = await k.ev(
+      `(()=>{const f=$("frame"),c=getComputedStyle(f),d=f.dataset;return [c.left,c.top,c.width,c.height].map(parseFloat).map((v,i)=>Math.abs(v-[+d.tl,+d.tt,+d.tw,+d.th][i]))})()`,
+    );
+    t.ok(Math.max(...end) <= 0.5, `${what}: …and lands where the layout wants it`, end);
+  }
+}
+frameOneOwner.opts = { step: 0.05 };

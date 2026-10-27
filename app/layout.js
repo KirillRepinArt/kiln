@@ -2,6 +2,7 @@
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
 import { plateFollow } from "./plate.js";
 import { placeAround } from "./around.js";
+import { frameGoal } from "./framebox.js";
 import { syncH } from "./boot.js";
 import { applyMode, applyPH, layoutLeft, lyReset, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
@@ -27,12 +28,6 @@ import { SPACE, pairGap } from "./tokens.js";
    the edges you drag, docking, and the holds that keep things still while you work */
 /* a quick fade-through; the picture morphs if it's on both sides */
 
-/** @param {HTMLElement} el @param {string} ar @param {number} bw @param {number} bh */
-function fitBox(el, ar, bw, bh) {
-  const { w, h } = fitInBox(ar, bw, bh);
-  el.style.width = w + "px";
-  el.style.height = h + "px";
-}
 /* the status block under the picture: the part gap + track 10 + 7 + status row 36 (a caption: 6 + row 36 + 4;
    nothing: 24) */
 export const BAR = () => SPACE.part + 10 + 7 + 36;
@@ -351,16 +346,7 @@ export function sizeFrame() {
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
   const PH = picH(),
     TB = tbW(PH),
-    morph = f.classList.contains("morph"),
-    ow = f.style.width,
-    oh = f.style.height;
-  fitBox(f, ar, SW - (stk ? 2 : 1) * TB, PH);
-  const w = parseFloat(f.style.width),
-    h = parseFloat(f.style.height);
-  if (morph) {
-    f.style.width = ow;
-    f.style.height = oh;
-  } /* a crop-and-reveal owns the box until it lands (frameMorph) */
+    { w, h } = fitInBox(ar, SW - (stk ? 2 : 1) * TB, PH);
   /* the picture's canvas is drawn at the box's FINAL size and centred in it: the box may glide to a new shape (its
     edges clip the picture, like a container transform) without the canvas being stretched on the way */
   /* Vertical keeps the column's room on both sides */
@@ -378,11 +364,9 @@ export function sizeFrame() {
       stacked: stk,
       toolsLeft: tbLeft,
     });
-  if (!morph) {
-    f.style.left = left + "px";
-    f.style.top = top + "px";
-  }
   Object.assign(f.dataset, { tw: w, th: h, tl: left, tt: top });
+  /* where the frame belongs; framebox.js moves it there (a glide, a jump, or where a crop-and-reveal lands) */
+  frameGoal({ l: left, t: top, w, h });
   /* the edit buttons' column: its width and side are the layout's; WHERE it sits is the frame's (around.js) */
   const gt = $("gtools");
   gt.style.width = TB + "px";

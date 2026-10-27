@@ -21,15 +21,8 @@
   outline: 1px solid var(--white-7);
   outline-offset: -1px;
 }
-/* position and size glide (stage.js sizeFrame); the canvas is drawn at the box's final size, so it never stretches.
-   A crop-and-reveal (.morph) moves the box itself, frame by frame */
-body:not(.laydrag) .stage .frame:not(.morph) {
-  transition:
-    top var(--lay-t) var(--lay-e),
-    left var(--lay-t) var(--lay-e),
-    width var(--lay-t) var(--lay-e),
-    height var(--lay-t) var(--lay-e);
-}
+/* its place and size are moved by one owner (framebox.js: glides on --lay-t / --lay-e, a crop-and-reveal frame by
+   frame) — no CSS transition. The canvas is drawn at the box's final size, so it never stretches */
 .frame.reveal {
   animation: develop var(--t-1100) var(--ease);
 }

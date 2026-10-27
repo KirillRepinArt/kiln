@@ -3,6 +3,7 @@
 import { $, hit } from "./dom.js";
 import { doneList } from "./jobs.js";
 import { lay } from "./layout.js";
+import { frameBox, frameTarget } from "./framebox.js";
 import { frameMorph } from "./morph.js";
 import { PV, browsed, onShow, picMode, pv } from "./picstate.js";
 import { S } from "./state.js";
@@ -36,21 +37,18 @@ export function genNav(dir, dry) {
     return true;
   }
   if (!dry) {
-    const fs = $("frame").style,
+    const b = frameBox() || { l: 0, t: 0, w: 0, h: 0 },
       sr = $("frame").getBoundingClientRect(),
       o = {
-        w: parseFloat(fs.width),
-        h: parseFloat(fs.height),
-        l: parseFloat(fs.left),
-        t: parseFloat(fs.top),
+        ...b,
         x: sr.left, // on screen, before anything moves (morph.js)
         y: sr.top,
       };
     PV.dir = dir;
     if (n >= L.length) pv("close", "arrow");
     else pv("browse", L[n]);
-    if (n < L.length && S.view === "gen" && Math.abs(parseFloat(fs.width) / parseFloat(fs.height) - o.w / o.h) > 0.02)
-      frameMorph(o);
+    const g = frameTarget();
+    if (n < L.length && S.view === "gen" && g && Math.abs(g.w / g.h - o.w / o.h) > 0.02) frameMorph(o);
   }
   return true;
 }

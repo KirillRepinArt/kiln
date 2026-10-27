@@ -3,7 +3,7 @@
 import { $ } from "./dom.js";
 import { bez } from "./layoutmath.js";
 import { overlayGone } from "./pictures.js";
-import { plateFollow, plateSync } from "./plate.js";
+import { frameDrive } from "./framebox.js";
 
 /* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design; per axis since 2026-10-27). Both
    pictures sit at their own final size, centred: only the frame moves. 1) an axis that shrinks crops the old picture
@@ -79,13 +79,11 @@ export function frameMorph(o) {
     eA = reveal ? eIn : eBoth,
     eB = crop ? eOut : eBoth,
     px = (/** @type {number} */ v) => v + "px";
-  cancelAnimationFrame(/** @type {any} */ (frameMorph).raf); // the running morph, kept on the function
   f.style.setProperty("--ow", px(o.w));
   f.style.setProperty("--oh", px(o.h));
   f.style.setProperty("--nw", px(n0.w));
   f.style.setProperty("--nh", px(n0.h));
   f.classList.add("morph");
-  plateFollow(T + 200); // the live plate rides the frame
   const t0 = performance.now();
   /* the old picture (on its own canvas) fades out across the swap */
   if (x) {
@@ -114,7 +112,9 @@ export function frameMorph(o) {
       [(o.x ?? st0.left + o.l) + o.w / 2, o.w],
       [(o.y ?? st0.top + o.t) + o.h / 2, o.h],
     ];
-  (function step(now) {
+  /* the frame's owner (framebox.js) asks for the box every frame and writes it — the plate and what sits round the
+     frame follow from there; a new crop-and-reveal replaces this one */
+  frameDrive(now => {
     const e = now - t0,
       st = $("stage").getBoundingClientRect(),
       n = T0();
@@ -138,20 +138,8 @@ export function frameMorph(o) {
       }),
       L = Bx[0][0] - Bx[0][1] / 2,
       Tp = Bx[1][0] - Bx[1][1] / 2;
-    if (e < T) {
-      f.style.left = px(L - st.left);
-      f.style.top = px(Tp - st.top);
-      f.style.width = px(Bx[0][1]);
-      f.style.height = px(Bx[1][1]);
-      plateSync(); // the plate rides the frame, and the tab bar the plate (plate.js)
-      /** @type {any} */ (frameMorph).raf = requestAnimationFrame(step);
-    } else {
-      f.classList.remove("morph");
-      f.style.left = px(n.l);
-      f.style.top = px(n.t);
-      f.style.width = px(n.w);
-      f.style.height = px(n.h);
-      plateSync();
-    }
-  })(t0);
+    if (e < T) return { l: L - st.left, t: Tp - st.top, w: Bx[0][1], h: Bx[1][1] };
+    f.classList.remove("morph");
+    return null; // landed: the owner puts the frame at its goal
+  });
 }

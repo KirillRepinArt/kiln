@@ -5,6 +5,7 @@
    They used to be placed at the frame's TARGET with CSS glides of their own (or none): on a crop-and-reveal the frame
    moved frame by frame and they jumped to the end or slid on another clock */
 import { $ } from "./dom.js";
+import { frameBox } from "./framebox.js";
 import { SPACE } from "./tokens.js";
 
 /** @param {CSSStyleDeclaration} s @param {string} p @param {number} v */
@@ -16,12 +17,9 @@ function set(s, p, v) {
    the stage fills Generating's view, so the status row's too. Not getBoundingClientRect: that includes transforms, and
    the "done" pulse (a 1.2 % scale) would shake everything round it */
 export function placeAround() {
-  const cs = getComputedStyle($("frame")),
-    l = parseFloat(cs.left),
-    t = parseFloat(cs.top),
-    w = parseFloat(cs.width),
-    h = parseFloat(cs.height);
-  if (!(w > 0 && h > 0) || isNaN(l + t)) return; // not laid out yet
+  const b = frameBox();
+  if (!b) return; // not laid out yet
+  const { l, t, w, h } = b;
   const gt = $("gtools"),
     he = $("hedges"),
     pr = $("prog"),

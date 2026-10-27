@@ -10,6 +10,7 @@ import { card, chipsH, layoutLeft, lyUnfreeze } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { status } from "./effects.js";
 import { up } from "./forge.js";
+import { frameBox } from "./framebox.js";
 import { current, doneList, jobs, lastDone, replaceJobs } from "./jobs.js";
 import { BAR, lay, setDock, sizeFrame, tbW } from "./layout.js";
 import { api, st } from "./live.js";
@@ -56,6 +57,7 @@ export function installTestBridge() {
     endPeek: { get: () => endPeek },
     fnLayout: { get: () => fnLayout },
     frame: { get: () => frame },
+    frameBox: { get: () => frameBox },
     genNav: { get: () => genNav },
     img: { get: () => img },
     jobs: { get: () => jobs, set: (/** @type {any} */ v) => replaceJobs(v) },

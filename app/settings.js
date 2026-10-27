@@ -6,7 +6,7 @@ import { $, hit, target, targetField } from "./dom.js";
 import { current } from "./jobs.js";
 import { resetLayout, setDock, sizeFrame } from "./layout.js";
 import { renderPills } from "./pills.js";
-import { applySwitchMode, switchStatsText } from "./plate.js";
+import { plateFollow } from "./plate.js";
 import { harmonics, skinName } from "./skins.js";
 import { S, save } from "./state.js";
 import { moveThumb, showView } from "./tabs.js";
@@ -129,11 +129,10 @@ export function initSettings() {
       }
       if (k === "glass") applyGlass();
       if (k === "stepsPill") applyStepsPill();
-      if (k === "switchMode") applySwitchMode();
     });
   });
   applyStepsPill();
-  applySwitchMode();
+  plateFollow(1500); // the glass plate finds its place once the page is laid out (plate.js)
   const sSteps = /** @type {HTMLInputElement} */ ($("sSteps"));
   sSteps.value = String(S.steps);
   sSteps.onchange = () => {
@@ -146,7 +145,6 @@ export function initSettings() {
   $("keysBtn").onclick = () => /** @type {() => void} */ (window.openKeys)();
   $("gear").onclick = () => {
     sSteps.value = String(S.steps); // the pill, a reused job may have changed them
-    $("swStats").textContent = switchStatsText();
     $("modal").classList.add("show");
   };
   $("mClose").onclick = () => $("modal").classList.remove("show");

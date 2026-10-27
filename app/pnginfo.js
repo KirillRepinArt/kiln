@@ -3,6 +3,7 @@
 import { esc, renderAll, toast } from "./boot.js";
 import { $, hit, targetField } from "./dom.js";
 import { SIZES } from "./presets.js";
+import { plateSync } from "./plate.js";
 import { setDraft } from "./prompt.js";
 import { IC, LORAS, P, S, save } from "./state.js";
 import { showView } from "./tabs.js";
@@ -34,6 +35,7 @@ export async function readPng(f) {
     el.src = u;
     $("pimg").classList.add("show");
     drop.parentElement?.classList.add("loaded");
+    plateSync();
     $("pClear").style.display = "";
   } catch (e) {}
   const b = new Uint8Array(await f.arrayBuffer());
@@ -186,6 +188,7 @@ export function initPnginfo() {
     over = (/** @type {boolean} */ on) => {
       wrap.classList.toggle("dragging", on);
       drop.classList.toggle("over", on);
+      plateSync(); // the drop line is the plate's
     };
   ["dragenter", "dragover"].forEach(t =>
     wrap.addEventListener(t, e => {
@@ -209,6 +212,7 @@ export function initPnginfo() {
     el.dataset.u = "";
     $("pimg").classList.remove("show");
     drop.parentElement?.classList.remove("loaded");
+    plateSync();
     const o = $("pout");
     o.classList.remove("raw");
     o.textContent = "";

@@ -317,8 +317,8 @@ export async function tabSwitchKeepsTabs(k, t) {
   t.ok(r.panel === "none", "…and the panel stays live: its glass blurs through the switch", r);
   t.ok(/0\.28s/.test(r.thumb), "…and the selected tab's pill slides", r);
   t.ok(
-    r.prompt === "kiln-prompt" && /0\.42s/.test(r.tabs),
-    "the prompt box slides as a snapshot, the tab bar glides (no jump between the tabs' widths)",
+    r.prompt === "none" && /0\.42s/.test(r.tabs),
+    "the prompt box slides live (its glass too — no snapshot), the tab bar glides (no jump between the tabs' widths)",
     r,
   );
   // positions relative to the tab bar: the bar itself glides during a switch (reading screen positions mid-glide mixed
@@ -524,3 +524,25 @@ export async function stepsInSettings(k, t) {
   await k.reload();
   t.ok(await k.ev(`!$("pST").hidden&&S.steps===9`), "both are remembered");
 }
+
+/* a picture that isn't carried across a switch fades in once the plate lands — its glow waits with it (2026-10-27: the
+   glow came first, the picture after) */
+export async function glowWaitsForItsPicture(k, t) {
+  await k.theme("aurora");
+  await k.setting("glow", "always");
+  await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 1 });
+  await k.until(`jobs.some(j=>j.status==="done")&&!current()`, 20000);
+  await k.job("[fill:446688] square render", { ar: "1:1", steps: 60 });
+  await k.until(`current()&&current().preview_rev`, 20000, 100);
+  await k.sleep(1500);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(1500);
+  const r =
+    await k.ev(`new Promise(res=>{const o={},t0=performance.now();document.querySelector('.tab[data-v="gen"]').click();
+    (function s(){for(const a of document.getAnimations()){const p=a.effect&&a.effect.pseudoElement;if(p&&/kiln-(glow|pic)/.test(p))o[p+" "+(a.animationName||"")]=a.effect.getTiming().delay}
+    o.picout=document.documentElement.classList.contains("picout");if(performance.now()-t0<500)requestAnimationFrame(s);else res(o)})()})`);
+  const glowIn = r["::view-transition-new(kiln-glow) -ua-view-transition-fade-in"];
+  t.ok(r.picout && glowIn != null, "the Gallery's picture and the render: not carried across, the glow comes along", r);
+  t.ok(glowIn >= 200, "…and the new glow waits for its picture", glowIn);
+}
+glowWaitsForItsPicture.opts = { step: 0.6 };

@@ -114,7 +114,7 @@ export async function startLive() {
       PV.from = S.view !== "gen" ? S.view : null;
       showView("gen");
       pv("browse", j);
-    }, true);
+    });
   };
   $("resumeBtn").onclick = e => {
     e.stopPropagation();

@@ -579,8 +579,9 @@ const PNG_WITH_PARAMS = `(async()=>{
 export async function pngInfoDropPanel(k, t) {
   await k.ev(`(document.querySelector('.tab[data-v="png"]').click(),1)`);
   await k.sleep(1200);
+  await k.until(`!$("plate").getAnimations().length`, 3000); // the plate has landed
   const gap =
-    await k.ev(`(()=>{const p=$("rpanel").getBoundingClientRect(),l=getComputedStyle($("drop"),"::after"),d=$("drop").getBoundingClientRect();
+    await k.ev(`(()=>{const p=$("rpanel").getBoundingClientRect(),l=getComputedStyle($("plate"),"::after"),d=$("plate").getBoundingClientRect();
     return [d.left-p.left+parseFloat(l.left), d.top-p.top+parseFloat(l.top), p.right-d.right+parseFloat(l.right)].map(Math.round)})()`);
   t.ok(
     gap.every(g => g >= 12 && g <= 13),

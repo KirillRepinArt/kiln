@@ -32,20 +32,7 @@
   color: var(--muted);
   cursor: pointer;
 }
-.drop::after {
-  content: "";
-  position: absolute;
-  inset: var(--drop-inset);
-  border: var(--outline);
-  border-radius: calc(var(--r-panel) - var(--drop-inset));
-  pointer-events: none;
-}
-.drop.over {
-  color: var(--text);
-}
-.drop.over::after {
-  border-color: var(--white-70);
-}
+/* the line itself is the glass plate's (glass.css .plate.drop): it changes shape with the plate on a switch */
 .pwrap.loaded .drop {
   display: none;
 }

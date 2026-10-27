@@ -1,22 +1,13 @@
 // @ts-check
-/* Kiln · the live glass plate (v0.7.2, a prototype behind Settings → Effects → Tab switch: Live plate).
-   One glass object under the right column's contents: the panel's shape in Queue / LoRAs / PNG Info, the picture
-   frame's shape in Generating. A tab switch changes its shape — the glass stays live, only the contents cross-fade.
-   (Snapshot switches can't carry glass: a View Transition's snapshot is a flat picture that can't blur what's behind
-   it, so the glass went clear for the switch.) The plate is empty, so changing its size costs the blur, no layout of
-   contents. Every switch in either mode records its frame times, shown under the setting, for the A/B */
+/* Kiln · the glass plate (v0.7.2): one glass object under the right column's contents — the panel's shape in Queue /
+   LoRAs / PNG Info, the picture frame's shape in Generating. A tab switch changes its shape — the glass stays live,
+   only the contents cross-fade. (Snapshot switches couldn't carry glass: a View Transition's snapshot is a flat picture
+   that can't blur what's behind it, so the glass went clear for every switch — the user chose the plate, 2026-10-27.)
+   The plate is empty, so changing its size costs the blur, no layout of contents. PNG Info's drop line is the plate's
+   too: inset on it, it changes shape with it and fades as a switch leaves (it slid inside the contents' snapshot) */
 import { $ } from "./dom.js";
-import { S } from "./state.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number, panel: boolean }} Box in #right's coordinates */
-
-export const isLive = () => (S.set || {}).switchMode === "live";
-
-/* the switch mode on the page: body.liveplate turns the panel's and the empty frame's own glass off (glass.css) */
-export function applySwitchMode() {
-  document.body.classList.toggle("liveplate", isLive());
-  plateFollow(600);
-}
 
 /** where the plate belongs now: the panel when there is one, else the picture frame @returns {Box} */
 function target() {
@@ -25,6 +16,16 @@ function target() {
     r = (panel ? rp : $("frame")).getBoundingClientRect(),
     o = $("right").getBoundingClientRect();
   return { l: r.left - o.left, t: r.top - o.top, w: r.width, h: r.height, panel };
+}
+/* PNG Info's drop line: while it's empty, or a file is dragged over it */
+function dropLine() {
+  const w = /** @type {HTMLElement | null} */ (document.querySelector("#v-png.on .pwrap"));
+  return w
+    ? {
+        on: !w.classList.contains("loaded") || w.classList.contains("dragging"),
+        over: w.classList.contains("dragging"),
+      }
+    : null;
 }
 /** @param {Box} b */
 function put(b) {
@@ -35,6 +36,9 @@ function put(b) {
   s.width = b.w + "px";
   s.height = b.h + "px";
   p.classList.toggle("panel", b.panel);
+  const d = dropLine();
+  p.classList.toggle("drop", !!d && d.on);
+  p.classList.toggle("over", !!d && d.over);
 }
 
 /* at rest the plate follows its element; only while something moves (a resize, a glide, a crop-and-reveal) does it
@@ -45,24 +49,25 @@ let until = 0,
   raf = 0;
 /** @param {number} [ms] */
 export function plateFollow(ms = 700) {
-  if (!isLive()) return;
   until = Math.max(until, performance.now() + ms);
   if (!raf) raf = requestAnimationFrame(tick);
 }
 /* right now, in step with whoever just moved the frame (a crop-and-reveal calls it each frame after placing the box:
    the follow loop runs before it in the frame, so on its own it drew where the frame was a frame ago) */
 export function plateSync() {
-  if (isLive() && !morph) put(target());
+  if (!morph && !pending) put(target());
 }
 function tick() {
   raf = 0;
-  if (!morph) put(target());
+  if (!morph && !pending) put(target());
   if (performance.now() < until) raf = requestAnimationFrame(tick);
 }
 
 /* a tab switch: the plate's box ON SCREEN before it (call before the switch changes anything) — the column the plate
    sits in may move with the switch */
+let pending = false; // a switch has begun and hasn't shown yet: the plate holds its old shape (and its drop line)
 export function plateBefore() {
+  pending = true;
   const p = $("plate").getBoundingClientRect();
   return { l: p.left, t: p.top, w: p.width, h: p.height };
 }
@@ -70,7 +75,7 @@ export function plateBefore() {
    prompt column's pace */
 /** @param {{ l: number, t: number, w: number, h: number }} at where it was on screen (plateBefore) */
 export function plateMorph(at) {
-  if (!isLive()) return;
+  pending = false;
   const o = $("right").getBoundingClientRect(),
     from = { l: at.l - o.left, t: at.t - o.top, w: at.w, h: at.h },
     to = target(),
@@ -89,38 +94,4 @@ export function plateMorph(at) {
     morph = null;
     plateFollow(300);
   };
-}
-
-/* the A/B: frame times of the last switch (rAF gaps over its 0.7 s) */
-/** @type {{ mode: string, frames: number, avg: number, worst: number, slow: number } | null} */
-export let lastSwitch = null;
-export function measureSwitch() {
-  const mode = isLive() ? "Live plate" : "Snapshot",
-    gaps = /** @type {number[]} */ ([]),
-    t0 = performance.now();
-  let prev = t0;
-  const f = (/** @type {number} */ now) => {
-    gaps.push(now - prev);
-    prev = now;
-    if (now - t0 < 700) requestAnimationFrame(f);
-    else {
-      const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-      lastSwitch = {
-        mode,
-        frames: gaps.length,
-        avg: Math.round(avg * 10) / 10,
-        worst: Math.round(Math.max(...gaps)),
-        slow: gaps.filter(g => g > 25).length,
-      };
-      const el = document.getElementById("swStats");
-      if (el) el.textContent = switchStatsText();
-    }
-  };
-  requestAnimationFrame(f);
-}
-export function switchStatsText() {
-  const s = lastSwitch;
-  return s
-    ? `Last switch (${s.mode}): ${s.frames} frames · avg ${s.avg} ms · worst ${s.worst} ms · ${s.slow} over 25 ms`
-    : "Switch tabs to measure";
 }

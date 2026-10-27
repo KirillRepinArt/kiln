@@ -92,19 +92,12 @@ html.tabmorph .app {
 }
 html.tabmorph .rpanel > .view.on {
   view-transition-name: kiln-panel;
-} /* the panel's content, not the panel: a named element can't see behind it (a backdrop root), so the panel's glass
-     went clear for the switch (2026-10-27). The panel itself stays live, its glass blurring all the way through */
-html.tabout .rpanel {
-  view-transition-name: kiln-panel;
-}
+} /* the panel's contents, not the panel or the prompt column: a named element can't see behind it (a backdrop root),
+     so glass in a snapshot went clear. The glass plate changes shape live (plate.js), the prompt column slides live */
 html.picout .view.on #frame {
   view-transition-name: none;
 } /* the new state has no picture (Generating at step 0): the old one isn't paired with an empty box — it fades out
      where it is instead of growing into it with nothing following (2026-10-26, the user's note) */
-html.tabout .rpanel > .view.on {
-  view-transition-name: none;
-} /* leaving the panel for Generating: the panel as a whole fades out, its glass with it — the old snapshot is taken from
-     the screen, glass and all, and Generating has no panel glass to lose (it vanished at once, 2026-10-27) */
 ::view-transition-group(kiln-panel) {
   animation-duration: var(--t-650);
   animation-timing-function: var(--lay-e);
@@ -117,17 +110,6 @@ html.tabout .rpanel > .view.on {
   object-position: 50% 0;
   height: 100%;
 } /* the panel changes width: its snapshot must not stretch (it read as a zoom) */
-html.tabmorph #lcol {
-  view-transition-name: kiln-prompt;
-} /* the prompt box slides to its new place as a snapshot: no glass re-blurred per frame (that lagged with Forge on the GPU) */
-::view-transition-group(kiln-prompt) {
-  animation-duration: var(--t-650);
-  animation-timing-function: var(--lay-e);
-}
-::view-transition-old(kiln-prompt),
-::view-transition-new(kiln-prompt) {
-  height: 100%;
-}
 html.tabmorph body.laysnap .tabs {
   transition:
     width var(--lay-t) var(--lay-e),
@@ -137,8 +119,8 @@ html.tabmorph::view-transition-old(kiln-panel) {
   animation: kfadeout var(--t-180) var(--e-accel) both;
 }
 html.tabmorph::view-transition-new(kiln-panel) {
-  animation: kfadein var(--t-320) var(--e-decel) var(--t-100) both;
-}
+  animation: kfadein var(--t-320) var(--e-decel) var(--t-250) both;
+} /* frame first, then the contents: they fade in as the plate lands, not spilling past it while it still moves */
 html.tabmorph body.laysnap .seg .thumb {
   transition:
     left var(--t-280) var(--ease),
@@ -155,6 +137,10 @@ html.tabmorph::view-transition-old(kiln-glow),
 html.tabmorph::view-transition-new(kiln-glow) {
   animation-duration: var(--t-200);
 } /* the glow on the picture's clock: it trailed it by 0.2 s (2026-10-27) */
+html.tabmorph.picout::view-transition-new(kiln-glow) {
+  animation-duration: var(--t-320);
+  animation-delay: var(--t-250);
+} /* a picture that isn't carried across fades in after the plate lands: its glow waits with it (it came first) */
 @keyframes kfadeout {
   to {
     opacity: 0;
@@ -173,13 +159,3 @@ html.tabmorph::view-transition-new(kiln-glow) {
     filter: blur(4px);
   }
 }
-
-/* live plate (plate.js): the panel and the prompt column aren't snapshots — the plate changes shape, the column slides
-   live; only the panel's contents cross-fade */
-html.liveswitch #lcol,
-html.liveswitch .rpanel {
-  view-transition-name: none;
-}
-html.tabmorph.liveswitch::view-transition-new(kiln-panel) {
-  animation-delay: var(--t-250);
-} /* frame first, then the contents: they fade in as the plate lands, not spilling past it while it still moves */

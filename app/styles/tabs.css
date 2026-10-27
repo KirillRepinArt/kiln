@@ -209,10 +209,8 @@ body.jobrun .tab .trw {
 } /* Generating: no panel, nothing clips the edge handles */
 .rpanel.paneled {
   overflow: hidden;
-  background: var(--panel);
-  border-color: var(--grey-27);
   border-radius: var(--r-panel);
-}
+} /* its plate (glass or Solid) is the glass plate under it (plate.js, glass.css) */
 .view {
   position: absolute;
   inset: 0;

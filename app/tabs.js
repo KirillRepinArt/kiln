@@ -5,7 +5,7 @@ import { lay, layMorph, morphReady, sizeFrame } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { current } from "./jobs.js";
 import { PV, browsed, onShow, picMode, pv } from "./picstate.js";
-import { isLive, measureSwitch, plateBefore, plateFollow, plateMorph } from "./plate.js";
+import { plateBefore, plateFollow, plateMorph } from "./plate.js";
 import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
 import { S } from "./state.js";
 
@@ -68,12 +68,11 @@ export function tabSync(force) {
 }
 /* a tab switch is navigation, not a layout edit: the new tab is laid out at once (no glide — on a GPU busy with Forge,
    0.4 s of glass re-blurring the sky per frame was the lag, 2026-10-19), and the layout is measured once per click */
-/** @param {() => void} fn @param {boolean} [toGen] it opens Generating or the Gallery (no panel there) */
-export function tabGo(fn, toGen = false) {
+/** @param {() => void} fn */
+export function tabGo(fn) {
   const seg = $("seg"),
     x0 = seg.getBoundingClientRect().left,
-    live = isLive(),
-    from = live ? plateBefore() : null,
+    from = plateBefore(),
     lc0 = $("lcol").getBoundingClientRect(),
     pic0 = picKey();
   const run = () => {
@@ -88,13 +87,11 @@ export function tabGo(fn, toGen = false) {
       }
     }
     flipTabs(x0);
-    if (from) {
-      const lc1 = $("lcol").getBoundingClientRect();
-      morphReady().then(() => {
-        plateMorph(from);
-        slideLcol(lc0, lc1);
-      });
-    }
+    const lc1 = $("lcol").getBoundingClientRect();
+    morphReady().then(() => {
+      plateMorph(from);
+      slideLcol(lc0, lc1);
+    });
     /* the picture travels across a switch only when it's the SAME picture on both sides; otherwise (the Gallery's
        picture and the render, or no picture yet) the old one fades where it is and the new one fades in — it grew into
        the other's box, a zoom of the wrong picture (2026-10-27, the user) */
@@ -104,13 +101,8 @@ export function tabGo(fn, toGen = false) {
   const h = document.documentElement,
     me = ++tabGos;
   h.classList.add("tabmorph");
-  /* live plate: the panel and the prompt column stay live (no snapshot) — the plate changes shape, the column slides */
-  h.classList.toggle("liveswitch", live);
-  // leaving the panel: it fades out as a whole, its glass with it (motion.css)
-  h.classList.toggle("tabout", !live && toGen && $("rpanel").classList.contains("paneled"));
-  measureSwitch();
   layMorph(run);
-  setTimeout(() => me === tabGos && h.classList.remove("tabmorph", "tabout", "picout", "liveswitch"), 900); // a newer click keeps them for its switch
+  setTimeout(() => me === tabGos && h.classList.remove("tabmorph", "picout"), 900); // a newer click keeps them for its switch
 }
 let tabGos = 0; // tab switches started so far
 
@@ -169,21 +161,18 @@ export function initTabs() {
   /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".tab")).forEach(
     t =>
       (t.onclick = () =>
-        tabGo(
-          () => {
-            const v = /** @type {import("./types.js").Settings["view"]} */ (t.dataset.v); // index.html's data-v
-            PV.from = null;
-            if (v === "gallery") {
-              if (S.view !== "gen") showView("gen");
-              if (!browsed()) pv("gallery");
-              tabSync();
-              return;
-            }
-            if (v === "gen") pv("generating"); /* the live view: the render, or the clean frame */
-            showView(v);
-          },
-          t.dataset.v === "gen" || t.dataset.v === "gallery",
-        )),
+        tabGo(() => {
+          const v = /** @type {import("./types.js").Settings["view"]} */ (t.dataset.v); // index.html's data-v
+          PV.from = null;
+          if (v === "gallery") {
+            if (S.view !== "gen") showView("gen");
+            if (!browsed()) pv("gallery");
+            tabSync();
+            return;
+          }
+          if (v === "gen") pv("generating"); /* the live view: the render, or the clean frame */
+          showView(v);
+        })),
   );
   document.fonts && document.fonts.ready.then(() => moveThumb(true));
 }

@@ -12,6 +12,10 @@
   outline: 1px solid var(--grey-23);
   outline-offset: -1px;
 }
+.frame:not(.has) {
+  outline-color: transparent;
+} /* empty: its ring is the glass plate's (glass.css .plate) — drawn here it sat in the contents' snapshot and popped in
+     after a switch (2026-10-27) */
 .frame.has {
   background: var(--grey-13);
   outline: 1px solid var(--white-7);

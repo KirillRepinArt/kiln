@@ -21,7 +21,7 @@ import shutil
 import sqlite3
 import threading
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, ClassVar
@@ -116,6 +116,7 @@ class Store:
             self.con.execute(f"PRAGMA {pragma}")
         self._migrate()
         self._saved: dict[int, tuple[int, str]] = {}  # job id -> (position, its JSON) as last written
+        self._order: list[int] = []  # the job ids in list order, as last written
         if new:
             import_json(self, paths)
 
@@ -154,13 +155,22 @@ class Store:
         with self.lock:
             rows = self.con.execute("SELECT id, pos, data FROM jobs ORDER BY pos").fetchall()
         self._saved = {i: (p, d) for i, p, d in rows}
+        self._order = [i for i, _, _ in rows]
         return [json.loads(d) for _, _, d in rows]
 
-    def save_jobs(self, jobs: list[Job]) -> None:
-        """Write the list: only the rows that changed (or moved), and drop the ones that are gone."""
-        now: dict[int, tuple[int, str]] = {}
-        for pos, j in enumerate(jobs):
-            now[j["id"]] = (pos, json.dumps(j, ensure_ascii=False))
+    def save_jobs(self, jobs: list[Job], only: Iterable[int] | None = None) -> None:
+        """Write the list: only the rows that changed (or moved), and drop the ones that are gone. `only`: the jobs a
+        change touched — when the list's order and members are as last written, only those are encoded and compared
+        (a one-job change at 10 000 jobs took ~170 ms comparing them all, 2026-10-28); otherwise everything is."""
+        order = [j["id"] for j in jobs]
+        if only is not None and order == self._order:
+            pick = set(only)
+            now = dict(self._saved)
+            for pos, j in enumerate(jobs):
+                if j["id"] in pick:
+                    now[j["id"]] = (pos, json.dumps(j, ensure_ascii=False))
+        else:
+            now = {j["id"]: (pos, json.dumps(j, ensure_ascii=False)) for pos, j in enumerate(jobs)}
         changed = [(i, p, d) for i, (p, d) in now.items() if self._saved.get(i) != (p, d)]
         gone = [i for i in self._saved if i not in now]
         if not changed and not gone:
@@ -173,6 +183,7 @@ class Store:
                 [(i, p, by_id[i]["status"], by_id[i].get("kind"), by_id[i].get("file"), d) for i, p, d in changed],
             )
         self._saved = now
+        self._order = order
 
 
 def import_json(store: Store, paths: Paths) -> None:

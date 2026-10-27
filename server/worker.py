@@ -53,7 +53,7 @@ class Worker:
                 if job["kind"] == "txt2img":
                     job["warm"] = setup_of(job["spec"]) == self.last_setup
                     job["est"], job["est_first"] = self.timings.estimate(job["spec"])
-                q.save()
+                q.save(only=[job["id"]])
             log.info("job %s (%s) started", job["id"], job["kind"])
             try:
                 result = self.upscale(job) if job["kind"] == "upscale" else self.txt2img(job)
@@ -74,7 +74,7 @@ class Worker:
                 self.timings.record(job)
             if job["kind"] == "txt2img":  # the generator now has this setup loaded — unless it never got going
                 self.last_setup = setup_of(job["spec"]) if (result == "done" or job.get("t_first")) else None
-            q.save()
+            q.save(only=[job["id"]])
         log.info("job %s %s%s", job["id"], result, f": {job.get('error')}" if job.get("error") else "")
 
     def on_progress(self, job: Job, p: Progress) -> None:

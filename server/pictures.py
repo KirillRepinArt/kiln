@@ -82,7 +82,7 @@ class Pictures:
                 j["status"] = "done"
             else:
                 raise ApiError(409, f"can't {act} a {j['status']} job")
-            q.save()
+            q.save(only=None if act == "remove" else [j["id"]])
 
     def finish_delete(self, jid: int) -> None:
         """The undo window is over: the file goes to the Recycle Bin and the job off the list."""
@@ -131,7 +131,7 @@ class Pictures:
             j["file"] = new
             j["spec"]["name"] = name
             j["name"] = name
-            q.save()
+            q.save(only=[j["id"]])
         return {"file": new, "old": old}
 
     # ------------------------------------------------------------ a file deleted outside Kiln

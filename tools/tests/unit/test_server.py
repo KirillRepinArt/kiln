@@ -202,6 +202,24 @@ class Queue(TempDirs):
         q.save()
         self.assertEqual(con.total_changes - before, 1)  # one row, not the whole list
 
+    def test_a_targeted_save_looks_at_its_jobs_only(self) -> None:
+        q = JobQueue(self.paths)
+        a, b = q.add([{"steps": 1}, {"steps": 1}])
+        q.jobs[0]["status"] = "done"
+        q.jobs[1]["status"] = "error"  # changed but not named: a targeted save leaves it for a later full one
+        q.save(only=[a])
+        rows = dict(q.store.con.execute("SELECT id, status FROM jobs"))
+        self.assertEqual(rows, {a: "done", b: "pending"})
+        q.save()
+        self.assertEqual(dict(q.store.con.execute("SELECT id, status FROM jobs"))[b], "error")
+
+    def test_a_targeted_save_after_a_move_saves_everything(self) -> None:
+        q = JobQueue(self.paths)
+        a, b = q.add([{"steps": 1}, {"steps": 1}])
+        q.jobs.reverse()  # the order changed: naming one job isn't enough
+        q.save(only=[a])
+        self.assertEqual([i for (i,) in q.store.con.execute("SELECT id FROM jobs ORDER BY pos")], [b, a])
+
     def test_old_json_files_are_imported_once_and_kept(self) -> None:
         self.paths.queue_file.write_bytes(b"")  # 2026-10-27: a crash had left queue.json empty…
         bak = self.paths.queue_file.with_name("queue.json.bak")

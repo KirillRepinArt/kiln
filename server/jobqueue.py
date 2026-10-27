@@ -54,9 +54,11 @@ class JobQueue:
                 j.update(status="pending", step=0, progress=0)
         self.flags.update(self.store.get("flags", {}))
 
-    def save(self) -> None:
+    def save(self, only: Iterable[int] | None = None) -> None:
+        """Every change ends here (the page's poll sees the new revision). `only`: the ids of the jobs it touched, when
+        it touched nothing else (no job added, removed or moved) — the save then looks at those alone."""
         self.rev += 1
-        self.store.save_jobs(self.jobs)
+        self.store.save_jobs(self.jobs, only)
 
     def set_paused(self, paused: bool) -> None:
         with self.lock:

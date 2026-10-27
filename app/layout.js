@@ -1,5 +1,6 @@
 // @ts-check
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
+import { plateFollow } from "./plate.js";
 import { syncH } from "./boot.js";
 import { applyMode, applyPH, layoutLeft, lyReset, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
@@ -246,6 +247,9 @@ export function setDock(z) {
 let morphs = 0; // switches started so far: only the latest one ends the morph
 /** @type {ViewTransition | null} */
 let morphNow = null; // the switch running now
+/* when the running switch starts to show (its snapshots taken): motion started inside the switch waits for it — the
+   capture can take a few hundred ms, and a motion started before it was mostly over by its first frame */
+export const morphReady = () => (morphNow ? morphNow.ready.catch(() => {}) : Promise.resolve());
 let morphClicks = false;
 /* a switch covers the page: Chrome sends every click during it to <html> (pointer-events can't change that), so quick
    clicks — a second tab right after the first — were lost (2026-10-27). Such a click cuts the switch short and goes to
@@ -436,6 +440,7 @@ export function sizeFrame() {
   sp.style.left = left + w / 2 + "px";
   sp.style.top = top + h + SPACE.part + "px";
   requestAnimationFrame(layoutLeft);
+  plateFollow(); // the live plate keeps to the frame / the panel through the glide
 }
 /* Vertical: the picture block sits between two equal gaps — the title starts as far under it (or under its progress
    bar) as the picture starts under the tab bar. A shift of the prompt column, not a resize (shrinking it would hand the

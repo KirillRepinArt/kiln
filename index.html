@@ -148,6 +148,7 @@
       <div class="split" id="split" title="Drag to resize · double-click to reset"></div>
 
       <section class="right" id="right">
+        <div class="plate" id="plate"></div>
         <nav class="tabs">
           <div class="seg" id="seg"
             ><span class="thumb" id="thumb"></span>
@@ -428,6 +429,12 @@
               ><option value="off">Solid</option></select
             >
             <div class="fgh" id="fghFx">Effects</div>
+            <label>Tab switch</label
+            ><select data-set="switchMode"
+              ><option value="snap">Snapshot</option
+              ><option value="live">Live plate · experimental</option></select
+            >
+            <div class="updres" id="swStats"></div>
             <label>Ambient glow</label
             ><select data-set="glow"
               ><option value="gen">While generating</option

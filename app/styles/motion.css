@@ -173,3 +173,10 @@ html.tabmorph::view-transition-new(kiln-glow) {
     filter: blur(4px);
   }
 }
+
+/* live plate (plate.js): the panel and the prompt column aren't snapshots — the plate changes shape, the column slides
+   live; only the panel's contents cross-fade */
+html.liveswitch #lcol,
+html.liveswitch .rpanel {
+  view-transition-name: none;
+}

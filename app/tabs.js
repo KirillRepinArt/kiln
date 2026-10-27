@@ -1,10 +1,11 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $, q } from "./dom.js";
-import { lay, layMorph, sizeFrame } from "./layout.js";
+import { lay, layMorph, morphReady, sizeFrame } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { current } from "./jobs.js";
 import { PV, browsed, picMode, pv } from "./picstate.js";
+import { isLive, measureSwitch, plateBefore, plateFollow, plateMorph } from "./plate.js";
 import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
 import { S } from "./state.js";
 
@@ -51,6 +52,7 @@ export function showView(v) {
   /* opening it: no slide to measure for, nothing to rebuild if nothing changed */
   if (v === "loras") renderLoras();
   sizeFrame();
+  plateFollow(800);
 }
 /* Gallery isn't a page of its own (yet): it's the name for browsing finished pictures in the picture view — the
    state ← and the arrows already put you in. Clicking it opens the last finished picture; Generating = the live view */
@@ -69,7 +71,10 @@ export function tabSync(force) {
 /** @param {() => void} fn @param {boolean} [toGen] it opens Generating or the Gallery (no panel there) */
 export function tabGo(fn, toGen = false) {
   const seg = $("seg"),
-    x0 = seg.getBoundingClientRect().left;
+    x0 = seg.getBoundingClientRect().left,
+    live = isLive(),
+    from = live ? plateBefore() : null,
+    lc0 = $("lcol").getBoundingClientRect();
   const run = () => {
     lay.frameDefer = true;
     try {
@@ -82,6 +87,13 @@ export function tabGo(fn, toGen = false) {
       }
     }
     flipTabs(x0);
+    if (from) {
+      const lc1 = $("lcol").getBoundingClientRect();
+      morphReady().then(() => {
+        plateMorph(from);
+        slideLcol(lc0, lc1);
+      });
+    }
     // no picture to show yet (a render before its first preview, the clean frame): the old picture fades where it is
     const live = S.view === "gen" && picMode() === "live",
       j = current();
@@ -90,12 +102,31 @@ export function tabGo(fn, toGen = false) {
   const h = document.documentElement,
     me = ++tabGos;
   h.classList.add("tabmorph");
+  /* live plate: the panel and the prompt column stay live (no snapshot) — the plate changes shape, the column slides */
+  h.classList.toggle("liveswitch", live);
   // leaving the panel: it fades out as a whole, its glass with it (motion.css)
-  h.classList.toggle("tabout", toGen && $("rpanel").classList.contains("paneled"));
+  h.classList.toggle("tabout", !live && toGen && $("rpanel").classList.contains("paneled"));
+  measureSwitch();
   layMorph(run);
-  setTimeout(() => me === tabGos && h.classList.remove("tabmorph", "tabout", "picout"), 900); // a newer click keeps them for its switch
+  setTimeout(() => me === tabGos && h.classList.remove("tabmorph", "tabout", "picout", "liveswitch"), 900); // a newer click keeps them for its switch
 }
 let tabGos = 0; // tab switches started so far
+
+/* live plate: the prompt column slides from where it was as the real thing (FLIP), its glass live — a snapshot of it
+   went clear like the panel's */
+/** @param {DOMRect} r0 where the column was @param {DOMRect} r1 where the switch put it */
+function slideLcol(r0, r1) {
+  const lc = $("lcol"),
+    dx = Math.round(r0.left - r1.left),
+    dy = Math.round(r0.top - r1.top);
+  if (!dx && !dy) return;
+  const base = getComputedStyle(lc).transform,
+    rest = base === "none" ? "" : base;
+  lc.animate([{ transform: `translate(${dx}px, ${dy}px) ${rest}` }, { transform: rest || "none" }], {
+    duration: 650,
+    easing: "cubic-bezier(0.05, 0.7, 0.1, 1)",
+  });
+}
 
 /* the tab bar through a tab switch (FLIP: measure, apply, invert, play): the column it sits in jumps to its new place (a
    switch lays out at once), while the bar's own offset over the picture glides — together it leapt sideways, then slid

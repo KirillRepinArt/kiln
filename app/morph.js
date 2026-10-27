@@ -1,6 +1,7 @@
 // @ts-check
 /* Kiln · the picture's crop-and-reveal when its shape changes: each axis moves once, on its own step */
 import { $ } from "./dom.js";
+import { plateFollow, plateSync } from "./plate.js";
 
 /* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design; per axis since 2026-10-27). Both
    pictures sit at their own final size, centred: only the frame moves. 1) an axis that shrinks crops the old picture
@@ -103,6 +104,7 @@ export function frameMorph(o) {
   f.style.setProperty("--nw", px(n0.w));
   f.style.setProperty("--nh", px(n0.h));
   f.classList.add("morph");
+  plateFollow(T + 200); // the live plate rides the frame
   const t0 = performance.now();
   /* the old picture (on its own canvas) fades out across the swap */
   if (x) {
@@ -178,6 +180,7 @@ export function frameMorph(o) {
       f.style.top = px(Tp - st.top);
       f.style.width = px(Bx[0][1]);
       f.style.height = px(Bx[1][1]);
+      plateSync();
       if (tb && tb.style.transform) {
         bx = barX(st, Bx[0][0]);
         tb.style.transform = `translate(${bx}px,${Math.round(Math.max(0, Tp - st.top))}px)`;

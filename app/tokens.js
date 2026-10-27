@@ -3,10 +3,10 @@
    value: change a gap there and the layout maths follows. The numbers here are the same values, for the unit tests
    (they run without a page); initTokens() replaces them with the stylesheet's at start-up. */
 
-/** The spacing hierarchy, in px: between areas, an area and its parts, things attached to a box; and how far a
- * moving / resizing outline sits outside its plate. */
-export const SPACE = { area: 20, part: 12, tight: 8, outline: 12 };
-const NAMES = { area: "--gap-area", part: "--gap-part", tight: "--gap-tight", outline: "--outline-out" };
+/** The spacing hierarchy, in px: between areas, an area and its parts, things attached to a box; how far a
+ * moving / resizing outline sits outside its plate; the picture's mat inside its plate. */
+export const SPACE = { area: 20, part: 12, tight: 8, outline: 12, mat: 0 };
+const NAMES = { area: "--gap-area", part: "--gap-part", tight: "--gap-tight", outline: "--outline-out", mat: "--mat" };
 
 /** The grid column between the prompt and the picture area: the area gap (the panels' edge sits on it; in
  * Generating the picture's stage covers the panel's transparent border, so the picture does too). */

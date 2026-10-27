@@ -16,10 +16,10 @@ export async function plateIsTheGlass(k, t) {
   );
   t.ok(
     await k.ev(
-      `getComputedStyle($("frame")).outlineColor==="rgba(0, 0, 0, 0)"&&/inset/.test(getComputedStyle($("plate")).boxShadow)`,
+      `getComputedStyle($("frame")).outlineStyle==="none"&&/inset/.test(getComputedStyle($("rim")).boxShadow)`,
     ),
-    "…its ring is the plate's too (it popped in after a switch, drawn by the frame)",
-    await k.ev(`getComputedStyle($("frame")).outlineColor`),
+    "…its ring is the plate's rim (drawn by the frame, it popped in / faded in with a switch)",
+    await k.ev(`[getComputedStyle($("frame")).outlineStyle,getComputedStyle($("rim")).boxShadow]`),
   );
   // a switch: the plate goes from the frame to the panel, every frame live glass, one way
   const s =
@@ -222,3 +222,37 @@ export async function frameOneOwner(k, t) {
   }
 }
 frameOneOwner.opts = { step: 0.05 };
+
+/* the outline is the plate's rim (2026-10-28, the user: in the Gallery "the outline fades" — the picture drew a line of
+   its own that came in with the switch's fading contents, over the plate's ring it hid): one line on every plate, over
+   the picture, that holds through a switch. Every frame of Generating → Gallery (a picture of another shape) and back:
+   the rim sits on the plate, at full strength, and it's drawn above the picture */
+export async function rimHoldsThroughSwitches(k, t) {
+  await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 1 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  await k.ev(`(closeShown(),S.ar="3:4",sizeFrame(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1200);
+  for (const to of ["gallery", "gen"]) {
+    const o =
+      await k.ev(`new Promise(res=>{const r=$("rim"),p=$("plate"),o={off:0,op:1,shadow:new Set()},t0=performance.now();
+      document.querySelector('.tab[data-v="${to}"]').click();
+      (function s(){const a=r.getBoundingClientRect(),b=p.getBoundingClientRect(),c=getComputedStyle(r);
+        o.off=Math.max(o.off,Math.abs(a.left-b.left),Math.abs(a.top-b.top),Math.abs(a.width-b.width),Math.abs(a.height-b.height));
+        o.op=Math.min(o.op,+c.opacity);o.shadow.add(c.boxShadow);
+        if(performance.now()-t0<900)requestAnimationFrame(s);else res({off:o.off,op:o.op,shadows:o.shadow.size})})()})`);
+    t.motion(
+      o.off <= 0.5 && o.op === 1 && o.shadows === 1,
+      `→ ${to}: the ring stays on the plate, unchanged, every frame`,
+      o,
+    );
+  }
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(1200);
+  t.ok(
+    (await k.ev(`$("frame").classList.contains("has")`)) &&
+      (await k.ev(`+getComputedStyle($("rim")).zIndex>+getComputedStyle($("stage")).zIndex`)),
+    "the ring is drawn above the picture",
+  );
+}
+rimHoldsThroughSwitches.opts = { step: 0.05 };

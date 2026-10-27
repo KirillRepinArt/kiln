@@ -16,8 +16,9 @@ function target() {
   const rp = $("rpanel"),
     panel = rp.classList.contains("paneled"),
     r = (panel ? rp : $("frame")).getBoundingClientRect(),
-    o = $("right").getBoundingClientRect();
-  return { l: r.left - o.left, t: r.top - o.top, w: r.width, h: r.height, panel };
+    o = $("right").getBoundingClientRect(),
+    M = panel ? 0 : SPACE.mat; // the picture sits a mat inside its plate
+  return { l: r.left - o.left - M, t: r.top - o.top - M, w: r.width + 2 * M, h: r.height + 2 * M, panel };
 }
 /* PNG Info's drop line: while it's empty, or a file is dragged over it */
 function dropLine() {
@@ -32,12 +33,16 @@ function dropLine() {
 /** @param {Box} b */
 function put(b) {
   const p = $("plate"),
-    s = p.style;
-  s.left = b.l + "px";
-  s.top = b.t + "px";
-  s.width = b.w + "px";
-  s.height = b.h + "px";
+    rim = $("rim");
+  for (const s of [p.style, rim.style]) {
+    s.left = b.l + "px";
+    s.top = b.t + "px";
+    s.width = b.w + "px";
+    s.height = b.h + "px";
+  } /* the rim: the plate's ring, on top of what the plate holds — the same line on every plate, over a picture too, and
+       never part of a switch's fading contents (the Gallery's picture drew a line of its own that faded in with it) */
   p.classList.toggle("panel", b.panel);
+  rim.classList.toggle("panel", b.panel);
   const d = dropLine();
   p.classList.toggle("drop", !!d && d.on);
   p.classList.toggle("over", !!d && d.over);
@@ -89,6 +94,8 @@ let barBefore = null; // where the tab buttons (#seg) were on screen when a swit
    look every frame — the loop runs until `ms` after the last call */
 /** @type {Animation | null} */
 let morph = null;
+/** @type {Animation | null} */
+let rimMorph = null; // the rim on the plate's glide
 let until = 0,
   raf = 0;
 /** @param {number} [ms] */
@@ -131,17 +138,20 @@ export function plateMorph(at) {
     px = (/** @type {number} */ v) => v + "px",
     p = $("plate");
   if (morph) morph.cancel();
+  if (rimMorph) rimMorph.cancel();
   put(to);
   plateFollow(700); // every frame of the glide: the bar follows the plate
-  morph = p.animate(
-    [
+  const keys = [
       { left: px(from.l), top: px(from.t), width: px(from.w), height: px(from.h) },
       { left: px(to.l), top: px(to.t), width: px(to.w), height: px(to.h) },
     ],
-    { duration: 650, easing: "cubic-bezier(0.05, 0.7, 0.1, 1)" },
-  );
+    timing = { duration: 650, easing: "cubic-bezier(0.05, 0.7, 0.1, 1)" };
+  morph = p.animate(keys, timing);
+  rimMorph = $("rim").animate(keys, timing); // the plate's ring: the same glide, started together (in lockstep)
   morph.onfinish = morph.oncancel = () => {
     morph = null;
+    if (rimMorph) rimMorph.cancel();
+    rimMorph = null;
     plateFollow(300);
   };
   /* the bar on the same glide: from where it was on screen to its place over the plate's new shape — one animation

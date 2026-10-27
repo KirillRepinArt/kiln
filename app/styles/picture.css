@@ -6,20 +6,13 @@
 }
 .frame {
   position: absolute;
-  border-radius: var(--r-panel);
+  border-radius: calc(var(--r-panel) - var(--mat)); /* concentric with its plate */
   overflow: hidden;
   background: transparent;
-  outline: 1px solid var(--grey-23);
-  outline-offset: -1px;
-}
-.frame:not(.has) {
-  outline-color: transparent;
-} /* empty: its ring is the glass plate's (glass.css .plate) — drawn here it sat in the contents' snapshot and popped in
-     after a switch (2026-10-27) */
+} /* no line of its own: the ring is the plate's rim (glass.css .rim) — drawn here it sat in the switch's fading
+     contents (it popped in after a switch, 2026-10-27; it faded in with the Gallery's picture, 2026-10-28) */
 .frame.has {
   background: var(--grey-13);
-  outline: 1px solid var(--white-7);
-  outline-offset: -1px;
 }
 /* its place and size are moved by one owner (framebox.js: glides on --lay-t / --lay-e, a crop-and-reveal frame by
    frame) — no CSS transition. The canvas is drawn at the box's final size, so it never stretches */

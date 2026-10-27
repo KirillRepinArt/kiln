@@ -346,7 +346,10 @@ export function sizeFrame() {
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
   const PH = picH(),
     TB = tbW(PH),
-    { w, h } = fitInBox(ar, SW - (stk ? 2 : 1) * TB, PH);
+    M = SPACE.mat, // the picture's mat: the plate is the picture and M round it
+    { w, h } = fitInBox(ar, SW - (stk ? 2 : 1) * TB - 2 * M, PH - 2 * M),
+    W = w + 2 * M, // the plate
+    H = h + 2 * M;
   /* the picture's canvas is drawn at the box's FINAL size and centred in it: the box may glide to a new shape (its
     edges clip the picture, like a container transform) without the canvas being stretched on the way */
   /* Vertical keeps the column's room on both sides */
@@ -356,29 +359,30 @@ export function sizeFrame() {
     { top, left } = framePlacement({
       areaW: SW,
       areaH: st.height,
-      w,
-      h,
+      w: W,
+      h: H,
       tb: TB,
       row: BAR(),
       heldTop: lay.vtop,
       stacked: stk,
       toolsLeft: tbLeft,
     });
-  Object.assign(f.dataset, { tw: w, th: h, tl: left, tt: top });
-  /* where the frame belongs; framebox.js moves it there (a glide, a jump, or where a crop-and-reveal lands) */
-  frameGoal({ l: left, t: top, w, h });
+  Object.assign(f.dataset, { tw: w, th: h, tl: left + M, tt: top + M });
+  /* where the frame belongs (the plate's place, less the mat); framebox.js moves it there (a glide, a jump, or where a
+     crop-and-reveal lands) */
+  frameGoal({ l: left + M, t: top + M, w, h });
   /* the edit buttons' column: its width and side are the layout's; WHERE it sits is the frame's (around.js) */
   const gt = $("gtools");
   gt.style.width = TB + "px";
   gt.classList.toggle("lefty", tbLeft);
   /* where the picture is going (not where it is mid-glide): the prompt's vertical anchors use this */
-  lay.target = { top: st.top + top, h, bottom: st.top + top + h + BAR() - 1, w };
+  lay.target = { top: st.top + top, h: H, bottom: st.top + top + H + BAR() - 1, w: W }; // the plate: the edge you see
   /* the area's outer handle sits on the picture's outer edge in Generating (the edge you see), not past the button column */
   {
     const ro = /** @type {HTMLElement} */ (document.querySelector(".pedge.ro"));
     if (ro) {
       const on = !stk && S.view === "gen",
-        d = tbLeft ? left : SW - (left + w);
+        d = tbLeft ? left : SW - (left + W);
       ro.style.right = on && !tbLeft ? d - 6 + "px" : "";
       ro.style.left = on && tbLeft ? d - 6 + "px" : "";
     }
@@ -389,7 +393,7 @@ export function sizeFrame() {
   /* Vertical: the picture block sits between two equal gaps — the title starts as far under it (or under its progress
     bar) as the picture starts under the tab bar. A shift, not a resize: shrinking the column would hand the picture more
     height and move the gap again */
-  lay.vB = stk ? st.top + top + h + (lay.row === "bar" ? 12 + $("prog").offsetHeight : 0) : null;
+  lay.vB = stk ? st.top + top + H + (lay.row === "bar" ? 12 + $("prog").offsetHeight : 0) : null;
   vAlign();
   /* the tab bar: as wide as the area; WHERE it sits is the plate's business (plate.js placeBar — one owner) */
   const tb = /** @type {HTMLElement} */ (document.querySelector(".tabs"));
@@ -501,7 +505,7 @@ export function initLayout() {
         on = false;
         return;
       } /* it fades out late and slowly (CSS): keep it on the picture meanwhile */
-      const r = (paneled ? $("rpanel") : $("frame")).getBoundingClientRect(),
+      const r = (paneled ? $("rpanel") : $("plate")).getBoundingClientRect(), // the plate: the edge you see
         O = SPACE.outline;
       fh.style.left = r.left - O + "px";
       fh.style.top = r.top - O + "px";

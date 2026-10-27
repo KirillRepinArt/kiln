@@ -45,6 +45,9 @@
   /* OUTLINES — one rule: something you move or resize = a dashed line one part gap OUTSIDE its plate, the corners
      concentric; a place to drop = a plate with the line one part gap INSIDE (the scripts read --outline-out too) */
   --outline-out: var(--gap-part);
+  /* the picture's mat: how far it sits inside its glass plate (the plate's ring shows round it). 0 = edge to edge,
+     the ring drawn over the picture (the rim, plate.js). The picture's corners stay concentric with the plate's */
+  --mat: 0px;
   --drop-inset: var(--gap-part);
   --outline: 1px dashed var(--white-28);
   --scrollbar: 15px; /* the scrollbars' width (base.css): the prompt keeps its text column when one appears */

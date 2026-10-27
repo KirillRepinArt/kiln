@@ -19,7 +19,11 @@ function set(s, p, v) {
 export function placeAround() {
   const b = frameBox();
   if (!b) return; // not laid out yet
-  const { l, t, w, h } = b;
+  const M = SPACE.mat, // measured from the plate (the picture and its mat): the edge you see
+    l = b.l - M,
+    t = b.t - M,
+    w = b.w + 2 * M,
+    h = b.h + 2 * M;
   const gt = $("gtools"),
     he = $("hedges"),
     pr = $("prog"),

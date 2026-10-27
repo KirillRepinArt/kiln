@@ -105,10 +105,15 @@ function piParams(line) {
   }
   return out;
 }
-/* the copy icon beside a heading (the icon set's copy, in the text's colour) */
-const COPY = `<button class="pi-copy" data-copy title="Copy all the parameters">${IC.copy.replace('stroke="#fff"', 'stroke="currentColor"')}</button>`;
-/** a heading; the first one carries the copy icon @param {string} t @param {boolean} [copy] */
-const piH = (t, copy) => `<div class="pi-h"><span>${t}</span>${copy ? COPY : ""}</div>`;
+/* a copy icon beside a heading copies what's under it — the prompt, not the whole stored text (2026-10-27, the user:
+   Send to prompt reproduces a picture; the full text also carries LoRA names and hashes, easy to paste somewhere by
+   accident). Settings have none: Send to prompt covers them */
+/** @type {Record<string, string>} what each icon copies: prompt, neg, raw */
+let copyable = {};
+const COPY_SVG = IC.copy.replace('stroke="#fff"', 'stroke="currentColor"');
+/** a heading, with a copy icon for `copy` @param {string} t @param {string} [copy] a key of `copyable` */
+const piH = (t, copy) =>
+  `<div class="pi-h"><span>${t}</span>${copy ? `<button class="pi-copy" data-copy="${copy}" title="Copy the ${t.toLowerCase()}">${COPY_SVG}</button>` : ""}</div>`;
 /* formatted when it's Forge's / A1111's layout (a "Steps:" line); anything else is shown as stored — the old "Show raw
    text" button is gone (2026-10-27, the user: "not sure why we need it") */
 /** @param {string} t the PNG's parameters text */
@@ -120,13 +125,16 @@ function renderPngInfo(t) {
   const kv = piParams(pline);
   o.classList.toggle("raw", !kv.length);
   if (!kv.length) {
-    o.innerHTML = piH("Parameters", true) + `<div class="pi-p">${esc(t)}</div>`;
+    copyable = { raw: t };
+    o.innerHTML = piH("Parameters", "raw") + `<div class="pi-p">${esc(t)}</div>`;
     return;
   }
   const prompt = t.slice(0, i);
   const negM = rest.match(/^Negative prompt:\s*([\s\S]*?)(?=\nSteps:|$)/);
-  let h = piH("Prompt", true) + `<div class="pi-p">${prompt.split("\n").map(piLine).join("")}</div>`;
-  if (negM && negM[1].trim()) h += piH("Negative prompt") + `<div class="pi-p pi-neg">${esc(negM[1].trim())}</div>`;
+  const neg = negM ? negM[1].trim() : "";
+  copyable = { prompt, neg };
+  let h = piH("Prompt", "prompt") + `<div class="pi-p">${prompt.split("\n").map(piLine).join("")}</div>`;
+  if (neg) h += piH("Negative prompt", "neg") + `<div class="pi-p pi-neg">${esc(neg)}</div>`;
   h +=
     piH("Settings") + `<dl class="pi-grid">${kv.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
   o.innerHTML = h;
@@ -210,12 +218,15 @@ export function initPnginfo() {
     $("pClear").style.display = "none";
     /** @type {HTMLInputElement} */ ($("file")).value = "";
   };
-  /* the copy icon on the first heading: the whole parameters text, as stored */
+  /* a heading's copy icon: what's under it */
   $("pout").addEventListener("click", e => {
-    if (!hit(e, "[data-copy]")) return;
-    navigator.clipboard.writeText($("pout").dataset.raw || "").then(
-      () => toast("Parameters copied"),
-      () => toast("Couldn't copy the parameters"),
+    const b = hit(e, "[data-copy]");
+    if (!b) return;
+    const k = /** @type {string} */ (b.dataset.copy),
+      what = { prompt: "Prompt", neg: "Negative prompt", raw: "Parameters" }[k] || "Text";
+    navigator.clipboard.writeText(copyable[k] || "").then(
+      () => toast(`${what} copied`),
+      () => toast(`Couldn't copy the ${what.toLowerCase()}`),
     );
   });
   $("pKeep").onclick = e => {

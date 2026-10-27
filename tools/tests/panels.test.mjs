@@ -639,7 +639,20 @@ export async function pngInfoBottomRow(k, t) {
   await k.until(`/harbour/.test($("pout").textContent)`, 3000);
   await k.sleep(400);
   t.ok(!(await k.ev(`/raw text/i.test(document.querySelector(".pwrap").textContent)`)), "no Show raw text");
-  t.ok(await k.ev(`!!document.querySelector(".pi-h [data-copy]")`), "a copy icon on the first heading");
+  // the copy icon copies what's under it: the prompt, never the settings line (LoRA names and hashes)
+  await k.ev(`(navigator.clipboard.writeText=t=>(window.__cb=t,Promise.resolve()),1)`);
+  await k.ev(`(document.querySelector('.pi-h [data-copy="prompt"]').click(),1)`);
+  t.ok(
+    await k.until(`window.__cb==="a quiet harbour"`, 2000),
+    "the copy icon by PROMPT copies the prompt only",
+    await k.ev(`window.__cb`),
+  );
+  t.ok(
+    await k.ev(
+      `[...document.querySelectorAll(".pi-h")].filter(h=>/Settings/i.test(h.textContent)).every(h=>!h.querySelector("[data-copy]"))`,
+    ),
+    "the settings have no copy icon (Send to prompt covers them)",
+  );
   const g =
     await k.ev(`(()=>{const r=id=>$(id).getBoundingClientRect(),c=r("pChoose"),k=r("pKeep"),s=r("pSend"),a=document.querySelector(".pact").getBoundingClientRect();
     return {chooseLeft:Math.round(c.left-a.left),keepToSend:Math.round(s.left-k.right),chooseToKeep:Math.round(k.left-c.right),send:!$("pSend").disabled}})()`);

@@ -15,6 +15,7 @@ add one (2026-10-25, the user's decision): older pictures are matched by name, s
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -27,6 +28,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
+from . import thumbs
 from .config import Paths
 from .store import Store
 
@@ -142,27 +144,38 @@ def describe(path: Path, rel: str, st: os.stat_result) -> dict[str, Any]:
         "steps": _int(s.get("Steps")),
         "model": s.get("Model"),
         "created": min(st.st_mtime, getattr(st, "st_birthtime", st.st_ctime)),
+        "thumb": thumb_key(rel, st),
     }
+
+
+def thumb_key(rel: str, st: os.stat_result) -> str:
+    """The name of a picture's thumbnail: from its path, size and modified time — a changed file gets a new one."""
+    return hashlib.sha1(f"{rel}|{st.st_size}|{st.st_mtime}".encode(), usedforsecurity=False).hexdigest()[:20]
 
 
 # one row per file, keyed by its path (relative to the output folder): a new file is added, a changed one updated
 UPSERT = (
     "INSERT INTO pictures (path, kind, size, mtime, w, h, kiln_id, series, prompt, negative, params, settings, loras,"
-    " seed, steps, model, created) VALUES (:path, :kind, :size, :mtime, :w, :h, :kiln_id, :series, :prompt,"
-    " :negative, :params, :settings, :loras, :seed, :steps, :model, :created)"
+    " seed, steps, model, created, thumb) VALUES (:path, :kind, :size, :mtime, :w, :h, :kiln_id, :series, :prompt,"
+    " :negative, :params, :settings, :loras, :seed, :steps, :model, :created, :thumb)"
     " ON CONFLICT(path) DO UPDATE SET kind = excluded.kind, size = excluded.size, mtime = excluded.mtime,"
     " w = excluded.w, h = excluded.h, kiln_id = excluded.kiln_id, series = excluded.series, prompt = excluded.prompt,"
     " negative = excluded.negative, params = excluded.params, settings = excluded.settings, loras = excluded.loras,"
-    " seed = excluded.seed, steps = excluded.steps, model = excluded.model, created = excluded.created"
+    " seed = excluded.seed, steps = excluded.steps, model = excluded.model, created = excluded.created,"
+    " thumb = excluded.thumb"
 )
 
 
 class Library:
-    def __init__(self, paths: Paths, store: Store) -> None:
+    def __init__(self, paths: Paths, store: Store, background: bool = True) -> None:
         self.paths = paths
         self.store = store
+        self.background = background  # thumbnails made ahead in a thread (tests make them on demand only)
         self.scanning = False
         self._scan_lock = threading.Lock()
+        self._todo: list[tuple[str, str]] = []  # (path, thumb key) still to make, newest first
+        self._todo_lock = threading.Condition()
+        self._maker: threading.Thread | None = None
 
     def _files(self) -> Iterator[tuple[Path, str, os.stat_result]]:
         """Every picture / video under the output folder (sub-folders too), with its path relative to it."""
@@ -207,9 +220,9 @@ class Library:
                 changed += self._write(batch)
                 gone = [p for p in known if p not in seen]
                 if gone:
-                    with self.store.tx() as c:
-                        c.executemany("DELETE FROM pictures WHERE path = ?", [(p,) for p in gone])
+                    self._drop(gone)
                     changed += len(gone)
+                self._want_thumbs()
                 return changed
             finally:
                 self.scanning = False
@@ -229,21 +242,92 @@ class Library:
         try:
             st = path.stat()
         except OSError:
-            with self.store.tx() as c:
-                c.execute("DELETE FROM pictures WHERE path = ?", (rel,))
+            self._drop([rel])
             return
         if path.suffix.lower() in MEDIA:
-            self._write([describe(path, rel, st)])
+            row = describe(path, rel, st)
+            self._write([row])
+            self._queue_thumbs([(rel, row["thumb"])], first=True)
 
     def count(self) -> int:
         with self.store.lock:
             return int(self.store.con.execute("SELECT COUNT(*) FROM pictures").fetchone()[0])
 
     def clear(self) -> None:
-        """Forget the index (Settings → Privacy); it rebuilds from the pictures, so nothing is lost."""
+        """Forget the index and its thumbnails (Settings → Privacy); both rebuild from the pictures, nothing is lost."""
         with self.store.tx() as c:
             c.execute("DELETE FROM pictures")
+        with self._todo_lock:
+            self._todo.clear()
+        for f in self.paths.pthumbs.glob("*.jpg"):
+            f.unlink(missing_ok=True)
         self.start()
+
+    # ------------------------------------------------------------ thumbnails (thumbs.py)
+    def _drop(self, rels: list[str]) -> None:
+        """Rows of files that are gone — and their thumbnails, at once (a deleted picture leaves nothing behind)."""
+        with self.store.tx() as c:
+            keys = [
+                k
+                for (k,) in c.execute(
+                    f"SELECT thumb FROM pictures WHERE path IN ({','.join('?' * len(rels))})",  # noqa: S608 — placeholders only
+                    rels,
+                )
+                if k
+            ]
+            c.executemany("DELETE FROM pictures WHERE path = ?", [(p,) for p in rels])
+        for k in keys:
+            (self.paths.pthumbs / f"{k}.jpg").unlink(missing_ok=True)
+
+    def _want_thumbs(self) -> None:
+        """After a scan: every picture without its thumbnail file, newest first; and old files no row names, gone."""
+        if not thumbs.available():
+            return
+        with self.store.lock:
+            rows = self.store.con.execute(
+                "SELECT path, thumb FROM pictures WHERE kind = 'image' AND thumb IS NOT NULL ORDER BY created DESC"
+            ).fetchall()
+        have = {f.stem for f in self.paths.pthumbs.glob("*.jpg")} if self.paths.pthumbs.exists() else set()
+        keys = {k for _, k in rows}
+        for stale in have - keys:
+            (self.paths.pthumbs / f"{stale}.jpg").unlink(missing_ok=True)
+        self._queue_thumbs([(p, k) for p, k in rows if k not in have])
+
+    def _queue_thumbs(self, items: list[tuple[str, str]], first: bool = False) -> None:
+        if not items or not thumbs.available() or not self.background:
+            return
+        with self._todo_lock:
+            self._todo = [*items, *self._todo] if first else [*self._todo, *items]
+            self._todo_lock.notify()
+            if self._maker is None:
+                self._maker = threading.Thread(target=self._make_thumbs, daemon=True, name="thumbs")
+                self._maker.start()
+
+    def _make_thumbs(self) -> None:
+        """The background maker: one at a time, quietly (the queue's renders matter more than thumbnails)."""
+        while True:
+            with self._todo_lock:
+                while not self._todo:
+                    self._todo_lock.wait()
+                rel, key = self._todo.pop(0)
+            dest = self.paths.pthumbs / f"{key}.jpg"
+            if not dest.exists():
+                thumbs.make(self.paths.out / rel, dest)
+
+    def thumb_for(self, path: Path) -> Path | None:
+        """The thumbnail of a picture in the output folder — made now if it isn't yet; None without Pillow."""
+        try:
+            rel = path.resolve().relative_to(self.paths.out.resolve()).as_posix()
+        except ValueError:
+            return None
+        with self.store.lock:
+            row = self.store.con.execute("SELECT thumb FROM pictures WHERE path = ?", (rel,)).fetchone()
+        if not row or not row[0]:
+            return None
+        dest = self.paths.pthumbs / f"{row[0]}.jpg"
+        if dest.exists() or thumbs.make(path, dest):
+            return dest
+        return None
 
     def start(self) -> None:
         """Scan in the background (at start-up, after a Clear): Kiln is usable at once."""

@@ -501,7 +501,7 @@ PARAMS = (
 class PictureIndex(TempDirs):
     def setUp(self) -> None:
         super().setUp()
-        self.lib = library.Library(self.paths, Store.open(self.paths))
+        self.lib = library.Library(self.paths, Store.open(self.paths), background=False)
 
     def png(self, rel: str, params: str = PARAMS, series: str = "Harbour") -> Path:
         f = self.paths.out / rel
@@ -587,7 +587,7 @@ class PictureIndex(TempDirs):
 class PicturesKeepTheIndex(PicturesOnDisk):
     def setUp(self) -> None:
         super().setUp()
-        self.lib = library.Library(self.paths, self.q.store)
+        self.lib = library.Library(self.paths, self.q.store, background=False)
         self.pics.library = self.lib
         self.lib.scan()
 
@@ -597,3 +597,46 @@ class PicturesKeepTheIndex(PicturesOnDisk):
         self.assertEqual(self.lib.count(), 0)
         self.pics.act(self.jid, "undelete")
         self.assertEqual(self.lib.count(), 1)
+
+
+@unittest.skipUnless(library.thumbs.available(), "Pillow isn't installed: the page makes the Queue's thumbnails")
+class Thumbnails(TempDirs):
+    def setUp(self) -> None:
+        super().setUp()
+        self.lib = library.Library(self.paths, Store.open(self.paths), background=False)
+
+    def picture(self, rel: str, w: int, h: int) -> Path:
+        im = library.thumbs._Image.new("RGB", (w, h), (200, 80, 40))
+        f = self.paths.out / rel
+        im.save(f, "PNG")
+        return f
+
+    def test_made_on_demand_small_and_in_shape(self) -> None:
+        f = self.picture("wide.png", 1600, 900)
+        self.lib.scan()
+        t = self.lib.thumb_for(f)
+        self.assertIsNotNone(t)
+        with library.thumbs._Image.open(t) as im:
+            self.assertEqual(im.size, (384, 216))  # the long side 384, the shape kept (the Queue crops it square)
+        self.assertEqual(self.lib.thumb_for(f), t)  # made once
+
+    def test_a_changed_picture_gets_a_new_one_and_a_gone_one_leaves_none(self) -> None:
+        f = self.picture("a.png", 64, 64)
+        self.lib.scan()
+        t1 = self.lib.thumb_for(f)
+        self.picture("a.png", 80, 40)
+        os.utime(f, (time.time() + 5, time.time() + 5))
+        self.lib.scan()
+        t2 = self.lib.thumb_for(f)
+        self.assertNotEqual(t1, t2)
+        self.assertFalse(t1.exists())  # the stale one is dropped at the scan
+        f.unlink()
+        self.lib.index_file(f)
+        self.assertFalse(t2.exists())  # a deleted picture leaves no thumbnail behind
+
+    def test_clear_removes_them(self) -> None:
+        f = self.picture("a.png", 64, 64)
+        self.lib.scan()
+        t = self.lib.thumb_for(f)
+        self.lib.clear()
+        self.assertFalse(t.exists())

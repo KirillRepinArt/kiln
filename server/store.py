@@ -72,7 +72,17 @@ def _v2(con: sqlite3.Connection) -> None:
     )
 
 
-MIGRATIONS: list[Callable[[sqlite3.Connection], None]] = [_v1, _v2]  # MIGRATIONS[n] takes the schema from n to n + 1
+def _v3(con: sqlite3.Connection) -> None:
+    """Each picture's thumbnail key (thumbs.py): its file in data/pthumbs/ is <key>.jpg; a new key when the file
+    changes, so a stale thumbnail is never shown."""
+    con.execute("ALTER TABLE pictures ADD COLUMN thumb TEXT")
+
+
+MIGRATIONS: list[Callable[[sqlite3.Connection], None]] = [
+    _v1,
+    _v2,
+    _v3,
+]  # MIGRATIONS[n] takes the schema from n to n + 1
 
 
 class Store:

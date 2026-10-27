@@ -21,6 +21,11 @@ What ships with Kiln that Kiln didn't write, and under which licence. Kiln itsel
 
 Copyright Marijn Haverbeke and others; the full licence texts are in `app/vendor/codemirror.LICENSES.txt`.
 
+**Pillow** 9.5.0, the server's thumbnails (`server/thumbs.py`): MIT-CMU (HPND) licence, Copyright © 1997–2011 by
+Secret Labs AB, © 1995–2011 by Fredrik Lundh and contributors, © 2010–2023 by Jeffrey A. Clark (Alex) and contributors.
+Optional for now — without it the page makes the Queue's thumbnails — and bundled with Kiln's own Python when the
+launcher comes (decision 0005).
+
 ## Fonts
 
 In `app/fonts/` (Latin, Latin Extended and Cyrillic subsets, as served by Google Fonts), all under the

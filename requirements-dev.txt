@@ -1,2 +1,3 @@
 ruff==0.17.2
 mypy==2.4.0
+pillow==9.5.0  # run-time, optional until the launcher bundles it (server/thumbs.py; decision 0005) — here so CI tests thumbnails

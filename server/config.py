@@ -74,6 +74,10 @@ class Paths:
         return self.data / "qthumbs"
 
     @property
+    def pthumbs(self) -> Path:  # one small JPEG per indexed picture, made by the server (thumbs.py), named by its key
+        return self.data / "pthumbs"
+
+    @property
     def trash(self) -> Path:  # deleted pictures during their undo window
         return self.data / "trash"
 

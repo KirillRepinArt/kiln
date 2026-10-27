@@ -146,6 +146,16 @@ class Handler(BaseHTTPRequestHandler):
         self.file(self.k.paths.thumbs, name)
 
     def get_queue_thumb(self, name: str) -> None:  # never cached by the browser either (no-store), like the pictures
+        """A finished job's thumbnail: one the page made earlier, else its picture's own (thumbs.py, made now if
+        needed); nothing without Pillow — the page then makes one itself."""
+        m = re.fullmatch(r"(\d+)\.jpg", name)
+        if m and not (self.k.paths.qthumbs / name).exists():
+            with self.k.queue.lock:
+                j = next((j for j in self.k.queue.jobs if j["id"] == int(m.group(1))), None)
+                f = self.k.paths.out / j["file"] if j and j.get("status") == "done" and j.get("file") else None
+            t = self.k.library.thumb_for(f) if f else None
+            if t:
+                return self.file(t.parent, t.name)
         self.file(self.k.paths.qthumbs, name)
 
     # ------------------------------------------------------------ GET: the API

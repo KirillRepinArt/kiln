@@ -284,11 +284,8 @@ export async function deleteJob(j) {
       L[i + d] ||
       L[i - d] ||
       null; /* where to land: onward in the way you were stepping (the ones behind you, you kept), else back */
-  const r = await api(`/api/jobs/${j.id}/delete`, {});
-  if (r.error) {
-    toast(r.error);
-    return;
-  }
+  /* the page moves on at once, then tells the server (an optimistic update): waiting for the answer, a poll that came
+     back first had already dropped the picture — the Gallery then had nowhere to land and left for an empty frame */
   dropJobs([j.id]);
   if ($("viewer").classList.contains("show") && V.job && V.job.id === j.id) {
     if (nb) openViewer(nb);
@@ -296,6 +293,12 @@ export async function deleteJob(j) {
   }
   pv("deleted", { job: j, next: nb });
   if (peekJob && peekJob.id === j.id) peekHide();
+  const r = await api(`/api/jobs/${j.id}/delete`, {});
+  if (r.error) {
+    toast(r.error);
+    poll(); // it stays: the list brings it back
+    return;
+  }
   toast("Moved to the Recycle Bin", "Undo", async () => {
     await api(`/api/jobs/${j.id}/undelete`, {});
     poll();

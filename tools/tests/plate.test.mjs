@@ -130,3 +130,48 @@ export async function tabBarFollowsThePlate(k, t) {
   }
 }
 tabBarFollowsThePlate.opts = { step: 0.05 };
+
+/* what sits round the frame follows it (2026-10-28, one owner): the status row, Show prompt, the edit buttons and the
+   edge strips are placed from the frame's live box every frame it moves. They used to aim at its TARGET with CSS glides
+   of their own: on a crop-and-reveal they jumped to the end, or slid on another clock. Compared on computed styles (the
+   values mid-glide, transforms left out), in the stage's coordinates (the stage fills Generating's view) */
+const AROUND =
+  ms => `new Promise(res=>{let m=0,n=0,why="";const t0=performance.now(),px=(e,p)=>parseFloat(getComputedStyle(e)[p]);
+  (function s(){const f=$("frame"),l=px(f,"left"),t=px(f,"top"),w=px(f,"width"),h=px(f,"height"),gt=$("gtools"),
+    tb=px(gt,"width"),gl=gt.classList.contains("lefty")?l-tb:l+w,he=$("hedges"),pr=$("prog"),sp=$("showP"),
+    d={hedges:Math.max(Math.abs(px(he,"left")-l),Math.abs(px(he,"top")-t),Math.abs(px(he,"width")-w),Math.abs(px(he,"height")-h)),
+      tools:Math.max(Math.abs(px(gt,"left")-gl),Math.abs(px(gt,"top")-t)),
+      prog:Math.max(Math.abs(px(pr,"left")-l),Math.abs(px(pr,"width")-w),Math.abs(px(pr,"top")-(t+h+12))),
+      showP:Math.max(Math.abs(px(sp,"left")-(l+w/2)),Math.abs(px(sp,"top")-(t+h+12)))};
+    for(const k in d)if(d[k]>m){m=d[k];why=k}n++;
+    if(performance.now()-t0<${ms})requestAnimationFrame(s);else res({m,why,n})})()})`;
+export async function aroundFollowsTheFrame(k, t) {
+  for (const [c, ar] of [
+    ["446688", "3:4"],
+    ["aa7733", "16:9"],
+    ["338844", "1:1"],
+    ["884488", "16:9"],
+  ])
+    await k.job(`[fill:${c}] p`, { ar, steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=4`, 40000);
+  await k.mouse(2, 2);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(1500);
+  const cases = [
+    ["a step to another shape", [`genNav(-1)`]],
+    ["two fast steps", [`genNav(-1)`, 120, `genNav(-1)`]],
+    ["the Gallery to Generating", [`document.querySelector('.tab[data-v="gen"]').click()`]],
+    [
+      "Generating → Gallery → a step, fast",
+      [`document.querySelector('.tab[data-v="gallery"]').click()`, 150, `genNav(1)`],
+    ],
+  ];
+  for (const [what, steps] of cases) {
+    const watch = k.ev(AROUND(1300));
+    for (const st of steps) typeof st === "number" ? await k.sleep(st) : await k.ev(`(${st},1)`);
+    const g = await watch;
+    t.motion(g.m <= 1, `${what}: everything round the frame stays on it, every frame`, g);
+    await k.sleep(900);
+  }
+}
+aroundFollowsTheFrame.opts = { step: 0.05 };

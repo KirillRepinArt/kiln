@@ -244,10 +244,7 @@ body.private .frame:hover .cbtn {
   padding-left: var(--space-2);
   opacity: 0;
   pointer-events: auto;
-  transition:
-    opacity var(--t-150),
-    top var(--lay-t) var(--lay-e),
-    left var(--lay-t) var(--lay-e);
+  transition: opacity var(--t-150); /* no glide of its own: it follows the frame (around.js) */
 }
 .gtools.lefty {
   align-content: flex-end;
@@ -364,11 +361,7 @@ body:has(.viewer.show) .gnav {
   display: none;
   flex-direction: column;
   gap: var(--space-2);
-  z-index: 1;
-  transition:
-    top var(--lay-t) var(--lay-e),
-    left var(--lay-t) var(--lay-e),
-    width var(--lay-t) var(--lay-e);
+  z-index: 1; /* no glide of its own: it follows the frame (around.js) */
 }
 .prog.show {
   display: flex;

@@ -5,6 +5,7 @@
    that can't blur what's behind it, so the glass went clear for every switch — the user chose the plate, 2026-10-27.)
    The plate is empty, so changing its size costs the blur, no layout of contents. PNG Info's drop line is the plate's
    too: inset on it, it changes shape with it and fades as a switch leaves (it slid inside the contents' snapshot) */
+import { placeAround } from "./around.js";
 import { $ } from "./dom.js";
 import { SPACE } from "./tokens.js";
 
@@ -99,9 +100,12 @@ export function plateFollow(ms = 700) {
    the follow loop runs before it in the frame, so on its own it drew where the frame was a frame ago) */
 export function plateSync() {
   if (!morph && !pending) put(target());
+  placeAround();
 }
+/* the loop also carries what sits round the frame (around.js): it runs whenever the frame may be moving */
 function tick() {
   raf = 0;
+  placeAround();
   if (!morph && !pending) put(target());
   else if (morph) placeBar(); // the plate is gliding (a switch): the bar follows it
   if (performance.now() < until) raf = requestAnimationFrame(tick);

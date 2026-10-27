@@ -1,6 +1,7 @@
 // @ts-check
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
 import { plateFollow } from "./plate.js";
+import { placeAround } from "./around.js";
 import { syncH } from "./boot.js";
 import { applyMode, applyPH, layoutLeft, lyReset, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
@@ -365,7 +366,7 @@ export function sizeFrame() {
   /* a held top / bottom edge (lay.vtop): the other edge stays put. The button column goes on the side away from the
     prompt; Vertical: the picture itself on the centre line (the prompt box and the tab bar are centred there too) */
   const tbLeft = !stk && /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
-    { top, left, toolsX } = framePlacement({
+    { top, left } = framePlacement({
       areaW: SW,
       areaH: st.height,
       w,
@@ -381,14 +382,10 @@ export function sizeFrame() {
     f.style.top = top + "px";
   }
   Object.assign(f.dataset, { tw: w, th: h, tl: left, tt: top });
+  /* the edit buttons' column: its width and side are the layout's; WHERE it sits is the frame's (around.js) */
   const gt = $("gtools");
-  if (gt) {
-    gt.style.top = top + "px";
-    gt.style.left = toolsX + "px";
-    gt.style.width = TB + "px";
-    gt.style.height = Math.max(40, h) + "px";
-    gt.classList.toggle("lefty", tbLeft);
-  }
+  gt.style.width = TB + "px";
+  gt.classList.toggle("lefty", tbLeft);
   /* where the picture is going (not where it is mid-glide): the prompt's vertical anchors use this */
   lay.target = { top: st.top + top, h, bottom: st.top + top + h + BAR() - 1, w };
   /* the area's outer handle sits on the picture's outer edge in Generating (the edge you see), not past the button column */
@@ -409,26 +406,12 @@ export function sizeFrame() {
     height and move the gap again */
   lay.vB = stk ? st.top + top + h + (lay.row === "bar" ? 12 + $("prog").offsetHeight : 0) : null;
   vAlign();
-  const he = $("hedges");
-  if (he) {
-    he.style.left = left + "px";
-    he.style.width = w + "px";
-    he.style.top = top + "px";
-    he.style.height = h + "px";
-  }
   /* the tab bar: as wide as the area; WHERE it sits is the plate's business (plate.js placeBar — one owner) */
   const tb = /** @type {HTMLElement} */ (document.querySelector(".tabs"));
   if (tb) tb.style.width = stk ? "" : SW + "px";
-  const sx = 0;
-  const pr = $("prog");
-  pr.style.left = left + sx + "px";
-  pr.style.width = w + "px";
-  pr.style.top = top + h + SPACE.part + "px";
-  pr.style.setProperty("--tw", w + "px");
-  /* the Gallery's "Show prompt": centred under the picture, in the room kept for the status row */
-  const sp = $("showP");
-  sp.style.left = left + w / 2 + "px";
-  sp.style.top = top + h + SPACE.part + "px";
+  /* the status row, Show prompt, the edit buttons and the edge strips: placed from where the frame is now, and every
+     frame it moves (around.js — one owner: the frame) */
+  placeAround();
   requestAnimationFrame(layoutLeft);
   plateFollow(); // the live plate keeps to the frame / the panel through the glide
 }

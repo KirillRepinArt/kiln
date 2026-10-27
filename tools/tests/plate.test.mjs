@@ -256,3 +256,79 @@ export async function rimHoldsThroughSwitches(k, t) {
   );
 }
 rimHoldsThroughSwitches.opts = { step: 0.05 };
+
+/* a tab switch's motion has one owner (2026-10-28, plate.js switchGlide): the plate, its rim, the tab bar, the switch's
+   own layers and the contents' clip all start at one time from one geometry. Five things timed themselves before: the
+   clip ran ~20 px off the plate, the rim's line crossed the picture, the plate sat empty ~200 ms. Every frame of empty
+   Generating → the Gallery (another shape) and back: one start time for all of them; the incoming contents' clip (its
+   layer's box + clip-path, read from the browser) 1 px inside the plate while they can be seen (the browser's layers
+   take the owner's timing a frame in — the contents are still at 0 then); the rim on the plate */
+const SWITCH_WATCH = `new Promise(res=>{const h=document.documentElement,p=$("plate"),rim=$("rim"),o={clip:0,rim:0,starts:0,n:0,clipped:0},t0=performance.now();
+  (function s(){const pr=p.getBoundingClientRect(),rr=rim.getBoundingClientRect();
+    o.rim=Math.max(o.rim,Math.abs(pr.left-rr.left),Math.abs(pr.top-rr.top),Math.abs(pr.width-rr.width),Math.abs(pr.height-rr.height));
+    const sw=document.getAnimations().filter(a=>{const e=a.effect,pe=e&&e.pseudoElement||"";return a.playState==="running"&&(pe.startsWith("::view-transition")||[p,rim,document.querySelector(".tabs")].includes(e&&e.target))});
+    o.starts=Math.max(o.starts,new Set(sw.map(a=>Math.round(a.startTime))).size);
+    if(h.classList.contains("tabmorph")&&sw.some(a=>a.effect.pseudoElement==="::view-transition-new(kiln-panel)")&&+getComputedStyle(h,"::view-transition-new(kiln-panel)").opacity>0.02){
+      const g=getComputedStyle(h,"::view-transition-group(kiln-panel)"),m=new DOMMatrix(g.transform),c=getComputedStyle(h,"::view-transition-new(kiln-panel)").clipPath,
+        v=c.replace("inset(","").split(" round")[0].replace(")","").trim().split(" ").map(parseFloat);
+      if(v.length>=1&&!isNaN(v[0])){const [t,r=t,b=t,l=r]=v,W=parseFloat(g.width),H=parseFloat(g.height),
+          box={l:m.e+l,t:m.f+t,r:m.e+W-r,b:m.f+H-b};
+        o.clip=Math.max(o.clip,Math.abs(box.l-(pr.left+1)),Math.abs(box.t-(pr.top+1)),Math.abs(box.r-(pr.right-1)),Math.abs(box.b-(pr.bottom-1)));o.clipped++}}
+    o.n++;if(performance.now()-t0<900)requestAnimationFrame(s);else res(o)})()})`;
+export async function switchHasOneOwner(k, t) {
+  await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 1 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  await k.ev(`(closeShown(),S.ar="3:4",sizeFrame(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1200);
+  for (const to of ["gallery", "gen", "queue", "gallery"]) {
+    const w = k.ev(SWITCH_WATCH);
+    await k.ev(`(document.querySelector('.tab[data-v="${to}"]').click(),1)`);
+    const o = await w;
+    t.ok(o.starts === 1, `→ ${to}: everything in the switch starts at one time`, o);
+    t.motion(o.clipped > 5 && o.clip <= 2, `→ ${to}: …the contents stay inside the plate, every frame they show`, o);
+    t.motion(o.rim <= 0.5, `→ ${to}: …the rim on the plate`, o);
+    await k.sleep(500);
+  }
+}
+switchHasOneOwner.opts = { step: 0.05 };
+
+/* the arrow you click stays under the pointer through the switch it starts (2026-10-28, the user: from Generating to
+   the Gallery with another shape it ran off — the switch's layers read as the pointer leaving it, 261 px). Held until
+   the pointer really moves off it; then it goes to the picture's edge */
+export async function arrowStaysUnderThePointer(k, t) {
+  await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 1 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  await k.ev(`(closeShown(),S.ar="3:4",sizeFrame(),1)`);
+  await k.sleep(1200);
+  const f = await k.ev(`JSON.parse(JSON.stringify($("frame").getBoundingClientRect()))`);
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: f.left + f.width / 2, y: f.top + f.height / 2 });
+  await k.sleep(500);
+  const a = await k.ev(
+    `(()=>{const r=document.querySelector('.gnav[data-nav="-1"]').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`,
+  );
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: a.x, y: a.y });
+  await k.sleep(400);
+  const w =
+    k.ev(`new Promise(res=>{const g=document.querySelector('.gnav[data-nav="-1"]'),r0=g.getBoundingClientRect(),t0=performance.now();let m=0;
+    (function s(){const r=g.getBoundingClientRect();m=Math.max(m,Math.abs(r.left-r0.left),Math.abs(r.top-r0.top));if(performance.now()-t0<1300)requestAnimationFrame(s);else res(m)})()})`);
+  await k.send("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    x: a.x,
+    y: a.y,
+    button: "left",
+    buttons: 1,
+    clickCount: 1,
+  });
+  await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: a.x, y: a.y, button: "left", clickCount: 1 });
+  const moved = await w;
+  t.ok(await k.ev(`document.body.dataset.pic==="browse"`), "the arrow opened the Gallery");
+  t.motion(moved <= 1, "the arrow stayed under the pointer all through the switch", { moved });
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: a.x + 200, y: a.y });
+  await k.sleep(900);
+  const end = await k.ev(
+    `(()=>{const g=document.querySelector('.gnav[data-nav="-1"]').getBoundingClientRect(),f=$("frame").getBoundingClientRect();return {held:!!lay.navHold,dx:Math.round(g.left-(f.left+10))}})()`,
+  );
+  t.ok(!end.held && Math.abs(end.dx) <= 1, "…and once the pointer left it, it went to the picture's edge", end);
+}
+arrowStaysUnderThePointer.opts = { step: 0.05 };

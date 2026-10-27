@@ -99,8 +99,6 @@ html.picout .view.on #frame {
 } /* the new state has no picture (Generating at step 0): the old one isn't paired with an empty box — it fades out
      where it is instead of growing into it with nothing following (2026-10-26, the user's note) */
 ::view-transition-group(kiln-panel) {
-  animation-duration: var(--t-650);
-  animation-timing-function: var(--lay-e);
   overflow: clip;
   border-radius: var(--r-panel);
 } /* the box morphs to the new size, like the Gallery's frame */
@@ -114,18 +112,28 @@ html.tabmorph::view-transition-old(kiln-panel) {
   animation: kfadeout var(--t-180) var(--e-accel) both;
 }
 html.tabmorph::view-transition-new(kiln-panel) {
-  animation: kfadein var(--t-320) var(--e-decel) var(--t-250) both;
-} /* frame first, then the contents: they fade in as the plate lands, not spilling past it while it still moves */
+  animation: kappear var(--t-320) var(--e-decel) var(--t-100) both;
+} /* the contents cross: both are clipped to the gliding plate (plate.js switchGlide), so the new ones come in right away
+     (they waited 250 ms for the plate to land: an empty plate). Opacity only — a scale would move them off the clip */
+/* the picture's arrows: layers of their own, above the contents (the picture's snapshot covered them); placed before
+   the capture, so the one you hold stays under the pointer and the other glides with the picture (plate.js times them) */
+html.tabmorph .gnav[data-nav="-1"] {
+  view-transition-name: kiln-navl;
+}
+html.tabmorph .gnav[data-nav="1"] {
+  view-transition-name: kiln-navr;
+}
+@keyframes kappear {
+  from {
+    opacity: 0;
+  }
+}
 html.tabmorph body.laysnap .seg .thumb {
   transition:
     left var(--t-280) var(--ease),
     width var(--t-280) var(--ease) !important;
 } /* !important: over the switch's glide stop */
-html.tabmorph::view-transition-group(kiln-pic),
-html.tabmorph::view-transition-group(kiln-glow) {
-  animation-duration: var(--t-260);
-  animation-timing-function: var(--e-emph);
-}
+/* a tab switch's groups (the picture that travels, its glow) are timed by plate.js switchGlide: the plate's glide */
 html.tabmorph::view-transition-old(kiln-pic),
 html.tabmorph::view-transition-new(kiln-pic),
 html.tabmorph::view-transition-old(kiln-glow),

@@ -83,31 +83,30 @@ export function initBrowse() {
    glides), but while you're clicking through with them they hold their place on SCREEN (Photos / Lightroom: navigation
    never runs away from the pointer); ~1 s after the last click they glide to the new picture's edges */
   (function () {
-    const [pv, nx] = /** @type {NodeListOf<HTMLElement & { _t?: number }>} */ (document.querySelectorAll(".gnav"));
     /* the arrow you clicked stays exactly where it is for as long as your pointer is on it (click as fast as you like);
     move off it and it slides to the picture's edge. The other one follows the picture at once. Keys don't hold anything */
-    for (const el of [pv, nx])
-      el.addEventListener("pointerleave", () => {
-        if (lay.navHold === el) {
-          lay.navHold = null;
-          el.classList.add("glide");
-          clearTimeout(el._t);
-          el._t = setTimeout(() => el.classList.remove("glide"), 460);
-        }
-      });
+    /* …until the pointer really leaves it: a switch covers the page with its layers, which Chrome reports as the pointer
+       leaving whatever it was over — the held arrow let go and ran 261 px to the new picture's edge (2026-10-28). So
+       the hold ends on a real move off the arrow, never during a switch */
+    /** @param {HTMLElement & { _t?: number }} el */
+    const letGo = el => {
+      lay.navHold = null;
+      el.classList.add("glide");
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.remove("glide"), 460);
+    };
+    document.addEventListener(
+      "pointermove",
+      e => {
+        const el = /** @type {(HTMLElement & { _t?: number }) | null} */ (lay.navHold);
+        if (!el || document.documentElement.classList.contains("tabmorph")) return;
+        const r = el.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) letGo(el);
+      },
+      { passive: true },
+    );
     function tick() {
-      if (document.body.classList.contains("navs")) {
-        const r = $("frame").getBoundingClientRect(),
-          y = Math.round(r.top + r.height / 2 - 20) + "px";
-        for (const [el, x] of /** @type {[HTMLElement, string][]} */ ([
-          [pv, Math.round(r.left + 10) + "px"],
-          [nx, Math.round(r.right - 50) + "px"],
-        ]))
-          if (el !== lay.navHold && (el.style.left !== x || el.style.top !== y)) {
-            el.style.left = x;
-            el.style.top = y;
-          }
-      }
+      placeNavs();
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
@@ -135,6 +134,23 @@ export function initBrowse() {
       updNav();
     }
   });
+}
+
+/* the picture's arrows on its side edges (the one you hold stays where it is): every frame, and at once for a switch's
+   capture (tabs.js) */
+export function placeNavs() {
+  if (!document.body.classList.contains("navs")) return;
+  const [pv, nx] = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".gnav")),
+    r = $("frame").getBoundingClientRect(),
+    y = Math.round(r.top + r.height / 2 - 20) + "px";
+  for (const [el, x] of /** @type {[HTMLElement, string][]} */ ([
+    [pv, Math.round(r.left + 10) + "px"],
+    [nx, Math.round(r.right - 50) + "px"],
+  ]))
+    if (el !== lay.navHold && (el.style.left !== x || el.style.top !== y)) {
+      el.style.left = x;
+      el.style.top = y;
+    }
 }
 
 /** @param {import("./types.js").Job} j */

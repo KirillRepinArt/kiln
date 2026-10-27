@@ -1,6 +1,6 @@
 // @ts-check
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
-import { plateFollow } from "./plate.js";
+import { SWITCH, plateFollow } from "./plate.js";
 import { placeAround } from "./around.js";
 import { frameGoal } from "./framebox.js";
 import { syncH } from "./boot.js";
@@ -247,6 +247,8 @@ let morphNow = null; // the switch running now
 /* when the running switch starts to show (its snapshots taken): motion started inside the switch waits for it — the
    capture can take a few hundred ms, and a motion started before it was mostly over by its first frame */
 export const morphReady = () => (morphNow ? morphNow.ready.catch(() => {}) : Promise.resolve());
+/** the running switch has finished (at once when there is none) */
+export const morphDone = () => (morphNow ? morphNow.finished.catch(() => {}) : Promise.resolve());
 let morphClicks = false;
 /* a switch covers the page: Chrome sends every click during it to <html> (pointer-events can't change that), so quick
    clicks — a second tab right after the first — were lost (2026-10-27). Such a click cuts the switch short and goes to
@@ -436,8 +438,7 @@ export function vAlign() {
    Its transform = the Vertical shift (vAlign, the even gaps) + what is left of a tab switch's slide, written here
    only. Two writers used to set it: vAlign's inline style, and a switch's own animation that froze the shift it started
    with for 650 ms (a re-shift meanwhile showed only at the end, as a jump) and made vAlign measure the column mid-slide */
-const COL_SLIDE = 650,
-  colEase = bez(0.05, 0.7, 0.1, 1); // the plate's glide: the column lands with it
+const colEase = bez(SWITCH.curve[0], SWITCH.curve[1], SWITCH.curve[2], SWITCH.curve[3]); // the switch's glide (plate.js)
 let colDy = 0, // the Vertical shift
   slX = 0, // the slide: how far from its place it started, and when
   slY = 0,
@@ -447,7 +448,7 @@ let colDy = 0, // the Vertical shift
   colRaf = 0;
 /** how much of the slide is still to go, 1 → 0 @param {number} now */
 function slideLeft(now) {
-  return slT0 ? 1 - colEase(Math.min(1, (now - slT0) / COL_SLIDE)) : 0;
+  return slT0 ? 1 - colEase(Math.min(1, Math.max(0, now - slT0) / SWITCH.ms)) : 0;
 }
 function colApply() {
   colRaf = 0;
@@ -470,11 +471,11 @@ function colShift(dy) {
 /** a tab switch moved the column's place: it slides there from where it was on screen (measured before the switch —
  * mid-slide too, so a fast second switch carries on from there). Its place is worked out here, from the layout and the
  * shift: measured through the running slide's offset, a new shift got lost (a 63 px jump) @param {DOMRect} was */
-export function slideCol(was) {
+export function slideCol(was, t0 = performance.now()) {
   const r = $("lcol").getBoundingClientRect();
   slX = Math.round(was.left - (r.left - colX));
   slY = Math.round(was.top - (r.top - colY + colDy));
-  slT0 = slX || slY ? performance.now() : 0;
+  slT0 = slX || slY ? t0 : 0;
   cancelAnimationFrame(colRaf);
   colApply();
 }

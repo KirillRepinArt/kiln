@@ -1,11 +1,12 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $ } from "./dom.js";
-import { lay, layMorph, morphReady, sizeFrame, slideCol } from "./layout.js";
+import { lay, layMorph, morphDone, morphReady, sizeFrame, slideCol } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { current } from "./jobs.js";
 import { PV, browsed, onShow, picMode, pv } from "./picstate.js";
-import { plateBefore, plateFollow, plateMorph } from "./plate.js";
+import { plateBefore, plateFollow, switchGlide } from "./plate.js";
+import { placeNavs } from "./browse.js";
 import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
 import { S } from "./state.js";
 
@@ -84,9 +85,11 @@ export function tabGo(fn) {
         sizeFrame();
       }
     }
+    placeNavs(); // the picture's arrows where they'll be, for the switch's capture (a held one stays put)
     morphReady().then(() => {
-      plateMorph(from);
-      slideCol(lc0); // the column slides from where it was, as the real thing (FLIP) — its glass stays live
+      /* one owner, one clock: everything that moves in the switch starts from here (plate.js switchGlide) */
+      const t0 = switchGlide(from);
+      slideCol(lc0, t0); // the column slides from where it was, as the real thing (FLIP) — its glass stays live
     });
     /* the picture travels across a switch only when it's the SAME picture on both sides; otherwise (the Gallery's
        picture and the render, or no picture yet) the old one fades where it is and the new one fades in — it grew into
@@ -98,7 +101,11 @@ export function tabGo(fn) {
     me = ++tabGos;
   h.classList.add("tabmorph");
   layMorph(run);
-  setTimeout(() => me === tabGos && h.classList.remove("tabmorph", "picout"), 900); // a newer click keeps them for its switch
+  /* the switch's names go when it ends, not on a timer: still named, the live panel was a backdrop root for ~200 ms
+     after the switch — PNG Info's text showed blurred, then sharp ("it blinks", the user, 2026-10-28) */
+  const off = () => me === tabGos && h.classList.remove("tabmorph", "picout"); // a newer click keeps them for its switch
+  morphDone().then(off);
+  setTimeout(off, 1500); // whatever happens to the transition
 }
 let tabGos = 0; // tab switches started so far
 

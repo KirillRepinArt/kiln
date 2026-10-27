@@ -223,3 +223,69 @@ export function bez(x1, y1, x2, y2) {
     return f(t, y1, y2);
   };
 }
+
+/* ---------- a box changing shape: the ONE choreography (2026-10-28) ----------
+   CROP, then REVEAL (the user's design, 2026-10-19; per axis since 2026-10-27). An axis that shrinks moves first (the
+   old contents cropped, never squeezed), the new contents take over at the overlap (a short cross-fade), an axis that
+   grows moves last (more of the new revealed). An axis that keeps its size doesn't move; a step with nothing to do takes
+   no time; each axis moves its centre with its size, so both sides go in or out alike. Browsing pictures (morph.js) and
+   a tab switch (plate.js switchGlide) both move by it: with a rule of their own, a switch from an empty 1:1 frame to a
+   16:9 picture showed a band of bare glass above and below the picture as it came in ("washed edges", the user) */
+export const MORPH = {
+  a: 180, // the crop (accelerating into the swap)
+  s: 80, // the cross-fade at the overlap
+  b: 280, // the reveal (decelerating out of it)
+  one: 320, // only a crop, or only a reveal: one move, eased at both ends
+};
+/* Material's emphasized curves: into the swap accelerating, out of it decelerating — with the swap between, it reads as
+   one move; a lone crop or reveal is eased at both ends */
+const eIn = bez(0.3, 0, 0.8, 0.15),
+  eOut = bez(0.05, 0.7, 0.1, 1),
+  eBoth = bez(0.2, 0, 0, 1);
+/**
+ * The steps of a shape change from size o to size n: the crop (0 → A), the swap (A → A + S), the reveal (→ T), and per
+ * axis how far along it is at e ms (0 → 1).
+ * @param {{ w: number, h: number }} o @param {{ w: number, h: number }} n
+ */
+export function shapeSteps(o, n) {
+  const shrink = [n.w < o.w - 0.5, n.h < o.h - 0.5],
+    grow = [n.w > o.w + 0.5, n.h > o.h + 0.5],
+    crop = shrink[0] || shrink[1],
+    reveal = grow[0] || grow[1],
+    A = crop ? (reveal ? MORPH.a : MORPH.one) : 0,
+    S = MORPH.s,
+    B = reveal ? (crop ? MORPH.b : MORPH.one) : 0,
+    T = A + S + B,
+    eA = reveal ? eIn : eBoth,
+    eB = crop ? eOut : eBoth;
+  /** per axis [x, y], how far along at e ms @param {number} e @returns {[number, number]} */
+  const q = e => {
+    const pA = A ? eA(Math.min(1, e / A)) : 1,
+      pB = B ? eB(Math.min(1, Math.max(0, e - A - S) / B)) : 1,
+      pAll = eBoth(Math.min(1, e / T)),
+      at = (/** @type {number} */ i) => (shrink[i] ? pA : grow[i] ? pB : pAll);
+    return [at(0), at(1)];
+  };
+  return { A, S, B, T, q };
+}
+/**
+ * The box at a point of a shape change: each axis moves its centre and its size by its own progress.
+ * @param {{ l: number, t: number, w: number, h: number }} o @param {{ l: number, t: number, w: number, h: number }} n
+ * @param {[number, number]} q
+ */
+export function shapeBox(o, n, q) {
+  const ax = (
+    /** @type {number} */ s0,
+    /** @type {number} */ z0,
+    /** @type {number} */ s1,
+    /** @type {number} */ z1,
+    /** @type {number} */ k,
+  ) => {
+    const c = s0 + z0 / 2 + (s1 + z1 / 2 - (s0 + z0 / 2)) * k,
+      z = z0 + (z1 - z0) * k;
+    return [c - z / 2, z];
+  };
+  const [l, w] = ax(o.l, o.w, n.l, n.w, q[0]),
+    [t, h] = ax(o.t, o.h, n.t, n.h, q[1]);
+  return { l, t, w, h };
+}

@@ -8,6 +8,8 @@ import {
   pageGeometry,
   stackColumnW,
   framePlacement,
+  shapeSteps,
+  shapeBox,
   upgradeLayoutPrefs,
   promptSlotH,
   cardAnchorTop,
@@ -166,4 +168,25 @@ test("frozen while you work: the top stays put and only the bottom grows (a bott
   assert.equal(bot.top + bot.H + 40, 740, "a bottom card keeps its bottom: it grew upward");
   const free = cardPlacement({ ...c, frozen: false, pos: "mid", prevTop: 200, prevBottom: 540 });
   assert.equal(free.top, 130, "not frozen: back to its resting place (centred on the picture)");
+});
+
+test("shapeSteps: a box changing shape crops first, swaps, then reveals (the one choreography)", () => {
+  // a 1:1 empty frame into a 16:9 picture: the height shrinks, the width grows
+  const o = { l: 0, t: 0, w: 600, h: 600 },
+    n = { l: -100, t: 131, w: 800, h: 450 },
+    st = shapeSteps(o, n);
+  assert.ok(st.A > 0 && st.B > 0 && st.T === st.A + st.S + st.B);
+  assert.deepEqual(st.q(st.A), [0, 1], "by the swap the shrinking axis is done and the growing one hasn't started");
+  assert.deepEqual(st.q(st.T), [1, 1]);
+  const atSwap = shapeBox(o, n, st.q(st.A));
+  assert.equal(atSwap.h, 450, "when the new contents come in the box is already their height (no band above or below)");
+  assert.equal(atSwap.w, 600);
+  assert.equal(atSwap.l + atSwap.w / 2, 300, "…and each axis keeps its centre until it moves");
+  // only a crop: one move, and the swap after it
+  const c = shapeSteps({ w: 800, h: 600 }, { w: 400, h: 300 });
+  assert.equal(c.B, 0);
+  assert.deepEqual(c.q(c.A), [1, 1]);
+  // the same size: nothing moves but the swap
+  const s = shapeSteps({ w: 500, h: 500 }, { w: 500, h: 500 });
+  assert.equal(s.T, s.S);
 });

@@ -332,3 +332,61 @@ export async function arrowStaysUnderThePointer(k, t) {
   t.ok(!end.held && Math.abs(end.dx) <= 1, "…and once the pointer left it, it went to the picture's edge", end);
 }
 arrowStaysUnderThePointer.opts = { step: 0.05 };
+
+/* a switch into a picture moves by the one choreography (2026-10-28, the user: from a clean 1:1 canvas to a 16:9
+   picture "the edges flicker as if washed — the top shouldn't be affected; why is the Gallery even?"). The switch had a
+   rule of its own (one curve for both axes): the plate stayed taller than the picture while it came in — a band of bare
+   glass above and below it. Now crop, swap, reveal, as when browsing: every frame the new picture shows, the plate is
+   no taller than it (the shrinking axis is done by the swap) */
+const BAND = `new Promise(res=>{const h=document.documentElement,p=$("plate"),f=$("frame"),o={over:0,shown:0},t0=performance.now();
+  (function s(){if(h.classList.contains("tabmorph")&&+getComputedStyle(h,"::view-transition-new(kiln-panel)").opacity>0.02){
+      const pr=p.getBoundingClientRect(),fr=f.getBoundingClientRect(),m=parseFloat(getComputedStyle(h).getPropertyValue("--mat"))||0;
+      o.over=Math.max(o.over,pr.height-(fr.height+2*m));o.shown++}
+    if(performance.now()-t0<900)requestAnimationFrame(s);else res(o)})()})`;
+export async function switchIntoAPictureHasNoBand(k, t) {
+  await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 1 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  await k.mouse(2, 2);
+  for (const [how, act] of [
+    ["the Gallery tab", `document.querySelector('.tab[data-v="gallery"]').click()`],
+    ["an arrow", `genNav(-1)`],
+  ]) {
+    await k.ev(`(document.querySelector('.tab[data-v="gen"]').click(),1)`);
+    await k.sleep(900);
+    await k.ev(`(closeShown(),S.ar="1:1",sizeFrame(),1)`);
+    await k.sleep(1200);
+    const w = k.ev(BAND);
+    await k.ev(`(${act},1)`);
+    const o = await w;
+    t.motion(o.shown > 3 && o.over <= 1, `${how}: no bare glass above or below the picture while it comes in`, o);
+    await k.sleep(400);
+  }
+}
+switchIntoAPictureHasNoBand.opts = { step: 0.05 };
+
+/* the Gallery's picture is cropped by the plate on the way out (2026-10-28, the user: Gallery → PNG Info "snaps",
+   Generating → PNG Info morphs). Its layer doesn't move, so the browser gave it no animation and the switch never
+   clipped it: it stayed whole over the plate's crop and vanished at the swap. Every frame it shows: inside the plate */
+export async function galleryPictureCropsOnTheWayOut(k, t) {
+  await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 1 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  await k.mouse(2, 2);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(1500);
+  const w = k.ev(`new Promise(res=>{const h=document.documentElement,p=$("plate"),o={out:0,seen:0},t0=performance.now();
+    (function s(){const pe="::view-transition-old(kiln-pic)";if(h.classList.contains("tabmorph")&&document.getAnimations().some(a=>a.effect&&a.effect.pseudoElement===pe)){
+      const c=getComputedStyle(h,pe),g=getComputedStyle(h,"::view-transition-group(kiln-pic)");
+      if(+c.opacity>0.02&&parseFloat(g.width)>0){const m=new DOMMatrix(g.transform==="none"?undefined:g.transform),
+          v=c.clipPath==="none"?[0,0,0,0]:c.clipPath.replace("inset(","").split(" round")[0].replace(")","").trim().split(" ").map(parseFloat),
+          [tt,r=tt,b=tt,l=r]=v,W=parseFloat(g.width),H=parseFloat(g.height),pr=p.getBoundingClientRect();
+        o.out=Math.max(o.out,pr.left-(m.e+l),pr.top-(m.f+tt),(m.e+W-r)-pr.right,(m.f+H-b)-pr.bottom);o.seen++}}
+      if(performance.now()-t0<700)requestAnimationFrame(s);else res(o)})()})`);
+  await k.ev(`(document.querySelector('.tab[data-v="png"]').click(),1)`);
+  const o = await w;
+  t.motion(
+    o.seen > 3 && o.out <= 1,
+    "the Gallery's picture stays inside the plate as it crops, every frame it shows",
+    o,
+  );
+}
+galleryPictureCropsOnTheWayOut.opts = { step: 0.05 };

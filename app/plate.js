@@ -7,6 +7,7 @@
    too: inset on it, it changes shape with it and fades as a switch leaves (it slid inside the contents' snapshot) */
 import { placeAround } from "./around.js";
 import { $ } from "./dom.js";
+import { shapeBox, shapeSteps } from "./layoutmath.js";
 import { SPACE } from "./tokens.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number, panel: boolean }} Box in #right's coordinates */
@@ -118,13 +119,9 @@ function tick() {
 
 /* a tab switch: the plate's box ON SCREEN before it (call before the switch changes anything) — the column the plate
    sits in may move with the switch */
-/** @type {DOMRect | null} */
-let viewBefore = null; // the panel's contents' box when the switch began (their snapshot glides from it)
 let pending = false; // a switch has begun and hasn't shown yet: the plate holds its old shape (and its drop line)
 export function plateBefore() {
   pending = true;
-  const vw = document.querySelector(".rpanel > .view.on");
-  viewBefore = vw ? vw.getBoundingClientRect() : null;
   barBefore = $("seg").getBoundingClientRect();
   const p = $("plate").getBoundingClientRect();
   return { l: p.left, t: p.top, w: p.width, h: p.height };
@@ -137,21 +134,10 @@ export function plateBefore() {
    the start time). Five things used to time themselves — CSS keyframes, the browser's groups, three scripts — each from
    its own numbers and clock: the clip ran ~20 px off the plate, the rim's line crossed the picture, the plate sat empty
    ~200 ms waiting for the contents. The CSS keeps the look (fades, corners), not the motion */
-export const SWITCH = { ms: 650, curve: [0.05, 0.7, 0.1, 1] }; // the plate's glide: --t-650, --lay-e
-const switchEase = `cubic-bezier(${SWITCH.curve.join(", ")})`;
+export const SWITCH = { ms: 650, curve: [0.05, 0.7, 0.1, 1] }; // the prompt column's slide (layout.js): --t-650, --lay-e
 /** @type {Animation[]} */
 let switchAnims = []; // the running switch's own animations (a new switch replaces them)
 
-/** the contents' clip: the plate's box (on screen) as an inset of the snapshot's box v, 1 px inside the plate so its
- * rim (its ring, in the page under the switch's layers) always shows
- * @param {DOMRect} v @param {{ l: number, t: number, w: number, h: number }} b */
-function clipIn(v, b) {
-  const R = 1,
-    ins = [b.t - v.top, v.right - (b.l + b.w), v.bottom - (b.t + b.h), b.l - v.left].map(
-      x => Math.max(0, Math.round(x)) + R + "px",
-    );
-  return `inset(${ins.join(" ")} round calc(var(--r-panel) - ${R}px))`;
-}
 /** @param {{ l: number, t: number, w: number, h: number }} at where the plate was on screen (plateBefore)
  * @returns {number} the switch's start time (the document timeline's ms — performance.now()'s clock) */
 export function switchGlide(at) {
@@ -159,10 +145,23 @@ export function switchGlide(at) {
   const h = document.documentElement,
     o = $("right").getBoundingClientRect(),
     to = target(),
-    from = { l: at.l - o.left, t: at.t - o.top, w: at.w, h: at.h },
     toS = { l: o.left + to.l, t: o.top + to.t, w: to.w, h: to.h }, // on screen
-    t0 = Number(document.timeline.currentTime ?? performance.now()),
-    timing = { duration: SWITCH.ms, easing: switchEase },
+    steps = shapeSteps(at, toS), // the one choreography: crop, swap, reveal (layoutmath.js)
+    T = Math.max(1, steps.T),
+    /* keyframes every 8 ms, and exactly on the steps' ends: between two samples the box goes in a straight line, and
+       the crop is steepest just before the swap — sampled past it, the plate was still 9 px taller than the picture
+       as it came in */
+    at8 = Array.from({ length: Math.ceil(T / 8) + 1 }, (_, i) => Math.min(T, i * 8)),
+    /** @type {{ offset: number, q: [number, number] }[]} */
+    samples = [...new Set([...at8, steps.A, steps.A + steps.S, T])]
+      .filter(e => e >= 0 && e <= T)
+      .sort((x, y) => x - y)
+      .map(e => ({ offset: e / T, q: steps.q(e) })),
+    /* the clock starts NOW, and everything holds its first keyframe until then (fill: backwards): read as the current
+       frame's start, the first frame shown was already ~30 ms in — the prompt column's first step 34 px */
+    t0 = performance.now(),
+    /** @type {{ duration: number, easing: string, fill: FillMode }} */
+    timing = { duration: T, easing: "linear", fill: "backwards" }, // the keyframes carry the curves
     px = (/** @type {number} */ v) => v + "px",
     /** one clock: every animation of the switch starts at t0 */
     go = (/** @type {Animation} */ a) => {
@@ -175,18 +174,22 @@ export function switchGlide(at) {
   if (barAnim) barAnim.cancel();
   barAnim = null;
   put(to);
-  plateFollow(SWITCH.ms + 50); // every frame of the glide: the bar's resting place follows the plate
+  plateFollow(T + 50); // every frame of the glide: the bar's resting place follows the plate
   /* the plate's look changing with it (a panel's glass and ring coming in) and the selected tab's pill: their own CSS
      transitions, put on the switch's clock (they began a frame later) */
   for (const el of [$("plate"), $("rim"), $("thumb")]) {
     void getComputedStyle(el).boxShadow; // starts the transitions the change above set off
     for (const a of el.getAnimations()) if (a instanceof CSSTransition) a.startTime = t0;
   }
-  /* the plate and its rim: one set of keyframes */
-  const keys = [
-    { left: px(from.l), top: px(from.t), width: px(from.w), height: px(from.h) },
-    { left: px(to.l), top: px(to.t), width: px(to.w), height: px(to.h) },
-  ];
+  /* the plate and its rim: one set of keyframes, on screen → in the right column */
+  const boxes = samples.map(s => shapeBox(at, toS, s.q)),
+    keys = boxes.map((b, i) => ({
+      offset: samples[i].offset,
+      left: px(b.l - o.left),
+      top: px(b.t - o.top),
+      width: px(b.w),
+      height: px(b.h),
+    }));
   const m = go($("plate").animate(keys, timing));
   morph = m;
   go($("rim").animate(keys, timing));
@@ -194,61 +197,90 @@ export function switchGlide(at) {
     if (morph === m) morph = null;
     plateFollow(300);
   };
-  /* the tab bar: from where its buttons were on screen to its place over the plate's new shape (the bar's box changes
-     width on a switch: worked out from the box it was off by up to 57 px) */
+  /* the tab bar over the plate all the way, starting where its buttons were on screen (the bar's box changes width on
+     a switch: worked out from the box it was off by up to 57 px) — that first gap closes as the plate moves */
   const tb = /** @type {HTMLElement} */ (document.querySelector(".tabs")),
     goal = barFor(tb, { left: toS.l, right: toS.l + toS.w, top: toS.t });
   setBar(tb, goal.x, goal.y);
   const now = $("seg").getBoundingClientRect(),
     fx = barBefore ? Math.round(goal.x + barBefore.left - now.left) : goal.x,
-    fy = barBefore ? Math.round(goal.y + barBefore.top - now.top) : goal.y;
-  if (fx !== goal.x || fy !== goal.y) {
-    const a = go(
-      tb.animate(
-        [{ transform: `translate(${fx}px, ${fy}px)` }, { transform: `translate(${goal.x}px, ${goal.y}px)` }],
-        timing,
-      ),
-    );
+    fy = barBefore ? Math.round(goal.y + barBefore.top - now.top) : goal.y,
+    over = boxes.map(b => barFor(tb, { left: b.l, right: b.l + b.w, top: b.t })),
+    dx = fx - over[0].x,
+    dy = fy - over[0].y,
+    barKeys = over.map((g, i) => {
+      const k = 1 - (samples[i].q[0] + samples[i].q[1]) / 2;
+      return { offset: samples[i].offset, transform: `translate(${g.x + dx * k}px, ${g.y + dy * k}px)` };
+    });
+  if (barKeys.some(k => k.transform !== barKeys[barKeys.length - 1].transform)) {
+    const a = go(tb.animate(barKeys, timing));
     barAnim = a;
     a.onfinish = a.oncancel = () => {
       if (barAnim === a) barAnim = null;
       placeBar();
     };
   }
-  /* the switch's own layers (a View Transition, when there is one): its groups glide on the plate's curve and clock;
-     their fades keep their own lengths, on the same clock */
-  const vt = document.getAnimations().filter(a => {
-    const p = /** @type {KeyframeEffect | null} */ (a.effect)?.pseudoElement || "";
-    return p.startsWith("::view-transition");
-  });
-  if (vt.length) {
-    for (const a of vt) {
-      const p = /** @type {KeyframeEffect} */ (a.effect).pseudoElement || "";
-      if (p.startsWith("::view-transition-group(")) {
-        /* the plate's curve exactly: a CSS animation eases per keyframe ("ease" by default), and the curve set on top
-           of that ran the layers off the plate by up to 78 px — so the keyframes go linear and the effect takes it */
-        const e = /** @type {KeyframeEffect} */ (a.effect);
+  /* the switch's own layers (a View Transition, when there is one): every group re-keyed to the same choreography from
+     its own first and last box; the contents' fades at the swap; the contents clipped to the plate — per keyframe, the
+     plate's box in its layer's box, so it holds exactly (a group eases its own keyframes: on two curves the clip ran off
+     the plate by up to 78 px) */
+  /** @type {Record<string, { l: number, t: number, w: number, h: number }[]>} */
+  const layer = {};
+  for (const a of document.getAnimations()) {
+    const e = /** @type {KeyframeEffect | null} */ (a.effect),
+      p = (e && e.pseudoElement) || "";
+    if (!e || !p.startsWith("::view-transition")) continue;
+    const name = (p.match(/\(([^)]*)\)/) || ["", ""])[1];
+    if (p.startsWith("::view-transition-group(")) {
+      const kf = e.getKeyframes(),
+        f0 = kf[0],
+        f1 = kf[kf.length - 1];
+      if (f0 && f1 && f0.transform && f0.width) {
+        const m0 = new DOMMatrix(String(f0.transform)),
+          m1 = new DOMMatrix(String(f1.transform)),
+          g0 = { l: m0.e, t: m0.f, w: parseFloat(String(f0.width)), h: parseFloat(String(f0.height)) },
+          g1 = { l: m1.e, t: m1.f, w: parseFloat(String(f1.width)), h: parseFloat(String(f1.height)) };
+        layer[name] = samples.map(s => shapeBox(g0, g1, s.q));
         e.setKeyframes(
-          e.getKeyframes().map(f => ({
-            ...Object.fromEntries(Object.entries(f).filter(([k]) => k !== "computedOffset" && k !== "composite")),
-            easing: "linear",
+          layer[name].map((b, i) => ({
+            offset: samples[i].offset,
+            transform: `matrix(1, 0, 0, 1, ${b.l}, ${b.t})`,
+            width: px(b.w),
+            height: px(b.h),
           })),
         );
-        e.updateTiming(timing);
       }
-      a.startTime = t0;
+      e.updateTiming(timing);
+    } else if (name === "kiln-panel" || name === "kiln-pic") e.updateTiming({ delay: steps.A, duration: steps.S }); // the old contents until the swap, the new from it
+    a.startTime = t0;
+  }
+  /* the contents inside the plate (1 px in, so its rim shows): the panel's contents, and a picture that fades where it
+     was (it would hang outside the plate while it crops) */
+  for (const [name, R] of /** @type {[string, number][]} */ ([
+    ["kiln-panel", 1],
+    ["kiln-pic", 0],
+  ])) {
+    let g = layer[name];
+    if (!g) {
+      /* a layer that doesn't move has no group animation (an old picture fading where it was): its box from the
+         browser. Unclipped, the Gallery's picture stayed whole over the plate's crop and vanished at the swap — the
+         switch to PNG Info looked like a snap (the user, 2026-10-28) */
+      const c = getComputedStyle(h, `::view-transition-group(${name})`),
+        w = parseFloat(c.width);
+      if (!(w > 0)) continue;
+      const mx = new DOMMatrix(c.transform === "none" ? undefined : c.transform),
+        box = { l: mx.e, t: mx.f, w, h: parseFloat(c.height) };
+      g = boxes.map(() => box);
     }
-    /* the contents live INSIDE the plate: both snapshots clipped to it as it glides — measured in the snapshot's box,
-       which glides from the old panel's box to the new one on this same curve and clock (where the plate was in the
-       OLD box, where it's going in the new) */
-    const view = document.querySelector(".rpanel > .view.on");
-    if (view) {
-      const v1 = view.getBoundingClientRect(),
-        v0 = viewBefore || v1,
-        clip = [{ clipPath: clipIn(v0, at) }, { clipPath: clipIn(v1, toS) }];
-      for (const side of ["old", "new"])
-        go(h.animate(clip, { ...timing, fill: "both", pseudoElement: `::view-transition-${side}(kiln-panel)` }));
-    }
+    const clip = boxes.map((b, i) => {
+      const v = g[i],
+        ins = [b.t - v.t, v.l + v.w - (b.l + b.w), v.t + v.h - (b.t + b.h), b.l - v.l].map(
+          x => (Math.max(0, x) + R).toFixed(1) + "px",
+        );
+      return { offset: samples[i].offset, clipPath: `inset(${ins.join(" ")} round calc(var(--r-panel) - ${R}px))` };
+    });
+    for (const side of ["old", "new"])
+      go(h.animate(clip, { ...timing, fill: "both", pseudoElement: `::view-transition-${side}(${name})` }));
   }
   return t0;
 }

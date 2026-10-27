@@ -1,29 +1,13 @@
 // @ts-check
 /* Kiln · the picture's crop-and-reveal when its shape changes: each axis moves once, on its own step */
 import { $ } from "./dom.js";
-import { bez } from "./layoutmath.js";
+import { shapeBox, shapeSteps } from "./layoutmath.js";
 import { overlayGone } from "./pictures.js";
 import { frameDrive } from "./framebox.js";
 
-/* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design; per axis since 2026-10-27). Both
-   pictures sit at their own final size, centred: only the frame moves. 1) an axis that shrinks crops the old picture
-   (it is never squeezed); 2) at the overlap of the two pictures the new one takes over (a short cross-fade); 3) an axis
-   that grows reveals more of the new one. An axis that keeps its size never changes it — switching between two
-   full-height pictures, only the width moves (it used to close in on a box 12 % smaller than needed, so the height
-   dipped on every switch, the user's note). Each axis moves its centre with its size, so both sides go in or out alike.
-   A step with nothing to do takes no time. Nothing is ever empty: the box is inside the old picture until the swap and
-   inside the new one after it */
-const MORPH = {
-  a: 180, // the crop (accelerating into the swap)
-  s: 80, // the cross-fade at the overlap
-  b: 280, // the reveal (decelerating out of it)
-  one: 320, // only a crop, or only a reveal: one move, eased at both ends
-};
-/* Material's emphasized curves: into the swap accelerating, out of it decelerating — with the swap between, it reads as
-   one move; a lone crop or reveal is eased at both ends */
-const eIn = bez(0.3, 0, 0.8, 0.15),
-  eOut = bez(0.05, 0.7, 0.1, 1),
-  eBoth = bez(0.2, 0, 0, 1);
+/* a picture of another shape: the one choreography (layoutmath.js shapeSteps) — crop, swap, reveal; only the frame
+   moves, both pictures at their own final size, centred. Nothing is ever empty: the box is inside the old picture
+   until the swap and inside the new one after it */
 /* where the picture area's left edge will be once the layout's glide ends (screen px), or null to follow it live. The
    area hugs the picture, so a shape change also glides the grid's columns; a morph aimed at the area's CURRENT place
    chased a moving target and overshot it by ~15 px, then came back (2026-10-27). The grid's columns are known: the
@@ -67,17 +51,7 @@ export function frameMorph(o) {
     }),
     n0 = T0();
   if (!(n0.w > 0 && n0.h > 0 && o.w > 0 && o.h > 0)) return;
-  /* per axis, which way does the picture go? Shrinks = crops the old picture, grows = reveals the new one */
-  const shrink = [n0.w < o.w - 0.5, n0.h < o.h - 0.5],
-    grow = [n0.w > o.w + 0.5, n0.h > o.h + 0.5],
-    crop = shrink[0] || shrink[1],
-    reveal = grow[0] || grow[1];
-  const A = crop ? (reveal ? MORPH.a : MORPH.one) : 0,
-    S = MORPH.s,
-    B = reveal ? (crop ? MORPH.b : MORPH.one) : 0,
-    T = A + S + B,
-    eA = reveal ? eIn : eBoth,
-    eB = crop ? eOut : eBoth,
+  const { A, S, T, q } = shapeSteps(o, n0),
     px = (/** @type {number} */ v) => v + "px";
   f.style.setProperty("--ow", px(o.w));
   f.style.setProperty("--oh", px(o.h));
@@ -105,13 +79,9 @@ export function frameMorph(o) {
     };
   }
   const st0 = $("stage").getBoundingClientRect(),
-    /* the old box on screen, as [centre, size] per axis */
-    O = [
-      /* measured on screen before the change: right after a tab switch the layout jumps instead of gliding, and the old
-         box placed in the NEW area showed the old picture 261 px off for the first frames (2026-10-27) */
-      [(o.x ?? st0.left + o.l) + o.w / 2, o.w],
-      [(o.y ?? st0.top + o.t) + o.h / 2, o.h],
-    ];
+    /* the old box on screen, measured before the change: right after a tab switch the layout jumps instead of gliding,
+       and the old box placed in the NEW area showed the old picture 261 px off for the first frames (2026-10-27) */
+    O = { l: o.x ?? st0.left + o.l, t: o.y ?? st0.top + o.t, w: o.w, h: o.h };
   /* the frame's owner (framebox.js) asks for the box every frame and writes it — the plate and what sits round the
      frame follow from there; a new crop-and-reveal replaces this one */
   frameDrive(now => {
@@ -122,23 +92,10 @@ export function frameMorph(o) {
     f.style.setProperty("--nh", px(n.h));
     const aL = areaLeftAtEnd(),
       sL = aL == null ? st.left : aL + (st.left - $("right").getBoundingClientRect().left), // the area's left, at the end
-      N = [
-        [sL + n.l + n.w / 2, n.w],
-        [st.top + n.t + n.h / 2, n.h],
-      ],
-      pA = A ? eA(Math.min(1, e / A)) : 1,
-      pB = B ? eB(Math.min(1, Math.max(0, e - A - S) / B)) : 1,
-      pAll = eBoth(Math.min(1, e / T)),
-      /* each axis moves its CENTRE and its SIZE on one clock — the crop if it shrinks, the reveal if it grows, the whole
-         move if only its place changes (the area hugs the picture and glides with it). Edge by edge, one side rode the
-         area's glide and the other the crop: lopsided (the user, 2026-10-27: "not symmetrical") */
-      Bx = O.map(([c, z], i) => {
-        const q = shrink[i] ? pA : grow[i] ? pB : pAll;
-        return [c + (N[i][0] - c) * q, z + (N[i][1] - z) * q];
-      }),
-      L = Bx[0][0] - Bx[0][1] / 2,
-      Tp = Bx[1][0] - Bx[1][1] / 2;
-    if (e < T) return { l: L - st.left, t: Tp - st.top, w: Bx[0][1], h: Bx[1][1] };
+      /* each axis moves its CENTRE and its SIZE on one clock (the area hugs the picture and glides with it: edge by edge,
+         one side rode the area's glide and the other the crop — lopsided, the user, 2026-10-27) */
+      b = shapeBox(O, { l: sL + n.l, t: st.top + n.t, w: n.w, h: n.h }, q(e));
+    if (e < T) return { l: b.l - st.left, t: b.t - st.top, w: b.w, h: b.h };
     f.classList.remove("morph");
     return null; // landed: the owner puts the frame at its goal
   });

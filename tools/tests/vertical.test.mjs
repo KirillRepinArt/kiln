@@ -741,3 +741,29 @@ export async function verticalBoxBottom(k, t) {
   });
 }
 verticalBoxBottom.opts = { width: 1872, height: 1080, step: 0.05 };
+
+/* the crop-and-reveal per edge (2026-10-27, the user: "the frame narrowing while switching between ratios … feels a bit
+   off"): between two pictures that both fill the height, only the sides move — the height and the top edge never do
+   (the old morph closed in on a box 12 % smaller than needed, so the height dipped on every switch) */
+export async function morphKeepsTheHeight(k, t) {
+  await k.job("[fill:446688] tall", { ar: "2:3", steps: 1 });
+  await k.job("[fill:884422] square", { ar: "1:1", steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  await k.mouse(2, 2);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(800);
+  const s = await k.ev(`new Promise(res=>{const f=$("frame"),o=[],t0=performance.now();
+    (function s(){const r=f.getBoundingClientRect();o.push([r.top,r.height,r.width,f.classList.contains("morph")]);
+    if(performance.now()-t0<900)requestAnimationFrame(s);else res(o)})();genNav(-1)})`);
+  const tops = s.map(x => x[0]),
+    hs = s.map(x => x[1]),
+    ws = s.map(x => x[2]);
+  t.ok(
+    s.some(x => x[3]),
+    "the shape change runs the crop-and-reveal",
+  );
+  t.ok(Math.abs(ws[0] - ws.at(-1)) > 50, "…between two widths", [ws[0], ws.at(-1)]);
+  t.motion(Math.max(...hs) - Math.min(...hs) < 1.5, "the height never moves", [Math.min(...hs), Math.max(...hs)]);
+  t.motion(Math.max(...tops) - Math.min(...tops) < 1.5, "nor the top edge", [Math.min(...tops), Math.max(...tops)]);
+}
+morphKeepsTheHeight.opts = { step: 0.05, width: 1800, height: 1000 };

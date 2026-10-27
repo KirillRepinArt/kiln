@@ -1,19 +1,20 @@
 // @ts-check
-/* Kiln · the picture's crop-and-reveal when its shape changes: one continuous move on its own timeline */
+/* Kiln · the picture's crop-and-reveal when its shape changes: each edge moves once, on its own timeline */
 import { $ } from "./dom.js";
 
-/* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design). 1) the frame closes in on the picture
-   on show to the new picture's shape — the largest such box inside it, centred: the old picture is cropped, never
-   squeezed, so nothing is ever empty; 2) at that box the new picture takes over (a short cross-fade: same shape now);
-   3) the frame opens out to the new picture's size, revealing more of it. Both pictures sit at their own final size,
-   centred: only the frame moves. ~180 ms accelerating + 80 ms seam + 280 ms decelerating (sequential motion) */
+/* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design; per edge since 2026-10-27). Both
+   pictures sit at their own final size: only the frame moves. 1) every edge that moves IN crops the old picture (it is
+   never squeezed); 2) at the overlap of the two pictures the new one takes over (a short cross-fade); 3) every edge that
+   moves OUT reveals more of the new one. An edge that stays where it is never moves — switching between two
+   full-height pictures, only the sides do (it used to close in on a box 12 % smaller than needed, so the height dipped
+   on every switch, the user's note). A step with nothing to do takes no time. Nothing is ever empty: the box is inside
+   the old picture until the swap and inside the new one after it */
 const MORPH = {
-  a: 180,
-  s: 80,
-  b: 280,
-  k: 0.88,
-  T: 520,
-}; /* k: the middle box is a little smaller than the largest that fits — the path curves inward (an iris closing a touch past what's needed); inside the old picture, so never a hole */
+  a: 180, // the crop (accelerating into the swap)
+  s: 80, // the cross-fade at the overlap
+  b: 280, // the reveal (decelerating out of it)
+  one: 320, // only a crop, or only a reveal: one move, eased at both ends
+};
 /* cubic-bezier easing as a function (for the frame's own timeline below) */
 /** @param {number} x1 @param {number} y1 @param {number} x2 @param {number} y2 @returns {(x: number) => number} */
 function bez(x1, y1, x2, y2) {
@@ -35,12 +36,11 @@ function bez(x1, y1, x2, y2) {
     return f(t, y1, y2);
   };
 }
-const eCrop = bez(
-  0.2,
-  0.6,
-  0.3,
-  1,
-); /* eCrop: the box reaches the middle in ~¼ of the time (the user: the contraction ×2), then opens out slowly */
+/* Material's emphasized curves: into the swap accelerating, out of it decelerating — with the swap between, it reads as
+   one move; a lone crop or reveal is eased at both ends */
+const eIn = bez(0.3, 0, 0.8, 0.15),
+  eOut = bez(0.05, 0.7, 0.1, 1),
+  eBoth = bez(0.2, 0, 0, 1);
 /* the crop and the reveal run on the SCREEN: the panel the frame sits in may be gliding (the pair re-centring), and a
    morph written in the panel's coordinates drifted with it — lopsided. Each frame the box is placed on screen and the
    panel's current offset taken off. The target is read from the frame's data (sizeFrame keeps it there while a morph
@@ -59,21 +59,20 @@ export function frameMorph(o) {
     }),
     n0 = T0();
   if (!(n0.w > 0 && n0.h > 0 && o.w > 0 && o.h > 0)) return;
-  const st0 = $("stage").getBoundingClientRect(),
-    r = n0.w / n0.h;
-  let aw = o.w,
-    ah = o.w / r;
-  if (ah > o.h) {
-    ah = o.h;
-    aw = o.h * r;
-  }
-  aw *= MORPH.k;
-  ah *= MORPH.k;
-  const O = { l: st0.left + o.l, t: st0.top + o.t, w: o.w, h: o.h },
-    M = { l: O.l + (o.w - aw) / 2, t: O.t + (o.h - ah) / 2, w: aw, h: ah },
-    T = MORPH.T,
-    k1 = 0.12,
-    k2 = 0.36,
+  /* the four edges, old and new (in the panel; both pictures move with it alike): which way does each go? */
+  const edges = (/** @type {{ w: number, h: number, l: number, t: number }} */ b) => [b.l, b.t, b.l + b.w, b.t + b.h],
+    E0 = edges(o),
+    E1 = edges(n0),
+    dirIn = [E1[0] > E0[0], E1[1] > E0[1], E1[2] < E0[2], E1[3] < E0[3]], // moves in = crops the old picture
+    moves = E0.map((v, i) => Math.abs(E1[i] - v) > 0.5),
+    crop = moves.some((m, i) => m && dirIn[i]),
+    reveal = moves.some((m, i) => m && !dirIn[i]);
+  const A = crop ? (reveal ? MORPH.a : MORPH.one) : 0,
+    S = MORPH.s,
+    B = reveal ? (crop ? MORPH.b : MORPH.one) : 0,
+    T = A + S + B,
+    eA = reveal ? eIn : eBoth,
+    eB = crop ? eOut : eBoth,
     px = (/** @type {number} */ v) => v + "px";
   cancelAnimationFrame(/** @type {any} */ (frameMorph).raf); // the running morph, kept on the function
   f.style.setProperty("--ow", px(o.w));
@@ -82,11 +81,17 @@ export function frameMorph(o) {
   f.style.setProperty("--nh", px(n0.h));
   f.classList.add("morph");
   const t0 = performance.now();
+  /* the old picture (on its own canvas) fades out across the swap */
   if (x) {
     x.dataset.morph = "1";
     x.getAnimations().forEach(q => q.cancel());
     x.animate(
-      [{ opacity: 1 }, { opacity: 1, offset: k1 }, { opacity: 0, offset: k2, easing: "ease-in-out" }, { opacity: 0 }],
+      [
+        { opacity: 1 },
+        { opacity: 1, offset: A / T },
+        { opacity: 0, offset: (A + S) / T, easing: "ease-in-out" },
+        { opacity: 0 },
+      ],
       { duration: T, fill: "forwards" },
     ).onfinish = () => {
       x.style.opacity = "0";
@@ -94,26 +99,25 @@ export function frameMorph(o) {
       x.getAnimations().forEach(q => q.cancel());
     };
   }
-  /* ONE continuous move (2026-10-19): the box travels a curve from the old picture toward the middle box — a pull point,
-    never a stop — and on to the new picture's place. A quadratic path in screen space; the time eased gently at both ends;
-    the old picture fades out round the middle. The box stays inside the old picture early and inside the new one late,
-    so no corner is ever empty */
+  /* the old box on screen, where the morph started (the panel may glide under it from here on) */
+  const st0 = $("stage").getBoundingClientRect(),
+    O = [E0[0] + st0.left, E0[1] + st0.top, E0[2] + st0.left, E0[3] + st0.top];
   (function step(now) {
     const e = now - t0,
       st = $("stage").getBoundingClientRect(),
       n = T0();
     f.style.setProperty("--nw", px(n.w));
     f.style.setProperty("--nh", px(n.h));
-    const u = eCrop(Math.min(1, e / T)),
-      N = { l: st.left + n.l, t: st.top + n.t, w: n.w, h: n.h },
-      q = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number} */ c) =>
-        (1 - u) * (1 - u) * a + 2 * u * (1 - u) * b + u * u * c;
-    const B = { l: q(O.l, M.l, N.l), t: q(O.t, M.t, N.t), w: q(O.w, M.w, N.w), h: q(O.h, M.h, N.h) };
+    const N = [n.l + st.left, n.t + st.top, n.l + n.w + st.left, n.t + n.h + st.top],
+      pA = A ? eA(Math.min(1, e / A)) : 1,
+      pB = B ? eB(Math.min(1, Math.max(0, e - A - S) / B)) : 1,
+      /* each edge on its own step: in = during the crop, out = during the reveal */
+      Bx = O.map((v, i) => v + (N[i] - v) * (dirIn[i] ? pA : pB));
     if (e < T) {
-      f.style.left = px(B.l - st.left);
-      f.style.top = px(B.t - st.top);
-      f.style.width = px(B.w);
-      f.style.height = px(B.h);
+      f.style.left = px(Bx[0] - st.left);
+      f.style.top = px(Bx[1] - st.top);
+      f.style.width = px(Bx[2] - Bx[0]);
+      f.style.height = px(Bx[3] - Bx[1]);
       /** @type {any} */ (frameMorph).raf = requestAnimationFrame(step);
     } else {
       f.classList.remove("morph");

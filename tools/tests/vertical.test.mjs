@@ -847,10 +847,14 @@ export async function tabBarStaysOverThePicture(k, t) {
     const xs = await k.ev(
       `new Promise(res=>{const out=[];const t0=performance.now();genNav(${dir});(function f(t){const s=$("seg").getBoundingClientRect();out.push((s.left+s.right)/2);if(t-t0<800)requestAnimationFrame(f);else res(out)})(performance.now())})`,
     );
-    const end = xs.at(-1),
-      wander = Math.max(...xs.map(x => Math.abs(x - end)));
-    t.motion(wander <= 16, `${what}: the pill row goes straight to its place (no trip to the side)`, {
-      wander: Math.round(wander),
+    /* straight to its place = one way only: the two shapes rest in different places (the bar centres on the picture
+       as far as the area allows), so the distance from the end isn't the measure — going one way and back is */
+    const way = Math.sign(xs.at(-1) - xs[0]),
+      back = Math.max(0, ...xs.slice(1).map((x, i) => (xs[i] - x) * way));
+    t.motion(back <= 2, `${what}: the pill row goes straight to its place (no trip to the side)`, {
+      back: Math.round(back),
+      from: Math.round(xs[0]),
+      to: Math.round(xs.at(-1)),
     });
     await k.sleep(900);
   }

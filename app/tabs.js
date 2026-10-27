@@ -1,6 +1,6 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
-import { $, q } from "./dom.js";
+import { $ } from "./dom.js";
 import { lay, layMorph, morphReady, sizeFrame } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { current } from "./jobs.js";
@@ -70,9 +70,7 @@ export function tabSync(force) {
    0.4 s of glass re-blurring the sky per frame was the lag, 2026-10-19), and the layout is measured once per click */
 /** @param {() => void} fn */
 export function tabGo(fn) {
-  const seg = $("seg"),
-    x0 = seg.getBoundingClientRect().left,
-    from = plateBefore(),
+  const from = plateBefore(),
     lc0 = $("lcol").getBoundingClientRect(),
     pic0 = picKey();
   const run = () => {
@@ -86,7 +84,6 @@ export function tabGo(fn) {
         sizeFrame();
       }
     }
-    flipTabs(x0);
     const lc1 = $("lcol").getBoundingClientRect();
     morphReady().then(() => {
       plateMorph(from);
@@ -128,31 +125,6 @@ function slideLcol(r0, r1) {
   lc.animate([{ transform: `translate(${dx}px, ${dy}px) ${rest}` }, { transform: rest || "none" }], {
     duration: 650,
     easing: "cubic-bezier(0.05, 0.7, 0.1, 1)",
-  });
-}
-
-/* the tab bar through a tab switch (FLIP: measure, apply, invert, play): the column it sits in jumps to its new place (a
-   switch lays out at once), while the bar's own offset over the picture glides — together it leapt sideways, then slid
-   back (2026-10-26, the user's note). Now it's put back where it was on screen and glides from there straight to its
-   new place, the selected pill sliding inside it */
-/** @param {number} x0 where the bar's pill row was (screen px) */
-function flipTabs(x0) {
-  const tb = q(".tabs"),
-    want = tb.style.transform;
-  tb.style.setProperty("transition", "none", "important"); // over the switch's own glide rule (motion.css)
-  const dx = Math.round(x0 - $("seg").getBoundingClientRect().left);
-  if (Math.abs(dx) < 1) {
-    tb.style.removeProperty("transition");
-    return;
-  }
-  tb.style.transform = `translateX(${dx}px) ${want}`;
-  void tb.offsetWidth;
-  /* the same pace as the prompt column's slide in a switch (motion.css kiln-prompt): side by side, the faster one read
-     as rushed (the user, 2026-10-27) */
-  requestAnimationFrame(() => {
-    tb.style.setProperty("transition", "transform var(--t-650) var(--lay-e)", "important");
-    tb.style.transform = want;
-    setTimeout(() => tb.style.removeProperty("transition"), 700);
   });
 }
 

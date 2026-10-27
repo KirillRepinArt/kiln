@@ -3,8 +3,8 @@
 export async function order(k, t) {
   const groups = await k.ev(`[...document.querySelectorAll("#modal .fgh")].map(e=>e.textContent).join(",")`);
   t.ok(
-    groups === "Model,Output,Appearance,Effects,Cover,About",
-    "groups: Model, Output, Appearance, Effects, Cover, About",
+    groups === "Model,Output,Appearance,Effects,Cover,Privacy,About",
+    "groups: Model, Output, Appearance, Effects, Cover, Privacy, About",
     groups,
   );
   const themes = await k.ev(`[...$("sTheme").options].map(o=>o.textContent)`);

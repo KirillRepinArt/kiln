@@ -416,19 +416,9 @@ export function sizeFrame() {
     he.style.top = top + "px";
     he.style.height = h + "px";
   }
-  /* tab bar: centred over the panel in Queue / LoRAs / PNG Info; in Generating it sits right on top of the picture and is
-    centred on the picture itself, not on picture + button column — as far as the area allows (it never pokes out) */
+  /* the tab bar: as wide as the area; WHERE it sits is the plate's business (plate.js placeBar — one owner) */
   const tb = /** @type {HTMLElement} */ (document.querySelector(".tabs"));
-  if (tb) {
-    tb.style.width = stk ? "" : SW + "px";
-    const gen = S.view === "gen";
-    const room = Math.max(0, (SW - tabsW()) / 2),
-      dx = gen && !stk ? Math.max(-room, Math.min(room, Math.round(left + w / 2 - SW / 2))) : 0;
-    tb.dataset.dx = String(dx);
-    /* a crop-and-reveal carries the bar on the picture's moving top edge (morph.js), and lands it on this target */
-    if (!$("frame").classList.contains("morph"))
-      tb.style.transform = gen && (top > 0 || dx) ? `translate(${dx}px,${Math.round(Math.max(0, top))}px)` : "";
-  }
+  if (tb) tb.style.width = stk ? "" : SW + "px";
   const sx = 0;
   const pr = $("prog");
   pr.style.left = left + sx + "px";

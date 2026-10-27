@@ -110,11 +110,6 @@ html.picout .view.on #frame {
   object-position: 50% 0;
   height: 100%;
 } /* the panel changes width: its snapshot must not stretch (it read as a zoom) */
-html.tabmorph body.laysnap .tabs {
-  transition:
-    width var(--lay-t) var(--lay-e),
-    transform var(--lay-t) var(--lay-e) !important;
-} /* the tab bar glides live (small) */
 html.tabmorph::view-transition-old(kiln-panel) {
   animation: kfadeout var(--t-180) var(--e-accel) both;
 }

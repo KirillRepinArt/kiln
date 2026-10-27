@@ -305,7 +305,7 @@ export async function tabSwitchKeepsTabs(k, t) {
   await k.sleep(1000);
   const r =
     await k.ev(`(()=>{const h=document.documentElement,b=document.body;h.classList.add("tabmorph","laymorph");b.classList.add("laysnap");
-   const o={app:getComputedStyle(document.querySelector(".app")).viewTransitionName,panel:getComputedStyle($("rpanel")).viewTransitionName,view:getComputedStyle(document.querySelector(".rpanel > .view.on")).viewTransitionName,prompt:getComputedStyle($("lcol")).viewTransitionName,tabs:getComputedStyle(document.querySelector(".tabs")).transitionDuration,thumb:getComputedStyle(document.querySelector(".seg .thumb")).transitionDuration};
+   const o={app:getComputedStyle(document.querySelector(".app")).viewTransitionName,panel:getComputedStyle($("rpanel")).viewTransitionName,view:getComputedStyle(document.querySelector(".rpanel > .view.on")).viewTransitionName,prompt:getComputedStyle($("lcol")).viewTransitionName,tabs:getComputedStyle(document.querySelector(".tabs")).transitionDuration,tabsProp:getComputedStyle(document.querySelector(".tabs")).transitionProperty,thumb:getComputedStyle(document.querySelector(".seg .thumb")).transitionDuration};
    h.classList.remove("tabmorph","laymorph");b.classList.remove("laysnap");return o})()`);
   t.ok(
     r.app === "none" && r.view === "kiln-panel",
@@ -317,8 +317,8 @@ export async function tabSwitchKeepsTabs(k, t) {
   t.ok(r.panel === "none", "…and the panel stays live: its glass blurs through the switch", r);
   t.ok(/0\.28s/.test(r.thumb), "…and the selected tab's pill slides", r);
   t.ok(
-    r.prompt === "none" && /0\.42s/.test(r.tabs),
-    "the prompt box slides live (its glass too — no snapshot), the tab bar glides (no jump between the tabs' widths)",
+    r.prompt === "none" && !/transform/.test(r.tabsProp),
+    "the prompt box slides live (its glass too — no snapshot); the tab bar has no glide of its own (it follows the plate)",
     r,
   );
   // positions relative to the tab bar: the bar itself glides during a switch (reading screen positions mid-glide mixed

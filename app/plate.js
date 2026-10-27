@@ -6,6 +6,7 @@
    The plate is empty, so changing its size costs the blur, no layout of contents. PNG Info's drop line is the plate's
    too: inset on it, it changes shape with it and fades as a switch leaves (it slid inside the contents' snapshot) */
 import { $ } from "./dom.js";
+import { SPACE } from "./tokens.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number, panel: boolean }} Box in #right's coordinates */
 
@@ -39,7 +40,49 @@ function put(b) {
   const d = dropLine();
   p.classList.toggle("drop", !!d && d.on);
   p.classList.toggle("over", !!d && d.over);
+  placeBar();
 }
+
+/* ---------- the tab bar has ONE owner: it follows the plate (2026-10-28) ----------
+   It sits a part gap above the plate's top edge — the picture frame in Generating, the panel elsewhere — centred on the
+   plate as far as the area allows (it never pokes out). It has no motion of its own: the plate glides on a switch and
+   rides the frame on a ratio change, and the bar is placed from where the plate is, every frame anything moves. Four
+   writers used to move it (the layout, a switch's slide, the crop-and-reveal, CSS glides); when two overlapped it
+   ended mid-way or over the picture (137 px over the panel after a switch during a ratio change) */
+let barX = 0,
+  barY = 0; // the offset last set
+/** the bar's offset that puts it a part gap above a plate box (screen px), centred on it within the area
+ * @param {HTMLElement} tb @param {{ left: number, right: number, top: number }} pr */
+function barFor(tb, pr) {
+  const r = tb.getBoundingClientRect(),
+    kids = tb.children,
+    half = (kids[kids.length - 1].getBoundingClientRect().right - kids[0].getBoundingClientRect().left) / 2,
+    left = r.left - barX, // where the bar is laid out, without the offset
+    right = r.right - barX,
+    bottom = r.bottom - barY,
+    // how far it may shift and stay inside the area — none when the area is narrower than the bar's contents
+    room = Math.max(0, (right - left) / 2 - half),
+    x = Math.max(-room, Math.min(room, (pr.left + pr.right) / 2 - (left + right) / 2));
+  return { x: Math.round(x), y: Math.round(Math.max(0, pr.top - SPACE.part - bottom)) };
+}
+/** @param {HTMLElement} tb @param {number} x @param {number} y */
+function setBar(tb, x, y) {
+  barX = x;
+  barY = y;
+  tb.style.transform = x || y ? `translate(${x}px, ${y}px)` : "";
+}
+export function placeBar() {
+  const tb = /** @type {HTMLElement | null} */ (document.querySelector(".tabs"));
+  if (!tb || !tb.children.length || barAnim) return; // during a switch it moves with the plate (plateMorph)
+  const pr = $("plate").getBoundingClientRect();
+  if (!pr.width) return;
+  const { x, y } = barFor(tb, pr);
+  if (x !== barX || y !== barY) setBar(tb, x, y);
+}
+/** @type {Animation | null} */
+let barAnim = null;
+/** @type {DOMRect | null} */
+let barBefore = null; // where the tab buttons (#seg) were on screen when a switch began
 
 /* at rest the plate follows its element; only while something moves (a resize, a glide, a crop-and-reveal) does it
    look every frame — the loop runs until `ms` after the last call */
@@ -60,6 +103,7 @@ export function plateSync() {
 function tick() {
   raf = 0;
   if (!morph && !pending) put(target());
+  else if (morph) placeBar(); // the plate is gliding (a switch): the bar follows it
   if (performance.now() < until) raf = requestAnimationFrame(tick);
 }
 
@@ -68,6 +112,7 @@ function tick() {
 let pending = false; // a switch has begun and hasn't shown yet: the plate holds its old shape (and its drop line)
 export function plateBefore() {
   pending = true;
+  barBefore = $("seg").getBoundingClientRect();
   const p = $("plate").getBoundingClientRect();
   return { l: p.left, t: p.top, w: p.width, h: p.height };
 }
@@ -83,6 +128,7 @@ export function plateMorph(at) {
     p = $("plate");
   if (morph) morph.cancel();
   put(to);
+  plateFollow(700); // every frame of the glide: the bar follows the plate
   morph = p.animate(
     [
       { left: px(from.l), top: px(from.t), width: px(from.w), height: px(from.h) },
@@ -94,4 +140,27 @@ export function plateMorph(at) {
     morph = null;
     plateFollow(300);
   };
+  /* the bar on the same glide: from where it was on screen to its place over the plate's new shape — one animation
+     for both, in lockstep (placed by script a frame behind the plate, it lagged and overshot, 2026-10-28) */
+  const tb = /** @type {HTMLElement} */ (document.querySelector(".tabs"));
+  if (barAnim) barAnim.cancel();
+  barAnim = null;
+  const goal = barFor(tb, { left: o.left + to.l, right: o.left + to.l + to.w, top: o.top + to.t });
+  setBar(tb, goal.x, goal.y);
+  /* the glide starts where the tab buttons WERE on screen: measured on the buttons themselves, before and now (at the
+     goal) — the bar's box changes width on a switch, so working it out from the box was off by up to 57 px */
+  const now = $("seg").getBoundingClientRect(),
+    fx = barBefore ? Math.round(goal.x + barBefore.left - now.left) : goal.x,
+    fy = barBefore ? Math.round(goal.y + barBefore.top - now.top) : goal.y;
+  if (fx !== goal.x || fy !== goal.y) {
+    const a = tb.animate(
+      [{ transform: `translate(${fx}px, ${fy}px)` }, { transform: `translate(${goal.x}px, ${goal.y}px)` }],
+      { duration: 650, easing: "cubic-bezier(0.05, 0.7, 0.1, 1)" },
+    );
+    barAnim = a;
+    a.onfinish = a.oncancel = () => {
+      if (barAnim === a) barAnim = null;
+      placeBar();
+    };
+  }
 }

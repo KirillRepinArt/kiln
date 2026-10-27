@@ -81,3 +81,52 @@ export async function dropLineRidesThePlate(k, t) {
     op.slice(0, 14).map(o => o.toFixed(2)),
   );
 }
+
+/* the tab bar has one owner: it follows the plate (2026-10-28, the user: "teleporting… getting on top of the area";
+   four writers moved it, and a switch during a ratio change left it 137 px over the panel). In every case that combines
+   motions it sits a part gap (12 px) above the plate, every frame */
+const BAR_GAP = ms => `new Promise(res=>{const tb=document.querySelector(".tabs"),o=[],t0=performance.now();
+  (function s(){o.push(Math.round($("plate").getBoundingClientRect().top-tb.getBoundingClientRect().bottom));
+    if(performance.now()-t0<${ms})requestAnimationFrame(s);else res(o)})()})`;
+export async function tabBarFollowsThePlate(k, t) {
+  for (const [c, ar] of [
+    ["446688", "3:4"],
+    ["aa7733", "16:9"],
+    ["338844", "1:1"],
+    ["884488", "16:9"],
+  ])
+    await k.job(`[fill:${c}] p`, { ar, steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=4`, 40000);
+  await k.mouse(2, 2);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(1500);
+  const cases = [
+    ["a step to another shape", [`genNav(-1)`]],
+    ["two fast steps", [`genNav(-1)`, 120, `genNav(-1)`]],
+    [
+      "a tab switch during a ratio change",
+      [`genNav(1)`, 150, `document.querySelector('.tab[data-v="queue"]').click()`],
+    ],
+    ["the Queue to the Gallery", [`document.querySelector('.tab[data-v="gallery"]').click()`]],
+    [
+      "Gallery → Generating → Gallery, fast",
+      [
+        `document.querySelector('.tab[data-v="gen"]').click()`,
+        200,
+        `document.querySelector('.tab[data-v="gallery"]').click()`,
+      ],
+    ],
+  ];
+  for (const [what, steps] of cases) {
+    const watch = k.ev(BAR_GAP(1300));
+    for (const st of steps) typeof st === "number" ? await k.sleep(st) : await k.ev(`(${st},1)`);
+    const g = await watch;
+    t.motion(Math.min(...g) >= 11 && Math.max(...g) <= 13, `${what}: the bar stays 12 px above the plate`, {
+      min: Math.min(...g),
+      max: Math.max(...g),
+      end: g.at(-1),
+    });
+    await k.sleep(900);
+  }
+}
+tabBarFollowsThePlate.opts = { step: 0.05 };

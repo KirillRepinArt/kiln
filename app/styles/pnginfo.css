@@ -10,11 +10,16 @@
 .rpanel.paneled .pwrap {
   padding: var(--space-5);
 }
-/* a place to drop: a plate with the dashed line inset (the outline rule) */
+/* a place to drop (the outline rule): the panel itself is the plate, the dashed line inset on it. Empty: the whole panel;
+   with a picture read, it comes back over the content while a file is dragged over the panel (2026-10-27) */
 .drop {
-  position: relative;
-  background: var(--white-3);
-  border-radius: var(--r-panel);
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   padding: var(--space-7);
   text-align: center;
   color: var(--muted);
@@ -34,12 +39,16 @@
 .drop.over::after {
   border-color: var(--white-70);
 }
-.pwrap:has(.pout:empty) .drop {
-  flex: 1;
+.pwrap.loaded .drop {
+  display: none;
+}
+.pwrap.loaded.dragging .drop {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-} /* nothing loaded: the whole panel is the drop target */
+  background: color-mix(in oklab, var(--panel) 88%, transparent);
+}
+.pwrap:not(.loaded) .pact {
+  display: none;
+} /* nothing read: nothing to send */
 .pout {
   flex: 1;
   overflow: auto;
@@ -129,6 +138,8 @@
 }
 #pClear {
   margin-left: 0;
+}
+#pChoose {
   margin-right: auto;
 }
 .pi-raw {

@@ -562,3 +562,43 @@ export async function promptMovesWithThePicture(k, t) {
     { early, final },
   );
 }
+
+/* PNG Info's drop area (2026-10-27, the user: "logically the same — inset from the panel"): the panel is the plate, the
+   dashed line 12 px inside it; once a PNG is read, a file dragged anywhere over the panel brings the line back */
+const PNG_WITH_PARAMS = `(async()=>{
+  const c=document.createElement("canvas");c.width=60;c.height=80;c.getContext("2d").fillRect(0,0,60,80);
+  const png=new Uint8Array(await (await new Promise(r=>c.toBlob(r,"image/png"))).arrayBuffer());
+  const data=new TextEncoder().encode("parameters"+String.fromCharCode(0)+"a quiet harbour"+String.fromCharCode(10)+"Steps: 4, Seed: 12345, Size: 60x80");
+  const crcT=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;crcT[n]=c>>>0}
+  const crc=b=>{let c=0xffffffff;for(const x of b)c=crcT[(c^x)&255]^(c>>>8);return (c^0xffffffff)>>>0};
+  const typ=new TextEncoder().encode("tEXt"),ch=new Uint8Array(12+data.length),dv=new DataView(ch.buffer);
+  dv.setUint32(0,data.length);ch.set(typ,4);ch.set(data,8);dv.setUint32(8+data.length,crc(new Uint8Array([...typ,...data])));
+  const out=new Uint8Array(png.length+ch.length);out.set(png.slice(0,33));out.set(ch,33);out.set(png.slice(33),33+ch.length);
+  const dt=new DataTransfer();dt.items.add(new File([out],"look.png",{type:"image/png"}));
+  return dt})()`;
+export async function pngInfoDropPanel(k, t) {
+  await k.ev(`(document.querySelector('.tab[data-v="png"]').click(),1)`);
+  await k.sleep(1200);
+  const gap =
+    await k.ev(`(()=>{const p=$("rpanel").getBoundingClientRect(),l=getComputedStyle($("drop"),"::after"),d=$("drop").getBoundingClientRect();
+    return [d.left-p.left+parseFloat(l.left), d.top-p.top+parseFloat(l.top), p.right-d.right+parseFloat(l.right)].map(Math.round)})()`);
+  t.ok(
+    gap.every(g => g >= 12 && g <= 13),
+    "empty: the line sits 12 px inside the panel (no plate of its own)",
+    gap,
+  );
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".pact")).display==="none"`), "…and nothing to send yet");
+  await k.ev(
+    `${PNG_WITH_PARAMS}.then(dt=>$("pout").dispatchEvent(new DragEvent("drop",{dataTransfer:dt,bubbles:true,cancelable:true})))`,
+  );
+  t.ok(await k.until(`/harbour/.test($("pout").textContent)`, 3000), "a drop anywhere on the panel reads the PNG");
+  t.ok(await k.ev(`getComputedStyle($("drop")).display==="none"`), "read: no drop strip takes room");
+  await k.ev(
+    `($("pout").dispatchEvent(new DragEvent("dragenter",{dataTransfer:new DataTransfer(),bubbles:true,cancelable:true})),1)`,
+  );
+  t.ok(await k.ev(`getComputedStyle($("drop")).display!=="none"`), "a file over the panel: the line comes back");
+  await k.ev(
+    `($("pout").dispatchEvent(new DragEvent("dragleave",{relatedTarget:document.body,bubbles:true,cancelable:true})),1)`,
+  );
+  t.ok(await k.ev(`getComputedStyle($("drop")).display==="none"`), "…and goes when it leaves");
+}

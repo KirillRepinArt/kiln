@@ -33,6 +33,7 @@ export async function readPng(f) {
     el.dataset.u = u;
     el.src = u;
     $("pimg").classList.add("show");
+    drop.parentElement?.classList.add("loaded");
     $("pClear").style.display = "";
   } catch (e) {}
   const b = new Uint8Array(await f.arrayBuffer());
@@ -153,19 +154,25 @@ export function initPnginfo() {
   drop.onclick = () => $("file").click();
   $("file").onchange = e =>
     /** @type {FileList} */ (targetField(e).files)[0] && readPng(/** @type {FileList} */ (targetField(e).files)[0]);
+  $("pChoose").onclick = () => $("file").click();
+  /* the whole panel takes a drop; dragleave fires on every child crossed, so only leaving the panel counts */
+  const wrap = /** @type {HTMLElement} */ (drop.parentElement),
+    over = (/** @type {boolean} */ on) => {
+      wrap.classList.toggle("dragging", on);
+      drop.classList.toggle("over", on);
+    };
   ["dragenter", "dragover"].forEach(t =>
-    drop.addEventListener(t, e => {
+    wrap.addEventListener(t, e => {
       e.preventDefault();
-      drop.classList.add("over");
+      over(true);
     }),
   );
-  ["dragleave", "drop"].forEach(t =>
-    drop.addEventListener(t, e => {
-      e.preventDefault();
-      drop.classList.remove("over");
-    }),
-  );
-  drop.addEventListener("drop", e => {
+  wrap.addEventListener("dragleave", e => {
+    if (!wrap.contains(/** @type {Node | null} */ (e.relatedTarget))) over(false);
+  });
+  wrap.addEventListener("drop", e => {
+    e.preventDefault();
+    over(false);
     const f = /** @type {DataTransfer} */ (e.dataTransfer).files[0];
     if (f) readPng(f);
   });
@@ -175,6 +182,7 @@ export function initPnginfo() {
     el.removeAttribute("src");
     el.dataset.u = "";
     $("pimg").classList.remove("show");
+    drop.parentElement?.classList.remove("loaded");
     const o = $("pout");
     o.classList.remove("raw");
     o.textContent = "";

@@ -795,3 +795,37 @@ export async function tabBarRidesTheMorph(k, t) {
   }
 }
 tabBarRidesTheMorph.opts = { step: 0.05, width: 1800, height: 1000 };
+
+/* both sides go in or out alike (2026-10-27, the user: "as if the horizontal contraction / expansion aren't
+   symmetrical"): measured, one side rode the area's glide, the other the crop, and the box chased the gliding area past
+   its place. Now each axis moves its centre with its size, aimed at where the area ends up */
+export async function morphIsSymmetric(k, t) {
+  await k.job("[fill:446688] tall", { ar: "3:4", steps: 2 });
+  await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 2 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(700); // right after a tab switch the layout jumps instead of gliding: the first browse meets that
+  for (const [what, dir] of [
+    ["16:9 → 3:4", -1],
+    ["3:4 → 16:9", 1],
+  ]) {
+    const r = await k.ev(
+      `new Promise(res=>{const b0=$("frame").getBoundingClientRect(),out=[[b0.left,b0.right]];const t0=performance.now();genNav(${dir});(function f(t){const b=$("frame").getBoundingClientRect();out.push([b.left,b.right]);if(t-t0<700)requestAnimationFrame(f);else res(out)})(performance.now())})`,
+    );
+    const [L0, R0] = r[0],
+      [L1, R1] = r.at(-1),
+      pl = r.map(x => (x[0] - L0) / (L1 - L0)),
+      pr = r.map(x => (x[1] - R0) / (R1 - R0)),
+      skew = Math.max(...pl.map((p, i) => Math.abs(p - pr[i]))),
+      over = Math.max(...pl, ...pr);
+    t.ok(Math.abs(r[1][0] - L0) < 2 && Math.abs(r[1][1] - R0) < 2, `${what}: starts where the picture was`, {
+      before: [L0, R0],
+      first: r[1],
+    });
+    t.ok(Math.abs(L1 - L0) > 40 && Math.abs(R1 - R0) > 40, `${what}: both sides move`, { L0, L1, R0, R1 });
+    t.motion(skew < 0.08, `${what}: …together (left and right equally far along, every frame)`, { skew });
+    t.motion(over < 1.02, `${what}: …and land without overshooting`, { over });
+    await k.sleep(700);
+  }
+}

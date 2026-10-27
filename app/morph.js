@@ -1,14 +1,15 @@
 // @ts-check
-/* Kiln · the picture's crop-and-reveal when its shape changes: each edge moves once, on its own timeline */
+/* Kiln · the picture's crop-and-reveal when its shape changes: each axis moves once, on its own step */
 import { $ } from "./dom.js";
 
-/* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design; per edge since 2026-10-27). Both
-   pictures sit at their own final size: only the frame moves. 1) every edge that moves IN crops the old picture (it is
-   never squeezed); 2) at the overlap of the two pictures the new one takes over (a short cross-fade); 3) every edge that
-   moves OUT reveals more of the new one. An edge that stays where it is never moves — switching between two
-   full-height pictures, only the sides do (it used to close in on a box 12 % smaller than needed, so the height dipped
-   on every switch, the user's note). A step with nothing to do takes no time. Nothing is ever empty: the box is inside
-   the old picture until the swap and inside the new one after it */
+/* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design; per axis since 2026-10-27). Both
+   pictures sit at their own final size, centred: only the frame moves. 1) an axis that shrinks crops the old picture
+   (it is never squeezed); 2) at the overlap of the two pictures the new one takes over (a short cross-fade); 3) an axis
+   that grows reveals more of the new one. An axis that keeps its size never changes it — switching between two
+   full-height pictures, only the width moves (it used to close in on a box 12 % smaller than needed, so the height
+   dipped on every switch, the user's note). Each axis moves its centre with its size, so both sides go in or out alike.
+   A step with nothing to do takes no time. Nothing is ever empty: the box is inside the old picture until the swap and
+   inside the new one after it */
 const MORPH = {
   a: 180, // the crop (accelerating into the swap)
   s: 80, // the cross-fade at the overlap
@@ -41,11 +42,36 @@ function bez(x1, y1, x2, y2) {
 const eIn = bez(0.3, 0, 0.8, 0.15),
   eOut = bez(0.05, 0.7, 0.1, 1),
   eBoth = bez(0.2, 0, 0, 1);
+/* where the picture area's left edge will be once the layout's glide ends (screen px), or null to follow it live. The
+   area hugs the picture, so a shape change also glides the grid's columns; a morph aimed at the area's CURRENT place
+   chased a moving target and overshot it by ~15 px, then came back (2026-10-27). The grid's columns are known: the
+   prompt column, the gap, the picture column (--pw / --rw, set by the layout) and the margins either side, which share
+   what's left unless set in px */
+function areaLeftAtEnd() {
+  const app = /** @type {HTMLElement | null} */ (document.querySelector(".app"));
+  if (!app || app.classList.contains("stacked")) return null;
+  const cs = getComputedStyle(app),
+    v = (/** @type {string} */ n) => cs.getPropertyValue(n).trim(),
+    pxOf = (/** @type {string} */ x) => (x.endsWith("px") ? parseFloat(x) : null),
+    pw = parseFloat(v("--pw")),
+    rw = parseFloat(v("--rw")),
+    gap = parseFloat(v("--gap-area")),
+    padL = parseFloat(cs.paddingLeft),
+    inner = app.clientWidth - padL - parseFloat(cs.paddingRight);
+  if (!(pw > 0 && rw > 0 && gap >= 0)) return null;
+  let mL = pxOf(v("--mL")),
+    mR = pxOf(v("--mR"));
+  const shares = (mL == null ? 1 : 0) + (mR == null ? 1 : 0),
+    free = Math.max(0, inner - pw - gap - rw - (mL || 0) - (mR || 0));
+  if (mL == null) mL = shares ? free / shares : 0;
+  return app.getBoundingClientRect().left + padL + mL + (app.classList.contains("pright") ? 0 : pw + gap);
+}
 /* the crop and the reveal run on the SCREEN: the panel the frame sits in may be gliding (the pair re-centring), and a
    morph written in the panel's coordinates drifted with it — lopsided. Each frame the box is placed on screen and the
    panel's current offset taken off. The target is read from the frame's data (sizeFrame keeps it there while a morph
    runs, so a re-layout mid-way just updates where it lands) */
-/** @param {{ w: number, h: number, l: number, t: number }} o where the picture was (its old box, in its panel) */
+/** @param {{ w: number, h: number, l: number, t: number, x?: number, y?: number }} o where the picture was: its old box
+ * in its panel, and (x, y) its top-left on screen, measured before the switch moved anything */
 export function frameMorph(o) {
   const f = $("frame"),
     x = $("cvx");
@@ -59,14 +85,11 @@ export function frameMorph(o) {
     }),
     n0 = T0();
   if (!(n0.w > 0 && n0.h > 0 && o.w > 0 && o.h > 0)) return;
-  /* the four edges, old and new (in the panel; both pictures move with it alike): which way does each go? */
-  const edges = (/** @type {{ w: number, h: number, l: number, t: number }} */ b) => [b.l, b.t, b.l + b.w, b.t + b.h],
-    E0 = edges(o),
-    E1 = edges(n0),
-    dirIn = [E1[0] > E0[0], E1[1] > E0[1], E1[2] < E0[2], E1[3] < E0[3]], // moves in = crops the old picture
-    moves = E0.map((v, i) => Math.abs(E1[i] - v) > 0.5),
-    crop = moves.some((m, i) => m && dirIn[i]),
-    reveal = moves.some((m, i) => m && !dirIn[i]);
+  /* per axis, which way does the picture go? Shrinks = crops the old picture, grows = reveals the new one */
+  const shrink = [n0.w < o.w - 0.5, n0.h < o.h - 0.5],
+    grow = [n0.w > o.w + 0.5, n0.h > o.h + 0.5],
+    crop = shrink[0] || shrink[1],
+    reveal = grow[0] || grow[1];
   const A = crop ? (reveal ? MORPH.a : MORPH.one) : 0,
     S = MORPH.s,
     B = reveal ? (crop ? MORPH.b : MORPH.one) : 0,
@@ -99,7 +122,6 @@ export function frameMorph(o) {
       x.getAnimations().forEach(q => q.cancel());
     };
   }
-  /* the old box on screen, where the morph started (the panel may glide under it from here on) */
   /* the tab bar sits on the picture's top edge: during the morph it rides that edge frame by frame (its own glide ran
      ahead and crossed over the picture, the user's note 2026-10-27) */
   const tb = /** @type {HTMLElement | null} */ (document.querySelector(".tabs"));
@@ -108,27 +130,44 @@ export function frameMorph(o) {
     if (tb.style.transform) tb.style.transform = `translate(${tb.dataset.dx || 0}px,${Math.round(Math.max(0, o.t))}px)`;
   }
   const st0 = $("stage").getBoundingClientRect(),
-    O = [E0[0] + st0.left, E0[1] + st0.top, E0[2] + st0.left, E0[3] + st0.top];
+    /* the old box on screen, as [centre, size] per axis */
+    O = [
+      /* measured on screen before the change: right after a tab switch the layout jumps instead of gliding, and the old
+         box placed in the NEW area showed the old picture 261 px off for the first frames (2026-10-27) */
+      [(o.x ?? st0.left + o.l) + o.w / 2, o.w],
+      [(o.y ?? st0.top + o.t) + o.h / 2, o.h],
+    ];
   (function step(now) {
     const e = now - t0,
       st = $("stage").getBoundingClientRect(),
       n = T0();
     f.style.setProperty("--nw", px(n.w));
     f.style.setProperty("--nh", px(n.h));
-    const N = [n.l + st.left, n.t + st.top, n.l + n.w + st.left, n.t + n.h + st.top],
+    const aL = areaLeftAtEnd(),
+      sL = aL == null ? st.left : aL + (st.left - $("right").getBoundingClientRect().left), // the area's left, at the end
+      N = [
+        [sL + n.l + n.w / 2, n.w],
+        [st.top + n.t + n.h / 2, n.h],
+      ],
       pA = A ? eA(Math.min(1, e / A)) : 1,
       pB = B ? eB(Math.min(1, Math.max(0, e - A - S) / B)) : 1,
-      /* each edge on its own step: in = during the crop, out = during the reveal; an edge that keeps its place in the
-         area rides the area as it glides (the area hugs the picture: holding such an edge where it was on screen left
-         it behind, then it caught up during the reveal — a second shrink, 2026-10-27) */
-      Bx = O.map((v, i) => v + (N[i] - v) * (!moves[i] ? 1 : dirIn[i] ? pA : pB));
+      pAll = eBoth(Math.min(1, e / T)),
+      /* each axis moves its CENTRE and its SIZE on one clock — the crop if it shrinks, the reveal if it grows, the whole
+         move if only its place changes (the area hugs the picture and glides with it). Edge by edge, one side rode the
+         area's glide and the other the crop: lopsided (the user, 2026-10-27: "not symmetrical") */
+      Bx = O.map(([c, z], i) => {
+        const q = shrink[i] ? pA : grow[i] ? pB : pAll;
+        return [c + (N[i][0] - c) * q, z + (N[i][1] - z) * q];
+      }),
+      L = Bx[0][0] - Bx[0][1] / 2,
+      Tp = Bx[1][0] - Bx[1][1] / 2;
     if (e < T) {
-      f.style.left = px(Bx[0] - st.left);
-      f.style.top = px(Bx[1] - st.top);
-      f.style.width = px(Bx[2] - Bx[0]);
-      f.style.height = px(Bx[3] - Bx[1]);
+      f.style.left = px(L - st.left);
+      f.style.top = px(Tp - st.top);
+      f.style.width = px(Bx[0][1]);
+      f.style.height = px(Bx[1][1]);
       if (tb && tb.style.transform)
-        tb.style.transform = `translate(${tb.dataset.dx || 0}px,${Math.round(Math.max(0, Bx[1] - st.top))}px)`;
+        tb.style.transform = `translate(${tb.dataset.dx || 0}px,${Math.round(Math.max(0, Tp - st.top))}px)`;
       /** @type {any} */ (frameMorph).raf = requestAnimationFrame(step);
     } else {
       f.classList.remove("morph");

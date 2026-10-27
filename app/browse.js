@@ -22,7 +22,15 @@ export function genNav(dir, dry) {
     return false; /* past the newest: out of the Gallery, or off the finished picture — to the render / the empty frame */
   if (!dry) {
     const fs = $("frame").style,
-      o = { w: parseFloat(fs.width), h: parseFloat(fs.height), l: parseFloat(fs.left), t: parseFloat(fs.top) };
+      sr = $("frame").getBoundingClientRect(),
+      o = {
+        w: parseFloat(fs.width),
+        h: parseFloat(fs.height),
+        l: parseFloat(fs.left),
+        t: parseFloat(fs.top),
+        x: sr.left, // on screen, before anything moves (morph.js)
+        y: sr.top,
+      };
     PV.dir = dir;
     if (n >= L.length) pv("close", "arrow");
     else pv("browse", L[n]);

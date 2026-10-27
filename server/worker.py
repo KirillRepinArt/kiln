@@ -7,7 +7,7 @@ import threading
 import time
 from pathlib import Path
 
-from . import images
+from . import durable, images
 from .backends import Backend, BackendError, Progress
 from .config import Paths
 from .jobqueue import Job, JobQueue
@@ -104,7 +104,7 @@ class Worker:
         with self.queue.lock:
             free = again.endswith(".png") and not (self.paths.out / again).exists()
             name = again if free else self.pictures.next_filename(sp.get("name", ""), r.seed, take=True)
-        (self.paths.out / name).write_bytes(img)
+        durable.write_bytes(self.paths.out / name, img)  # a crash mid-save left a picture of zeros
         with self.queue.lock:
             job.update(file=name, seed_used=r.seed, infotext=r.infotext)
         return "done"
@@ -115,7 +115,7 @@ class Worker:
         image = src.read_bytes()
         scale = sp.get("scale", 2)
         out = src.with_name(f"{src.stem}_x{scale}.png")
-        out.write_bytes(self.backend.upscale(image, sp["upscaler"], scale))
+        durable.write_bytes(out, self.backend.upscale(image, sp["upscaler"], scale))
         with self.queue.lock:
             job["file"] = out.name
         return "done"

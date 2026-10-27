@@ -9,6 +9,8 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+from . import durable
+
 
 def slugify(name: str) -> str:
     s = re.sub(r"[^\w]+", "-", name.lower(), flags=re.UNICODE).strip("-")
@@ -33,6 +35,6 @@ def next_filename(
         n = max([*nums, used.get(slug, 0)], default=0) + 1
         if take:
             used[slug] = n
-            names_file.write_text(json.dumps(used), encoding="utf-8")
+            durable.write_text(names_file, json.dumps(used))
         return f"{slug}-{n:03d}.png"
     return f"kiln-{datetime.datetime.now():%Y%m%d-%H%M%S}-{seed}.png"

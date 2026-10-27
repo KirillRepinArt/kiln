@@ -10,7 +10,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from . import images, naming, recyclebin
+from . import durable, images, naming, recyclebin
 from .config import Paths
 from .errors import ApiError
 from .jobqueue import FINISHED, Job, JobQueue
@@ -110,7 +110,7 @@ class Pictures:
             data = images.drop_text(src.read_bytes(), "kiln_name")
             if name:
                 data = images.add_text(data, "kiln_name", name)
-            (out / new).write_bytes(data)
+            durable.write_bytes(out / new, data)
             try:
                 src.unlink()
             except OSError:
@@ -168,7 +168,7 @@ class Pictures:
             img = images.add_text(img, "parameters", j["infotext"])
         if (j.get("spec") or {}).get("name", "").strip():
             img = images.add_text(img, "kiln_name", j["spec"]["name"].strip())
-        dest.write_bytes(img)
+        durable.write_bytes(dest, img)
         return {"ok": True}
 
     def forget_missing(self) -> None:

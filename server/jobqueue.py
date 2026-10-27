@@ -16,6 +16,7 @@ import time
 from collections.abc import Callable, Iterable
 from typing import Any
 
+from . import durable
 from .config import Paths
 from .timings import Estimate
 
@@ -48,11 +49,24 @@ class JobQueue:
     # ------------------------------------------------------------ saving
     def load(self) -> None:
         f = self.paths.queue_file
-        if f.exists():
+        bak = f.with_name(f.name + ".bak")
+        for src in (f, bak):
+            if not src.exists():
+                continue
             try:
-                self.jobs = json.loads(f.read_text(encoding="utf-8"))
+                self.jobs = json.loads(src.read_text(encoding="utf-8"))
             except (OSError, ValueError) as e:
-                log.warning("queue.json unreadable, starting empty: %s", e)
+                # never written over: kept aside as it was, and the previous list (queue.json.bak) is tried next
+                aside = src.with_name(f"{src.name}.unreadable-{int(time.time())}")
+                log.warning("%s unreadable (%s) — kept as %s", src.name, e, aside.name)
+                try:
+                    src.replace(aside)
+                except OSError:
+                    pass
+                continue
+            if src is bak:
+                log.warning("queue.json was unreadable — the previous list (queue.json.bak) is back")
+            break
         for j in self.jobs:  # a crash mid-job: run it again
             if j["status"] == "running":
                 j.update(status="pending", step=0, progress=0)
@@ -64,14 +78,14 @@ class JobQueue:
 
     def save(self) -> None:
         self.rev += 1
-        tmp = self.paths.queue_file.with_suffix(".tmp")
-        tmp.write_text(json.dumps(self.jobs, ensure_ascii=False, indent=1), encoding="utf-8")
-        tmp.replace(self.paths.queue_file)
+        durable.write_text(
+            self.paths.queue_file, json.dumps(self.jobs, ensure_ascii=False, indent=1), keep_previous=True
+        )
 
     def set_paused(self, paused: bool) -> None:
         with self.lock:
             self.flags["paused"] = paused
-            self.paths.flags_file.write_text(json.dumps(self.flags), encoding="utf-8")
+            durable.write_text(self.paths.flags_file, json.dumps(self.flags))
         self.wake.set()
 
     # ------------------------------------------------------------ looking things up (hold the lock)
@@ -141,7 +155,7 @@ class JobQueue:
             hw = 0
         n = max(hw, max([j["id"] for j in self.jobs], default=0)) + 1
         try:
-            f.write_text(json.dumps({"high": n}), encoding="utf-8")
+            durable.write_text(f, json.dumps({"high": n}))
         except OSError:
             pass
         return n

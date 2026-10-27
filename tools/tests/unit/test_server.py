@@ -177,6 +177,26 @@ class Queue(TempDirs):
         up = q.add_upscale(q.jobs[0], "R-ESRGAN", 2)
         self.assertEqual([j["id"] for j in q.jobs], [ids[0], up, ids[1]])
 
+    def test_a_crash_mid_save_falls_back_to_the_previous_list(self) -> None:
+        q = JobQueue(self.paths)
+        q.add([{"steps": 1}])
+        q.add([{"steps": 1}])  # the second save keeps the first list as queue.json.bak
+        self.paths.queue_file.write_bytes(b"")  # 2026-10-27: a crash left queue.json empty
+        q2 = JobQueue(self.paths)
+        with self.assertLogs("kiln", "WARNING"):
+            q2.load()
+        self.assertEqual([j["id"] for j in q2.jobs], [1])  # the previous list is back, not an empty one
+        aside = list(self.paths.data.glob("queue.json.unreadable-*"))
+        self.assertEqual(len(aside), 1)  # the broken file is kept, never written over
+
+    def test_every_save_keeps_the_previous_list(self) -> None:
+        q = JobQueue(self.paths)
+        q.add([{"steps": 1}])
+        q.add([{"steps": 1}])
+        prev = json.loads((self.paths.data / "queue.json.bak").read_text(encoding="utf-8"))
+        self.assertEqual([j["id"] for j in prev], [1])
+        self.assertFalse((self.paths.data / "queue.json.tmp").exists())
+
     def test_clear_list_then_undo(self) -> None:
         q = JobQueue(self.paths)
         a, b, c, d = q.add([{"steps": 1}] * 4)

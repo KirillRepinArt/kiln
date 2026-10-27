@@ -6,6 +6,7 @@ import json
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
+from . import durable
 from .config import Paths
 
 Job = dict[str, Any]
@@ -105,9 +106,7 @@ class Timings:
 
     def save_history(self) -> None:
         del self.history[:-HISTORY_KEEP]
-        tmp = self.paths.history_file.with_suffix(".tmp")
-        tmp.write_text(json.dumps(self.history), encoding="utf-8")
-        tmp.replace(self.paths.history_file)
+        durable.write_text(self.paths.history_file, json.dumps(self.history))
 
     def estimate(self, spec: Spec) -> Estimate:
         return estimate_from(self.history, self.stats["sec_per_step"], spec)
@@ -119,6 +118,6 @@ class Timings:
         per = (job["finished"] - job["started"]) / max(1, sp["steps"])
         old = self.stats["sec_per_step"].get(b)
         self.stats["sec_per_step"][b] = round(per if old is None else old * 0.7 + per * 0.3, 2)
-        self.paths.stats_file.write_text(json.dumps(self.stats), encoding="utf-8")
+        durable.write_text(self.paths.stats_file, json.dumps(self.stats))
         self.history.append(run_record(job, setup_of(sp), job.get("warm")))
         self.save_history()

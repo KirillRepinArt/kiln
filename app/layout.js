@@ -390,6 +390,10 @@ export function sizeFrame() {
   pr.style.width = w + "px";
   pr.style.top = top + h + SPACE.part + "px";
   pr.style.setProperty("--tw", w + "px");
+  /* the Gallery's "Show prompt": centred under the picture, in the room kept for the status row */
+  const sp = $("showP");
+  sp.style.left = left + w / 2 + "px";
+  sp.style.top = top + h + SPACE.part + "px";
   requestAnimationFrame(layoutLeft);
 }
 /* Vertical: the picture block sits between two equal gaps — the title starts as far under it (or under its progress

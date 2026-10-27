@@ -214,21 +214,81 @@ export async function promptEdges(k, t) {
   );
 }
 
-export async function narrowReuseRow(k, t) {
-  await k.job("[fill:446688] one", { steps: 2 });
+/* modeless (2026-10-27, the user): a shown picture's prompt has no bar — change anything (a pill, a LoRA, the text) and
+   it becomes your draft (random seed, Undo); ✕ sits at the end of its file name and the title never moves */
+export async function peekModeless(k, t) {
+  await k.job("[fill:446688] one", { steps: 2, name: "Harbour" });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
-  await k.ev(`(S.lay.pw=380,sizeFrame(),layoutLeft(),document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.ev(`(S.steps=7,S.ar="16:9",S.pname="",$("pname").value="",P.value="something else",draft=P.value,save(),1)`);
+  await k.sleep(300);
+  const y0 = (await k.rect("#pname")).top;
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(800);
+  t.ok(!(await k.ev(`!!document.getElementById("peekbar")`)), "no bar above the box");
+  t.near((await k.rect("#pname")).top, y0, 1, "the title stays where it was");
+  const line = await k.ev(`({suf:$("fnSuf").textContent,x:getComputedStyle($("pkX")).display,
+    gap:$("pkX").getBoundingClientRect().left-$("fnSuf").getBoundingClientRect().right})`);
+  t.ok(line.suf === "-001.png" && line.x !== "none", "after the title: its number and .png, then ✕", line);
+  t.ok(line.gap > 4 && line.gap < 12, "✕ attached to the file name (a tight gap)", line);
+  await k.shot("peek-line");
+  // a pill: picking a value makes the picture your draft first, then applies
+  await k.ev(`($("pST").click(),1)`);
+  await k.sleep(200);
+  t.ok(await k.ev(`peekJob!==null`), "opening a pop-up changes nothing");
+  await k.ev(`(document.querySelector('#popST .qb[data-q="8"]').click(),1)`);
+  await k.sleep(300);
+  const s = await k.ev(`({peek:!!peekJob,steps:S.steps,ar:S.ar,name:S.pname,seed:S.seedMode,draft})`);
+  t.ok(
+    !s.peek && s.steps === 8 && s.ar === "3:4" && s.name === "Harbour" && s.seed === "random" && /one/.test(s.draft),
+    "a pill changed: the picture is your draft (its settings, series, a random seed), then the change",
+    s,
+  );
+  t.ok(/Undo/.test(await k.ev(`$("toast").textContent`)), "…with Undo");
+  // ✕ closes the prompt; in the Gallery it stays closed as you browse, and "Show prompt" under the picture brings it back
+  await k.job("[fill:884422] two", { steps: 2 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 20000);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(600);
+  await k.ev(`($("pkX").click(),1)`);
+  await k.sleep(300);
+  t.ok(
+    await k.ev(`peekJob===null&&PV.browse!==null&&$("showP").classList.contains("show")`),
+    "✕: your draft; Show prompt",
+  );
+  const sp = await k.rect("#showP"),
+    fr = await k.rect("#frame");
+  t.near(sp.left + sp.width / 2, fr.left + fr.width / 2, 2, "…centred under the picture");
+  await k.shot("show-prompt");
+  t.ok(sp.top > fr.bottom && sp.top - fr.bottom < 24, "…just under it", { gap: sp.top - fr.bottom });
+  await k.ev(`(genNav(-1),1)`);
+  await k.sleep(400);
+  t.ok(await k.ev(`peekJob===null&&$("showP").classList.contains("show")`), "browsing on: still closed");
+  await k.ev(`($("showP").click(),1)`);
+  await k.sleep(300);
+  t.ok(
+    await k.ev(`peekJob!==null&&peekJob.id===PV.browse&&!$("showP").classList.contains("show")`),
+    "Show prompt: back",
+  );
+}
+
+/* the narrowest box: title, file name and ✕ share the line with the size buttons — the file name goes first, ✕ never,
+   and the line keeps a part gap from the size buttons (box controls, not the prompt's) */
+export async function narrowNameLine(k, t) {
+  await k.job("[fill:446688] one", { steps: 2, name: "A rather long series name" });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  await k.ev(`(S.lay.pw=360,sizeFrame(),layoutLeft(),document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.mouse(2, 2);
   await k.sleep(1200);
-  const r = await k.ev(
-    `(()=>{const a=$("peekbar").getBoundingClientRect(),b=$("hmodes").getBoundingClientRect();return{narrow:$("ltitle").classList.contains("tnarrow"),overlap:!(a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top),sameRow:Math.abs((a.top+a.bottom)/2-(b.top+b.bottom)/2)<6}})()`,
-  );
+  const r = await k.ev(`(()=>{const x=$("pkX").getBoundingClientRect(),h=$("hmodes").getBoundingClientRect(),
+    n=$("pname").getBoundingClientRect();return{gap:h.left-x.right,x:getComputedStyle($("pkX")).display,
+    nosuf:document.querySelector(".plbl").classList.contains("nosuf"),noext:document.querySelector(".plbl").classList.contains("noext"),sameRow:Math.abs((x.top+x.bottom)/2-(n.top+n.bottom)/2)<3}})()`);
   t.ok(
-    r.narrow && !r.overlap && r.sameRow,
-    "a narrow box: the Reuse bar and the size buttons share one row, no overlap",
+    r.x !== "none" && r.gap >= 11.5 && r.sameRow,
+    "✕ stays, on the title's line, a part gap from the size buttons",
     r,
   );
-  await k.shot("narrow-row");
+  t.ok(r.noext && r.nosuf, "the file name gave way before the title: .png first, then the number", r);
+  await k.shot("narrow-name-line");
 }
 
 export async function tabSwitchKeepsTabs(k, t) {

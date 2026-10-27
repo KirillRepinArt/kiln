@@ -483,7 +483,7 @@ export async function simpleRename(k, t) {
     await k.ev(
       `$("fnPre").textContent==="#"+lastDone().id&&$("pname").value==="Castle"&&$("fnSuf").textContent==="-001.png"&&document.querySelector(".plbl").classList.contains("fnon")`,
     ),
-    "hovering the title: it stays as it is, its number and .png appear beside it",
+    "a shown picture's title: as it is, its number and .png beside it; hovering adds its #",
     [await k.ev(`$("fnPre").textContent`), await k.ev(`$("pname").value`), await k.ev(`$("fnSuf").textContent`)],
   );
   t.ok(
@@ -522,13 +522,13 @@ export async function reuseLeavesClean(k, t) {
   await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),genNav(-1),1)`);
   await k.sleep(500);
-  await k.ev(`($("pkPrompt").style.display==="none"?$("pkAll").click():$("pkPrompt").click(),1)`);
+  await k.ev(`(reuse(),1)`);
   await k.sleep(600);
   t.ok(
     await k.ev(
       `PV.browse===null&&PV.still&&PV.still.kind==="reference"&&peekJob===null&&$("frame").classList.contains("has")&&!P.readOnly&&document.querySelector(".tab.on").dataset.v==="gen"`,
     ),
-    "Reuse from the Gallery: Generating, you edit your draft with that picture on show as the reference",
+    "Edit from the Gallery: Generating, you edit your draft with that picture on show as the reference",
   );
   await k.ev(`(closeShown(),1)`);
   await k.sleep(400);
@@ -668,10 +668,10 @@ export async function lateFixes(k, t) {
   await k.sleep(400);
   t.ok(await k.ev(`$("stage").classList.contains("tools")`), "hovering the edit buttons' column shows them");
   await k.mouse(2, 2);
-  // the Reuse bar sits one tight gap (8 px) above the box: attached to it
-  const pb = await R(k, "#peekbar"),
+  // the name line (here a shown picture's: title, file name, ✕) ends one tight gap (8 px) above the box: attached to it
+  const nl = await R(k, "#ltitle"),
     L = await R(k, "#left");
-  t.near(L.top - pb.bottom, 8, 1, "the Reuse bar one tight gap above the prompt box", { gap: L.top - pb.bottom });
+  t.near(L.top - nl.bottom, 8, 1, "the name line one tight gap above the prompt box", { gap: L.top - nl.bottom });
   // Vertical: a side edge scales the picture
   await k.ev(`(endPeek(),setDock("below"),1)`);
   await k.until(`!document.body.classList.contains("laysnap")`, 4000, 50);

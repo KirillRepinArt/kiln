@@ -15,7 +15,7 @@ import { BAR, lay, setDock, sizeFrame, tbW } from "./layout.js";
 import { api, st } from "./live.js";
 import { checkStyles } from "./livestyles.js";
 import { renderLoras } from "./loras.js";
-import { endPeek, fnShow, loadJob, peekHide, reuse, updPrompt } from "./peek.js";
+import { editFirst, endPeek, fnLayout, fnShow, loadJob, peekHide, reuse, updPrompt } from "./peek.js";
 import { PV, browsed, justDone, pvSync, setJustDone } from "./picstate.js";
 import { __imgsN, img, missing } from "./pictures.js";
 import { closePops, renderPills } from "./pills.js";
@@ -33,20 +33,15 @@ import { closeShown, closeViewer, openViewer } from "./viewer.js";
 export function installTestBridge() {
   const props = {
     $: { get: () => $ },
-    BAR: { get: () => BAR() },
-    LORAS: { get: () => LORAS },
-    P: { get: () => P },
-    PV: { get: () => PV },
-    QS: { get: () => QS },
-    S: { get: () => S },
     __imgsN: { get: () => __imgsN },
     act: { get: () => act },
     addJobs: { get: () => addJobs },
     api: { get: () => api },
     applyTheme: { get: () => applyTheme },
+    BAR: { get: () => BAR() },
     blockSaves: { get: () => blockSaves },
-    browseTo: { get: () => browseTo },
     browsed: { get: () => browsed },
+    browseTo: { get: () => browseTo },
     checkStyles: { get: () => checkStyles },
     chipsH: { get: () => chipsH },
     closePops: { get: () => closePops },
@@ -57,7 +52,9 @@ export function installTestBridge() {
     doneList: { get: () => doneList },
     draft: { get: () => draft, set: (/** @type {any} */ v) => setDraft(v) },
     drop: { get: () => drop },
+    editFirst: { get: () => editFirst },
     endPeek: { get: () => endPeek },
+    fnLayout: { get: () => fnLayout },
     fnShow: { get: () => fnShow },
     frame: { get: () => frame },
     genNav: { get: () => genNav },
@@ -69,6 +66,7 @@ export function installTestBridge() {
     lay: { get: () => lay },
     layoutLeft: { get: () => layoutLeft },
     loadJob: { get: () => loadJob },
+    LORAS: { get: () => LORAS },
     lyFrozen: {
       get: () => card.frozen,
       set: (/** @type {any} */ v) =>
@@ -84,11 +82,14 @@ export function installTestBridge() {
     nameFrom: { get: () => nameFrom },
     nameUI: { get: () => nameUI },
     openViewer: { get: () => openViewer },
+    P: { get: () => P },
     parsed: { get: () => parsed },
     peekHide: { get: () => peekHide },
     peekJob: { get: () => peekJob, set: (/** @type {any} */ v) => setPeekJob(v) },
     poll: { get: () => poll },
+    PV: { get: () => PV },
     pvSync: { get: () => pvSync },
+    QS: { get: () => QS },
     qsAnchor: { get: () => qsAnchor, set: (/** @type {any} */ v) => setQsAnchor(v) },
     qsClear: { get: () => qsClear },
     qsDelete: { get: () => qsDelete },
@@ -99,6 +100,7 @@ export function installTestBridge() {
     renderPills: { get: () => renderPills },
     reuse: { get: () => reuse },
     rgba: { get: () => rgba },
+    S: { get: () => S },
     save: { get: () => save, set: () => blockSaves() /* a test replacing save = no more saves in this page */ },
     seen: { get: () => seen },
     setDock: { get: () => setDock },

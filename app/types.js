@@ -94,7 +94,7 @@
  * @property {string} theme
  * @property {boolean} oneFace       only one "people" LoRA on at a time
  * @property {string} lfilter        the LoRA tab's folder filter
- * @property {boolean} [keepSeed]    Reuse / Vary keep the seed
+ * @property {boolean} [keepSeed]    PNG Info's Send to prompt keeps the image's seed
  * @property {boolean} [privacy]     the privacy cover is on (sticky)
  * @property {number | null} [seenDone]  the newest finished job you've seen (for "finished while you were away")
  * @property {number | null} [clearedId] the finished picture you closed with ✕

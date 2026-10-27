@@ -25,7 +25,7 @@
 } /* Aurora's halo round the picture (skins.js makeHalo) */
 
 /* ======================= glass: the material the UI is made of =======================
-   Settings → Material (Solid is the alternative). Three thicknesses: regular (prompt box, tab bar, Reuse bar, pop-ups,
+   Settings → Material (Solid is the alternative). Three thicknesses: regular (prompt box, tab bar, pop-ups,
    toasts, tooltips) gathers the background's light; thick (panels full of text) frosts more; thin (every control and
    row) is a light capsule. Glass that holds glass of its own carries it on a ::before layer, not on itself: in
    Chromium an element with a backdrop-filter becomes the backdrop of its children, so glass inside glass could not blur
@@ -33,13 +33,11 @@
 body.glass .left,
 body.glass .rpanel.paneled,
 body.glass .mcard,
-body.glass .seg,
-body.glass .peekbar {
+body.glass .seg {
   background: transparent;
   isolation: isolate;
   border-color: var(--white-12);
 }
-body.glass .ltitle .peekbar,
 body.glass .mcard {
   position: relative;
 }
@@ -47,7 +45,6 @@ body.glass .left::before,
 body.glass .rpanel.paneled::before,
 body.glass .mcard::before,
 body.glass .seg::before,
-body.glass .peekbar::before,
 body.glass .pill::before,
 body.glass .play::before {
   content: "";
@@ -60,7 +57,6 @@ body.glass .play::before {
 /* regular */
 body.glass .left::before,
 body.glass .seg::before,
-body.glass .peekbar::before,
 body.glass .frame:not(.has)::before {
   background: color-mix(in oklab, rgba(var(--glass-regular), var(--gta, 0.28)), var(--a1) 6%);
   -webkit-backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
@@ -151,10 +147,10 @@ body.glass .play.gen:hover::before {
 }
 body.glass .qb:not(.on),
 body.glass .btn:not(.pri),
-body.glass .peekbar button:not(#pkAll),
 body.glass .qsec button,
 body.glass .prog .stop,
 body.glass .prog .resume,
+body.glass .showp,
 body.glass .chip,
 body.glass .fchips button:not(.on),
 body.glass .iconbtn,
@@ -172,12 +168,12 @@ body.glass .search {
 body.glass .btn:not(.pri):hover,
 body.glass .chip:hover,
 body.glass .prog .stop:hover,
+body.glass .showp:hover,
 body.glass .qb:not(.on):hover,
 body.glass .iconbtn:hover,
 body.glass .fchips button:not(.on):hover,
 body.glass .hmodes button:not(.on):hover,
-body.glass .qi .x:hover,
-body.glass .peekbar button:not(#pkAll):hover {
+body.glass .qi .x:hover {
   background: color-mix(in oklab, var(--white-16), var(--cool) 18%);
 }
 body.glass .hmodes button:not(.on),
@@ -292,10 +288,9 @@ body.glass .left .pwrapT .cm-editor {
 body.glass .left .privov {
   bottom: var(--ctrlh, var(--space-16));
 }
-/* main actions (Start, Send to prompt, Reuse all, Save name): tinted glass — the theme gradient, see-through, with
+/* main actions (Start, Send to prompt, Save name): tinted glass — the theme gradient, see-through, with
    the glass's light edge. Nothing to queue / a job running: Start is plain thin glass */
 body.glass .btn.pri,
-body.glass .peekbar #pkAll,
 body.glass .play:not(.off),
 body.glass .pnsave {
   background: linear-gradient(
@@ -312,8 +307,7 @@ body.glass .pnsave {
     0 0 0 1px var(--white-14),
     0 2px 8px var(--black-25);
 }
-body.glass .btn.pri,
-body.glass .peekbar #pkAll {
+body.glass .btn.pri {
   position: relative;
   color: var(--ink);
   font-weight: 600;
@@ -325,8 +319,7 @@ body.glass .pnsave {
     0 2px 8px var(--black-25);
   padding: var(--space-1) var(--space-3);
 }
-body.glass .btn.pri:hover,
-body.glass .peekbar #pkAll:hover {
+body.glass .btn.pri:hover {
   filter: brightness(1.1) saturate(1.05);
 }
 body.glass .play {

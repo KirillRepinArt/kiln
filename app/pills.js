@@ -1,10 +1,11 @@
 // @ts-check
 /* Kiln · the pills under the prompt: size, ratio, steps, seed, count — their pop-ups, sliders and steppers */
-import { fmt, toast } from "./boot.js";
+import { esc, fmt, toast } from "./boot.js";
 import { $, field, hit, qa, target, targetField } from "./dom.js";
 import { sizeFrame } from "./layout.js";
 import { pv } from "./picstate.js";
 import { RATIOS, SEC_PER_STEP, SIZES } from "./presets.js";
+import { editFirst } from "./peek.js";
 import { peekJob } from "./prompt.js";
 import { IC, S, save } from "./state.js";
 
@@ -28,13 +29,21 @@ function idleText() {
   $("idleT").textContent = `Next: ${S.ar} · ${w}×${h}`;
   $("idleS").textContent = `Estimated time: ~${fmt(S.steps * SEC_PER_STEP[S.mp])}`;
 } /* live.js keeps it current */
+/** the lock on the Seed pill and in its pop-up */
+const LOCK =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 export function renderPills() {
   idleText();
-  const pk = typeof peekJob !== "undefined" && peekJob; // peeking: the pills show that job's own settings
+  /* a shown job: the pills show its own settings; picking a value makes it your draft first (editFirst) */
+  const pk = typeof peekJob !== "undefined" && peekJob;
   const v = pk
-    ? { mp: pk.mp, ar: pk.ar, steps: pk.steps, seed: pk.seed != null ? String(pk.seed) : "—", n: 1 }
-    : { mp: S.mp, ar: S.ar, steps: S.steps, seed: S.seedMode === "random" ? "Random" : String(S.seed), n: S.n };
-  $("pSD").dataset.tip = pk ? "Click to copy this seed" : "Seed — random each job, or fixed";
+    ? { mp: pk.mp, ar: pk.ar, steps: pk.steps, seed: pk.seed ?? S.seed, locked: false, n: 1 }
+    : { mp: S.mp, ar: S.ar, steps: S.steps, seed: S.seed, locked: S.seedMode === "fixed", n: S.n };
+  $("pSD").dataset.tip = pk
+    ? "This picture's seed — lock it to use it again"
+    : v.locked
+      ? "Seed: locked — every job uses it (×N counts up)"
+      : "Seed: a random one for each job";
   $("vMP").textContent = v.mp + " MP";
   {
     const [pw, ph] = (SIZES[v.mp] || {})[v.ar] || [];
@@ -42,26 +51,28 @@ export function renderPills() {
   }
   $("vAR").innerHTML = v.ar + '<span class="w"> Ratio</span>';
   $("vST").innerHTML = v.steps + '<span class="w"> Steps</span>';
-  $("vSD").textContent = v.seed;
+  $("vSD").innerHTML = pk ? esc(String(v.seed)) : v.locked ? `${v.seed}<span class="lk">${LOCK}</span>` : "Random";
   $("vN").textContent = "×" + v.n;
   $("popMP").innerHTML = ["0.5", "1.0", "1.5", "2.0"]
     .map(
       m =>
-        `<div class="opt ${m === S.mp ? "on" : ""}" data-v="${m}">${m} MP <small>~${SEC_PER_STEP[m]}s/step</small></div>`,
+        `<div class="opt ${m === v.mp ? "on" : ""}" data-v="${m}">${m} MP <small>~${SEC_PER_STEP[m]}s/step</small></div>`,
     )
     .join("");
   $("popAR").innerHTML = `<div class="rgrid">${RATIOS.map(r => {
     const [a, b] = r.split(":").map(Number);
     const k = 34 / Math.max(a, b);
-    const [w, h] = SIZES[S.mp][r];
-    return `<div class="rt ${r === S.ar ? "on" : ""}" data-v="${r}"><div class="shape" style="width:${Math.round(a * k)}px;height:${Math.round(b * k)}px"></div><div class="t">${r}</div><div class="px">${w}×${h}</div></div>`;
+    const [w, h] = SIZES[v.mp][r];
+    return `<div class="rt ${r === v.ar ? "on" : ""}" data-v="${r}"><div class="shape" style="width:${Math.round(a * k)}px;height:${Math.round(b * k)}px"></div><div class="t">${r}</div><div class="px">${w}×${h}</div></div>`;
   }).join("")}</div>`;
   if (!$("popST").classList.contains("show"))
-    $("popST").innerHTML = slider("st", 1, 30, S.steps, [4, 6, 8, 12], stepsHint());
+    $("popST").innerHTML = slider("st", 1, 30, v.steps, [4, 6, 8, 12], stepsHint());
   if (!$("popN").classList.contains("show")) $("popN").innerHTML = slider("cn", 1, 50, S.n, [1, 4, 8, 16], countHint());
-  $("popSD").innerHTML = `<div class="opt ${S.seedMode === "random" ? "on" : ""}" data-v="random">Random each job</div>
-   <div class="row"><input type="number" id="seedIn" value="${S.seed}" style="width:140px"><button class="iconbtn" id="dice" title="New random seed">${IC.dice}</button><button class="iconbtn" id="seedCopy" title="Copy the seed">${IC.copy}</button></div>
-   <div class="opt ${S.seedMode === "fixed" ? "on" : ""}" data-v="fixed">Fixed</div>`;
+  /* the seed, the die, the lock, copy (as in Forge's own seed field: the number with its buttons beside it). Unlocked: a
+     random seed each job; locked: this one (×N counts up from it) */
+  $("popSD").innerHTML =
+    `<div class="row"><input type="number" id="seedIn" value="${v.seed}" style="width:140px"><button class="iconbtn" id="dice" title="A new random seed (locks it)">${IC.dice}</button><button class="iconbtn lockb${v.locked ? " on" : ""}" id="seedLock" title="${v.locked ? "Locked: every job uses this seed — click for a random one each job" : "Lock: use this seed for every job"}">${LOCK}</button><button class="iconbtn" id="seedCopy" title="Copy the seed">${IC.copy}</button></div>
+   <div class="hint">${v.locked ? "Locked · every job uses this seed" : "Unlocked · a random seed for each job"}</div>`;
   sizeFrame();
 }
 export function closePops() {
@@ -95,7 +106,7 @@ const PILLS = [
   ],
   ["pST", "popST", v => (S.steps = +v)],
   ["pN", "popN", v => (S.n = +v)],
-  ["pSD", "popSD", v => (S.seedMode = /** @type {"random" | "fixed"} */ (v))], // the options are those two
+  ["pSD", "popSD", () => {}], // its pop-up has buttons, not options (the document's click handler)
 ];
 /** @param {number | string | null | undefined} s */
 export function copySeed(s) {
@@ -114,13 +125,10 @@ export function initPills() {
   PILLS.forEach(([b, p, set]) => {
     $(b).addEventListener("click", e => {
       const pop = $(p);
-      if (b === "pSD" && typeof peekJob !== "undefined" && peekJob) {
-        copySeed(peekJob.seed);
-        return;
-      } // an old job: the seed pill copies its seed
       if (hit(e, ".pop") && !hit(e, ".opt,.rt,.qb")) return;
       const o = hit(e, ".opt,.rt");
       if (o) {
+        if (!editFirst()) return; // a shown job becomes your draft, then the choice applies to it
         set(/** @type {string} */ (o.dataset.v)); // every option carries its value
         save();
         closePops();
@@ -128,6 +136,7 @@ export function initPills() {
       }
       const q = hit(e, ".qb");
       if (q) {
+        if (!editFirst()) return;
         set(/** @type {string} */ (q.dataset.q));
         save();
         pop.classList.remove("show");
@@ -145,15 +154,30 @@ export function initPills() {
   });
   document.addEventListener("click", e => {
     if (hit(e, "#seedCopy")) {
-      copySeed(S.seed);
+      copySeed(peekJob ? peekJob.seed : S.seed);
+      return;
+    }
+    if (hit(e, "#seedLock")) {
+      const pk = peekJob;
+      if (!editFirst()) return;
+      if (pk) {
+        S.seed = pk.seed; // locking a picture's seed: that picture's, for your draft
+        S.seedMode = "fixed";
+      } else S.seedMode = S.seedMode === "fixed" ? "random" : "fixed";
+      save();
+      renderPills();
+      $("popSD").classList.add("show");
+      $("pSD").classList.add("open");
       return;
     }
     if (hit(e, "#dice")) {
+      if (!editFirst()) return;
       S.seed = Math.floor(Math.random() * 4294967295);
       S.seedMode = "fixed";
       save();
       renderPills();
       $("popSD").classList.add("show");
+      $("pSD").classList.add("open");
       return;
     }
     if (!target(e).isConnected || hit(e, ".pill")) return;
@@ -161,6 +185,13 @@ export function initPills() {
   });
   document.addEventListener("input", e => {
     const id = target(e).id;
+    const wasPeek = !!peekJob;
+    if (["stR", "stN", "cnR", "cnN", "seedIn"].includes(id) && !editFirst()) return; // a shown job: yours first
+    if (wasPeek && id === "seedIn") {
+      const n = field("seedIn"); // the pop-up was drawn anew for your draft: typing goes on in the new field
+      n.value = targetField(e).value;
+      n.focus();
+    }
     if (id === "stR" || id === "stN") {
       S.steps = clamp(+targetField(e).value, 1, 60);
       field(id === "stR" ? "stN" : "stR").value = String(S.steps);
@@ -177,8 +208,9 @@ export function initPills() {
     }
     if (id === "seedIn") {
       S.seed = +targetField(e).value || 0;
-      S.seedMode = "fixed";
-      $("vSD").textContent = "Fixed";
+      S.seedMode = "fixed"; // a number you typed: locked
+      $("vSD").innerHTML = `${S.seed}<span class="lk">${LOCK}</span>`;
+      /** @type {HTMLElement} */ ($("seedLock")).classList.add("on");
       save();
     }
   });
@@ -191,6 +223,7 @@ export function initPills() {
       "wheel",
       e => {
         e.preventDefault();
+        if (!editFirst()) return;
         f(e.deltaY < 0 ? 1 : -1);
         save();
         renderPills();

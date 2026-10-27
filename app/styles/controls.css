@@ -60,7 +60,8 @@
     display: none;
   }
 }
-.left.peeking .pills {
+/* a shown job's settings, greyed — live: picking a value makes it your draft (an upscale's are only shown) */
+.left.peekfix .pills {
   pointer-events: none;
 }
 .left.peeking .pill {
@@ -72,10 +73,6 @@
 .left.peeking #pN {
   display: none;
 }
-.left.peeking #pSD {
-  pointer-events: auto;
-  cursor: copy;
-} /* an old picture's seed pill copies its seed */
 /* Start: the theme gradient with a dark triangle; nothing to queue — plain, a grey triangle; while a job runs — plain,
    the triangle in the progress bar's flowing gradient (the same colours and pace) */
 .play {
@@ -245,6 +242,20 @@
 .pop .opt.on {
   color: var(--white);
   font-weight: 600;
+}
+/* the seed's lock: on the pill when locked, and in its pop-up beside the die and copy */
+.pill .lk {
+  display: inline-grid;
+  margin-left: var(--space-1);
+  vertical-align: -1px;
+  color: var(--muted);
+}
+.pill .lk svg {
+  width: 12px;
+  height: 12px;
+}
+.iconbtn.lockb.on {
+  color: var(--a1);
 }
 .pop .opt small {
   color: var(--muted);

@@ -1,14 +1,14 @@
-// Series names travel with Reuse and PNG Info; the LoRA tab rescans.
+// Series names travel with Edit and PNG Info; the LoRA tab rescans.
 const done = (k, n) => k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=${n}`, 30000);
 
 export async function reuseTakesName(k, t) {
   await k.job("a grey wolf", { name: "Wolf Pack", steps: 2 });
   await done(k, 1);
   await k.ev(`(S.pname="something else",$("pname").value=S.pname,P.value="another draft",draft=P.value,1)`);
-  await k.ev(`(loadJob(lastDone()),reuse(false),1)`);
+  await k.ev(`(loadJob(lastDone()),reuse(),1)`);
   t.ok(
     (await k.ev(`S.pname`)) === "Wolf Pack" && (await k.ev(`$("pname").value`)) === "Wolf Pack",
-    "Reuse takes the job's name",
+    "Edit takes the job's name",
   );
 }
 

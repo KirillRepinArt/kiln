@@ -4,7 +4,7 @@ import { esc } from "./boot.js";
 import { layoutLeft } from "./cardlayout.js";
 import { $, hit, q, qa } from "./dom.js";
 import { renderLoras } from "./loras.js";
-import { peekButtons } from "./peek.js";
+import { editFirst } from "./peek.js";
 import { peekJob } from "./prompt.js";
 import { IC, LORAS, S, save } from "./state.js";
 import { showView } from "./tabs.js";
@@ -14,19 +14,20 @@ export function renderChips() {
   requestAnimationFrame(() => layoutLeft());
   const pk = typeof peekJob !== "undefined" && peekJob;
   $("chips").classList.toggle("peek", !!pk);
+  /* a shown job: its LoRAs, live like yours — touching one makes the job your draft first (editFirst) */
   if (pk) {
-    $("chips").innerHTML = (pk.loras || [])
-      .map(x => {
-        const l = LORAS.find(l => l.name === x.name);
-        return `<span class="chip ${l && l.folder === "people" ? "face" : ""}"><span class="cn">${esc(l ? l.display : x.name)}</span><span class="cw">${fmtW(x.w)}</span></span>`;
-      })
-      .join("");
+    $("chips").innerHTML =
+      (pk.loras || [])
+        .map(x => {
+          const l = LORAS.find(l => l.name === x.name);
+          return `<span class="chip ${l && l.folder === "people" ? "face" : ""}" data-n="${x.name}"><span class="cn">${esc(l ? l.display : x.name)}</span><span class="cw">${fmtW(x.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`;
+        })
+        .join("") + '<button class="chip chipadd" data-tip="Add a LoRA — opens the library">+</button>';
     $("chips").insertAdjacentHTML(
       "afterbegin",
       `<span class="chiplbl">${(pk.loras || []).length === 1 ? "LoRA" : "LoRAs"}</span>`,
     );
     capChips();
-    peekButtons();
     return;
   }
   $("chips").innerHTML = LORAS.filter(l => l.on)
@@ -45,7 +46,6 @@ export function renderChips() {
     '<button class="chip chipadd" data-tip="Add a LoRA — opens the library">+</button>',
   );
   capChips();
-  if (typeof peekJob !== "undefined" && peekJob) peekButtons();
 }
 /* more than two rows of chips: hide the rest behind a "+N" chip that expands (and collapses again) */
 function capChips() {
@@ -95,17 +95,18 @@ export function initChips() {
   $("chips").onclick = e => {
     const c = hit(e, ".chip");
     if (!c) return;
-    if (c.classList.contains("chipadd")) {
-      showView("loras");
-      return;
-    }
     if (c.classList.contains("chipmore")) {
       chipsOpen = !chipsOpen;
       renderChips();
       return;
     }
-    if (peekJob) return;
-    const l = /** @type {import("./types.js").Lora} */ (LORAS.find(l => l.name === c.dataset.n)); // a chip is drawn from the list
+    if (!editFirst()) return; // a shown job's LoRAs: it becomes your draft, then this applies to it
+    if (c.classList.contains("chipadd")) {
+      showView("loras");
+      return;
+    }
+    const l = LORAS.find(l => l.name === c.dataset.n);
+    if (!l) return; // a LoRA Forge doesn't have any more
     if (hit(e, ".cx")) {
       l.on = false;
       save();
@@ -144,8 +145,18 @@ export function initChips() {
       save();
       if (S.view === "loras") renderLoras();
     }
+    /** the weight label of a chip's LoRA, after a shown job became your draft (its chips were drawn anew)
+     * @param {HTMLElement} el @returns {HTMLElement | null} */
+    const fresh = el => {
+      if (!peekJob) return el;
+      const name = /** @type {HTMLElement} */ (el.closest(".chip")).dataset.n;
+      if (!editFirst()) return null;
+      return /** @type {HTMLElement | null} */ (box.querySelector(`.chip[data-n="${CSS.escape(String(name))}"] .cw`));
+    };
     box.addEventListener("pointerdown", e => {
-      const el = hit(e, ".cw");
+      const hitEl = hit(e, ".cw");
+      if (!hitEl) return;
+      const el = fresh(hitEl);
       if (!el) return;
       e.preventDefault();
       el.setPointerCapture(e.pointerId);
@@ -185,7 +196,8 @@ export function initChips() {
     box.addEventListener(
       "wheel",
       e => {
-        const el = hit(e, ".cw");
+        const hitEl = hit(e, ".cw"),
+          el = hitEl && fresh(hitEl);
         if (!el) return;
         e.preventDefault();
         const l = lor(el);

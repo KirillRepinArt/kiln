@@ -8,7 +8,7 @@
    3. a reference stays until you let it go (✕, Start, an arrow) — a running render never pushes it away
    4. ✕ on a picture = the clean area: the render if a job runs, else the empty frame (← brings the picture back)
    5. Generating's prompt box holds your draft; the Gallery's the picture's prompt (a peek). Nothing overwrites your
-      draft but Reuse (with Undo)
+      draft but Edit (with Undo)
    The prompt box's peek (peekJob, loadJob / peekHide in queue.js) is the second half: the Gallery's picture, or on
    demand the render's / a waiting job's prompt. */
 import { toast } from "./boot.js";
@@ -203,7 +203,7 @@ export function pv(ev, arg) {
     case "browse":
       browseSet(arg);
       break; /* a finished queue row, a neighbour after a delete */
-    case "reuse" /* Reuse from the Gallery: Generating, with the picture as your reference */:
+    case "reuse" /* Edit from the Gallery: Generating, with the picture as your reference */:
       if (PV.browse != null) {
         PV.still = { id: PV.browse, kind: "reference" };
         PV.browse = null;

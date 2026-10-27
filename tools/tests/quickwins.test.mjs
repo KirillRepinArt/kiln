@@ -33,15 +33,29 @@ export async function sendToPrompt(k, t) {
   t.ok(await k.ev(`S.seedMode==="fixed"&&S.seed===lastDone().seed`), "Keep seed on: the image's seed");
 }
 
-export async function reuseKeepSeed(k, t) {
+/* the seed lock lives in the Seed pill's pop-up (beside the die and copy): unlocked = random each job (the default);
+   locking a shown picture's seed makes it your draft with that seed */
+export async function seedLock(k, t) {
   await k.job("a grey wolf", { steps: 2 });
   await done(k);
-  await k.ev(`(S.keepSeed=false,S.seedMode="random",S.steps=7,P.value="other",draft="other",loadJob(lastDone()),1)`);
-  t.ok(await k.ev(`$("pkSeed").style.display!=="none"`), "the seed lock shows next to Reuse all");
-  await k.ev(`($("pkAll").click(),1)`);
-  t.ok(await k.ev(`S.steps===2&&S.seedMode==="random"`), "Reuse all, Keep seed off: its settings, a new seed");
-  await k.ev(`(loadJob(lastDone()),$("pkSeed").click(),$("pkAll").click(),1)`);
-  t.ok(await k.ev(`S.seedMode==="fixed"&&S.seed===lastDone().seed`), "lock on: its seed too");
+  await k.ev(`(S.seedMode="random",S.steps=7,P.value="other",draft="other",renderPills(),1)`);
+  t.ok((await k.ev(`$("vSD").textContent`)) === "Random", "unlocked: the pill says Random (no 'Fixed')");
+  await k.ev(`($("pSD").click(),1)`);
+  await k.ev(`($("seedLock").click(),1)`);
+  t.ok(await k.ev(`S.seedMode==="fixed"&&!!$("vSD").querySelector(".lk")`), "the lock: this seed, a lock on the pill");
+  await k.ev(`($("seedLock").click(),closePops(),1)`);
+  t.ok(await k.ev(`S.seedMode==="random"`), "again: random each job");
+  // a shown picture: its seed on the pill; locking it = the picture becomes your draft, with that seed
+  await k.ev(`(loadJob(lastDone()),1)`);
+  t.ok(+(await k.ev(`$("vSD").textContent`)) === (await k.ev(`lastDone().seed`)), "a shown picture: its seed");
+  await k.ev(`($("pSD").click(),1)`);
+  t.ok(await k.ev(`peekJob!==null&&$("popSD").classList.contains("show")`), "opening the pop-up changes nothing");
+  await k.ev(`($("seedLock").click(),1)`);
+  t.ok(
+    await k.ev(`peekJob===null&&S.seedMode==="fixed"&&S.seed===lastDone().seed&&S.steps===2&&draft==="a grey wolf"`),
+    "locking its seed: the picture is your draft, with that seed",
+    await k.ev(`({peek:!!peekJob,mode:S.seedMode,steps:S.steps,draft})`),
+  );
 }
 
 export async function startLine(k, t) {

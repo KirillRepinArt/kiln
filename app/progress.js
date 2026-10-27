@@ -241,16 +241,15 @@ export function jobProgress(j) {
 /* start-up wiring: Stop, and a click on the status row under the picture (called from main.js, in order) */
 export function initStatusRow() {
   $("stopBtn").onclick = () => stopJob(current());
+  $("showP").onclick = () => {
+    const b = browsed();
+    if (!b) return;
+    PV.promptClosed = false;
+    loadJob(b);
+  };
   $("prog").addEventListener("click", e => {
     if (hit(e, ".stop,.resume")) return;
     const m = picMode();
-    if (m === "browse") {
-      if (PV.promptClosed) {
-        PV.promptClosed = false;
-        loadJob(/** @type {import("./types.js").Job} */ (browsed())); // browsing: there is one
-      }
-      return;
-    }
     if (m === "still") {
       if (current()) pv("toRender");
       else if (PV.news != null) pv("browse", doneById(PV.news));

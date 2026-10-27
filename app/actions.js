@@ -17,7 +17,7 @@ import { V, closeViewer, openViewer } from "./viewer.js";
 
 /* ---------- queue actions -> server ---------- */
 /* Start in the Gallery = Vary: the picture on show again — its prompt, settings, LoRAs and series — with a new seed.
-   Your draft isn't touched, and you stay where you are (Midjourney's Vary; Reuse is for editing first) */
+   Your draft isn't touched, and you stay where you are (Midjourney's Vary; Edit is for changing it first) */
 /** @param {import("./types.js").Job} j */
 export async function vary(j) {
   if (j.kind === "upscale") {

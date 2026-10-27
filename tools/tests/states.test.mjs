@@ -122,10 +122,10 @@ export async function tabsAndArrows(k, t) {
   await k.sleep(500);
   await k.ev(`(genNav(-1),1)`);
   await k.sleep(500);
-  await k.ev(`($("pkPrompt").click(),1)`);
+  await k.ev(`(reuse(),1)`);
   await k.sleep(500);
   s = await st(k);
-  t.ok(s.pic === "still" && s.still === "reference" && s.sid === ids[0], "Reuse: the picture as a reference", s);
+  t.ok(s.pic === "still" && s.still === "reference" && s.sid === ids[0], "Edit: the picture as a reference", s);
   t.ok(!(await k.ev(`genNav(-1,true)`)), "← from the oldest: nothing to go to");
   await k.ev(`(genNav(1),1)`);
   await k.sleep(500);
@@ -160,12 +160,12 @@ export async function referenceHolds(k, t) {
   await k.until(`!!current()`, 20000, 50);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.sleep(500);
-  await k.ev(`($("pkPrompt").click(),1)`);
+  await k.ev(`(reuse(),1)`);
   await k.sleep(500);
   let s = await st(k);
   t.ok(
     s.pic === "still" && s.still === "reference" && s.tab === "gen" && s.peek == null,
-    "Reuse: Generating, the picture as your reference",
+    "Edit: Generating, the picture as your reference",
     s,
   );
   t.ok(await k.ev(`P.value.includes("one")`), "your draft is now its prompt");
@@ -197,7 +197,7 @@ export async function referenceHolds(k, t) {
     s,
   );
   // Start from a reference: it holds until the render has a picture, then gives way
-  await k.ev(`($("pkPrompt").click(),1)`);
+  await k.ev(`(reuse(),1)`);
   await k.sleep(400);
   await k.ev(`(P.value="[fill:28dc28] go",draft=P.value,1)`);
   await k.ev(`addJobs().then(()=>1)`);
@@ -267,7 +267,7 @@ export async function shapeAndDelete(k, t) {
   await k.sleep(400);
   await tab(k, "gallery");
   await k.sleep(400);
-  await k.ev(`($("pkPrompt").click(),1)`);
+  await k.ev(`(reuse(),1)`);
   await k.sleep(400);
   await k.ev(`($("pAR").click(),1)`);
   await k.sleep(200);
@@ -332,7 +332,7 @@ export async function generatingTabIsLive(k, t) {
   await k.until(`current()&&current().preview_rev>0`, 20000, 100);
   await tab(k, "gallery");
   await k.sleep(400);
-  await k.ev(`($("pkPrompt").click(),1)`);
+  await k.ev(`(reuse(),1)`);
   await k.sleep(400);
   t.ok((await st(k)).still === "reference", "a reference over the running render");
   await tab(k, "gen");

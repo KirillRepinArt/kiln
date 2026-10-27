@@ -118,11 +118,9 @@ body.cardmove #lcol > .chips {
   font-weight: 600;
   color: var(--grey-88);
 }
-.chips.peek .chip {
-  opacity: 0.68;
-  pointer-events: none;
-}
-.chips.peek .chipmore {
-  pointer-events: auto;
-  opacity: 1;
+/* a shown job's LoRAs: greyed, still live (touching one makes the job your draft). Dimmed by colour, not opacity: a
+   partly transparent chip switches its glass off */
+.chips.peek .chip,
+.chips.peek .chip .cw {
+  color: var(--grey-64);
 }

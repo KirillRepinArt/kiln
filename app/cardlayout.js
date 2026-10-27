@@ -99,8 +99,7 @@ export function layoutLeft() {
   const L = $("left"),
     col = $("lcol"),
     CH = chipsH();
-  const TS = $("peekbar").classList.contains("show") ? 104 : 64;
-  /* the Reuse bar takes the row above the box; the name moves up */
+  const TS = 64; // the name row over the box (one height whatever it shows: the title never moves)
   col.style.setProperty("--ts", TS + "px");
   const stk = !!document.querySelector(".app.stacked"),
     hm = !stk && (S.hmode === "full" || S.hmode === "match") ? S.hmode : "";
@@ -232,11 +231,6 @@ export function initCardlayout() {
     if (!card.hover) thaw();
   });
   new ResizeObserver(() => layoutLeft()).observe($("lcol"));
-  /* a narrow box: the Reuse bar and the size buttons in one centred row (side by side they collided) */
-  new ResizeObserver(() => {
-    const T = $("ltitle");
-    T.classList.toggle("tnarrow", T.clientWidth < 560);
-  }).observe($("ltitle"));
   $("hmodes").addEventListener("click", e => {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-hm]"));
     if (!b) return;

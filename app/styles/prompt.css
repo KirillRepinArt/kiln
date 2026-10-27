@@ -50,6 +50,7 @@
   field-sizing: content;
   min-width: 9ch;
   max-width: 100%;
+  text-overflow: ellipsis; /* a narrow box shortens a shown picture's title (peek.js fnLayout) */
   background: transparent;
   border: 0;
   outline: 0;
@@ -131,43 +132,83 @@
 .ltitle:hover .plbl.hasname .pnx {
   opacity: 1;
 }
-/* the file name round the title (hover a finished picture's title): its number and .png appear beside it, fading in
-   and drifting out of the title (queue.js fnShow sets their margins) */
-.fnpre,
-.fnsuf {
+/* the job's # before the title on hover (peek.js fnShow sets its margin, against the title's text) */
+.fnpre {
   display: inline;
   position: absolute;
   top: 50%;
+  right: 100%;
+  margin-right: var(--space-2);
   pointer-events: none;
   opacity: 0;
   color: var(--grey-57);
   font-size: var(--fs-24);
   font-weight: 500;
   white-space: nowrap;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.02em;
   font-family: var(--font-title, inherit);
+  transform: translate(8px, -50%);
   transition:
     opacity var(--t-200) ease,
     transform var(--t-200) ease;
 }
-.fnpre {
-  right: 100%;
-  margin-right: var(--space-2);
-  transform: translate(8px, -50%);
-  letter-spacing: 0.02em;
-}
-.fnsuf {
-  left: 100%;
-  margin-left: 0;
-  transform: translate(-8px, -50%);
-}
-.plbl.fnon .fnpre,
-.plbl.fnon .fnsuf {
+.plbl.fnon .fnpre {
   opacity: 1;
   transform: translate(0, -50%);
   transition:
     opacity var(--t-450) var(--e-quick),
     transform var(--t-550) var(--e-quick);
+}
+/* a shown job's name line reads like a file's tab: the title, its number and .png greyed, then ✕ (back to your draft).
+   Outside the title, so the title never moves; there for as long as the prompt is shown (peek.js fnLayout places it,
+   and in a narrow box drops the file name before the title shortens) */
+.fnend {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  translate: 0 -50%; /* centred on the line (a centring offset, not spacing) */
+  align-items: center;
+  gap: var(--gap-tight);
+  white-space: nowrap;
+}
+.plbl.peekname .fnend {
+  display: flex;
+}
+.fnsuf {
+  color: var(--grey-57);
+  font-size: var(--fs-24);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-family: var(--font-title, inherit);
+}
+.fnsuf:empty,
+.plbl.nosuf .fnsuf {
+  display: none;
+}
+.plbl.noext .fnext {
+  display: none;
+} /* a narrow box: ".png" goes first (every file is one) */
+/* ✕: small and plain, like the ✕ that clears your own draft's name — the same job, the same look */
+.pkx {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--muted);
+  transition:
+    background var(--t-150),
+    color var(--t-150);
+}
+.pkx:hover {
+  background: var(--grey-35);
+  color: var(--white);
+}
+.pkx svg {
+  width: 10px;
+  height: 10px;
 }
 .pnsave {
   display: none;
@@ -182,76 +223,6 @@
 }
 .pnsave.show {
   display: inline-block;
-}
-/* the Reuse bar: the row above the box, centred, its ends clear of the size buttons; ~9 px over the box */
-.peekbar {
-  display: none;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
-  margin-top: var(--space-3);
-  margin-bottom: 0; /* the name row already ends one tight gap above the box */
-  max-width: calc(100% - 136px);
-  border-radius: var(--r-pill);
-  background: var(--grey-30);
-  border: 1px solid var(--grey-35);
-  font-size: var(--fs-12-5);
-  white-space: nowrap;
-  z-index: 3;
-}
-.peekbar.show {
-  display: flex;
-}
-.peekbar > span {
-  color: var(--muted);
-  margin-right: var(--space-1);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-.peekbar button {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--r-pill);
-  background: var(--grey-35);
-  font-size: var(--fs-12-5);
-}
-.peekbar button:hover {
-  background: var(--grey-41);
-}
-.peekbar #pkAll {
-  background: var(--white);
-  color: var(--grey-18);
-  font-weight: 600;
-}
-.peekbar .pkseed {
-  min-width: 32px;
-  padding: var(--space-1) var(--space-2);
-  display: grid;
-  place-items: center;
-  color: var(--muted);
-}
-.peekbar .pkseed svg {
-  width: 15px;
-  height: 15px;
-}
-.peekbar .pkseed.on {
-  color: var(--a1);
-}
-.peekbar .sm {
-  display: none;
-}
-@container (max-width:470px) {
-  .ltitle #peekLbl {
-    display: none;
-  }
-}
-@container (max-width:340px) {
-  .ltitle .peekbar .lg {
-    display: none;
-  }
-  .ltitle .peekbar .sm {
-    display: inline;
-  }
 }
 /* the size buttons at the name row's right: Match the picture's height · Full height (Vertical: Fit the width) */
 .hmodes {
@@ -290,26 +261,6 @@
 }
 .app.stacked #hmFull {
   display: none;
-}
-.ltitle.tnarrow:has(.peekbar.show) {
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-content: flex-end;
-  align-items: center;
-  column-gap: var(--space-2);
-}
-.ltitle.tnarrow:has(.peekbar.show) .phead {
-  flex-basis: 100%;
-}
-.ltitle.tnarrow .peekbar {
-  max-width: none;
-}
-.ltitle.tnarrow:has(.peekbar.show) .hmodes {
-  position: static;
-  margin-top: var(--space-3);
-  margin-bottom: var(--space-1);
-  opacity: 1;
 }
 
 /* ======================= prompt box ======================= */
@@ -593,7 +544,6 @@ body.private .pwrapT .cm-editor,
 body.private .pwrapT textarea,
 body.private .ltitle .nchip,
 body.private .chips,
-body.private .peekbar,
 body.private .pcount {
   visibility: hidden;
 }

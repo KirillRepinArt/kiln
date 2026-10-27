@@ -418,10 +418,29 @@ body.norow .prog {
   color: var(--grey-85);
   white-space: nowrap;
 }
-body[data-pic="still"] .prog.run .meta,
-.prog.showp .meta {
+body[data-pic="still"] .prog.run .meta {
   cursor: pointer;
-} /* click: the render (behind a still), or the prompt you closed */
+} /* click: the render behind a still */
+/* the Gallery with its prompt closed: "Show prompt", centred under the picture in the status row's room (layout.js) */
+.showp {
+  position: absolute;
+  z-index: 2;
+  display: none;
+  translate: -50% 0; /* centred on the picture (a centring offset, not spacing) */
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--r-pill);
+  background: var(--raised);
+  font-size: var(--fs-13-5);
+  font-weight: 500;
+  color: var(--grey-93);
+  white-space: nowrap;
+}
+.showp:hover {
+  background: var(--raised2);
+}
+.showp.show {
+  display: block;
+}
 .prog .meta .eta {
   margin-left: auto;
   color: var(--muted);

@@ -200,7 +200,7 @@ export function initEffects() {
       dimV = 1,
       holes = /** @type {{ x: number, y: number, w: number, h: number }[]} what the code rain flows round */ ([]),
       holeT = 0;
-    const HOLES = "#ltitle .phead,#ltitle .peekbar.show,#prog .meta,#idle>div";
+    const HOLES = "#ltitle .phead,#prog .meta,#idle>div,#showP.show";
     ["pointermove", "keydown", "wheel"].forEach(ev =>
       addEventListener(ev, () => (lastIn = performance.now()), { passive: true }),
     );
@@ -488,7 +488,7 @@ export function initEffects() {
     no viewer) and the prompt, name and LoRA chips are hidden. It stays on until pressed again, across jobs and
     restarts. Off: the cover follows Settings → Cover. The Queue tab isn't touched (decided 2026-10-18). */
     const CV = { held: false, t0: 0, pr: 0.55 };
-    const HALO_CUT = "#left,.ltitle .peekbar.show,.seg,#layBtn,#gear,#lcol>.chips .chip";
+    const HALO_CUT = "#left,.seg,#layBtn,#gear,#lcol>.chips .chip";
     const cbtn = $("cbtn");
     if (S.set && S.set.privacy != null) {
       if (S.privacy == null) S.privacy = S.set.privacy === "on";

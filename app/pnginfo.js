@@ -143,16 +143,9 @@ function parseParams(t) {
     schedule: g("Schedule type"),
   };
 }
-/* Keep seed (shared with the peek bar's lock): off = a new random seed, for variations; on = the image's own seed */
+/* Keep seed: off = a new random seed, for variations; on = the image's own seed */
 export function keepSeedUI() {
   $("pKeepSw").classList.toggle("on", !!S.keepSeed);
-  const k = $("pkSeed");
-  if (k) {
-    k.classList.toggle("on", !!S.keepSeed);
-    k.dataset.tip = S.keepSeed
-      ? "Keep seed: on — Reuse all uses this image's seed"
-      : "Keep seed: off — Reuse all makes a variation (new random seed)";
-  }
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */

@@ -193,7 +193,7 @@ export async function startEditor() {
               if (!edit) return false; /* copying, moving the cursor, selecting: not an edit */
               ta.dispatchEvent(
                 new KeyboardEvent("keydown", { key: e.key, ctrlKey: e.ctrlKey }),
-              ); /* Kiln makes this prompt your draft (Reuse prompt) */
+              ); /* Kiln makes this job your draft (Edit) */
               if (ta.readOnly) return true;
               /* now editable: the key does what it would have done. Typed text and paste go on to the editor as usual; the keys the
       keymap had already turned away (read-only then) are applied here */

@@ -102,7 +102,7 @@ export function initTooltips() {
       const h = hit(e, ".qi .handle");
       if (h && !h.dataset.tip) h.dataset.tip = "Drag to reorder";
       const qi = hit(e, ".qi .body");
-      if (qi && !qi.dataset.tip) qi.dataset.tip = "Peek at this prompt — Reuse to load it";
+      if (qi && !qi.dataset.tip) qi.dataset.tip = "Peek at this prompt — change anything in it to make it yours";
     };
     document.addEventListener("mouseover", CHIPT, true);
   })();

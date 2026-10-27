@@ -49,10 +49,10 @@ export function updNav() {
     b.classList.toggle("off", !navFn(b)(+(/** @type {string} */ (b.dataset.nav)), true)),
   );
 } /* the render's prompt: click the render itself (the status line doubled it) */
+/* the Gallery with the prompt closed (it stays closed as you browse): a pill under the picture brings it back */
 export function browseStatus() {
-  const b = browsed(),
-    on = !!(b && PV.promptClosed);
-  $("prog").classList.toggle("showp", on);
+  const on = S.view === "gen" && !!browsed() && PV.promptClosed;
+  $("showP").classList.toggle("show", on);
 }
 
 /* start-up wiring: the on-picture arrows (held under the pointer while you click them), ← / → (called from main.js, in order) */

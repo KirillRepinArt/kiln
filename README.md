@@ -55,7 +55,8 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
 **Queue first**
 - ▶ / `Ctrl+Enter` adds to the queue; it starts immediately if idle. Keep writing while it runs.
 - Drag to reorder, × to remove, **Stop** to cancel the running job (it stops after the current step — Forge can't
-  stop mid-step — and says so). **×N** queues a batch — random seeds, or counting up from a fixed seed.
+  stop mid-step — and says so). **×N** queues a batch — random seeds, or counting up from a locked one (the lock is in the Seed pill, beside the die
+  and copy).
 - **Pause after this** (Queue tab): the current image finishes, nothing new starts until you resume.
 - **Select** finished pictures: the round box on a row, Ctrl-click, Shift-click a range (then a plain click adds or
   removes), Ctrl+A, Esc. The Finished header turns into the actions: **All “Fox”** (the whole series), Select all,
@@ -71,9 +72,9 @@ started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it 
   file name) or **Remove from list**.
 - An **upscale** goes to the front of the line: seconds, right after the current image.
 - Click a finished job to open it in the Gallery (✕ brings you back to the Queue). Click a waiting or running job to
-  **peek** at its prompt without touching your draft, then **Reuse prompt** or **Reuse all**
-  (settings and LoRAs; its seed too if the 🔒 next to it is on — off gives a variation). Reusing a named image also
-  takes its name, so the next one joins the series. The same buttons, in the same places, on every picture.
+  **peek** at its prompt without touching your draft. **Change anything in it** — type, pick a size or ratio, move a
+  LoRA's weight — and it becomes your draft: its prompt, series, settings and LoRAs, with a random seed. Undo puts
+  your own draft back. ✕ at the end of its file name closes it (or Esc).
 - **Honest time estimates** from your own history: the median of your last five runs at the same image size and
   steps, counted down while the job runs (on real history this halved the error of a per-megapixel average).
   The queue total uses the same numbers.
@@ -134,10 +135,10 @@ The queue shows which variant each job got, so a good result can be traced back.
   you hover the picture or the column.
 - **Gallery** (the tab left of Generating): your finished pictures, browsed with `←` / `→` or the arrows on the picture
   — while a job renders, too. `←` from Generating steps into it; `→` past the newest brings you back. Each picture
-  shows its name and prompt (greyed, with **Reuse prompt** / **Reuse all**). Pictures cross-fade; when the shape
+  shows its name, file name and prompt (greyed; ✕ closes the prompt, **Show prompt** under the picture brings it back). Pictures cross-fade; when the shape
   changes, the frame crops in on the picture you leave and opens out over the next. **▶ in the Gallery is Vary** (a die
   instead of the triangle): the picture again with a new seed — same prompt, settings, LoRAs and series — your draft
-  untouched. **Reuse** takes you to Generating with the picture kept as a reference while you edit (a running render
+  untouched. Changing it takes you to Generating with the picture kept as a reference while you edit (a running render
   doesn't push it away; a result that lands behind it is announced in the status line), until ▶ or ✕. Deleting lands on
   the next picture in the way you were stepping.
 - **File names:** hover a finished picture's title to see its file name around it (`#27 Rome-003.png`). Edit the title

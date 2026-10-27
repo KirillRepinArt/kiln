@@ -400,10 +400,10 @@ export async function menusOverPromptButtons(k, t) {
     await k.until(`document.getElementById("pop${id}").classList.contains("show")`, 2000);
     await k.sleep(300);
     const r = await k.ev(`(()=>{const P=document.getElementById("pop${id}"),p=P.getBoundingClientRect(),out={};
-      for(const s of ["#pclear","#hmodes"]){const e=document.querySelector(s);e.style.opacity="1";e.style.visibility="visible";
+      for(const s of ["#pclear","#hmodes"]){const e=document.querySelector(s);e.style.opacity="1";e.style.visibility="visible";e.style.pointerEvents="auto";
         const b=e.getBoundingClientRect(),x=(Math.max(p.left,b.left)+Math.min(p.right,b.right))/2,y=(Math.max(p.top,b.top)+Math.min(p.bottom,b.bottom))/2;
         if(b.width&&x>p.left&&x<p.right&&y>p.top&&y<p.bottom&&x>b.left&&x<b.right&&y>b.top&&y<b.bottom)out[s]=P.contains(document.elementFromPoint(x,y));
-        e.style.opacity="";e.style.visibility=""}
+        e.style.opacity="";e.style.visibility="";e.style.pointerEvents=""}
       return out})()`);
     for (const [s, under] of Object.entries(r)) {
       checked++;

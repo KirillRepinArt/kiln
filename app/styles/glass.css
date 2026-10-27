@@ -283,6 +283,9 @@ body.glass .left .controls {
   bottom: 0;
   z-index: 2;
 }
+body.glass .left .controls:has(.pop.show) {
+  z-index: 6;
+} /* a menu open: over the prompt's ✕ (controls.css) */
 body.glass .left .pwrapT .cm-scroller {
   padding-bottom: calc(var(--ctrlh, var(--space-16)) - var(--space-2));
 } /* the text runs on under the glass controls, almost to the box's edge */

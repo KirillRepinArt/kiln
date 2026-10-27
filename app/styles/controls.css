@@ -38,11 +38,8 @@
   background: var(--raised);
 }
 /* an open menu over the prompt's own buttons (2026-10-27, the user's note): its z-index only counts inside the boxes
-   it sits in, so those rise while it's open — the controls over the ✕ (inside the prompt box), the prompt box over the
-   expand modes beside the title */
-.controls:has(.pop.show) {
-  z-index: 6;
-}
+   it sits in, so those rise while it's open — the prompt box over the expand modes beside the title; in glass, the
+   controls over the ✕ too (glass.css) */
 #left:has(.controls .pop.show) {
   z-index: 5;
 }

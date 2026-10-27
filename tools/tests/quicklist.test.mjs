@@ -445,7 +445,7 @@ export async function galleryToStepZeroFades(k, t) {
     requestAnimationFrame(()=>requestAnimationFrame(()=>res(document.getAnimations().filter(a=>a.effect&&a.effect.pseudoElement==="::view-transition-group(kiln-pic)").length)))})`);
   t.ok(g === 0, "with a preview: the Gallery's picture doesn't grow into the render either (another picture)", g);
 }
-galleryToStepZeroFades.opts = { step: 1.5 };
+galleryToStepZeroFades.opts = { step: 4 }; // step 0 must outlast the Gallery visit on a slow machine (CI run 75 reached step 1)
 
 /* Gallery → Generating with a preview to show (2026-10-27, the user: "looks twitchy"): measured per frame — the old
    picture flashed into the new frame for a frame or two (a second cross-fade on top of the switch's), the box

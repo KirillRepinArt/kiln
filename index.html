@@ -389,6 +389,13 @@
             ><select data-set="sampler"
               ><option>Euler · Simple</option></select
             >
+            <label>Steps</label
+            ><input id="sSteps" type="number" min="1" max="150" step="1" title="Steps for new jobs" />
+            <label>Steps on the prompt box</label
+            ><select data-set="stepsPill"
+              ><option value="off">Off · set here</option
+              ><option value="on">On · a pill beside Ratio</option></select
+            >
             <label>Shift</label><input data-set="shift" type="number" step="0.05" value="1.15" /> <label>CFG</label
             ><input data-set="cfg" type="number" step="0.1" value="1" />
             <div class="fgh">Output</div>

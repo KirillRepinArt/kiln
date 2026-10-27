@@ -32,6 +32,9 @@
     color var(--dur),
     background var(--dur);
 }
+.pill[hidden] {
+  display: none;
+} /* the Steps pill, switched off in Settings */
 .pill:hover,
 .pill.open {
   color: var(--text);

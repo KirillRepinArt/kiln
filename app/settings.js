@@ -1,9 +1,11 @@
 // @ts-check
 /* Kiln · settings, themes */
 import { toast } from "./boot.js";
+import { layoutLeft } from "./cardlayout.js";
 import { $, hit, target, targetField } from "./dom.js";
 import { current } from "./jobs.js";
 import { resetLayout, setDock, sizeFrame } from "./layout.js";
+import { renderPills } from "./pills.js";
 import { harmonics, skinName } from "./skins.js";
 import { S, save } from "./state.js";
 import { moveThumb, showView } from "./tabs.js";
@@ -36,6 +38,12 @@ export function applyFont() {
   const sel = /** @type {HTMLSelectElement | null} */ (document.getElementById("sFont"));
   if (sel) sel.value = S.set.font;
   requestAnimationFrame(() => moveThumb(true));
+}
+/* Steps live in Settings → Model; the pill on the prompt box is a switch (2026-10-27, the user: set once with a turbo
+   LoRA and never changed — it only took room). Off by default */
+export function applyStepsPill() {
+  $("pST").hidden = (S.set || {}).stepsPill !== "on";
+  layoutLeft();
 }
 export function applyGlass() {
   document.body.classList.toggle("glass", (S.set || {}).glass === "on");
@@ -119,11 +127,24 @@ export function initSettings() {
         applyFont();
       }
       if (k === "glass") applyGlass();
+      if (k === "stepsPill") applyStepsPill();
     });
   });
+  applyStepsPill();
+  const sSteps = /** @type {HTMLInputElement} */ ($("sSteps"));
+  sSteps.value = String(S.steps);
+  sSteps.onchange = () => {
+    S.steps = Math.max(1, Math.min(150, Math.round(+sSteps.value) || S.steps));
+    sSteps.value = String(S.steps);
+    save();
+    renderPills();
+  };
   $("updBtn").onclick = () => toast("The update check needs the Kiln server (kiln.bat)");
   $("keysBtn").onclick = () => /** @type {() => void} */ (window.openKeys)();
-  $("gear").onclick = () => $("modal").classList.add("show");
+  $("gear").onclick = () => {
+    sSteps.value = String(S.steps); // the pill, a reused job may have changed them
+    $("modal").classList.add("show");
+  };
   $("mClose").onclick = () => $("modal").classList.remove("show");
   $("modal").onclick = e => {
     if (target(e).id === "modal") $("modal").classList.remove("show");

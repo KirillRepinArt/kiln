@@ -6,6 +6,9 @@ const hit = (k, sel) =>
     `(()=>{const e=document.querySelector(${JSON.stringify(sel)}),r=e.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)===e})()`,
   );
 
+/* the Steps pill is off by default (Settings → Model); tests that open it switch it on, as a user would */
+const stepsPillOn = k => k.setting("stepsPill", "on");
+
 export async function verticalTitleClicks(k, t) {
   await k.ev(`(setDock("below"),1)`);
   await k.sleep(900);
@@ -217,6 +220,7 @@ export async function promptEdges(k, t) {
 /* modeless (2026-10-27, the user): a shown picture's prompt has no bar — change anything (a pill, a LoRA, the text) and
    it becomes your draft (random seed, Undo); ✕ sits at the end of its file name and the title never moves */
 export async function peekModeless(k, t) {
+  await stepsPillOn(k);
   await k.job("[fill:446688] one", { steps: 2, name: "Harbour" });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
   await k.ev(`(S.steps=7,S.ar="16:9",S.pname="",$("pname").value="",P.value="something else",draft=P.value,save(),1)`);
@@ -392,6 +396,7 @@ export async function fastTabClicks(k, t) {
    box). A menu's z-index only counts inside the boxes it sits in; those rise while it's open. The ✕ and the expand modes
    are hover-revealed: shown here for the check */
 export async function menusOverPromptButtons(k, t) {
+  await stepsPillOn(k);
   await k.ev(`(P.value="a cat",draft=P.value,layoutLeft(),1)`);
   await k.sleep(600);
   let checked = 0;
@@ -471,6 +476,7 @@ galleryToPreviewIsClean.opts = { step: 0.6 };
 /* menus stay fully on screen (the user, 2026-10-27: "ratio pill menu — in a narrow prompt box, the menu goes off the
    screen"): every pill's menu, opened in a narrow window, sits inside it with the window's margin */
 export async function menusStayOnScreen(k, t) {
+  await stepsPillOn(k);
   for (const w of [640, 900]) {
     await k.send("Emulation.setDeviceMetricsOverride", { width: w, height: 760, deviceScaleFactor: 1, mobile: false });
     await k.ev(`(dispatchEvent(new Event("resize")),1)`);
@@ -493,3 +499,17 @@ export async function menusStayOnScreen(k, t) {
   }
 }
 menusStayOnScreen.opts = { width: 640, height: 760 };
+
+/* Steps live in Settings → Model; the pill on the prompt box is a switch, off by default (2026-10-27, the user: set once
+   with a turbo LoRA and never changed — the pill only took room) */
+export async function stepsInSettings(k, t) {
+  t.ok(await k.ev(`$("pST").hidden&&getComputedStyle($("pST")).display==="none"`), "by default: no Steps pill");
+  await k.ev(`(()=>{const i=$("sSteps");i.value="9";i.dispatchEvent(new Event("change"));return 1})()`);
+  t.ok(await k.ev(`S.steps===9`), "Settings → Model → Steps sets them");
+  await k.ev(`(P.value="one",draft=P.value,addJobs().then(()=>1))`); // not k.job: it sets its own steps
+  t.ok(await k.until(`jobs.some(j=>j.steps===9)`, 5000), "…and new jobs use them", await k.ev(`jobs.map(j=>j.steps)`));
+  await stepsPillOn(k);
+  t.ok(await k.ev(`!$("pST").hidden&&/9/.test($("vST").textContent)`), "switched on: the pill is back, showing them");
+  await k.reload();
+  t.ok(await k.ev(`!$("pST").hidden&&S.steps===9`), "both are remembered");
+}

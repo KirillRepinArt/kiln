@@ -285,8 +285,26 @@ body.glass .qi.sel .qck {
   flex: 1;
 }
 .qbar {
-  flex-wrap: wrap;
-  row-gap: var(--space-2);
+  flex-wrap: nowrap;
+  white-space: nowrap;
+} /* one line, always: words give way instead (queue.js fitBar) */
+.qbar > * {
+  flex: none;
+}
+.qbar #qsSeries {
+  flex: 0 1 auto;
+  min-width: 7em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+} /* the series name shortens first */
+.qbar .qcut3a,
+.qbar.c1 .qcut1,
+.qbar.c2 .qcut2,
+.qbar.c3 .qcut3 {
+  display: none;
+}
+.qbar.c3 .qcut3a {
+  display: inline;
 }
 .qbar .qn b {
   color: var(--text);

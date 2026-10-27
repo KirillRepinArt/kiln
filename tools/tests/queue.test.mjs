@@ -289,3 +289,22 @@ export async function clearListUndo(k, t) {
   await k.ev(`($("toastBtn").click(),1)`);
   t.ok(await k.until(`jobs.map(j=>j.id).join()===${JSON.stringify(before)}`, 3000), "Undo: the list is back, in order");
 }
+
+/* the selection bar in a narrow panel (2026-10-27, the user: it broke onto two lines, "ruining the page layout"): one
+   line always — the series name shortens, then words give way ("of N", "from list", "Select") */
+export async function selectionBarOneLine(k, t) {
+  for (let i = 0; i < 3; i++)
+    await k.job(`[fill:446688] harbour ${i}`, { steps: 1, name: "Harbour at Dusk with Long Mist" });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=3`, 30000);
+  await k.ev(`(showView("queue"),1)`);
+  await k.sleep(800);
+  const row = await k.ev(`$("qfin").offsetHeight`);
+  await k.ev(`(QS.add(jobs.find(j=>j.status==="done").id),qsUpdate(),1)`);
+  await k.sleep(300);
+  const r = await k.ev(`(()=>{const h=$("qfin"),b=[...h.children].map(e=>e.getBoundingClientRect());
+    return {h:h.offsetHeight,fits:h.scrollWidth<=h.clientWidth,rows:new Set(b.filter(x=>x.width).map(x=>Math.round((x.top+x.bottom)/2/8))).size,w:h.clientWidth,cls:h.className}})()`);
+  t.ok(r.rows === 1 && r.fits, "the bar stays on one line", r);
+  t.ok(r.h === row, "…the header's height doesn't change (the rows below never move)", { row, bar: r.h });
+  t.ok(await k.ev(`!!$("qsDel")&&!!$("qsRemove")&&!!$("qsX")`), "…and every action is still there");
+}
+selectionBarOneLine.opts = { width: 1000, height: 800 };

@@ -155,9 +155,29 @@ export function qsUpdate() {
   if (h) {
     h.classList.toggle("qbar", QS.size > 0);
     h.innerHTML = finHead(done);
+    fitBar(h);
   }
   shownSig = queueSig();
 }
+/* the selection bar stays on one line (2026-10-27, the user: in a narrow panel it broke onto two, the rows below
+   jumping): words give way in order — the series name shortens (CSS), then "of N", "from list", "Select" */
+const CUTS = ["c1", "c2", "c3"];
+/** @param {HTMLElement} h */
+function fitBar(h) {
+  h.classList.remove(...CUTS);
+  if (!h.classList.contains("qbar")) return;
+  for (const c of CUTS) {
+    if (h.scrollWidth <= h.clientWidth) return;
+    h.classList.add(c);
+  }
+}
+let barSeen = 0; // the panel's width last fitted to
+new ResizeObserver(([e]) => {
+  const w = Math.round(e.contentRect.width),
+    h = document.getElementById("qfin");
+  if (w !== barSeen && h) fitBar(h);
+  barSeen = w;
+}).observe($("qwrap"));
 /** @param {Job[]} done */
 function qsBar(done) {
   if (!QS.size) return "";
@@ -169,8 +189,8 @@ function qsBar(done) {
     if (all > sel.length)
       series = `<button id="qsSeries" data-tip="Select every “${esc(names[0])}” picture">All “${esc(names[0])}” · ${all}</button>`;
   }
-  return `<span class="qn"><b>${QS.size}</b> of ${done.length} selected</span>${series}${sel.length < done.length ? '<button id="qsAll">Select all</button>' : ""}<span class="qgap"></span>
-  <button id="qsRemove" data-tip="Take them off the list — the files stay">Remove from list</button><button id="qsDel" class="qdel" data-tip="To the Recycle Bin, with Undo (Del)">Delete</button><button id="qsX" class="qx" data-tip="Clear the selection (Esc)">${IC.x}</button>`;
+  return `<span class="qn"><b>${QS.size}</b><span class="qcut1"> of ${done.length}</span> selected</span>${series}${sel.length < done.length ? '<button id="qsAll"><span class="qcut3">Select a</span><span class="qcut3a">A</span>ll</button>' : ""}<span class="qgap"></span>
+  <button id="qsRemove" data-tip="Take them off the list — the files stay">Remove<span class="qcut2"> from list</span></button><button id="qsDel" class="qdel" data-tip="To the Recycle Bin, with Undo (Del)">Delete</button><button id="qsX" class="qx" data-tip="Clear the selection (Esc)">${IC.x}</button>`;
 }
 function qsFinished() {
   return jobs.filter(j => j.status === "done" || j.status === "cancelled").reverse();

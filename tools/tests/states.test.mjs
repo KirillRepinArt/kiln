@@ -72,7 +72,7 @@ export async function resultHoldsForTheRender(k, t) {
   await k.job("[fill:dc2828] third", { steps: 2 });
   await k.job("[fill:2828dc] fourth", { steps: 6 });
   await k.until(`jobs.filter(j=>j.status==="done").length>=3`, 30000, 50);
-  await k.sleep(100);
+  await k.until(`!!current()`, 5000, 50); // the fourth has started (on a busy machine the queue takes a moment)
   if ((await st(k)).pic === "still") {
     await k.ev(`($("bclose").click(),1)`);
     await k.sleep(200);

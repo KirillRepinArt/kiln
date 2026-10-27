@@ -171,12 +171,9 @@ export function pv(ev, arg) {
       } else if (PV.still) PV.still.kind = "result";
       PV.news = null;
       break;
-    case "shape" /* size or ratio changed: a result clears (the empty frame previews the new shape); a reference stays (Q2) */:
-      if (PV.browse == null && PV.still && PV.still.kind === "result" && !run) {
-        PV.still = null;
-        resetCv();
-        $("frame").classList.remove("has");
-      }
+    case "shape" /* size or ratio changed: the picture on show stays — you're often editing from it; the pill shows the
+      new shape, the empty frame previews it once the picture goes (✕, an arrow, Start). Revised 2026-10-27, the user's
+      call: a result clearing as you typed was a surprise every time */:
       break;
     case "gallery" /* the Gallery tab: the picture on show, else the newest (rule 1) */:
       {

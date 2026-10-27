@@ -244,9 +244,10 @@ export async function peekTheRender(k, t) {
 }
 peekTheRender.opts = { step: 1.2 };
 
-/* size / ratio: a result clears (the frame previews the new shape), a reference stays (Q2); Del on a still */
+/* size / ratio: the picture on show stays, whatever kind (revised 2026-10-27); ✕ then shows the new shape; Del on a still */
+const frameRatio = k => k.ev(`+$("frame").dataset.tw / +$("frame").dataset.th`);
 export async function shapeAndDelete(k, t) {
-  await k.job("[fill:dc2828] one", { steps: 2 });
+  await k.job("[fill:dc2828] one", { steps: 2 }); // 3:4
   await done(k, 1);
   await k.sleep(400);
   await k.ev(`($("pAR").click(),1)`);
@@ -254,7 +255,16 @@ export async function shapeAndDelete(k, t) {
   await k.ev(`(document.querySelector('#popAR .rt[data-v="16:9"]').click(),1)`);
   await k.sleep(400);
   let s = await st(k);
-  t.ok(s.pic === "empty", "a result + a new ratio: the empty frame shows the next shape", s);
+  t.ok(s.pic === "still" && s.still === "result" && s.has, "a result + a new ratio: the picture stays", s);
+  t.ok(await red(k), "…still drawn");
+  t.near(await frameRatio(k), 3 / 4, 0.02, "…in its own shape");
+  await k.ev(`($("bclose").click(),1)`);
+  await k.sleep(400);
+  s = await st(k);
+  t.ok(s.pic === "empty", "✕: the empty frame", s);
+  t.near(await frameRatio(k), 16 / 9, 0.02, "…in the new shape");
+  await k.ev(`(genNav(-1),1)`);
+  await k.sleep(400);
   await tab(k, "gallery");
   await k.sleep(400);
   await k.ev(`($("pkPrompt").click(),1)`);

@@ -158,10 +158,12 @@ class Store:
         self._order = [i for i, _, _ in rows]
         return [json.loads(d) for _, _, d in rows]
 
-    def save_jobs(self, jobs: list[Job], only: Iterable[int] | None = None) -> None:
+    def save_jobs(self, jobs: list[Job], only: Iterable[int] | None = None) -> tuple[set[int], set[int], bool]:
         """Write the list: only the rows that changed (or moved), and drop the ones that are gone. `only`: the jobs a
         change touched — when the list's order and members are as last written, only those are encoded and compared
-        (a one-job change at 10 000 jobs took ~170 ms comparing them all, 2026-10-28); otherwise everything is."""
+        (a one-job change at 10 000 jobs took ~170 ms comparing them all, 2026-10-28); otherwise everything is.
+        Returns what changed: the ids written, the ids gone, and whether the order moved (the page's poll gets just
+        that — jobqueue.py changes_since)."""
         order = [j["id"] for j in jobs]
         if only is not None and order == self._order:
             pick = set(only)
@@ -173,8 +175,9 @@ class Store:
             now = {j["id"]: (pos, json.dumps(j, ensure_ascii=False)) for pos, j in enumerate(jobs)}
         changed = [(i, p, d) for i, (p, d) in now.items() if self._saved.get(i) != (p, d)]
         gone = [i for i in self._saved if i not in now]
+        moved = order != self._order
         if not changed and not gone:
-            return
+            return set(), set(), moved
         by_id = {j["id"]: j for j in jobs}
         with self.tx() as c:
             c.executemany("DELETE FROM jobs WHERE id = ?", [(i,) for i in gone])
@@ -184,6 +187,7 @@ class Store:
             )
         self._saved = now
         self._order = order
+        return {i for i, _, _ in changed}, set(gone), moved
 
 
 def import_json(store: Store, paths: Paths) -> None:

@@ -220,6 +220,30 @@ class Queue(TempDirs):
         q.save(only=[a])
         self.assertEqual([i for (i,) in q.store.con.execute("SELECT id FROM jobs ORDER BY pos")], [b, a])
 
+    def test_the_poll_gets_what_changed(self) -> None:
+        q = JobQueue(self.paths)
+        a, b = q.add([{"steps": 1}, {"steps": 1}])
+        seen = q.signature()
+        q.jobs[0]["status"] = "done"
+        q.save(only=[a])
+        self.assertEqual(q.changes_since(seen), ({a}, set(), False))  # one job changed, nothing moved
+        seen = q.signature()
+        (c,) = q.add([{"steps": 1}])
+        q.keep_only(lambda j: j["id"] != b)
+        changed, gone, moved = q.changes_since(seen)
+        self.assertIn(c, changed)
+        self.assertEqual((gone, moved), ({b}, True))
+
+    def test_a_page_too_far_behind_gets_the_whole_list(self) -> None:
+        q = JobQueue(self.paths)
+        (a,) = q.add([{"steps": 1}])
+        old = q.signature()
+        for _ in range(250):  # more revisions than are remembered
+            q.save(only=[a])
+        self.assertIsNone(q.changes_since(old))
+        self.assertIsNone(q.changes_since("999.0.0"))  # from before a restart
+        self.assertIsNone(q.changes_since("nonsense"))
+
     def test_old_json_files_are_imported_once_and_kept(self) -> None:
         self.paths.queue_file.write_bytes(b"")  # 2026-10-27: a crash had left queue.json empty…
         bak = self.paths.queue_file.with_name("queue.json.bak")

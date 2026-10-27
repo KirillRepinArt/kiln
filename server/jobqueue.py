@@ -24,6 +24,7 @@ log = logging.getLogger("kiln")
 Job = dict[str, Any]
 WAITING = ("pending", "running")
 FINISHED = ("done", "cancelled", "error")
+CHANGES_KEPT = 200  # revisions remembered for the page's poll (a page further behind gets the whole list)
 
 
 def public(job: Job) -> Job:
@@ -40,6 +41,8 @@ class JobQueue:
         self.jobs: list[Job] = []
         self.flags: dict[str, Any] = {"paused": False}  # Pause queue: the running job finishes, nothing new starts
         self.rev = 0  # bumped on every change to the list
+        # what each recent revision changed: (rev, ids written, ids gone, order moved) — the page's poll gets just that
+        self._changes: list[tuple[int, set[int], set[int], bool]] = []
         self._miss_t = 0.0
         self._miss: frozenset[int] = frozenset()
         # the last Clear list, for its Undo: in memory only (never written), gone when Kiln closes
@@ -58,7 +61,9 @@ class JobQueue:
         """Every change ends here (the page's poll sees the new revision). `only`: the ids of the jobs it touched, when
         it touched nothing else (no job added, removed or moved) — the save then looks at those alone."""
         self.rev += 1
-        self.store.save_jobs(self.jobs, only)
+        changed, gone, moved = self.store.save_jobs(self.jobs, only)
+        self._changes.append((self.rev, changed, gone, moved))
+        del self._changes[:-CHANGES_KEPT]
 
     def set_paused(self, paused: bool) -> None:
         with self.lock:
@@ -105,6 +110,25 @@ class JobQueue:
         """What the page has seen: the list's revision, which files are missing, paused. Same signature = the page
         only needs the running job's progress (the light poll — the full list was ~1 MB at 500 jobs, every 0.7 s)."""
         return f"{self.rev}.{hash(self.missing_ids()) & 0xFFFFFFFF}.{int(self.flags['paused'])}"
+
+    def changes_since(self, sig: str) -> tuple[set[int], set[int], bool] | None:
+        """What changed after the revision in `sig` (a signature the page had): ids changed, ids gone, order moved —
+        None when it's too old to tell (or from before a restart): the page then gets the whole list."""
+        try:
+            since = int(sig.split(".", 1)[0])
+        except ValueError:
+            return None
+        if since > self.rev or not self._changes or self._changes[0][0] > since + 1:
+            return None
+        changed: set[int] = set()
+        gone: set[int] = set()
+        moved = False
+        for rev, c, g, m in self._changes:
+            if rev > since:
+                changed |= c
+                gone |= g
+                moved = moved or m
+        return changed, gone, moved
 
     def public_list(self, estimate: Callable[[Any], Estimate]) -> list[Job]:
         """The list for the page: est / est_first on waiting jobs; finished files that are gone are marked missing;

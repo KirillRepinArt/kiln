@@ -185,6 +185,31 @@ class Handler(BaseHTTPRequestHandler):
                         "styles": styles_signature(k.paths.root),
                     },
                 )
+            delta = q.changes_since(since) if since else None
+            if delta is not None:
+                # only what changed since the page's revision (v0.7b: the whole list was 12 MB at 10 000 jobs) — the
+                # jobs written, every waiting one (their estimates move as others finish), the ones gone, the order
+                # if it moved, and which files are missing
+                changed, gone, moved = delta
+                full = q.public_list(k.timings.estimate)
+                listed = {j["id"] for j in full}
+                return self.reply(
+                    200,
+                    {
+                        "sig": sig,
+                        "delta": True,
+                        "forge": k.backend.status,
+                        "jobs": [j for j in full if j["id"] in changed or j["status"] == "pending"],
+                        "removed": sorted((gone | changed) - listed),
+                        "order": [j["id"] for j in full] if moved or gone else None,
+                        "missing": sorted(q.missing_ids()),
+                        "stats": k.timings.stats,
+                        "out_dir": str(k.paths.out),
+                        "version": VERSION,
+                        "paused": q.flags["paused"],
+                        "styles": styles_signature(k.paths.root),
+                    },
+                )
             return self.reply(
                 200,
                 {

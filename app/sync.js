@@ -109,17 +109,36 @@ export async function poll() {
   }
   since = s.sig || "";
   const prev = new Map(jobs.map(j => [j.id, j]));
-  replaceJobs(
-    s.jobs.map((/** @type {any} */ x) => {
-      const u = toUI(x),
-        o = prev.get(u.id);
-      if (o && o.status === "running" && u.status === "running") {
-        u._ss = o._ss;
-        u._lastStep = o._lastStep;
-      }
-      return u;
-    }),
-  );
+  /** a job from the server for the page — keeping a running job's own progress bookkeeping @param {any} x */
+  const fresh = x => {
+    const u = toUI(x),
+      o = prev.get(u.id);
+    if (o && o.status === "running" && u.status === "running") {
+      u._ss = o._ss;
+      u._lastStep = o._lastStep;
+    }
+    return u;
+  };
+  if (s.delta) {
+    /* only what changed since this page's revision (v0.7b: the whole list was 12 MB at 10 000 jobs): the changed and
+       waiting jobs replace theirs, the removed go, the order follows when it moved, missing files are flagged; every
+       other job keeps its object */
+    const by = new Map(prev);
+    for (const id of s.removed) by.delete(id);
+    for (const x of s.jobs) by.set(x.id, fresh(x));
+    const order = s.order || jobs.map(j => j.id).filter(id => by.has(id));
+    for (const x of s.jobs) if (!order.includes(x.id)) order.push(x.id); // new at the end (an order comes with any add)
+    const miss = new Set(s.missing);
+    /** @type {import("./types.js").Job[]} */
+    const list = [];
+    for (const id of order) {
+      const j = by.get(id);
+      if (!j) continue; // never expected: an order naming a job this page doesn't have (the next full list mends it)
+      j.missing = miss.has(id);
+      list.push(j);
+    }
+    replaceJobs(list);
+  } else replaceJobs(s.jobs.map(fresh));
   for (const j of jobs) {
     const jk = j.id + ":" + (j.created || 0); /* the server can hand an id out again after its job left the list */
     if (j.status === "done" && !seen.has(jk)) {

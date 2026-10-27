@@ -13,7 +13,7 @@ that changes later gets a new record; the old one says what replaced it.
 | [0005](0005-dependencies-pinned-and-bundled.md) | No downloads at run time: a short, pinned, bundled dependency list | accepted |
 | [0006](0006-polling-before-push.md) | The page polls (with a light answer) until server push | accepted, to be replaced (v0.7b) |
 | [0007](0007-json-files-before-a-database.md) | JSON files until one SQLite database | accepted, to be replaced (v0.7b) |
-| [0008](0008-own-test-runner.md) | Our own end-to-end runner over the DevTools protocol | under review (the v0.7 gate) |
+| [0008](0008-own-test-runner.md) | Our own end-to-end runner over the DevTools protocol | accepted |
 | [0009](0009-design-tokens.md) | Design tokens in CSS, enforced by the linter; skins as token files | accepted |
 | [0010](0010-one-instance-own-launcher.md) | One Kiln per data folder; the launcher in Python | accepted |
 | [0011](0011-nothing-leaves-the-machine.md) | Nothing leaves the machine, checked by tests | accepted |

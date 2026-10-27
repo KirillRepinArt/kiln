@@ -179,7 +179,7 @@ The server (`server/`, Python standard library only) owns the queue — saved in
 and feeds Forge one job at a time; Forge's own UI keeps working alongside. Images go to `outputs/` with the
 generation settings embedded, so PNG Info (Kiln's or Forge's) can read them back. Model and module choices in
 ⚙ Settings default to whatever Forge has loaded; pick others and Kiln switches before the job runs.
-The interface is `index.html` plus plain files in `app/` (CSS and scripts), no build step; the server joins them into one page.
+The interface is `index.html` plus plain files in `app/` (CSS and scripts), no build step: the browser loads them as they are.
 
 **LoRA folders.** Kiln reads your LoRAs from Forge. Put face LoRAs in a `people` (or `faces`, `characters`)
 subfolder and styles in `style`; the folder names are configurable in `config.local.json`.

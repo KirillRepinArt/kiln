@@ -2,16 +2,40 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
-## Unreleased — v0.7 (structure: the whole app reorganised, behaviour unchanged)
+## v0.7 — 2026-10-27 (structure: the whole app reorganised)
 
-- **Development safety net** (nothing changes for users): every commit is checked by a privacy scan (personal paths,
-  e-mail addresses, pictures with a prompt inside, private words kept outside the repo — commit messages too) and by
-  linters (ESLint, Stylelint, Ruff); CI runs the linters, the privacy scan and the end-to-end tests on every push; the
-  tests run several at a time. Setup in CONTRIBUTING.md.
-- Fixed a test that could never fail (a regular expression with control characters in it).
-- **Demo mode removed:** opening `index.html` as a file (or Kiln's server stopping) now shows a note to start Kiln
-  with `kiln.bat`, and the page reconnects by itself — instead of a simulated queue with made-up LoRAs. Kiln no
-  longer starts on a fake LoRA list before Forge's arrives. The one-time LoRA restore of v0.2.1 is gone too.
+Mostly under the hood: Kiln works as before, and is now built to grow (ComfyUI, the Library, thousands of pictures).
+What you'll notice:
+
+- **Spacing on one scale** (a 4-pixel grid) with a clear hierarchy: 20 px between areas, 12 between an area and its
+  parts, 8 for things attached to a box. Gaps are a little roomier. The prompt's text sits 28 px from the box's edge to
+  the letters on every side; its character count and ✕ sit centred in the top margin, on the text column.
+- **One outline rule:** something you move or resize gets a dashed line 12 px outside it, its corners following the
+  plate (the prompt box's press outline now follows the box); a place to drop gets the line inside.
+- **Four skins:** Aurora, Embers, Matrix (was Emerald) and Starscape. Ice, Sunset and Ember shared one look in three
+  colourings; a saved choice moves to the nearest skin. Embers' own effect (sparks rising from a kiln) comes later.
+- **Change the look yourself:** every colour, gap, corner, type size and timing is a named value in
+  `app/styles/tokens.css`, each skin a small file in `app/styles/themes/` (`docs/CUSTOMIZING.md`). Save a style file
+  while Kiln runs and the page takes it in place — no reload.
+- **Starting Kiln twice is safe:** one Kiln per data folder; if its port is taken by another program it uses the next
+  free one, and `kiln.bat` finds the running Kiln instead of mistaking another program for it. No Edge: Chrome or
+  Chromium, else your default browser.
+- **Nothing leaves your machine**, now checked by a test on every change (the update check, when you press it, is the
+  one exception). Satoshi, when not installed, says so in the font menu (no failed request on every start).
+- **Demo mode removed:** opening `index.html` as a file (or the server stopping) shows a note to start Kiln with
+  `kiln.bat`, and the page reconnects by itself. Kiln no longer starts on a made-up LoRA list.
+- The server keeps a log in `data/kiln.log` (rotated), for when something went wrong while nobody was watching.
+
+Under the hood:
+
+- The page is native ES modules, one model per kind of state (the queue, the prompt, the picture view, the layout), the
+  layout maths in a pure, unit-tested module; every page file type-checked (TypeScript as a checker, JSDoc types).
+- The server is a package of small typed modules (`python -m server`, mypy strict); Forge sits behind one backend
+  interface, ready for a second generator.
+- Safety net: a privacy scan and linters on every commit, CI on every push, end-to-end tests several at a time, unit
+  tests for the server and the page's logic. Behaviour-preserving steps were proven unchanged (computed styles, API
+  answers, syntax trees).
+- Docs: `docs/ARCHITECTURE.md` (how it's built), `docs/decisions/` (why), `THIRD-PARTY.md`, `CONTRIBUTING.md`.
 
 ## v0.6 — 2026-10-25 (queue at scale)
 

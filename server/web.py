@@ -10,6 +10,7 @@ import base64
 import json
 import os
 import re
+import socket
 import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -46,6 +47,9 @@ Routes = tuple[tuple[re.Pattern[str], str], ...]  # (path pattern, Handler metho
 class KilnServer(ThreadingHTTPServer):
     # on Windows "reuse address" lets a second server share the port silently: claim it exclusively instead
     allow_reuse_address = os.name != "nt"
+    # the page asks for ~40 modules at once (modulepreload): socketserver's backlog of 5 overflowed on a slow machine
+    # and Windows refused the rest (ERR_CONNECTION_REFUSED on random /app/*.js — CI's "never became ready")
+    request_queue_size = socket.SOMAXCONN
 
     def __init__(self, address: tuple[str, int], kiln: Kiln) -> None:
         super().__init__(address, Handler)

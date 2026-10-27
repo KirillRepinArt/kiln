@@ -2,6 +2,22 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
+## v0.7.2 — 2026-10-28 (the glass plate)
+
+- **One glass plate under the right column.** It is the empty frame in Generating and the panel in Queue, LoRAs and PNG
+  Info, and a tab switch changes its shape — the glass blurs all the way through (it used to go clear for a moment, then
+  the blur popped in: a switch was a snapshot, and a snapshot can't blur what's behind it). The prompt column slides as
+  itself, its glass live too; only the panel's contents cross-fade, landing with the plate.
+- PNG Info's dashed drop line and the empty frame's outline belong to the plate: they change shape with it and fade
+  as a switch leaves (they used to slide, get cut off, or pop in after the switch).
+- **A picture travels across a switch only when it's the same picture** (a just-finished one, in Generating and the
+  Gallery). Otherwise the old one fades where it is and the new one — with its glow — fades in as the plate lands (the
+  Gallery's picture used to grow into the render's box).
+- **Saves survive a crash.** Kiln writes its list, numbers, timings and every picture to a temporary file, makes sure
+  it's on the disk, then swaps it in — a crash leaves the old file or the new one, never an empty or zeroed one (a blue
+  screen mid-save had emptied the list and zeroed a picture). The list keeps its previous version (`queue.json.bak`);
+  an unreadable list is set aside, not written over, and the previous one is loaded.
+
 ## v0.7.1 — 2026-10-27 (a pass of small fixes and features)
 
 - **A picture you're looking at stays** when you change size or ratio: it goes with ✕, an arrow or Start; the new

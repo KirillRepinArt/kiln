@@ -71,7 +71,8 @@ html.laymorph #fglow[style*="display: none"] {
   animation-duration: var(--sw-t);
   animation-timing-function: var(--sw-e);
   height: 100%;
-}
+  object-fit: cover;
+} /* a box changing shape crops the pictures, never squeezes them (Gallery ↔ Generating between shapes, 2026-10-27) */
 ::view-transition-group(kiln-glow) {
   animation-duration: var(--sw-t);
   animation-timing-function: var(--sw-e);
@@ -143,14 +144,17 @@ html.tabmorph body.laysnap .seg .thumb {
     left var(--t-280) var(--ease),
     width var(--t-280) var(--ease) !important;
 } /* !important: over the switch's glide stop */
-html.tabmorph::view-transition-group(kiln-pic) {
+html.tabmorph::view-transition-group(kiln-pic),
+html.tabmorph::view-transition-group(kiln-glow) {
   animation-duration: var(--t-260);
   animation-timing-function: var(--e-emph);
 }
 html.tabmorph::view-transition-old(kiln-pic),
-html.tabmorph::view-transition-new(kiln-pic) {
+html.tabmorph::view-transition-new(kiln-pic),
+html.tabmorph::view-transition-old(kiln-glow),
+html.tabmorph::view-transition-new(kiln-glow) {
   animation-duration: var(--t-200);
-}
+} /* the glow on the picture's clock: it trailed it by 0.2 s (2026-10-27) */
 @keyframes kfadeout {
   to {
     opacity: 0;

@@ -441,3 +441,29 @@ export async function galleryToStepZeroFades(k, t) {
   t.ok(g > 0, "with a preview: the picture morphs into it, as before", g);
 }
 galleryToStepZeroFades.opts = { step: 1.5 };
+
+/* Gallery → Generating with a preview to show (2026-10-27, the user: "looks twitchy"): measured per frame — the old
+   picture flashed into the new frame for a frame or two (a second cross-fade on top of the switch's), the box
+   squeezed the pictures as it changed shape, and the glow trailed the picture by 0.2 s */
+export async function galleryToPreviewIsClean(k, t) {
+  await k.theme("aurora"); // the skin with a glow round the picture
+  await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 1 });
+  await k.until(`jobs.some(j=>j.status==="done")`, 20000);
+  await k.job("[fill:446688] square render", { ar: "1:1", steps: 60 });
+  await k.until(`current()&&current().preview_rev`, 20000, 100);
+  await k.sleep(1500);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1500);
+  const r = await k.ev(`new Promise(res=>{const o={cvx:0,dur:{},fit:""},t0=performance.now();
+    document.querySelector('.tab[data-v="gen"]').click();
+    (function s(){o.cvx=Math.max(o.cvx,+getComputedStyle($("cvx")).opacity);
+      for(const a of document.getAnimations()){const p=a.effect&&a.effect.pseudoElement;if(p&&/group\\((kiln-pic|kiln-glow)\\)/.test(p))o.dur[p]=a.effect.getComputedTiming().duration}
+      if(!o.fit&&document.documentElement.classList.contains("laymorph"))o.fit=getComputedStyle(document.documentElement,"::view-transition-old(kiln-pic)").objectFit;
+      if(performance.now()-t0<700)requestAnimationFrame(s);else res(o)})()})`);
+  t.ok(r.cvx === 0, "no second cross-fade: the old picture never flashes into the new frame", r);
+  const d = Object.values(r.dur);
+  t.ok(d.length === 2 && d[0] === d[1], "the glow moves on the picture's clock", r.dur);
+  t.ok(r.fit === "cover", "the changing box crops the pictures, never squeezes them", r.fit);
+}
+galleryToPreviewIsClean.opts = { step: 0.6 };

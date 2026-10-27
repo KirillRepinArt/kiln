@@ -57,7 +57,7 @@
   background: var(--raised2);
 }
 /* reorder = pick up the plate: the held row floats over the list, a touch larger, with a deeper shadow; where it would
-   land, a drop plate with the line inset (the outline rule). queue.js places the row while you hold it */
+   land, its footprint. queue.js places the row while you hold it */
 .qi.lifted,
 .qi.settling {
   position: fixed;
@@ -70,18 +70,12 @@
   box-shadow: 0 16px 40px var(--black-55);
   background: var(--raised2);
 }
+/* where the held row fits: its footprint — the dashed line on the row's own edge, its corners, nothing inside (a row
+   lifted out leaves its outline, not a drop plate: nothing is dropped into it, the row itself moves) */
 .qslot {
-  position: relative;
   margin-bottom: var(--space-2);
-  border-radius: var(--r-14);
-  background: var(--white-3);
-}
-.qslot::after {
-  content: "";
-  position: absolute;
-  inset: var(--drop-inset);
   border: var(--outline);
-  border-radius: max(0px, calc(var(--r-14) - var(--drop-inset))); /* concentric */
+  border-radius: var(--r-14);
 }
 body.qdragging,
 body.qdragging * {

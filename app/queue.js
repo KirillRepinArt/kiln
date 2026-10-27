@@ -226,8 +226,8 @@ export function setQsAnchor(id) {
   qsAnchor = id;
 }
 /* reorder = pick up the plate (2026-10-27, agreed with the user): the real row lifts (a touch larger, a deeper shadow)
-   and follows the pointer up and down — one copy, never a ghost of it; where it would land, a drop plate (the line inset,
-   the outline rule) travels through the list as the other rows slide aside on the glide curve. Letting go settles it into
+   and follows the pointer up and down — one copy, never a ghost of it; where it would land, its footprint (the dashed line
+   on a row's edge) travels through the list as the other rows slide aside on the glide curve. Letting go settles it into
    the plate; Esc puts it back where it was. The same drag language as moving the prompt box. The list is never rebuilt
    while you hold a row (the poll waits: dragId) */
 /** the waiting job being held @type {number | null} */
@@ -254,12 +254,12 @@ function slideRows(change) {
 }
 function initReorder() {
   const W = $("qwrap");
-  /** the row pressed / held: the press, where on the row it was grabbed, the drop plate, what it sat before, the pointer
+  /** the row pressed / held: the press, where on the row it was grabbed, the footprint, what it sat before, the pointer
    * @type {{ row: HTMLElement, pid: number, x0: number, y0: number, moved: boolean, grab: number,
    *   slot: HTMLElement | null, home: Element | null, y: number, raf: number } | null} */
   let d = null,
     noClick = false;
-  /** the drop plate's place for a pointer at y: before the first row whose middle is below it @param {number} y */
+  /** the footprint's place for a pointer at y: before the first row whose middle is below it @param {number} y */
   const placeSlot = y => {
     const m = /** @type {NonNullable<typeof d>} */ (d),
       slot = /** @type {HTMLElement} */ (m.slot),
@@ -303,7 +303,7 @@ function initReorder() {
     } catch (_) {}
     m.raf = requestAnimationFrame(edgeScroll);
   }
-  /* let go (or Esc): the row glides into the plate, then takes its place in the list */
+  /* let go (or Esc): the row glides into its footprint, then takes its place in the list */
   /** @param {boolean} keep where it was dropped (false: back home) */
   function settle(keep) {
     const m = d;

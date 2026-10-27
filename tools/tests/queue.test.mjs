@@ -196,8 +196,8 @@ export async function thumbnailsDraw(k, t) {
   );
 }
 
-/* reorder = pick up the plate (2026-10-27): the row itself lifts and follows the pointer (one copy, no ghost), a drop
-   plate with the line inset travels through the list, letting go settles it there; Esc puts it back; a press without
+/* reorder = pick up the plate (2026-10-27): the row itself lifts and follows the pointer (one copy, no ghost), its
+   footprint travels through the list, letting go settles it there; Esc puts it back; a press without
    moving is still a click (its prompt) */
 export async function pickUpThePlate(k, t) {
   await k.job("[fill:2828dc] running", { steps: 60 });
@@ -224,11 +224,15 @@ export async function pickUpThePlate(k, t) {
       clones:document.querySelectorAll(".qi").length,slot:!!s,
       order:[...document.querySelector("#qsPend").children].filter(e=>e.matches(".qi:not(.lifted),.qslot")).map(e=>e.classList.contains("qslot")?"_":e.querySelector(".p").textContent.trim()),
       rowTop:l&&l.getBoundingClientRect().top,
-      plate:!!s&&getComputedStyle(s,"::after").borderTopStyle}})()`);
+      line:!!s&&getComputedStyle(s).borderTopStyle,fill:!!s&&getComputedStyle(s).backgroundColor}})()`);
   await k.shot("held");
   t.ok(held.lifted && held.copies === 1, "the row itself is lifted: one copy, no ghost", held);
-  t.ok(held.order.join() === "b,c,_,d", "the drop plate travels to where it would land (after c)", held);
-  t.ok(held.plate === "dashed", "…a plate with the line inset", held);
+  t.ok(held.order.join() === "b,c,_,d", "the footprint travels to where it would land (after c)", held);
+  t.ok(
+    held.line === "dashed" && held.fill === "rgba(0, 0, 0, 0)",
+    "…its footprint: the dashed line on its edge, nothing inside",
+    held,
+  );
   t.near(held.rowTop, rows[0].top + 2.2 * step, 6, "the row follows the pointer", held);
   await k.release(x, y + 2.2 * step);
   await k.sleep(1500);

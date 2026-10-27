@@ -103,9 +103,12 @@ function flipTabs(x0) {
   }
   tb.style.transform = `translateX(${dx}px) ${want}`;
   void tb.offsetWidth;
+  /* the same pace as the prompt column's slide in a switch (motion.css kiln-prompt): side by side, the faster one read
+     as rushed (the user, 2026-10-27) */
   requestAnimationFrame(() => {
-    tb.style.removeProperty("transition");
+    tb.style.setProperty("transition", "transform var(--t-650) var(--lay-e)", "important");
     tb.style.transform = want;
+    setTimeout(() => tb.style.removeProperty("transition"), 700);
   });
 }
 

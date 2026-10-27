@@ -626,3 +626,32 @@ export async function pngInfoOnePlate(k, t) {
     "✕ closes the PNG",
   );
 }
+
+/* PNG Info's bottom row and its raw text (2026-10-27, the user: "Show raw text — not sure why we need it", "not loving
+   the way bottom buttons are spread to all sides"): no raw toggle — a format Kiln can't lay out is shown as stored, a
+   copy icon on the first heading copies the whole text; Choose… on the left, Keep seed right beside Send to prompt */
+export async function pngInfoBottomRow(k, t) {
+  await k.ev(`(document.querySelector('.tab[data-v="png"]').click(),1)`);
+  await k.sleep(1200);
+  await k.ev(
+    `${PNG_WITH_PARAMS}.then(dt=>$("pout").dispatchEvent(new DragEvent("drop",{dataTransfer:dt,bubbles:true,cancelable:true})))`,
+  );
+  await k.until(`/harbour/.test($("pout").textContent)`, 3000);
+  await k.sleep(400);
+  t.ok(!(await k.ev(`/raw text/i.test(document.querySelector(".pwrap").textContent)`)), "no Show raw text");
+  t.ok(await k.ev(`!!document.querySelector(".pi-h [data-copy]")`), "a copy icon on the first heading");
+  const g =
+    await k.ev(`(()=>{const r=id=>$(id).getBoundingClientRect(),c=r("pChoose"),k=r("pKeep"),s=r("pSend"),a=document.querySelector(".pact").getBoundingClientRect();
+    return {chooseLeft:Math.round(c.left-a.left),keepToSend:Math.round(s.left-k.right),chooseToKeep:Math.round(k.left-c.right),send:!$("pSend").disabled}})()`);
+  t.ok(g.keepToSend <= 12 && g.chooseToKeep > 100, "two groups: Choose… alone, Keep seed right beside Send", g);
+  t.ok(g.send, "a Forge PNG can be sent to the prompt", g);
+  // another tool's text: shown as stored, nothing to send
+  await k.ev(
+    `${PNG_WITH_PARAMS.replace('"a quiet harbour"+String.fromCharCode(10)+"Steps: 4, Seed: 12345, Size: 60x80"', '"made elsewhere: cfg 7"')}.then(dt=>$("pout").dispatchEvent(new DragEvent("drop",{dataTransfer:dt,bubbles:true,cancelable:true})))`,
+  );
+  t.ok(
+    await k.until(`$("pout").classList.contains("raw")&&/made elsewhere/.test($("pout").textContent)`, 3000),
+    "a format Kiln can't lay out is shown as stored",
+  );
+  t.ok(await k.ev(`$("pSend").disabled`), "…with nothing to send to the prompt");
+}

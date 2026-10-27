@@ -131,6 +131,9 @@
   font-size: var(--fs-13);
 }
 .pi-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -214,9 +217,9 @@
   border-radius: var(--r-pill);
 }
 .pact .keepseed {
-  margin-right: auto;
-  margin-left: var(--space-3);
-}
+  margin-right: var(--space-1);
+} /* two groups (2026-10-27): Choose… on the left (the file); Keep seed right beside Send to prompt (the option next to
+     the action it changes) */
 .btn {
   padding: var(--space-2) var(--space-4);
   border-radius: var(--r-pill);
@@ -234,4 +237,26 @@
 .btn[disabled] {
   opacity: 0.4;
   pointer-events: none;
+}
+
+/* copy the whole parameters text: a quiet icon at the end of the first heading's row, on the text column's edge */
+.pi-copy {
+  display: grid;
+  place-items: center;
+  width: var(--pc-btn);
+  height: var(--pc-btn);
+  margin: calc(var(--space-hair) * -1.5) calc(var(--space-hair) * -1.5) calc(var(--space-hair) * -1.5) 0; /* the 14 px glyph on the text's edge, the row's height unchanged */
+  border-radius: 50%;
+  color: var(--muted);
+  transition:
+    color var(--t-150),
+    background var(--t-150);
+}
+.pi-copy svg {
+  width: 14px;
+  height: 14px;
+}
+.pi-copy:hover {
+  color: var(--white);
+  background: var(--raised2);
 }

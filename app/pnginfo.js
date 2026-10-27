@@ -1,10 +1,10 @@
 // @ts-check
 /* Kiln · PNG Info tab */
 import { esc, renderAll, toast } from "./boot.js";
-import { $, targetField } from "./dom.js";
+import { $, hit, targetField } from "./dom.js";
 import { SIZES } from "./presets.js";
 import { setDraft } from "./prompt.js";
-import { LORAS, P, S, save } from "./state.js";
+import { IC, LORAS, P, S, save } from "./state.js";
 import { showView } from "./tabs.js";
 
 /* ======================= PNG info (real) ======================= */
@@ -78,8 +78,8 @@ export async function readPng(f) {
   parsed = parseParams(txt);
   parsed.name = nameFrom(f);
   renderPngInfo(txt);
-  /** @type {HTMLButtonElement} */ ($("pSend")).disabled = false;
-  $("pRaw").style.display = "";
+  // not Forge's layout: nothing Kiln can put in the prompt box (it would paste the whole stored text)
+  /** @type {HTMLButtonElement} */ ($("pSend")).disabled = $("pout").classList.contains("raw");
 }
 
 /* ---------- PNG Info: prompt rendered like the editor + settings table ---------- */
@@ -105,23 +105,31 @@ function piParams(line) {
   }
   return out;
 }
+/* the copy icon beside a heading (the icon set's copy, in the text's colour) */
+const COPY = `<button class="pi-copy" data-copy title="Copy all the parameters">${IC.copy.replace('stroke="#fff"', 'stroke="currentColor"')}</button>`;
+/** a heading; the first one carries the copy icon @param {string} t @param {boolean} [copy] */
+const piH = (t, copy) => `<div class="pi-h"><span>${t}</span>${copy ? COPY : ""}</div>`;
+/* formatted when it's Forge's / A1111's layout (a "Steps:" line); anything else is shown as stored — the old "Show raw
+   text" button is gone (2026-10-27, the user: "not sure why we need it") */
 /** @param {string} t the PNG's parameters text */
 function renderPngInfo(t) {
   const o = $("pout");
-  o.classList.remove("raw");
   const i = t.search(/\n(Negative prompt:|Steps:)/);
-  const prompt = i >= 0 ? t.slice(0, i) : t;
   const rest = i >= 0 ? t.slice(i + 1) : "";
-  const negM = rest.match(/^Negative prompt:\s*([\s\S]*?)(?=\nSteps:|$)/);
   const pline = (rest.match(/(^|\n)(Steps:[^\n]*)/) || [])[2] || "";
-  let h = `<div class="pi-h">Prompt</div><div class="pi-p">${prompt.split("\n").map(piLine).join("")}</div>`;
-  if (negM && negM[1].trim())
-    h += `<div class="pi-h">Negative prompt</div><div class="pi-p pi-neg">${esc(negM[1].trim())}</div>`;
   const kv = piParams(pline);
-  if (kv.length)
-    h += `<div class="pi-h">Settings</div><dl class="pi-grid">${kv.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
+  o.classList.toggle("raw", !kv.length);
+  if (!kv.length) {
+    o.innerHTML = piH("Parameters", true) + `<div class="pi-p">${esc(t)}</div>`;
+    return;
+  }
+  const prompt = t.slice(0, i);
+  const negM = rest.match(/^Negative prompt:\s*([\s\S]*?)(?=\nSteps:|$)/);
+  let h = piH("Prompt", true) + `<div class="pi-p">${prompt.split("\n").map(piLine).join("")}</div>`;
+  if (negM && negM[1].trim()) h += piH("Negative prompt") + `<div class="pi-p pi-neg">${esc(negM[1].trim())}</div>`;
+  h +=
+    piH("Settings") + `<dl class="pi-grid">${kv.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
   o.innerHTML = h;
-  $("pRaw").textContent = "Show raw text";
 }
 
 /** @param {string} t @returns {PngParams} */
@@ -199,20 +207,17 @@ export function initPnginfo() {
     o.dataset.raw = "";
     parsed = null;
     /** @type {HTMLButtonElement} */ ($("pSend")).disabled = true;
-    $("pRaw").style.display = "none";
     $("pClear").style.display = "none";
     /** @type {HTMLInputElement} */ ($("file")).value = "";
   };
-  $("pRaw").onclick = () => {
-    const o = $("pout");
-    if (o.classList.contains("raw")) {
-      renderPngInfo(/** @type {string} */ (o.dataset.raw));
-    } else {
-      o.classList.add("raw");
-      o.textContent = /** @type {string} */ (o.dataset.raw);
-      $("pRaw").textContent = "Show formatted";
-    }
-  };
+  /* the copy icon on the first heading: the whole parameters text, as stored */
+  $("pout").addEventListener("click", e => {
+    if (!hit(e, "[data-copy]")) return;
+    navigator.clipboard.writeText($("pout").dataset.raw || "").then(
+      () => toast("Parameters copied"),
+      () => toast("Couldn't copy the parameters"),
+    );
+  });
   $("pKeep").onclick = e => {
     e.preventDefault();
     S.keepSeed = !S.keepSeed;

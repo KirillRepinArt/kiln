@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -76,6 +77,21 @@ def jobs():
 
 def idle():
     return not any(j["status"] in ("pending", "running") for j in jobs())
+
+
+def saved(data_dir):
+    """What Kiln saved — the job list and the series numbers — from data/kiln.db (v0.7b on) or the JSON files before."""
+    db = data_dir / "kiln.db"
+    if db.exists():
+        con = sqlite3.connect(db)
+        try:
+            q = [json.loads(d) for (d,) in con.execute("SELECT data FROM jobs ORDER BY pos")]
+            row = con.execute("SELECT value FROM kv WHERE key = 'names'").fetchone()
+            return q, json.loads(row[0]) if row else {}
+        finally:
+            con.close()
+    q = json.loads((data_dir / "queue.json").read_text(encoding="utf-8"))
+    return q, json.loads((data_dir / "names.json").read_text(encoding="utf-8"))
 
 
 def main(repo, out_path):
@@ -225,9 +241,9 @@ def main(repo, out_path):
         rec.append(["data files", 0, sorted(p.name for p in data_dir.iterdir())])
         rec.append(["out files", 0, sorted(p.name for p in out_dir.iterdir())])
         rec.append(["trash", 0, sorted(p.name for p in (data_dir / "trash").iterdir())])
-        q = json.loads((data_dir / "queue.json").read_text(encoding="utf-8"))
+        q, names = saved(data_dir)
         rec.append(["queue.json", 0, clean(q, out_dir)])
-        rec.append(["names.json", 0, json.loads((data_dir / "names.json").read_text(encoding="utf-8"))])
+        rec.append(["names.json", 0, names])
     finally:
         for p in procs:
             p.kill()

@@ -18,6 +18,7 @@ from server.launch import browser_command, find_browser, profile_dir, running_po
 from server.lifecycle import window_gone
 from server.page import build_page, styles_signature
 from server.pictures import Pictures
+from server.store import Store
 from server.updates import version_key
 
 
@@ -41,6 +42,7 @@ class TempDirs(unittest.TestCase):
         self.paths.make_dirs()
 
     def tearDown(self) -> None:
+        Store.close_all()  # Windows won't delete a folder with an open database in it
         self._tmp.cleanup()
 
 
@@ -69,7 +71,7 @@ class Images(unittest.TestCase):
 class Naming(TempDirs):
     def name(self, series: str, files: list[str] | None = None, take: bool = False) -> str:
         return naming.next_filename(
-            series, 42, out_dir=self.paths.out, job_files=files or [], names_file=self.paths.names_file, take=take
+            series, 42, out_dir=self.paths.out, job_files=files or [], names=Store.open(self.paths), take=take
         )
 
     def test_slugify(self) -> None:
@@ -88,7 +90,7 @@ class Naming(TempDirs):
     def test_a_deleted_number_is_never_reused(self) -> None:
         self.assertEqual(self.name("Cup", take=True), "cup-001.png")
         self.assertEqual(self.name("Cup", take=True), "cup-002.png")  # nothing on disk: the high-water mark counts
-        self.assertEqual(json.loads(self.paths.names_file.read_text()), {"cup": 2})
+        self.assertEqual(Store.open(self.paths).get("names"), {"cup": 2})
         self.assertEqual(self.name("Cup"), "cup-003.png")
         self.assertEqual(self.name("Cup"), "cup-003.png", "without take, nothing is recorded")
 
@@ -135,9 +137,9 @@ class Queue(TempDirs):
 
     def test_unreadable_queue_starts_empty(self) -> None:
         self.paths.queue_file.write_text("{ broken")
-        q = JobQueue(self.paths)
         with self.assertLogs("kiln", "WARNING"):
-            q.load()
+            q = JobQueue(self.paths)  # the one-time import of the old JSON files
+        q.load()
         self.assertEqual(q.jobs, [])
 
     def test_ids_are_never_reused(self) -> None:
@@ -177,25 +179,42 @@ class Queue(TempDirs):
         up = q.add_upscale(q.jobs[0], "R-ESRGAN", 2)
         self.assertEqual([j["id"] for j in q.jobs], [ids[0], up, ids[1]])
 
-    def test_a_crash_mid_save_falls_back_to_the_previous_list(self) -> None:
+    def test_the_list_is_kept_in_the_database(self) -> None:
         q = JobQueue(self.paths)
-        q.add([{"steps": 1}])
-        q.add([{"steps": 1}])  # the second save keeps the first list as queue.json.bak
-        self.paths.queue_file.write_bytes(b"")  # 2026-10-27: a crash left queue.json empty
+        a, b = q.add([{"steps": 1}, {"steps": 1}])
+        q.jobs[0]["status"] = "done"
+        q.save()
+        Store.close_all()  # as after a restart
         q2 = JobQueue(self.paths)
-        with self.assertLogs("kiln", "WARNING"):
-            q2.load()
-        self.assertEqual([j["id"] for j in q2.jobs], [1])  # the previous list is back, not an empty one
-        aside = list(self.paths.data.glob("queue.json.unreadable-*"))
-        self.assertEqual(len(aside), 1)  # the broken file is kept, never written over
+        q2.load()
+        self.assertEqual([(j["id"], j["status"]) for j in q2.jobs], [(a, "done"), (b, "pending")])
+        self.assertTrue(self.paths.db_file.exists())
+        self.assertFalse(self.paths.queue_file.exists())
 
-    def test_every_save_keeps_the_previous_list(self) -> None:
+    def test_a_save_writes_only_what_changed(self) -> None:
         q = JobQueue(self.paths)
-        q.add([{"steps": 1}])
-        q.add([{"steps": 1}])
-        prev = json.loads((self.paths.data / "queue.json.bak").read_text(encoding="utf-8"))
-        self.assertEqual([j["id"] for j in prev], [1])
-        self.assertFalse((self.paths.data / "queue.json.tmp").exists())
+        q.add([{"steps": 1}] * 3)
+        con = q.store.con
+        before = con.total_changes
+        q.jobs[1]["status"] = "done"
+        q.save()
+        self.assertEqual(con.total_changes - before, 1)  # one row, not the whole list
+
+    def test_old_json_files_are_imported_once_and_kept(self) -> None:
+        self.paths.queue_file.write_bytes(b"")  # 2026-10-27: a crash had left queue.json empty…
+        bak = self.paths.queue_file.with_name("queue.json.bak")
+        bak.write_text(json.dumps([{"id": 7, "status": "done"}]))  # …and the previous list was kept
+        self.paths.ids_file.write_text(json.dumps({"high": 9}))
+        self.paths.names_file.write_text(json.dumps({"cup": 3}))
+        with self.assertLogs("kiln", "WARNING"):
+            q = JobQueue(self.paths)
+        q.load()
+        self.assertEqual([j["id"] for j in q.jobs], [7])
+        self.assertEqual(q.next_id(), 10)
+        self.assertEqual(q.store.get("names"), {"cup": 3})
+        legacy = sorted(p.name for p in (self.paths.data / "legacy-json").iterdir())
+        self.assertEqual(legacy, ["ids.json", "names.json", "queue.json", "queue.json.bak"])  # kept, not deleted
+        self.assertFalse(self.paths.queue_file.exists())
 
     def test_clear_list_then_undo(self) -> None:
         q = JobQueue(self.paths)

@@ -1,4 +1,4 @@
-"""The job list: every picture asked for, waiting, rendering or finished; saved to data/queue.json on every change.
+"""The job list: every picture asked for, waiting, rendering or finished; saved to data/kiln.db on every change.
 
 One lock guards the list (the worker, the HTTP threads and the delete timers all touch it). Every change goes through
 save(), which bumps the revision — the page's light poll compares against it (see signature()).
@@ -9,15 +9,14 @@ server's own and never leave it (public()).
 
 from __future__ import annotations
 
-import json
 import logging
 import threading
 import time
 from collections.abc import Callable, Iterable
 from typing import Any
 
-from . import durable
 from .config import Paths
+from .store import Store
 from .timings import Estimate
 
 log = logging.getLogger("kiln")
@@ -35,6 +34,7 @@ def public(job: Job) -> Job:
 class JobQueue:
     def __init__(self, paths: Paths) -> None:
         self.paths = paths
+        self.store = Store.open(paths)
         self.lock = threading.RLock()
         self.wake = threading.Event()  # set when there's new work: the worker stops waiting
         self.jobs: list[Job] = []
@@ -48,44 +48,20 @@ class JobQueue:
 
     # ------------------------------------------------------------ saving
     def load(self) -> None:
-        f = self.paths.queue_file
-        bak = f.with_name(f.name + ".bak")
-        for src in (f, bak):
-            if not src.exists():
-                continue
-            try:
-                self.jobs = json.loads(src.read_text(encoding="utf-8"))
-            except (OSError, ValueError) as e:
-                # never written over: kept aside as it was, and the previous list (queue.json.bak) is tried next
-                aside = src.with_name(f"{src.name}.unreadable-{int(time.time())}")
-                log.warning("%s unreadable (%s) — kept as %s", src.name, e, aside.name)
-                try:
-                    src.replace(aside)
-                except OSError:
-                    pass
-                continue
-            if src is bak:
-                log.warning("queue.json was unreadable — the previous list (queue.json.bak) is back")
-            break
+        self.jobs = self.store.load_jobs()
         for j in self.jobs:  # a crash mid-job: run it again
             if j["status"] == "running":
                 j.update(status="pending", step=0, progress=0)
-        if self.paths.flags_file.exists():
-            try:
-                self.flags.update(json.loads(self.paths.flags_file.read_text(encoding="utf-8")))
-            except (OSError, ValueError):
-                pass
+        self.flags.update(self.store.get("flags", {}))
 
     def save(self) -> None:
         self.rev += 1
-        durable.write_text(
-            self.paths.queue_file, json.dumps(self.jobs, ensure_ascii=False, indent=1), keep_previous=True
-        )
+        self.store.save_jobs(self.jobs)
 
     def set_paused(self, paused: bool) -> None:
         with self.lock:
             self.flags["paused"] = paused
-            durable.write_text(self.paths.flags_file, json.dumps(self.flags))
+            self.store.put("flags", self.flags)
         self.wake.set()
 
     # ------------------------------------------------------------ looking things up (hold the lock)
@@ -148,16 +124,12 @@ class JobQueue:
     def next_id(self) -> int:
         """Job ids are never handed out again (like file names): the page keys its state and its image copies by id,
         and a reused id made a new job look like one it had already seen (2026-10-24)."""
-        f = self.paths.ids_file
         try:
-            hw = int(json.loads(f.read_text(encoding="utf-8")).get("high", 0))
-        except (OSError, ValueError, AttributeError):
+            hw = int((self.store.get("ids") or {}).get("high", 0))
+        except (TypeError, ValueError, AttributeError):
             hw = 0
         n = max(hw, max([j["id"] for j in self.jobs], default=0)) + 1
-        try:
-            durable.write_text(f, json.dumps({"high": n}))
-        except OSError:
-            pass
+        self.store.put("ids", {"high": n})
         return n
 
     def add(self, specs: Iterable[dict[str, Any]]) -> list[int]:

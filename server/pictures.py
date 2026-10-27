@@ -30,7 +30,7 @@ class Pictures:
             seed,
             out_dir=self.paths.out,
             job_files=self.queue.files(),
-            names_file=self.paths.names_file,
+            names=self.queue.store,
             take=take,
         )
 

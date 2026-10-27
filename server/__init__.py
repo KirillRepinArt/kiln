@@ -6,6 +6,8 @@ Settings: copy config.example.json to config.local.json and edit (that file is g
 The modules, from the bottom up (each one only uses the ones above it):
     config     settings, and where the program's files and your data live (Paths)
     images     PNG text chunks (the generation parameters inside a picture), image types
+    durable    writing files so a crash can't empty them (temp file, flushed, swapped in)
+    store      data/kiln.db: the job list, the numbers, the timings (SQLite; JSON of older versions imported once)
     naming     file names: a series and its next number, numbers never handed out twice
     timings    how long a job will take, from your own finished runs
     jobqueue   the job list: saved to data/queue.json, one lock, a revision the page polls against

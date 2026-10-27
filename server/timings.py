@@ -1,4 +1,4 @@
-"""How long a job will take, learned from your own finished runs (data/history.json, data/stats.json)."""
+"""How long a job will take, learned from your own finished runs (kept in data/kiln.db: "history", "stats")."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import json
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
-from . import durable
 from .config import Paths
+from .store import Store
 
 Job = dict[str, Any]
 Spec = Mapping[str, Any]
@@ -71,21 +71,18 @@ class Timings:
 
     def __init__(self, paths: Paths) -> None:
         self.paths = paths
+        self.store = Store.open(paths)
         self.history: list[dict[str, Any]] = []
         # MP bucket -> seconds per step (end to end, incl. load/decode); sent to the page as "stats"
         self.stats: dict[str, Any] = {"sec_per_step": {}}
 
     def load(self, jobs: Iterable[Job]) -> None:
-        if self.paths.stats_file.exists():
-            try:
-                self.stats = json.loads(self.paths.stats_file.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                pass
-        if self.paths.history_file.exists():
-            try:
-                self.history = json.loads(self.paths.history_file.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                self.history = []
+        stats = self.store.get("stats")
+        if isinstance(stats, dict):
+            self.stats = stats
+        history = self.store.get("history")
+        if history is not None:
+            self.history = history if isinstance(history, list) else []
             return
         # first run with history: seed it from the finished jobs still in the queue
         prev = None
@@ -106,7 +103,7 @@ class Timings:
 
     def save_history(self) -> None:
         del self.history[:-HISTORY_KEEP]
-        durable.write_text(self.paths.history_file, json.dumps(self.history))
+        self.store.put("history", self.history)
 
     def estimate(self, spec: Spec) -> Estimate:
         return estimate_from(self.history, self.stats["sec_per_step"], spec)
@@ -118,6 +115,6 @@ class Timings:
         per = (job["finished"] - job["started"]) / max(1, sp["steps"])
         old = self.stats["sec_per_step"].get(b)
         self.stats["sec_per_step"][b] = round(per if old is None else old * 0.7 + per * 0.3, 2)
-        durable.write_text(self.paths.stats_file, json.dumps(self.stats))
+        self.store.put("stats", self.stats)
         self.history.append(run_record(job, setup_of(sp), job.get("warm")))
         self.save_history()

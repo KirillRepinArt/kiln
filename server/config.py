@@ -78,6 +78,10 @@ class Paths:
         return self.data / "trash"
 
     @property
+    def db_file(self) -> Path:  # everything below lives here since v0.7b (store.py); the JSON files are imported once
+        return self.data / "kiln.db"
+
+    @property
     def queue_file(self) -> Path:
         return self.data / "queue.json"
 

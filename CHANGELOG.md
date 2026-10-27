@@ -2,7 +2,7 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
-## Unreleased — v0.7.1 (a pass of small fixes and features)
+## v0.7.1 — 2026-10-27 (a pass of small fixes and features)
 
 - **A picture you're looking at stays** when you change size or ratio: it goes with ✕, an arrow or Start; the new
   shape shows on the ratio pill, and on the empty frame once the picture is gone.
@@ -18,6 +18,25 @@ Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when th
   through the list, letting go settles it in, Esc puts it back.
 - **Tab switches:** the tab bar glides straight to its new place (it used to leap sideways, then slide back), at the
   prompt column's pace.
+- **Tab switches keep their glass:** the panel stays glass all the way through (it went clear for a moment, then the
+  blur popped in); leaving it for Generating, it fades out glass and all. Quick clicks on the tabs land — a click during
+  a switch cuts it short and opens its tab (they used to be lost).
+- **Gallery → Generating:** before the render's first preview the picture fades where it is (it used to grow into an
+  empty frame); with a preview, no flash of the old picture, no squeezing as the box changes shape, and the glow moves
+  with the picture.
+- **Browsing pictures of different shapes:** the frame crops, then reveals, per side — two full-height pictures keep
+  their height, only the sides move (the height used to dip on every change); both sides move together, nothing
+  overshoots, and the tab bar stays on the picture's top edge and over its centre (it ran ahead, or off to the side).
+- **Steps move to ⚙ Settings → Model.** The pill on the prompt box is a switch there ("Steps on the prompt box", off by
+  default), so the box has a little more room.
+- **PNG Info:** the whole panel is the place to drop a PNG (and, once one is read, dragging another anywhere over it
+  shows the line again); read, it follows the prompt box's rules — one plate, 28 px to the picture and the letters, the
+  prompt's ✕ in the corner, the text scrolling under the picture. **Choose…** sits on the left, **Keep seed** right
+  beside **Send to prompt**. A copy icon by the prompt copies the prompt only (never the settings line with its LoRA
+  names); "Show raw text" is gone — a format Kiln can't lay out is shown as stored.
+- **Clear list has Undo** (the files were always kept; now the list comes back too, while Kiln runs).
+- Pill menus stay fully on screen and over the prompt's own buttons (✕, expand); the Queue's selection bar stays on one
+  line in a narrow panel; "1 Step", not "1 Steps".
 
 ## v0.7 — 2026-10-27 (structure: the whole app reorganised)
 

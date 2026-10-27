@@ -37,7 +37,7 @@ Kiln then starts Forge minimized when it isn't running, and stops it again when 
 started it and nothing else is using it (`"stop_forge_on_exit": false` keeps it running).
 
 **Defaults.** Kiln starts with Krea 2 Turbo settings: 4 steps, CFG 1, Euler / Simple, shift 1.15. Change them in
-⚙ Settings. Model, VAE and text encoder default to whatever Forge has loaded.
+⚙ Settings (Steps too — switch "Steps on the prompt box" on for a pill beside Ratio). Model, VAE and text encoder default to whatever Forge has loaded.
 
 **If something's off**
 
@@ -165,7 +165,8 @@ The queue shows which variant each job got, so a good result can be traced back.
   instead of stacking (switchable).
 
 **Also**
-- PNG Info: drop any Forge PNG to read its settings and send them to the prompt.
+- PNG Info: drop any Forge PNG anywhere on the panel (or Choose…) to read its settings and send them to the prompt;
+  the copy icon copies its prompt.
 - Ratio picker with shape previews · ~1 / 1.5 / 2 MP presets (all sides multiples of 16).
 - Window title and favicon show progress; a desktop notification when the queue empties (on, silent or off).
 - Closing the Kiln window stops the server once the queue is done.

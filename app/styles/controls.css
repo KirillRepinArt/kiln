@@ -37,6 +37,15 @@
   color: var(--text);
   background: var(--raised);
 }
+/* an open menu over the prompt's own buttons (2026-10-27, the user's note): its z-index only counts inside the boxes
+   it sits in, so those rise while it's open — the controls over the ✕ (inside the prompt box), the prompt box over the
+   expand modes beside the title */
+.controls:has(.pop.show) {
+  z-index: 6;
+}
+#left:has(.controls .pop.show) {
+  z-index: 5;
+}
 .pill .val {
   font-size: var(--fs-15);
   line-height: 1.1;

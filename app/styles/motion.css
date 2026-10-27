@@ -89,9 +89,17 @@ html.laymorph #fglow[style*="display: none"] {
 html.tabmorph .app {
   view-transition-name: none;
 }
-html.tabmorph .rpanel {
+html.tabmorph .rpanel > .view.on {
+  view-transition-name: kiln-panel;
+} /* the panel's content, not the panel: a named element can't see behind it (a backdrop root), so the panel's glass
+     went clear for the switch (2026-10-27). The panel itself stays live, its glass blurring all the way through */
+html.tabout .rpanel {
   view-transition-name: kiln-panel;
 }
+html.tabout .rpanel > .view.on {
+  view-transition-name: none;
+} /* leaving the panel for Generating: the panel as a whole fades out, its glass with it — the old snapshot is taken from
+     the screen, glass and all, and Generating has no panel glass to lose (it vanished at once, 2026-10-27) */
 ::view-transition-group(kiln-panel) {
   animation-duration: var(--t-650);
   animation-timing-function: var(--lay-e);

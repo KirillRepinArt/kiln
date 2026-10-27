@@ -301,13 +301,16 @@ export async function tabSwitchKeepsTabs(k, t) {
   await k.sleep(1000);
   const r =
     await k.ev(`(()=>{const h=document.documentElement,b=document.body;h.classList.add("tabmorph","laymorph");b.classList.add("laysnap");
-   const o={app:getComputedStyle(document.querySelector(".app")).viewTransitionName,panel:getComputedStyle($("rpanel")).viewTransitionName,prompt:getComputedStyle($("lcol")).viewTransitionName,tabs:getComputedStyle(document.querySelector(".tabs")).transitionDuration,thumb:getComputedStyle(document.querySelector(".seg .thumb")).transitionDuration};
+   const o={app:getComputedStyle(document.querySelector(".app")).viewTransitionName,panel:getComputedStyle($("rpanel")).viewTransitionName,view:getComputedStyle(document.querySelector(".rpanel > .view.on")).viewTransitionName,prompt:getComputedStyle($("lcol")).viewTransitionName,tabs:getComputedStyle(document.querySelector(".tabs")).transitionDuration,thumb:getComputedStyle(document.querySelector(".seg .thumb")).transitionDuration};
    h.classList.remove("tabmorph","laymorph");b.classList.remove("laysnap");return o})()`);
   t.ok(
-    r.app === "none" && r.panel === "kiln-panel",
+    r.app === "none" && r.view === "kiln-panel",
     "a tab switch fades only the content under the tabs (the tab bar and the prompt stay live)",
     r,
   );
+  /* the panel itself is never named: a named element is a backdrop root, so its glass went clear for the whole switch,
+     then the blur popped in (2026-10-27) */
+  t.ok(r.panel === "none", "…and the panel stays live: its glass blurs through the switch", r);
   t.ok(/0\.28s/.test(r.thumb), "…and the selected tab's pill slides", r);
   t.ok(
     r.prompt === "kiln-prompt" && /0\.42s/.test(r.tabs),
@@ -383,4 +386,31 @@ export async function fastTabClicks(k, t) {
   await k.until(`document.documentElement.classList.contains("laymorph")`, 1000);
   await k.click(...(await at("loras")));
   t.ok(await k.until(`${lit}==="loras"`, 3000), "again, from a page whose bar moves", await k.ev(lit));
+}
+
+/* the user, 2026-10-27: "Clear prompt, expand buttons are rendered on top of the pill menus" (a short prompt, a small
+   box). A menu's z-index only counts inside the boxes it sits in; those rise while it's open. The ✕ and the expand modes
+   are hover-revealed: shown here for the check */
+export async function menusOverPromptButtons(k, t) {
+  await k.ev(`(P.value="a cat",draft=P.value,layoutLeft(),1)`);
+  await k.sleep(600);
+  let checked = 0;
+  for (const id of ["MP", "AR", "ST", "SD", "N"]) {
+    await k.ev(`(document.getElementById("pop${id}").parentElement.click(),1)`);
+    await k.until(`document.getElementById("pop${id}").classList.contains("show")`, 2000);
+    await k.sleep(300);
+    const r = await k.ev(`(()=>{const P=document.getElementById("pop${id}"),p=P.getBoundingClientRect(),out={};
+      for(const s of ["#pclear","#hmodes"]){const e=document.querySelector(s);e.style.opacity="1";e.style.visibility="visible";
+        const b=e.getBoundingClientRect(),x=(Math.max(p.left,b.left)+Math.min(p.right,b.right))/2,y=(Math.max(p.top,b.top)+Math.min(p.bottom,b.bottom))/2;
+        if(b.width&&x>p.left&&x<p.right&&y>p.top&&y<p.bottom&&x>b.left&&x<b.right&&y>b.top&&y<b.bottom)out[s]=P.contains(document.elementFromPoint(x,y));
+        e.style.opacity="";e.style.visibility=""}
+      return out})()`);
+    for (const [s, under] of Object.entries(r)) {
+      checked++;
+      t.ok(under, `the ${id} menu is over ${s}`);
+    }
+    await k.ev(`(document.body.click(),1)`);
+    await k.sleep(400);
+  }
+  t.ok(checked > 0, "at least one menu overlaps a prompt button here (the check means something)", checked);
 }

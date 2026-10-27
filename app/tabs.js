@@ -65,8 +65,8 @@ export function tabSync(force) {
 }
 /* a tab switch is navigation, not a layout edit: the new tab is laid out at once (no glide — on a GPU busy with Forge,
    0.4 s of glass re-blurring the sky per frame was the lag, 2026-10-19), and the layout is measured once per click */
-/** @param {() => void} fn */
-export function tabGo(fn) {
+/** @param {() => void} fn @param {boolean} [toGen] it opens Generating or the Gallery (no panel there) */
+export function tabGo(fn, toGen = false) {
   const seg = $("seg"),
     x0 = seg.getBoundingClientRect().left;
   const run = () => {
@@ -85,8 +85,10 @@ export function tabGo(fn) {
   const h = document.documentElement,
     me = ++tabGos;
   h.classList.add("tabmorph");
+  // leaving the panel: it fades out as a whole, its glass with it (motion.css)
+  h.classList.toggle("tabout", toGen && $("rpanel").classList.contains("paneled"));
   layMorph(run);
-  setTimeout(() => me === tabGos && h.classList.remove("tabmorph"), 900); // a newer click keeps it on for its own switch
+  setTimeout(() => me === tabGos && h.classList.remove("tabmorph", "tabout"), 900); // a newer click keeps them for its switch
 }
 let tabGos = 0; // tab switches started so far
 
@@ -120,18 +122,21 @@ export function initTabs() {
   /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".tab")).forEach(
     t =>
       (t.onclick = () =>
-        tabGo(() => {
-          const v = /** @type {import("./types.js").Settings["view"]} */ (t.dataset.v); // index.html's data-v
-          PV.from = null;
-          if (v === "gallery") {
-            if (S.view !== "gen") showView("gen");
-            if (!browsed()) pv("gallery");
-            tabSync();
-            return;
-          }
-          if (v === "gen") pv("generating"); /* the live view: the render, or the clean frame */
-          showView(v);
-        })),
+        tabGo(
+          () => {
+            const v = /** @type {import("./types.js").Settings["view"]} */ (t.dataset.v); // index.html's data-v
+            PV.from = null;
+            if (v === "gallery") {
+              if (S.view !== "gen") showView("gen");
+              if (!browsed()) pv("gallery");
+              tabSync();
+              return;
+            }
+            if (v === "gen") pv("generating"); /* the live view: the render, or the clean frame */
+            showView(v);
+          },
+          t.dataset.v === "gen" || t.dataset.v === "gallery",
+        )),
   );
   document.fonts && document.fonts.ready.then(() => moveThumb(true));
 }

@@ -135,6 +135,7 @@ export async function scale(k, t) {
     `(()=>{const t=performance.now();showView("queue");document.body.offsetHeight;return Math.round(performance.now()-t)})()`,
   );
   await k.sleep(3000);
+  r.finRows = await k.ev(`document.querySelectorAll("#qsFin .qi").length`); // only the rows in view (+ a margin)
   const loads = await k.ev(`performance.getEntriesByType("resource").map(e=>e.name)`);
   r.fullPngLoads = loads.filter(u => u.includes("/files/")).length;
   r.thumbLoads = loads.filter(u => u.includes("/qthumbs/")).length;
@@ -143,6 +144,10 @@ export async function scale(k, t) {
     `new Promise(res=>{const q=$("qwrap"),gaps=[];let last=performance.now(),n=0;(function f(now){gaps.push(now-last);last=now;q.scrollTop+=40;if(++n<180)requestAnimationFrame(f);else{gaps.shift();gaps.sort((a,b)=>a-b);res({frames:n,p50:+gaps[gaps.length>>1].toFixed(1),p95:+gaps[Math.floor(gaps.length*.95)].toFixed(1),max:+gaps[gaps.length-1].toFixed(1)})}})(performance.now())})`,
   );
   await k.sleep(3000);
+  // to the very end: the oldest picture is there, still only a window of rows, and their thumbnails only
+  r.end = await k.ev(
+    `new Promise(res=>{const q=$("qwrap");q.scrollTop=q.scrollHeight;requestAnimationFrame(()=>requestAnimationFrame(()=>{const rows=[...document.querySelectorAll("#qsFin .qi")];res({rows:rows.length,oldest:rows.some(r=>r.dataset.id==="1"),thumbsHeld:document.querySelectorAll("#qsFin img.qt").length})}))})`,
+  );
   const loads2 = await k.ev(`performance.getEntriesByType("resource").map(e=>e.name)`);
   r.fullPngLoadsAfterScroll = loads2.filter(u => u.includes("/files/")).length;
   // 3b · a second visit (thumbnails exist now): no full pictures at all
@@ -183,5 +188,9 @@ export async function scale(k, t) {
       r,
     );
   t.ok(r.imgCache <= 16, "the page's picture cache stays bounded", r);
+  // v0.7b: the Finished list builds only the rows on screen
+  t.ok(r.finRows > 5 && r.finRows <= 60, "500 finished jobs: only the rows in view exist", r.finRows);
+  t.ok(r.end.oldest && r.end.rows <= 60, "scrolled to the end: the oldest is there, still a window of rows", r.end);
+  t.ok(r.end.thumbsHeld <= 60, "…and only their thumbnails are held", r.end);
 }
 scale.opts = { step: 1, before: fill, width: 1600, height: 1000 };

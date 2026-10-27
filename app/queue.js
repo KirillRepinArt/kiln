@@ -89,37 +89,119 @@ export function renderQueueInner() {
     `<div class="qsec"><span>Up next ${pend.length ? `· ${pend.length} · ~${fmt(left)}` : ""}${window.qPaused ? ' · <b class="paused">paused</b>' : ""}</span><button id="pauseQ" data-tip="${window.qPaused ? "Start the waiting jobs again" : "The current image finishes; nothing new starts until you resume"}">${window.qPaused ? "Resume" : "Pause after this"}</button></div>` +
       (pend.length ? pend.map(j => item(j, "pend")).join("") : '<div class="empty">Nothing queued</div>'),
   );
-  put("qsFin", done.length ? `<div class="qsec qfin" id="qfin"></div>` + done.map(j => item(j, "done")).join("") : "");
+  put("qsFin", done.length ? `<div class="qsec qfin" id="qfin"></div><div class="qflist" id="qflist"></div>` : "");
+  FIN.item = j => item(j, "done");
+  finSet(done);
   qsUpdate(); /* the selection (highlights, the header) is applied to whatever is there — never part of the rebuild */
-  {
-    const have = new Set(done.map(j => j.id));
-    for (const id of QT.keys()) if (!have.has(id)) QT.delete(id);
-    qa("[data-tth]", $("qwrap")).forEach(ph => {
-      const id = Number(ph.dataset.tth);
-      let im = QT.get(id);
-      if (!im) {
-        im = new Image();
-        im.className = "qt";
-        im.dataset.qt = id;
-        im.alt = "";
-        im.decoding = "async";
-        im.loading = "lazy";
-        im.onerror = () => {
-          if (im.dataset.tried) return;
-          im.dataset.tried = "1";
-          const j = jobs.find(x => x.id === id);
-          if (j) makeQThumb(j, im);
-        };
-        im.src = `/qthumbs/${id}.jpg`;
-        QT.set(id, im);
-      }
-      ph.replaceWith(im);
-    });
-  }
   shownSig = queueSig();
 }
 /** @type {Record<string, string>} */
 const QSEC = {}; /* the last markup of each section */
+
+/* ---------- the Finished list builds only the rows on screen (v0.7b: thousands of pictures) ----------
+   Every finished row is the same height (one line each — queue.css), so the list is a spacer as tall as all of them,
+   and only the rows in view, plus a margin, exist: placed by their index, kept while they stay in the window, made as
+   they scroll in. Their thumbnails come and go with them (all of them kept, 10 000 decoded pictures would fill the
+   memory). The rest of the Queue (the running and the waiting jobs, the selection, the header) is as before */
+const FIN = {
+  /** @type {Job[]} newest first */
+  done: [],
+  /** @type {Map<number, number>} job id -> its index */
+  at: new Map(),
+  /** @type {(j: Job) => string} a row's markup (renderQueueInner's) */
+  item: () => "",
+  sig: "",
+  pitch: 0, // a row's height plus the gap to the next
+  /** @type {Map<number, HTMLElement>} the rows that exist, by job id */
+  rows: new Map(),
+};
+const FIN_MARGIN = 8; // rows made beyond the visible ones, each side (a fast scroll never shows a gap)
+/** the finished jobs to show: the rows are made again only when something they show changed @param {Job[]} done */
+function finSet(done) {
+  const sig = done.map(j => `${j.id}:${j.status}:${j.file || ""}:${j.missing ? 1 : 0}:${j.name || ""}`).join("|");
+  FIN.done = done;
+  FIN.at = new Map(done.map((j, i) => [j.id, i]));
+  const L = $("qflist");
+  if (L && (sig !== FIN.sig || !L.childElementCount)) {
+    FIN.sig = sig;
+    L.textContent = "";
+    FIN.rows.clear();
+    FIN.pitch = 0;
+  }
+  finWindow();
+}
+/* the rows in view (+ the margin): the ones scrolled out go, with their thumbnails; the ones scrolled in are made */
+function finWindow() {
+  const L = $("qflist"),
+    n = FIN.done.length;
+  if (!L || !n) return;
+  const tmp = document.createElement("div");
+  /** @param {Job} j @param {number} i */
+  const make = (j, i) => {
+    tmp.innerHTML = FIN.item(j);
+    const el = /** @type {HTMLElement} */ (tmp.firstElementChild);
+    el.style.top = i * FIN.pitch + "px";
+    el.classList.toggle("sel", QS.has(j.id));
+    L.appendChild(el);
+    FIN.rows.set(j.id, el);
+    const ph = /** @type {HTMLElement | null} */ (el.querySelector("[data-tth]"));
+    if (ph) thumbInto(ph);
+    return el;
+  };
+  if (!FIN.pitch) {
+    const el = make(FIN.done[0], 0);
+    FIN.pitch = el.offsetHeight + parseFloat(getComputedStyle(el).marginBottom || "0") || 68;
+    el.remove();
+    FIN.rows.delete(FIN.done[0].id);
+    QT.delete(FIN.done[0].id);
+  }
+  L.style.height = n * FIN.pitch + "px";
+  const W = $("qwrap").getBoundingClientRect(),
+    top = L.getBoundingClientRect().top,
+    a = Math.max(0, Math.floor((W.top - top) / FIN.pitch) - FIN_MARGIN),
+    b = Math.min(n, Math.ceil((W.bottom - top) / FIN.pitch) + FIN_MARGIN);
+  for (const [id, el] of FIN.rows) {
+    const i = FIN.at.get(id);
+    if (i == null || i < a || i >= b) {
+      el.remove();
+      FIN.rows.delete(id);
+      QT.delete(id);
+    } else el.style.top = i * FIN.pitch + "px";
+  }
+  for (let i = a; i < b; i++) if (!FIN.rows.has(FIN.done[i].id)) make(FIN.done[i], i);
+}
+let finRaf = 0;
+/* scrolling or resizing the Queue: the window follows, once a frame */
+function finFollow() {
+  if (!finRaf)
+    finRaf = requestAnimationFrame(() => {
+      finRaf = 0;
+      finWindow();
+    });
+}
+/** a finished row's thumbnail: the one already loaded (moved into the row, never loaded twice), else a new one
+ * @param {HTMLElement} ph the row's placeholder */
+function thumbInto(ph) {
+  const id = Number(ph.dataset.tth);
+  let im = QT.get(id);
+  if (!im) {
+    const ni = new Image();
+    ni.className = "qt";
+    ni.dataset.qt = String(id);
+    ni.alt = "";
+    ni.decoding = "async";
+    ni.onerror = () => {
+      if (ni.dataset.tried) return;
+      ni.dataset.tried = "1";
+      const j = jobs.find(x => x.id === id);
+      if (j) makeQThumb(j, ni);
+    };
+    ni.src = `/qthumbs/${id}.jpg`;
+    QT.set(id, ni);
+    im = ni;
+  }
+  ph.replaceWith(im);
+}
 /* each finished row's thumbnail element, loaded once and moved into every rebuild of the list (a new element would load
    again: the files are never cached by the browser, so the list flashed empty on every visit) */
 const QT = new Map();
@@ -430,6 +512,8 @@ function initReorder() {
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initQueue() {
+  $("qwrap").addEventListener("scroll", finFollow, { passive: true });
+  new ResizeObserver(finFollow).observe($("qwrap"));
   $("qwrap").addEventListener(
     "click",
     e => {

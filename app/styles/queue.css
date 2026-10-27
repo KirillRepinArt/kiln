@@ -188,10 +188,21 @@ body.qdragging * {
   }
 }
 /* only the rows on screen are laid out and painted (hundreds of finished pictures) */
-#qsFin .qi {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 68px;
-} /* the finished rows only: a rebuilt waiting row measured at the estimate made the rows below it jump */
+/* the finished rows: only those in view exist (queue.js finWindow), each placed by its index in a list as tall as all
+   of them — so they're all one height: every line on one line, the end ending in … */
+.qflist {
+  position: relative;
+}
+.qflist > .qi {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.qflist > .qi .meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 /* selection: a round box at the row's start — on hover, or always while something is selected */
 .qck {
   position: relative;

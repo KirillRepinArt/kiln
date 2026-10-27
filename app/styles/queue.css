@@ -56,8 +56,37 @@
 .qi:hover {
   background: var(--raised2);
 }
-.qi.drag {
-  opacity: 0.4;
+/* reorder = pick up the plate: the held row floats over the list, a touch larger, with a deeper shadow; where it would
+   land, a drop plate with the line inset (the outline rule). queue.js places the row while you hold it */
+.qi.lifted,
+.qi.settling {
+  position: fixed;
+  z-index: 50;
+  margin: 0;
+  pointer-events: none;
+}
+.qi.lifted {
+  transform: scale(1.02);
+  box-shadow: 0 16px 40px var(--black-55);
+  background: var(--raised2);
+}
+.qslot {
+  position: relative;
+  margin-bottom: var(--space-2);
+  border-radius: var(--r-14);
+  background: var(--white-3);
+}
+.qslot::after {
+  content: "";
+  position: absolute;
+  inset: var(--drop-inset);
+  border: var(--outline);
+  border-radius: max(0px, calc(var(--r-14) - var(--drop-inset))); /* concentric */
+}
+body.qdragging,
+body.qdragging * {
+  cursor: grabbing !important; /* !important: over every cursor while a row is held */
+  user-select: none;
 }
 .qi.new {
   animation: qin var(--t-350) var(--ease);

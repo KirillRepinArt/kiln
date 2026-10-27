@@ -125,11 +125,13 @@ export async function sectionsStay(k, t) {
   await k.ev(
     `(window.__fin=[...document.querySelectorAll("#qsFin .qi")],window.__mut=0,new MutationObserver(m=>{for(const x of m)if(x.target.closest&&x.target.closest("#qsFin .qi"))window.__mut++}).observe($("qwrap"),{childList:true,subtree:true,attributes:true}),1)`,
   );
-  // a real drag (the events the browser sends), then the server's round trip
-  await k.ev(`(()=>{const rows=[...document.querySelectorAll('#qsPend .qi[draggable="true"]')],a=rows[0],c=rows[1],dt=new DataTransfer();
-    a.dispatchEvent(new DragEvent("dragstart",{bubbles:true,dataTransfer:dt}));const r=c.getBoundingClientRect();
-    c.dispatchEvent(new DragEvent("dragover",{bubbles:true,cancelable:true,dataTransfer:dt,clientX:r.left+20,clientY:r.bottom-4}));
-    c.dispatchEvent(new DragEvent("drop",{bubbles:true,cancelable:true,dataTransfer:dt}));a.dispatchEvent(new DragEvent("dragend",{bubbles:true,dataTransfer:dt}));return 1})()`);
+  // a real drag (the mouse, through the browser), then the server's round trip
+  const a = await k.rect("#qsPend .qi"),
+    x = a.left + 60,
+    y = a.top + a.height / 2;
+  await k.press(x, y);
+  await k.drag(x, y, x, y + a.height + 20);
+  await k.release(x, y + a.height + 20);
   await k.sleep(2500);
   t.ok(
     await k.ev(`[...document.querySelectorAll("#qsFin .qi")].every((q,i)=>q===window.__fin[i])&&window.__fin.length>0`),

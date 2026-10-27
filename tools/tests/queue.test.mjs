@@ -195,3 +195,68 @@ export async function thumbnailsDraw(k, t) {
     "the row loads that file, not the full picture",
   );
 }
+
+/* reorder = pick up the plate (2026-10-27): the row itself lifts and follows the pointer (one copy, no ghost), a drop
+   plate with the line inset travels through the list, letting go settles it there; Esc puts it back; a press without
+   moving is still a click (its prompt) */
+export async function pickUpThePlate(k, t) {
+  await k.job("[fill:2828dc] running", { steps: 60 });
+  await k.until(`!!current()`, 15000, 50);
+  for (const n of ["a", "b", "c", "d"]) await k.job(n, { steps: 2 });
+  await k.ev(`(showView("queue"),1)`);
+  await k.sleep(800);
+  const order = () =>
+    k.ev(`[...document.querySelectorAll("#qsPend .qi")].map(r=>r.querySelector(".p").textContent.trim())`);
+  const server = () => k.ev(`api("/api/state").then(s=>s.jobs.filter(j=>j.status==="pending").map(j=>j.spec.raw))`);
+  t.ok((await order()).join() === "a,b,c,d", "four waiting", await order());
+  const rows = await k.ev(
+    `[...document.querySelectorAll("#qsPend .qi")].map(r=>{const b=r.getBoundingClientRect();return{top:b.top,h:b.height,left:b.left}})`,
+  );
+  const x = rows[0].left + 80,
+    y = rows[0].top + rows[0].h / 2,
+    step = rows[1].top - rows[0].top;
+  // hold "a" and carry it below "c"
+  await k.press(x, y);
+  await k.drag(x, y, x, y + 2.2 * step, 16);
+  await k.sleep(500);
+  const held = await k.ev(`(()=>{const l=document.querySelector(".qi.lifted"),s=document.querySelector(".qslot");
+    return{lifted:!!l,copies:document.querySelectorAll('.qi[data-id="'+(l&&l.dataset.id)+'"]').length,
+      clones:document.querySelectorAll(".qi").length,slot:!!s,
+      order:[...document.querySelector("#qsPend").children].filter(e=>e.matches(".qi:not(.lifted),.qslot")).map(e=>e.classList.contains("qslot")?"_":e.querySelector(".p").textContent.trim()),
+      rowTop:l&&l.getBoundingClientRect().top,
+      plate:!!s&&getComputedStyle(s,"::after").borderTopStyle}})()`);
+  await k.shot("held");
+  t.ok(held.lifted && held.copies === 1, "the row itself is lifted: one copy, no ghost", held);
+  t.ok(held.order.join() === "b,c,_,d", "the drop plate travels to where it would land (after c)", held);
+  t.ok(held.plate === "dashed", "…a plate with the line inset", held);
+  t.near(held.rowTop, rows[0].top + 2.2 * step, 6, "the row follows the pointer", held);
+  await k.release(x, y + 2.2 * step);
+  await k.sleep(1500);
+  t.ok((await order()).join() === "b,c,a,d", "let go: it settles there", await order());
+  t.ok(!(await k.ev(`!!document.querySelector(".qi.lifted,.qi.settling,.qslot")`)), "…no plate or lifted row left");
+  t.ok((await server()).join() === "b,c,a,d", "…and the server has the new order", await server());
+  // Esc: back where it was
+  const r2 = await k.ev(
+    `(()=>{const r=document.querySelectorAll("#qsPend .qi")[3].getBoundingClientRect();return{top:r.top,h:r.height,left:r.left}})()`,
+  );
+  const y2 = r2.top + r2.h / 2;
+  await k.press(x, y2);
+  await k.drag(x, y2, x, y2 - 2 * step, 12);
+  await k.sleep(300);
+  await k.key("Escape");
+  await k.sleep(900);
+  await k.release(x, y2 - 2 * step);
+  await k.sleep(800);
+  t.ok((await order()).join() === "b,c,a,d", "Esc: it goes back where it was", await order());
+  t.ok((await server()).join() === "b,c,a,d", "…the order unchanged", await server());
+  // a press without moving: a click (its prompt in the box)
+  const r3 = await k.rect("#qsPend .qi");
+  await k.click(r3.left + 80, r3.top + r3.height / 2);
+  await k.sleep(400);
+  t.ok(
+    await k.ev(`peekJob&&peekJob.raw==="b"`),
+    "a press without moving is a click: its prompt",
+    await k.ev(`peekJob&&peekJob.raw`),
+  );
+}
+pickUpThePlate.opts = { step: 1 };

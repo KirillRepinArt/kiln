@@ -258,6 +258,22 @@ async function launch(
           `(()=>{const e=new KeyboardEvent("keydown",{key:${JSON.stringify(key)},bubbles:true});(document.activeElement||document.body).dispatchEvent(e);return 1})()`,
         ),
       mouse: (x, y) => send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y }),
+      /* a real drag in pieces: press, move (in steps, the button held), release */
+      press: (x, y) => send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 }),
+      drag: async (x0, y0, x1, y1, steps = 12) => {
+        for (let i = 1; i <= steps; i++) {
+          await send("Input.dispatchMouseEvent", {
+            type: "mouseMoved",
+            x: x0 + ((x1 - x0) * i) / steps,
+            y: y0 + ((y1 - y0) * i) / steps,
+            button: "left",
+            buttons: 1,
+          });
+          await sleep(16);
+        }
+      },
+      release: (x, y) =>
+        send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 }),
       click: async (x, y) => {
         await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 });
         await send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });

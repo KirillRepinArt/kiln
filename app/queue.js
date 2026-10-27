@@ -1,6 +1,15 @@
 // @ts-check
 /** @typedef {import("./types.js").Job} Job */
-import { deleteMany, makeQThumb, removeJob, removeMany, removeMissing, setPaused, stopJob } from "./actions.js";
+import {
+  deleteMany,
+  makeQThumb,
+  removeJob,
+  removeMany,
+  removeMissing,
+  saveOrder,
+  setPaused,
+  stopJob,
+} from "./actions.js";
 import { esc, fmt } from "./boot.js";
 import { $, hit, qa, target } from "./dom.js";
 import { jEst, jobs, orderPending } from "./jobs.js";
@@ -56,7 +65,7 @@ export function renderQueueInner() {
   for (const id of [...QS]) if (!done.some(j => j.id === id)) QS.delete(id);
   $("qwrap").classList.toggle("selecting", QS.size > 0);
   /** one row's markup @param {Job} j @param {"run" | "pend" | "done"} k its section */
-  const item = (j, k) => `<div class="qi${j.missing ? " missing" : ""}" data-id="${j.id}" draggable="${k === "pend"}">
+  const item = (j, k) => `<div class="qi${j.missing ? " missing" : ""}" data-id="${j.id}">
    ${k === "pend" ? '<span class="handle" title="Drag to reorder">⋮⋮</span>' : ""}${k === "done" ? `<span class="qck" data-ck="${j.id}" data-tip="Select (Ctrl-click · Shift-click a range)"></span>` : ""}
    <div class="th">${j.missing ? "gone" : j.status === "done" ? `<span data-tth="${j.id}"></span>` : j.status === "cancelled" ? "stopped" : k === "run" ? `<svg class="hg" viewBox="0 0 24 24" fill="none"><g class="hgg"><path d="M7 3.5h10M7 20.5h10" stroke="currentColor" stroke-width="1.6"/><path d="M8 3.5c0 4 1.6 6 4 8.5-2.4 2.5-4 4.5-4 8.5M16 3.5c0 4-1.6 6-4 8.5 2.4 2.5 4 4.5 4 8.5" stroke="currentColor" stroke-width="1.4"/><path class="st" d="M9.2 6.5h5.6c-.4 2-1.3 3.4-2.8 4.9-1.5-1.5-2.4-2.9-2.8-4.9z" fill="currentColor"/><path class="sb" d="M12 14.2c1.8 1.9 2.7 3.6 3 6H9c.3-2.4 1.2-4.1 3-6z" fill="currentColor"/></g></svg><img class="lp" data-lp="${j.id}" alt="">` : "#" + j.id}</div>
    <div class="body"><div class="p">${j.file ? `<b style="font-weight:600">${esc(j.file)}</b> · ` : ""}${esc((j.prompt || "").slice(0, 240))}</div>
@@ -216,13 +225,188 @@ function clock(ms) {
 export function setQsAnchor(id) {
   qsAnchor = id;
 }
-/* drag to reorder: the dragged row itself moves in the list (no re-render while dragging — that swapped the element
-   under the pointer and made the cursor flicker); it moves once the pointer crosses a row's middle, so rows don't
-   ping-pong; the others slide out of the way */
-/** the waiting job being dragged @type {number | null} */
+/* reorder = pick up the plate (2026-10-27, agreed with the user): the real row lifts (a touch larger, a deeper shadow)
+   and follows the pointer up and down — one copy, never a ghost of it; where it would land, a drop plate (the line inset,
+   the outline rule) travels through the list as the other rows slide aside on the glide curve. Letting go settles it into
+   the plate; Esc puts it back where it was. The same drag language as moving the prompt box. The list is never rebuilt
+   while you hold a row (the poll waits: dragId) */
+/** the waiting job being held @type {number | null} */
 export let dragId = null;
-/** @type {HTMLElement | null} */
-let dragEl = null;
+
+/** the waiting rows, not the one held @returns {HTMLElement[]} */
+const pendRows = () => qa("#qsPend .qi:not(.lifted)");
+/** the rows slide to their new places when the list changes under them (FLIP, by layout position: never mid-glide)
+ * @param {() => void} change */
+function slideRows(change) {
+  const rows = pendRows(),
+    before = new Map(rows.map(r => [r, r.offsetTop]));
+  change();
+  for (const r of rows) {
+    const d = /** @type {number} */ (before.get(r)) - r.offsetTop;
+    if (Math.abs(d) < 1) continue;
+    r.style.transition = "none";
+    r.style.transform = `translateY(${d}px)`;
+    requestAnimationFrame(() => {
+      r.style.transition = "transform var(--lay-t) var(--lay-e)";
+      r.style.transform = "";
+    });
+  }
+}
+function initReorder() {
+  const W = $("qwrap");
+  /** the row pressed / held: the press, where on the row it was grabbed, the drop plate, what it sat before, the pointer
+   * @type {{ row: HTMLElement, pid: number, x0: number, y0: number, moved: boolean, grab: number,
+   *   slot: HTMLElement | null, home: Element | null, y: number, raf: number } | null} */
+  let d = null,
+    noClick = false;
+  /** the drop plate's place for a pointer at y: before the first row whose middle is below it @param {number} y */
+  const placeSlot = y => {
+    const m = /** @type {NonNullable<typeof d>} */ (d),
+      slot = /** @type {HTMLElement} */ (m.slot),
+      top = W.getBoundingClientRect().top - W.scrollTop,
+      rows = pendRows(),
+      next = rows.find(r => top + r.offsetTop + r.offsetHeight / 2 > y) || null,
+      tail = rows[rows.length - 1];
+    if (next ? slot.nextElementSibling === next : !tail || slot.previousElementSibling === tail) return;
+    slideRows(() => (next ? next.before(slot) : tail.after(slot)));
+  };
+  /* near the list's top or bottom edge the list scrolls under the held row */
+  const edgeScroll = () => {
+    const m = d;
+    if (!m || !m.moved) return;
+    const r = W.getBoundingClientRect(),
+      v = m.y < r.top + 48 ? -(r.top + 48 - m.y) / 4 : m.y > r.bottom - 48 ? (m.y - (r.bottom - 48)) / 4 : 0;
+    if (v) {
+      W.scrollTop += v;
+      placeSlot(m.y);
+    }
+    m.raf = requestAnimationFrame(edgeScroll);
+  };
+  function lift() {
+    const m = /** @type {NonNullable<typeof d>} */ (d),
+      row = m.row,
+      r = row.getBoundingClientRect();
+    m.moved = true;
+    m.grab = m.y0 - r.top; // where it was pressed: the row stays under that point of the pointer
+    dragId = Number(row.dataset.id);
+    const slot = document.createElement("div");
+    slot.className = "qslot";
+    slot.style.height = r.height + "px";
+    row.before(slot);
+    m.slot = slot;
+    m.home = row.nextElementSibling; // where it was: Esc puts the plate back before this
+    Object.assign(row.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", transition: "none" });
+    row.classList.add("lifted");
+    document.body.classList.add("qdragging");
+    try {
+      W.setPointerCapture(m.pid);
+    } catch (_) {}
+    m.raf = requestAnimationFrame(edgeScroll);
+  }
+  /* let go (or Esc): the row glides into the plate, then takes its place in the list */
+  /** @param {boolean} keep where it was dropped (false: back home) */
+  function settle(keep) {
+    const m = d;
+    d = null;
+    if (!m || !m.slot) return;
+    cancelAnimationFrame(m.raf);
+    const slot = m.slot,
+      row = m.row;
+    if (!keep) {
+      const home = m.home;
+      slideRows(() => (home && home.parentElement ? home.before(slot) : slot.parentElement?.append(slot)));
+    }
+    const s = slot.getBoundingClientRect();
+    row.style.transition = "top var(--lay-t) var(--lay-e), transform var(--lay-t) var(--lay-e)";
+    row.style.top = s.top + "px";
+    row.classList.remove("lifted");
+    row.classList.add("settling");
+    document.body.classList.remove("qdragging");
+    let done = false;
+    const land = () => {
+      if (done) return;
+      done = true;
+      slot.replaceWith(row);
+      row.classList.remove("settling");
+      for (const k of ["left", "top", "width", "transition", "transform"]) row.style.removeProperty(k);
+      dragId = null;
+      const ids = qa("#qsPend .qi").map(x => Number(x.dataset.id)),
+        was = jobs.filter(j => j.status === "pending").map(j => j.id);
+      if (ids.join() === was.join()) return;
+      orderPending(/** @type {Job[]} */ (ids.map(id => jobs.find(j => j.id === id)).filter(Boolean)));
+      saveOrder(ids);
+      renderQueue();
+    };
+    row.addEventListener("transitionend", e => e.propertyName === "top" && land());
+    setTimeout(land, 700); // a hidden window pauses transitions: it lands anyway
+  }
+  W.addEventListener("pointerdown", e => {
+    if (e.button !== 0 || d) return;
+    const row = hit(e, "#qsPend .qi");
+    if (!row || hit(e, "button,input,.seedc")) return;
+    d = {
+      row,
+      pid: e.pointerId,
+      x0: e.clientX,
+      y0: e.clientY,
+      moved: false,
+      grab: 0,
+      slot: null,
+      home: null,
+      y: e.clientY,
+      raf: 0,
+    };
+  });
+  W.addEventListener("pointermove", e => {
+    const m = d;
+    if (!m || e.pointerId !== m.pid) return;
+    if (!(e.buttons & 1)) {
+      if (m.moved) settle(true);
+      else d = null;
+      return;
+    }
+    m.y = e.clientY;
+    if (!m.moved) {
+      if (Math.hypot(e.clientX - m.x0, e.clientY - m.y0) < 6) return;
+      lift();
+    }
+    m.row.style.top = e.clientY - m.grab + "px";
+    placeSlot(e.clientY);
+  });
+  W.addEventListener("pointerup", e => {
+    const m = d;
+    if (!m || e.pointerId !== m.pid) return;
+    if (!m.moved) {
+      d = null;
+      return;
+    }
+    noClick = true; // the click that follows a drag isn't a click on the row
+    settle(true);
+  });
+  W.addEventListener("pointercancel", () => {
+    if (d && d.moved) settle(false);
+    else d = null;
+  });
+  W.addEventListener(
+    "click",
+    e => {
+      if (!noClick) return;
+      noClick = false;
+      e.stopImmediatePropagation();
+      e.preventDefault();
+    },
+    true,
+  );
+  document.addEventListener(
+    "keydown",
+    e => {
+      if (e.key !== "Escape" || !d || !d.moved) return;
+      e.stopImmediatePropagation();
+      settle(false);
+    },
+    true,
+  );
+}
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initQueue() {
@@ -396,53 +580,5 @@ export function initQueue() {
     $("qwrap").addEventListener("scroll", hide, { passive: true });
     $("qwrap").addEventListener("mousedown", hide);
   })();
-  $("qwrap").addEventListener("dragstart", e => {
-    const q = hit(e, '.qi[draggable="true"]');
-    if (!q) return;
-    dragId = Number(q.dataset.id);
-    dragEl = q;
-    q.classList.add("drag");
-    const dt = /** @type {DataTransfer} */ (e.dataTransfer); // a drag event always has one
-    dt.effectAllowed = "move";
-    try {
-      dt.setData("text/plain", String(dragId));
-    } catch (_) {}
-  });
-  $("qwrap").addEventListener("dragover", e => {
-    if (!dragEl) return;
-    e.preventDefault();
-    /** @type {DataTransfer} */ (e.dataTransfer).dropEffect = "move";
-    const q = hit(e, '.qi[draggable="true"]');
-    if (!q || q === dragEl) return;
-    const r = q.getBoundingClientRect(),
-      after = e.clientY > r.top + r.height / 2;
-    if (after ? q.nextElementSibling === dragEl : q.previousElementSibling === dragEl) return;
-    const rows = qa('.qi[draggable="true"]', $("qwrap")),
-      before = new Map(rows.map(x => [x, x.getBoundingClientRect().top]));
-    if (after) q.after(dragEl);
-    else q.before(dragEl);
-    for (const x of rows) {
-      if (x === dragEl) continue;
-      const d = /** @type {number} */ (before.get(x)) - x.getBoundingClientRect().top;
-      if (Math.abs(d) < 1) continue;
-      x.style.transition = "none";
-      x.style.transform = `translateY(${d}px)`;
-      requestAnimationFrame(() => {
-        x.style.transition = "transform .34s cubic-bezier(.4,0,.2,1)";
-        x.style.transform = "";
-      });
-    }
-  });
-  $("qwrap").addEventListener("drop", e => {
-    if (dragEl) e.preventDefault();
-  });
-  $("qwrap").addEventListener("dragend", () => {
-    if (!dragEl) return;
-    const ids = qa('.qi[draggable="true"]', $("qwrap")).map(x => Number(x.dataset.id));
-    orderPending(/** @type {Job[]} */ (ids.map(id => jobs.find(j => j.id === id)).filter(Boolean))); // the new order, in place of the old
-    dragEl.classList.remove("drag");
-    dragId = null;
-    dragEl = null;
-    renderQueue();
-  });
+  initReorder();
 }

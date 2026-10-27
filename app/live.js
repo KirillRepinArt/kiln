@@ -81,17 +81,6 @@ export async function startLive() {
     const d = shownMissing();
     if (d) removeJob(d);
   };
-  $("qwrap").addEventListener("drop", () => {}, true);
-  $("qwrap").addEventListener("dragend", () => {
-    const ids = [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.qi[draggable="true"]'))].map(
-      q => +(/** @type {string} */ (q.dataset.id)),
-    );
-    window._rp = true;
-    api("/api/reorder", { ids }).finally(() => {
-      window._rp = false;
-      poll();
-    });
-  });
   $("qwrap").addEventListener(
     "click",
     e => {

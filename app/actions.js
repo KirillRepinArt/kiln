@@ -215,6 +215,15 @@ export function doneNote(j) {
   dn.classList.add("show");
   dnHideIn(6000);
 }
+/** the waiting jobs in a new order (the Queue's reorder): the poll keeps the page's order until the server has it
+ * @param {number[]} ids */
+export function saveOrder(ids) {
+  window._rp = true;
+  api("/api/reorder", { ids }).finally(() => {
+    window._rp = false;
+    poll();
+  });
+}
 /** @param {import("./types.js").Job | null | undefined} j */
 export async function removeJob(j) {
   if (!j) return;

@@ -125,10 +125,22 @@ export function frameMorph(o) {
   /* the tab bar sits on the picture's top edge: during the morph it rides that edge frame by frame (its own glide ran
      ahead and crossed over the picture, the user's note 2026-10-27) */
   const tb = /** @type {HTMLElement | null} */ (document.querySelector(".tabs"));
+  /* …and across: the pill row stays centred on the picture's CURRENT centre (as far as the area allows), from where it
+     is now. Its width keeps gliding with the column; jumping its offset and width to their end values sent it to the
+     side first, then back (2026-10-27) */
+  let bx = 0; // the bar's sideways offset, as last set
   if (tb) {
-    tb.style.setProperty("transition", "none", "important");
-    if (tb.style.transform) tb.style.transform = `translate(${tb.dataset.dx || 0}px,${Math.round(Math.max(0, o.t))}px)`;
+    bx = new DOMMatrix(getComputedStyle(tb).transform).m41;
+    tb.style.setProperty("transition", "width var(--lay-t) var(--lay-e)", "important");
+    if (tb.style.transform) tb.style.transform = `translate(${bx}px,${Math.round(Math.max(0, o.t))}px)`;
   }
+  /** the offset that centres the pill row on x (screen), kept inside the area @param {DOMRect} st @param {number} x */
+  const barX = (st, x) => {
+    const r = /** @type {HTMLElement} */ (tb).getBoundingClientRect(),
+      half = $("seg").offsetWidth / 2,
+      want = Math.max(st.left + half, Math.min(st.right - half, x));
+    return Math.round(want - (r.left + r.width / 2 - bx));
+  };
   const st0 = $("stage").getBoundingClientRect(),
     /* the old box on screen, as [centre, size] per axis */
     O = [
@@ -166,8 +178,10 @@ export function frameMorph(o) {
       f.style.top = px(Tp - st.top);
       f.style.width = px(Bx[0][1]);
       f.style.height = px(Bx[1][1]);
-      if (tb && tb.style.transform)
-        tb.style.transform = `translate(${tb.dataset.dx || 0}px,${Math.round(Math.max(0, Tp - st.top))}px)`;
+      if (tb && tb.style.transform) {
+        bx = barX(st, Bx[0][0]);
+        tb.style.transform = `translate(${bx}px,${Math.round(Math.max(0, Tp - st.top))}px)`;
+      }
       /** @type {any} */ (frameMorph).raf = requestAnimationFrame(step);
     } else {
       f.classList.remove("morph");

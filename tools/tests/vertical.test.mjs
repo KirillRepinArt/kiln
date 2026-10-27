@@ -829,3 +829,29 @@ export async function morphIsSymmetric(k, t) {
     await k.sleep(700);
   }
 }
+
+/* the tab bar through a ratio change, across (2026-10-27, the user: "it seems to go to the edge first and then get
+   into its actual position"): measured, the pill row wandered 80 px while the picture's centre stood still — the bar's
+   width and offset jumped to their end values while the column under it glided */
+export async function tabBarStaysOverThePicture(k, t) {
+  await k.job("[fill:446688] tall", { ar: "3:4", steps: 2 });
+  await k.job("[fill:338844] sq", { ar: "1:1", steps: 2 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1500);
+  for (const [what, dir] of [
+    ["1:1 → 3:4", -1],
+    ["3:4 → 1:1", 1],
+  ]) {
+    const xs = await k.ev(
+      `new Promise(res=>{const out=[];const t0=performance.now();genNav(${dir});(function f(t){const s=$("seg").getBoundingClientRect();out.push((s.left+s.right)/2);if(t-t0<800)requestAnimationFrame(f);else res(out)})(performance.now())})`,
+    );
+    const end = xs.at(-1),
+      wander = Math.max(...xs.map(x => Math.abs(x - end)));
+    t.motion(wander <= 16, `${what}: the pill row goes straight to its place (no trip to the side)`, {
+      wander: Math.round(wander),
+    });
+    await k.sleep(900);
+  }
+}

@@ -194,6 +194,7 @@ body.jobrun .tab .trw {
 /* ======================= the panel under the tabs ======================= */
 .rpanel {
   position: relative;
+  z-index: 1; /* one layer above the plate, whatever its contents do (glass.css: the column's layers) */
   flex: 1;
   min-height: 0;
   overflow: visible;

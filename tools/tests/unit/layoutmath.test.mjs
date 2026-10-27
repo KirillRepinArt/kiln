@@ -189,4 +189,5 @@ test("shapeSteps: a box changing shape crops first, swaps, then reveals (the one
   // the same size: nothing moves but the swap
   const s = shapeSteps({ w: 500, h: 500 }, { w: 500, h: 500 });
   assert.equal(s.T, s.S);
+  assert.ok(s.S >= 180, "…a swap on its own is a real cross-fade, not an 80 ms cut");
 });

@@ -233,7 +233,8 @@ export function bez(x1, y1, x2, y2) {
    16:9 picture showed a band of bare glass above and below the picture as it came in ("washed edges", the user) */
 export const MORPH = {
   a: 180, // the crop (accelerating into the swap)
-  s: 80, // the cross-fade at the overlap
+  s: 80, // the cross-fade at the overlap (a crop or a reveal around it carries the change)
+  alone: 200, // the cross-fade when nothing changes shape: on its own, 80 ms read as a cut (Queue ↔ PNG Info, the user)
   b: 280, // the reveal (decelerating out of it)
   one: 320, // only a crop, or only a reveal: one move, eased at both ends
 };
@@ -253,7 +254,7 @@ export function shapeSteps(o, n) {
     crop = shrink[0] || shrink[1],
     reveal = grow[0] || grow[1],
     A = crop ? (reveal ? MORPH.a : MORPH.one) : 0,
-    S = MORPH.s,
+    S = crop || reveal ? MORPH.s : MORPH.alone,
     B = reveal ? (crop ? MORPH.b : MORPH.one) : 0,
     T = A + S + B,
     eA = reveal ? eIn : eBoth,

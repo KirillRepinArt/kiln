@@ -539,10 +539,15 @@ export async function glowWaitsForItsPicture(k, t) {
   await k.sleep(1500);
   const r =
     await k.ev(`new Promise(res=>{const o={},t0=performance.now();document.querySelector('.tab[data-v="gen"]').click();
-    (function s(){for(const a of document.getAnimations()){const p=a.effect&&a.effect.pseudoElement;if(p&&/kiln-(glow|pic)/.test(p))o[p+" "+(a.animationName||"")]=a.effect.getTiming().delay}
-    o.picout=document.documentElement.classList.contains("picout");if(performance.now()-t0<500)requestAnimationFrame(s);else res(o)})()})`);
-  const glowIn = r["::view-transition-new(kiln-glow) -ua-view-transition-fade-in"];
+    (function s(){for(const a of document.getAnimations()){const p=a.effect&&a.effect.pseudoElement;if(p&&/kiln-(glow|pic|panel)/.test(p))o[p+" "+(a.animationName||"")]=a.effect.getTiming().delay}
+    o.picout=o.picout||document.documentElement.classList.contains("picout");if(performance.now()-t0<500)requestAnimationFrame(s);else res(o)})()})`);
+  const glowIn = r["::view-transition-new(kiln-glow) -ua-view-transition-fade-in"],
+    picIn = r["::view-transition-new(kiln-panel) kappear"];
   t.ok(r.picout && glowIn != null, "the Gallery's picture and the render: not carried across, the glow comes along", r);
-  t.ok(glowIn >= 200, "…and the new glow waits for its picture", glowIn);
+  // the glow is its picture's: it comes in with it, at the switch's swap (plate.js switchGlide — one clock)
+  t.ok(picIn != null && Math.abs(glowIn - picIn) <= 1, "…and the new glow comes in with its picture", {
+    glowIn,
+    picIn,
+  });
 }
 glowWaitsForItsPicture.opts = { step: 0.6 };

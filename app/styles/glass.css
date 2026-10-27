@@ -403,6 +403,13 @@ body.glass .play.gen::before {
     background var(--t-250) var(--ease),
     box-shadow var(--t-250) var(--ease);
 }
+/* the right column's layers, bottom to top: the plate (0), the panel's contents (.rpanel: 1, its own stacking context,
+   tabs.css), the rim (2), the tab bar (4). Set here, never left to the order of the page: the contents' own z-indexes
+   stayed above the plate only while nothing made the panel a stacking context — a switch's name did, and the plate's
+   glass blurred PNG Info's text (2026-10-28) */
+.plate {
+  z-index: 0;
+}
 .plate.panel {
   background: var(--panel);
 }

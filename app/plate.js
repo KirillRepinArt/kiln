@@ -136,7 +136,9 @@ export function plateBefore() {
    ~200 ms waiting for the contents. The CSS keeps the look (fades, corners), not the motion */
 export const SWITCH = { ms: 650, curve: [0.05, 0.7, 0.1, 1] }; // the prompt column's slide (layout.js): --t-650, --lay-e
 /** @type {Animation[]} */
-let switchAnims = []; // the running switch's own animations (a new switch replaces them)
+let switchAnims = [];
+/* the switch's layers that cross at the swap: the contents, a picture and its glow, the picture's arrows */
+const SWAPS = new Set(["kiln-panel", "kiln-pic", "kiln-glow", "kiln-navl", "kiln-navr"]); // the running switch's own animations (a new switch replaces them)
 
 /** @param {{ l: number, t: number, w: number, h: number }} at where the plate was on screen (plateBefore)
  * @returns {number} the switch's start time (the document timeline's ms — performance.now()'s clock) */
@@ -173,7 +175,19 @@ export function switchGlide(at) {
   switchAnims = [];
   if (barAnim) barAnim.cancel();
   barAnim = null;
+  const dropWas = $("plate").classList.contains("drop");
   put(to);
+  /* PNG Info's drop line leaving with its panel: it fades across the crop, to the swap (its own 150 ms fade at the
+     start read as vanishing, the user, 2026-10-28); coming in, its own fade is the one the user liked */
+  if (dropWas && !$("plate").classList.contains("drop"))
+    go(
+      $("plate").animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: Math.max(steps.A + steps.S, 1),
+        easing: "ease-in",
+        fill: "backwards",
+        pseudoElement: "::after",
+      }),
+    );
   plateFollow(T + 50); // every frame of the glide: the bar's resting place follows the plate
   /* the plate's look changing with it (a panel's glass and ring coming in) and the selected tab's pill: their own CSS
      transitions, put on the switch's clock (they began a frame later) */
@@ -251,7 +265,7 @@ export function switchGlide(at) {
         );
       }
       e.updateTiming(timing);
-    } else if (name === "kiln-panel" || name === "kiln-pic") e.updateTiming({ delay: steps.A, duration: steps.S }); // the old contents until the swap, the new from it
+    } else if (SWAPS.has(name)) e.updateTiming({ delay: steps.A, duration: steps.S }); // the old contents until the swap, the new from it
     a.startTime = t0;
   }
   /* the contents inside the plate (1 px in, so its rim shows): the panel's contents, and a picture that fades where it

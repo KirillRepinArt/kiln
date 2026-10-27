@@ -123,6 +123,16 @@ html.tabmorph .gnav[data-nav="-1"] {
 html.tabmorph .gnav[data-nav="1"] {
   view-transition-name: kiln-navr;
 }
+/* a switch's layer can't hold glass (it is a picture of the element: its blur saw nothing behind it, the arrows showed
+   as stale flat squares); and the switch alone fades them (their own fade crossed the switch's: a blink). So in a switch
+   the arrows are their glass's tint, no blur, no transition of their own */
+html.tabmorph body.glass .gnav {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html.tabmorph .gnav {
+  transition: none;
+}
 @keyframes kappear {
   from {
     opacity: 0;

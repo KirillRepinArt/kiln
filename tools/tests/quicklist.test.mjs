@@ -357,3 +357,30 @@ export async function tabBarNoTeleport(k, t) {
   }
 }
 tabBarNoTeleport.opts = { step: 0.05 };
+
+/* v0.7.1 item 10 (the user, 2026-10-27: "the tab bar doesn't respond to fast clicks"): a switch covers the page and Chrome
+   sent every click during it to <html> — a second tab clicked mid-switch was lost. Between two panel tabs the bar
+   stays put, so the second click lands where it was aimed */
+export async function fastTabClicks(k, t) {
+  const at = async v => {
+    const r = await k.rect(`.tab[data-v="${v}"]`);
+    return [r.x + r.width / 2, r.y + r.height / 2];
+  };
+  const lit = `document.querySelector(".tab.on").dataset.v`;
+  await k.click(...(await at("queue")));
+  await k.sleep(1500);
+  const [lx, ly] = await at("loras"),
+    [px, py] = await at("png");
+  await k.click(lx, ly);
+  t.ok(
+    await k.until(`document.documentElement.classList.contains("laymorph")`, 1000),
+    "the second click comes mid-switch",
+  );
+  await k.click(px, py);
+  t.ok(await k.until(`${lit}==="png"`, 3000), "…and still opens its tab", await k.ev(lit));
+  t.ok(await k.until(`!document.documentElement.classList.contains("laymorph")`, 3000), "the switch ends");
+  await k.click(...(await at("queue")));
+  await k.until(`document.documentElement.classList.contains("laymorph")`, 1000);
+  await k.click(...(await at("loras")));
+  t.ok(await k.until(`${lit}==="loras"`, 3000), "again, from a page whose bar moves", await k.ev(lit));
+}

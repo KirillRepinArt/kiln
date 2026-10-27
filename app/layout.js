@@ -243,13 +243,41 @@ export function setDock(z) {
 }
 /* a layout switch as a View Transition: the old layout is a snapshot, the new one is applied with every glide off (so it
    is captured where it ends, not mid-way), then they cross-fade (CSS ::view-transition-*). Without the API: a plain switch */
+let morphs = 0; // switches started so far: only the latest one ends the morph
+/** @type {ViewTransition | null} */
+let morphNow = null; // the switch running now
+let morphClicks = false;
+/* a switch covers the page: Chrome sends every click during it to <html> (pointer-events can't change that), so quick
+   clicks — a second tab right after the first — were lost (2026-10-27). Such a click cuts the switch short and goes to
+   what is under the pointer once the real page is back */
+/** @param {MouseEvent} e */
+function clickThrough(e) {
+  const vt = morphNow;
+  if (!vt || e.target !== document.documentElement) return;
+  e.stopPropagation();
+  // found now, where the pointer is (the tab bar may still be gliding): the smallest control under it
+  /** @type {HTMLElement | null} */
+  let hit = null,
+    area = Infinity;
+  for (const c of /** @type {NodeListOf<HTMLElement>} */ (
+    document.querySelectorAll("button, a, label, input, select, [role='button']")
+  )) {
+    const r = c.getBoundingClientRect();
+    if (!r.width || e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) continue;
+    if (r.width * r.height < area) [hit, area] = [c, r.width * r.height];
+  }
+  if (!hit) return;
+  vt.skipTransition();
+  vt.finished.finally(() => hit.click());
+}
 /** @param {() => void} fn the switch itself */
 export function layMorph(fn) {
   const b = document.body,
-    h = document.documentElement;
+    h = document.documentElement,
+    me = ++morphs;
   let ended = false;
   const end = () => {
-    if (ended) return;
+    if (ended || me !== morphs) return; // a newer switch cut this one short: the classes are its now
     ended = true;
     h.classList.remove("laymorph");
     setTimeout(() => b.classList.remove("laysnap"), 300);
@@ -266,7 +294,17 @@ export function layMorph(fn) {
   }
   h.classList.add("laymorph");
   try {
-    document.startViewTransition(fn).finished.finally(end);
+    const vt = document.startViewTransition(fn);
+    morphNow = vt;
+    vt.ready.catch(() => {}); // cut short by a click (skipTransition): not an error
+    vt.finished.finally(() => {
+      if (morphNow === vt) morphNow = null;
+      end();
+    });
+    if (!morphClicks) {
+      morphClicks = true;
+      document.addEventListener("click", clickThrough, true);
+    }
   } catch (e) {
     fn();
     end();

@@ -82,10 +82,13 @@ export function tabGo(fn) {
     }
     flipTabs(x0);
   };
-  document.documentElement.classList.add("tabmorph");
+  const h = document.documentElement,
+    me = ++tabGos;
+  h.classList.add("tabmorph");
   layMorph(run);
-  setTimeout(() => document.documentElement.classList.remove("tabmorph"), 900);
+  setTimeout(() => me === tabGos && h.classList.remove("tabmorph"), 900); // a newer click keeps it on for its own switch
 }
+let tabGos = 0; // tab switches started so far
 
 /* the tab bar through a tab switch (FLIP: measure, apply, invert, play): the column it sits in jumps to its new place (a
    switch lays out at once), while the bar's own offset over the picture glides — together it leapt sideways, then slid

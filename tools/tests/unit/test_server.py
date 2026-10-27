@@ -626,6 +626,50 @@ class PictureIndex(TempDirs):
         self.assertEqual(self.lib.count(), 1)  # nothing lost: the pictures carry their own text
 
 
+class LibraryLists(PictureIndex):
+    def many(self, n: int) -> None:
+        for i in range(n):
+            f = self.png(f"p{i:03d}.png", f"harbour number {i}\nSteps: 4, Seed: {i}")
+            os.utime(f, (1000 + i, 1000 + i))  # p000 oldest … newest last
+        self.lib.scan()
+
+    def test_newest_first_a_page_at_a_time(self) -> None:
+        self.many(5)
+        a = self.lib.page(limit=2)
+        self.assertEqual([p["path"] for p in a["pictures"]], ["p004.png", "p003.png"])
+        self.assertEqual(a["total"], 5)
+        b = self.lib.page(a["next"], 2)
+        c = self.lib.page(b["next"], 2)
+        self.assertEqual([p["path"] for p in b["pictures"] + c["pictures"]], ["p002.png", "p001.png", "p000.png"])
+        self.assertIsNone(c["next"])
+
+    def test_a_new_picture_between_pages_never_shifts_them(self) -> None:
+        self.many(4)
+        a = self.lib.page(limit=2)
+        f = self.png("new.png")
+        os.utime(f, (5000, 5000))
+        self.lib.index_file(f)
+        b = self.lib.page(a["next"], 2)
+        self.assertEqual([p["path"] for p in b["pictures"]], ["p001.png", "p000.png"])  # no repeat, no skip
+
+    def test_search_by_word_prefix(self) -> None:
+        self.many(3)
+        self.png("cup.png", "a red cup\nSteps: 4, Seed: 1", "Cup")
+        self.lib.index_file(self.paths.out / "cup.png")
+        self.assertEqual([p["path"] for p in self.lib.page(q="cu")["pictures"]], ["cup.png"])
+        self.assertEqual(self.lib.page(q="harb")["total"], 3)
+        # quotes and operators typed in are only text: OR doesn't widen the search (as an operator it would find 3)
+        self.assertEqual(self.lib.page(q='harbour" OR "x')["total"], 0)
+        self.assertEqual(self.lib.page(q="AND")["total"], 0)
+
+    def test_details(self) -> None:
+        self.many(1)
+        pid = self.lib.page()["pictures"][0]["id"]
+        d = self.lib.details(pid)
+        self.assertEqual((d["prompt"], d["seed"], d["settings"]["Steps"]), ("harbour number 0", 0, "4"))
+        self.assertIsNone(self.lib.details(999))
+
+
 class PicturesKeepTheIndex(PicturesOnDisk):
     def setUp(self) -> None:
         super().setUp()

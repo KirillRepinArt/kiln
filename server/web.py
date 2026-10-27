@@ -159,6 +159,21 @@ class Handler(BaseHTTPRequestHandler):
         self.file(self.k.paths.qthumbs, name)
 
     # ------------------------------------------------------------ GET: the API
+    def get_pictures(self) -> None:
+        """The Library's list, a page at a time: ?after=<cursor>&limit=<n>&q=<words> (library.py page)."""
+        try:
+            limit = int(self.query("limit") or 200)
+        except ValueError:
+            limit = 200
+        return self.reply(200, self.k.library.page(self.query("after"), limit, self.query("q")))
+
+    def get_picture_details(self, pid: str) -> None:
+        d = self.k.library.details(int(pid))
+        return self.reply(200, d) if d else self.reply(404, {"error": "no such picture"})
+
+    def get_picture_thumb(self, name: str) -> None:  # never cached by the browser (no-store), like the pictures
+        self.file(self.k.paths.pthumbs, name)
+
     def get_library(self) -> None:
         """The picture index: how many pictures it holds, and whether it's catching up (Settings → Privacy)."""
         lib = self.k.library
@@ -385,6 +400,9 @@ GET_ROUTES = _routes(
     ("/api/preview/(.*)", "get_preview"),
     ("/api/models", "get_models"),
     ("/api/library", "get_library"),
+    ("/api/pictures", "get_pictures"),
+    ("/api/pictures/(\d+)", "get_picture_details"),
+    ("/pthumbs/(.*)", "get_picture_thumb"),
 )
 
 POST_ROUTES = _routes(

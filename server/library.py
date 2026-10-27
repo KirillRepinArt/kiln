@@ -45,6 +45,14 @@ MEDIA = {
 }
 LORA = re.compile(r"\s*<lora:([^:>]+):([-\d.]+)>")
 BATCH = 200  # rows per transaction while scanning: short transactions, the queue never waits long for the lock
+PAGE, PAGE_MAX = 200, 1000  # the Library's lists: a page, and the most one request may ask for
+
+
+def fts_query(q: str) -> str:
+    """Words typed into a search -> a full-text query: every word must match, each as a prefix ("harb" finds
+    harbour); quotes and operators typed in are taken as text, never as query syntax."""
+    words = re.findall(r"\w+", q or "", re.UNICODE)
+    return " ".join(f'"{w}"*' for w in words)
 
 
 def png_meta(path: Path) -> tuple[int | None, int | None, dict[str, str]]:
@@ -261,7 +269,76 @@ class Library:
             self._todo.clear()
         for f in self.paths.pthumbs.glob("*.jpg"):
             f.unlink(missing_ok=True)
-        self.start()
+        if self.background:
+            self.start()
+        else:
+            self.scan()
+
+    # ------------------------------------------------------------ the Library's lists (v0.8 lays them out)
+    def page(self, after: str = "", limit: int = PAGE, q: str = "") -> dict[str, Any]:
+        """Pictures newest first, a page at a time: `after` is the cursor the last page ended with ("<created>:<id>",
+        so pages never skip or repeat a picture while new ones arrive); `q` = words to find in the prompt, series or
+        LoRAs (each word matches as a prefix). Each row has what a grid needs — size, kind, thumbnail."""
+        limit = max(1, min(int(limit), PAGE_MAX))
+        where: list[str] = []
+        args: list[Any] = []
+        if after:
+            try:
+                created, pid = after.split(":", 1)
+                where.append("(created < ? OR (created = ? AND id < ?))")
+                args += [float(created), float(created), int(pid)]
+            except ValueError:
+                return {"pictures": [], "next": None, "total": 0}
+        match = fts_query(q)
+        if match:
+            where.append("id IN (SELECT rowid FROM pictures_fts WHERE pictures_fts MATCH ?)")
+            args.append(match)
+        cond = (" WHERE " + " AND ".join(where)) if where else ""
+        sql = "SELECT id, path, kind, w, h, thumb, created, series, kiln_id FROM pictures" + cond  # noqa: S608 — fixed text + placeholders
+        with self.store.lock:
+            rows = self.store.con.execute(
+                sql + " ORDER BY created DESC, id DESC LIMIT ?", [*args, limit + 1]
+            ).fetchall()
+            total = (
+                self.store.con.execute(
+                    "SELECT COUNT(*) FROM pictures WHERE id IN (SELECT rowid FROM pictures_fts WHERE pictures_fts MATCH ?)",
+                    (match,),
+                )
+                if match
+                else self.store.con.execute("SELECT COUNT(*) FROM pictures")
+            ).fetchone()[0]
+        more = len(rows) > limit
+        rows = rows[:limit]
+        pics = [
+            {
+                "id": i,
+                "path": path,
+                "kind": kind,
+                "w": w,
+                "h": h,
+                "thumb": f"/pthumbs/{t}.jpg" if t else None,
+                "created": created,
+                "series": series,
+                "kiln_id": kid,
+            }
+            for i, path, kind, w, h, t, created, series, kid in rows
+        ]
+        nxt = f"{rows[-1][6]!r}:{rows[-1][0]}" if more else None
+        return {"pictures": pics, "next": nxt, "total": total}
+
+    def details(self, pid: int) -> dict[str, Any] | None:
+        """One picture's full row: prompt, negative prompt, settings, LoRAs, seed, steps, model, series…"""
+        with self.store.lock:
+            cur = self.store.con.execute("SELECT * FROM pictures WHERE id = ?", (pid,))
+            row = cur.fetchone()
+            names = [d[0] for d in cur.description]
+        if not row:
+            return None
+        d = dict(zip(names, row, strict=True))
+        for k in ("settings", "loras"):
+            d[k] = json.loads(d[k]) if d[k] else ({} if k == "settings" else [])
+        d["thumb"] = f"/pthumbs/{d['thumb']}.jpg" if d["thumb"] else None
+        return d
 
     # ------------------------------------------------------------ thumbnails (thumbs.py)
     def _drop(self, rels: list[str]) -> None:

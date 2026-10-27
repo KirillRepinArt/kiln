@@ -3,7 +3,8 @@
 import { $, q } from "./dom.js";
 import { lay, layMorph, sizeFrame } from "./layout.js";
 import { renderLoras } from "./loras.js";
-import { PV, browsed, pv } from "./picstate.js";
+import { current } from "./jobs.js";
+import { PV, browsed, picMode, pv } from "./picstate.js";
 import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
 import { S } from "./state.js";
 
@@ -81,6 +82,10 @@ export function tabGo(fn, toGen = false) {
       }
     }
     flipTabs(x0);
+    // no picture to show yet (a render before its first preview, the clean frame): the old picture fades where it is
+    const live = S.view === "gen" && picMode() === "live",
+      j = current();
+    h.classList.toggle("picout", !$("frame").classList.contains("has") || (live && !!j && !j.preview_rev));
   };
   const h = document.documentElement,
     me = ++tabGos;
@@ -88,7 +93,7 @@ export function tabGo(fn, toGen = false) {
   // leaving the panel: it fades out as a whole, its glass with it (motion.css)
   h.classList.toggle("tabout", toGen && $("rpanel").classList.contains("paneled"));
   layMorph(run);
-  setTimeout(() => me === tabGos && h.classList.remove("tabmorph", "tabout"), 900); // a newer click keeps them for its switch
+  setTimeout(() => me === tabGos && h.classList.remove("tabmorph", "tabout", "picout"), 900); // a newer click keeps them for its switch
 }
 let tabGos = 0; // tab switches started so far
 

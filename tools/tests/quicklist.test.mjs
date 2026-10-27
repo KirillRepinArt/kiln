@@ -414,3 +414,30 @@ export async function menusOverPromptButtons(k, t) {
   }
   t.ok(checked > 0, "at least one menu overlaps a prompt button here (the check means something)", checked);
 }
+
+/* Gallery → Generating while the render has no picture yet (2026-10-26, the user: "it still scales up as if for a
+   transition but there's no next pic to follow"): the old picture fades where it is — not paired with the empty frame */
+export async function galleryToStepZeroFades(k, t) {
+  await k.job("[fill:446688] done one", { steps: 1, ar: "16:9" });
+  await k.until(`jobs.some(j=>j.status==="done")`, 20000);
+  await k.job("[fill:884422] slow one", { steps: 30, ar: "3:4" });
+  await k.until(`current()&&current().step===0`, 10000, 50);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(1200);
+  t.ok(await k.ev(`$("frame").classList.contains("has")`), "the Gallery shows the finished picture");
+  const r = await k.ev(`new Promise(res=>{document.querySelector('.tab[data-v="gen"]').click();
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{const a=document.getAnimations().map(a=>a.effect&&a.effect.pseudoElement||"").filter(Boolean);
+      res({group:a.filter(p=>p==="::view-transition-group(kiln-pic)").length,old:a.filter(p=>p==="::view-transition-old(kiln-pic)").length,step:current()&&current().step,has:$("frame").classList.contains("has")})}))})`);
+  t.ok(r.step === 0, "Generating at step 0: no preview yet", r);
+  t.ok(r.group === 0, "the old picture doesn't grow into the empty frame (no box morph)", r);
+  t.ok(r.old > 0, "…it fades out where it is", r);
+  // with a preview to show, the picture still travels as before
+  await k.until(`current()&&current().preview_rev`, 15000, 100);
+  await k.sleep(1200);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(1200);
+  const g = await k.ev(`new Promise(res=>{document.querySelector('.tab[data-v="gen"]').click();
+    requestAnimationFrame(()=>requestAnimationFrame(()=>res(document.getAnimations().filter(a=>a.effect&&a.effect.pseudoElement==="::view-transition-group(kiln-pic)").length)))})`);
+  t.ok(g > 0, "with a preview: the picture morphs into it, as before", g);
+}
+galleryToStepZeroFades.opts = { step: 1.5 };

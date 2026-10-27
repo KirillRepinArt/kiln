@@ -96,6 +96,10 @@ html.tabmorph .rpanel > .view.on {
 html.tabout .rpanel {
   view-transition-name: kiln-panel;
 }
+html.picout .view.on #frame {
+  view-transition-name: none;
+} /* the new state has no picture (Generating at step 0): the old one isn't paired with an empty box — it fades out
+     where it is instead of growing into it with nothing following (2026-10-26, the user's note) */
 html.tabout .rpanel > .view.on {
   view-transition-name: none;
 } /* leaving the panel for Generating: the panel as a whole fades out, its glass with it — the old snapshot is taken from

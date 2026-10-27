@@ -324,10 +324,13 @@
                   >Reads the generation settings Forge stores inside the file</small
                 ><input type="file" id="file" accept="image/png" hidden
               /></div>
+              <button class="pclear" id="pClear" title="Close this PNG" style="display: none"
+                ><svg viewBox="4.8 4.8 14.4 14.4" stroke="currentColor" stroke-width="2.4" fill="none">
+                  <path d="M6 6l12 12M18 6L6 18" /></svg
+              ></button>
               <div class="pimg" id="pimg"><img id="pimgEl" alt="" /></div>
-              <div class="pout" id="pout"></div>
+              <div class="poutw" id="poutw"><div class="pout" id="pout"></div></div>
               <div class="pact"
-                ><button class="pi-raw" id="pClear" style="display: none">Clear</button
                 ><button class="pi-raw" id="pChoose" title="Read another PNG (or drop one anywhere on this panel)"
                   >Choose…</button
                 ><button class="pi-raw" id="pRaw" style="display: none; margin-left: 6px">Show raw text</button

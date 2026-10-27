@@ -225,12 +225,6 @@ body.glass .li:hover {
 body.glass .li.on {
   background: var(--white-5);
 }
-body.glass .pout {
-  background: var(--black-22);
-}
-body.glass .drop {
-  border-color: var(--white-18);
-}
 /* tabs switch at once: a fading view is partly transparent, and Chromium turns off the glass inside anything partly
    transparent, so the blur popped in only after the fade */
 body.glass .view {

@@ -602,3 +602,27 @@ export async function pngInfoDropPanel(k, t) {
   );
   t.ok(await k.ev(`getComputedStyle($("drop")).display==="none"`), "…and goes when it leaves");
 }
+
+/* PNG Info, read, follows the prompt box's rules (2026-10-27): one plate, the picture's top and the letters 28 px from
+   the panel's outer edge on every side, the ✕ centred in the top margin instead of the word Clear */
+export async function pngInfoOnePlate(k, t) {
+  await k.ev(`(document.querySelector('.tab[data-v="png"]').click(),1)`);
+  await k.sleep(1200);
+  await k.ev(
+    `${PNG_WITH_PARAMS}.then(dt=>$("pout").dispatchEvent(new DragEvent("drop",{dataTransfer:dt,bubbles:true,cancelable:true})))`,
+  );
+  await k.until(`/harbour/.test($("pout").textContent)`, 3000);
+  await k.sleep(600);
+  const g =
+    await k.ev(`(()=>{const p=$("rpanel").getBoundingClientRect(),i=$("pimgEl").getBoundingClientRect(),c=$("pClear").getBoundingClientRect(),o=$("pout"),r=document.createRange();r.selectNodeContents(o.querySelector(".pi-p"));const tr=r.getBoundingClientRect();
+    return {picTop:Math.round(i.top-p.top),textLeft:Math.round(tr.left-p.left),closeMid:Math.round((c.top+c.bottom)/2-p.top),closeShown:+getComputedStyle($("pClear")).opacity,bg:getComputedStyle(o).backgroundColor}})()`);
+  t.ok(g.picTop === 28 && g.textLeft === 28, "the picture's top and the letters sit 28 px from the panel's edge", g);
+  t.ok(g.closeMid === 14 && g.closeShown === 1, "the ✕ sits in the top margin, shown", g);
+  t.ok(/rgba\(0, 0, 0, 0\)|transparent/.test(g.bg), "one plate: the text has no plate of its own", g.bg);
+  t.ok(!(await k.ev(`/Clear/.test(document.querySelector(".pact").textContent)`)), "no word Clear in the bottom row");
+  await k.ev(`($("pClear").click(),1)`);
+  t.ok(
+    await k.until(`!$("pout").textContent&&!document.querySelector(".pwrap").classList.contains("loaded")`, 2000),
+    "✕ closes the PNG",
+  );
+}

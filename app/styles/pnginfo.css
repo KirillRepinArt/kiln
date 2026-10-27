@@ -2,13 +2,20 @@
 .pwrap {
   position: absolute;
   inset: 0;
-  padding: var(--space-1) var(--space-hair) var(--space-5);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  --pc-btn: 20px; /* the ✕, as on the prompt box */
+  --pc-glyph: 7px;
 }
-.rpanel.paneled .pwrap {
-  padding: var(--space-5);
+/* read, it follows the prompt box's rules (2026-10-27): ONE plate — the panel — with the picture's top and the letters
+   --inset-box from its outer edge on every side (the 1 px border counts, as on the prompt), the ✕ in the top margin on the text column's edge, the text scrolling under
+   the picture and the bottom row with the prompt's fade and blur, the bottom row spaced like the prompt's controls */
+.pwrap .pclear {
+  display: grid;
+}
+.pwrap.loaded .pclear {
+  opacity: 1;
+  pointer-events: auto;
 }
 /* a place to drop (the outline rule): the panel itself is the plate, the dashed line inset on it. Empty: the whole panel;
    with a picture read, it comes back over the content while a file is dragged over the panel (2026-10-27) */
@@ -49,21 +56,79 @@
 .pwrap:not(.loaded) .pact {
   display: none;
 } /* nothing read: nothing to send */
+.poutw {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
 .pout {
   flex: 1;
   overflow: auto;
-  background: var(--grey-20);
-  border-radius: var(--r-14);
-  padding: var(--space-5) var(--space-5);
+  scrollbar-gutter: stable;
+  padding: var(--gap-area) calc(var(--inset-box) - var(--space-px) - var(--scrollbar)) var(--gap-area)
+    calc(var(--inset-box) - var(--space-px));
   font-size: var(--fs-14);
   color: var(--grey-85);
+  transition:
+    --ft var(--t-200),
+    --fb var(--t-200);
+  -webkit-mask-image: linear-gradient(
+    transparent 0,
+    var(--black) var(--ft),
+    var(--black) calc(100% - var(--fb)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    transparent 0,
+    var(--black) var(--ft),
+    var(--black) calc(100% - var(--fb)),
+    transparent 100%
+  );
+} /* the scrollbar sits in the right margin: the letters end --inset-box from the panel's edge either way */
+.poutw.scrolled .pout {
+  --ft: var(--gap-area);
+}
+.poutw.more .pout {
+  --fb: var(--gap-area);
+}
+.poutw::before,
+.poutw::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: var(--scrollbar);
+  height: var(--gap-area);
+  z-index: 1;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(0px);
+  backdrop-filter: blur(0px);
+  transition:
+    backdrop-filter var(--t-200),
+    -webkit-backdrop-filter var(--t-200);
+}
+.poutw::before {
+  top: 0;
+  -webkit-mask-image: linear-gradient(var(--black), transparent);
+  mask-image: linear-gradient(var(--black), transparent);
+}
+.poutw::after {
+  bottom: 0;
+  -webkit-mask-image: linear-gradient(transparent, var(--black));
+  mask-image: linear-gradient(transparent, var(--black));
+}
+.poutw.scrolled::before,
+.poutw.more::after {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+} /* the prompt's scroll edge (prompt.css): the text fades and slides under a gradual blur where there's more of it */
+.pout:empty,
+.poutw:has(.pout:empty) {
+  display: none;
 }
 .pout.raw {
   white-space: pre-wrap;
   font-size: var(--fs-13);
-}
-.pout:empty {
-  display: none;
 }
 .pi-h {
   font-size: var(--fs-11);
@@ -119,6 +184,7 @@
   flex: none;
   max-height: 38%;
   min-height: 0;
+  margin: calc(var(--inset-box) - var(--space-px)) calc(var(--inset-box) - var(--space-px)) 0;
 }
 .pimg.show {
   display: flex;
@@ -135,10 +201,8 @@
   display: flex;
   gap: var(--space-2);
   justify-content: flex-end;
-}
-#pClear {
-  margin-left: 0;
-}
+  padding: var(--space-2) var(--space-4) var(--space-4);
+} /* the prompt's controls row: 16 from the panel's edge */
 #pChoose {
   margin-right: auto;
 }

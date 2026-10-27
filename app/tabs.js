@@ -4,7 +4,7 @@ import { $, q } from "./dom.js";
 import { lay, layMorph, morphReady, sizeFrame } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { current } from "./jobs.js";
-import { PV, browsed, picMode, pv } from "./picstate.js";
+import { PV, browsed, onShow, picMode, pv } from "./picstate.js";
 import { isLive, measureSwitch, plateBefore, plateFollow, plateMorph } from "./plate.js";
 import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
 import { S } from "./state.js";
@@ -74,7 +74,8 @@ export function tabGo(fn, toGen = false) {
     x0 = seg.getBoundingClientRect().left,
     live = isLive(),
     from = live ? plateBefore() : null,
-    lc0 = $("lcol").getBoundingClientRect();
+    lc0 = $("lcol").getBoundingClientRect(),
+    pic0 = picKey();
   const run = () => {
     lay.frameDefer = true;
     try {
@@ -94,10 +95,11 @@ export function tabGo(fn, toGen = false) {
         slideLcol(lc0, lc1);
       });
     }
-    // no picture to show yet (a render before its first preview, the clean frame): the old picture fades where it is
-    const live = S.view === "gen" && picMode() === "live",
-      j = current();
-    h.classList.toggle("picout", !$("frame").classList.contains("has") || (live && !!j && !j.preview_rev));
+    /* the picture travels across a switch only when it's the SAME picture on both sides; otherwise (the Gallery's
+       picture and the render, or no picture yet) the old one fades where it is and the new one fades in — it grew into
+       the other's box, a zoom of the wrong picture (2026-10-27, the user) */
+    const pic1 = picKey();
+    h.classList.toggle("picout", !$("frame").classList.contains("has") || !pic0 || pic0 !== pic1);
   };
   const h = document.documentElement,
     me = ++tabGos;
@@ -111,6 +113,15 @@ export function tabGo(fn, toGen = false) {
   setTimeout(() => me === tabGos && h.classList.remove("tabmorph", "tabout", "picout", "liveswitch"), 900); // a newer click keeps them for its switch
 }
 let tabGos = 0; // tab switches started so far
+
+/* which picture the picture area shows: a finished one (by id) or the render's preview — null when there's none */
+function picKey() {
+  if (S.view !== "gen") return null;
+  const d = onShow();
+  if (d) return "done:" + d.id;
+  const j = current();
+  return picMode() === "live" && j && j.preview_rev ? "render:" + j.id : null;
+}
 
 /* live plate: the prompt column slides from where it was as the real thing (FLIP), its glass live — a snapshot of it
    went clear like the panel's */

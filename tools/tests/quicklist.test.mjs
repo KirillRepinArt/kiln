@@ -436,14 +436,14 @@ export async function galleryToStepZeroFades(k, t) {
   t.ok(r.step === 0, "Generating at step 0: no preview yet", r);
   t.ok(r.group === 0, "the old picture doesn't grow into the empty frame (no box morph)", r);
   t.ok(r.old > 0, "…it fades out where it is", r);
-  // with a preview to show, the picture still travels as before
+  // with a preview: the Gallery's picture and the render are different pictures — still not paired (2026-10-27)
   await k.until(`current()&&current().preview_rev`, 15000, 100);
   await k.sleep(1200);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.sleep(1200);
   const g = await k.ev(`new Promise(res=>{document.querySelector('.tab[data-v="gen"]').click();
     requestAnimationFrame(()=>requestAnimationFrame(()=>res(document.getAnimations().filter(a=>a.effect&&a.effect.pseudoElement==="::view-transition-group(kiln-pic)").length)))})`);
-  t.ok(g > 0, "with a preview: the picture morphs into it, as before", g);
+  t.ok(g === 0, "with a preview: the Gallery's picture doesn't grow into the render either (another picture)", g);
 }
 galleryToStepZeroFades.opts = { step: 1.5 };
 
@@ -452,24 +452,35 @@ galleryToStepZeroFades.opts = { step: 1.5 };
    squeezed the pictures as it changed shape, and the glow trailed the picture by 0.2 s */
 export async function galleryToPreviewIsClean(k, t) {
   await k.theme("aurora"); // the skin with a glow round the picture
+  await k.setting("glow", "always"); // …shown without a job running too
   await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 1 });
-  await k.until(`jobs.some(j=>j.status==="done")`, 20000);
+  await k.until(`jobs.some(j=>j.status==="done")&&!current()`, 20000);
+  await k.mouse(2, 2);
+  await k.sleep(1500);
+  const sw = to => `new Promise(res=>{const o={cvx:0,dur:{},fit:""},t0=performance.now();
+    document.querySelector('.tab[data-v="${to}"]').click();
+    (function s(){o.cvx=Math.max(o.cvx,+getComputedStyle($("cvx")).opacity);
+      for(const a of document.getAnimations()){const p=a.effect&&a.effect.pseudoElement;if(p&&/group\\((kiln-pic|kiln-glow)\\)/.test(p))o.dur[p]=a.effect.getComputedTiming().duration}
+      if(!o.fit&&document.documentElement.classList.contains("laymorph"))o.fit=getComputedStyle(document.documentElement,"::view-transition-old(kiln-pic)").objectFit;
+      if(performance.now()-t0<700)requestAnimationFrame(s);else res(o)})()})`;
+  // the SAME picture (just finished, on Generating) into the Gallery: it travels — on the glow's clock, cropped
+  const a = await k.ev(sw("gallery"));
+  const d = Object.values(a.dur);
+  t.ok(d.length === 2 && d[0] === d[1], "the same picture travels, the glow on its clock", a.dur);
+  t.ok(a.fit === "cover", "the changing box crops the pictures, never squeezes them", a.fit);
+  // another picture: the render, from the Gallery
   await k.job("[fill:446688] square render", { ar: "1:1", steps: 60 });
   await k.until(`current()&&current().preview_rev`, 20000, 100);
   await k.sleep(1500);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
-  await k.mouse(2, 2);
   await k.sleep(1500);
-  const r = await k.ev(`new Promise(res=>{const o={cvx:0,dur:{},fit:""},t0=performance.now();
-    document.querySelector('.tab[data-v="gen"]').click();
-    (function s(){o.cvx=Math.max(o.cvx,+getComputedStyle($("cvx")).opacity);
-      for(const a of document.getAnimations()){const p=a.effect&&a.effect.pseudoElement;if(p&&/group\\((kiln-pic|kiln-glow)\\)/.test(p))o.dur[p]=a.effect.getComputedTiming().duration}
-      if(!o.fit&&document.documentElement.classList.contains("laymorph"))o.fit=getComputedStyle(document.documentElement,"::view-transition-old(kiln-pic)").objectFit;
-      if(performance.now()-t0<700)requestAnimationFrame(s);else res(o)})()})`);
-  t.ok(r.cvx === 0, "no second cross-fade: the old picture never flashes into the new frame", r);
-  const d = Object.values(r.dur);
-  t.ok(d.length === 2 && d[0] === d[1], "the glow moves on the picture's clock", r.dur);
-  t.ok(r.fit === "cover", "the changing box crops the pictures, never squeezes them", r.fit);
+  const b = await k.ev(sw("gen"));
+  t.ok(b.cvx === 0, "no second cross-fade: the old picture never flashes into the new frame", b);
+  t.ok(
+    !b.dur["::view-transition-group(kiln-pic)"],
+    "the Gallery's picture and the render aren't paired (no zoom)",
+    b.dur,
+  );
 }
 galleryToPreviewIsClean.opts = { step: 0.6 };
 

@@ -180,3 +180,6 @@ html.liveswitch #lcol,
 html.liveswitch .rpanel {
   view-transition-name: none;
 }
+html.tabmorph.liveswitch::view-transition-new(kiln-panel) {
+  animation-delay: var(--t-250);
+} /* frame first, then the contents: they fade in as the plate lands, not spilling past it while it still moves */

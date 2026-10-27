@@ -177,6 +177,29 @@ class Queue(TempDirs):
         up = q.add_upscale(q.jobs[0], "R-ESRGAN", 2)
         self.assertEqual([j["id"] for j in q.jobs], [ids[0], up, ids[1]])
 
+    def test_clear_list_then_undo(self) -> None:
+        q = JobQueue(self.paths)
+        a, b, c, d = q.add([{"steps": 1}] * 4)
+        q.jobs[0]["status"] = "done"
+        q.jobs[1]["status"] = "error"
+        q.jobs[2]["status"] = "deleted"  # in Delete's undo window: left to its own timer
+        self.assertEqual(q.clear_finished(), 2)
+        self.assertEqual([j["id"] for j in q.jobs], [c, d])
+        (e,) = q.add([{"steps": 1}])
+        self.assertEqual(q.unclear(), 2)
+        self.assertEqual([j["id"] for j in q.jobs], [a, b, c, d, e])  # back in place; the new one after
+        self.assertEqual(q.unclear(), 0)  # once
+
+    def test_undo_brings_back_only_the_last_clear(self) -> None:
+        q = JobQueue(self.paths)
+        _a, b = q.add([{"steps": 1}] * 2)
+        q.jobs[0]["status"] = "done"
+        q.clear_finished()
+        q.jobs[0]["status"] = "done"
+        q.clear_finished()
+        q.unclear()
+        self.assertEqual([j["id"] for j in q.jobs], [b])
+
     def test_public_hides_the_servers_keys(self) -> None:
         self.assertEqual(public({"id": 1, "_cancel": True}), {"id": 1})
 

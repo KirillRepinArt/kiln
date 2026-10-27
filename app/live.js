@@ -86,7 +86,18 @@ export async function startLive() {
     e => {
       if (target(e).id === "clearDone") {
         e.stopImmediatePropagation();
-        api("/api/clear", {}).then(poll);
+        /* the files stay in the output folder; the list comes back with Undo (kept in memory while Kiln runs) */
+        api("/api/clear", {}).then(r => {
+          poll();
+          const n = /** @type {{ cleared?: number }} */ (r).cleared || 0;
+          if (n)
+            toast(
+              `${n} cleared from the list — the files stay in the output folder`,
+              "Undo",
+              () => api("/api/unclear", {}).then(poll),
+              "queue",
+            );
+        });
       }
     },
     true,

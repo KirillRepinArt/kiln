@@ -264,3 +264,28 @@ export async function pickUpThePlate(k, t) {
   );
 }
 pickUpThePlate.opts = { step: 1 };
+
+/* Clear list (the user, 2026-10-27: pressed it by accident, "history and gallery are gone"): the files stay, and Undo
+   brings the list back in its order */
+export async function clearListUndo(k, t) {
+  await k.job("one", { steps: 1 });
+  await k.job("two", { steps: 1 });
+  await k.until(`jobs.filter(j=>j.status==="done").length===2`, 20000);
+  const before = await k.ev(`jobs.map(j=>j.id).join()`),
+    files = await k.ev(`jobs.map(j=>j.file)`);
+  await k.ev(`(showView("queue"),1)`);
+  await k.until(`!!$("clearDone")`, 2000);
+  await k.ev(`($("clearDone").click(),1)`);
+  t.ok(await k.until(`!jobs.some(j=>j.status==="done")`, 3000), "Clear list empties the finished list");
+  t.ok(
+    files.every(f => existsSync(join(k.out, f))),
+    "the files stay",
+  );
+  t.ok(
+    await k.until(`/2 cleared/.test($("toastMsg").textContent)&&$("toast").classList.contains("show")`, 2000),
+    "a toast says so, with Undo",
+    await k.ev(`$("toastMsg").textContent`),
+  );
+  await k.ev(`($("toastBtn").click(),1)`);
+  t.ok(await k.until(`jobs.map(j=>j.id).join()===${JSON.stringify(before)}`, 3000), "Undo: the list is back, in order");
+}

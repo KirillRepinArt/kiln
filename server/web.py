@@ -287,8 +287,10 @@ class Handler(BaseHTTPRequestHandler):
         return {"ok": True}
 
     def post_clear(self, b: dict[str, Any]) -> dict[str, Any]:
-        self.k.queue.clear_finished()
-        return {"ok": True}
+        return {"ok": True, "cleared": self.k.queue.clear_finished()}
+
+    def post_unclear(self, b: dict[str, Any]) -> dict[str, Any]:
+        return {"ok": True, "back": self.k.queue.unclear()}
 
     def post_open(self, b: dict[str, Any]) -> dict[str, Any]:
         self.k.pictures.open(b.get("id"))
@@ -354,6 +356,7 @@ POST_ROUTES = _routes(
     ("/api/remove-missing", "post_remove_missing"),
     ("/api/reorder", "post_reorder"),
     ("/api/clear", "post_clear"),
+    ("/api/unclear", "post_unclear"),
     ("/api/open", "post_open"),
     ("/api/reveal", "post_reveal"),
     ("/api/upscale", "post_upscale"),

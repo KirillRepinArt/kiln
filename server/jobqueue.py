@@ -41,6 +41,9 @@ class JobQueue:
         self.rev = 0  # bumped on every change to the list
         self._miss_t = 0.0
         self._miss: frozenset[int] = frozenset()
+        # the last Clear list, for its Undo: in memory only (never written), gone when Kiln closes
+        self._cleared: list[Job] = []
+        self._order_before: list[int] = []
 
     # ------------------------------------------------------------ saving
     def load(self) -> None:
@@ -207,5 +210,24 @@ class JobQueue:
             self.jobs[:] = [j for j in self.jobs if keep(j)]
             self.save()
 
-    def clear_finished(self) -> None:
-        self.keep_only(lambda j: j["status"] in WAITING)
+    def clear_finished(self) -> int:
+        with self.lock:
+            # a picture in Delete's undo window stays: its own timer takes it off the list and its file to the Bin
+            stays = (*WAITING, "deleted")
+            self._order_before = [j["id"] for j in self.jobs]
+            self._cleared = [j for j in self.jobs if j["status"] not in stays]
+            self.keep_only(lambda j: j["status"] in stays)
+            return len(self._cleared)
+
+    def unclear(self) -> int:
+        """Undo the last Clear list: its rows back in their old places; anything added since keeps its place after."""
+        with self.lock:
+            back, self._cleared = self._cleared, []
+            if not back:
+                return 0
+            have = {j["id"] for j in self.jobs}
+            by_id = {j["id"]: j for j in [*self.jobs, *(j for j in back if j["id"] not in have)]}
+            old = [i for i in self._order_before if i in by_id]
+            self.jobs[:] = [by_id[i] for i in old] + [j for j in self.jobs if j["id"] not in set(old)]
+            self.save()
+            return len(back)

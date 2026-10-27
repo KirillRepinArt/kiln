@@ -6,6 +6,7 @@ import { lay } from "./layout.js";
 import { frameMorph } from "./morph.js";
 import { PV, browsed, onShow, picMode, pv } from "./picstate.js";
 import { S } from "./state.js";
+import { tabGo } from "./tabs.js";
 import { V, openViewer } from "./viewer.js";
 
 /** a step through the pictures in Generating / the Gallery @param {number} dir -1 / 1 @param {boolean} [dry] only ask
@@ -20,6 +21,20 @@ export function genNav(dir, dry) {
   if (n < 0) return false;
   if (n >= L.length && m !== "browse" && m !== "still")
     return false; /* past the newest: out of the Gallery, or off the finished picture — to the render / the empty frame */
+  if (!dry && n < L.length && (m === "live" || m === "empty")) {
+    /* from the render or the empty frame into the Gallery: a change of view, like its tab — the render fades where it
+       is and the picture comes in as the plate lands. A crop-and-reveal is for stepping between finished pictures: run
+       from the render it cropped the preview (without its veil) into the new shape — "a zoomed pic first", the user's
+       note 2026-10-28. One rule: a picture travels only when it's the same picture */
+    if (toGallery) return true; // a repeat (a held key) before the switch has applied: it would start from the old state
+    toGallery = true;
+    PV.dir = dir;
+    tabGo(() => {
+      toGallery = false;
+      pv("browse", L[n]);
+    });
+    return true;
+  }
   if (!dry) {
     const fs = $("frame").style,
       sr = $("frame").getBoundingClientRect(),
@@ -39,6 +54,7 @@ export function genNav(dir, dry) {
   }
   return true;
 }
+let toGallery = false; // an arrow's switch into the Gallery has begun and not applied yet
 /** the same in the full-size viewer @param {number} dir -1 / 1 @param {boolean} [dry] */
 export function vNav(dir, dry) {
   const L = doneList(),

@@ -126,7 +126,7 @@ export function frame() {
         const jid = j.id;
         i.onload = () => {
           if (+(/** @type {string} */ ($("cv").dataset.j)) === jid && picMode() === "live") {
-            drawTo(/** @type {HTMLCanvasElement} */ ($("cv")), i, false);
+            drawTo(/** @type {HTMLCanvasElement} */ ($("cv")), i, false, "render:" + jid);
             xfadeEnd();
           }
           lastPrev = r;

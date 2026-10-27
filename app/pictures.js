@@ -41,8 +41,13 @@ export function __imgsN() {
 export function urlFor(j) {
   return j.file ? `/files/${encodeURIComponent(j.file)}?j=${j.id}` : null;
 }
-/** @param {HTMLCanvasElement} cv @param {HTMLImageElement} im @param {boolean} natural at the picture's own size (the viewer) */
-export function drawTo(cv, im, natural) {
+/* what the frame's canvas shows has ONE writer (2026-10-28): what draws it says what it drew — a finished picture's id,
+   or "render:<job>" for a preview. The render's previews didn't, so the canvas kept the last finished picture's id:
+   an arrow from a running render to that picture skipped copying the screen, and the crop-and-reveal cropped a stale
+   copy instead (the "zoomed picture first", the user's note) */
+/** @param {HTMLCanvasElement} cv @param {HTMLImageElement} im @param {boolean} natural at the picture's own size (the viewer)
+ * @param {number | string} [what] what it is (the frame's canvas): a finished picture's id, or "render:<job>" */
+export function drawTo(cv, im, natural, what) {
   const dpr = devicePixelRatio || 1,
     iw = im.naturalWidth,
     ih = im.naturalHeight;
@@ -70,6 +75,7 @@ export function drawTo(cv, im, natural) {
   c.clearRect(0, 0, W, H);
   const k = cv.id === "cv" ? Math.min(W / iw, H / ih) : Math.max(W / iw, H / ih);
   c.drawImage(im, (W - iw * k) / 2, (H - ih * k) / 2, iw * k, ih * k);
+  if (cv.id === "cv" && what != null) cv.dataset.shown = String(what);
 }
 /* a canvas only ever shows the image it was last asked for: while that one loads it is blank (never the previous
     picture or a cancelled job's preview stretched to the new shape), a load that lands after you moved on is dropped,
@@ -90,10 +96,9 @@ function xfadeFrom(cv, id) {
   x.style.opacity = "1";
   x.dataset.wait = "1";
 }
-/** @param {HTMLCanvasElement} cv @param {number} id */
-function xfadeGo(cv, id) {
+/** @param {HTMLCanvasElement} cv */
+function xfadeGo(cv) {
   if (cv.id !== "cv") return;
-  cv.dataset.shown = /** @type {any} */ (id);
   cv.dataset.cw = cv.style.width;
   cv.dataset.ch = cv.style.height;
   const x = $("cvx");
@@ -106,7 +111,25 @@ function xfadeGo(cv, id) {
     void x.offsetWidth;
     x.style.transition = "";
     x.style.opacity = "0";
+    overlayGone();
   }
+}
+/* the overlay is a copy of what WAS on screen, for one fade: once it has faded out it is emptied, so a later fade or
+   crop-and-reveal that took no copy shows nothing rather than an old picture */
+export function overlayGone() {
+  const x = /** @type {HTMLCanvasElement} */ ($("cvx")),
+    clear = () => {
+      if (x.dataset.wait || x.dataset.morph || getComputedStyle(x).opacity !== "0") return; // in use again
+      x.width = 1;
+      x.height = 1;
+    };
+  if (
+    getComputedStyle(x)
+      .transitionDuration.split(",")
+      .every(d => parseFloat(d) === 0)
+  )
+    clear();
+  else x.addEventListener("transitionend", clear, { once: true });
 }
 /* any other change of what's on show (leaving the Gallery, ✕, the render taking over): the picture fades out the same
     way — over whatever comes next (a render's first preview), or at once if nothing does (a clean screen) */
@@ -132,6 +155,7 @@ export function xfadeEnd() {
   void x.offsetWidth;
   x.style.transition = "";
   x.style.opacity = "0";
+  overlayGone();
 }
 /** @param {import("./types.js").Job} j */
 export function preload(j) {
@@ -149,15 +173,15 @@ export function paint(cv, j) {
   xfadeFrom(cv, j.id);
   if (j.missing) {
     cv.dataset.want = /** @type {any} */ (j.id);
-    if (cv.id === "cv") missing(cv);
+    if (cv.id === "cv") missing(cv, j.id);
     return;
   }
   const e = img(u),
     nat = cv.id === "vcv";
   cv.dataset.want = /** @type {any} */ (j.id);
   if (e.i.complete && e.i.naturalWidth) {
-    drawTo(cv, e.i, nat);
-    xfadeGo(cv, j.id);
+    drawTo(cv, e.i, nat, j.id);
+    xfadeGo(cv);
     return;
   }
   if (cv.id === "cv") {
@@ -167,17 +191,18 @@ export function paint(cv, j) {
   e.p.then(im => {
     if (cv.dataset.want != String(j.id)) return;
     if (im) {
-      drawTo(cv, im, nat);
-      xfadeGo(cv, j.id);
+      drawTo(cv, im, nat, j.id);
+      xfadeGo(cv);
     } else {
       imgs.delete(u);
-      missing(cv);
-      xfadeGo(cv, j.id);
+      missing(cv, j.id);
+      xfadeGo(cv);
     }
   });
 }
-/** the missing-file card's dark ground, at the box's size @param {HTMLCanvasElement} cv */
-export function missing(cv) {
+/** the missing-file card's dark ground, at the box's size @param {HTMLCanvasElement} cv @param {number} [id] the
+ * picture that's missing */
+export function missing(cv, id) {
   const dpr = devicePixelRatio || 1,
     fd = cv.id === "cv" && $("frame").dataset,
     W = Math.max(64, Math.round(((fd && +(/** @type {string} */ (fd.tw))) || cv.clientWidth || 300) * dpr)),
@@ -190,6 +215,7 @@ export function missing(cv) {
   const c = /** @type {CanvasRenderingContext2D} */ (cv.getContext("2d"));
   c.fillStyle = "#0b0b0e";
   c.fillRect(0, 0, W, H);
+  if (id != null) cv.dataset.shown = String(id);
 } /* the words and the ways back are on the card (#missCard) */
 /* the missing-file card: what can bring it back, best first */
 /** a missing file in the Recycle Bin, by job id: true found, false not there, null still looking */

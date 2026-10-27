@@ -2,6 +2,7 @@
 /* Kiln · the picture's crop-and-reveal when its shape changes: each axis moves once, on its own step */
 import { $ } from "./dom.js";
 import { bez } from "./layoutmath.js";
+import { overlayGone } from "./pictures.js";
 import { plateFollow, plateSync } from "./plate.js";
 
 /* a picture of another shape: CROP, then REVEAL (2026-10-19, the user's design; per axis since 2026-10-27). Both
@@ -102,6 +103,7 @@ export function frameMorph(o) {
       x.style.opacity = "0";
       delete x.dataset.morph;
       x.getAnimations().forEach(q => q.cancel());
+      overlayGone();
     };
   }
   const st0 = $("stage").getBoundingClientRect(),

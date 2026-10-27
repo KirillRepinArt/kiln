@@ -148,8 +148,10 @@ async function launch(
       errors = [],
       requests = [],
       failed = []; // requests that failed (and the browser's own error lines): what stops a module graph loading
+    const listeners = {}; // CDP events a test asked for (k.on), e.g. Page.screencastFrame
     ws.onmessage = m => {
       const d = JSON.parse(m.data);
+      if (d.method && listeners[d.method]) for (const f of listeners[d.method]) f(d.params);
       if (d.id && wait[d.id]) {
         wait[d.id](d);
         delete wait[d.id];
@@ -311,6 +313,8 @@ async function launch(
         writeFileSync(join(OUT, `${name}-${n}.png`), Buffer.from(s.result.data, "base64"));
       },
       log,
+      /* a CDP event to a test's function (screencasts: every frame the page paints, at real speed) */
+      on: (method, f) => (listeners[method] ||= []).push(f),
       async close() {
         try {
           await send("Browser.close");

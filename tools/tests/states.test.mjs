@@ -451,3 +451,30 @@ export async function notes06(k, t) {
   t.ok((await k.ev(`jobs.length`)) > n0, "…and queues another like it");
 }
 notes06.opts = { step: 0.5 };
+
+/* an arrow from a running render into the Gallery (2026-10-28, the user: "a zoomed pic first"): a change of view, like
+   the Gallery tab — the render fades where it is, the picture comes in as the plate lands. It ran a crop-and-reveal,
+   which cropped the render's preview (without its veil) into the new shape. And the copy of what was on screen is
+   emptied once it has faded (an old copy could show in a later crop) */
+export async function arrowFromTheRender(k, t) {
+  await k.job("wide", { ar: "16:9", steps: 1 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.job("square", { ar: "1:1", steps: 40 });
+  await k.until(`current()&&current().step>=2&&$("cv").width>1&&+$("cv").dataset.j===current().id`, 30000, 100);
+  await k.mouse(2, 2);
+  await k.sleep(600);
+  const r =
+    await k.ev(`new Promise(res=>{let morph=false,fade=false;const t0=performance.now(),h=document.documentElement;genNav(-1);
+    (function s(){morph=morph||$("frame").classList.contains("morph");fade=fade||(h.classList.contains("tabmorph")&&h.classList.contains("picout"));
+      if(performance.now()-t0<500)requestAnimationFrame(s);else res({morph,fade,pic:document.body.dataset.pic,tab:document.querySelector(".tab.on").dataset.v})})()})`);
+  t.ok(!r.morph, "no crop-and-reveal from the render", r);
+  t.ok(r.fade, "…the Gallery tab's switch instead: the render fades, the picture comes in", r);
+  t.ok(r.pic === "browse" && r.tab === "gallery", "…into the Gallery", r);
+  await k.sleep(1200);
+  t.ok(
+    await k.ev(`$("cvx").width<=1`),
+    "the copy of the old picture is emptied once it has faded",
+    await k.ev(`$("cvx").width`),
+  );
+}
+arrowFromTheRender.opts = { step: 0.3 };

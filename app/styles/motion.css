@@ -85,75 +85,24 @@ html.laymorph #fglow[style*="display: none"] {
   animation-timing-function: var(--sw-e);
   height: 100%;
 }
-/* tab switches: only the content under the tabs fades through; the tab bar and the prompt stay as they are (live), and
-   the selected tab's pill slides to its new place — a fade of the whole app read as the page reloading (2026-10-25) */
-html.tabmorph .app {
-  view-transition-name: none;
+/* a tab switch (tabs.js, plate.js switchGlide): the leaving view stays on the page where it was, under the plate's
+   clip, until it has faded; the panel doesn't cut it off meanwhile (the clip is the plate's) */
+.view.leaving {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
 }
-html.tabmorph .rpanel > .view.on {
-  view-transition-name: kiln-panel;
-} /* the panel's contents, not the panel or the prompt column: a named element can't see behind it (a backdrop root),
-     so glass in a snapshot went clear. The glass plate changes shape live (plate.js), the prompt column slides live */
-html.picout .view.on #frame {
-  view-transition-name: none;
-} /* the new state has no picture (Generating at step 0): the old one isn't paired with an empty box — it fades out
-     where it is instead of growing into it with nothing following (2026-10-26, the user's note) */
-::view-transition-group(kiln-panel) {
-  overflow: clip;
-  border-radius: var(--r-panel);
-} /* the box morphs to the new size, like the Gallery's frame */
-::view-transition-old(kiln-panel),
-::view-transition-new(kiln-panel) {
-  object-fit: none;
-  object-position: 50% 0;
-  height: 100%;
-} /* the panel changes width: its snapshot must not stretch (it read as a zoom) */
-html.tabmorph::view-transition-old(kiln-panel) {
-  animation: kfadeout var(--t-180) var(--e-accel) both;
+html.switching .rpanel {
+  overflow: visible;
 }
-html.tabmorph::view-transition-new(kiln-panel) {
-  animation: kappear var(--t-320) var(--e-decel) var(--t-100) both;
-} /* the contents cross: both are clipped to the gliding plate (plate.js switchGlide), so the new ones come in right away
-     (they waited 250 ms for the plate to land: an empty plate). Opacity only — a scale would move them off the clip */
-/* the picture's arrows: layers of their own, above the contents (the picture's snapshot covered them); placed before
-   the capture, so the one you hold stays under the pointer and the other glides with the picture (plate.js times them) */
-html.tabmorph .gnav[data-nav="-1"] {
-  view-transition-name: kiln-navl;
-}
-html.tabmorph .gnav[data-nav="1"] {
-  view-transition-name: kiln-navr;
-}
-/* a switch's layer can't hold glass (it is a picture of the element: its blur saw nothing behind it, the arrows showed
-   as stale flat squares); and the switch alone fades them (their own fade crossed the switch's: a blink). So in a switch
-   the arrows are their glass's tint, no blur, no transition of their own */
-html.tabmorph body.glass .gnav {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-html.tabmorph .gnav {
-  transition: none;
-}
-@keyframes kappear {
-  from {
-    opacity: 0;
-  }
-}
-html.tabmorph body.laysnap .seg .thumb {
+html.tabswitch .seg .thumb {
   transition:
     left var(--t-280) var(--ease),
     width var(--t-280) var(--ease) !important;
-} /* !important: over the switch's glide stop */
-/* a tab switch's groups (the picture that travels, its glow) are timed by plate.js switchGlide: the plate's glide */
-html.tabmorph::view-transition-old(kiln-pic),
-html.tabmorph::view-transition-new(kiln-pic),
-html.tabmorph::view-transition-old(kiln-glow),
-html.tabmorph::view-transition-new(kiln-glow) {
-  animation-duration: var(--t-200);
-} /* the glow on the picture's clock: it trailed it by 0.2 s (2026-10-27) */
-html.tabmorph.picout::view-transition-new(kiln-glow) {
-  animation-duration: var(--t-320);
-  animation-delay: var(--t-250);
-} /* a picture that isn't carried across fades in after the plate lands: its glow waits with it (it came first) */
+} /* the selected tab's pill slides in a switch (!important: over the switch's glide stop) */
+html.tabswitch .gnav {
+  transition: opacity var(--t-150) !important;
+} /* the picture's arrows keep their own fade in a switch: shown by hover, they popped in */
 @keyframes kfadeout {
   to {
     opacity: 0;

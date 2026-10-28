@@ -1,10 +1,11 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $ } from "./dom.js";
-import { lay, layMorph, morphDone, morphReady, sizeFrame, slideCol } from "./layout.js";
+import { lay, sizeFrame, slideCol } from "./layout.js";
 import { renderLoras } from "./loras.js";
-import { current } from "./jobs.js";
-import { PV, browsed, onShow, picMode, pv } from "./picstate.js";
+import { PV, browsed, pv } from "./picstate.js";
+import { frameBox, frameHold, frameTarget } from "./framebox.js";
+import { frameMorph } from "./morph.js";
 import { plateBefore, plateFollow, switchGlide } from "./plate.js";
 import { placeNavs } from "./browse.js";
 import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
@@ -67,56 +68,68 @@ export function tabSync(force) {
   );
   moveThumb();
 }
-/* a tab switch is navigation, not a layout edit: the new tab is laid out at once (no glide — on a GPU busy with Forge,
-   0.4 s of glass re-blurring the sky per frame was the lag, 2026-10-19), and the layout is measured once per click */
+/* a tab switch is navigation, not a layout edit: the new tab is laid out at once and the switch moves everything from
+   where it was, live (2026-10-28: no View Transition — its pictures of the page couldn't hold glass, changed what
+   painted over what, and took the pointer away: a run of blinks). Generating ↔ the Gallery is one view with another
+   picture: the frame crops and reveals by itself, as when browsing. Between views both stay on the page for the switch
+   (plate.js switchGlide) */
 /** @param {() => void} fn */
 export function tabGo(fn) {
   const from = plateBefore(),
     lc0 = $("lcol").getBoundingClientRect(),
-    pic0 = picKey();
-  const run = () => {
-    lay.frameDefer = true;
-    try {
-      fn();
-    } finally {
-      lay.frameDefer = false;
-      if (lay.framePending) {
-        lay.framePending = false;
-        sizeFrame();
-      }
-    }
-    placeNavs(); // the picture's arrows where they'll be, for the switch's capture (a held one stays put)
-    morphReady().then(() => {
-      /* one owner, one clock: everything that moves in the switch starts from here (plate.js switchGlide) */
-      const t0 = switchGlide(from);
-      slideCol(lc0, t0); // the column slides from where it was, as the real thing (FLIP) — its glass stays live
-    });
-    /* the picture travels across a switch only when it's the SAME picture on both sides; otherwise (the Gallery's
-       picture and the render, or no picture yet) the old one fades where it is and the new one fades in — it grew into
-       the other's box, a zoom of the wrong picture (2026-10-27, the user) */
-    const pic1 = picKey();
-    h.classList.toggle("picout", !$("frame").classList.contains("has") || !pic0 || pic0 !== pic1);
-  };
-  const h = document.documentElement,
+    v0 = /** @type {HTMLElement | null} */ (document.querySelector(".rpanel > .view.on")),
+    r0 = v0 ? v0.getBoundingClientRect() : null,
+    f0 = frameBox(),
+    fr0 = $("frame").getBoundingClientRect(),
+    b = document.body,
+    row0 = !b.classList.contains("norow"),
     me = ++tabGos;
-  h.classList.add("tabmorph");
-  layMorph(run);
-  /* the switch's names go when it ends, not on a timer: still named, the live panel was a backdrop root for ~200 ms
-     after the switch — PNG Info's text showed blurred, then sharp ("it blinks", the user, 2026-10-28) */
-  const off = () => me === tabGos && h.classList.remove("tabmorph", "picout"); // a newer click keeps them for its switch
-  morphDone().then(off);
-  setTimeout(off, 1500); // whatever happens to the transition
+  b.classList.add("laysnap"); // the layout lands at once: the switch alone moves things
+  document.documentElement.classList.add("tabswitch"); // a tab switch (not a layout switch): the tab pill still slides
+  lay.frameDefer = true;
+  try {
+    fn();
+  } finally {
+    lay.frameDefer = false;
+    if (lay.framePending) {
+      lay.framePending = false;
+      sizeFrame();
+    }
+  }
+  const v1 = /** @type {HTMLElement | null} */ (document.querySelector(".rpanel > .view.on"));
+  let sw;
+  if (v0 && v1 && r0 && v0 !== v1) {
+    if (v0.id === "v-gen" && f0) frameHold(f0); // the picture stays where it was while its view leaves
+    sw = switchGlide(from, { old: v0, oldRect: r0, neu: v1 });
+  } else {
+    const g = frameTarget();
+    sw = switchGlide(from, null);
+    /* the same view: a picture of another shape crops and reveals, as when browsing (morph.js) */
+    if (f0 && g && Math.abs(g.w / g.h - f0.w / f0.h) > 0.02) frameMorph({ ...f0, x: fr0.left, y: fr0.top });
+    /* the status row under the picture (the render's progress) comes and goes with a short fade, like the rest of
+       what sits round the picture — its room is kept either way, only its look changes (it vanished at the click) */
+    const row1 = !b.classList.contains("norow");
+    if (row0 !== row1)
+      $("prog").animate(
+        [
+          { opacity: row0 ? 1 : 0, visibility: "visible" },
+          { opacity: row0 ? 0 : 1, visibility: "visible" },
+        ],
+        { duration: 150 },
+      );
+  }
+  placeNavs();
+  slideCol(lc0, sw.t0); // the column slides from where it was, as the real thing (FLIP)
+  /* once it has landed: one more layout, still without glides (measured mid-switch, the prompt column's Vertical shift
+     rested a pixel off), then the layout's glides come back */
+  setTimeout(() => {
+    if (me !== tabGos) return;
+    sizeFrame();
+    b.classList.remove("laysnap");
+    document.documentElement.classList.remove("tabswitch");
+  }, sw.T + 300);
 }
 let tabGos = 0; // tab switches started so far
-
-/* which picture the picture area shows: a finished one (by id) or the render's preview — null when there's none */
-function picKey() {
-  if (S.view !== "gen") return null;
-  const d = onShow();
-  if (d) return "done:" + d.id;
-  const j = current();
-  return picMode() === "live" && j && j.preview_rev ? "render:" + j.id : null;
-}
 
 /* start-up wiring: the tab bar's clicks; the pill's place once the fonts have loaded (called from main.js, in order) */
 export function initTabs() {

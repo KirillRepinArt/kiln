@@ -263,30 +263,41 @@ rimHoldsThroughSwitches.opts = { step: 0.05 };
    Generating → the Gallery (another shape) and back: one start time for all of them; the incoming contents' clip (its
    layer's box + clip-path, read from the browser) 1 px inside the plate while they can be seen (the browser's layers
    take the owner's timing a frame in — the contents are still at 0 then); the rim on the plate */
-const SWITCH_WATCH = `new Promise(res=>{const h=document.documentElement,p=$("plate"),rim=$("rim"),o={clip:0,rim:0,starts:0,n:0,clipped:0},t0=performance.now();
+const SWITCH_WATCH = `new Promise(res=>{const p=$("plate"),rim=$("rim"),f=$("frame"),o={clip:0,rim:0,starts:0,n:0,clipped:0,onFrame:0},t0=performance.now(),
+    m=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--mat"))||0,mine=a=>!(a instanceof CSSTransition)&&!(a instanceof CSSAnimation)&&a.playState==="running";
   (function s(){const pr=p.getBoundingClientRect(),rr=rim.getBoundingClientRect();
     o.rim=Math.max(o.rim,Math.abs(pr.left-rr.left),Math.abs(pr.top-rr.top),Math.abs(pr.width-rr.width),Math.abs(pr.height-rr.height));
-    const sw=document.getAnimations().filter(a=>{const e=a.effect,pe=e&&e.pseudoElement||"";return a.playState==="running"&&(pe.startsWith("::view-transition")||[p,rim,document.querySelector(".tabs")].includes(e&&e.target))});
+    const els=[p,rim,document.querySelector(".tabs"),f,...document.querySelectorAll(".rpanel > .view")],sw=document.getAnimations().filter(a=>mine(a)&&a.effect&&els.includes(a.effect.target));
     o.starts=Math.max(o.starts,new Set(sw.map(a=>Math.round(a.startTime))).size);
-    if(h.classList.contains("tabmorph")&&sw.some(a=>a.effect.pseudoElement==="::view-transition-new(kiln-panel)")&&+getComputedStyle(h,"::view-transition-new(kiln-panel)").opacity>0.02){
-      const g=getComputedStyle(h,"::view-transition-group(kiln-panel)"),m=new DOMMatrix(g.transform),c=getComputedStyle(h,"::view-transition-new(kiln-panel)").clipPath,
-        v=c.replace("inset(","").split(" round")[0].replace(")","").trim().split(" ").map(parseFloat);
-      if(v.length>=1&&!isNaN(v[0])){const [t,r=t,b=t,l=r]=v,W=parseFloat(g.width),H=parseFloat(g.height),
-          box={l:m.e+l,t:m.f+t,r:m.e+W-r,b:m.f+H-b};
-        o.clip=Math.max(o.clip,Math.abs(box.l-(pr.left+1)),Math.abs(box.t-(pr.top+1)),Math.abs(box.r-(pr.right-1)),Math.abs(box.b-(pr.bottom-1)));o.clipped++}}
-    o.n++;if(performance.now()-t0<900)requestAnimationFrame(s);else res(o)})()})`;
+    for(const el of [f,...document.querySelectorAll(".rpanel > .view")]){const c=getComputedStyle(el),v=c.clipPath,vw=el.closest(".view");if(!v.startsWith("inset(")||+c.opacity<0.02||(vw&&+getComputedStyle(vw).opacity<0.02))continue;
+      const r=el.getBoundingClientRect(),[tt,rgt=tt,b=tt,l=rgt]=v.replace("inset(","").split(" round")[0].replace(")","").trim().split(" ").map(parseFloat);
+      o.clip=Math.max(o.clip,pr.left-(r.left+l),pr.top-(r.top+tt),r.right-rgt-pr.right,r.bottom-b-pr.bottom);o.clipped++}
+    if(!document.querySelector(".rpanel.paneled")&&!document.querySelector(".view.leaving")){const fr=f.getBoundingClientRect();
+      o.onFrame=Math.max(o.onFrame,Math.abs(fr.left-m-pr.left),Math.abs(fr.top-m-pr.top),Math.abs(fr.width+2*m-pr.width),Math.abs(fr.height+2*m-pr.height))}
+    o.n++;if(performance.now()-t0<900)requestAnimationFrame(()=>setTimeout(s,0));else res(o)})()})`; // after the frame's writes
 export async function switchHasOneOwner(k, t) {
   await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 1 });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
   await k.ev(`(closeShown(),S.ar="3:4",sizeFrame(),1)`);
   await k.mouse(2, 2);
   await k.sleep(1200);
-  for (const to of ["gallery", "gen", "queue", "gallery"]) {
+  for (const [to, sameView] of [
+    ["gallery", true],
+    ["gen", true],
+    ["queue", false],
+    ["gallery", false],
+  ]) {
     const w = k.ev(SWITCH_WATCH);
     await k.ev(`(document.querySelector('.tab[data-v="${to}"]').click(),1)`);
     const o = await w;
-    t.ok(o.starts === 1, `→ ${to}: everything in the switch starts at one time`, o);
-    t.motion(o.clipped > 5 && o.clip <= 2, `→ ${to}: …the contents stay inside the plate, every frame they show`, o);
+    t.ok(o.starts <= 1, `→ ${to}: everything the switch starts, starts at one time`, o);
+    if (sameView) t.motion(o.onFrame <= 1.5, `→ ${to}: the same view — the plate rides the frame, every frame`, o);
+    else
+      t.motion(
+        o.clipped > 5 && o.clip <= 1.5,
+        `→ ${to}: …the contents stay inside the plate, every frame they show`,
+        o,
+      );
     t.motion(o.rim <= 0.5, `→ ${to}: …the rim on the plate`, o);
     await k.sleep(500);
   }
@@ -338,11 +349,10 @@ arrowStaysUnderThePointer.opts = { step: 0.05 };
    rule of its own (one curve for both axes): the plate stayed taller than the picture while it came in — a band of bare
    glass above and below it. Now crop, swap, reveal, as when browsing: every frame the new picture shows, the plate is
    no taller than it (the shrinking axis is done by the swap) */
-const BAND = `new Promise(res=>{const h=document.documentElement,p=$("plate"),f=$("frame"),o={over:0,shown:0},t0=performance.now();
-  (function s(){if(h.classList.contains("tabmorph")&&+getComputedStyle(h,"::view-transition-new(kiln-panel)").opacity>0.02){
-      const pr=p.getBoundingClientRect(),fr=f.getBoundingClientRect(),m=parseFloat(getComputedStyle(h).getPropertyValue("--mat"))||0;
-      o.over=Math.max(o.over,pr.height-(fr.height+2*m));o.shown++}
-    if(performance.now()-t0<900)requestAnimationFrame(s);else res(o)})()})`;
+const BAND = `new Promise(res=>{const p=$("plate"),f=$("frame"),c=$("cv"),o={over:0,shown:0},t0=performance.now(),m=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--mat"))||0;
+  (function s(){if(f.classList.contains("has")&&+getComputedStyle(c).opacity>0.02){
+      const pr=p.getBoundingClientRect();o.over=Math.max(o.over,pr.height-(+f.dataset.th+2*m));o.shown++}
+    if(performance.now()-t0<900)requestAnimationFrame(()=>setTimeout(s,0));else res(o)})()})`; // read after the frame's own writes
 export async function switchIntoAPictureHasNoBand(k, t) {
   await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 1 });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
@@ -373,13 +383,10 @@ export async function galleryPictureCropsOnTheWayOut(k, t) {
   await k.mouse(2, 2);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.sleep(1500);
-  const w = k.ev(`new Promise(res=>{const h=document.documentElement,p=$("plate"),o={out:0,seen:0},t0=performance.now();
-    (function s(){const pe="::view-transition-old(kiln-pic)";if(h.classList.contains("tabmorph")&&document.getAnimations().some(a=>a.effect&&a.effect.pseudoElement===pe)){
-      const c=getComputedStyle(h,pe),g=getComputedStyle(h,"::view-transition-group(kiln-pic)");
-      if(+c.opacity>0.02&&parseFloat(g.width)>0){const m=new DOMMatrix(g.transform==="none"?undefined:g.transform),
-          v=c.clipPath==="none"?[0,0,0,0]:c.clipPath.replace("inset(","").split(" round")[0].replace(")","").trim().split(" ").map(parseFloat),
-          [tt,r=tt,b=tt,l=r]=v,W=parseFloat(g.width),H=parseFloat(g.height),pr=p.getBoundingClientRect();
-        o.out=Math.max(o.out,pr.left-(m.e+l),pr.top-(m.f+tt),(m.e+W-r)-pr.right,(m.f+H-b)-pr.bottom);o.seen++}}
+  const w = k.ev(`new Promise(res=>{const p=$("plate"),f=$("frame"),v=$("v-gen"),o={out:0,seen:0},t0=performance.now();
+    (function s(){if(v.classList.contains("leaving")&&+getComputedStyle(v).opacity>0.02){const c=getComputedStyle(f).clipPath,r=f.getBoundingClientRect(),pr=p.getBoundingClientRect(),
+        [tt,rg=tt,b=tt,l=rg]=c==="none"?[0,0,0,0]:c.replace("inset(","").split(" round")[0].replace(")","").trim().split(" ").map(parseFloat);
+      o.out=Math.max(o.out,pr.left-(r.left+l),pr.top-(r.top+tt),(r.right-rg)-pr.right,(r.bottom-b)-pr.bottom);o.seen++}
       if(performance.now()-t0<700)requestAnimationFrame(s);else res(o)})()})`);
   await k.ev(`(document.querySelector('.tab[data-v="png"]').click(),1)`);
   const o = await w;
@@ -390,3 +397,25 @@ export async function galleryPictureCropsOnTheWayOut(k, t) {
   );
 }
 galleryPictureCropsOnTheWayOut.opts = { step: 0.05 };
+
+/* the picture's edit buttons and arrows are shown by hovering the picture, nothing else (2026-10-28, the user: "they
+   are blinking on some transitions; the only reason for them to be shown is pic hover"). The switch faded them in on
+   arrival and out from fully shown on leaving. With the pointer away, through every switch with the picture's view,
+   they stay hidden every frame */
+export async function editButtonsOnlyOnHover(k, t) {
+  await k.job("[fill:aa7733] wide", { ar: "16:9", steps: 1 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  await k.mouse(2, 2);
+  await k.sleep(800);
+  for (const to of ["gallery", "queue", "gallery", "png", "gen", "loras", "gen"]) {
+    const o =
+      await k.ev(`new Promise(res=>{const els=[$("gtools"),...document.querySelectorAll(".gnav")],o={max:0,who:""},t0=performance.now();
+      document.querySelector('.tab[data-v="${to}"]').click();
+      (function s(){for(const el of els){const c=getComputedStyle(el),vw=el.closest(".view");if(c.display==="none"||c.visibility==="hidden"||(vw&&+getComputedStyle(vw).opacity<0.02))continue;
+        if(+c.opacity>o.max){o.max=+c.opacity;o.who=el.id||el.className}}
+        if(performance.now()-t0<900)requestAnimationFrame(()=>setTimeout(s,0));else res(o)})()})`);
+    t.motion(o.max <= 0.01, `→ ${to}: the edit buttons and arrows stay hidden (the pointer is away)`, o);
+    await k.sleep(300);
+  }
+}
+editButtonsOnlyOnHover.opts = { step: 0.05 };

@@ -463,18 +463,25 @@ export async function arrowFromTheRender(k, t) {
   await k.until(`current()&&current().step>=2&&$("cv").width>1&&+$("cv").dataset.j===current().id`, 30000, 100);
   await k.mouse(2, 2);
   await k.sleep(600);
-  const r =
-    await k.ev(`new Promise(res=>{let morph=false,fade=false;const t0=performance.now(),h=document.documentElement;genNav(-1);
-    (function s(){morph=morph||$("frame").classList.contains("morph");fade=fade||(h.classList.contains("tabmorph")&&h.classList.contains("picout"));
-      if(performance.now()-t0<500)requestAnimationFrame(s);else res({morph,fade,pic:document.body.dataset.pic,tab:document.querySelector(".tab.on").dataset.v})})()})`);
-  t.ok(!r.morph, "no crop-and-reveal from the render", r);
-  t.ok(r.fade, "…the Gallery tab's switch instead: the render fades, the picture comes in", r);
-  t.ok(r.pic === "browse" && r.tab === "gallery", "…into the Gallery", r);
+  /* the arrow and the Gallery tab move alike: the frame crops what was on screen (the render under its veil and
+     embers, copied as shown — the bare preview read as another picture, "zoomed", 2026-10-28) and reveals the picture */
+  const how = act => `new Promise(res=>{let morph=false;const t0=performance.now();${act};
+    (function s(){morph=morph||$("frame").classList.contains("morph");if(performance.now()-t0<500)requestAnimationFrame(s);else res({morph,pic:document.body.dataset.pic,tab:document.querySelector(".tab.on").dataset.v})})()})`;
+  const r = await k.ev(how(`genNav(-1)`));
+  t.ok(
+    r.morph && r.pic === "browse" && r.tab === "gallery",
+    "an arrow from the render: a crop-and-reveal into the Gallery",
+    r,
+  );
   await k.sleep(1200);
   t.ok(
     await k.ev(`$("cvx").width<=1`),
     "the copy of the old picture is emptied once it has faded",
     await k.ev(`$("cvx").width`),
   );
+  await k.ev(`(document.querySelector('.tab[data-v="gen"]').click(),1)`);
+  await k.until(`document.body.dataset.pic==="live"`, 4000, 50);
+  await k.sleep(1200);
+  const tb = await k.ev(how(`document.querySelector('.tab[data-v="gallery"]').click()`));
+  t.ok(tb.morph && tb.pic === "browse", "…and the Gallery tab the same way", tb);
 }
-arrowFromTheRender.opts = { step: 0.3 };

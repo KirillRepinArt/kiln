@@ -17,3 +17,4 @@ that changes later gets a new record; the old one says what replaced it.
 | [0009](0009-design-tokens.md) | Design tokens in CSS, enforced by the linter; skins as token files | accepted |
 | [0010](0010-one-instance-own-launcher.md) | One Kiln per data folder; the launcher in Python | accepted |
 | [0011](0011-nothing-leaves-the-machine.md) | Nothing leaves the machine, checked by tests | accepted |
+| [0012](0012-one-owner-baseline.md) | One owner for every moving or visible thing, checked by tests | accepted |

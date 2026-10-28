@@ -582,7 +582,7 @@ export function initEffects() {
             fs.top = a.top - R + "px";
             fs.width = a.width + 2 * R + "px";
             fs.height = a.height + 2 * R + "px";
-            fs.opacity = "1";
+            fs.opacity = "1"; // its visibility in a motion belongs to the motion's owner (morph.js, plate.js switchGlide)
             fs.display = "";
             const X = R * dp,
               Y = R * dp,

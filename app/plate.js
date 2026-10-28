@@ -7,6 +7,7 @@
    too: inset on it, it changes shape with it and fades as a switch leaves (it slid inside the contents' snapshot) */
 import { placeAround } from "./around.js";
 import { $ } from "./dom.js";
+import { frameHold } from "./framebox.js";
 import { shapeBox, shapeSteps } from "./layoutmath.js";
 import { SPACE } from "./tokens.js";
 
@@ -137,13 +138,28 @@ export function plateBefore() {
 export const SWITCH = { ms: 650, curve: [0.05, 0.7, 0.1, 1] }; // the prompt column's slide (layout.js): --t-650, --lay-e
 /** @type {Animation[]} */
 let switchAnims = [];
-/* the switch's layers that cross at the swap: the contents, a picture and its glow, the picture's arrows */
-const SWAPS = new Set(["kiln-panel", "kiln-pic", "kiln-glow", "kiln-navl", "kiln-navr"]); // the running switch's own animations (a new switch replaces them)
+// the running switch's own animations (a new switch replaces them)
 
+/** @typedef {{ old: HTMLElement, oldRect: DOMRect, neu: HTMLElement }} Views a switch between two views: the one
+ * leaving (where it was on screen) and the one coming */
+/** @type {(() => void) | null} */
+let leaveDone = null; // ends the running switch's leaving view (a new switch ends it at once)
 /** @param {{ l: number, t: number, w: number, h: number }} at where the plate was on screen (plateBefore)
- * @returns {number} the switch's start time (the document timeline's ms — performance.now()'s clock) */
-export function switchGlide(at) {
+ * @param {Views | null} views the two views when the switch changes view; null: the same view (Generating ↔ the
+ * Gallery — the frame moves by itself, as when browsing, and the plate follows it)
+ * @returns {{ t0: number, T: number }} the switch's start time (performance.now()'s clock) and its length */
+export function switchGlide(at, views) {
   pending = false;
+  for (const a of switchAnims) a.cancel();
+  switchAnims = [];
+  if (leaveDone) leaveDone();
+  if (barAnim) barAnim.cancel();
+  barAnim = null;
+  if (!views) {
+    put(target()); // the plate rides the frame from here (framebox.js → plateSync)
+    plateFollow(700);
+    return { t0: performance.now(), T: 600 };
+  }
   const h = document.documentElement,
     o = $("right").getBoundingClientRect(),
     to = target(),
@@ -171,10 +187,6 @@ export function switchGlide(at) {
       switchAnims.push(a);
       return a;
     };
-  for (const a of switchAnims) a.cancel();
-  switchAnims = [];
-  if (barAnim) barAnim.cancel();
-  barAnim = null;
   const dropWas = $("plate").classList.contains("drop");
   put(to);
   /* PNG Info's drop line leaving with its panel: it fades across the crop, to the swap (its own 150 ms fade at the
@@ -234,67 +246,87 @@ export function switchGlide(at) {
       placeBar();
     };
   }
-  /* the switch's own layers (a View Transition, when there is one): every group re-keyed to the same choreography from
-     its own first and last box; the contents' fades at the swap; the contents clipped to the plate — per keyframe, the
-     plate's box in its layer's box, so it holds exactly (a group eases its own keyframes: on two curves the clip ran off
-     the plate by up to 78 px) */
-  /** @type {Record<string, { l: number, t: number, w: number, h: number }[]>} */
-  const layer = {};
-  for (const a of document.getAnimations()) {
-    const e = /** @type {KeyframeEffect | null} */ (a.effect),
-      p = (e && e.pseudoElement) || "";
-    if (!e || !p.startsWith("::view-transition")) continue;
-    const name = (p.match(/\(([^)]*)\)/) || ["", ""])[1];
-    if (p.startsWith("::view-transition-group(")) {
-      const kf = e.getKeyframes(),
-        f0 = kf[0],
-        f1 = kf[kf.length - 1];
-      if (f0 && f1 && f0.transform && f0.width) {
-        const m0 = new DOMMatrix(String(f0.transform)),
-          m1 = new DOMMatrix(String(f1.transform)),
-          g0 = { l: m0.e, t: m0.f, w: parseFloat(String(f0.width)), h: parseFloat(String(f0.height)) },
-          g1 = { l: m1.e, t: m1.f, w: parseFloat(String(f1.width)), h: parseFloat(String(f1.height)) };
-        layer[name] = samples.map(s => shapeBox(g0, g1, s.q));
-        e.setKeyframes(
-          layer[name].map((b, i) => ({
-            offset: samples[i].offset,
-            transform: `matrix(1, 0, 0, 1, ${b.l}, ${b.t})`,
-            width: px(b.w),
-            height: px(b.h),
-          })),
+  /* the two views, live (no snapshots: glass, the picture's arrows and buttons stay real — a View Transition's
+     pictures of them blinked, 2026-10-28). The leaving one stays where it was on screen at its size (its contents
+     don't reflow), the coming one where it belongs; both inside the plate as it glides (1 px in, so its rim shows),
+     crossing at the swap */
+  const { old, oldRect, neu } = views,
+    rp = $("rpanel").getBoundingClientRect(),
+    rpanel = $("rpanel"),
+    os = old.style;
+  old.classList.add("leaving");
+  os.left = oldRect.left - rp.left - rpanel.clientLeft + "px";
+  os.top = oldRect.top - rp.top - rpanel.clientTop + "px";
+  os.width = oldRect.width + "px";
+  os.height = oldRect.height + "px";
+  os.right = os.bottom = "auto";
+  h.classList.add("switching");
+  const nr = neu.getBoundingClientRect(),
+    /** the plate's box (on screen) as an inset of a view's box, 1 px inside */
+    clip = (/** @type {DOMRect} */ v) =>
+      boxes.map((b, i) => {
+        const ins = [b.t - v.top, v.right - (b.l + b.w), v.bottom - (b.t + b.h), b.l - v.left].map(
+          x => Math.max(0, x).toFixed(1) + "px",
         );
-      }
-      e.updateTiming(timing);
-    } else if (SWAPS.has(name)) e.updateTiming({ delay: steps.A, duration: steps.S }); // the old contents until the swap, the new from it
-    a.startTime = t0;
-  }
-  /* the contents inside the plate (1 px in, so its rim shows): the panel's contents, and a picture that fades where it
-     was (it would hang outside the plate while it crops) */
-  for (const [name, R] of /** @type {[string, number][]} */ ([
-    ["kiln-panel", 1],
-    ["kiln-pic", 0],
-  ])) {
-    let g = layer[name];
-    if (!g) {
-      /* a layer that doesn't move has no group animation (an old picture fading where it was): its box from the
-         browser. Unclipped, the Gallery's picture stayed whole over the plate's crop and vanished at the swap — the
-         switch to PNG Info looked like a snap (the user, 2026-10-28) */
-      const c = getComputedStyle(h, `::view-transition-group(${name})`),
-        w = parseFloat(c.width);
-      if (!(w > 0)) continue;
-      const mx = new DOMMatrix(c.transform === "none" ? undefined : c.transform),
-        box = { l: mx.e, t: mx.f, w, h: parseFloat(c.height) };
-      g = boxes.map(() => box);
+        return { offset: samples[i].offset, clipPath: `inset(${ins.join(" ")} round var(--r-panel))` };
+      }),
+    swap = { delay: steps.A, duration: steps.S, fill: /** @type {FillMode} */ ("both") },
+    /* the picture's view: the picture is what the plate crops (the frame); what sits round it outside the plate — the
+       edit buttons, the status row, Show prompt, the arrows — fades on its own, quickly: out at the start, in as the
+       plate lands (clipped, they were cut off at the first frame) */
+    pic = (/** @type {HTMLElement} */ v) => v.id === "v-gen",
+    around = () => [$("gtools"), $("prog"), $("showP")],
+    /* the picture's arrows: shown by hover alone (browse.js); a switch only takes them out with their view — faded
+       in by the switch too, they showed where they last were (the screen's edge) while hover hadn't shown them */
+    navs = () => [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".gnav"))],
+    Q = Math.min(150, T) / T;
+  for (const [v, r] of /** @type {[HTMLElement, DOMRect][]} */ ([
+    [old, oldRect],
+    [neu, nr],
+  ]))
+    if (pic(v)) go($("frame").animate(clip($("frame").getBoundingClientRect()), timing));
+    else go(v.animate(clip(r), timing));
+  /* only out, from what they are now: shown by hover (the edit buttons, the arrows) or by state (the status row,
+     Show prompt), a switch never shows them — faded in by it, or out from fully shown, they blinked (the user,
+     2026-10-28: "the only reason for them to be shown is hovering the picture") */
+  /* everything that leaves fades out across the crop, easing in, gone by the swap — the edit buttons and arrows like
+     PNG Info's drop line (in 150 ms they read as disintegrating, the user, 2026-10-28) */
+  const leave = { duration: Math.max(1, steps.A + steps.S), easing: "ease-in", fill: /** @type {FillMode} */ ("both") };
+  if (pic(old))
+    for (const el of [...around(), ...navs()]) {
+      const now = getComputedStyle(el).opacity;
+      if (+now > 0.01) go(el.animate([{ opacity: now }, { opacity: 0 }], leave));
     }
-    const clip = boxes.map((b, i) => {
-      const v = g[i],
-        ins = [b.t - v.t, v.l + v.w - (b.l + b.w), v.t + v.h - (b.t + b.h), b.l - v.l].map(
-          x => (Math.max(0, x) + R).toFixed(1) + "px",
-        );
-      return { offset: samples[i].offset, clipPath: `inset(${ins.join(" ")} round calc(var(--r-panel) - ${R}px))` };
-    });
-    for (const side of ["old", "new"])
-      go(h.animate(clip, { ...timing, fill: "both", pseudoElement: `::view-transition-${side}(${name})` }));
-  }
-  return t0;
+  /* coming in, what state shows (the status row, Show prompt) fades in as the plate lands; the edit buttons wait for
+     hover */
+  if (pic(neu))
+    for (const el of [$("prog"), $("showP")]) {
+      const now = getComputedStyle(el).opacity;
+      if (+now > 0.01) go(el.animate([{ opacity: 0 }, { opacity: 0, offset: 1 - Q }, { opacity: now }], timing));
+    }
+  /* a picture is cropped, then crosses at the swap; a panel's contents (a list, a form) fade across the crop from the
+     first frame, linearly — held whole (or nearly, on an ease-in) while the plate cut into them, Queue → Generating
+     read as a frozen snapshot (the user, 2026-10-28). Material's fade-through: the outgoing content goes at once */
+  const out = go(old.animate([{ opacity: 1 }, { opacity: 0 }], pic(old) ? swap : { ...leave, easing: "linear" }));
+  /* the picture's glow lives outside its view (a fixed layer): it comes and goes with the picture, at the swap */
+  const fg = document.getElementById("fglow");
+  if (fg && pic(neu) !== pic(old))
+    go(fg.animate(pic(neu) ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], swap));
+  go(neu.animate([{ opacity: 0 }, { opacity: 1 }], swap));
+  /* the leaving view goes when the switch ends (or a new switch begins): hidden, back in its place */
+  const end = () => {
+    if (leaveDone !== end) return;
+    leaveDone = null;
+    old.classList.remove("leaving");
+    for (const p of ["left", "top", "width", "height", "right", "bottom"]) os.removeProperty(p);
+    h.classList.remove("switching");
+    frameHold(null); // the picture's frame (if its view left) to where the layout wants it
+    /* the switch's own animations end with it: kept (filling), they piled up holding the views' last looks */
+    for (const a of switchAnims) a.cancel();
+    switchAnims = [];
+  };
+  leaveDone = end;
+  const last = go(old.animate([], { duration: T })); // the switch's length, no effect of its own
+  last.onfinish = last.oncancel = out.oncancel = end;
+  return { t0, T };
 }

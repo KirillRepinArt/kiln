@@ -59,19 +59,38 @@ export function frameMorph(o) {
   f.style.setProperty("--nh", px(n0.h));
   f.classList.add("morph");
   const t0 = performance.now();
+  /* the new picture comes in at the swap: until then the box shows the old one (cropped) — with no old picture (an
+     empty frame) the new one showed cropped through the crop, "a zoomed picture first". Browsing never showed it: the
+     old picture covered it */
+  /* on the frame's clock (t0): started on the next frame instead, the picture came in a frame early for its box — 15 to
+     26 px of bare glass above and below it, where the crop is steepest */
+  $("cv").animate(
+    [{ opacity: 0 }, { opacity: 0, offset: A / T }, { opacity: 1, offset: (A + S) / T }, { opacity: 1 }],
+    { duration: T, fill: "backwards" }, // held at its first keyframe until t0
+  ).startTime = t0;
+  /* the glow is its picture's: with no old picture on show it comes in with the new one — the same keyframes, the same
+     clock (copied from the picture's opacity every frame by the effects loop, it ran a frame ahead) */
+  const fg = document.getElementById("fglow");
+  if (fg && !(x && /** @type {HTMLCanvasElement} */ (x).width > 1))
+    fg.animate([{ opacity: 0 }, { opacity: 0, offset: A / T }, { opacity: 1, offset: (A + S) / T }, { opacity: 1 }], {
+      duration: T,
+      fill: "backwards",
+    }).startTime = t0;
   /* the old picture (on its own canvas) fades out across the swap */
   if (x) {
     x.dataset.morph = "1";
     x.getAnimations().forEach(q => q.cancel());
-    x.animate(
+    const xa = x.animate(
       [
         { opacity: 1 },
         { opacity: 1, offset: A / T },
         { opacity: 0, offset: (A + S) / T, easing: "ease-in-out" },
         { opacity: 0 },
       ],
-      { duration: T, fill: "forwards" },
-    ).onfinish = () => {
+      { duration: T, fill: "both" },
+    );
+    xa.startTime = t0;
+    xa.onfinish = () => {
       x.style.opacity = "0";
       delete x.dataset.morph;
       x.getAnimations().forEach(q => q.cancel());

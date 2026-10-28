@@ -205,8 +205,8 @@ body.qdragging * {
 }
 /* selection: a round box at the row's start — on hover, or always while something is selected. At rest a thin ring,
    a line like the row's ✕ (2026-10-28, the user); selected, the ring fills edge to edge with a bead — a full fill reads
-   "on", a dot inside would read as a radio button (pick one). Its glass is drawn (a highlight, a darker rim), not a
-   blur: on 20 px a blur shows nothing and costs a layer per row, and the box fades in (glass and opacity don't mix) */
+   "on", a dot inside would read as a radio button (pick one) — in glass, an accent glass bead like the other glass
+   buttons (it shows whole whenever a row is selected, so the box's hover fade never crosses its glass) */
 .qck {
   position: relative;
   width: 20px;
@@ -248,14 +248,12 @@ body.qdragging * {
   transform: scale(1);
 }
 body.glass .qck::before {
-  background:
-    radial-gradient(circle at 34% 28%, var(--white-35), transparent 46%),
-    radial-gradient(circle at 50% 50%, var(--a1) 55%, color-mix(in oklab, var(--a1), var(--black) 28%));
-  box-shadow:
-    inset 0 1px 1px var(--white-35),
-    inset 0 -1px 2px var(--black-35),
-    0 0 0 1px color-mix(in oklab, var(--a1) 70%, var(--white));
-} /* a glass bead: a highlight top-left, the accent, a darker rim, a light edge */
+  background: color-mix(in oklab, var(--a1) 78%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.7);
+  backdrop-filter: blur(12px) saturate(1.7);
+  box-shadow: inset 0 1px 0 var(--white-35);
+} /* selected: one glass object in the accent, like Kiln's other glass buttons — no outline, no drawn layers on top
+     (the user, 2026-10-28); the thin ring is the at-rest look only */
 .qi.sel {
   box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--a1) 75%, transparent);
 }

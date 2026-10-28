@@ -99,7 +99,7 @@ export function initBrowse() {
       "pointermove",
       e => {
         const el = /** @type {(HTMLElement & { _t?: number }) | null} */ (lay.navHold);
-        if (!el || document.documentElement.classList.contains("tabmorph")) return;
+        if (!el) return;
         const r = el.getBoundingClientRect();
         if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) letGo(el);
       },
@@ -139,7 +139,7 @@ export function initBrowse() {
 /* the picture's arrows on its side edges (the one you hold stays where it is): every frame, and at once for a switch's
    capture (tabs.js) */
 export function placeNavs() {
-  if (!document.body.classList.contains("navs")) return;
+  /* always, shown or not: they come in where the picture is, never from where they last were */
   const [pv, nx] = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".gnav")),
     r = $("frame").getBoundingClientRect(),
     y = Math.round(r.top + r.height / 2 - 20) + "px";

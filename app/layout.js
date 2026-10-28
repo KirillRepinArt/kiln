@@ -246,9 +246,6 @@ let morphs = 0; // switches started so far: only the latest one ends the morph
 let morphNow = null; // the switch running now
 /* when the running switch starts to show (its snapshots taken): motion started inside the switch waits for it — the
    capture can take a few hundred ms, and a motion started before it was mostly over by its first frame */
-export const morphReady = () => (morphNow ? morphNow.ready.catch(() => {}) : Promise.resolve());
-/** the running switch has finished (at once when there is none) */
-export const morphDone = () => (morphNow ? morphNow.finished.catch(() => {}) : Promise.resolve());
 let morphClicks = false;
 /* a switch covers the page: Chrome sends every click during it to <html> (pointer-events can't change that), so quick
    clicks — a second tab right after the first — were lost (2026-10-27). Such a click cuts the switch short and goes to

@@ -89,7 +89,15 @@ function xfadeFrom(cv, id) {
     return; /* already taken (xfadeSnap, before the box changed) */
   x.width = cv.width;
   x.height = cv.height;
-  /** @type {CanvasRenderingContext2D} */ (x.getContext("2d")).drawImage(cv, 0, 0);
+  const c = /** @type {CanvasRenderingContext2D} */ (x.getContext("2d"));
+  c.drawImage(cv, 0, 0);
+  /* what was on screen, not the bare canvas: a render shows under its veil and embers — cropped without them, the
+     render's preview read as another picture, zoomed (the user, 2026-10-28) */
+  for (const id of ["veil", "embers"]) {
+    const e = /** @type {HTMLCanvasElement | null} */ (document.getElementById(id));
+    if (e && e.width > 1 && +getComputedStyle(e).opacity > 0.01 && getComputedStyle(e).display !== "none")
+      c.drawImage(e, 0, 0, x.width, x.height);
+  }
   x.style.width = cv.style.width;
   x.style.height = cv.style.height;
   x.style.transition = "none";

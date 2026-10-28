@@ -22,6 +22,7 @@ let glide = null;
 /** @type {Drive | null} */
 let drive = null;
 let raf = 0;
+let held = false; // its view is leaving in a switch: it stays where it was (frameHold)
 const layE = bez(0.05, 0.7, 0.1, 1); // --lay-e: the layout's curve
 
 /** where the frame is now (null before the first layout) */
@@ -63,6 +64,10 @@ const same = (/** @type {Box} */ a, /** @type {Box} */ b) => a.l === b.l && a.t 
  * the current box, as a CSS transition would), or jumps (snaps()). While a crop-and-reveal drives it, the goal is
  * where it lands @param {Box} b */
 export function frameGoal(b) {
+  if (held) {
+    goal = b; // where it goes once its view has left (frameHold)
+    return;
+  }
   if (goal && same(goal, b) && (glide || drive || (cur && same(cur, b)))) return;
   goal = b;
   if (drive) return;
@@ -116,4 +121,19 @@ function tick(now) {
   }
   write({ l: at(f.l, g.l), t: at(f.t, g.t), w: at(f.w, g.w), h: at(f.h, g.h) });
   run();
+}
+/** a tab switch leaving the picture's view: the frame (and what sits round it) stays where it was on screen while the
+ * view fades — the layout has already moved on to the new tab's (it jumped 261 px with the area). null: let go, to the
+ * layout's goal (the view is hidden by then) @param {Box | null} b */
+export function frameHold(b) {
+  if (b) {
+    held = true;
+    glide = null;
+    drive = null;
+    write(b);
+    return;
+  }
+  if (!held) return;
+  held = false;
+  if (goal) write(goal);
 }

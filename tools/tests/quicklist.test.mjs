@@ -303,24 +303,19 @@ export async function narrowNameLine(k, t) {
 export async function tabSwitchKeepsTabs(k, t) {
   await k.mouse(2, 2);
   await k.sleep(1000);
-  const r =
-    await k.ev(`(()=>{const h=document.documentElement,b=document.body;h.classList.add("tabmorph","laymorph");b.classList.add("laysnap");
-   const o={app:getComputedStyle(document.querySelector(".app")).viewTransitionName,panel:getComputedStyle($("rpanel")).viewTransitionName,view:getComputedStyle(document.querySelector(".rpanel > .view.on")).viewTransitionName,prompt:getComputedStyle($("lcol")).viewTransitionName,tabs:getComputedStyle(document.querySelector(".tabs")).transitionDuration,tabsProp:getComputedStyle(document.querySelector(".tabs")).transitionProperty,thumb:getComputedStyle(document.querySelector(".seg .thumb")).transitionDuration};
-   h.classList.remove("tabmorph","laymorph");b.classList.remove("laysnap");return o})()`);
-  t.ok(
-    r.app === "none" && r.view === "kiln-panel",
-    "a tab switch fades only the content under the tabs (the tab bar and the prompt stay live)",
-    r,
+  /* a tab switch is live: no View Transition (its pictures of the page couldn't hold glass and took the pointer away,
+     2026-10-28) — the tab bar, the prompt and the panels' glass stay the real thing all through it */
+  const vt =
+    await k.ev(`new Promise(res=>{let n=0;const o=document.startViewTransition;if(o)document.startViewTransition=function(fn){n++;return o.call(document,fn)};
+    document.querySelector('.tab[data-v="queue"]').click();setTimeout(()=>{if(o)document.startViewTransition=o;res(n)},900)})`);
+  t.ok(vt === 0, "a tab switch takes no pictures of the page: everything stays live", vt);
+  await k.ev(`(document.querySelector('.tab[data-v="gen"]').click(),1)`);
+  await k.sleep(1200);
+  const r = await k.ev(
+    `(()=>{const b=document.body,h=document.documentElement;b.classList.add("laysnap");h.classList.add("tabswitch");const o={tabsProp:getComputedStyle(document.querySelector(".tabs")).transitionProperty,thumb:getComputedStyle(document.querySelector(".seg .thumb")).transitionDuration};b.classList.remove("laysnap");h.classList.remove("tabswitch");return o})()`,
   );
-  /* the panel itself is never named: a named element is a backdrop root, so its glass went clear for the whole switch,
-     then the blur popped in (2026-10-27) */
-  t.ok(r.panel === "none", "…and the panel stays live: its glass blurs through the switch", r);
-  t.ok(/0\.28s/.test(r.thumb), "…and the selected tab's pill slides", r);
-  t.ok(
-    r.prompt === "none" && !/transform/.test(r.tabsProp),
-    "the prompt box slides live (its glass too — no snapshot); the tab bar has no glide of its own (it follows the plate)",
-    r,
-  );
+  t.ok(/0\.28s/.test(r.thumb), "…the selected tab's pill slides", r);
+  t.ok(!/transform/.test(r.tabsProp), "…the tab bar has no glide of its own (it follows the plate)", r);
   // positions relative to the tab bar: the bar itself glides during a switch (reading screen positions mid-glide mixed
   // the two movements up)
   const inBar = sel =>
@@ -332,9 +327,6 @@ export async function tabSwitchKeepsTabs(k, t) {
     x2 = await k.ev(inBar('.tab[data-v="queue"]'));
   t.motion(x1 > x0 + 2 && x1 < x2 - 2, "mid-switch the pill is on its way (not jumped)", { x0, x1, x2 });
 }
-
-/* a tab switch: the tab bar goes straight from where it was to its new place — it used to leap sideways with its column,
-   then slide back (2026-10-26, the user's note). Sampled per frame: no step bigger than a glide's */
 export async function tabBarNoTeleport(k, t) {
   await k.job("[fill:446688] one", { steps: 2, ar: "3:4" });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
@@ -379,15 +371,12 @@ export async function fastTabClicks(k, t) {
   const [lx, ly] = await at("loras"),
     [px, py] = await at("png");
   await k.click(lx, ly);
-  t.ok(
-    await k.until(`document.documentElement.classList.contains("laymorph")`, 1000),
-    "the second click comes mid-switch",
-  );
+  t.ok(await k.until(`document.body.classList.contains("laysnap")`, 1000), "the second click comes mid-switch");
   await k.click(px, py);
   t.ok(await k.until(`${lit}==="png"`, 3000), "…and still opens its tab", await k.ev(lit));
-  t.ok(await k.until(`!document.documentElement.classList.contains("laymorph")`, 3000), "the switch ends");
+  t.ok(await k.until(`!document.body.classList.contains("laysnap")`, 3000), "the switch ends");
   await k.click(...(await at("queue")));
-  await k.until(`document.documentElement.classList.contains("laymorph")`, 1000);
+  await k.until(`document.body.classList.contains("laysnap")`, 1000);
   await k.click(...(await at("loras")));
   t.ok(await k.until(`${lit}==="loras"`, 3000), "again, from a page whose bar moves", await k.ev(lit));
 }
@@ -430,20 +419,28 @@ export async function galleryToStepZeroFades(k, t) {
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.sleep(1200);
   t.ok(await k.ev(`$("frame").classList.contains("has")`), "the Gallery shows the finished picture");
-  const r = await k.ev(`new Promise(res=>{document.querySelector('.tab[data-v="gen"]').click();
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{const a=document.getAnimations().map(a=>a.effect&&a.effect.pseudoElement||"").filter(Boolean);
-      res({group:a.filter(p=>p==="::view-transition-group(kiln-pic)").length,old:a.filter(p=>p==="::view-transition-old(kiln-pic)").length,step:current()&&current().step,has:$("frame").classList.contains("has")})}))})`);
+  // the old picture is its copy (#cvx), at its own size: cropped by the frame, never grown into the empty box
+  const r =
+    await k.ev(`new Promise(res=>{const o={grew:0,seen:0,ow:null,step:null},x=$("cvx"),t0=performance.now();document.querySelector('.tab[data-v="gen"]').click();
+    (function s(){if(+getComputedStyle(x).opacity>0.02&&x.width>1){o.seen++;const w=x.getBoundingClientRect().width;if(o.ow==null)o.ow=w;o.grew=Math.max(o.grew,w-o.ow)}
+      if(o.step==null)o.step=current()&&current().step;if(performance.now()-t0<900)requestAnimationFrame(s);else{o.end=+getComputedStyle(x).opacity;res(o)}})()})`);
   t.ok(r.step === 0, "Generating at step 0: no preview yet", r);
-  t.ok(r.group === 0, "the old picture doesn't grow into the empty frame (no box morph)", r);
-  t.ok(r.old > 0, "…it fades out where it is", r);
-  // with a preview: the Gallery's picture and the render are different pictures — still not paired (2026-10-27)
+  t.ok(r.seen > 0 && r.grew <= 1, "the old picture doesn't grow into the empty frame: it is cropped where it is", r);
+  t.ok(r.end === 0, "…and it has gone when the switch ends", r);
+  // with a preview: the Gallery's picture and the render are different pictures — the same (2026-10-27)
   await k.until(`current()&&current().preview_rev`, 15000, 100);
   await k.sleep(1200);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.sleep(1200);
-  const g = await k.ev(`new Promise(res=>{document.querySelector('.tab[data-v="gen"]').click();
-    requestAnimationFrame(()=>requestAnimationFrame(()=>res(document.getAnimations().filter(a=>a.effect&&a.effect.pseudoElement==="::view-transition-group(kiln-pic)").length)))})`);
-  t.ok(g === 0, "with a preview: the Gallery's picture doesn't grow into the render either (another picture)", g);
+  const g =
+    await k.ev(`new Promise(res=>{const o={grew:0,seen:0,ow:null,step:null},x=$("cvx"),t0=performance.now();document.querySelector('.tab[data-v="gen"]').click();
+    (function s(){if(+getComputedStyle(x).opacity>0.02&&x.width>1){o.seen++;const w=x.getBoundingClientRect().width;if(o.ow==null)o.ow=w;o.grew=Math.max(o.grew,w-o.ow)}
+      if(o.step==null)o.step=current()&&current().step;if(performance.now()-t0<900)requestAnimationFrame(s);else{o.end=+getComputedStyle(x).opacity;res(o)}})()})`);
+  t.ok(
+    g.grew <= 1 && g.end === 0,
+    "with a preview: the Gallery's picture is cropped too, never grown into the render",
+    g,
+  );
 }
 galleryToStepZeroFades.opts = { step: 4 }; // step 0 must outlast the Gallery visit on a slow machine (CI run 75 reached step 1)
 
@@ -457,17 +454,18 @@ export async function galleryToPreviewIsClean(k, t) {
   await k.until(`jobs.some(j=>j.status==="done")&&!current()`, 20000);
   await k.mouse(2, 2);
   await k.sleep(1500);
-  const sw = to => `new Promise(res=>{const o={cvx:0,dur:{},fit:""},t0=performance.now();
+  /* per frame: the old picture's copy fades once (never comes back up), both pictures keep their own shape (the box
+     crops them), and the glow is on the frame */
+  const sw =
+    to => `new Promise(res=>{const o={up:0,last:null,squeeze:0,glow:0,n:0},x=$("cvx"),c=$("cv"),f=$("frame"),g=$("fglow"),ar=+f.dataset.tw/+f.dataset.th,t0=performance.now();
     document.querySelector('.tab[data-v="${to}"]').click();
-    (function s(){o.cvx=Math.max(o.cvx,+getComputedStyle($("cvx")).opacity);
-      for(const a of document.getAnimations()){const p=a.effect&&a.effect.pseudoElement;if(p&&/group\\((kiln-pic|kiln-glow)\\)/.test(p))o.dur[p]=a.effect.getComputedTiming().duration}
-      if(!o.fit&&document.documentElement.classList.contains("laymorph"))o.fit=getComputedStyle(document.documentElement,"::view-transition-old(kiln-pic)").objectFit;
-      if(performance.now()-t0<700)requestAnimationFrame(s);else res(o)})()})`;
-  // the SAME picture (just finished, on Generating) into the Gallery: it travels — on the glow's clock, cropped
+    (function s(){const op=+getComputedStyle(x).opacity;if(o.last!=null&&op>o.last+0.02)o.up=Math.max(o.up,op-o.last);o.last=op;
+      const cr=c.getBoundingClientRect();if(+getComputedStyle(c).opacity>0.02&&cr.height>0){const want=+f.dataset.tw/+f.dataset.th;o.squeeze=Math.max(o.squeeze,Math.abs(cr.width/cr.height-want))}
+      if(g&&getComputedStyle(g).display!=="none"&&+getComputedStyle(g).opacity>0.02){const fr=f.getBoundingClientRect(),gr=g.getBoundingClientRect();o.glow=Math.max(o.glow,Math.abs(gr.left+95-fr.left),Math.abs(gr.top+95-fr.top),Math.abs(gr.width-190-fr.width));o.n++}
+      if(performance.now()-t0<800)requestAnimationFrame(s);else res(o)})()})`;
   const a = await k.ev(sw("gallery"));
-  const d = Object.values(a.dur);
-  t.ok(d.length === 2 && d[0] === d[1], "the same picture travels, the glow on its clock", a.dur);
-  t.ok(a.fit === "cover", "the changing box crops the pictures, never squeezes them", a.fit);
+  t.ok(a.squeeze < 0.02, "the same picture into the Gallery: never squeezed", a);
+  t.motion(a.glow <= 2, "…the glow on the frame every frame", a);
   // another picture: the render, from the Gallery
   await k.job("[fill:446688] square render", { ar: "1:1", steps: 60 });
   await k.until(`current()&&current().preview_rev`, 20000, 100);
@@ -475,12 +473,9 @@ export async function galleryToPreviewIsClean(k, t) {
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.sleep(1500);
   const b = await k.ev(sw("gen"));
-  t.ok(b.cvx === 0, "no second cross-fade: the old picture never flashes into the new frame", b);
-  t.ok(
-    !b.dur["::view-transition-group(kiln-pic)"],
-    "the Gallery's picture and the render aren't paired (no zoom)",
-    b.dur,
-  );
+  t.ok(b.up === 0, "one cross-fade: the old picture never comes back into the frame", b);
+  t.ok(b.squeeze < 0.02, "…the pictures are cropped, never squeezed", b);
+  t.motion(b.glow <= 2, "…and the glow stays on the frame", b);
 }
 galleryToPreviewIsClean.opts = { step: 0.6 };
 
@@ -537,17 +532,12 @@ export async function glowWaitsForItsPicture(k, t) {
   await k.sleep(1500);
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.sleep(1500);
+  /* the glow is its picture's: no frame of the switch shows it without a picture on screen (pictures cover as
+     1-(1-a)(1-b) in a cross-fade) — it comes in with its picture, on the same clock (morph.js, plate.js) */
   const r =
-    await k.ev(`new Promise(res=>{const o={},t0=performance.now();document.querySelector('.tab[data-v="gen"]').click();
-    (function s(){for(const a of document.getAnimations()){const p=a.effect&&a.effect.pseudoElement;if(p&&/kiln-(glow|pic|panel)/.test(p))o[p+" "+(a.animationName||"")]=a.effect.getTiming().delay}
-    o.picout=o.picout||document.documentElement.classList.contains("picout");if(performance.now()-t0<500)requestAnimationFrame(s);else res(o)})()})`);
-  const glowIn = r["::view-transition-new(kiln-glow) -ua-view-transition-fade-in"],
-    picIn = r["::view-transition-new(kiln-panel) kappear"];
-  t.ok(r.picout && glowIn != null, "the Gallery's picture and the render: not carried across, the glow comes along", r);
-  // the glow is its picture's: it comes in with it, at the switch's swap (plate.js switchGlide — one clock)
-  t.ok(picIn != null && Math.abs(glowIn - picIn) <= 1, "…and the new glow comes in with its picture", {
-    glowIn,
-    picIn,
-  });
+    await k.ev(`new Promise(res=>{const o={over:0,n:0},g=$("fglow"),c=$("cv"),x=$("cvx"),t0=performance.now();document.querySelector('.tab[data-v="gen"]').click();
+    (function s(){if(getComputedStyle(g).display!=="none"){const a=+getComputedStyle(c).opacity,b=x.width>1?+getComputedStyle(x).opacity:0,pic=1-(1-a)*(1-b);if(pic<0.05)o.over=Math.max(o.over,+getComputedStyle(g).opacity);o.n++}
+    if(performance.now()-t0<700)requestAnimationFrame(()=>setTimeout(s,0));else res(o)})()})`); // after the frame's writes
+  t.ok(r.n > 5 && r.over <= 0.05, "the glow comes with its picture: never shown without one", r);
 }
 glowWaitsForItsPicture.opts = { step: 0.6 };

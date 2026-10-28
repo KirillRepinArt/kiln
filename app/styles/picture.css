@@ -242,7 +242,7 @@ body.private .frame:hover .cbtn {
 .stage.tools .gtools {
   opacity: 1;
 }
-.rpanel.paneled .gtools,
+.rpanel.paneled #v-gen:not(.leaving) .gtools,
 .stage:has(.frame.running) .gtools,
 .stage:has(.frame.held) .gtools,
 .stage:has(.frame.missing) .gtools,
@@ -331,7 +331,7 @@ body.private .frame:hover .cbtn {
 body.navs .gnav:not(.off) {
   opacity: 1;
 }
-body:has(.rpanel.paneled) .gnav,
+body:has(.rpanel.paneled):not(:has(#v-gen.leaving)) .gnav,
 body:has(.frame.missing) .gnav,
 body:has(.modal.show) .gnav,
 body:has(.viewer.show) .gnav {

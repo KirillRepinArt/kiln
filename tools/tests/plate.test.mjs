@@ -419,3 +419,36 @@ export async function editButtonsOnlyOnHover(k, t) {
   }
 }
 editButtonsOnlyOnHover.opts = { step: 0.05 };
+
+/* the views ride the plate (2026-10-28, the user: Queue / LoRAs → Generating / the Gallery "does a snapshot"): the
+   plate moves as well as shrinks (the area re-centres), and the leaving list, pinned on screen, stayed behind like a
+   still. Every frame it shows: its offset from the plate's centre is what it was at the start (it rides), and what
+   shows of it is inside the plate */
+export async function viewsRideThePlate(k, t) {
+  for (const c of ["aa7733", "3366aa"]) await k.job(`[fill:${c}] p`, { ar: "16:9", steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  await k.mouse(2, 2);
+  for (const [from, to] of [
+    ["queue", "gen"],
+    ["loras", "gallery"],
+  ]) {
+    await k.ev(`(document.querySelector('.tab[data-v="${from}"]').click(),1)`);
+    await k.sleep(1300);
+    const o =
+      await k.ev(`new Promise(res=>{const p=$("plate"),v=$("v-${from}"),o={drift:0,out:0,seen:0},t0=performance.now();let d0=null;
+      document.querySelector('.tab[data-v="${to}"]').click();
+      (function s(){if(v.classList.contains("leaving")&&+getComputedStyle(v).opacity>0.02){const r=v.getBoundingClientRect(),pr=p.getBoundingClientRect(),
+          d=[(r.left+r.right)/2-(pr.left+pr.right)/2,(r.top+r.bottom)/2-(pr.top+pr.bottom)/2];if(!d0)d0=d;o.drift=Math.max(o.drift,Math.abs(d[0]-d0[0]),Math.abs(d[1]-d0[1]));
+          const c=getComputedStyle(v).clipPath,[tt,rg=tt,b=tt,l=rg]=c==="none"?[0,0,0,0]:c.replace("inset(","").split(" round")[0].replace(")","").trim().split(" ").map(parseFloat);
+          o.out=Math.max(o.out,pr.left-(r.left+l),pr.top-(r.top+tt),r.right-rg-pr.right,r.bottom-b-pr.bottom);o.seen++}
+        if(performance.now()-t0<700)requestAnimationFrame(()=>setTimeout(s,0));else res(o)})()})`);
+    t.motion(
+      o.seen > 3 && o.drift <= 1.5,
+      `${from} → ${to}: the leaving view rides the plate (no still left behind)`,
+      o,
+    );
+    t.motion(o.out <= 1.5, `${from} → ${to}: …and shows only inside it`, o);
+    await k.sleep(400);
+  }
+}
+viewsRideThePlate.opts = { step: 0.05 };

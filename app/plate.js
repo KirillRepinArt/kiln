@@ -263,13 +263,11 @@ export function switchGlide(at, views) {
   h.classList.add("switching");
   const nr = neu.getBoundingClientRect(),
     /** the plate's box (on screen) as an inset of a view's box, 1 px inside */
-    clip = (/** @type {DOMRect} */ v) =>
-      boxes.map((b, i) => {
-        const ins = [b.t - v.top, v.right - (b.l + b.w), v.bottom - (b.t + b.h), b.l - v.left].map(
-          x => Math.max(0, x).toFixed(1) + "px",
-        );
-        return { offset: samples[i].offset, clipPath: `inset(${ins.join(" ")} round var(--r-panel))` };
-      }),
+    /** the plate's box b (on screen) as a clip of the box v */
+    inset = (/** @type {DOMRect} */ v, /** @type {{ l: number, t: number, w: number, h: number }} */ b) =>
+      `inset(${[b.t - v.top, v.right - (b.l + b.w), v.bottom - (b.t + b.h), b.l - v.left]
+        .map(x => Math.max(0, x).toFixed(1) + "px")
+        .join(" ")} round var(--r-panel))`,
     swap = { delay: steps.A, duration: steps.S, fill: /** @type {FillMode} */ ("both") },
     /* the picture's view: the picture is what the plate crops (the frame); what sits round it outside the plate — the
        edit buttons, the status row, Show prompt, the arrows — fades on its own, quickly: out at the start, in as the
@@ -280,12 +278,32 @@ export function switchGlide(at, views) {
        in by the switch too, they showed where they last were (the screen's edge) while hover hadn't shown them */
     navs = () => [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".gnav"))],
     Q = Math.min(150, T) / T;
-  for (const [v, r] of /** @type {[HTMLElement, DOMRect][]} */ ([
-    [old, oldRect],
-    [neu, nr],
-  ]))
-    if (pic(v)) go($("frame").animate(clip($("frame").getBoundingClientRect()), timing));
-    else go(v.animate(clip(r), timing));
+  /* the views ride the plate: each keeps its place relative to the plate's centre every keyframe — the leaving one as
+     it was at the start, the coming one as it will be at the end (the rule of the picture's crop-and-reveal). Pinned
+     on screen, the leaving list stayed behind like a still while the plate moved off it ("a snapshot", the user,
+     2026-10-28). The clip is the plate's box in the moved one */
+  const centre = (/** @type {{ l: number, t: number, w: number, h: number }} */ b) => [b.l + b.w / 2, b.t + b.h / 2],
+    fr = $("frame").getBoundingClientRect(), // measured before anything rides
+    rides = /** @type {[HTMLElement, DOMRect, number[]][]} */ ([
+      [old, oldRect, centre(boxes[0])],
+      [neu, nr, centre(boxes[boxes.length - 1])],
+    ]);
+  for (const [v, r, anchor] of rides) {
+    const sh = boxes.map(b => {
+        const c = centre(b);
+        return [c[0] - anchor[0], c[1] - anchor[1]];
+      }),
+      box = pic(v) ? fr : r, // what the plate crops: the picture in its view, else the whole view
+      moved = (/** @type {number} */ i) => new DOMRect(box.left + sh[i][0], box.top + sh[i][1], box.width, box.height);
+    go(
+      v.animate(
+        sh.map(([dx, dy], i) => ({ offset: samples[i].offset, transform: `translate(${dx}px, ${dy}px)` })),
+        timing,
+      ),
+    );
+    const c = boxes.map((b, i) => ({ offset: samples[i].offset, clipPath: inset(moved(i), b) }));
+    go((pic(v) ? $("frame") : v).animate(c, timing));
+  }
   /* only out, from what they are now: shown by hover (the edit buttons, the arrows) or by state (the status row,
      Show prompt), a switch never shows them — faded in by it, or out from fully shown, they blinked (the user,
      2026-10-28: "the only reason for them to be shown is hovering the picture") */

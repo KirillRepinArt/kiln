@@ -4,6 +4,7 @@ import { $ } from "./dom.js";
 import { shapeBox, shapeSteps } from "./layoutmath.js";
 import { overlayGone } from "./pictures.js";
 import { frameDrive } from "./framebox.js";
+import { stageRect } from "./layout.js";
 
 /* a picture of another shape: the one choreography (layoutmath.js shapeSteps) — crop, swap, reveal; only the frame
    moves, both pictures at their own final size, centred. Nothing is ever empty: the box is inside the old picture
@@ -97,7 +98,7 @@ export function frameMorph(o) {
       overlayGone();
     };
   }
-  const st0 = $("stage").getBoundingClientRect(),
+  const st0 = stageRect(),
     /* the old box on screen, measured before the change: right after a tab switch the layout jumps instead of gliding,
        and the old box placed in the NEW area showed the old picture 261 px off for the first frames (2026-10-27) */
     O = { l: o.x ?? st0.left + o.l, t: o.y ?? st0.top + o.t, w: o.w, h: o.h };
@@ -105,7 +106,7 @@ export function frameMorph(o) {
      frame follow from there; a new crop-and-reveal replaces this one */
   frameDrive(now => {
     const e = now - t0,
-      st = $("stage").getBoundingClientRect(),
+      st = stageRect(),
       n = T0();
     f.style.setProperty("--nw", px(n.w));
     f.style.setProperty("--nh", px(n.h));

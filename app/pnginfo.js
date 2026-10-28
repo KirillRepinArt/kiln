@@ -294,6 +294,9 @@ export function initPnginfo() {
     renderAll();
     toast(
       `Loaded into the prompt${parsed.name ? ` as “${parsed.name}”` : ""} — ${S.keepSeed ? "its seed" : "new random seed"}`,
+      "",
+      null,
+      "gen", // your draft's news: under the Generating tab (the user, 2026-10-28)
     );
   };
 }

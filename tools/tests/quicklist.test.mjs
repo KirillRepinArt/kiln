@@ -92,6 +92,15 @@ export async function toastsByThePrompt(k, t) {
   const [tr, lr, cr] = [await k.rect("#toast"), await k.rect("#left"), await k.rect("#lcol .controls")];
   t.near(tr.left + tr.width / 2, lr.left + lr.width / 2, 2, "side by side: centred on the prompt column");
   t.ok(tr.bottom < cr.top || tr.top > cr.bottom, "never over the controls", { tr, cr });
+  /* your draft's news sits under the Generating tab (2026-10-28, the user): clearing the prompt, for one */
+  await k.ev(`(P.value="a fox",P.dispatchEvent(new Event("input")),$("pclear").click(),1)`);
+  await k.sleep(300);
+  const [dr, gt] = [await k.rect("#toast"), await k.rect('.tab[data-v="gen"]')];
+  t.ok(
+    Math.abs(dr.left + dr.width / 2 - (gt.left + gt.width / 2)) <= 2 && dr.top > gt.bottom && dr.top - gt.bottom < 30,
+    "your draft's news: under the Generating tab",
+    { dr, gt },
+  );
   await k.ev(`(setDock("below"),1)`);
   await k.sleep(1000);
   await k.ev(`(toast("again"),1)`);

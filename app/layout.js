@@ -310,6 +310,17 @@ export function layMorph(fn) {
     end();
   }
 }
+/* the stage where the layout puts it — without a tab switch's ride (its view's transform is plate.js switchGlide's):
+   measured mid-ride, the prompt column's Vertical shift jumped 24 px for a frame (2026-10-28) */
+export function stageRect() {
+  const st = $("stage"),
+    r = st.getBoundingClientRect(),
+    v = st.closest(".view"),
+    t = v ? getComputedStyle(v).transform : "none";
+  if (t === "none") return r;
+  const m = new DOMMatrix(t);
+  return new DOMRect(r.left - m.e, r.top - m.f, r.width, r.height);
+}
 export function sizeFrame() {
   if (lay.frameDefer) {
     lay.framePending = true;
@@ -340,7 +351,7 @@ export function sizeFrame() {
     }
   }
   /* the target geometry, not a measurement: the grid may be mid-glide */
-  const st = $("stage").getBoundingClientRect(),
+  const st = stageRect(),
     SW = stk ? (lay.colW ? lay.colW - 2 : st.width) : /** @type {Geometry} */ (lay.last).rw; // wide: layApply above has set it
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
   const PH = picH(),

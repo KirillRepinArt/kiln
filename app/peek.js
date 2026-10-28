@@ -182,16 +182,21 @@ export function reuse(focus = true) {
   save();
   renderAll();
   if (focus) P.focus(); /* the picture stays as your reference while you edit — until Start or ✕ */
-  toast(`#${j.id} is now your draft — its prompt, settings and LoRAs`, "Undo", () => {
-    setDraft(prev.draft);
-    P.value = draft;
-    Object.assign(S, prev.S);
-    field("pname").value = S.pname || "";
-    LORAS.forEach((l, i) => Object.assign(l, prev.loras[i]));
-    save();
-    renderAll();
-    updPrompt();
-  });
+  toast(
+    `#${j.id} is now your draft — its prompt, settings and LoRAs`,
+    "Undo",
+    () => {
+      setDraft(prev.draft);
+      P.value = draft;
+      Object.assign(S, prev.S);
+      field("pname").value = S.pname || "";
+      LORAS.forEach((l, i) => Object.assign(l, prev.loras[i]));
+      save();
+      renderAll();
+      updPrompt();
+    },
+    "gen",
+  ); // your draft's news: under the Generating tab (the user, 2026-10-28)
 }
 /** a change to a shown job's settings (a pill, a LoRA chip) makes it your draft first — like typing into it. False:
  * nothing to change (an upscale's settings aren't yours) */

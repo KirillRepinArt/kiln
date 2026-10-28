@@ -59,7 +59,7 @@ export function initPromptBox() {
         }
       };
     put("");
-    toast("Prompt cleared", "Undo", () => put(was));
+    toast("Prompt cleared", "Undo", () => put(was), "gen"); // your draft's news: under the Generating tab
   };
   P.addEventListener("input", () => {
     requestAnimationFrame(layoutLeft);

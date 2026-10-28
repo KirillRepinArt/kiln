@@ -29,9 +29,8 @@
   align-items: center;
   padding: var(--space-7);
   text-align: center;
-  color: var(--muted);
   cursor: pointer;
-}
+} /* its words are the empty plate's (.platehint, picture.css); what they mean in detail is the tooltip */
 /* the line itself is the glass plate's (glass.css .plate.drop): it changes shape with the plate on a switch */
 .pwrap.loaded .drop {
   display: none;

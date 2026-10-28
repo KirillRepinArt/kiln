@@ -203,7 +203,10 @@ body.qdragging * {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* selection: a round box at the row's start — on hover, or always while something is selected */
+/* selection: a round box at the row's start — on hover, or always while something is selected. At rest a thin ring,
+   a line like the row's ✕ (2026-10-28, the user); selected, the ring fills edge to edge with a bead — a full fill reads
+   "on", a dot inside would read as a radio button (pick one). Its glass is drawn (a highlight, a darker rim), not a
+   blur: on 20 px a blur shows nothing and costs a layer per row, and the box fades in (glass and opacity don't mix) */
 .qck {
   position: relative;
   width: 20px;
@@ -214,47 +217,45 @@ body.qdragging * {
   opacity: 0;
   transition:
     opacity var(--t-150),
-    background var(--t-150),
     border-color var(--t-150);
   cursor: pointer;
 }
+.qck::after {
+  content: "";
+  position: absolute;
+  /* the hit area's own size (32 px, like the ✕: 20 + 6 each side, past the ring), not spacing */
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+  inset: -7.5px;
+  border-radius: 50%;
+}
+.qck::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px; /* over the ring, edge to edge */
+  border-radius: 50%;
+  background: var(--a1);
+  transform: scale(0);
+  transition: transform var(--t-150) var(--e-standard);
+} /* the bead grows from the centre */
 .qi:hover .qck,
 .qwrap.selecting .qck {
   opacity: 1;
 }
 .qi.sel .qck {
-  background: var(--a1);
-  border-color: var(--a1);
+  border-color: transparent;
 }
-body.glass .qck {
-  border: 0;
-  background: color-mix(in oklab, var(--white-6), var(--cool) 14%);
-  -webkit-backdrop-filter: blur(8px) saturate(1.6);
-  backdrop-filter: blur(8px) saturate(1.6);
+.qi.sel .qck::before {
+  transform: scale(1);
+}
+body.glass .qck::before {
+  background:
+    radial-gradient(circle at 34% 28%, var(--white-35), transparent 46%),
+    radial-gradient(circle at 50% 50%, var(--a1) 55%, color-mix(in oklab, var(--a1), var(--black) 28%));
   box-shadow:
-    inset 0 1px 0 var(--white-22),
-    0 0 0 1px var(--white-16);
-} /* thin glass, like every control */
-body.glass .qi.sel .qck {
-  background: var(--a1);
-  box-shadow:
-    inset 0 1px 0 var(--white-35),
+    inset 0 1px 1px var(--white-35),
+    inset 0 -1px 2px var(--black-35),
     0 0 0 1px color-mix(in oklab, var(--a1) 70%, var(--white));
-}
-.qi.sel .qck::after {
-  /* the tick's own drawing (a rotated corner), not spacing */
-  /* stylelint-disable declaration-property-value-disallowed-list */
-  content: "";
-  position: absolute;
-  left: 5.5px;
-  top: 2.5px;
-  /* stylelint-enable declaration-property-value-disallowed-list */
-  width: 5px;
-  height: 9px;
-  border: solid var(--ink);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
+} /* a glass bead: a highlight top-left, the accent, a darker rim, a light edge */
 .qi.sel {
   box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--a1) 75%, transparent);
 }

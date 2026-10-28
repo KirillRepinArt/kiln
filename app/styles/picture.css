@@ -104,8 +104,9 @@
   text-align: center;
   pointer-events: none;
 }
-#idleT,
-#idleS {
+/* text in an empty plate — Generating's next picture, PNG Info's drop: one style (the user, 2026-10-28: "sure one is
+   usable, other is info, but it's the plate that's usable, the text is just info") */
+.platehint {
   font-size: var(--fs-15);
   color: var(--grey-74);
 }

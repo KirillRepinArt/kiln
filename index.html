@@ -240,7 +240,7 @@
                 <canvas id="cv"></canvas><canvas id="cvx"></canvas><button class="cbtn" id="cbtn"></button>
                 <div class="idle" id="idle"
                   ><div
-                    ><span id="idleT">Queue is empty</span><br /><small id="idleS"
+                    ><span class="platehint" id="idleT">Queue is empty</span><br /><small class="platehint" id="idleS"
                       >Write a prompt and press ▶ (Ctrl+Enter)</small
                     ></div
                   ></div
@@ -321,9 +321,8 @@
 
           <div class="view" id="v-png">
             <div class="pwrap">
-              <div class="drop" id="drop"
-                >Drop a PNG here, or click to choose<br /><small
-                  >Reads the generation settings Forge stores inside the file</small
+              <div class="drop" id="drop" data-tip="Reads the generation settings Forge stores inside the file"
+                ><span class="platehint">Drop a PNG here, or click to choose</span
                 ><input type="file" id="file" accept="image/png" hidden
               /></div>
               <button class="pclear" id="pClear" title="Close this PNG" style="display: none"

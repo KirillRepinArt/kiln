@@ -14,7 +14,7 @@ import { SPACE } from "./tokens.js";
 /** a pop-up's slider row + number box + quick picks @param {string} id @param {number} min @param {number} max
  * @param {number} val @param {number[]} quick @param {string} hint */
 function slider(id, min, max, val, quick, hint) {
-  return `<div class="row"><input type="range" id="${id}R" min="${min}" max="${max}" value="${val}" style="flex:1"><input type="number" id="${id}N" min="1" max="${max * 2}" value="${val}"></div>
+  return `<div class="row"><input type="range" id="${id}R" min="${min}" max="${max}" value="${val}" style="flex:1"><input type="number" autocomplete="off" id="${id}N" min="1" max="${max * 2}" value="${val}"></div>
   <div class="row" style="justify-content:space-between">${quick.map(q => `<button class="qb ${q === val ? "on" : ""}" data-q="${q}">${q}</button>`).join("")}</div><div class="hint" id="${id}H">${hint}</div>`;
 }
 function stepsHint() {
@@ -72,7 +72,7 @@ export function renderPills() {
   /* the seed, the die, the lock, copy (as in Forge's own seed field: the number with its buttons beside it). Unlocked: a
      random seed each job; locked: this one (×N counts up from it) */
   $("popSD").innerHTML =
-    `<div class="row"><input type="number" id="seedIn" class="${v.locked ? "" : "unused"}" value="${v.seed}" style="width:140px" title="${v.locked ? "Every job uses this seed" : "Not in use — a random seed each job (lock it, type one or roll the die)"}"><button class="iconbtn" id="dice" title="A new random seed (locks it)">${IC.dice}</button><button class="iconbtn lockb${v.locked ? " on" : ""}" id="seedLock" title="${v.locked ? "Locked: every job uses this seed — click for a random one each job" : "Lock: use this seed for every job"}">${LOCK}</button><button class="iconbtn" id="seedCopy" title="Copy the seed">${IC.copy}</button></div>`;
+    `<div class="row"><input type="number" autocomplete="off" id="seedIn" class="${v.locked ? "" : "unused"}" value="${v.seed}" style="width:140px" title="${v.locked ? "Every job uses this seed" : "Not in use — a random seed each job (lock it, type one or roll the die)"}"><button class="iconbtn" id="dice" title="A new random seed (locks it)">${IC.dice}</button><button class="iconbtn lockb${v.locked ? " on" : ""}" id="seedLock" title="${v.locked ? "Locked: every job uses this seed — click for a random one each job" : "Lock: use this seed for every job"}">${LOCK}</button><button class="iconbtn" id="seedCopy" title="Copy the seed">${IC.copy}</button></div>`;
   sizeFrame();
 }
 /* a pill's menu opens above it, starting at its left edge — and stays fully on screen (the user, 2026-10-27: in a narrow

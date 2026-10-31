@@ -49,7 +49,7 @@ export function renderLoras() {
    <div class="lth" data-tg data-tip="Click to switch on/off" style="background:${l.thumb ? "#000" : `linear-gradient(135deg,hsl(${hue(l.name)},35%,30%),hsl(${(hue(l.name) + 50) % 360},35%,18%))`}">${l.thumb ? `<img src="${l.thumb}" alt="">` : initials(l.display)}</div>
    <div class="lbody"><div class="l1"><div class="nm"><span data-rename title="Double-click to rename">${esc(l.display)}</span>${l.recipe ? '<span class="tag">recipe</span>' : ""}<small>${esc(l.tags || l.note || l.folder)}</small></div>
     <span class="sw ${l.on ? "on" : ""}" data-tg title="On/off"></span></div>
-   <div class="l2"><input type="range" min="${a}" max="${b}" step="0.05" value="${l.w}"><input type="number" min="${a}" max="${b}" step="0.05" value="${l.w}">
+   <div class="l2"><input type="range" min="${a}" max="${b}" step="0.05" value="${l.w}"><input type="number" autocomplete="off" min="${a}" max="${b}" step="0.05" value="${l.w}">
     <button class="star ${l.fav ? "on" : ""}" data-star title="Favorite">★</button></div></div></div>`;
   };
   /** favourites first, then A–Z (Recent keeps its own order) @param {import("./types.js").Lora[]} g */
@@ -175,6 +175,7 @@ export function initLoras() {
     const el = /** @type {HTMLElement} */ (hit(e, "[data-ln]"));
     const l = /** @type {import("./types.js").Lora} */ (LORAS.find(l => l.name === el.dataset.ln));
     const inp = document.createElement("input");
+    inp.autocomplete = "off";
     inp.className = "nmedit";
     inp.value = l.display;
     n.replaceWith(inp);

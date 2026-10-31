@@ -16,11 +16,9 @@ export async function verticalTitleClicks(k, t) {
   await done(k);
   await k.mouse(2, 2);
   await k.sleep(1200);
-  t.ok(
-    await k.ev(`+($("lcol").dataset.dy||0)<0`),
-    "Vertical: the prompt column is shifted up (even gaps) — the case that hid the title",
-    await k.ev(`$("lcol").dataset.dy`),
-  );
+  /* 2026-10-31: the prompt column sits at the bottom (no upward shift) on a layer above the picture area (glass.css
+     "the page's layers") — the title is safe by paint order, not only by the picture area letting the pointer through */
+  t.ok(await k.ev(`!$("lcol").style.transform`), "Vertical: the prompt column isn't shifted");
   t.ok(await hit(k, "#pname"), "the title takes the pointer in Generating");
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
   await k.sleep(1200);
@@ -28,7 +26,7 @@ export async function verticalTitleClicks(k, t) {
   await k.ev(
     `(document.head.insertAdjacentHTML("beforeend",'<style id="mut">.app.stacked .stage,.app.stacked #v-gen,.app.stacked>.right,.app.stacked .rpanel{pointer-events:auto!important}</style>'),1)`,
   );
-  t.ok(!(await hit(k, "#pname")), "(check: without the fix the picture area's empty box covers it)");
+  t.ok(await hit(k, "#pname"), "…even with the picture area taking the pointer (the layer order protects it)");
   await k.ev(`($("mut").remove(),1)`);
   const f = await k.rect("#frame");
   await k.mouse(f.left + f.width / 2, f.bottom + 2);
@@ -550,3 +548,13 @@ export async function glowWaitsForItsPicture(k, t) {
   t.ok(r.n > 5 && r.over <= 0.05, "the glow comes with its picture: never shown without one", r);
 }
 glowWaitsForItsPicture.opts = { step: 0.6 };
+
+/* the browser's form suggestions are off on every field Kiln has (2026-10-31: a name picked from them took the
+   browser's autofill look — a dark-blue box, square corners; CSS can't override it). Kiln's own fields, Kiln's look */
+export async function fieldsTakeNoAutofill(k, t) {
+  await k.ev(`(document.querySelectorAll(".pill").forEach(p=>p.click()),closePops(),1)`); // the pop-ups' fields made
+  const bad = await k.ev(
+    `[...document.querySelectorAll("input")].filter(i=>!["range","file","checkbox","hidden"].includes(i.type)&&i.autocomplete!=="off").map(i=>i.id||i.className||i.outerHTML.slice(0,60))`,
+  );
+  t.ok(bad.length === 0, "every text and number field has the browser's suggestions off", bad);
+}

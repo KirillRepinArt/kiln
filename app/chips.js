@@ -175,6 +175,7 @@ export function initChips() {
       if (d.moved) return;
       const inp = document.createElement("input");
       inp.className = "cwi";
+      inp.autocomplete = "off"; // the browser's suggestions (and their autofill look) belong to forms, not Kiln's fields
       inp.value = fmtW(d.l.w);
       d.el.replaceWith(inp);
       inp.focus();

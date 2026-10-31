@@ -10,7 +10,7 @@ or a long queue runs on a fast one, there's something worth watching while it wo
 comes back with its prompt and settings beside it, so looking through your results means reading what made them,
 not hunting through files.
 
-![Kiln — writing the next prompt while the current image renders](docs/screenshot.png)
+![Kiln — the Gallery: a finished picture on its glass plate, its prompt beside it](docs/screenshot.jpg)
 
 > **Status: early, working.** Kiln drives a local Forge Neo through its API: real queue, live previews,
 > your own LoRAs and models.

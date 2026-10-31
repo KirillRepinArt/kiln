@@ -217,7 +217,7 @@ def main(repo, out_path):
         log("page again", call("GET", "/?x", raw=True))
         log("app file", call("GET", "/app/main.js", raw=True))
         log("app escape", call("GET", "/app/../kiln.bat", raw=True))
-        log("docs", call("GET", "/docs/screenshot.png", raw=True))
+        log("docs", call("GET", "/docs/screenshot.jpg", raw=True))
         log("unknown get", call("GET", "/nope"))
         log("unknown post", call("POST", "/api/nope"))
         log("delete for good", call("POST", f"/api/jobs/{a}/delete"))

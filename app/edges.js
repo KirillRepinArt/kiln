@@ -3,7 +3,7 @@
    picture's top / bottom edges — and the edit buttons beside the picture showing on hover. The sizes they set are in
    S.lay (layout.js does the maths and applies them) */
 import { toast } from "./boot.js";
-import { applyPH, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
+import { applyPH, boxHint, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
 import { $, q, qa } from "./dom.js";
 import { lay, layDef, layDrag, layGeo, layRelease, picFull, prefs, sizeFrame } from "./layout.js";
 import { PWMIN } from "./layoutmath.js";
@@ -58,6 +58,16 @@ export function initEdges() {
     const g = $("hsplit");
     let y0 = 0,
       h0 = 0;
+    /* the divider resizes two panes: while it's hovered or held, both are outlined (Apple HIG split view; the picture's
+       own bottom edge used to show its outline) */
+    const both = (/** @type {boolean} */ on) => {
+      $("right").classList.toggle("edgehint", on);
+      boxHint(on);
+    };
+    g.addEventListener("pointerenter", () => both(true));
+    g.addEventListener("pointerleave", () => {
+      if (!g.classList.contains("drag")) both(false);
+    });
     g.addEventListener("pointerdown", e => {
       e.preventDefault();
       g.setPointerCapture(e.pointerId);
@@ -79,6 +89,7 @@ export function initEdges() {
     g.addEventListener("pointerup", () => {
       g.classList.remove("drag");
       document.body.classList.remove("vresizing");
+      both(false);
       save();
     });
     g.addEventListener("dblclick", () => {

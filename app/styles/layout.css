@@ -261,11 +261,18 @@
   left: 0;
   right: 0;
   top: calc(var(--space-3) * -1);
-  height: 8px;
+  height: var(--space-2);
   cursor: ns-resize;
   z-index: 6;
   touch-action: none;
-} /* stage.js places it above the title */
+} /* Vertical: the one divider between the picture and the prompt — layout.js vAlign places it in the gap (L4) */
+.app.stacked .hsplit::after {
+  top: 50%;
+  translate: -50% -50%;
+} /* its grip line in the middle of the gap */
+.app.stacked .hedge.b {
+  display: none;
+} /* Vertical: the picture's bottom edge IS the divider (.hsplit); its own size cap stays on its top and side edges */
 /* the resize outline: on the page's bottom layer (above the sky, under the panels), 12 px round the picture
    (stage.js places it every frame). Hover intent: in quickly, out late and slowly, so sweeping across an edge never
    makes it blink. !important: these two transitions outrank the motion switches below on purpose */

@@ -28,14 +28,13 @@ export async function verticalTitleClicks(k, t) {
   );
   t.ok(await hit(k, "#pname"), "…even with the picture area taking the pointer (the layer order protects it)");
   await k.ev(`($("mut").remove(),1)`);
-  /* just inside the picture's edge: below it the strip shares the 13 px gap with the prompt's split line, which wins
-     where they overlap — two handles on one boundary (map L4, the user's call) */
+  /* under the picture: the one divider between it and the prompt (2026-11-01, L4) */
   const f = await k.rect("#frame");
-  await k.mouse(f.left + f.width / 2, f.bottom - 2);
+  await k.mouse(f.left + f.width / 2, f.bottom + 4);
   await k.sleep(400);
   t.ok(
-    await k.ev(`document.elementFromPoint(${f.left + f.width / 2},${f.bottom - 2}).classList.contains("hedge")`),
-    "the picture's bottom edge still takes the pointer",
+    await k.ev(`document.elementFromPoint(${f.left + f.width / 2},${f.bottom + 4}).id === "hsplit"`),
+    "the boundary under the picture takes the pointer: the divider",
   );
 }
 verticalTitleClicks.opts = { width: 1872, height: 1080, step: 0.05 };

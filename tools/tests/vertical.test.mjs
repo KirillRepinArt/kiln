@@ -278,14 +278,15 @@ export async function heightIsALimit(k, t) {
   const short = (await R(k, "#left")).height;
   /* 2026-10-31 (the user's choice): the box grows with your draft — a short prompt takes only the box's least height,
      the picture the rest; your line above the name is the cap */
-  t.ok(short < 200, "a short prompt: the box is small (it grows with your draft)", { short });
+  /* 2026-11-01 (L4): S.sch is the height you set with the divider — kept, short text or long */
+  t.near(short, 420, 3, "your height: a short prompt keeps it", { short });
   const f0 = (await R(k, "#frame")).height;
   await k.ev(
     `(P.value=Array(40).fill("a long line of prompt text that keeps going").join(String.fromCharCode(10)),draft=P.value,1)`,
   );
   await k.sleep(900);
-  t.near((await R(k, "#left")).height, 420, 3, "a long prompt: it grows to your cap (and scrolls)");
-  t.ok((await R(k, "#frame")).height < f0 - 100, "…and the picture gave it the room", { f0 });
+  t.near((await R(k, "#left")).height, 420, 3, "a long prompt: the same height (it scrolls)");
+  t.near((await R(k, "#frame")).height, f0, 2, "…and the picture doesn't move", { f0 });
 }
 heightIsALimit.opts = { width: 2000, height: 1023 };
 
@@ -623,11 +624,17 @@ export async function verticalHeight(k, t) {
   await k.job("[fill:446688] tall", { ar: "3:4", steps: 2 });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
   await k.sleep(800);
+  /* 2026-11-01 (L4): the boundary between the picture and the prompt is ONE divider — dragging it up gives the prompt
+     the room the picture gives up */
   const f0 = await R(k, "#frame"),
-    h = await R(k, ".hedge.b"),
+    b0 = await R(k, "#left"),
+    h = await R(k, "#hsplit"),
     x = h.left + h.width / 2,
     y = h.top + h.height / 2;
-  t.ok(h.width > 0, "Vertical: the picture has its bottom edge");
+  t.ok(
+    h.width > 0 && (await k.ev(`getComputedStyle(document.querySelector(".hedge.b")).display`)) === "none",
+    "Vertical: one divider under the picture (no separate bottom edge)",
+  );
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
   for (let i = 1; i <= 10; i++)
@@ -637,7 +644,32 @@ export async function verticalHeight(k, t) {
   await k.sleep(800);
   const f1 = await R(k, "#frame");
   t.near(f1.height, f0.height - 150, 3, "dragging it up makes the picture smaller", { f0: f0.height, f1: f1.height });
-  t.ok(await k.ev(`S.lay.vih>0&&!S.lay.ih`), "Vertical remembers its own limit");
+  t.near((await R(k, "#left")).height, b0.height + 150, 3, "…and the prompt taller by as much");
+  t.ok(await k.ev(`S.sch>0`), "Vertical remembers the height you set");
+  /* hovering the divider outlines both panes it resizes: the picture and the prompt box (the user, 2026-11-01) */
+  const hs = await R(k, "#hsplit"),
+    hx = hs.left + hs.width / 2,
+    hy = hs.top + hs.height / 2;
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: hx, y: hy });
+  await k.sleep(500);
+  t.ok(
+    await k.ev(`$("fithint").classList.contains("show")&&$("cardhint").classList.contains("show")`),
+    "hovering the divider: the outline round the picture and round the box",
+  );
+  await k.mouse(2, 2);
+  await k.sleep(1500);
+  t.ok(
+    await k.ev(`!$("cardhint").classList.contains("show")&&!$("right").classList.contains("edgehint")`),
+    "…gone when you move away",
+  );
+  /* double-click the divider: back to automatic — the box grows with your draft again (a short one: small) */
+  for (const type of ["mousePressed", "mouseReleased"])
+    await k.send("Input.dispatchMouseEvent", { type, x: hx, y: hy, button: "left", clickCount: 2 });
+  await k.sleep(800);
+  t.ok(
+    (await k.ev(`!S.sch`)) && (await R(k, "#left")).height < b0.height + 20,
+    "double-click: back to automatic (the box as tall as your draft)",
+  );
   await k.ev(`(setDock("left"),1)`);
   await k.sleep(900);
   t.ok((await R(k, "#frame")).height > f1.height + 50, "side by side is unaffected");
@@ -740,7 +772,7 @@ export async function verticalSplitLine(k, t) {
     clickCount: 1,
   });
   await k.sleep(1200);
-  t.near(await k.ev(`S.sch`), slot + 60, 3, "the line up 60 px: the slot is 60 px taller");
+  t.near(await k.ev(`S.sch`), slot + 60, 3, "the divider up 60 px: the box is 60 px taller (your height, kept)");
   t.near((await k.rect("#left")).bottom, b0, 3, "…the box's bottom stays where it is");
   t.ok((await k.rect("#frame")).height < p0 - 20, "…and the picture gave up the room", {
     p0,

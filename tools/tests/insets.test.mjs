@@ -276,3 +276,70 @@ export async function plateSharesItsEdges(k, t) {
   }
 }
 plateSharesItsEdges.opts = { width: 1825, height: 1080, step: 0.05 };
+
+/* the divider is the shared edge (2026-11-01): dragging it, the prompt stays a pair gap from the picture on every step —
+   the hug held still while an edge was dragged (promptFollow), and with a picture narrower than its area (the Gallery,
+   a portrait) the picture slid under the prompt (−55 px) or away from it (+145 px) until you let go */
+export async function dividerKeepsTheGap(k, t) {
+  await k.job("[fill:446688] p", { ar: "3:4", steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=1`, 30000);
+  for (const dock of ["right", "left"]) {
+    await k.ev(`(setDock("${dock}"),1)`);
+    await k.mouse(2, 2);
+    await k.sleep(1600);
+    for (const [sel, dx] of [
+      [".pedge.ri", -150],
+      [".pedge.ri", 250],
+      [".pedge.pi", -120],
+      [".pedge.pi", 120],
+    ]) {
+      await k.ev(`(${tab("gallery")},genNav(-1),1)`);
+      await k.sleep(1500);
+      const e = await k.rect(sel),
+        x = e.left + e.width / 2,
+        y = e.top + Math.min(300, e.height / 2),
+        d = dock === "right" ? dx : -dx,
+        gap = () =>
+          k.ev(`(()=>{const p=$("plate").getBoundingClientRect(),l=$("left").getBoundingClientRect();
+            return Math.round("${dock}"==="right"?l.left-p.right:p.left-l.right)})()`);
+      const gaps = [await gap()],
+        g0 = await k.ev(`$("frame").getBoundingClientRect().left`);
+      await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+      await k.send("Input.dispatchMouseEvent", {
+        type: "mousePressed",
+        x,
+        y,
+        button: "left",
+        buttons: 1,
+        clickCount: 1,
+      });
+      for (let i = 1; i <= 8; i++) {
+        await k.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: x + (d * i) / 8,
+          y,
+          button: "left",
+          buttons: 1,
+        });
+        await k.sleep(40);
+        gaps.push(await gap());
+      }
+      const g1 = await k.ev(`$("frame").getBoundingClientRect().left`);
+      await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x + d, y, button: "left", clickCount: 1 });
+      await k.sleep(1200);
+      gaps.push(await gap());
+      t.ok(
+        Math.abs(g1 - g0) > 20,
+        `${dock}, ${sel} ${dx}: the drag moves the picture (a portrait: its height is the limit)`,
+        { g0, g1 },
+      );
+      t.ok(
+        Math.max(...gaps) - Math.min(...gaps) <= 2,
+        `${dock}, ${sel} ${dx}: the prompt a pair gap from the picture on every step`,
+        gaps,
+      );
+      await k.ev(`(document.querySelector("${sel}").dispatchEvent(new MouseEvent("dblclick",{bubbles:true})),1)`);
+    }
+  }
+}
+dividerKeepsTheGap.opts = { width: 1825, height: 1080 };

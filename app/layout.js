@@ -532,7 +532,12 @@ export function sizeFrame() {
 export function vAlign() {
   if (!document.querySelector(".app.stacked")) return;
   const { pn, colTop } = nameTop();
-  $("hsplit").style.top = pn - colTop - 10 + "px";
+  /* the ONE divider between the picture and the prompt (2026-11-01, L4): the whole gap from the picture's room down to
+     just above the name — the picture's bottom-edge strip used to share it (and won nowhere, overlapped) */
+  const A = evenGap(),
+    hs = $("hsplit").style;
+  hs.top = pn - A - colTop + "px";
+  hs.height = Math.max(6, A - 2) + "px";
   /* the prompt's grip zone starts under the split line (cardlayout.js, prompt.css .pgrip) */
   $("lcol").style.setProperty("--gtop-v", pn - colTop - 2 + "px");
 }
@@ -594,7 +599,9 @@ export function slideCol(was, t0 = performance.now()) {
    up on the layout's glide — nothing else moves then; a moving frame takes it over frame by frame
    @param {boolean} [direct] the frame is being written now: follow it exactly (else: glide to where it belongs) */
 export function promptFollow(direct = false) {
-  if (lay.drag || lay.pressCard || document.querySelector("#left .pop.show")) return;
+  /* an edge being dragged is NOT working in the prompt (the divider's handle sits in it): the prompt follows the
+     picture through it — held, the picture slid under the prompt (2026-11-01) */
+  if (!lay.drag && (lay.pressCard || document.querySelector("#left .pop.show"))) return;
   const b = frameBox(),
     app = /** @type {HTMLElement} */ (document.querySelector(".app")),
     on = !!b && S.view === "gen" && !app.classList.contains("stacked") && !!lay.last,

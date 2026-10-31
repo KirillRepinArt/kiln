@@ -169,18 +169,20 @@ export function upgradeLayoutPrefs(L, W) {
  */
 
 /**
- * Vertical: the prompt box's height (2026-10-31, the user's choice — the composer pattern): as tall as YOUR draft's text,
- * from the box's least height (its controls and ~2 lines) up to a cap — the line above its name (sch) if you set one,
- * else ~40 % of the window — never above 70 % of it; past the cap the text scrolls. The picture gets the rest. (It was a
- * fixed slot, ≥ 200 px, 250 by default: one line of prompt took all that room.)
+ * Vertical: the prompt box's height. Automatic (2026-10-31, the user's choice — the composer pattern): as tall as YOUR
+ * draft's text, from the box's least height (its controls and ~2 lines) up to ~40 % of the window, then the text
+ * scrolls. Or yours (sch, 2026-11-01): the height you dragged the divider to — the one boundary between the picture and
+ * the prompt — kept until you double-click it back to automatic (the box's bottom edge side by side works the same).
+ * Never above 70 % of the window. The picture gets the rest.
  * @param {number} natural the height your draft's text needs
- * @param {number | undefined} sch your cap (0 / undefined: the default)
+ * @param {number | undefined} sch the height you set (0 / undefined: automatic)
  * @param {number} innerH the window's height
  * @param {number} least the box's least height
  */
 export function promptSlotH(natural, sch, innerH, least) {
-  const cap = Math.max(least, Math.min(sch || Math.round(innerH * 0.4), Math.round(innerH * 0.7)));
-  return Math.round(Math.max(least, Math.min(natural, cap)));
+  const most = Math.round(innerH * 0.7),
+    h = sch ? sch : Math.min(natural, Math.round(innerH * 0.4));
+  return Math.round(Math.max(least, Math.min(h, most)));
 }
 
 /**

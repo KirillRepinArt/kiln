@@ -696,7 +696,9 @@ export async function lateFixes(k, t) {
 lateFixes.opts = { width: 1872, height: 1080, step: 0.05 };
 
 /* Vertical: the box fills its slot; its bottom edge sizes the slot, following the pointer, then the layout settles */
-export async function verticalBoxBottom(k, t) {
+/* Vertical (2026-10-31): the prompt sits at the window's bottom, the picture takes everything above it. Its slot is
+   set with the line above its name — a docked composer's top edge; the box's bottom edge is no handle here */
+export async function verticalSplitLine(k, t) {
   await k.ev(`(setDock("below"),P.value="short",draft=P.value,1)`);
   await k.job("[fill:446688] sq", { ar: "1:1", steps: 2 });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
@@ -712,7 +714,12 @@ export async function verticalBoxBottom(k, t) {
     2,
     "a short prompt: the box still fills its slot (no dead space under it)",
   );
-  const e = await k.rect(".vedge"),
+  t.ok(await k.ev(`getComputedStyle($("vedge")).display==="none"`), "the box's bottom edge is no handle in Vertical");
+  const low = await k.ev(
+    `innerHeight-Math.max($("left").getBoundingClientRect().bottom,$("chips").getBoundingClientRect().bottom)`,
+  );
+  t.ok(low < 40, "the prompt sits at the window's bottom (nothing empty under it)", { low });
+  const e = await k.rect("#hsplit"),
     x = e.left + e.width / 2,
     y = e.top + e.height / 2,
     b0 = (await k.rect("#left")).bottom,
@@ -720,26 +727,26 @@ export async function verticalBoxBottom(k, t) {
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
   for (let i = 1; i <= 6; i++) {
-    await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y: y + 10 * i, button: "left", buttons: 1 });
+    await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y: y - 10 * i, button: "left", buttons: 1 });
     await k.sleep(30);
   }
-  t.near((await k.rect("#left")).bottom, b0 + 60, 3, "dragging the bottom edge: it follows the pointer");
   await k.send("Input.dispatchMouseEvent", {
     type: "mouseReleased",
     x,
-    y: y + 60,
+    y: y - 60,
     button: "left",
     buttons: 0,
     clickCount: 1,
   });
   await k.sleep(1200);
-  t.near(await k.ev(`S.sch`), slot + 60, 3, "let go: the slot is 60 px taller");
+  t.near(await k.ev(`S.sch`), slot + 60, 3, "the line up 60 px: the slot is 60 px taller");
+  t.near((await k.rect("#left")).bottom, b0, 3, "…the box's bottom stays where it is");
   t.ok((await k.rect("#frame")).height < p0 - 20, "…and the picture gave up the room", {
     p0,
     p1: (await k.rect("#frame")).height,
   });
 }
-verticalBoxBottom.opts = { width: 1872, height: 1080, step: 0.05 };
+verticalSplitLine.opts = { width: 1872, height: 1080, step: 0.05 };
 
 /* the crop-and-reveal per edge (2026-10-27, the user: "the frame narrowing while switching between ratios … feels a bit
    off"): between two pictures that both fill the height, only the sides move — the height and the top edge never do

@@ -113,8 +113,6 @@ export function layoutLeft() {
      text inside it (top-aligned) and the picture's size never depends on what the prompt says — browsing prompts of
      different lengths used to resize and move the picture on every step (2026-10-19) */
     const slot = promptSlotH(S.sch, innerHeight);
-    if (lay.vbDrag)
-      return; /* its bottom edge is being dragged: the box follows the pointer, the layout settles on release */
     H =
       slot; /* the box fills its slot (2026-10-24): what you see is the room it takes — no dead space under a short prompt */
     col.style.setProperty("--sw", stackW() + "px");

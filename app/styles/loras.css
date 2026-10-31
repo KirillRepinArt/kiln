@@ -4,11 +4,8 @@
   inset: 0;
   display: flex;
   flex-direction: column;
-  padding: var(--space-1) var(--space-hair) var(--space-4);
-}
-.rpanel.paneled .lwrap {
   padding: var(--space-4) var(--space-5);
-}
+} /* the view's own look: it is only ever shown as a panel (keyed on the container's tab, it changed as it left) */
 .ltop {
   display: flex;
   gap: var(--space-3);

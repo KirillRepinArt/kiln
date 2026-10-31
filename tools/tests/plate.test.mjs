@@ -452,3 +452,96 @@ export async function viewsRideThePlate(k, t) {
   }
 }
 viewsRideThePlate.opts = { step: 0.05 };
+
+/* fade-through when the plate changes shape (2026-10-31, the user: "Queue to Generating or Gallery is a bit off"): what
+   leaves is gone by the swap, what comes fades in from there over at least ~200 ms, never reversing — it came in over
+   the swap's 80 ms, a cut. The same shape (Queue ↔ LoRAs) keeps its cross-fade */
+const VIEWS =
+  ms => `new Promise(res=>{const o=[],t0=performance.now(),op=id=>{const c=getComputedStyle($(id));return c.visibility==="hidden"?0:+c.opacity};
+  (function s(){requestAnimationFrame(()=>setTimeout(()=>{o.push({t:performance.now()-t0,gen:op("v-gen"),queue:op("v-queue"),loras:op("v-loras")});
+  if(performance.now()-t0<${ms})s();else res(o)},0))})()})`;
+export async function fadeThrough(k, t) {
+  await k.job("[fill:446688] tall", { ar: "9:16", steps: 1 }); // a shape far from the panel's
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  await k.mouse(2, 2);
+  const tab = v => `(document.querySelector('.tab[data-v="${v}"]').click(),1)`;
+  /** every fade measured, 2 % → 98 % @type {[string, number][]} */
+  const speeds = [];
+  const run = async (from, to, inId, outId, what) => {
+    await k.ev(tab(from));
+    await k.sleep(1500);
+    const w = k.ev(VIEWS(1100));
+    await k.ev(tab(to));
+    const s = await w,
+      i = s.map(x => x[inId]),
+      o = s.map(x => x[outId]),
+      up = i.every((v, n) => n === 0 || v >= i[n - 1] - 0.01),
+      down = o.every((v, n) => n === 0 || v <= o[n - 1] + 0.01),
+      a = s.find(x => x[inId] > 0.02),
+      b = s.find(x => x[inId] > 0.98),
+      o0 = s.find(x => x[outId] < 0.98),
+      gone = s.find(x => x[outId] < 0.02);
+    if (a && b) speeds.push([`${what} in`, Math.round(b.t - a.t)]);
+    if (o0 && gone) speeds.push([`${what} out`, Math.round(gone.t - o0.t)]);
+    t.ok(up, `${what}: what comes only fades in (no blink)`);
+    t.ok(down, `${what}: what leaves only fades out`);
+    t.motion(!!a && !!b && b.t - a.t >= 170, `${what}: it comes in over ~200 ms or more, not a cut`, {
+      ms: a && b ? Math.round(b.t - a.t) : null,
+    });
+    return { a, gone };
+  };
+  /* the plate crops into the picture: a fade-through (what leaves is gone by the swap). The other way it only grows
+     (a reveal, no crop): the swap is at the start, so the two cross-fade — the same rule */
+  for (const [from, to, inId, outId] of [
+    ["queue", "gallery", "gen", "queue"],
+    ["queue", "gen", "gen", "queue"],
+  ]) {
+    const { a, gone } = await run(from, to, inId, outId, `${from} → ${to}`);
+    t.motion(
+      !!a && !!gone && gone.t <= a.t + 120,
+      `${from} → ${to}: a fade-through (what leaves is gone near the swap)`,
+      {
+        in: a && Math.round(a.t),
+        gone: gone && Math.round(gone.t),
+      },
+    );
+  }
+  await run("gallery", "queue", "queue", "gen", "gallery → queue (a reveal: its cross-fade)");
+  await run("queue", "loras", "loras", "queue", "queue → loras (the same shape: its cross-fade)");
+  /* one speed (the user, 2026-10-31): every fade, in or out, in every switch, takes the same time */
+  const ms = speeds.map(x => x[1]);
+  t.motion(Math.max(...ms) - Math.min(...ms) <= 40, "one fade speed: in and out, in every switch", speeds);
+}
+fadeThrough.opts = { step: 0.05 };
+
+/* a view's look is the view's own (2026-10-31, the user: "the queue items expand a bit and abruptly disappear"): the
+   Queue's and LoRAs' boxes were keyed on the container's tab (.rpanel.paneled), which changes at the switch's first
+   frame — the leaving list jumped 12 px wider. While a view leaves, its contents' box never changes */
+export async function leavingViewKeepsItsLook(k, t) {
+  await k.job("[fill:446688] p", { ar: "3:4", steps: 1 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  await k.mouse(2, 2);
+  const tab = v => `(document.querySelector('.tab[data-v="${v}"]').click(),1)`;
+  for (const [from, sel] of [
+    ["queue", "#qwrap"],
+    ["loras", ".lwrap"],
+    ["png", ".pwrap"],
+  ]) {
+    await k.ev(tab(from));
+    await k.sleep(1500);
+    const w =
+      k.ev(`new Promise(res=>{const o=[],el=document.querySelector("${sel}"),v=el.closest(".view"),t0=performance.now();
+      (function s(){requestAnimationFrame(()=>setTimeout(()=>{if(getComputedStyle(v).visibility!=="hidden"){const c=getComputedStyle(el);
+        o.push([el.offsetLeft,el.offsetTop,el.clientWidth,el.clientHeight,c.paddingLeft,c.paddingTop].join(","))}
+        if(performance.now()-t0<900)s();else res(o)},0))})()})`);
+    await k.ev(tab("gen"));
+    const s = await w,
+      kinds = [...new Set(s)];
+    t.ok(
+      s.length > 5 && kinds.length === 1,
+      `${from} → Generating: the leaving ${sel} keeps its box`,
+      kinds.slice(0, 3),
+    );
+  }
+}
+leavingViewKeepsItsLook.opts = { step: 0.05 };

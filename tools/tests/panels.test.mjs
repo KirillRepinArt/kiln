@@ -27,12 +27,11 @@ export async function wideBasics(k, t) {
     { tabs: [tabs.left, tabs.width], tk, R: [Rr.left, Rr.right] },
   );
   t.ok(f.left >= Rr.left - 1 && f.right <= Rr.right + 1, "the image sits inside the right area");
-  const tb = await k.ev(`tbW($("frame").offsetHeight)`); // the room kept for the edit buttons (hidden with no picture)
-  t.ok(
-    Math.abs((f.left + f.right + tb) / 2 - (Rr.left + Rr.right) / 2) < 3,
-    "the picture and its toolbar's room are centred in it",
-    { f: [f.left, f.right], tb, R: [Rr.left, Rr.right] },
-  );
+  /* 2026-10-31: the edit buttons take no room — they hang outside the plate, into the margin's clearance */
+  t.ok(Math.abs((f.left + f.right) / 2 - (Rr.left + Rr.right) / 2) < 3, "the picture is centred in it", {
+    f: [f.left, f.right],
+    R: [Rr.left, Rr.right],
+  });
   t.ok(
     await k.until(
       `(()=>{const p=$("prog").getBoundingClientRect(),f=$("frame").getBoundingClientRect();return Math.abs(p.left-f.left)<2&&Math.abs(p.width-f.width)<2&&p.top>f.bottom})()`,
@@ -444,17 +443,26 @@ export async function heightLimit(k, t) {
   const f1 = await R(k, "#frame"),
     st = await R(k, "#stage");
   t.ok(Math.abs(f1.height - (f0.height - 200)) <= 2, "the limit stays after release", f1.height);
-  const bar = await k.ev(`BAR`);
+  /* the status row's room only while the queue works (2026-10-31: insets) — idle, the picture centres in the full height */
+  const bar = (await k.ev(`document.body.classList.contains("norow")`)) ? 0 : await k.ev(`BAR`);
   t.ok(Math.abs(f1.top - st.top - (st.height - bar - f1.height) / 2) <= 2, "the picture re-centres vertically", {
     top: f1.top - st.top,
     h: f1.height,
     bar,
   });
-  const want = AREA + Math.max(0, (420 - f1.width - 56) / 2); // 56: the edit buttons' column // in Generating the area only stops at 420 px (the tab bar may overhang a narrow picture)
+  /* the prompt hugs the picture's area; the area is never narrower than the tab bar (it sits on the plate's centre line,
+     2026-10-31), the picture centred in it */
+  const area = await R(k, "#rpanel"),
+    bw = await k.ev(
+      `(()=>{const c=document.querySelector(".tabs").children;return c[c.length-1].getBoundingClientRect().right-c[0].getBoundingClientRect().left})()`,
+    ),
+    want = AREA + (area.width - f1.width) / 2;
   t.ok(
-    Math.abs(f1.width / f1.height - 0.75) < 0.01 && Math.abs((await gapToPic(k)) - want) <= 1.5,
-    "its width follows (3:4); the prompt hugs it",
-    { w: f1.width, gap: await gapToPic(k), want },
+    Math.abs(f1.width / f1.height - 0.75) < 0.01 &&
+      Math.abs((await gapToPic(k)) - want) <= 1.5 &&
+      area.width <= Math.max(f1.width, bw) + 4,
+    "its width follows (3:4); the prompt hugs its area (the picture, or the tab bar if wider)",
+    { w: f1.width, area: area.width, bar: bw, gap: await gapToPic(k), want },
   );
   await k.mouse(f1.left + f1.width / 2, f1.top + f1.height / 2);
   await k.sleep(300);
@@ -524,10 +532,12 @@ export async function toolbarBesideThePicture(k, t) {
       `[...document.querySelectorAll("#gtools button")].map(b=>{const r=b.getBoundingClientRect();return [r.left,r.top,r.right,r.bottom]})`,
     ),
     rp = await R(k, "#rpanel");
+  /* they hang outside the picture, into the margin's clearance (2026-10-31: no room in the area) */
+  const vw = await k.ev(`innerWidth`);
   t.ok(
-    btns.length === 6 && btns.every(([l, , r, b]) => l >= f.right && r <= rp.right + 1 && b <= rp.bottom + 1),
+    btns.length === 6 && btns.every(([l, , r, b]) => l >= f.right && r <= vw - 1 && b <= rp.bottom + 1),
     "all six outside the picture and none cut off (they wrap into a second column)",
-    { btns, rp: [rp.right, rp.bottom] },
+    { btns, rp: [rp.right, rp.bottom], vw },
   );
   await k.mouse(2, 2);
   await k.sleep(500);

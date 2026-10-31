@@ -218,8 +218,9 @@ body.private .frame:hover .cbtn {
   display: grid;
 }
 /* the edit buttons: a column OUTSIDE the picture, on the side away from the prompt; shown on hover of the picture or the
-   column (one zone, composer.js), hidden when they can't act (empty, rendering, private, file gone). A short picture
-   wraps the column outward. The column itself is part of the hover zone; its buttons take clicks once shown */
+   column (one zone, edges.js), only while the page keeps room for them (body.notools: layout.js insets — no finished
+   picture, or the queue at work), hidden when they can't act (private, file gone). A short picture wraps the column
+   outward. The column itself is part of the hover zone; its buttons take clicks once shown */
 .gtools {
   position: absolute;
   z-index: 6;
@@ -242,11 +243,9 @@ body.private .frame:hover .cbtn {
 .stage.tools .gtools {
   opacity: 1;
 }
-.rpanel.paneled #v-gen:not(.leaving) .gtools,
-.stage:has(.frame.running) .gtools,
+body.notools #v-gen:not(.leaving) .gtools,
 .stage:has(.frame.held) .gtools,
-.stage:has(.frame.missing) .gtools,
-.stage:has(.frame:not(.has)) .gtools {
+.stage:has(.frame.missing) .gtools {
   display: none;
 }
 .gtools .side {
@@ -331,7 +330,7 @@ body.private .frame:hover .cbtn {
 body.navs .gnav:not(.off) {
   opacity: 1;
 }
-body:has(.rpanel.paneled):not(:has(#v-gen.leaving)) .gnav,
+body:not(:has(#v-gen.on, #v-gen.leaving)) .gnav,
 body:has(.frame.missing) .gnav,
 body:has(.modal.show) .gnav,
 body:has(.viewer.show) .gnav {

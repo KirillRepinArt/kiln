@@ -1,12 +1,11 @@
 /* ======================= Queue ======================= */
+/* the list's box is the Queue view's own — it is only ever shown as a panel. Keyed on the container's tab
+   (.rpanel.paneled) it jumped 12 px wider as the view left for Generating: the container had already changed while the
+   switch held the view as it was (2026-10-31, the user: "the queue items expand a bit and abruptly disappear") */
 .qwrap {
   position: absolute;
-  inset: 0;
-  overflow: auto;
-  padding: var(--space-1) var(--space-hair) var(--space-5);
-}
-.rpanel.paneled .qwrap {
   inset: var(--space-3);
+  overflow: auto;
   padding: var(--space-2);
   border-radius: var(--r-12);
 }

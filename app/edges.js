@@ -3,9 +3,9 @@
    picture's top / bottom edges — and the edit buttons beside the picture showing on hover. The sizes they set are in
    S.lay (layout.js does the maths and applies them) */
 import { toast } from "./boot.js";
-import { applyPH, chipsH, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
+import { applyPH, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
 import { $, q, qa } from "./dom.js";
-import { BAR, lay, layDef, layDrag, layGeo, layRelease, prefs, sizeFrame } from "./layout.js";
+import { lay, layDef, layDrag, layGeo, layRelease, picFull, prefs, sizeFrame } from "./layout.js";
 import { PWMIN } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
@@ -13,15 +13,12 @@ import { SPACE } from "./tokens.js";
 
 /* start-up wiring: every edge you drag, and the edit buttons' hover (called from main.js, in order) */
 export function initEdges() {
-  /* the prompt box's bottom edge. Side by side: its height. Vertical: its slot (as the line above the title) — the edge
-   follows the pointer down into the room below, and on release the layout settles (the picture gives up that room),
-   like every outer edge */
+  /* the prompt box's bottom edge, side by side: its height. (Vertical has none since 2026-10-31: the prompt sits at the
+   window's bottom — its slot is set with the line above its name, like a docked composer's top edge) */
   (function () {
     const g = $("vedge");
     let y0 = 0,
-      h0 = 0,
-      stk = false,
-      vH = 0;
+      h0 = 0;
     g.addEventListener("pointerdown", e => {
       e.preventDefault();
       g.setPointerCapture(e.pointerId);
@@ -30,26 +27,11 @@ export function initEdges() {
       $("left").classList.add("nodur");
       y0 = e.clientY;
       h0 = $("left").getBoundingClientRect().height;
-      stk = !!q(".app.stacked");
-      if (stk) {
-        lay.vbDrag = true;
-        vH = h0;
-        $("lcol").classList.add("vbdrag");
-      }
     });
     g.addEventListener("pointermove", e => {
       if (!g.classList.contains("drag")) return;
       if (!(e.buttons & 1)) {
         g.dispatchEvent(new PointerEvent("pointerup"));
-        return;
-      }
-      if (stk) {
-        const col = $("lcol"),
-          TS = parseFloat(col.style.getPropertyValue("--ts")) || 64,
-          room = innerHeight - 10 - $("left").getBoundingClientRect().top - chipsH();
-        vH = Math.round(Math.max(200, Math.min(innerHeight * 0.7, room, h0 + e.clientY - y0)));
-        col.style.setProperty("--lh", vH + "px");
-        col.style.setProperty("--chtop", TS + vH + 10 + "px");
         return;
       }
       const max = /** @type {HTMLElement} */ ($("left").parentElement).getBoundingClientRect().height - 2 * SPACE.area;
@@ -61,28 +43,11 @@ export function initEdges() {
       g.classList.remove("drag");
       document.body.classList.remove("vresizing");
       $("left").classList.remove("nodur");
-      if (stk) {
-        S.sch = vH;
-        lay.vbDrag = false;
-        $("lcol").classList.remove("vbdrag");
-        save();
-        layoutLeft();
-        sizeFrame();
-        return;
-      }
       lyUnfreeze();
       layoutLeft();
       save();
     });
     g.addEventListener("dblclick", () => {
-      if (q(".app.stacked")) {
-        S.sch = 0;
-        save();
-        layoutLeft();
-        sizeFrame();
-        toast("Prompt height back to auto");
-        return;
-      }
       S.pph = 0;
       applyPH();
       save();
@@ -232,7 +197,7 @@ export function initEdges() {
           w0: f.offsetWidth,
           h0: f.offsetHeight,
           t0: f.offsetTop,
-          full: $("stage").getBoundingClientRect().height - BAR(),
+          full: picFull(), // the room the layout gives the picture now (its insets: layout.js)
         };
         document.body.classList.add("vresizing", "laydrag");
         $("right").classList.add("edgehint");

@@ -8,6 +8,7 @@ import {
   pageGeometry,
   stackColumnW,
   framePlacement,
+  pageInsets,
   shapeSteps,
   shapeBox,
   upgradeLayoutPrefs,
@@ -73,9 +74,41 @@ test("Generating while an edge is dragged: your cap, not the picture's hug", () 
 });
 
 test("Vertical: the column is as wide as a 16:9 picture at its height, within the tab bar, the prompt and the window", () => {
-  assert.equal(stackColumnW(2000, 420, 600, 450, 52), 904); // 450 × 16/9 = 800, + a 52 px button column each side
-  assert.equal(stackColumnW(2000, 420, 1000, 450, 52), 1000, "never narrower than the prompt box");
-  assert.equal(stackColumnW(700, 420, 600, 450, 52), 700, "never wider than the window");
+  assert.equal(stackColumnW(2000, 420, 600, 450, 36), 800, "450 × 16/9 — the buttons take no room in it");
+  assert.equal(stackColumnW(2000, 420, 1000, 450, 36), 1000, "never narrower than the prompt box");
+  assert.equal(stackColumnW(700, 420, 600, 450, 36), 628, "never wider than the window less the buttons' clearance");
+});
+
+test("a picture page: the plate's centre stays put — the prompt keeps its width, a wide picture fits what's left", () => {
+  const W = 1473,
+    at = (/** @type {number} */ hug) => pageGeometry({ W, gen: true, drag: false, minR: 420, hug, clear: 36 }, wide),
+    centre = (/** @type {any} */ g) => g.mL + g.pw + pairGap() + g.rw / 2;
+  for (const hug of [450, 600, 900, 1400]) {
+    const g = at(hug);
+    assert.equal(g.pw, 680, `hug ${hug}: the prompt keeps its width`);
+    assert.equal(g.mL, g.mR, `hug ${hug}: even margins`);
+    near(centre(g), (W + 680 + pairGap()) / 2, `hug ${hug}: the plate's centre`);
+  }
+  assert.equal(
+    at(1400).rw,
+    W - 680 - pairGap() - 72,
+    "a wide picture: the area is what the prompt and the margins leave",
+  );
+  assert.equal(at(1400).mL, 36, "…the margins at the buttons' clearance");
+});
+
+test("side by side: the margins keep the edit buttons' clearance, the same each side", () => {
+  const roomy = pageGeometry({ W: 2400, gen: true, drag: false, minR: 420, hug: 600, clear: 36 }, wide);
+  assert.equal(roomy.mL, roomy.mR, "a roomy window: centred, the clearance changes nothing");
+  const tight = pageGeometry(
+    { W: 680 + 600 + pairGap() + 50, gen: true, drag: false, minR: 420, hug: 600, clear: 36 },
+    wide,
+  );
+  assert.equal(tight.mL, 36, "tight: each side keeps the clearance");
+  assert.equal(tight.mR, 36, "…the same each side (the pair stays centred)");
+  assert.equal(tight.pw, 680, "…the prompt keeps its width; the picture's area gives way");
+  const panel = pageGeometry({ W: 680 + 660 + pairGap() + 30, gen: false, drag: false, minR: 420, clear: 0 }, wide);
+  assert.equal(panel.mL, panel.mR, "a panel: no clearance, centred as ever");
 });
 
 test("the picture and its button column sit centred together; the column away from the prompt", () => {
@@ -190,4 +223,46 @@ test("shapeSteps: a box changing shape crops first, swaps, then reveals (the one
   const s = shapeSteps({ w: 500, h: 500 }, { w: 500, h: 500 });
   assert.equal(s.T, s.S);
   assert.ok(s.S >= 180, "…a swap on its own is a real cross-fade, not an 80 ms cut");
+});
+
+/* ---------- every page's insets (2026-10-31): room only while what it holds is there ---------- */
+const idle = { running: false, waiting: false, paused: false, ready: true, news: false, shown: false };
+
+test("panels keep no room: Queue, LoRAs and PNG Info fill their plate", () => {
+  assert.deepEqual(pageInsets("panel", { ...idle, running: true, shown: true }), { row: false, tools: false });
+});
+
+test("the Gallery keeps the buttons' column and never the status row, rendering or not", () => {
+  assert.deepEqual(pageInsets("gallery", idle), { row: false, tools: true });
+  assert.deepEqual(pageInsets("gallery", { ...idle, running: true, waiting: true }), { row: false, tools: true });
+});
+
+test("Generating, empty and idle: the whole plate", () => {
+  assert.deepEqual(pageInsets("generating", idle), { row: false, tools: false });
+});
+
+test("Generating while rendering: the row, no buttons' column", () => {
+  assert.deepEqual(pageInsets("generating", { ...idle, running: true }), { row: true, tools: false });
+});
+
+test("Generating between two queued jobs: nothing changes — the row stays, no column for the result between them", () => {
+  const between = { ...idle, waiting: true, shown: true }; // job 1 done (its result on show), job 2 not started yet
+  assert.deepEqual(
+    pageInsets("generating", between),
+    pageInsets("generating", { ...idle, running: true, shown: true }),
+  );
+  assert.deepEqual(pageInsets("generating", between), { row: true, tools: false });
+});
+
+test("Generating after the last job: the row goes, the result gets its buttons' column", () => {
+  assert.deepEqual(pageInsets("generating", { ...idle, shown: true }), { row: false, tools: true });
+});
+
+test("a paused queue keeps its row (it says so); waiting jobs with the generator down don't", () => {
+  assert.equal(pageInsets("generating", { ...idle, waiting: true, paused: true }).row, true);
+  assert.equal(pageInsets("generating", { ...idle, waiting: true, ready: false }).row, false);
+});
+
+test('a result behind your reference keeps the row ("#N finished")', () => {
+  assert.deepEqual(pageInsets("generating", { ...idle, news: true, shown: true }), { row: true, tools: false });
 });

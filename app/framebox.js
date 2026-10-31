@@ -53,8 +53,8 @@ function snaps() {
     matchMedia("(prefers-reduced-motion: reduce)").matches
   );
 }
-/** the layout's glide time (--lay-t), in ms */
-function layT() {
+/** the layout's glide time (--lay-t), in ms — what moves with the frame's glide uses it too (layout.js rowFade) */
+export function layT() {
   const v = getComputedStyle(document.documentElement).getPropertyValue("--lay-t").trim();
   return v.endsWith("ms") ? parseFloat(v) : (parseFloat(v) || 0.42) * 1000;
 }

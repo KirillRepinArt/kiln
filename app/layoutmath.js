@@ -25,6 +25,43 @@ export function fitInBox(ar, bw, bh) {
   return { w, h };
 }
 
+/* ---------- every page's plate: the content area minus insets (2026-10-31, the user's design) ----------
+   One table decides what each page keeps room for, and what may show round its plate. The status row is an inset: room
+   only while something is being made (or the queue is paused / a result waits behind your reference). The edit
+   buttons are NOT room: they hang outside the plate, anchored to it, into a clearance the layout always keeps in the
+   margin — so a page looks the same with them or without (the user: "the edit button area should be ignored for the
+   layout"); `tools` only says whether they may show. Never hover. Everything else is the plate: full height by default.
+   (Industry: iOS safe-area insets, Android WindowInsets for the row; anchored, out-of-flow controls for the buttons.) */
+
+/** @typedef {"generating" | "gallery" | "panel"} Page */
+/** what each page's plate holds: a picture fitted inside it, or a panel filling it */
+export const PAGES = /** @type {const} */ ({
+  generating: { fit: true },
+  gallery: { fit: true },
+  panel: { fit: false },
+});
+/**
+ * What a page keeps room for right now (row) and whether its edit buttons may show (tools — never room).
+ * @param {Page} page
+ * @param {object} s
+ * @param {boolean} s.running a job is being made
+ * @param {boolean} s.waiting jobs are waiting
+ * @param {boolean} s.paused the queue is paused
+ * @param {boolean} s.ready the image generator is up (waiting jobs are about to start)
+ * @param {boolean} s.news a result landed behind the reference you hold ("#N finished")
+ * @param {boolean} s.shown a finished picture is on show
+ * @returns {{ row: boolean, tools: boolean }}
+ */
+export function pageInsets(page, s) {
+  if (page === "panel") return { row: false, tools: false };
+  if (page === "gallery") return { row: false, tools: true };
+  /* Generating: the row while the queue works — between two of its jobs too (a box changing between every job read as a
+     twitch; "if there's a queue, nothing changes", the user). The buttons only when the row is gone: a result shown
+     between two renders has none (the Gallery has them) */
+  const row = s.running || (s.waiting && (s.paused || s.ready)) || s.news;
+  return { row, tools: !row && s.shown };
+}
+
 /**
  * The edit buttons' column beside the picture: 40 px buttons, 6 px apart and from the picture, in as many columns as
  * the picture's height needs (none is ever cut off).
@@ -39,23 +76,32 @@ export function toolColumnW(h, n) {
 }
 
 /**
- * The prompt and the picture area as one centred pair: their widths and the margins round them.
- * Too narrow a window: both give way in proportion, each down to its minimum.
+ * The prompt and the picture area as one centred pair: their widths and the margins round them, the same on both
+ * sides. A picture page keeps the plate on a FIXED centre line (2026-10-31, the user: "expand or contract
+ * symmetrically"): the prompt keeps its width and the picture's area takes at most what is left with even margins —
+ * a wide picture is fitted to that (the textbook image stage: the panels keep their widths, the picture fits the rest,
+ * centred; it never pushes them). Only a window too narrow even for that makes both give way, in proportion, each down
+ * to its minimum.
  * @param {object} m what was measured
  * @param {number} m.W the room the pair has (the window less its padding)
  * @param {boolean} m.gen Generating (the area hugs the picture) or another tab (a panel)
  * @param {boolean} m.drag an edge is being dragged (the area doesn't hug the picture then)
  * @param {number} m.minR the picture area's least width
- * @param {number} [m.hug] Generating, not dragging: the width that hugs the picture (picture + its button column)
+ * @param {number} [m.hug] Generating, not dragging: the width that hugs the picture
+ * @param {number} [m.clear] the least margin each side: the edit buttons hang into the outer one (never room in the
+ *   area — the plate is centred in it on every page); the same each side, so the pair stays centred
  * @param {{pw: number, rw: number, iw: number | null}} L your widths: prompt, panel, the picture's cap (null = none)
  * @returns {import("./types.js").Geometry}
  */
 export function pageGeometry(m, L) {
-  const { W, gen, drag, minR } = m;
+  const { W, gen, drag, minR } = m,
+    cl = Math.max(MMIN, m.clear || 0);
   let pw = Math.max(PWMIN, Math.min(L.pw, CARDMAX));
   const want = gen ? (drag ? L.iw || W : Math.min(L.iw || 1e9, m.hug ?? 9999)) : L.rw;
   let rw = Math.max(minR, want);
-  const room = W - pairGap() - 2 * MMIN;
+  const room = W - pairGap() - 2 * cl;
+  /* a picture page: the picture fits what the prompt leaves — the plate's centre, (W + pw + gap) / 2, stays put */
+  if (gen && !drag) rw = Math.max(minR, Math.min(rw, room - pw));
   if (pw + rw > room) {
     const k = Math.max(0, room) / (pw + rw);
     pw = Math.max(PWMIN, pw * k);
@@ -66,21 +112,23 @@ export function pageGeometry(m, L) {
 }
 
 /**
- * Vertical: the picture area's column — no wider than a 16:9 picture at the height it has (plus its button column each
- * side), never narrower than the tab bar or the prompt box, never wider than the window.
+ * Vertical: the picture area's column — no wider than a 16:9 picture at the height it has, never narrower than the tab
+ * bar or the prompt box, never wider than the window less a clearance each side (the edit buttons hang into it, outside
+ * the column: never room inside it).
  * @param {number} full the window's room
  * @param {number} minR the tab bar's least width
  * @param {number} promptW the prompt box's width
  * @param {number} picH the picture's height
- * @param {number} tb the button column's width at that height
+ * @param {number} clear the clearance each side, beyond the window's own margin
  */
-export function stackColumnW(full, minR, promptW, picH, tb) {
-  return Math.round(Math.min(full, Math.max(minR, promptW, (picH * 16) / 9 + 2 * tb)));
+export function stackColumnW(full, minR, promptW, picH, clear) {
+  return Math.round(Math.min(full - 2 * clear, Math.max(minR, promptW, (picH * 16) / 9)));
 }
 
 /**
  * Where the picture goes in its area: picture + button column as one group, centred; the column on the side away
- * from the prompt. Vertical: the picture itself on the centre line (its column hangs in the margin).
+ * from the prompt. Vertical: the picture itself on the centre line (its column hangs in the margin). No column or row
+ * in the page's insets right now: pass 0 for it.
  * @param {object} a
  * @param {number} a.areaW the area's width
  * @param {number} a.areaH the area's height
@@ -237,6 +285,7 @@ export const MORPH = {
   alone: 200, // the cross-fade when nothing changes shape: on its own, 80 ms read as a cut (Queue ↔ PNG Info, the user)
   b: 280, // the reveal (decelerating out of it)
   one: 320, // only a crop, or only a reveal: one move, eased at both ends
+  fade: 200, // a view's contents fading out or in, in EVERY switch: one speed (the user, 2026-10-31 — the Queue ↔ PNG Info one)
 };
 /* Material's emphasized curves: into the swap accelerating, out of it decelerating — with the swap between, it reads as
    one move; a lone crop or reveal is eased at both ends */

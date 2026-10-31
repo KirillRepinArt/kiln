@@ -7,6 +7,7 @@ import { onJobDone } from "./effects.js";
 import { forgeMsg, loadModels, models, refreshUp } from "./forge.js";
 import { current, jobs, lastDone, replaceJobs } from "./jobs.js";
 import { checkStyles } from "./livestyles.js";
+import { insetsKey, lay, sizeFrame } from "./layout.js";
 import { PV, pv, pvPrune } from "./picstate.js";
 import { SEC_PER_STEP } from "./presets.js";
 import { forgetNextEstimate } from "./progress.js";
@@ -104,6 +105,7 @@ export async function poll() {
     $("badge").textContent = /** @type {any} */ (n); // the number, as text
     $("badge").classList.toggle("show", n > 0);
     $("tabN").textContent = /** @type {any} */ (n || "");
+    if (lay.ins && insetsKey() !== lay.ins) sizeFrame(); // a pause / Forge coming up changes them too
     setTimeout(poll, current() ? 700 : 1800);
     return;
   }
@@ -175,6 +177,9 @@ export async function poll() {
   firstPoll = false;
   if (peekJob) setPeekJob(jobs.find(j => j.id === /** @type {import("./types.js").Job} */ (peekJob).id) || peekJob);
   pvPrune();
+  /* the queue changed what the page keeps room for (a job started, the last one finished, a pause): the layout makes
+     or gives back that room now — on the state, not on a timer (it lagged up to 300 ms behind the picture) */
+  if (lay.ins && insetsKey() !== lay.ins) sizeFrame();
   const ns = jobs.map(j => `${j.id}:${j.status}:${j.file}:${j.missing ? 1 : 0}:${j.name || ""}`).join("|");
   if (ns !== sig) {
     sig = ns;

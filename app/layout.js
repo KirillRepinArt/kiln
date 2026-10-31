@@ -2,7 +2,7 @@
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
 import { SWITCH, plateFollow } from "./plate.js";
 import { placeAround } from "./around.js";
-import { frameGoal } from "./framebox.js";
+import { frameGoal, layT } from "./framebox.js";
 import { syncH } from "./boot.js";
 import { applyMode, applyPH, layoutLeft, lyReset, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
@@ -15,12 +15,14 @@ import {
   fitInBox,
   framePlacement,
   pageGeometry,
+  pageInsets,
   stackColumnW,
   toolColumnW,
   upgradeLayoutPrefs,
 } from "./layoutmath.js";
 import { PV, onShow, picMode } from "./picstate.js";
 import { S, save } from "./state.js";
+import { forgeOk } from "./sync.js";
 import { moveThumb } from "./tabs.js";
 import { SPACE, pairGap } from "./tokens.js";
 
@@ -31,15 +33,53 @@ import { SPACE, pairGap } from "./tokens.js";
 /* the status block under the picture: the part gap + track 10 + 7 + status row 36 (a caption: 6 + row 36 + 4;
    nothing: 24) */
 export const BAR = () => SPACE.part + 10 + 7 + 36;
-/* what the row under the picture is: "bar" (rendering, or a paused queue), "cap" (a finished picture's caption), "none" */
-export function rowMode() {
-  if (S.view !== "gen") return "bar";
+/* the status row coming or going inside the picture's view: on the frame's clock — the same length and curve as the
+   frame's glide into (or out of) the room, started with it. ONE place (tabs.js faded it on its own for a switch) */
+/** @param {boolean} on */
+function rowFade(on) {
+  const b = document.body.classList,
+    jump = b.contains("laysnap") || b.contains("liveresize") || b.contains("laydrag"),
+    cs = getComputedStyle(document.documentElement),
+    a = $("prog").animate(
+      [
+        { opacity: on ? 0 : 1, visibility: "visible" },
+        { opacity: on ? 1 : 0, visibility: "visible" },
+      ],
+      {
+        duration: jump ? 150 : layT(),
+        easing: jump ? "linear" : cs.getPropertyValue("--lay-e").trim() || "ease",
+        fill: "backwards", // its first keyframe holds until the clock's start (now): the row was hidden for a frame
+      },
+    );
+  a.startTime = performance.now();
+}
+/* the page on show, for its insets (layoutmath.js PAGES) */
+function page() {
+  return S.view !== "gen" ? "panel" : picMode() === "browse" ? "gallery" : "generating";
+}
+/** what the page keeps room for right now — the ONE decider (layoutmath.js pageInsets): the layout reserves by it, the
+ * status row and the edit buttons are shown by it */
+export function insets() {
   const m = picMode();
-  if (m === "browse") return "none";
-  if (current() || (window.qPaused && jobs.some(j => j.status === "pending")) || (m === "still" && PV.news != null))
-    return "bar";
-  return "none";
-} /* the picture's caption went into the title (hover it) and the job's progress onto the Generating tab */
+  return pageInsets(page(), {
+    running: !!current(),
+    waiting: jobs.some(j => j.status === "pending"),
+    paused: !!window.qPaused,
+    ready: forgeOk,
+    news: m === "still" && PV.news != null,
+    shown: !!onShow(),
+  });
+}
+/* what the row under the picture is: "bar" (the queue's progress, a paused queue, a result behind your reference) or
+   "none" — the picture's caption went into the title, the job's progress onto the Generating tab */
+export function rowMode() {
+  return insets().row ? "bar" : "none";
+}
+/** the insets as a key: the layout runs again when it changes (sync.js after a poll, picstate.js after an event) */
+export const insetsKey = () => {
+  const i = insets();
+  return `${i.row}:${i.tools}`;
+};
 /* Wide window = the prompt and the image area as one pair: their own widths (S.lay.pw / S.lay.rw), a fixed 18 px gap,
    the pair centred in the window. A window resize only changes the margins around it. The image area is the same
    rectangle in every tab and for every image shape: Generating fits the picture into it, Queue / LoRAs / PNG Info
@@ -90,39 +130,86 @@ export const lay = {
   drag: false,
   vh: null,
   vtop: null,
-  vbDrag: false,
   target: null,
-  vB: null,
   frameDefer: false,
   framePending: false,
   frameHold: false,
   row: null,
+  rowView: null,
+  ins: "",
   colW: 0,
 };
-/* the picture's height: the stage minus the status row, capped in Generating by S.lay.ih (a share of that height,
-   set with the image area's top / bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
+/* Vertical: the even gap — the picture's plate starts this far under the tab buttons, and the prompt's name starts this
+   far under the plate (or under its status row) */
+function evenGap() {
+  const seg = /** @type {HTMLElement} */ (document.querySelector(".seg")),
+    tbs = /** @type {HTMLElement} */ (document.querySelector(".tabs"));
+  return SPACE.part + (tbs.getBoundingClientRect().bottom - seg.getBoundingClientRect().bottom);
+}
+/* Vertical: where the prompt's name starts (screen px) — worked out from where the column is laid out (without a
+   switch's slide on it) and the name row's own height, not from where the title is mid-glide */
+function nameTop() {
+  const col = $("lcol"),
+    colTop = col.getBoundingClientRect().top - colY,
+    TS = parseFloat(col.style.getPropertyValue("--ts")) || 64,
+    fromBottom = $("ltitle").getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top;
+  return { pn: colTop + 4 + (TS - 4 - SPACE.tight) - fromBottom, colTop };
+}
+/* the room the status row takes under the picture while the page keeps it (the part gap + the row) */
+function rowRoom() {
+  return document.querySelector(".app.stacked") ? SPACE.part + $("prog").offsetHeight : BAR();
+}
+/* the height the picture's block may take: the stage; Vertical — down to one even gap above the prompt's name (the
+   prompt sits at the bottom, the picture takes everything above it: 2026-10-31, it used to be pulled up under the
+   picture and left the window's bottom empty) */
+function roomH() {
+  const st = stageRect();
+  if (!document.querySelector(".app.stacked")) return st.height;
+  return nameTop().pn - evenGap() - st.top;
+}
+/* the picture's largest height: the room less the status row while the page keeps it (insets) */
+export function picFull() {
+  return roomH() - (insets().row ? rowRoom() : 0);
+}
+/* the picture's height: picFull, capped in Generating by S.lay.ih (a share of it, set with the image area's top /
+   bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
 function picH() {
-  const full = $("stage").getBoundingClientRect().height - BAR();
+  const full = picFull();
   if (lay.vh) return Math.min(full, lay.vh);
   const ih = S.lay && (document.querySelector(".app.stacked") ? S.lay.vih : S.lay.ih);
   return S.view === "gen" && ih ? Math.max(200, Math.min(full, ih * full)) : full;
 } /* Vertical keeps its own limit (vih) */
+/* the clearance the edit buttons need beyond the window's own margin (they hang outside the plate, never room in the
+   area — kept whether they show or not, so nothing moves when they come) */
+function toolsClear(/** @type {number} */ h) {
+  return Math.max(0, tbW(h) - SPACE.area);
+}
 function hugW() {
   const j = onShow() || current(),
     ar = j ? j.ar : S.ar,
     [a, b] = ar.split(":").map(Number),
     h = picH();
-  return h > 0 ? (h * a) / b + tbW(h) : 9999;
+  return h > 0 ? (h * a) / b : 9999;
 }
 export function layGeo() {
   const W = layW();
   const gen = S.view === "gen",
     L = S.lay || (S.lay = Object.assign(layDef(), S.lw ? { pw: S.lw } : {})),
-    minR = gen
-      ? 420
-      : minRight(); /* Generating: the tab bar may overhang a narrow picture (decided 2026-10-19); the other tabs' panel holds it */
+    /* never narrower than the tab bar: it sits on the plate's centre line (plate.js placeBar), and the plate is centred
+       in the area on every page (2026-10-31; the bar used to be clamped into the area, off the plate's centre) */
+    minR = minRight();
   // the picture's hug width is measured only when it's used (Generating, no edge held)
-  return pageGeometry({ W, gen, drag: lay.drag, minR, hug: gen && !lay.drag ? hugW() : undefined }, L);
+  return pageGeometry(
+    {
+      W,
+      gen,
+      drag: lay.drag,
+      minR,
+      hug: gen && !lay.drag ? hugW() : undefined,
+      clear: gen ? toolsClear(picH()) : 0,
+    },
+    L,
+  );
 }
 /** @param {Geometry} g */
 function layApply(g) {
@@ -328,11 +415,20 @@ export function sizeFrame() {
   } /* inside one click: once, at the end (it measures the page) */
   const app = /** @type {HTMLElement} */ (document.querySelector(".app")),
     stk = app.classList.contains("stacked");
+  const ins = insets();
   {
-    const m = rowMode();
-    /* the same rect for the same shape in Generating and the Gallery (2026-10-19): the row's room is always kept, used or not */
-    document.body.classList.toggle("norow", m === "none");
-    lay.row = m;
+    /* the page's insets (layoutmath.js pageInsets) — room for the status row and the edit buttons only while the page
+       keeps them; the same decider shows them (2026-10-31: the row's room used to be kept always, used or not) */
+    const was = lay.row,
+      wasView = lay.rowView;
+    lay.row = ins.row ? "bar" : "none";
+    lay.rowView = S.view;
+    lay.ins = `${ins.row}:${ins.tools}`;
+    document.body.classList.toggle("norow", !ins.row);
+    document.body.classList.toggle("notools", !ins.tools);
+    /* the row comes and goes on the layout's clock, as the box makes or gives back its room — inside the picture's view
+       only: a switch between views fades it with everything else (plate.js switchGlide) */
+    if (was && was !== lay.row && wasView === "gen" && S.view === "gen") rowFade(ins.row);
   }
   const j = onShow() || current();
   const ar = j ? j.ar : S.ar;
@@ -343,7 +439,7 @@ export function sizeFrame() {
     const rt = $("right");
     if (stk) {
       const hh = picH();
-      lay.colW = stackColumnW(app.clientWidth - 2 * SPACE.area, minRight(), stackW(), hh, tbW(hh));
+      lay.colW = stackColumnW(app.clientWidth - 2 * SPACE.area, minRight(), stackW(), hh, toolsClear(hh));
       rt.style.width = lay.colW + "px";
     } else {
       if (rt.style.width) rt.style.width = "";
@@ -355,24 +451,24 @@ export function sizeFrame() {
     SW = stk ? (lay.colW ? lay.colW - 2 : st.width) : /** @type {Geometry} */ (lay.last).rw; // wide: layApply above has set it
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
   const PH = picH(),
-    TB = tbW(PH),
+    TB = tbW(PH), // the edit buttons' column: it hangs outside the plate (no room in the area — toolsClear)
+    R = ins.row ? rowRoom() : 0,
     M = SPACE.mat, // the picture's mat: the plate is the picture and M round it
-    { w, h } = fitInBox(ar, SW - (stk ? 2 : 1) * TB - 2 * M, PH - 2 * M),
+    { w, h } = fitInBox(ar, SW - 2 * M, PH - 2 * M),
     W = w + 2 * M, // the plate
     H = h + 2 * M;
   /* the picture's canvas is drawn at the box's FINAL size and centred in it: the box may glide to a new shape (its
     edges clip the picture, like a container transform) without the canvas being stretched on the way */
-  /* Vertical keeps the column's room on both sides */
-  /* a held top / bottom edge (lay.vtop): the other edge stays put. The button column goes on the side away from the
-    prompt; Vertical: the picture itself on the centre line (the prompt box and the tab bar are centred there too) */
+  /* a held top / bottom edge (lay.vtop): the other edge stays put. The plate is centred in its area on every page; the
+    button column hangs on the side away from the prompt (Vertical: on the right) */
   const tbLeft = !stk && /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
     { top, left } = framePlacement({
       areaW: SW,
-      areaH: st.height,
+      areaH: roomH(),
       w: W,
       h: H,
-      tb: TB,
-      row: BAR(),
+      tb: 0,
+      row: R,
       heldTop: lay.vtop,
       stacked: stk,
       toolsLeft: tbLeft,
@@ -386,7 +482,7 @@ export function sizeFrame() {
   gt.style.width = TB + "px";
   gt.classList.toggle("lefty", tbLeft);
   /* where the picture is going (not where it is mid-glide): the prompt's vertical anchors use this */
-  lay.target = { top: st.top + top, h: H, bottom: st.top + top + H + BAR() - 1, w: W }; // the plate: the edge you see
+  lay.target = { top: st.top + top, h: H, bottom: st.top + top + H + (R ? R - 1 : 0), w: W }; // the plate: the edge you see
   /* the area's outer handle sits on the picture's outer edge in Generating (the edge you see), not past the button column */
   {
     const ro = /** @type {HTMLElement} */ (document.querySelector(".pedge.ro"));
@@ -400,10 +496,7 @@ export function sizeFrame() {
   /* while an edge is held or hovered: an outline round the picture itself, an even 5 px out (the edges you drag are
     the picture's own; the box it may fill showed as a frame floating off the picture) */
 
-  /* Vertical: the picture block sits between two equal gaps — the title starts as far under it (or under its progress
-    bar) as the picture starts under the tab bar. A shift, not a resize: shrinking the column would hand the picture more
-    height and move the gap again */
-  lay.vB = stk ? st.top + top + H + (lay.row === "bar" ? 12 + $("prog").offsetHeight : 0) : null;
+  /* Vertical: the picture block sits between two equal gaps — roomH() ends one even gap above the prompt's name */
   vAlign();
   /* the tab bar: as wide as the area; WHERE it sits is the plate's business (plate.js placeBar — one owner) */
   const tb = /** @type {HTMLElement} */ (document.querySelector(".tabs"));
@@ -414,41 +507,21 @@ export function sizeFrame() {
   requestAnimationFrame(layoutLeft);
   plateFollow(); // the live plate keeps to the frame / the panel through the glide
 }
-/* Vertical: the picture block sits between two equal gaps — the title starts as far under it (or under its progress
-   bar) as the picture starts under the tab bar. A shift of the prompt column, not a resize (shrinking it would hand the
-   picture more height and move the gap again). Worked out from TARGETS: the name row may be mid-glide (the Reuse bar
-   row opening), so the title's place comes from the row's target height, not from where it is right now */
+/* Vertical: the prompt-slot line, just above the title, clear of the picture's bottom edge. The prompt column itself
+   stays where the page puts it — at the bottom; the picture's room ends one even gap above its name (roomH). It used
+   to be shifted UP under the picture to make that gap (2026-10-31: the window's bottom stayed empty, and the shift's
+   transform put the pill menus under the picture) */
 export function vAlign() {
-  const col = $("lcol");
-  if (!document.querySelector(".app.stacked") || lay.vB == null) {
-    if (col.dataset.dy) {
-      delete col.dataset.dy;
-      colShift(0);
-    }
-    return;
-  }
-  const seg = /** @type {HTMLElement} */ (document.querySelector(".seg")),
-    tbs = /** @type {HTMLElement} */ (document.querySelector(".tabs")),
-    T = $("ltitle"),
-    A = 12 + (tbs.getBoundingClientRect().bottom - seg.getBoundingClientRect().bottom);
-  const colTop = col.getBoundingClientRect().top - colY, // where it is laid out: without the shift and any slide on it
-    TS = parseFloat(col.style.getPropertyValue("--ts")) || 64;
-  const fromBottom = T.getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top,
-    pn = colTop + 4 + (TS - 4 - SPACE.tight) - fromBottom; /* the name row: top 4, ending a tight gap above the box */
-  const dy = Math.round(Math.min(0, lay.vB + A - pn));
-  if (String(dy) !== col.dataset.dy) {
-    col.dataset.dy = String(dy);
-    colShift(dy);
-  }
+  if (!document.querySelector(".app.stacked")) return;
+  const { pn, colTop } = nameTop();
   $("hsplit").style.top = pn - colTop - 10 + "px";
-} /* the prompt-slot line: just above the title, clear of the picture's bottom edge */
+}
 /* ---------- the prompt column's place has ONE owner (2026-10-28) ----------
-   Its transform = the Vertical shift (vAlign, the even gaps) + what is left of a tab switch's slide, written here
-   only. Two writers used to set it: vAlign's inline style, and a switch's own animation that froze the shift it started
-   with for 650 ms (a re-shift meanwhile showed only at the end, as a jump) and made vAlign measure the column mid-slide */
+   Its transform = what is left of a tab switch's slide, written here only (Vertical's upward shift is gone,
+   2026-10-31). Two writers used to set it: vAlign's inline style, and a switch's own animation that froze the shift it
+   started with for 650 ms (a re-shift meanwhile showed only at the end, as a jump) */
 const colEase = bez(SWITCH.curve[0], SWITCH.curve[1], SWITCH.curve[2], SWITCH.curve[3]); // the switch's glide (plate.js)
-let colDy = 0, // the Vertical shift
-  slX = 0, // the slide: how far from its place it started, and when
+let slX = 0, // the slide: how far from its place it started, and when
   slY = 0,
   slT0 = 0,
   colX = 0, // the offset written last (taken off a measurement to find where the column is laid out)
@@ -462,7 +535,7 @@ function colApply() {
   colRaf = 0;
   const k = slideLeft(performance.now()),
     x = Math.round(slX * k),
-    y = colDy + Math.round(slY * k),
+    y = Math.round(slY * k),
     t = x || y ? `translate(${x}px, ${y}px)` : "",
     col = $("lcol");
   colX = x;
@@ -471,18 +544,13 @@ function colApply() {
   if (k > 0) colRaf = requestAnimationFrame(colApply);
   else slT0 = 0;
 }
-/** the Vertical shift (vAlign) @param {number} dy */
-function colShift(dy) {
-  colDy = dy;
-  if (!colRaf) colApply(); // mid-slide the next frame has it
-}
 /** a tab switch moved the column's place: it slides there from where it was on screen (measured before the switch —
- * mid-slide too, so a fast second switch carries on from there). Its place is worked out here, from the layout and the
- * shift: measured through the running slide's offset, a new shift got lost (a 63 px jump) @param {DOMRect} was */
+ * mid-slide too, so a fast second switch carries on from there). Its place is worked out here, from the layout:
+ * measured through the running slide's offset @param {DOMRect} was */
 export function slideCol(was, t0 = performance.now()) {
   const r = $("lcol").getBoundingClientRect();
   slX = Math.round(was.left - (r.left - colX));
-  slY = Math.round(was.top - (r.top - colY + colDy));
+  slY = Math.round(was.top - (r.top - colY));
   slT0 = slX || slY ? t0 : 0;
   cancelAnimationFrame(colRaf);
   colApply();

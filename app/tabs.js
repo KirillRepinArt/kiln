@@ -82,7 +82,6 @@ export function tabGo(fn) {
     f0 = frameBox(),
     fr0 = $("frame").getBoundingClientRect(),
     b = document.body,
-    row0 = !b.classList.contains("norow"),
     me = ++tabGos;
   b.classList.add("laysnap"); // the layout lands at once: the switch alone moves things
   document.documentElement.classList.add("tabswitch"); // a tab switch (not a layout switch): the tab pill still slides
@@ -104,19 +103,11 @@ export function tabGo(fn) {
   } else {
     const g = frameTarget();
     sw = switchGlide(from, null);
-    /* the same view: a picture of another shape crops and reveals, as when browsing (morph.js) */
-    if (f0 && g && Math.abs(g.w / g.h - f0.w / f0.h) > 0.02) frameMorph({ ...f0, x: fr0.left, y: fr0.top });
-    /* the status row under the picture (the render's progress) comes and goes with a short fade, like the rest of
-       what sits round the picture — its room is kept either way, only its look changes (it vanished at the click) */
-    const row1 = !b.classList.contains("norow");
-    if (row0 !== row1)
-      $("prog").animate(
-        [
-          { opacity: row0 ? 1 : 0, visibility: "visible" },
-          { opacity: row0 ? 0 : 1, visibility: "visible" },
-        ],
-        { duration: 150 },
-      );
+    /* the same view: a box of another shape or size crops and reveals, as when browsing (morph.js) — the render and
+       the Gallery keep different room (their insets), so the box may change size with the same shape. The status
+       row's fade is the layout's (layout.js rowFade) */
+    if (f0 && g && (Math.abs(g.w - f0.w) > 0.5 || Math.abs(g.h - f0.h) > 0.5))
+      frameMorph({ ...f0, x: fr0.left, y: fr0.top });
   }
   placeNavs();
   slideCol(lc0, sw.t0); // the column slides from where it was, as the real thing (FLIP)

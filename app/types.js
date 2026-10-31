@@ -163,14 +163,14 @@
  * @property {boolean} drag          an edge is being dragged
  * @property {number | null} vh      a top / bottom edge held: the picture's live height
  * @property {number | null} vtop    …and the top that stays put meanwhile
- * @property {boolean} vbDrag        Vertical: the prompt box's bottom edge being dragged
  * @property {{top: number, h: number, bottom: number, w: number} | null} target  where the picture is going (not
  *   where it is mid-glide): the prompt's vertical anchors use this
- * @property {number | null} vB      Vertical: the bottom of the picture block (the gap under it is matched above)
  * @property {boolean} frameDefer    inside one click: sizeFrame runs once, at the end
  * @property {boolean} framePending  …and was asked for meanwhile
  * @property {boolean} frameHold     the layout is held (the prompt box's bottom edge being dragged)
  * @property {"bar" | "none" | null} row  the row under the picture: the progress bar, or nothing
+ * @property {string | null} rowView the tab the row was decided for (its fade belongs to a switch between views)
+ * @property {string} ins            the page's insets last laid out ("row:tools"): a change lays out again
  * @property {number} colW           Vertical: the picture column's width (0 otherwise)
  */
 

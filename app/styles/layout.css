@@ -73,6 +73,14 @@
 .app.stacked #lcol > * {
   pointer-events: auto;
 } /* its empty parts let the pointer through to the picture's edges */
+.app.stacked #lcol > .ltitle {
+  pointer-events: none;
+}
+.app.stacked #lcol > .ltitle .phead,
+.app.stacked #lcol > .ltitle .hmodes {
+  pointer-events: auto;
+} /* the name row's box reaches up under the picture's bottom edge (its room ends one even gap above the name): only the
+     name and its buttons take the pointer */
 .right {
   display: flex;
   flex-direction: column;
@@ -232,12 +240,10 @@
 .hsplit.drag::after {
   opacity: 1;
 }
-.left.hm .vedge {
+.left.hm .vedge,
+.app.stacked .vedge {
   display: none;
-}
-#lcol.vbdrag > .chips {
-  transition: none;
-} /* Vertical: the chips follow the dragged bottom edge directly */
+} /* Vertical: the prompt sits at the bottom — its slot is set with the line above its name (.hsplit) */
 .hsplit {
   display: none;
 }
@@ -269,8 +275,7 @@
   opacity: 1;
   transition: opacity var(--t-200) ease 0s !important;
 }
-/* Vertical: the picture area's empty boxes let the pointer through. The prompt column is shifted up under them (the
-   even gaps), and they come later in the page, so they took the title's clicks ("the title isn't editable") */
+/* Vertical: the picture area's empty boxes let the pointer through to the prompt column under its edges */
 .app.stacked > .right,
 .app.stacked .rpanel:not(.paneled),
 .app.stacked #v-gen,

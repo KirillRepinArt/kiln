@@ -8,7 +8,7 @@
 import { placeAround } from "./around.js";
 import { $ } from "./dom.js";
 import { frameHold } from "./framebox.js";
-import { shapeBox, shapeSteps } from "./layoutmath.js";
+import { MORPH, shapeBox, shapeSteps } from "./layoutmath.js";
 import { SPACE } from "./tokens.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number, panel: boolean }} Box in #right's coordinates */
@@ -52,25 +52,25 @@ function put(b) {
 }
 
 /* ---------- the tab bar has ONE owner: it follows the plate (2026-10-28) ----------
-   It sits a part gap above the plate's top edge — the picture frame in Generating, the panel elsewhere — centred on the
-   plate as far as the area allows (it never pokes out). It has no motion of its own: the plate glides on a switch and
+   It sits a part gap above the plate's top edge — the picture frame in Generating, the panel elsewhere — on the plate's
+   centre line, always (2026-10-31: it used to be clamped into the area, which holds the edit buttons' column too — the
+   bar sat ~24 px off the plate's centre). The layout keeps the room for it (layout.js layGeo: the area is never narrower
+   than the bar beside the buttons' column). It has no motion of its own: the plate glides on a switch and
    rides the frame on a ratio change, and the bar is placed from where the plate is, every frame anything moves. Four
    writers used to move it (the layout, a switch's slide, the crop-and-reveal, CSS glides); when two overlapped it
    ended mid-way or over the picture (137 px over the panel after a switch during a ratio change) */
 let barX = 0,
   barY = 0; // the offset last set
-/** the bar's offset that puts it a part gap above a plate box (screen px), centred on it within the area
+/** the bar's offset that puts it a part gap above a plate box (screen px), centred on it
  * @param {HTMLElement} tb @param {{ left: number, right: number, top: number }} pr */
 function barFor(tb, pr) {
   const r = tb.getBoundingClientRect(),
     kids = tb.children,
-    half = (kids[kids.length - 1].getBoundingClientRect().right - kids[0].getBoundingClientRect().left) / 2,
-    left = r.left - barX, // where the bar is laid out, without the offset
-    right = r.right - barX,
+    // where the bar's contents are laid out, without the offset (its box may be wider: the area's width)
+    left = kids[0].getBoundingClientRect().left - barX,
+    right = kids[kids.length - 1].getBoundingClientRect().right - barX,
     bottom = r.bottom - barY,
-    // how far it may shift and stay inside the area — none when the area is narrower than the bar's contents
-    room = Math.max(0, (right - left) / 2 - half),
-    x = Math.max(-room, Math.min(room, (pr.left + pr.right) / 2 - (left + right) / 2));
+    x = (pr.left + pr.right) / 2 - (left + right) / 2;
   return { x: Math.round(x), y: Math.round(Math.max(0, pr.top - SPACE.part - bottom)) };
 }
 /** @param {HTMLElement} tb @param {number} x @param {number} y */
@@ -268,7 +268,6 @@ export function switchGlide(at, views) {
       `inset(${[b.t - v.top, v.right - (b.l + b.w), v.bottom - (b.t + b.h), b.l - v.left]
         .map(x => Math.max(0, x).toFixed(1) + "px")
         .join(" ")} round var(--r-panel))`,
-    swap = { delay: steps.A, duration: steps.S, fill: /** @type {FillMode} */ ("both") },
     /* the picture's view: the picture is what the plate crops (the frame); what sits round it outside the plate — the
        edit buttons, the status row, Show prompt, the arrows — fades on its own, quickly: out at the start, in as the
        plate lands (clipped, they were cut off at the first frame) */
@@ -322,15 +321,33 @@ export function switchGlide(at, views) {
       const now = getComputedStyle(el).opacity;
       if (+now > 0.01) go(el.animate([{ opacity: 0 }, { opacity: 0, offset: 1 - Q }, { opacity: now }], timing));
     }
-  /* a picture is cropped, then crosses at the swap; a panel's contents (a list, a form) fade across the crop from the
-     first frame, linearly — held whole (or nearly, on an ease-in) while the plate cut into them, Queue → Generating
-     read as a frozen snapshot (the user, 2026-10-28). Material's fade-through: the outgoing content goes at once */
-  const out = go(old.animate([{ opacity: 1 }, { opacity: 0 }], pic(old) ? swap : { ...leave, easing: "linear" }));
-  /* the picture's glow lives outside its view (a fixed layer): it comes and goes with the picture, at the swap */
+  /* ONE FADE SPEED for a view's contents, in every switch (2026-10-31, the user: "one fade speed everywhere"): they
+     leave in the MORPH.fade ms that end at the swap (from the first frame, if the swap comes sooner) and come in the
+     MORPH.fade ms that start at it, linearly — a panel, a picture and its glow alike. Where the shape doesn't change the
+     swap is at the start and the two overlap: the cross-fade (Queue ↔ PNG Info, the speed the user liked); where it
+     does, a fade-through (Material's pattern for unrelated contents). The plate's crop and reveal keep their own steps;
+     the switch runs on until the fade-in ends, on the same clock. (A picture cut in the swap's 80 ms, and a decelerating
+     fade-in of its own, read as two speeds) */
+  const F = MORPH.fade,
+    TT = Math.max(T, steps.A + F), // the switch's length, its fade-in included
+    goOut = {
+      delay: Math.max(0, steps.A + steps.S - F),
+      duration: F,
+      easing: "linear",
+      fill: /** @type {FillMode} */ ("both"),
+    },
+    comeIn = { delay: steps.A, duration: F, easing: "linear", fill: /** @type {FillMode} */ ("both") };
+  const out = go(old.animate([{ opacity: 1 }, { opacity: 0 }], goOut));
+  /* the picture's glow lives outside its view (a fixed layer): it comes and goes with the picture, on its fade */
   const fg = document.getElementById("fglow");
   if (fg && pic(neu) !== pic(old))
-    go(fg.animate(pic(neu) ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], swap));
-  go(neu.animate([{ opacity: 0 }, { opacity: 1 }], swap));
+    go(
+      fg.animate(
+        pic(neu) ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }],
+        pic(neu) ? comeIn : goOut,
+      ),
+    );
+  go(neu.animate([{ opacity: 0 }, { opacity: 1 }], comeIn));
   /* the leaving view goes when the switch ends (or a new switch begins): hidden, back in its place */
   const end = () => {
     if (leaveDone !== end) return;
@@ -344,7 +361,7 @@ export function switchGlide(at, views) {
     switchAnims = [];
   };
   leaveDone = end;
-  const last = go(old.animate([], { duration: T })); // the switch's length, no effect of its own
+  const last = go(old.animate([], { duration: TT })); // the switch's length, no effect of its own
   last.onfinish = last.oncancel = out.oncancel = end;
-  return { t0, T };
+  return { t0, T: TT };
 }

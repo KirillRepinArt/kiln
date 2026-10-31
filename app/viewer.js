@@ -3,7 +3,6 @@
 import { deleteJob, openInApp } from "./actions.js";
 import { updNav } from "./browse.js";
 import { $, hit, target } from "./dom.js";
-import { lay, rowMode, sizeFrame } from "./layout.js";
 import { onShow, picMode, pv, pvSync } from "./picstate.js";
 import { paint } from "./pictures.js";
 import { SIZES } from "./presets.js";
@@ -146,7 +145,6 @@ export function initViewer() {
   })();
   setInterval(() => {
     tabSync();
-    if (typeof rowMode === "function" && lay.row && rowMode() !== lay.row) sizeFrame();
     pvSync();
     updNav();
   }, 300);

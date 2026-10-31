@@ -221,9 +221,10 @@ body.jobrun .tab .trw {
     transform var(--t-220) var(--ease),
     visibility 0s linear var(--t-220);
 }
-/* without a panel (Generating, the Gallery) the panel's 1 px border is transparent: the view covers it, so the picture
-   sits exactly one area gap from the prompt and one part gap under the tabs — where a panel's visible edge sits */
-.rpanel:not(.paneled) > .view {
+/* the picture's view (Generating, the Gallery) has no panel: the container's 1 px border is transparent and the view
+   covers it, so the picture sits exactly one area gap from the prompt and one part gap under the tabs — where a panel's
+   visible edge sits. A view's look is the view's own: keyed on the container's tab, a leaving view changed mid-switch */
+.rpanel > #v-gen {
   inset: calc(var(--space-px) * -1);
 }
 .view.on {

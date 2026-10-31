@@ -647,3 +647,33 @@ export async function snapHeldUntilTheLastMotion(k, t) {
   );
 }
 snapHeldUntilTheLastMotion.opts = { step: 0.05 };
+
+/* the empty frame's text fades with the picture (2026-11-01, F2): Generating (empty) ↔ the Gallery is one view, so no
+   view fade covers it — the text was hidden and shown at once by the status loop while the picture faded */
+export async function emptyTextFadesWithThePicture(k, t) {
+  await k.job("[fill:446688] p", { ar: "3:4", steps: 1 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
+  await k.mouse(2, 2);
+  const tab = v => `(document.querySelector('.tab[data-v="${v}"]').click(),1)`;
+  const watch = `new Promise(res=>{const o=[],t0=performance.now();
+    (function s(){requestAnimationFrame(()=>setTimeout(()=>{o.push({t:performance.now()-t0,op:+getComputedStyle($("idle")).opacity});
+    if(performance.now()-t0<900)s();else res(o)},0))})()})`;
+  for (const [from, to, up] of [
+    ["gen", "gallery", false],
+    ["gallery", "gen", true],
+  ]) {
+    await k.ev(tab(from));
+    if (from === "gen") await k.ev(`(closeShown(),1)`);
+    await k.sleep(1300);
+    const w = k.ev(watch);
+    await k.ev(tab(to));
+    const s = await w,
+      a = s.find(x => (up ? x.op > 0.02 : x.op < 0.98)),
+      b = s.find(x => (up ? x.op > 0.98 : x.op < 0.02));
+    const ms = a && b ? Math.round(b.t - a.t) : null;
+    t.motion(ms != null && ms >= 150, `${from} → ${to}: the empty frame's text fades ${up ? "in" : "out"}, not a cut`, {
+      ms,
+    });
+  }
+}
+emptyTextFadesWithThePicture.opts = { step: 0.05 };

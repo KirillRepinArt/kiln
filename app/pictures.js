@@ -101,6 +101,49 @@ const SAME = fades(shapeSteps({ w: 1, h: 1 }, { w: 1, h: 1 }));
 /** @type {Animation | null} the frame's picture coming in */
 let cvIn = null;
 let arriving = false; // the picture being drawn comes into an empty frame: nothing to cross-fade from
+/* ---------- the empty frame's text is the frame's third layer (2026-11-01, F2) ----------
+   "Next: 3:4 · … / Estimated time" stands in for a picture: it shows while the frame is empty and fades by the same fade
+   as the pictures — out as one comes in, in as one leaves (on that picture's own timing and clock). The status loop
+   used to show and hide it at once (display), the picture fading meanwhile: Generating ↔ the Gallery cut the text */
+let idleOn = true;
+/** @param {boolean} on @param {{ delay: number, duration: number, startTime?: number | null }} fade */
+function idleFade(on, fade) {
+  if (on === idleOn) return;
+  idleOn = on;
+  const el = $("idle");
+  for (const a of el.getAnimations()) a.cancel();
+  const a = el.animate([{ opacity: on ? 0 : 1 }, { opacity: on ? 1 : 0 }], {
+    delay: fade.delay,
+    duration: fade.duration,
+    easing: "linear",
+    fill: "both",
+  });
+  if (fade.startTime != null) a.startTime = fade.startTime;
+  a.onfinish = () => {
+    el.style.opacity = on ? "" : "0";
+    a.cancel();
+  };
+}
+/** the frame has a picture now (the status loop): the text goes — with the picture's own fade if one is coming in
+ * (pictureIn), else the one fade now (a render starting) */
+export function frameFilled() {
+  idleFade(false, SAME.out);
+}
+/** the frame is empty now (the status loop): the text comes back — as the picture leaving fades off (the overlay's
+ * clock), else the one fade now */
+export function frameEmptied() {
+  const t = ovFade && ovFade.effect ? ovFade.effect.getTiming() : null;
+  idleFade(
+    true,
+    t && ovFade
+      ? {
+          delay: Number(t.delay) || 0,
+          duration: Number(t.duration) || 0,
+          startTime: /** @type {number} */ (ovFade.startTime),
+        }
+      : SAME.in,
+  );
+}
 /** the frame's picture comes in — the other half of the same owner (the overlay is what leaves): one fade, the
  * cross-fade's by default, or on a motion's timing and clock (the crop-and-reveal). It used to have none of its own in
  * place — a picture came into an empty frame at once (the user: "Gallery just appears instantly") — and its own 80 ms
@@ -116,6 +159,7 @@ export function pictureIn(fade = SAME.in) {
     fill: "backwards", // held unseen until its delay, from its clock's start
   });
   if (fade.startTime != null) a.startTime = fade.startTime;
+  idleFade(false, fade); // the empty frame's text goes as the picture comes (F2)
   cvIn = a;
   a.onfinish = a.oncancel = () => {
     if (cvIn === a) cvIn = null;

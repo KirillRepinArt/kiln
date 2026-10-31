@@ -9,7 +9,7 @@ import { sizeFrame } from "./layout.js";
 import { api } from "./live.js";
 import { loadJob } from "./peek.js";
 import { PV, browsed, justDone, onShow, picMode, pv, setJustDone, shownDone } from "./picstate.js";
-import { drawTo, missUI, paint, xfadeEnd } from "./pictures.js";
+import { drawTo, frameEmptied, frameFilled, missUI, paint, xfadeEnd } from "./pictures.js";
 import { SEC_PER_STEP, SIZES } from "./presets.js";
 import { draft, peekJob } from "./prompt.js";
 import { S } from "./state.js";
@@ -108,7 +108,7 @@ export function frame() {
     if (S.view === "gen" && picMode() === "live") {
       const f = $("frame");
       f.classList.add("has");
-      $("idle").style.display = "none";
+      frameFilled(); // the empty frame's text fades (pictures.js owns it, F2)
       if (+(/** @type {string} */ ($("cv").dataset.j)) !== j.id) {
         $("cv").dataset.j = /** @type {any} */ (j.id);
         $("cv").dataset.d = "";
@@ -200,10 +200,10 @@ export function frame() {
         paint(/** @type {HTMLCanvasElement} */ ($("cv")), d);
       }
       $("frame").classList.add("has");
-      $("idle").style.display = "none";
+      frameFilled();
     } else if (!d) {
       $("frame").classList.remove("has");
-      $("idle").style.display = "";
+      frameEmptied();
       const c = /** @type {HTMLCanvasElement} */ ($("cv"));
       if (c.width > 1) {
         c.width = 1;

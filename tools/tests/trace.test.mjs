@@ -8,7 +8,14 @@
 import { TRACER, reversals, secondWriters, twoClocks } from "./trace.mjs";
 
 /** known second writers / reversals: "el.prop" (or "el~what" for a reversal) → the map's id and why it's there */
-const ALLOW = /** @type {Record<string, string>} */ ({});
+const ALLOW = /** @type {Record<string, string>} */ ({
+  /* a second tab click mid-switch that changes only the picture (Gallery → Generating) cancels the first switch's fades:
+     the leaving list and the coming view cut. Known to the user (2026-11-01); needs its own model — which parts of the
+     running switch carry on */
+  "vGen~cut": "F3 — a same-view switch mid-switch cuts the running switch's view fades",
+  "vQueue~cut": "F3 — a same-view switch mid-switch cuts the running switch's view fades",
+  "picture~cut": "F3 — a same-view switch mid-switch cuts the running switch's view fades",
+});
 
 const WATCH = `__trace.watch({
   plate: $("plate"), rim: $("rim"), frame: $("frame"), cv: $("cv"), cvx: $("cvx"), fglow: $("fglow"),
@@ -17,6 +24,7 @@ const WATCH = `__trace.watch({
   lcol: $("lcol"), left: $("left"), ltitle: $("ltitle"), chips: $("chips"),
   prog: $("prog"), showP: $("showP"), gtools: $("gtools"),
   navPrev: document.querySelector(".gnav.prev"), navNext: document.querySelector(".gnav.next"), toast: $("toast"),
+  idle: $("idle"),
 })`;
 const HOVER_ONLY = ["gtools", "navPrev", "navNext"];
 const tab = v => `document.querySelector('.tab[data-v="${v}"]').click()`;
@@ -63,6 +71,22 @@ export async function ownershipTour(k, t) {
     ]);
     delete r.samples.cv;
     delete r.samples.cvx;
+    /* the empty frame's text too is seen through its view (it snaps hidden once its view has faded out) */
+    r.samples.idle = (r.samples.idle || []).map((/** @type {number[]} */ row, /** @type {number} */ i) => [
+      ...row.slice(0, 5),
+      row[5] * (view[i] ? view[i][5] : 1),
+      row[6],
+    ]);
+    /* a CUT: something seen goes from shown to gone (or back) between two frames mid-motion — the frame's contents and
+       what sits round it (2026-11-01, F2: the empty frame's text was hidden at once while the picture faded) */
+    for (const el of ["picture", "idle", "prog", "showP", "vGen", "vQueue", "vLoras", "vPng"]) {
+      const rows = r.samples[el] || [];
+      for (let i = 1; i < rows.length; i++)
+        if (Math.abs(rows[i][5] - rows[i - 1][5]) > 0.6) {
+          note(`${el}~cut`, `${label} (${rows[i - 1][5].toFixed(2)}→${rows[i][5].toFixed(2)} at ${rows[i][6]}ms)`);
+          break;
+        }
+    }
     if (!many)
       for (const x of reversals(r.samples))
         if (x.el !== "toast") note(`${x.el}~${x.what}`, `${label} (${x.from}→${x.peak}→${x.to}; ${x.when})`);

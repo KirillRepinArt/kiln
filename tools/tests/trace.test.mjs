@@ -126,7 +126,18 @@ export async function ownershipTour(k, t) {
   await motion("Aurora: Queue → Gallery (the glow comes)", tab("gallery"));
   await motion("Aurora: browse (the glow with its picture)", `genNav(-1)`);
   /* the layout switch (Left / Right / Vertical) */
-  for (const d of ["right", "below", "left"]) await motion(`layout → ${d}`, `setDock("${d}")`, 1700);
+  for (const d of ["right", "below", "left"]) {
+    await motion(`layout → ${d}`, `setDock("${d}")`, 1700);
+    /* Vertical: the prompt grows with your draft and the picture gives it the room — one motion (2026-10-31, L2) */
+    if (d === "below") {
+      const L = "String.fromCharCode(10)";
+      await motion(
+        "Vertical: a long draft grows the box",
+        `(P.value=Array(30).fill("a line of prompt text").join(${L}),P.dispatchEvent(new Event("input")))`,
+      );
+      await motion("Vertical: …and a short one shrinks it", `(P.value="one line",P.dispatchEvent(new Event("input")))`);
+    }
+  }
   const unknown = Object.keys(found).filter(key => !(key.replace(/ \[.*$/, "") in ALLOW));
   /* a second writer or two clocks fail everywhere; what is sampled frame by frame (a reversal, a hover-only thing shown)
      is judged on a real PC — CI's machines draw a few frames a second */

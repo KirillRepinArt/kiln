@@ -1,8 +1,9 @@
 // @ts-check
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $, q } from "./dom.js";
-import { lay, minRight, setDock, sizeFrame, vAlign } from "./layout.js";
+import { lay, minRight, setDock, sizeFrame, snapHold, vAlign } from "./layout.js";
 import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement, promptSlotH } from "./layoutmath.js";
+import { peekJob } from "./prompt.js";
 import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { SPACE } from "./tokens.js";
@@ -42,6 +43,30 @@ function cardNaturalH() {
   const edH = (sc ? sc.scrollHeight : P.scrollHeight) + 16;
   return Math.max(170, L.offsetHeight - w.offsetHeight + Math.max(EDMIN, edH));
 }
+/* Vertical: the height the box needs for the text in it — measured from the text itself (the editor's content and its
+   paddings), never from the scroller, whose height is the box's: measured that way the box could grow but never shrink.
+   `lines`: the height for that many lines instead (the box's least) */
+/** @param {number} [lines] */
+function textBoxH(lines) {
+  const L = $("left"),
+    w = q(".pwrapT", L),
+    sc = /** @type {HTMLElement | null} */ (L.querySelector(".cm-scroller")),
+    ct = /** @type {HTMLElement | null} */ (L.querySelector(".cm-content"));
+  if (!sc || !ct) return cardNaturalH(); // the plain textarea (no editor)
+  const cs = getComputedStyle(ct),
+    line = parseFloat(getComputedStyle(L.querySelector(".cm-line") || ct).lineHeight) || 24,
+    body =
+      lines == null
+        ? ct.offsetHeight
+        : (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + lines * line,
+    edMargin = parseFloat(getComputedStyle(/** @type {HTMLElement} */ (sc.parentElement)).marginBottom) || 0;
+  return Math.ceil(
+    L.offsetHeight - w.offsetHeight + body + (parseFloat(getComputedStyle(sc).paddingBottom) || 0) + edMargin,
+  );
+}
+/** the box's least height in Vertical: its controls and two lines */
+export const slotLeast = () => textBoxH(2);
+let draftH = 0; // the height your draft's text needs (kept while a job's prompt is shown: it never resizes the box)
 export function applyMode() {
   const a = q(".app"),
     was = a.classList.contains("stacked");
@@ -109,12 +134,13 @@ export function layoutLeft() {
   if (stk) {
     let H;
     card.top = 0;
-    /* the prompt's SLOT is fixed: set with the line above the name, or ~4 lines + the pills by default. The box fits its
-     text inside it (top-aligned) and the picture's size never depends on what the prompt says — browsing prompts of
-     different lengths used to resize and move the picture on every step (2026-10-19) */
-    const slot = promptSlotH(S.sch, innerHeight);
-    H =
-      slot; /* the box fills its slot (2026-10-24): what you see is the room it takes — no dead space under a short prompt */
+    /* the box is as tall as YOUR draft's text, between its least height and your cap (layoutmath.js promptSlotH — the
+     user's choice, 2026-10-31). A job's prompt shown in it never resizes it (it scrolls inside): browsing prompts of
+     different lengths never moves the picture (2026-10-19) */
+    const least = slotLeast();
+    if (!peekJob || !draftH) draftH = textBoxH();
+    const slot = promptSlotH(draftH, S.sch, innerHeight, least);
+    H = slot;
     col.style.setProperty("--sw", stackW() + "px");
     const lch = slot + TS + 2 + CH + "px",
       chg = col.style.getPropertyValue("--lch") !== lch;
@@ -123,7 +149,12 @@ export function layoutLeft() {
     requestAnimationFrame(vAlign);
     col.style.setProperty("--lh", H + "px");
     col.style.setProperty("--chtop", TS + H + SPACE.tight + "px");
-    if (chg) requestAnimationFrame(sizeFrame);
+    /* a new line (or your cap) changes its height: the box and the picture land at once, together — a line at a time,
+       like a chat app's composer (the box's own height transition and the picture's glide were two clocks) */
+    if (chg) {
+      snapHold("prompt", 150);
+      requestAnimationFrame(sizeFrame);
+    }
     return;
   }
   const colH = col.clientHeight - TS;

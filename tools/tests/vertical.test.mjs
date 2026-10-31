@@ -276,12 +276,16 @@ export async function heightIsALimit(k, t) {
   await k.mouse(2, 2);
   await k.sleep(800);
   const short = (await R(k, "#left")).height;
-  t.near(short, 420, 3, "a short prompt: the box fills its slot (2026-10-24 — no dead space under it)");
+  /* 2026-10-31 (the user's choice): the box grows with your draft — a short prompt takes only the box's least height,
+     the picture the rest; your line above the name is the cap */
+  t.ok(short < 200, "a short prompt: the box is small (it grows with your draft)", { short });
+  const f0 = (await R(k, "#frame")).height;
   await k.ev(
     `(P.value=Array(40).fill("a long line of prompt text that keeps going").join(String.fromCharCode(10)),draft=P.value,1)`,
   );
   await k.sleep(900);
-  t.near((await R(k, "#left")).height, 420, 3, "a long prompt: it stops at the limit (and scrolls)");
+  t.near((await R(k, "#left")).height, 420, 3, "a long prompt: it grows to your cap (and scrolls)");
+  t.ok((await R(k, "#frame")).height < f0 - 100, "…and the picture gave it the room", { f0 });
 }
 heightIsALimit.opts = { width: 2000, height: 1023 };
 
@@ -698,22 +702,19 @@ lateFixes.opts = { width: 1872, height: 1080, step: 0.05 };
 /* Vertical: the box fills its slot; its bottom edge sizes the slot, following the pointer, then the layout settles */
 /* Vertical (2026-10-31): the prompt sits at the window's bottom, the picture takes everything above it. Its slot is
    set with the line above its name — a docked composer's top edge; the box's bottom edge is no handle here */
+/* …and the box grows with your draft (2026-10-31): the line is its CAP — with a long draft, raising the line raises
+   the box */
 export async function verticalSplitLine(k, t) {
-  await k.ev(`(setDock("below"),P.value="short",draft=P.value,1)`);
+  await k.ev(`(setDock("below"),1)`);
   await k.job("[fill:446688] sq", { ar: "1:1", steps: 2 });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
-  await k.ev(`(P.value="short",draft=P.value,layoutLeft(),1)`);
+  await k.ev(
+    `(P.value=Array(40).fill("a long line of prompt text").join(String.fromCharCode(10)),P.dispatchEvent(new Event("input")),1)`,
+  );
   await k.mouse(2, 2);
   await k.sleep(1500);
-  const slot = await k.ev(
-    `Math.max(200,Math.min(S.sch||Math.min(250,Math.round(innerHeight*.42)),Math.round(innerHeight*.7)))`,
-  );
-  t.near(
-    (await k.rect("#left")).height,
-    slot,
-    2,
-    "a short prompt: the box still fills its slot (no dead space under it)",
-  );
+  const slot = (await k.rect("#left")).height;
+  t.near(slot, await k.ev(`Math.round(innerHeight*.4)`), 3, "a long draft: the box at its default cap (~40 %)");
   t.ok(await k.ev(`getComputedStyle($("vedge")).display==="none"`), "the box's bottom edge is no handle in Vertical");
   const low = await k.ev(
     `innerHeight-Math.max($("left").getBoundingClientRect().bottom,$("chips").getBoundingClientRect().bottom)`,

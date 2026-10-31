@@ -169,12 +169,18 @@ export function upgradeLayoutPrefs(L, W) {
  */
 
 /**
- * Vertical: the prompt's slot height — yours (sch) or ~42 % of the window (at most 250 px), always 200 px to 70 % of it.
- * @param {number | undefined} sch
+ * Vertical: the prompt box's height (2026-10-31, the user's choice — the composer pattern): as tall as YOUR draft's text,
+ * from the box's least height (its controls and ~2 lines) up to a cap — the line above its name (sch) if you set one,
+ * else ~40 % of the window — never above 70 % of it; past the cap the text scrolls. The picture gets the rest. (It was a
+ * fixed slot, ≥ 200 px, 250 by default: one line of prompt took all that room.)
+ * @param {number} natural the height your draft's text needs
+ * @param {number | undefined} sch your cap (0 / undefined: the default)
  * @param {number} innerH the window's height
+ * @param {number} least the box's least height
  */
-export function promptSlotH(sch, innerH) {
-  return Math.max(200, Math.min(sch || Math.min(250, Math.round(innerH * 0.42)), Math.round(innerH * 0.7)));
+export function promptSlotH(natural, sch, innerH, least) {
+  const cap = Math.max(least, Math.min(sch || Math.round(innerH * 0.4), Math.round(innerH * 0.7)));
+  return Math.round(Math.max(least, Math.min(natural, cap)));
 }
 
 /**

@@ -161,11 +161,13 @@ test("older saved layouts become today's: shares of the window → px, once", ()
 /* ---------- the prompt card ---------- */
 const anchors = { it: 100, ib: 700, cy: 400 }; // picture top 100, status line 700, centre 400
 
-test("Vertical: the prompt slot is yours, or ~42 % of the window (≤ 250), between 200 px and 70 % of it", () => {
-  assert.equal(promptSlotH(0, 1000), 250, "default: 420 → capped at 250");
-  assert.equal(promptSlotH(0, 400), 200, "never below 200");
-  assert.equal(promptSlotH(600, 1000), 600, "yours");
-  assert.equal(promptSlotH(900, 1000), 700, "never above 70 % of the window");
+test("Vertical: the prompt box grows with your draft — from its least height up to your cap (or ~40 %), ≤ 70 %", () => {
+  assert.equal(promptSlotH(130, 0, 1000, 150), 150, "a line of text: the box's least height");
+  assert.equal(promptSlotH(260, 0, 1000, 150), 260, "longer: as tall as the text");
+  assert.equal(promptSlotH(900, 0, 1000, 150), 400, "past the default cap (~40 % of the window): it scrolls");
+  assert.equal(promptSlotH(900, 600, 1000, 150), 600, "your cap (the line above the name)");
+  assert.equal(promptSlotH(900, 900, 1000, 150), 700, "never above 70 % of the window");
+  assert.equal(promptSlotH(100, 120, 1000, 150), 150, "a cap below the least height: the least height");
 });
 
 test("the card rests at the picture's top, centre or status line — inside the column", () => {

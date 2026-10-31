@@ -3,7 +3,7 @@
    picture's top / bottom edges — and the edit buttons beside the picture showing on hover. The sizes they set are in
    S.lay (layout.js does the maths and applies them) */
 import { toast } from "./boot.js";
-import { applyPH, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
+import { applyPH, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
 import { $, q, qa } from "./dom.js";
 import { lay, layDef, layDrag, layGeo, layRelease, picFull, prefs, sizeFrame } from "./layout.js";
 import { PWMIN } from "./layoutmath.js";
@@ -72,7 +72,8 @@ export function initEdges() {
         g.dispatchEvent(new PointerEvent("pointerup"));
         return;
       }
-      S.sch = Math.max(200, Math.min(Math.round(innerHeight * 0.7), Math.round(h0 - (e.clientY - y0))));
+      /* the box's cap (layoutmath.js promptSlotH): between its least height and 70 % of the window */
+      S.sch = Math.max(slotLeast(), Math.min(Math.round(innerHeight * 0.7), Math.round(h0 - (e.clientY - y0))));
       layoutLeft();
     });
     g.addEventListener("pointerup", () => {

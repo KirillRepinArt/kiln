@@ -73,7 +73,7 @@ const inKiln = expr => `(() => { with (window.kiln || {}) { return (${expr}\n); 
 /* one Kiln instance + browser page, with the helpers a test uses */
 async function launch(
   name,
-  { step = 0.6, width = 1513, height = 900, env = {}, autoExit = false, before = null } = {},
+  { step = 0.6, width = 1513, height = 900, env = {}, autoExit = false, before = null, inject = null } = {},
   procs = [],
   log = [],
 ) {
@@ -195,6 +195,8 @@ async function launch(
       features: [{ name: "prefers-reduced-motion", value: "no-preference" }],
     });
     await send("Emulation.setLocaleOverride", { locale: "en-GB" });
+    // a test's own page-side script, run before Kiln's (the ownership tracer: tools/tests/trace.mjs)
+    if (inject) await send("Page.addScriptToEvaluateOnNewDocument", { source: inject });
     await send("Page.navigate", { url });
     const ev = async expr => {
       const r = await send("Runtime.evaluate", { expression: inKiln(expr), returnByValue: true, awaitPromise: true });

@@ -60,6 +60,17 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
   draft and the job shown instead), `picstate.js` (what the picture area shows, a state machine:
   `ux-review/11-picture-states.md`), `layout.js` + `layoutmath.js` (the layout: pure maths, unit-tested),
   `cardlayout.js` (the prompt card). The rest of the page reads them and draws.
+- **One owner for everything that moves or shows** (`docs/decisions/0012-one-owner-baseline.md`) — each property has one
+  module that writes it; what depends on it is derived from it:
+  - what a page keeps room for, its geometry and every fade's timing: `layoutmath.js` (`pageInsets`, `pageGeometry`,
+    `fades`, `shapeSteps`, `promptSlotH` — pure, unit-tested)
+  - the picture frame's box: `framebox.js`; what sits round it (status row, buttons, edge strips): `around.js`
+  - the glass plate, the tab bar, and every tab switch's motion (one clock): `plate.js` (`switchGlide`, `placeBar`)
+  - the prompt column's place (its hug of the picture, a switch's slide): `layout.js` (`promptFollow` → `colApply`);
+    "the layout lands at once" during a motion: `layout.js` `snapHold`
+  - the frame's two pictures' opacity (the old one's copy leaving, the new one coming): `pictures.js`; a shape change's
+    crop-and-reveal drives the frame through `framebox.js` and hands its timing over (`morph.js`)
+  - paint order: one list in `styles/glass.css` ("the page's layers")
 - **The screen, by area:** `tabs`, `browse`, `morph`, `edges`, `pills`, `chips`, `peek`, `queue`, `loras`, `pnginfo`,
   `viewer`, `settings`, `keys`, `tooltips`, `editor` (CodeMirror).
 - **The server's side:** `live.js` (start), `sync.js` (polling, what changed), `actions.js` (requests), `pictures.js`
@@ -79,6 +90,7 @@ Types: JSDoc in the files, checked by TypeScript (`tsc`, a dev tool, strict) —
 | unit, page | the pure logic (layout maths, the job list) | `tools/tests/unit/*.test.mjs`, `npm run test:unit` |
 | unit, server | the server's logic, the instance lock, the network-call list | `tools/tests/unit/test_server.py`, `npm run test:server` |
 | end to end | the real app: a fake Forge (`tools/fake_forge.py`), the server, a headless Edge, per test | `tools/tests/*.test.mjs`, `node tools/tests/run.mjs` |
+| ownership | the tracer (`tools/tests/trace.mjs`) records every writer of what moves or shows, by module, while a tour (`trace.test.mjs`) runs every kind of motion; it fails on a second writer, two clocks in one motion, a blink. Known cases in its baseline (`ALLOW`, empty since 2026-11-01) | `node tools/tests/run.mjs trace` |
 | proofs | a refactor changes nothing: computed styles (`cssdiff`), API answers (`tools/dev/api-same.py`), syntax trees (`tools/dev/ast-same.mjs`) | run by hand when one applies |
 | static | ESLint, Stylelint (incl. the token rule), Prettier, Ruff, mypy `--strict`, `tsc`, the privacy scan | the commit hook and CI |
 

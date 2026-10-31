@@ -2,6 +2,29 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
+## Unreleased — v0.7b (data, and one owner for everything that moves)
+
+- **Every page's plate is the page minus what it needs right now.** Pages take the full height; the status row gets its
+  room only while the queue works (between its jobs too — nothing changes mid-queue) and gives it back as the last
+  picture lands. The edit buttons take no room at all: they hang beside the picture, so the Gallery and Generating
+  look the same with them or without.
+- **The picture stays on one centre line.** Browsing between shapes grows and shrinks it evenly about its centre (it
+  grew toward the prompt in a tight window); the prompt keeps its width and sits a gap from the picture, however narrow
+  — and holds still while you work in it (a menu open), catching up when you let go. The tab bar sits on the picture's
+  centre line on every page.
+- **One fade, everywhere.** Every tab switch and every picture change fades at one speed: a cross-fade where the shape
+  stays, a fade-through where a list gives way to a picture; a new picture is laid under the old one, which fades off
+  it — nothing dips or cuts. A picture coming into an empty frame fades in, and leaving for one (the Generating tab, ✕)
+  fades out (they used to appear or vanish).
+- **Vertical:** the prompt sits at the window's bottom and grows with your draft — from about two lines up to your cap
+  (the line above its name), then it scrolls; a shown picture's prompt never resizes it, so browsing never moves the
+  picture. The picture takes everything above. The pill menus paint over the picture (they went under it).
+- Fields don't take the browser's form suggestions (picking one painted the name field in the browser's autofill
+  colour).
+- Under the hood: one SQLite database for the queue, history and settings, an index of every picture in the output
+  folder, server-side thumbnails, lists that page and send only what changed; and a run-time **ownership tracer** that
+  tours the whole app in the tests and fails on any property with two writers, two clocks in one motion, or a blink.
+
 ## v0.7.2 — 2026-10-28 (the glass plate)
 
 - **One glass plate under the right column.** It is the empty frame in Generating and the panel in Queue, LoRAs and PNG

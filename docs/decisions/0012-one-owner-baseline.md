@@ -19,6 +19,11 @@ order of the page. Each writer looked fine alone; the bug was where they met.
    dropped for tab switches on 2026-10-28: their snapshots can't hold glass (a backdrop blur), naming an element
    changes what paints over what, the overlay takes the pointer, and they run on their own clock.
 
+**Status 2026-11-01.** The tracer exists (`tools/tests/trace.mjs`, its tour `trace.test.mjs`) and runs with every test
+run, in CI too. It found the two cases the static map listed (the old picture's fade had two modules; the layout grid
+glided on CSS's clock while the frame moved on its own) — both fixed — and its baseline is empty: any new second writer,
+second clock or blink fails a test.
+
 **Consequences.** Slower first steps (a model and an invariant test before the feature), far fewer refactors, and a
 CI that catches the next second writer before anyone sees it. Common practice in design systems and UI frameworks
 (one transition system, state → layout → one animator); recorded because Kiln is imperative (0002) and nothing in

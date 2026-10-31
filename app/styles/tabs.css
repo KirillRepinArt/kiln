@@ -9,6 +9,7 @@
   transition: width var(--lay-t) var(--lay-e);
 } /* no glide of its place: it follows the plate (plate.js placeBar) */
 .right .tabs {
+  pointer-events: none;
   align-self: flex-start;
   max-width: none;
   position: relative;
@@ -18,6 +19,10 @@
   align-self: center;
   width: auto !important;
 } /* !important: over the inline width sizeFrame gives it side by side */
+.tabs > * {
+  pointer-events: auto;
+} /* the bar's box is as wide as the picture area and slides with the plate: invisible outside its buttons, it took the
+     pointer over the prompt's name row (2026-11-01) — only what you see takes it */
 .seg {
   position: relative;
   display: flex;

@@ -126,6 +126,7 @@ export function layoutLeft() {
     CH = chipsH();
   const TS = 64; // the name row over the box (one height whatever it shows: the title never moves)
   col.style.setProperty("--ts", TS + "px");
+  col.style.setProperty("--chh", $("chips").offsetHeight + "px"); // the LoRA row: the grip zone's bottom (.pgrip)
   const stk = !!document.querySelector(".app.stacked"),
     hm = !stk && (S.hmode === "full" || S.hmode === "match") ? S.hmode : "";
   /* Vertical has no height modes: they took the picture's room */
@@ -278,7 +279,12 @@ export function initCardlayout() {
     /** the card being pressed / dragged: where it started, whether it moved, where it would go
      * @type {{ x0: number, y0: number, t0: number, moved: boolean, stk: boolean, zone?: "left" | "right" | "below" | null, t?: number } | null} */
     let d = null;
-    const NO = "input,textarea,button,a,select,.chip,.pwrapT,.vedge,.pedge,.pop,.cwi";
+    /* the grip is ONE zone (2026-11-01, L3): the group's rectangle — the grip layer behind it (.pgrip), the box, the
+       name row, the LoRA row — through one listener on the column; what keeps its pointer: text, controls, chips,
+       menus, the edges you drag. It used to be two targets (the box, the name row) with dead gaps between them and the
+       LoRA row */
+    const NO = "input,textarea,button,a,select,.chip,.pwrapT,.vedge,.pedge,.sedge,.hsplit,.pop,.cwi",
+      GROUP = "#pgrip,#left,#ltitle,#chips";
     const ghosts = ["top", "mid", "bot"].map(p => {
       const g = document.createElement("div");
       g.className = "ghost";
@@ -322,7 +328,8 @@ export function initCardlayout() {
     }
     /** @param {PointerEvent} e */
     function down(e) {
-      if (S.hmode || e.button !== 0 || /** @type {HTMLElement} */ (e.target).closest(NO)) return;
+      const tg = /** @type {HTMLElement} */ (e.target);
+      if (S.hmode || e.button !== 0 || !tg.closest(GROUP) || tg.closest(NO)) return;
       e.preventDefault();
       d = {
         x0: e.clientX,
@@ -425,12 +432,10 @@ export function initCardlayout() {
       layoutLeft();
       card.frozen = fz;
     }
-    for (const el of [L, T]) {
-      el.addEventListener("pointerdown", down);
-      el.addEventListener("pointermove", move);
-      el.addEventListener("pointerup", up);
-      el.addEventListener("pointercancel", up);
-    }
+    col.addEventListener("pointerdown", down);
+    col.addEventListener("pointermove", move);
+    col.addEventListener("pointerup", up);
+    col.addEventListener("pointercancel", up);
     // the empty space under the text belongs to the editor: a click there puts the cursor at the end
     q(".pwrapT").addEventListener("mousedown", e => {
       if (!(/** @type {HTMLElement} */ (e.target).classList.contains("pwrapT"))) return;

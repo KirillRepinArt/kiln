@@ -7,6 +7,7 @@
 }
 #lcol > .chips {
   position: absolute;
+  cursor: grab; /* its empty part is the prompt group's grip too (L3); a chip keeps its own */
   right: 0;
   width: min(100%, var(--cw, 680px));
   top: var(--chtop, 0px);

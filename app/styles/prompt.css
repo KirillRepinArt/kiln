@@ -6,7 +6,7 @@
   right: 0;
   width: min(100%, var(--cw, 680px));
   top: calc(var(--ltop, 0px) - var(--ts, var(--space-16)) + var(--space-1));
-  height: calc(var(--ts, 64px) - var(--space-1) - var(--gap-tight)); /* ends one tight gap above the box */
+  height: calc(var(--ts, var(--space-16)) - var(--space-1) - var(--gap-tight)); /* ends one tight gap above the box */
   padding: 0 var(--space-7);
   display: flex;
   flex-direction: column;
@@ -284,13 +284,42 @@
   right: auto;
   left: 0;
 }
-/* side by side: grab the empty parts of the box (or the name row) to move it — top / middle / bottom */
-.app:not(.stacked) .left,
-.app:not(.stacked) .ltitle {
+/* the prompt's grip is ONE zone (2026-11-01, L3): the group's rectangle — from the name row to the LoRA row, the box's
+   width — behind its parts, so every empty point of it grips (the gaps, the LoRA row's empty part, the name row's
+   sides); a control keeps its pointer (cardlayout.js: one listener). Side by side it moves the box (top / middle /
+   bottom), in Vertical it docks it. Its place comes from the box's own values (layoutLeft); in Vertical it starts
+   under the split line, clear of the picture's bottom edge */
+.pgrip {
+  position: absolute;
+  right: 0;
+  width: min(100%, var(--cw, 680px));
+  top: calc(var(--ltop, 0px) - var(--ts, var(--space-16)) + var(--space-1));
+  height: calc(var(--chtop, 0px) + var(--chh, 0px) - var(--ltop, 0px) + var(--ts, var(--space-16)) - var(--space-1));
+  cursor: grab;
+  transition:
+    top var(--lay-t) var(--lay-e),
+    height var(--lay-t) var(--lay-e),
+    width var(--lay-t) var(--lay-e);
+}
+.app.stacked .pgrip {
+  right: auto;
+  left: 50%;
+  width: min(100%, var(--sw, 760px));
+  transform: translateX(calc(-50% + var(--soff, 0px)));
+  top: var(--gtop-v, 0px);
+  height: calc(var(--chtop, 0px) + var(--chh, 0px) - var(--gtop-v, 0px));
+}
+.app.pright .pgrip {
+  right: auto;
+  left: 0;
+}
+.app .left,
+.app .ltitle {
   cursor: grab;
 }
 .app:not(.stacked) .left.hm,
-.app:not(.stacked) .ltitle.hm {
+.app:not(.stacked) .ltitle.hm,
+.app:not(.stacked) #lcol:has(.left.hm) > .pgrip {
   cursor: default;
 }
 .pwrapT {

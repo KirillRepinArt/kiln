@@ -533,6 +533,8 @@ export function vAlign() {
   if (!document.querySelector(".app.stacked")) return;
   const { pn, colTop } = nameTop();
   $("hsplit").style.top = pn - colTop - 10 + "px";
+  /* the prompt's grip zone starts under the split line (cardlayout.js, prompt.css .pgrip) */
+  $("lcol").style.setProperty("--gtop-v", pn - colTop - 2 + "px");
 }
 /* ---------- the prompt column's place has ONE owner (2026-10-28) ----------
    Its transform = its hug of the picture (below) + what is left of a tab switch's slide, written here only. Two

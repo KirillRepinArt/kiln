@@ -167,3 +167,86 @@ export async function dragToDock(k, t) {
     z3,
   );
 }
+
+/* the prompt's grip is ONE zone (2026-11-01, L3, the user: "an entire area — rectangle sized, including the LoRA area
+   beneath and the title above — where there's nothing else, we should always be able to grip"): every empty point of the
+   group's rectangle starts a drag; a control keeps its pointer (Apple HIG: drag by the title bar and empty chrome) */
+export async function gripIsTheWholeGroup(k, t) {
+  const tryAt = async (x, y) => {
+    await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+    await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+    for (let i = 1; i <= 4; i++)
+      await k.send("Input.dispatchMouseEvent", {
+        type: "mouseMoved",
+        x: x + 4 * i,
+        y: y + 6 * i,
+        button: "left",
+        buttons: 1,
+      });
+    const moving = await k.ev(`document.body.classList.contains("cardmove")`);
+    await k.send("Input.dispatchMouseEvent", {
+      type: "mouseReleased",
+      x: x + 16,
+      y: y + 24,
+      button: "left",
+      clickCount: 1,
+    });
+    await k.sleep(700);
+    return moving;
+  };
+  for (const dock of ["left", "right", "below"]) {
+    await k.ev(`(setDock("${dock}"),P.value="one line",P.dispatchEvent(new Event("input")),1)`);
+    await k.mouse(2, 2);
+    await k.sleep(1600);
+    /* each point measured just before it's pressed: a press can change the layout (the box's bottom edge resizes it) */
+    const at = async (/** @type {(r: Record<string, DOMRect>) => number[]} */ f) => {
+      const r = /** @type {Record<string, DOMRect>} */ ({});
+      for (const [n, sel] of Object.entries({
+        L: "#left",
+        T: "#pname",
+        C: "#chips",
+        add: "#chips .chipadd",
+        pill: "#pAR",
+      }))
+        r[n] = await k.rect(sel);
+      return f(r);
+    };
+    const empty = {
+        "the name row, left of the name": (/** @type {any} */ r) => [r.L.left + 12, r.T.top + r.T.height / 2],
+        /* clear of the size buttons at the row's right end (controls) */
+        "the name row, right of the name": (/** @type {any} */ r) => [r.L.right - 100, r.T.top + r.T.height / 2],
+        "the gap between the name and the box": (/** @type {any} */ r) => [r.L.left + r.L.width / 2, r.L.top - 4],
+        /* at its end: side by side the middle of that gap is the box's bottom resize edge, which wins (edges keep their
+           pointer — the cursor says so) */
+        "the gap between the box and the LoRA row": (/** @type {any} */ r) => [r.L.left + 12, r.L.bottom + 4],
+        "the LoRA row's empty part": (/** @type {any} */ r) => [
+          Math.min(r.L.right - 12, r.add.right + 60),
+          r.C.top + r.C.height / 2,
+        ],
+      },
+      controls = {
+        "the name field": (/** @type {any} */ r) => [r.T.left + r.T.width / 2, r.T.top + r.T.height / 2],
+        "a pill": (/** @type {any} */ r) => [r.pill.left + r.pill.width / 2, r.pill.top + r.pill.height / 2],
+        "the LoRA add button": (/** @type {any} */ r) => [r.add.left + r.add.width / 2, r.add.top + r.add.height / 2],
+        ...(dock !== "below"
+          ? { "the box's bottom resize edge": (/** @type {any} */ r) => [r.L.left + r.L.width / 2, r.L.bottom + 4] }
+          : {}),
+      };
+    for (const [what, f] of Object.entries(empty)) {
+      const [x, y] = await at(f);
+      /* it SHOWS it can be grabbed: the hand (2026-11-01: the tab bar's invisible box took the name row's pointer, and
+         the LoRA row gripped under an arrow) */
+      const cur = await k.ev(
+        `(()=>{const e=document.elementFromPoint(${x},${y});return e?getComputedStyle(e).cursor:""})()`,
+      );
+      t.ok(cur === "grab", `${dock}: ${what} — shows the grab hand`, { x, y, cur });
+      t.ok(await tryAt(x, y), `${dock}: ${what} — grips`, { x, y });
+    }
+    for (const [what, f] of Object.entries(controls)) {
+      const [x, y] = await at(f);
+      t.ok(!(await tryAt(x, y)), `${dock}: ${what} — keeps its pointer`, { x, y });
+    }
+    await k.ev(`(closePops(),1)`);
+  }
+}
+gripIsTheWholeGroup.opts = { width: 1825, height: 1080, step: 0.05 };

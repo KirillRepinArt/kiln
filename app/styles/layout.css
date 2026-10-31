@@ -90,6 +90,9 @@
 .app.stacked .right {
   order: 1;
 }
+.app.stacked .rpanel {
+  flex: none;
+} /* Vertical: its height is the picture's room (layout.js sizeFrame) — every page's plate ends at the same line */
 .app.stacked > .right {
   justify-self: center;
   max-width: 100%;

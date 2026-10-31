@@ -250,3 +250,29 @@ export async function stageStaysPutPromptHugs(k, t) {
   }
 }
 stageStaysPutPromptHugs.opts = { step: 0.05 };
+
+/* every page's plate shares one top and bottom (2026-11-01, G10): in Vertical the picture's room ended an even gap above
+   the prompt's name while a panel's box came from the column's CSS — the plate moved ~6 px on every switch between
+   Generating and a panel. A height-limited plate is the same height on every page, in every layout */
+export async function plateSharesItsEdges(k, t) {
+  await k.mouse(2, 2);
+  for (const dock of ["left", "right", "below"]) {
+    await k.ev(`(setDock("${dock}"),${tab("gen")},closeShown(),S.ar="9:16",sizeFrame(),1)`); // tall: height-limited
+    await k.sleep(1600);
+    const edges = {};
+    for (const v of ["gen", "queue", "png"]) {
+      await k.ev(`(${tab(v)},1)`);
+      await k.sleep(1400);
+      const r = await k.rect("#plate");
+      edges[v] = [Math.round(r.top), Math.round(r.bottom)];
+    }
+    const tops = new Set(Object.values(edges).map(e => e[0])),
+      bottoms = new Set(Object.values(edges).map(e => e[1]));
+    t.ok(
+      tops.size === 1 && bottoms.size === 1,
+      `${dock}: the plate's top and bottom are the same on every page`,
+      edges,
+    );
+  }
+}
+plateSharesItsEdges.opts = { width: 1825, height: 1080, step: 0.05 };

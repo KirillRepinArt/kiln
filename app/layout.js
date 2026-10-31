@@ -449,6 +449,12 @@ export function sizeFrame() {
       if (rt.style.width) rt.style.width = "";
       lay.colW = 0;
     }
+    /* every page's plate shares one top and bottom (2026-11-01, G10): in Vertical the panels' box is the picture's
+       room (roomH — down to an even gap above the prompt's name), not what the column's CSS leaves: they ended ~6–12 px
+       apart and the plate moved on every switch. Side by side the room IS the panel's box: nothing to set */
+    const rp = $("rpanel"),
+      h = stk ? Math.round(roomH()) + "px" : "";
+    if (rp.style.height !== h) rp.style.height = h;
   }
   /* the target geometry, not a measurement: the grid may be mid-glide */
   const st = stageRect(),

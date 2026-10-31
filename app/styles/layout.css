@@ -70,9 +70,14 @@
 .app.stacked #lcol {
   pointer-events: none;
 }
-.app.stacked #lcol > * {
+.app.stacked #lcol > #left,
+.app.stacked #lcol > .chips,
+.app.stacked #lcol > .hsplit,
+.app.stacked #lcol > .pgrip {
   pointer-events: auto;
-} /* its empty parts let the pointer through to the picture's edges */
+} /* its empty parts let the pointer through to the picture's edges; only these parts take it — NAMED, not "every
+     child": the drag's snap ghosts (invisible once it ends, keeping their size) sat over the box's right edge after a
+     drag to the bottom dock and took its pointer (2026-11-01) */
 .app.stacked #lcol > .ltitle {
   pointer-events: none;
 }

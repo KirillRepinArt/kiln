@@ -250,3 +250,54 @@ export async function gripIsTheWholeGroup(k, t) {
   }
 }
 gripIsTheWholeGroup.opts = { width: 1825, height: 1080, step: 0.05 };
+
+/* after dragging the box to the bottom dock, both its side edges still take the pointer (2026-11-01, the user: "the right
+   edge is gone after I dragged it to the bottom") — the drag's snap ghosts, invisible once it ends, sat over the right
+   edge: in Vertical every child of the prompt column took the pointer, invisible ones too */
+export async function edgesAfterDragToDock(k, t) {
+  await k.ev(`(setDock("right"),P.value="one line",P.dispatchEvent(new Event("input")),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1600);
+  const L = await k.rect("#left"),
+    T = await k.rect("#pname"),
+    x0 = L.left + 12,
+    y0 = T.top + T.height / 2;
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x0, y: y0 });
+  await k.send("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    x: x0,
+    y: y0,
+    button: "left",
+    buttons: 1,
+    clickCount: 1,
+  });
+  for (let i = 1; i <= 20; i++)
+    await k.send("Input.dispatchMouseEvent", {
+      type: "mouseMoved",
+      x: x0 - 20 * i,
+      y: y0 + 45 * i,
+      button: "left",
+      buttons: 1,
+    });
+  await k.sleep(200);
+  await k.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    x: x0 - 400,
+    y: y0 + 900,
+    button: "left",
+    clickCount: 1,
+  });
+  await k.sleep(1800);
+  t.ok(await k.ev(`document.querySelector(".app").classList.contains("stacked")`), "dropped at the bottom: Vertical");
+  const B = await k.rect("#left"),
+    y = B.top + B.height / 2;
+  for (const [side, x] of [
+    ["right", B.right + 2],
+    ["left", B.left - 2],
+  ])
+    t.ok(
+      await k.ev(`(()=>{const e=document.elementFromPoint(${x},${y});return !!e&&e.classList.contains("sedge")})()`),
+      `the box's ${side} edge takes the pointer`,
+    );
+}
+edgesAfterDragToDock.opts = { width: 1825, height: 1080, step: 0.05 };

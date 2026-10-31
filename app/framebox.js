@@ -10,6 +10,7 @@ import { $ } from "./dom.js";
 import { bez } from "./layoutmath.js";
 import { plateSync } from "./plate.js";
 import { promptFollow } from "./layout.js";
+import { S } from "./state.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number }} Box in the stage's coordinates */
 /** @typedef {(now: number) => Box | null} Drive a box for this frame, or null when done */
@@ -26,6 +27,27 @@ let raf = 0;
 let held = false; // its view is leaving in a switch: it stays where it was (frameHold)
 export const layE = bez(0.05, 0.7, 0.1, 1); // --lay-e: the layout's curve (the pair's columns glide on it too)
 
+/* ---------- a picture change: the motion is decided HERE (2026-11-01, ownership map G11) ----------
+   What's on show changing is declared by its owners (picstate.js pv; a tab switch, tabs.js tabGo) with where the
+   picture was; the next goal decides once: a box of another shape or size in Generating crops and reveals (morph.js),
+   the same box doesn't move. Leaving the Gallery with the arrow (and ✕, Esc) used to glide the frame with the old
+   picture stretched in it, while the tab cropped and revealed: each caller chose its own motion */
+/** @typedef {Box & { x: number, y: number }} WasBox the old box, and its top-left on screen before anything moved */
+/** @type {(o: WasBox) => boolean} the crop-and-reveal (morph.js registers it): false when it didn't start */
+let morphWith = () => false;
+/** @param {(o: WasBox) => boolean} fn */
+export function setPictureMorph(fn) {
+  morphWith = fn;
+}
+/** @type {WasBox | null} */
+let change = null;
+/** the picture on show is changing (declared once per change, in the same task as its layout) @param {WasBox} o */
+export function pictureChange(o) {
+  change = o;
+  queueMicrotask(() => {
+    change = null; // unused by the end of this task: no new box came (another view, the same box)
+  });
+}
 /** where the frame is now (null before the first layout) */
 export const frameBox = () => cur;
 /** where the layout wants it (a glide or a crop-and-reveal may still be on the way) */
@@ -66,6 +88,14 @@ const same = (/** @type {Box} */ a, /** @type {Box} */ b) => a.l === b.l && a.t 
  * the current box, as a CSS transition would), or jumps (snaps()). While a crop-and-reveal drives it, the goal is
  * where it lands @param {Box} b */
 export function frameGoal(b) {
+  if (change && !held) {
+    const o = change;
+    change = null;
+    if (cur && !same(cur, b) && S.view === "gen") {
+      goal = b;
+      if (morphWith(o)) return; // reduced motion: it doesn't start — the jump below
+    }
+  }
   if (held) {
     goal = b; // where it goes once its view has left (frameHold)
     return;
@@ -129,6 +159,7 @@ function tick(now) {
  * layout's goal (the view is hidden by then) @param {Box | null} b */
 export function frameHold(b) {
   if (b) {
+    change = null; // its view is leaving: no crop-and-reveal there
     held = true;
     glide = null;
     drive = null;

@@ -4,8 +4,7 @@ import { $ } from "./dom.js";
 import { lay, sizeFrame, slideCol, snapHold } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
-import { frameBox, frameHold, frameTarget } from "./framebox.js";
-import { frameMorph } from "./morph.js";
+import { frameBox, frameHold, pictureChange } from "./framebox.js";
 import { plateBefore, plateFollow, switchGlide } from "./plate.js";
 import { placeNavs } from "./browse.js";
 import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
@@ -84,6 +83,9 @@ export function tabGo(fn) {
     me = ++tabGos;
   snapHold("tab", 10000); // the layout lands at once: the switch alone moves things (let go at its end, below)
   document.documentElement.classList.add("tabswitch"); // a tab switch (not a layout switch): the tab pill still slides
+  /* a switch within Generating's view changes the frame's box: the frame's owner crops and reveals it (G11) — a switch
+     to another view gives it up (frameHold) */
+  if (S.view === "gen" && f0) pictureChange({ ...f0, x: fr0.left, y: fr0.top });
   lay.frameDefer = true;
   try {
     fn();
@@ -100,13 +102,9 @@ export function tabGo(fn) {
     if (v0.id === "v-gen" && f0) frameHold(f0); // the picture stays where it was while its view leaves
     sw = switchGlide(from, { old: v0, oldRect: r0, neu: v1 });
   } else {
-    const g = frameTarget();
     sw = switchGlide(from, null);
-    /* the same view: a box of another shape or size crops and reveals, as when browsing (morph.js) — the render and
-       the Gallery keep different room (their insets), so the box may change size with the same shape. The status
-       row's fade is the layout's (layout.js rowFade) */
-    if (f0 && g && (Math.abs(g.w - f0.w) > 0.5 || Math.abs(g.h - f0.h) > 0.5))
-      frameMorph({ ...f0, x: fr0.left, y: fr0.top });
+    /* the same view: a box of another shape or size crops and reveals (declared above; framebox.js decides) — the
+       render and the Gallery keep different room (their insets). The status row's fade is the layout's (rowFade) */
   }
   placeNavs();
   slideCol(lc0, sw.t0); // the column slides from where it was, as the real thing (FLIP)

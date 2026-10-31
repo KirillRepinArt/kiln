@@ -13,6 +13,7 @@ import { initKeys } from "./keys.js";
 import { initLayout, migrateLayoutPrefs } from "./layout.js";
 import { startLive } from "./live.js";
 import { initLoras } from "./loras.js";
+import { initMorph } from "./morph.js";
 import { initPeek } from "./peek.js";
 import { initPills } from "./pills.js";
 import { initPnginfo } from "./pnginfo.js";
@@ -40,6 +41,7 @@ initCardlayout();
 initTabs();
 initBrowse();
 initLayout();
+initMorph(); // the crop-and-reveal, for the frame's owner (framebox.js)
 initStartKeys();
 initStatusRow();
 initSkins();

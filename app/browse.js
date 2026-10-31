@@ -3,8 +3,6 @@
 import { $, hit } from "./dom.js";
 import { doneList } from "./jobs.js";
 import { lay } from "./layout.js";
-import { frameBox, frameTarget } from "./framebox.js";
-import { frameMorph } from "./morph.js";
 import { PV, browsed, onShow, picMode, pv } from "./picstate.js";
 import { S } from "./state.js";
 import { tabGo } from "./tabs.js";
@@ -37,18 +35,11 @@ export function genNav(dir, dry) {
     return true;
   }
   if (!dry) {
-    const b = frameBox() || { l: 0, t: 0, w: 0, h: 0 },
-      sr = $("frame").getBoundingClientRect(),
-      o = {
-        ...b,
-        x: sr.left, // on screen, before anything moves (morph.js)
-        y: sr.top,
-      };
+    /* the picture changes: its owner (pv) declares it, the frame's owner picks the motion (G11) — out of the Gallery
+       past the newest it's the same crop-and-reveal as its tab's */
     PV.dir = dir;
     if (n >= L.length) pv("close", "arrow");
     else pv("browse", L[n]);
-    const g = frameTarget();
-    if (n < L.length && S.view === "gen" && g && Math.abs(g.w / g.h - o.w / o.h) > 0.02) frameMorph(o);
   }
   return true;
 }

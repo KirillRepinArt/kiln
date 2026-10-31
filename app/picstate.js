@@ -15,7 +15,8 @@ import { toast } from "./boot.js";
 import { updNav } from "./browse.js";
 import { $ } from "./dom.js";
 import { current, doneById, doneList, lastDone } from "./jobs.js";
-import { sizeFrame } from "./layout.js";
+import { lay, sizeFrame } from "./layout.js";
+import { frameBox, pictureChange } from "./framebox.js";
 import { loadJob, peekHide } from "./peek.js";
 import { preload, xfadeSnap } from "./pictures.js";
 import { peekJob } from "./prompt.js";
@@ -104,7 +105,8 @@ function browseSet(j) {
   PV.still = null;
   PV.news = null;
   resetCv();
-  sizeFrame();
+  /* no layout here: pv lays out once at its end, after the picture change is declared (G11) — laid out here first,
+     the frame glided before its owner knew the picture was changing (a shape change stopped cropping and revealing) */
   if (!PV.promptClosed) loadJob(j);
   else if (peekJob) peekHide();
   {
@@ -128,7 +130,34 @@ function browseEnd() {
  * @param {any} [arg] what it carries: the job ("done", "browse"), "arrow" ("close"), { job, next } ("deleted")
  */
 export function pv(ev, arg) {
-  const run = current();
+  const run = current(),
+    /* where the picture is before the change: if what's on show changes, the frame's owner picks the motion (G11). A
+       tab switch declares its own (tabs.js tabGo); a render's own events don't lay out */
+    b0 = ev !== "done" && ev !== "preview" && S.view === "gen" && !lay.frameDefer ? frameBox() : null,
+    r0 = b0 ? $("frame").getBoundingClientRect() : null,
+    was = onShow(),
+    /* one layout per change, at its end (lay.frameDefer — the same as a tab switch's click): the prompt loading in the
+       middle laid the frame out early, before the picture change was declared (G11) */
+    outer = lay.frameDefer;
+  lay.frameDefer = true;
+  try {
+    pvApply(ev, arg, run);
+  } finally {
+    lay.frameDefer = outer;
+  }
+  pvSync();
+  tabSync();
+  if (b0 && r0 && (onShow()?.id ?? null) !== (was?.id ?? null)) pictureChange({ ...b0, x: r0.left, y: r0.top });
+  if (ev !== "done" && ev !== "preview") {
+    lay.framePending = false;
+    sizeFrame();
+  } else if (!outer && lay.framePending) {
+    lay.framePending = false;
+    sizeFrame();
+  }
+}
+/** the change itself (pv's table) @param {PictureEvent} ev @param {any} arg @param {any} run the running job */
+function pvApply(ev, arg, run) {
   switch (ev) {
     case "done" /* a job finished: Generating shows it — unless you're in the Gallery or hold a reference */:
       if (PV.browse != null) break;
@@ -243,9 +272,6 @@ export function pv(ev, arg) {
       }
       break;
   }
-  pvSync();
-  tabSync();
-  if (ev !== "done" && ev !== "preview") sizeFrame();
 }
 /* what the CSS and the rest of the page read: body[data-pic] / [data-still], and the frame's affordances */
 export function pvSync() {

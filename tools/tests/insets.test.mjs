@@ -399,3 +399,60 @@ export async function resetKeepsTheGap(k, t) {
     }
 }
 resetKeepsTheGap.opts = { width: 2000, height: 1060, step: 0.05 };
+
+/* every way out of the Gallery moves the picture the same way (2026-11-01, G11): to an empty frame of another shape
+   the old picture keeps its own size while the frame crops it — it never zooms. The tab cropped and revealed; the arrow
+   past the newest (and ✕, Esc) glided the frame with the old picture stretched over it ("the picture zooming") */
+export async function galleryExitsAreOne(k, t) {
+  await k.job("[fill:446688] p", { ar: "3:4", steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=1`, 30000);
+  const exits = {
+    "the arrow past the newest": `genNav(1)`,
+    "the ✕": `$("bclose").click()`,
+    "Esc": "ESC",
+    "the Generating tab": tab("gen"),
+  };
+  for (const dock of ["right", "below"])
+    for (const [how, go] of Object.entries(exits)) {
+      await k.ev(`(setDock("${dock}"),${tab("gen")},closeShown(),S.ar="16:9",sizeFrame(),1)`);
+      await k.mouse(2, 2);
+      await k.sleep(1500);
+      await k.ev(`(${tab("gallery")},1)`);
+      await k.sleep(1500);
+      const f0 = await k.rect("#frame"),
+        w = k.ev(
+          SAMPLE(
+            1000,
+            `(()=>{const c=$("cvx").getBoundingClientRect(),o=+getComputedStyle($("cvx")).opacity;return [Math.round(c.width),Math.round(c.height),o]})()`,
+          ),
+        );
+      if (go === "ESC") {
+        await k.send("Input.dispatchKeyEvent", {
+          type: "keyDown",
+          key: "Escape",
+          code: "Escape",
+          windowsVirtualKeyCode: 27,
+        });
+        await k.send("Input.dispatchKeyEvent", {
+          type: "keyUp",
+          key: "Escape",
+          code: "Escape",
+          windowsVirtualKeyCode: 27,
+        });
+      } else await k.ev(`(${go},1)`);
+      const seen = (await w).filter(x => x[2] > 0.02),
+        f1 = await k.rect("#frame"),
+        ws = seen.map(x => x[0]),
+        hs = seen.map(x => x[1]);
+      t.ok(Math.abs(f1.width / f1.height - f0.width / f0.height) > 0.3, `${dock}, ${how}: the frame changes shape`, {
+        f0: [f0.width, f0.height],
+        f1: [f1.width, f1.height],
+      });
+      t.motion(
+        seen.length > 0 && Math.max(...ws) - Math.min(...ws) <= 1 && Math.max(...hs) - Math.min(...hs) <= 1,
+        `${dock}, ${how}: the old picture keeps its size while it shows (no zoom)`,
+        { frames: seen.length, w: [Math.min(...ws), Math.max(...ws)], h: [Math.min(...hs), Math.max(...hs)] },
+      );
+    }
+}
+galleryExitsAreOne.opts = { width: 1825, height: 1080, step: 0.05 };

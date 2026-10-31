@@ -3,7 +3,7 @@
 import { $ } from "./dom.js";
 import { MORPH, shapeBox, shapeSteps } from "./layoutmath.js";
 import { overlayRelease, overlayShows, pictureIn } from "./pictures.js";
-import { frameDrive } from "./framebox.js";
+import { frameDrive, setPictureMorph } from "./framebox.js";
 import { stageRect } from "./layout.js";
 
 /* a picture of another shape: the one choreography (layoutmath.js shapeSteps) — crop, swap, reveal; only the frame
@@ -19,7 +19,7 @@ import { stageRect } from "./layout.js";
  * in its panel, and (x, y) its top-left on screen, measured before the switch moved anything */
 export function frameMorph(o) {
   const f = $("frame");
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
   /** the target box sizeFrame keeps on the frame (data-tw/th/tl/tt) */
   const T0 = () => ({
       w: +(/** @type {string} */ (f.dataset.tw)),
@@ -28,7 +28,7 @@ export function frameMorph(o) {
       t: +(/** @type {string} */ (f.dataset.tt)),
     }),
     n0 = T0();
-  if (!(n0.w > 0 && n0.h > 0 && o.w > 0 && o.h > 0)) return;
+  if (!(n0.w > 0 && n0.h > 0 && o.w > 0 && o.h > 0)) return false;
   const { A, T, q } = shapeSteps(o, n0),
     px = (/** @type {number} */ v) => v + "px";
   f.style.setProperty("--ow", px(o.w));
@@ -82,4 +82,10 @@ export function frameMorph(o) {
     f.classList.remove("morph");
     return null; // landed: the owner puts the frame at its goal
   });
+  return true;
+}
+/* start-up wiring: the frame's owner calls it when a picture change gives the frame a new box (framebox.js
+   pictureChange; called from main.js, in order) */
+export function initMorph() {
+  setPictureMorph(frameMorph);
 }

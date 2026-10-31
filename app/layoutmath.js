@@ -319,6 +319,24 @@ export function shapeSteps(o, n) {
   return { A, S, B, T, q };
 }
 /**
+ * ONE fade for contents, everywhere (2026-10-31, the user: "one fade speed everywhere") — a view's contents in a tab
+ * switch (plate.js), the frame's pictures when they change (pictures.js, the crop-and-reveal's in morph.js): what
+ * leaves fades in the MORPH.fade ms that end at the swap (from the first frame if the swap comes sooner), what comes in
+ * the MORPH.fade ms that start at it, linearly. Nothing changes shape: the swap is at the start — a cross-fade.
+ * @param {{ A: number, S: number, T: number }} st a shape change's steps (shapeSteps)
+ * @returns {{ out: { delay: number, duration: number }, in: { delay: number, duration: number }, T: number }} T: the
+ *   whole change, its fades included
+ */
+export function fades(st) {
+  const F = MORPH.fade;
+  return {
+    out: { delay: Math.max(0, st.A + st.S - F), duration: F },
+    in: { delay: st.A, duration: F },
+    T: Math.max(st.T, st.A + F),
+  };
+}
+
+/**
  * The box at a point of a shape change: each axis moves its centre and its size by its own progress.
  * @param {{ l: number, t: number, w: number, h: number }} o @param {{ l: number, t: number, w: number, h: number }} n
  * @param {[number, number]} q

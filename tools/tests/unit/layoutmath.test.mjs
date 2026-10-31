@@ -9,6 +9,8 @@ import {
   stackColumnW,
   framePlacement,
   pageInsets,
+  fades,
+  MORPH,
   shapeSteps,
   shapeBox,
   upgradeLayoutPrefs,
@@ -265,4 +267,20 @@ test("a paused queue keeps its row (it says so); waiting jobs with the generator
 
 test('a result behind your reference keeps the row ("#N finished")', () => {
   assert.deepEqual(pageInsets("generating", { ...idle, news: true, shown: true }), { row: true, tools: false });
+});
+
+test("one fade for contents everywhere: out ends at the swap, in starts there, both MORPH.fade long", () => {
+  const F = MORPH.fade;
+  const same = fades(shapeSteps({ w: 100, h: 100 }, { w: 100, h: 100 }));
+  assert.deepEqual([same.out.delay, same.in.delay], [0, 0], "the same shape: a cross-fade from the start");
+  const both = shapeSteps({ w: 100, h: 200 }, { w: 200, h: 100 }), // a crop and a reveal
+    f = fades(both);
+  assert.equal(f.out.delay + f.out.duration, both.A + both.S, "out ends at the swap");
+  assert.equal(f.in.delay, both.A, "in starts at the swap");
+  assert.equal(f.out.duration, F);
+  assert.equal(f.in.duration, F);
+  const grow = fades(shapeSteps({ w: 100, h: 100 }, { w: 200, h: 200 })); // only a reveal: the swap comes first
+  assert.equal(grow.out.delay, 0, "the swap sooner than a fade: out from the first frame");
+  const crop = shapeSteps({ w: 200, h: 200 }, { w: 100, h: 100 }); // only a crop: in runs past the shape change
+  assert.equal(fades(crop).T, Math.max(crop.T, crop.A + F), "the change lasts until its fade-in ends");
 });

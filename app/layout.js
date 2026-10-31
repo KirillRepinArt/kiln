@@ -2,7 +2,7 @@
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
 import { SWITCH, plateFollow } from "./plate.js";
 import { placeAround } from "./around.js";
-import { frameGoal, layT } from "./framebox.js";
+import { frameBox, frameGoal, layT } from "./framebox.js";
 import { syncH } from "./boot.js";
 import { applyMode, applyPH, layoutLeft, lyReset, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
@@ -168,13 +168,13 @@ function roomH() {
   return nameTop().pn - evenGap() - st.top;
 }
 /* the picture's largest height: the room less the status row while the page keeps it (insets) */
-export function picFull() {
-  return roomH() - (insets().row ? rowRoom() : 0);
+export function picFull(noRow = false) {
+  return roomH() - (!noRow && insets().row ? rowRoom() : 0);
 }
 /* the picture's height: picFull, capped in Generating by S.lay.ih (a share of it, set with the image area's top /
    bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
-function picH() {
-  const full = picFull();
+function picH(noRow = false) {
+  const full = picFull(noRow);
   if (lay.vh) return Math.min(full, lay.vh);
   const ih = S.lay && (document.querySelector(".app.stacked") ? S.lay.vih : S.lay.ih);
   return S.view === "gen" && ih ? Math.max(200, Math.min(full, ih * full)) : full;
@@ -184,13 +184,6 @@ function picH() {
 function toolsClear(/** @type {number} */ h) {
   return Math.max(0, tbW(h) - SPACE.area);
 }
-function hugW() {
-  const j = onShow() || current(),
-    ar = j ? j.ar : S.ar,
-    [a, b] = ar.split(":").map(Number),
-    h = picH();
-  return h > 0 ? (h * a) / b : 9999;
-}
 export function layGeo() {
   const W = layW();
   const gen = S.view === "gen",
@@ -198,18 +191,9 @@ export function layGeo() {
     /* never narrower than the tab bar: it sits on the plate's centre line (plate.js placeBar), and the plate is centred
        in the area on every page (2026-10-31; the bar used to be clamped into the area, off the plate's centre) */
     minR = minRight();
-  // the picture's hug width is measured only when it's used (Generating, no edge held)
-  return pageGeometry(
-    {
-      W,
-      gen,
-      drag: lay.drag,
-      minR,
-      hug: gen && !lay.drag ? hugW() : undefined,
-      clear: gen ? toolsClear(picH()) : 0,
-    },
-    L,
-  );
+  /* Generating's area is the whole stage the prompt leaves (no hug: ownership map G6) — the picture is centred in it
+     and the prompt follows the picture instead (promptFollow) */
+  return pageGeometry({ W, gen, drag: lay.drag, minR, clear: gen ? toolsClear(picH()) : 0 }, L);
 }
 /** @param {Geometry} g */
 function layApply(g) {
@@ -326,6 +310,25 @@ export function setDock(z) {
     if (window.haloNow) window.haloNow();
   });
 }
+/* ---------- "the layout lands at once" has ONE owner (2026-10-31, ownership map T1) ----------
+   While a switch moves things itself, the layout's own glides are off (body.laysnap: it lands at once). Each motion
+   holds it until its own end — a tab switch, a layout switch; a newer one of the same kind replaces its hold — and it
+   lasts until the LAST hold ends. Each used to add and remove the class on its own timer: one ending turned the glides
+   back on in the middle of the other */
+/** @type {Record<string, number>} the end of each motion's hold (performance.now()'s clock) */
+const snapUntil = {};
+let snapTimer = 0;
+/** hold the layout's glides off for `who` for `ms` from now (0: let go now) @param {string} who @param {number} ms */
+export function snapHold(who, ms) {
+  snapUntil[who] = performance.now() + ms;
+  snapCheck();
+}
+function snapCheck() {
+  clearTimeout(snapTimer);
+  const left = Math.max(0, ...Object.values(snapUntil)) - performance.now();
+  document.body.classList.toggle("laysnap", left > 0);
+  if (left > 0) snapTimer = setTimeout(snapCheck, left + 1);
+}
 /* a layout switch as a View Transition: the old layout is a snapshot, the new one is applied with every glide off (so it
    is captured where it ends, not mid-way), then they cross-fade (CSS ::view-transition-*). Without the API: a plain switch */
 let morphs = 0; // switches started so far: only the latest one ends the morph
@@ -359,21 +362,20 @@ function clickThrough(e) {
 }
 /** @param {() => void} fn the switch itself */
 export function layMorph(fn) {
-  const b = document.body,
-    h = document.documentElement,
+  const h = document.documentElement,
     me = ++morphs;
   let ended = false;
   const end = () => {
     if (ended || me !== morphs) return; // a newer switch cut this one short: the classes are its now
     ended = true;
     h.classList.remove("laymorph");
-    setTimeout(() => b.classList.remove("laysnap"), 300);
+    snapHold("layout", 300);
   }; /* glides stay off a moment longer: late re-measures (the editor's) must not glide after the switch */
   setTimeout(
     end,
     1500,
   ); /* whatever happens to the transition (skipped, a hidden window pausing frames), the glides come back */
-  b.classList.add("laysnap");
+  snapHold("layout", 1500); // until it ends (end() shortens it) — the safety timeout's length
   if (!document.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) {
     fn();
     end();
@@ -438,7 +440,9 @@ export function sizeFrame() {
   {
     const rt = $("right");
     if (stk) {
-      const hh = picH();
+      /* its width from the picture's height WITHOUT the status row's room: a render starting or ending doesn't
+         change it (its width glided on CSS's clock while the frame moved on its own: G6) */
+      const hh = picH(true);
       lay.colW = stackColumnW(app.clientWidth - 2 * SPACE.area, minRight(), stackW(), hh, toolsClear(hh));
       rt.style.width = lay.colW + "px";
     } else {
@@ -483,14 +487,21 @@ export function sizeFrame() {
   gt.classList.toggle("lefty", tbLeft);
   /* where the picture is going (not where it is mid-glide): the prompt's vertical anchors use this */
   lay.target = { top: st.top + top, h: H, bottom: st.top + top + H + (R ? R - 1 : 0), w: W }; // the plate: the edge you see
-  /* the area's outer handle sits on the picture's outer edge in Generating (the edge you see), not past the button column */
+  /* the area's handles sit on the picture's edges in Generating (the edges you see): the outer one on its outer edge,
+     the divider's on the edge by the prompt — the area is the whole stage, the picture centred in it */
   {
-    const ro = /** @type {HTMLElement} */ (document.querySelector(".pedge.ro"));
+    const ro = /** @type {HTMLElement | null} */ (document.querySelector(".pedge.ro")),
+      ri = /** @type {HTMLElement | null} */ (document.querySelector(".pedge.ri")),
+      on = !stk && S.view === "gen",
+      outer = tbLeft ? left : SW - (left + W),
+      inner = tbLeft ? SW - (left + W) : left;
     if (ro) {
-      const on = !stk && S.view === "gen",
-        d = tbLeft ? left : SW - (left + W);
-      ro.style.right = on && !tbLeft ? d - 6 + "px" : "";
-      ro.style.left = on && tbLeft ? d - 6 + "px" : "";
+      ro.style.right = on && !tbLeft ? outer - 6 + "px" : "";
+      ro.style.left = on && tbLeft ? outer - 6 + "px" : "";
+    }
+    if (ri) {
+      ri.style.left = on && !tbLeft ? inner - SPACE.part + "px" : "";
+      ri.style.right = on && tbLeft ? inner - SPACE.part + "px" : "";
     }
   }
   /* while an edge is held or hovered: an outline round the picture itself, an even 5 px out (the edges you drag are
@@ -504,6 +515,7 @@ export function sizeFrame() {
   /* the status row, Show prompt, the edit buttons and the edge strips: placed from where the frame is now, and every
      frame it moves (around.js — one owner: the frame) */
   placeAround();
+  promptFollow(); // Queue / LoRAs / PNG Info, Vertical: no hug (the frame's writes keep it in Generating)
   requestAnimationFrame(layoutLeft);
   plateFollow(); // the live plate keeps to the frame / the panel through the glide
 }
@@ -517,11 +529,15 @@ export function vAlign() {
   $("hsplit").style.top = pn - colTop - 10 + "px";
 }
 /* ---------- the prompt column's place has ONE owner (2026-10-28) ----------
-   Its transform = what is left of a tab switch's slide, written here only (Vertical's upward shift is gone,
-   2026-10-31). Two writers used to set it: vAlign's inline style, and a switch's own animation that froze the shift it
-   started with for 650 ms (a re-shift meanwhile showed only at the end, as a jump) */
+   Its transform = its hug of the picture (below) + what is left of a tab switch's slide, written here only. Two
+   writers used to set it: vAlign's inline style, and a switch's own animation that froze the shift it started with for
+   650 ms (a re-shift meanwhile showed only at the end, as a jump) */
 const colEase = bez(SWITCH.curve[0], SWITCH.curve[1], SWITCH.curve[2], SWITCH.curve[3]); // the switch's glide (plate.js)
-let slX = 0, // the slide: how far from its place it started, and when
+let hugX = 0, // side by side in Generating: in by the picture's inset in its area (promptFollow)
+  hugFrom = 0, // …catching up after a hold: from, to, since when (0: not catching up)
+  hugTo = 0,
+  hugT0 = 0,
+  slX = 0, // the slide: how far from its place it started, and when
   slY = 0,
   slT0 = 0,
   colX = 0, // the offset written last (taken off a measurement to find where the column is laid out)
@@ -533,27 +549,66 @@ function slideLeft(now) {
 }
 function colApply() {
   colRaf = 0;
-  const k = slideLeft(performance.now()),
-    x = Math.round(slX * k),
+  const now = performance.now();
+  if (hugT0) {
+    const p = Math.min(1, (now - hugT0) / layT());
+    hugX = Math.round(hugFrom + (hugTo - hugFrom) * colEase(p));
+    if (p >= 1) hugT0 = 0;
+  }
+  const k = slideLeft(now),
+    x = hugX + Math.round(slX * k),
     y = Math.round(slY * k),
     t = x || y ? `translate(${x}px, ${y}px)` : "",
     col = $("lcol");
   colX = x;
   colY = y;
   if (col.style.transform !== t) col.style.transform = t;
-  if (k > 0) colRaf = requestAnimationFrame(colApply);
-  else slT0 = 0;
+  if (k > 0 || hugT0) colRaf = requestAnimationFrame(colApply);
+  if (k <= 0) slT0 = 0;
 }
 /** a tab switch moved the column's place: it slides there from where it was on screen (measured before the switch —
  * mid-slide too, so a fast second switch carries on from there). Its place is worked out here, from the layout:
  * measured through the running slide's offset @param {DOMRect} was */
 export function slideCol(was, t0 = performance.now()) {
   const r = $("lcol").getBoundingClientRect();
-  slX = Math.round(was.left - (r.left - colX));
+  slX = Math.round(was.left - (r.left - colX + hugX)); // from where it was to its place (its hug included)
   slY = Math.round(was.top - (r.top - colY));
   slT0 = slX || slY ? t0 : 0;
   cancelAnimationFrame(colRaf);
   colApply();
+}
+/* side by side in Generating the prompt sits a pair gap from the PICTURE: the area is the whole stage and the picture
+   is centred in it (2026-10-31, ownership map G6 — the area used to hug the picture and glide its grid columns on CSS's
+   clock while the frame moved on its own: two clocks, a wobble). The column moves in by the plate's inset, worked out
+   from the frame's box every time the frame is written (framebox.js) — the frame's clock. It holds while an edge is
+   dragged (the edge stays under the pointer) and while you work in the prompt — a press in it, one of its menus open:
+   nothing moves under the cursor (the layout's rule; the hug ignored it at first, 2026-10-31). Letting go it catches
+   up on the layout's glide — nothing else moves then; a moving frame takes it over frame by frame
+   @param {boolean} [direct] the frame is being written now: follow it exactly (else: glide to where it belongs) */
+export function promptFollow(direct = false) {
+  if (lay.drag || lay.pressCard || document.querySelector("#left .pop.show")) return;
+  const b = frameBox(),
+    app = /** @type {HTMLElement} */ (document.querySelector(".app")),
+    on = !!b && S.view === "gen" && !app.classList.contains("stacked") && !!lay.last,
+    R = app.classList.contains("pright");
+  let x = 0;
+  if (on && b && lay.last) {
+    const M = SPACE.mat,
+      inset = R ? lay.last.rw - (b.l + b.w + M) : b.l - M;
+    x = Math.round(Math.max(0, inset)) * (R ? -1 : 1);
+  }
+  const b2 = document.body.classList;
+  if (direct || b2.contains("laysnap") || b2.contains("liveresize") || b2.contains("laydrag")) {
+    hugT0 = 0;
+    if (x === hugX) return;
+    hugX = x;
+  } else {
+    if (x === (hugT0 ? hugTo : hugX)) return;
+    hugFrom = hugX;
+    hugTo = x;
+    hugT0 = performance.now();
+  }
+  if (!colRaf) colApply();
 }
 // live resize: everything follows the window edge directly; animations return ~150 ms after the last resize event
 

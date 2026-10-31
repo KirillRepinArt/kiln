@@ -148,7 +148,15 @@ function tracer() {
         const r = el.getBoundingClientRect(),
           cs = getComputedStyle(el),
           op = cs.visibility === "hidden" || cs.display === "none" ? 0 : +cs.opacity;
-        (T.samples[n] ||= []).push([T.frame, r.left, r.top, r.width, r.height, op]);
+        (T.samples[n] ||= []).push([
+          T.frame,
+          r.left,
+          r.top,
+          r.width,
+          r.height,
+          op,
+          Math.round(performance.now() - T.t0),
+        ]);
         for (const a of el.getAnimations())
           if (a instanceof CSSTransition && a.playState === "running" && WATCHED.has(camel(a.transitionProperty)))
             T.writes.push({ el: n, p: camel(a.transitionProperty), by: "css:transition", f: T.frame, kind: "css" });
@@ -159,6 +167,7 @@ function tracer() {
   requestAnimationFrame(() => setTimeout(sample, 0));
   /** start recording a motion */
   T.start = () => {
+    T.t0 = performance.now();
     T.writes = [];
     T.samples = {};
     T.on = true;
@@ -210,22 +219,30 @@ export function reversals(samples) {
     for (let i = 0; i < NAMES.length; i++) {
       /* only while it can be seen: a hidden element repositioned is no blink */
       const tol = NAMES[i] === "opacity" ? 0.03 : 1.5,
-        v = (NAMES[i] === "opacity" ? rows : rows.filter(r => r[5] > 0.01)).map(r => r[i + 1]);
+        rs = NAMES[i] === "opacity" ? rows : rows.filter(r => r[5] > 0.01),
+        v = rs.map(r => r[i + 1]);
       if (v.length < 2) continue;
       /* the turning points of the series, small jitter ignored */
       let dir = 0,
         start = v[0],
-        ext = v[0];
-      for (const x of v) {
-        const d = x - ext;
+        ext = v[0],
+        extAt = 0;
+      for (let j = 0; j < v.length; j++) {
+        const x = v[j],
+          d = x - ext;
         if (dir === 0) {
           if (Math.abs(x - start) > tol) {
             dir = Math.sign(x - start);
             ext = x;
+            extAt = j;
           }
-        } else if (Math.sign(d) === dir) ext = x;
-        else if (Math.abs(d) > tol) {
-          out.push({ el, what: NAMES[i], from: +start.toFixed(2), peak: +ext.toFixed(2), to: +x.toFixed(2) });
+        } else if (Math.sign(d) === dir) {
+          ext = x;
+          extAt = j;
+        } else if (Math.abs(d) > tol) {
+          /* when (ms from the motion's start): the turn, where it was seen again, the last sample */
+          const when = `${rs[extAt][6]}→${rs[j][6]}ms of ${rs[rs.length - 1][6]}, ${rs.length} frames`;
+          out.push({ el, what: NAMES[i], from: +start.toFixed(2), peak: +ext.toFixed(2), to: +x.toFixed(2), when });
           break;
         }
       }

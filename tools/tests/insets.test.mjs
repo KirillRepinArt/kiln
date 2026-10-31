@@ -209,3 +209,44 @@ export async function browsingIsSymmetric(k, t) {
   }
 }
 browsingIsSymmetric.opts = { step: 0.05 };
+
+/* one clock for a shape change (2026-10-31, G6): the area the picture sits in doesn't move when its shape changes —
+   the picture changes inside a still stage, and the prompt follows the picture, a pair gap from it, every frame (the
+   area used to hug the picture and glide its grid on CSS's clock while the frame moved on its own: the plate's centre
+   wobbled, the tab bar with it) */
+export async function stageStaysPutPromptHugs(k, t) {
+  for (const [c, ar] of [
+    ["446688", "3:4"],
+    ["aa7733", "16:9"],
+    ["338844", "9:16"],
+  ])
+    await k.job(`[fill:${c}] p`, { ar, steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=3`, 40000);
+  await k.mouse(2, 2);
+  for (const dock of ["left", "right"]) {
+    await k.ev(`(setDock("${dock}"),1)`);
+    await k.sleep(1600);
+    await k.ev(`(${tab("gallery")},1)`);
+    await k.sleep(1500);
+    for (const step of [-1, -1, 1]) {
+      const w = k.ev(
+        SAMPLE(
+          1000,
+          `(()=>{const s=$("stage").getBoundingClientRect(),p=$("plate").getBoundingClientRect(),l=$("left").getBoundingClientRect();
+          return [Math.round(s.left*10)/10,Math.round(s.width*10)/10,Math.round(("${dock}"==="left"?p.left-l.right:l.left-p.right)*10)/10]})()`,
+        ),
+      );
+      await k.ev(`(genNav(${step}),1)`);
+      const s = await w,
+        stage = new Set(s.map(x => `${x[0]},${x[1]}`)),
+        gaps = s.map(x => x[2]);
+      t.ok(stage.size === 1, `${dock}, step ${step}: the stage never moves`, [...stage].slice(0, 3));
+      t.motion(
+        Math.max(...gaps) - Math.min(...gaps) <= 1.5 && Math.abs(gaps[0] - 20) <= 1.5,
+        `${dock}, step ${step}: the prompt a pair gap from the picture, every frame`,
+        { min: Math.min(...gaps), max: Math.max(...gaps) },
+      );
+    }
+  }
+}
+stageStaysPutPromptHugs.opts = { step: 0.05 };

@@ -8,18 +8,7 @@
 import { TRACER, reversals, secondWriters, twoClocks } from "./trace.mjs";
 
 /** known second writers / reversals: "el.prop" (or "el~what" for a reversal) → the map's id and why it's there */
-const G6 = "G6 — the layout grid glides on a CSS clock while this moves frame by frame in script, inside it";
-const ALLOW = /** @type {Record<string, string>} */ ({
-  "cvx.opacity":
-    "V2 — the old picture's fade: pictures.js (cross-fade) and morph.js (crop-and-reveal), kept apart by flags",
-  "frame~two clocks": G6,
-  "plate~two clocks": G6,
-  "rim~two clocks": G6,
-  "prog~two clocks": G6,
-  "showP~two clocks": G6,
-  "gtools~two clocks": G6,
-  "tabs~two clocks": G6,
-});
+const ALLOW = /** @type {Record<string, string>} */ ({});
 
 const WATCH = `__trace.watch({
   plate: $("plate"), rim: $("rim"), frame: $("frame"), cv: $("cv"), cvx: $("cvx"), fglow: $("fglow"),
@@ -62,9 +51,21 @@ export async function ownershipTour(k, t) {
     writes += r.writes.length;
     for (const [key, mods] of Object.entries(secondWriters(r.writes))) note(`${key} [${mods.join(" + ")}]`, label);
     for (const [key, what] of Object.entries(twoClocks(r.writes, r.up))) note(`${key} [${what.join(" + ")}]`, label);
+    /* the frame's two pictures are ONE picture on screen — the old one's copy (cvx) over the new (cv), inside their view:
+       what you see is (1 − (1 − cv)(1 − cvx)) × the view's opacity. Checked apart, the copy appearing over the same
+       picture, or a change while a switch still holds the view unseen, read as blinks (2026-10-31) */
+    const cvx = r.samples.cvx || [],
+      view = r.samples.vGen || [];
+    r.samples.picture = (r.samples.cv || []).map((/** @type {number[]} */ row, /** @type {number} */ i) => [
+      ...row.slice(0, 5),
+      (1 - (1 - row[5]) * (1 - (cvx[i] ? cvx[i][5] : 0))) * (view[i] ? view[i][5] : 1),
+      row[6],
+    ]);
+    delete r.samples.cv;
+    delete r.samples.cvx;
     if (!many)
       for (const x of reversals(r.samples))
-        if (x.el !== "toast") note(`${x.el}~${x.what}`, `${label} (${x.from}→${x.peak}→${x.to})`);
+        if (x.el !== "toast") note(`${x.el}~${x.what}`, `${label} (${x.from}→${x.peak}→${x.to}; ${x.when})`);
     for (const el of HOVER_ONLY) {
       const op = Math.max(0, ...(r.samples[el] || []).map((/** @type {number[]} */ s) => s[5]));
       if (op > 0.01) note(`${el}~shown without hover`, `${label} (${op.toFixed(2)})`);

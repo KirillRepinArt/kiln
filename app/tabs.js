@@ -1,7 +1,7 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $ } from "./dom.js";
-import { lay, sizeFrame, slideCol } from "./layout.js";
+import { lay, sizeFrame, slideCol, snapHold } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
 import { frameBox, frameHold, frameTarget } from "./framebox.js";
@@ -81,9 +81,8 @@ export function tabGo(fn) {
     r0 = v0 ? v0.getBoundingClientRect() : null,
     f0 = frameBox(),
     fr0 = $("frame").getBoundingClientRect(),
-    b = document.body,
     me = ++tabGos;
-  b.classList.add("laysnap"); // the layout lands at once: the switch alone moves things
+  snapHold("tab", 10000); // the layout lands at once: the switch alone moves things (let go at its end, below)
   document.documentElement.classList.add("tabswitch"); // a tab switch (not a layout switch): the tab pill still slides
   lay.frameDefer = true;
   try {
@@ -114,9 +113,9 @@ export function tabGo(fn) {
   /* once it has landed: one more layout, still without glides (measured mid-switch, the prompt column's Vertical shift
      rested a pixel off), then the layout's glides come back */
   setTimeout(() => {
-    if (me !== tabGos) return;
+    if (me !== tabGos) return; // a newer tab switch holds it now
     sizeFrame();
-    b.classList.remove("laysnap");
+    snapHold("tab", 0);
     document.documentElement.classList.remove("tabswitch");
   }, sw.T + 300);
 }

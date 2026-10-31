@@ -42,13 +42,16 @@ export async function presets(k, t) {
   await k.mouse(2, 2);
   await k.sleep(600);
   await menu(k, "right");
+  /* in Generating the prompt's place is stated against the picture (#plate), the edge you see — the area is the whole
+     stage (G6, 2026-10-31) */
   let L = await R(k, "#left"),
-    Rr = await R(k, "#right");
+    Rr = await R(k, "#plate"),
+    col = await R(k, "#right");
   t.ok(
     L.left > Rr.right &&
       Math.round(L.left - Rr.right) === AREA &&
-      Math.abs((await R(k, "#lcol")).top - Rr.top) < 2 &&
-      Rr.bottom <= 950,
+      Math.abs((await R(k, "#lcol")).top - col.top) < 2 &&
+      col.bottom <= 950,
     "Horizontal · prompt on the right: right of the picture, same row, the area gap",
     { L: L.left, R: [Rr.right, Rr.top, Rr.bottom] },
   );
@@ -92,7 +95,7 @@ export async function presets(k, t) {
   t.ok(await stacked(k), "remembered after a restart");
   await menu(k, "left");
   t.ok(
-    !(await stacked(k)) && (await R(k, "#left")).right < (await R(k, "#right")).left,
+    !(await stacked(k)) && (await R(k, "#left")).right < (await R(k, "#plate")).left,
     "Horizontal · prompt on the left: back beside it",
   );
 }
@@ -106,7 +109,7 @@ export async function narrowKeepsChoice(k, t) {
   await viewport(k, 1700, 950);
   await k.sleep(700);
   t.ok(
-    !(await stacked(k)) && (await R(k, "#left")).left > (await R(k, "#right")).right,
+    !(await stacked(k)) && (await R(k, "#left")).left > (await R(k, "#plate")).right,
     "wide again: back on the right",
   );
 }
@@ -125,7 +128,7 @@ export async function dragToDock(k, t) {
   await k.sleep(800);
   t.ok(z1 === "right", "dragging the name line to the right shows the right drop zone", z1);
   t.ok(
-    (await k.ev(`S.dock`)) === "right" && (await R(k, "#left")).left > (await R(k, "#right")).right,
+    (await k.ev(`S.dock`)) === "right" && (await R(k, "#left")).left > (await R(k, "#plate")).right,
     "dropping there docks the prompt on the right",
   );
   await k.mouse(2, 2);

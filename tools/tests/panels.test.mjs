@@ -14,9 +14,11 @@ export async function wideBasics(k, t) {
     f = await R(k, "#frame"),
     p = await R(k, "#prog");
   t.ok(!(await k.ev(`document.querySelector(".app").classList.contains("stacked")`)), "1513×900: side by side");
-  t.ok(!overlapX(L, Rr) && L.right < Rr.left, "the prompt is left of the right area, no overlap", {
+  /* the prompt beside the PICTURE (G6, 2026-10-31: in Generating the area is the whole stage, the prompt hugs the
+     picture inside it) */
+  t.ok(!overlapX(L, f) && L.right < f.left, "the prompt is left of the picture, no overlap", {
     L: [L.left, L.right],
-    R: [Rr.left, Rr.right],
+    f: [f.left, f.right],
   });
   const tk = await k.ev(
     `(()=>{const k=document.querySelector(".tabs").children,a=k[0].getBoundingClientRect(),b=k[k.length-1].getBoundingClientRect();return{l:a.left,r:b.right}})()`,
@@ -326,7 +328,9 @@ export async function hugsThePicture(k, t) {
     "…and the prompt still sits one area gap from the picture (no gap in the middle)",
     await gapToPic(k),
   );
-  const fr = await R(k, "#right"),
+  /* 2026-10-31 (G6): in Generating the area is the whole stage and the picture sits centred in it — the prompt's place is
+     stated against the picture (#plate), the edge you see */
+  const fr = await R(k, "#plate"),
     L = await R(k, "#left");
   t.ok(Math.abs(L.left - 18 - (1700 - 18 - fr.right)) <= 3, "the pair is centred", { l: L.left, r: fr.right });
   await k.ev(`(showView("queue"),1)`);
@@ -348,20 +352,22 @@ export async function holdsWhileYouWork(k, t) {
   const f = await R(k, "#frame");
   await k.mouse(f.left + f.width / 2, f.top + f.height / 2);
   await k.sleep(200);
-  const before = await R(k, "#rpanel");
+  /* 2026-10-31 (G6): in Generating the area is the whole stage and the picture sits centred in it — the prompt's place is
+     stated against the picture (#plate), the edge you see */
+  const before = await R(k, "#plate");
   await k.ev(`(document.activeElement.blur(),genNav(-1),updNav(),1)`);
   await k.sleep(500);
-  const during = await R(k, "#rpanel");
+  const during = await R(k, "#plate");
   await k.sleep(500);
-  const after = await R(k, "#rpanel");
+  const after = await R(k, "#plate");
   t.ok(
     Math.abs(during.width - after.width) < 2 && Math.abs(after.width - before.width) > 40,
-    "flipping with the pointer on the picture: the area goes straight to the new picture's size — one glide, no hold (the arrows hold on their own)",
+    "flipping with the pointer on the picture: it goes straight to the new picture's size — one glide, no hold (the arrows hold on their own)",
     { before: [before.left, before.width], during: [during.left, during.width], after: [after.left, after.width] },
   );
   await k.sleep(1100);
   t.ok(
-    (await R(k, "#rpanel")).width < before.width - 200,
+    (await R(k, "#plate")).width < before.width - 200,
     "~1 s after the last flip it fits the picture, even with the pointer still there",
   );
   // the prompt holds while a menu in it is open, and adjusts the moment you choose
@@ -380,7 +386,7 @@ export async function holdsWhileYouWork(k, t) {
   });
   await k.ev(`(closePops(),document.body.click(),1)`);
   await k.sleep(600);
-  const fr = await R(k, "#right"),
+  const fr = await R(k, "#plate"),
     L2 = await R(k, "#left");
   t.ok(Math.abs(L2.left - 18 - (1700 - 18 - fr.right)) <= 3, "once it closes, the pair re-centres", {
     l: L2.left,
@@ -450,19 +456,12 @@ export async function heightLimit(k, t) {
     h: f1.height,
     bar,
   });
-  /* the prompt hugs the picture's area; the area is never narrower than the tab bar (it sits on the plate's centre line,
-     2026-10-31), the picture centred in it */
-  const area = await R(k, "#rpanel"),
-    bw = await k.ev(
-      `(()=>{const c=document.querySelector(".tabs").children;return c[c.length-1].getBoundingClientRect().right-c[0].getBoundingClientRect().left})()`,
-    ),
-    want = AREA + (area.width - f1.width) / 2;
+  /* the prompt hugs the picture itself — a pair gap from it, however narrow (2026-10-31, G6: the area is the whole stage,
+     the picture centred in it, the prompt following the picture) */
   t.ok(
-    Math.abs(f1.width / f1.height - 0.75) < 0.01 &&
-      Math.abs((await gapToPic(k)) - want) <= 1.5 &&
-      area.width <= Math.max(f1.width, bw) + 4,
-    "its width follows (3:4); the prompt hugs its area (the picture, or the tab bar if wider)",
-    { w: f1.width, area: area.width, bar: bw, gap: await gapToPic(k), want },
+    Math.abs(f1.width / f1.height - 0.75) < 0.01 && Math.abs((await gapToPic(k)) - AREA) <= 1.5,
+    "its width follows (3:4); the prompt hugs it",
+    { w: f1.width, gap: await gapToPic(k), want: AREA },
   );
   await k.mouse(f1.left + f1.width / 2, f1.top + f1.height / 2);
   await k.sleep(300);

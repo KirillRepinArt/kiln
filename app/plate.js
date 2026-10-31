@@ -8,7 +8,7 @@
 import { placeAround } from "./around.js";
 import { $ } from "./dom.js";
 import { frameHold } from "./framebox.js";
-import { MORPH, shapeBox, shapeSteps } from "./layoutmath.js";
+import { fades, shapeBox, shapeSteps } from "./layoutmath.js";
 import { SPACE } from "./tokens.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number, panel: boolean }} Box in #right's coordinates */
@@ -328,15 +328,10 @@ export function switchGlide(at, views) {
      does, a fade-through (Material's pattern for unrelated contents). The plate's crop and reveal keep their own steps;
      the switch runs on until the fade-in ends, on the same clock. (A picture cut in the swap's 80 ms, and a decelerating
      fade-in of its own, read as two speeds) */
-  const F = MORPH.fade,
-    TT = Math.max(T, steps.A + F), // the switch's length, its fade-in included
-    goOut = {
-      delay: Math.max(0, steps.A + steps.S - F),
-      duration: F,
-      easing: "linear",
-      fill: /** @type {FillMode} */ ("both"),
-    },
-    comeIn = { delay: steps.A, duration: F, easing: "linear", fill: /** @type {FillMode} */ ("both") };
+  const fd = fades(steps), // the one formula (layoutmath.js) — the frame's pictures fade by it too (pictures.js)
+    TT = Math.max(T, fd.T), // the switch's length, its fade-in included
+    goOut = { ...fd.out, easing: "linear", fill: /** @type {FillMode} */ ("both") },
+    comeIn = { ...fd.in, easing: "linear", fill: /** @type {FillMode} */ ("both") };
   const out = go(old.animate([{ opacity: 1 }, { opacity: 0 }], goOut));
   /* the picture's glow lives outside its view (a fixed layer): it comes and goes with the picture, on its fade */
   const fg = document.getElementById("fglow");

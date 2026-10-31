@@ -144,7 +144,7 @@ export async function switchFades(k, t) {
     "outside a switch the app has no transition name (it would cut the glass off from the sky)",
   );
   const L = await R(k, "#left"),
-    Rr = await R(k, "#right");
+    Rr = await R(k, "#plate"); // the picture: the area is the whole stage in Generating (G6)
   t.ok(L.left > Rr.right, "and the prompt ended up on the right");
 }
 switchFades.opts = { width: 2000, height: 1023 };

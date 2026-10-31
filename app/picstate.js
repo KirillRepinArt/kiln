@@ -87,11 +87,13 @@ function resetCv() {
   c.dataset.j = "";
 }
 /* the picture fades out over what comes next (live.js: a snapshot on #cvx) */
+/* — always, by the one fade, also when nothing comes after it (✕, the Generating tab with no render): it used to just
+   go then, the one picture change that didn't fade (the user, 2026-10-31: "a fade would be more consistent") */
 function snapOut() {
   /* inside a switch the View Transition cross-fades the pictures already: a second fade drew the old picture into the
      new frame for a frame or two, then cut it (a flicker, 2026-10-27) */
   if (document.documentElement.classList.contains("laymorph")) return;
-  if (S.view === "gen" && $("frame").classList.contains("has")) xfadeSnap();
+  if (S.view === "gen" && $("frame").classList.contains("has")) xfadeSnap(!!current());
 }
 /* into the Gallery at k: the prompt box peeks its prompt (unless you closed the prompt while browsing) */
 /** @param {import("./types.js").Job | null | undefined} j */
@@ -147,7 +149,7 @@ export function pv(ev, arg) {
       }
       break;
     case "close" /* ✕ on the picture, Esc outside the editor */:
-      if (run) snapOut(); /* a fade only when the render replaces it — into the empty frame the picture just goes */
+      snapOut();
       if (PV.browse != null) browseEnd();
       PV.still = null;
       PV.news = null;
@@ -190,7 +192,7 @@ export function pv(ev, arg) {
       break;
     case "generating" /* the Generating tab: the live view — what's being made, or the clean frame (rule 1) */:
       if (PV.browse != null) {
-        if (run) snapOut();
+        snapOut();
         browseEnd();
         PV.still = null;
         PV.news = null;

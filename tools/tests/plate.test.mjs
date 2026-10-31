@@ -545,3 +545,105 @@ export async function leavingViewKeepsItsLook(k, t) {
   }
 }
 leavingViewKeepsItsLook.opts = { step: 0.05 };
+
+/* the frame's pictures fade by the same one fade (2026-10-31, F1, the user: "Gallery just appears instantly … should we
+   use a single owner for the tab transitions?"): a picture coming into an empty frame, one replacing another of the same
+   shape, and one of another shape (the crop-and-reveal) — in and out, every one about MORPH.fade long, none a cut */
+const PICS = ms => `new Promise(res=>{const o=[],t0=performance.now(),op=id=>+getComputedStyle($(id)).opacity;
+  (function s(){requestAnimationFrame(()=>setTimeout(()=>{o.push({t:performance.now()-t0,cv:op("cv"),cvx:$("cvx").width>1?op("cvx"):0});
+  if(performance.now()-t0<${ms})s();else res(o)},0))})()})`;
+export async function picturesFadeAtOneSpeed(k, t) {
+  for (const [c, ar] of [
+    ["446688", "3:4"],
+    ["aa7733", "3:4"],
+    ["338844", "16:9"],
+  ])
+    await k.job(`[fill:${c}] p`, { ar, steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=3`, 40000);
+  await k.mouse(2, 2);
+  const span = (s, key, up) => {
+    const a = s.find(x => (up ? x[key] > 0.02 : x[key] < 0.98)),
+      b = s.find(x => (up ? x[key] > 0.98 : x[key] < 0.02));
+    return a && b ? Math.round(b.t - a.t) : null;
+  };
+  const cases = [
+    [
+      "an empty frame → the Gallery (same box): the picture fades in",
+      `(closeShown(),S.ar="16:9",sizeFrame(),1)`,
+      `document.querySelector('.tab[data-v="gallery"]').click()`,
+      [["cv", true]],
+    ],
+    [
+      /* the pictures stack: the new one is laid under the old at the swap and the old fades off it (no dip) */
+      "browse, another shape (the crop-and-reveal)",
+      null,
+      `genNav(-1)`,
+      [["cvx", false]],
+    ],
+    ["browse, the same shape (a cross-fade)", null, `genNav(-1)`, [["cvx", false]]],
+    /* leaving for an empty frame: the picture fades out too (it used to just go — the user, 2026-10-31) */
+    [
+      "the Gallery → Generating, nothing rendering: the picture fades out",
+      `(document.querySelector('.tab[data-v="gallery"]').click(),1)`,
+      `document.querySelector('.tab[data-v="gen"]').click()`,
+      [["cvx", false]],
+    ],
+    [
+      "✕ on a picture: it fades out",
+      `(document.querySelector('.tab[data-v="gallery"]').click(),1)`,
+      `closeShown()`,
+      [["cvx", false]],
+    ],
+  ];
+  for (const [what, prep, go, checks] of cases) {
+    if (prep) {
+      await k.ev(`(document.querySelector('.tab[data-v="gen"]').click(),1)`);
+      await k.sleep(1300);
+      await k.ev(prep);
+      await k.sleep(1300);
+    }
+    const w = k.ev(PICS(1000));
+    await k.ev(`(${go},1)`);
+    const s = await w;
+    for (const [key, up] of checks) {
+      const ms = span(s, key, up);
+      t.motion(ms != null && ms >= 160 && ms <= 260, `${what}: ${key} ${up ? "in" : "out"} over the one fade`, { ms });
+    }
+    /* what you see — the two pictures as one, 1 − (1 − cv)(1 − cvx) — only ever goes one way: never a dip */
+    const seen = s.map(x => 1 - (1 - x.cv) * (1 - x.cvx)),
+      dip = seen.some(
+        (v, i) => i > 0 && seen.slice(0, i).some(a => a > v + 0.05) && seen.slice(i).some(c => c > v + 0.05),
+      );
+    t.motion(
+      !dip,
+      `${what}: the picture you see never dips`,
+      seen
+        .map(v => v.toFixed(2))
+        .filter((v, i, a) => v !== a[i - 1])
+        .slice(0, 14),
+    );
+    await k.sleep(800);
+  }
+}
+picturesFadeAtOneSpeed.opts = { step: 0.05 };
+
+/* "the layout lands at once" (body.laysnap) has one owner (2026-10-31, T1): a tab switch and a layout switch each turned
+   it off on their own timer, so one ending turned the glides back on in the middle of the other. A layout switch started
+   during a tab switch keeps the glides off until it has ended (+ its 300 ms) */
+export async function snapHeldUntilTheLastMotion(k, t) {
+  await k.mouse(2, 2);
+  const s = await k.ev(`new Promise(res=>{const o=[],t0=performance.now(),h=document.documentElement,b=document.body;
+    document.querySelector('.tab[data-v="queue"]').click();
+    setTimeout(()=>setDock("right"),500);
+    (function s(){requestAnimationFrame(()=>setTimeout(()=>{o.push([Math.round(performance.now()-t0),b.classList.contains("laysnap"),h.classList.contains("laymorph")]);
+    if(performance.now()-t0<2600)s();else res(o)},0))})()})`);
+  const lastMorph = s.filter(x => x[2]).at(-1),
+    gap = lastMorph ? s.filter(x => x[0] <= lastMorph[0] + 250 && x[0] >= 20 && !x[1]) : [];
+  t.ok(!!lastMorph, "the layout switch ran", s.slice(0, 3));
+  t.ok(
+    gap.length === 0,
+    "the glides stay off from the tab switch until the layout switch has landed (no gap)",
+    gap.slice(0, 5).map(x => x[0]),
+  );
+}
+snapHeldUntilTheLastMotion.opts = { step: 0.05 };

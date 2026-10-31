@@ -9,6 +9,7 @@ import { placeAround } from "./around.js";
 import { $ } from "./dom.js";
 import { bez } from "./layoutmath.js";
 import { plateSync } from "./plate.js";
+import { promptFollow } from "./layout.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number }} Box in the stage's coordinates */
 /** @typedef {(now: number) => Box | null} Drive a box for this frame, or null when done */
@@ -41,6 +42,7 @@ function write(b) {
   cur = b;
   plateSync(); // the plate rides the frame, the tab bar the plate
   placeAround(); // the status row, Show prompt, the edit buttons, the edge strips
+  promptFollow(true); // the prompt column, a pair gap from the picture (side by side), on this write
 }
 /* no glide while the layout jumps on purpose: a switch (captured where it ends), an edge or a window being dragged
    (the box follows the pointer), reduced motion */

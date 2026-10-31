@@ -3,6 +3,7 @@
    the cross-fade between two, the missing-file card */
 import { $ } from "./dom.js";
 import { api } from "./live.js";
+import { fades, shapeSteps } from "./layoutmath.js";
 import { shownDone } from "./picstate.js";
 import { S } from "./state.js";
 
@@ -94,7 +95,32 @@ let ovOf;
 /** @type {Animation | null} */
 let ovFade = null;
 let ovTimer = 0;
-const XFADE = { duration: 200, easing: "cubic-bezier(0.4, 0, 0.2, 1)" }; // --t-200 · --e-standard
+/* a picture changing in place (nothing changes shape): the one fade's cross-fade (layoutmath.js fades) — the old one
+   (its copy) fades off the new one under it; with nothing over it, the new one fades in itself */
+const SAME = fades(shapeSteps({ w: 1, h: 1 }, { w: 1, h: 1 }));
+/** @type {Animation | null} the frame's picture coming in */
+let cvIn = null;
+let arriving = false; // the picture being drawn comes into an empty frame: nothing to cross-fade from
+/** the frame's picture comes in — the other half of the same owner (the overlay is what leaves): one fade, the
+ * cross-fade's by default, or on a motion's timing and clock (the crop-and-reveal). It used to have none of its own in
+ * place — a picture came into an empty frame at once (the user: "Gallery just appears instantly") — and its own 80 ms
+ * one in the crop-and-reveal (2026-10-31, F1)
+ * @param {{ delay: number, duration: number, startTime?: number }} [fade] */
+export function pictureIn(fade = SAME.in) {
+  const cv = /** @type {HTMLCanvasElement} */ ($("cv"));
+  if (cvIn) cvIn.cancel();
+  const a = cv.animate([{ opacity: 0 }, { opacity: 1 }], {
+    delay: fade.delay,
+    duration: fade.duration,
+    easing: "linear",
+    fill: "backwards", // held unseen until its delay, from its clock's start
+  });
+  if (fade.startTime != null) a.startTime = fade.startTime;
+  cvIn = a;
+  a.onfinish = a.oncancel = () => {
+    if (cvIn === a) cvIn = null;
+  };
+}
 /** the overlay holds a picture, or is fading it out */
 export const overlayShows = () => ov !== "idle";
 /** hold a copy of what is on screen over the frame's canvas — unless that same picture is already held or leaving
@@ -122,18 +148,20 @@ function overlayHold(cv) {
   ov = "held";
   ovOf = cv.dataset.shown;
 }
-/** let the held picture go: it fades out — the cross-fade, now, or on a motion's own keyframes and clock (the
- * crop-and-reveal fades it at its swap); once faded the overlay is emptied, so a later fade shows nothing old
- * @param {{ keyframes: Keyframe[], duration: number, startTime: number }} [fade] */
-export function overlayRelease(fade) {
+/** let the held picture go: it fades out — the one fade's cross-fade, now, or on a motion's timing and clock (the
+ * crop-and-reveal fades it ending at its swap); once faded the overlay is emptied, so a later fade shows nothing old
+ * @param {{ delay: number, duration: number, startTime?: number }} [fade] */
+export function overlayRelease(fade = SAME.out) {
   if (ov !== "held") return;
   clearTimeout(ovTimer);
   const x = /** @type {HTMLCanvasElement} */ ($("cvx")),
-    a = x.animate(fade ? fade.keyframes : [{ opacity: 1 }, { opacity: 0 }], {
-      ...(fade ? { duration: fade.duration } : XFADE),
-      fill: "forwards",
+    a = x.animate([{ opacity: 1 }, { opacity: 0 }], {
+      delay: fade.delay,
+      duration: fade.duration,
+      easing: "linear",
+      fill: "both",
     });
-  if (fade) a.startTime = fade.startTime;
+  if (fade.startTime != null) a.startTime = fade.startTime;
   ov = "fading";
   ovFade = a;
   a.onfinish = () => {
@@ -149,7 +177,9 @@ export function overlayRelease(fade) {
 /** a new picture is being drawn on the frame's canvas: the one on show is held over it
  * @param {HTMLCanvasElement} cv @param {number} id */
 function xfadeFrom(cv, id) {
-  if (cv.id !== "cv" || !cv.dataset.shown || cv.dataset.shown === String(id)) return;
+  if (cv.id !== "cv") return;
+  arriving = cv.width < 2 || !cv.dataset.shown; // the frame shows nothing now (✕ empties the canvas, not its tag)
+  if (!cv.dataset.shown || cv.dataset.shown === String(id)) return;
   overlayHold(cv);
 }
 /** …and it's drawn: the held one fades out (if a crop-and-reveal took it, it is already fading on that clock)
@@ -158,14 +188,21 @@ function xfadeGo(cv) {
   if (cv.id !== "cv") return;
   cv.dataset.cw = cv.style.width;
   cv.dataset.ch = cv.style.height;
-  overlayRelease();
+  /* the old picture over it fades out — or, coming into an empty frame, it fades in itself (unless a crop-and-reveal
+     is bringing it in on its own timing) */
+  if (ov === "held") overlayRelease();
+  else if (arriving && !cvIn) pictureIn();
+  arriving = false;
 }
 /* any other change of what's on show (leaving the Gallery, ✕, the render taking over): the picture fades out the same
-    way — over whatever comes next (a render's first preview), or soon if nothing does (a clean screen) */
-export function xfadeSnap() {
+    way — over what comes next when something does (it waits a moment for a render's first preview to be under it), at
+    once when nothing does (an empty frame). "At once" is the end of this step: a crop-and-reveal starting in the same
+    click hands over its own timing first */
+/** @param {boolean} coming a render's picture is coming in under it */
+export function xfadeSnap(coming) {
   overlayHold(/** @type {HTMLCanvasElement} */ ($("cv")));
   clearTimeout(ovTimer);
-  ovTimer = setTimeout(() => overlayRelease(), 260);
+  ovTimer = setTimeout(() => overlayRelease(), coming ? 260 : 0);
 }
 /* a render's preview landed over it: the held picture goes now */
 export function xfadeEnd() {

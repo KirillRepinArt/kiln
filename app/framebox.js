@@ -24,7 +24,7 @@ let glide = null;
 let drive = null;
 let raf = 0;
 let held = false; // its view is leaving in a switch: it stays where it was (frameHold)
-const layE = bez(0.05, 0.7, 0.1, 1); // --lay-e: the layout's curve
+export const layE = bez(0.05, 0.7, 0.1, 1); // --lay-e: the layout's curve (the pair's columns glide on it too)
 
 /** where the frame is now (null before the first layout) */
 export const frameBox = () => cur;
@@ -45,8 +45,8 @@ function write(b) {
   promptFollow(true); // the prompt column, a pair gap from the picture (side by side), on this write
 }
 /* no glide while the layout jumps on purpose: a switch (captured where it ends), an edge or a window being dragged
-   (the box follows the pointer), reduced motion */
-function snaps() {
+   (the box follows the pointer), reduced motion — the pair's columns use the same rule (layout.js, G12) */
+export function snaps() {
   const b = document.body.classList;
   return (
     b.contains("laysnap") ||

@@ -11,8 +11,7 @@
   padding: var(--gap-area);
   align-items: stretch;
   grid-template-columns: var(--mL, 1fr) var(--pw, 680px) var(--gap-area) var(--rw, 660px) var(--mR, 1fr);
-  transition: grid-template-columns var(--lay-t) var(--lay-e);
-}
+} /* no CSS transition: layout.js layApply glides the columns on the layout's clock (G12) */
 .app.pright {
   grid-template-columns: var(--mL, 1fr) var(--rw, 660px) var(--gap-area) var(--pw, 680px) var(--mR, 1fr);
 }

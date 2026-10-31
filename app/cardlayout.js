@@ -1,6 +1,7 @@
 // @ts-check
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $, q } from "./dom.js";
+import { outlines, setBoxDraw } from "./outlines.js";
 import { lay, minRight, setDock, sizeFrame, snapHold, vAlign } from "./layout.js";
 import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement, promptSlotH } from "./layoutmath.js";
 import { peekJob } from "./prompt.js";
@@ -67,9 +68,6 @@ function textBoxH(lines) {
 /** the box's least height in Vertical: its controls and two lines */
 export const slotLeast = () => textBoxH(2);
 let draftH = 0; // the height your draft's text needs (kept while a job's prompt is shown: it never resizes the box)
-/** the prompt box's outline (the one drawn while you move it), for the divider in Vertical: it outlines both panes it
- * resizes — the picture (layout.js's resize outline) and the box (L4, 2026-11-01) @type {(on: boolean) => void} */
-export let boxHint = () => {};
 export function applyMode() {
   const a = q(".app"),
     was = a.classList.contains("stacked");
@@ -344,13 +342,13 @@ export function initCardlayout() {
       try {
         /** @type {HTMLElement} */ (e.currentTarget).setPointerCapture(e.pointerId);
       } catch (_) {}
-      hint(true);
+      outlines("move", ["box"]);
     }
     /* the press shows what moves: an outline round the plate (the box; its name and LoRAs move with it), like the
        resize outline and the snap positions */
     const ch = $("cardhint");
     let hraf = 0;
-    boxHint = on => hint(on);
+    setBoxDraw(on => hint(on)); // which outlines show: outlines.js (one owner)
     /** @param {boolean} on */
     function hint(on) {
       cancelAnimationFrame(hraf);
@@ -415,7 +413,7 @@ export function initCardlayout() {
       if (!d) return;
       const was = d;
       d = null;
-      hint(false);
+      outlines("move", []);
       if (!was.moved) return;
       card.drag = false;
       L.classList.remove("nodur");

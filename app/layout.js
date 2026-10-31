@@ -2,7 +2,7 @@
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
 import { SWITCH, plateFollow } from "./plate.js";
 import { placeAround } from "./around.js";
-import { frameBox, frameGoal, layT } from "./framebox.js";
+import { frameBox, frameGoal, layE, layT, snaps } from "./framebox.js";
 import { syncH } from "./boot.js";
 import { applyMode, applyPH, layoutLeft, lyReset, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
@@ -138,6 +138,7 @@ export const lay = {
   rowView: null,
   ins: "",
   colW: 0,
+  shown: null,
 };
 /* Vertical: the even gap — the picture's plate starts this far under the tab buttons, and the prompt's name starts this
    far under the plate (or under its status row) */
@@ -195,19 +196,57 @@ export function layGeo() {
      and the prompt follows the picture instead (promptFollow) */
   return pageGeometry({ W, gen, drag: lay.drag, minR, clear: gen ? toolsClear(picH()) : 0 }, L);
 }
+/* ---------- the pair's columns move on the layout's clock, here (2026-11-01, ownership map G12) ----------
+   They glided on CSS's clock (a transition on grid-template-columns) while the prompt's follow offset was worked out
+   from where they were GOING and applied at once: on Reset layout the prompt sat ~200 px over the picture, then slid
+   out. Now one glide writes them every frame on the frame's curve and time, and says where they are (lay.shown) to
+   what follows them, in the same frame */
+/** @typedef {{ mL: number, pw: number, rw: number, mR: number }} Cols */
+/** @type {{ from: Cols, to: Cols, t0: number, ms: number } | null} */
+let colsGlide = null;
+let colsRaf = 0;
+/** @param {Cols} c */
+function colsWrite(c) {
+  const st = /** @type {HTMLElement} */ (document.querySelector(".app")).style,
+    px = (/** @type {number} */ v) => Math.round(v * 10) / 10 + "px";
+  st.setProperty("--mL", px(c.mL));
+  st.setProperty("--pw", px(c.pw));
+  st.setProperty("--rw", px(c.rw));
+  st.setProperty("--mR", px(c.mR));
+  st.setProperty("--cw", px(c.pw));
+  lay.shown = c;
+}
+function colsTick() {
+  colsRaf = 0;
+  if (!colsGlide) return;
+  const G = colsGlide,
+    p = Math.min(1, (performance.now() - G.t0) / G.ms),
+    e = layE(p),
+    at = (/** @type {keyof Cols} */ k) => G.from[k] + (G.to[k] - G.from[k]) * e;
+  colsWrite(p >= 1 ? G.to : { mL: at("mL"), pw: at("pw"), rw: at("rw"), mR: at("mR") });
+  if (p >= 1) colsGlide = null;
+  else colsRaf = requestAnimationFrame(colsTick);
+  promptFollow(true); // the prompt follows the picture where the columns are now
+}
 /** @param {Geometry} g */
 function layApply(g) {
-  const app = /** @type {HTMLElement} */ (document.querySelector(".app")),
-    st = app.style,
-    px = (/** @type {number} */ v) => Math.round(v * 10) / 10 + "px";
   const mL = Math.max(0, g.mL + (g.off || 0)),
-    mR = Math.max(0, g.W - pairGap() - g.pw - g.rw - mL);
-  st.setProperty("--mL", px(mL));
-  st.setProperty("--pw", px(g.pw));
-  st.setProperty("--rw", px(g.rw));
-  st.setProperty("--mR", px(mR));
-  st.setProperty("--cw", px(g.pw));
+    mR = Math.max(0, g.W - pairGap() - g.pw - g.rw - mL),
+    to = { mL, pw: g.pw, rw: g.rw, mR };
   lay.last = Object.assign({}, g, { mL, mR, off: 0 });
+  const was = colsGlide ? colsGlide.to : lay.shown,
+    same = (/** @type {Cols | null} */ c) =>
+      !!c && c.mL === to.mL && c.pw === to.pw && c.rw === to.rw && c.mR === to.mR;
+  if (same(was)) return;
+  if (!lay.shown || snaps() || document.querySelector(".app.stacked")) {
+    colsGlide = null;
+    cancelAnimationFrame(colsRaf);
+    colsRaf = 0;
+    colsWrite(to);
+    return;
+  } /* Vertical: the columns aren't used (one column) — written at once */
+  colsGlide = { from: Object.assign({}, lay.shown), to, t0: performance.now(), ms: layT() };
+  if (!colsRaf) colsRaf = requestAnimationFrame(colsTick);
 }
 /* what to apply now. Holds last only while you're doing something, and the layout adjusts the moment you finish:
    flipping with the arrows on the picture holds it (so "next" stays under the cursor) until ~1 s after the last flip;
@@ -609,7 +648,7 @@ export function promptFollow(direct = false) {
   let x = 0;
   if (on && b && lay.last) {
     const M = SPACE.mat,
-      inset = R ? lay.last.rw - (b.l + b.w + M) : b.l - M;
+      inset = R ? (lay.shown || lay.last).rw - (b.l + b.w + M) : b.l - M; // the area as it is on screen now (G12)
     x = Math.round(Math.max(0, inset)) * (R ? -1 : 1);
   }
   const b2 = document.body.classList;

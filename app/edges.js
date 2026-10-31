@@ -3,7 +3,8 @@
    picture's top / bottom edges — and the edit buttons beside the picture showing on hover. The sizes they set are in
    S.lay (layout.js does the maths and applies them) */
 import { toast } from "./boot.js";
-import { applyPH, boxHint, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
+import { applyPH, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
+import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
 import { lay, layDef, layDrag, layGeo, layRelease, picFull, prefs, sizeFrame } from "./layout.js";
 import { PWMIN } from "./layoutmath.js";
@@ -19,10 +20,16 @@ export function initEdges() {
     const g = $("vedge");
     let y0 = 0,
       h0 = 0;
+    /* every handle shows the outlines of the panes it resizes (outlines.js RESIZES) while hovered or held */
+    g.addEventListener("pointerenter", () => outlines("edge", RESIZES.vedge));
+    g.addEventListener("pointerleave", () => {
+      if (!g.classList.contains("drag")) outlines("edge", []);
+    });
     g.addEventListener("pointerdown", e => {
       e.preventDefault();
       g.setPointerCapture(e.pointerId);
       g.classList.add("drag");
+      outlines("edge", RESIZES.vedge);
       document.body.classList.add("vresizing");
       $("left").classList.add("nodur");
       y0 = e.clientY;
@@ -41,6 +48,7 @@ export function initEdges() {
     g.addEventListener("pointerup", () => {
       if (!g.classList.contains("drag")) return;
       g.classList.remove("drag");
+      outlines("edge", []);
       document.body.classList.remove("vresizing");
       $("left").classList.remove("nodur");
       lyUnfreeze();
@@ -60,10 +68,7 @@ export function initEdges() {
       h0 = 0;
     /* the divider resizes two panes: while it's hovered or held, both are outlined (Apple HIG split view; the picture's
        own bottom edge used to show its outline) */
-    const both = (/** @type {boolean} */ on) => {
-      $("right").classList.toggle("edgehint", on);
-      boxHint(on);
-    };
+    const both = (/** @type {boolean} */ on) => outlines("edge", on ? RESIZES.hsplit : []);
     g.addEventListener("pointerenter", () => both(true));
     g.addEventListener("pointerleave", () => {
       if (!g.classList.contains("drag")) both(false);
@@ -137,7 +142,7 @@ export function initEdges() {
         lay.drag = true;
         h.classList.add("drag");
         document.body.classList.add("resizing", "laydrag");
-        if (h.dataset.e !== "po") $("right").classList.add("edgehint");
+        outlines("edge", RESIZES[/** @type {string} */ (h.dataset.e)]);
       });
       h.addEventListener("pointermove", ev => {
         if (!d) return;
@@ -156,7 +161,7 @@ export function initEdges() {
         d = null;
         h.classList.remove("drag");
         document.body.classList.remove("resizing", "laydrag");
-        $("right").classList.remove("edgehint");
+        outlines("edge", []);
         save();
         layRelease();
         setTimeout(() => {
@@ -177,11 +182,9 @@ export function initEdges() {
         layRelease();
         moveThumb(true);
       }); /* defaults as shares of this window */
-      h.addEventListener("pointerenter", () => {
-        if (h.dataset.e !== "po") $("right").classList.add("edgehint");
-      });
+      h.addEventListener("pointerenter", () => outlines("edge", RESIZES[/** @type {string} */ (h.dataset.e)]));
       h.addEventListener("pointerleave", () => {
-        if (!d) $("right").classList.remove("edgehint");
+        if (!d) outlines("edge", []);
       });
     }
   })();
@@ -192,9 +195,9 @@ export function initEdges() {
      * @type {{ e: string, x0: number, y0: number, w0: number, h0: number, t0: number, full: number } | null} */
     let d = null;
     qa(".hedge").forEach(h => {
-      h.addEventListener("pointerenter", () => $("right").classList.add("edgehint"));
+      h.addEventListener("pointerenter", () => outlines("edge", RESIZES.hedge));
       h.addEventListener("pointerleave", () => {
-        if (!d) $("right").classList.remove("edgehint");
+        if (!d) outlines("edge", []);
       });
       h.addEventListener("pointerdown", ev => {
         if (S.view !== "gen" || ev.button !== 0) return;
@@ -212,7 +215,7 @@ export function initEdges() {
           full: picFull(), // the room the layout gives the picture now (its insets: layout.js)
         };
         document.body.classList.add("vresizing", "laydrag");
-        $("right").classList.add("edgehint");
+        outlines("edge", RESIZES.hedge);
       });
       h.addEventListener("pointermove", ev => {
         if (!d) return;
@@ -239,7 +242,7 @@ export function initEdges() {
         if ((prefs().ih ?? 0) > 0.995) prefs().ih = null; // no cap: the same as before (no)
         if ((prefs().vih ?? 0) > 0.995) prefs().vih = null;
         document.body.classList.remove("vresizing", "laydrag");
-        $("right").classList.remove("edgehint");
+        outlines("edge", []);
         save();
         sizeFrame();
       };
@@ -285,6 +288,10 @@ export function initEdges() {
       h.className = "sedge " + side;
       h.dataset.tip = "Drag to resize the prompt box · double-click for its default width";
       L.appendChild(h);
+      h.addEventListener("pointerenter", () => outlines("edge", RESIZES.sedge));
+      h.addEventListener("pointerleave", () => {
+        if (!d) outlines("edge", []);
+      });
       h.addEventListener("pointerdown", ev => {
         if (!q(".app.stacked") || ev.button !== 0) return;
         ev.preventDefault();
@@ -292,6 +299,7 @@ export function initEdges() {
         h.setPointerCapture(ev.pointerId);
         d = { side, x0: ev.clientX, w0: stackW() };
         document.body.classList.add("resizing", "laydrag");
+        outlines("edge", RESIZES.sedge);
       });
       h.addEventListener("pointermove", ev => {
         if (!d) return;
@@ -312,6 +320,7 @@ export function initEdges() {
         if (!d) return;
         d = null;
         document.body.classList.remove("resizing", "laydrag");
+        outlines("edge", []);
         col.style.setProperty("--soff", "0px");
         save();
         updHm();

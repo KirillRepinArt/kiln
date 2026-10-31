@@ -301,3 +301,55 @@ export async function edgesAfterDragToDock(k, t) {
     );
 }
 edgesAfterDragToDock.opts = { width: 1825, height: 1080, step: 0.05 };
+
+/* every handle outlines exactly the panes it resizes, in every layout (2026-11-01, outlines.js — one owner): the
+   divider both, the prompt's edges the box, the picture's edges the picture. Side by side the divider outlined only
+   the picture (Vertical's both); the prompt's own edges outlined nothing */
+export async function handlesOutlineTheirPanes(k, t) {
+  await k.job("[fill:446688] p", { ar: "3:4", steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=1`, 30000);
+  const cases = {
+    right: [
+      [".pedge.pi", true, true],
+      [".pedge.ri", true, true],
+      [".pedge.po", false, true],
+      [".pedge.ro", true, false],
+      ["#vedge", false, true],
+      [".hedge.t", true, false],
+    ],
+    below: [
+      ["#hsplit", true, true],
+      [".sedge.l", false, true],
+      [".hedge.t", true, false],
+    ],
+  };
+  cases.left = cases.right;
+  for (const dock of ["right", "left", "below"]) {
+    await k.ev(`(setDock("${dock}"),document.querySelector('.tab[data-v="gen"]').click(),1)`);
+    await k.mouse(2, 2);
+    await k.sleep(1800);
+    for (const [sel, pic, box] of cases[dock]) {
+      const r = await k.rect(sel),
+        x = r.left + r.width / 2,
+        y = r.top + Math.min(r.height / 2, 60);
+      await k.mouse(x, y);
+      await k.sleep(500);
+      const s = await k.ev(
+        `[document.elementFromPoint(${x},${y})===document.querySelector("${sel}"),$("fithint").classList.contains("show"),$("cardhint").classList.contains("show")]`,
+      );
+      t.ok(s[0], `${dock}: ${sel} takes the pointer`);
+      t.ok(
+        s[1] === pic && s[2] === box,
+        `${dock}: ${sel} outlines ${[pic && "the picture", box && "the box"].filter(Boolean).join(" and ")}`,
+        {
+          picture: s[1],
+          box: s[2],
+        },
+      );
+      await k.mouse(2, 2);
+      await k.sleep(1000);
+      t.ok(!(await k.ev(`$("cardhint").classList.contains("show")`)), `${dock}: ${sel} — gone after`);
+    }
+  }
+}
+handlesOutlineTheirPanes.opts = { width: 1825, height: 1080 };

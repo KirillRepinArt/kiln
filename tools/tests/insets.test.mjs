@@ -343,3 +343,59 @@ export async function dividerKeepsTheGap(k, t) {
   }
 }
 dividerKeepsTheGap.opts = { width: 1825, height: 1080 };
+
+/* Reset layout moves the pair on ONE clock (2026-11-01, G12): the prompt a pair gap from the picture on every frame.
+   The columns glided on CSS's clock while the prompt's offset jumped to where they were going: it sat ~200 px over the
+   picture for the first frames, then slid out ("teleports, then travels") */
+export async function resetKeepsTheGap(k, t) {
+  await k.job("[fill:446688] p", { ar: "3:4", steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=1`, 30000);
+  const drag = async (sel, dx) => {
+    const h = await k.rect(sel),
+      x = h.left + h.width / 2,
+      y = h.top + Math.min(100, h.height / 2);
+    await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+    await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+    for (let i = 1; i <= 8; i++)
+      await k.send("Input.dispatchMouseEvent", {
+        type: "mouseMoved",
+        x: x + (dx * i) / 8,
+        y,
+        button: "left",
+        buttons: 1,
+      });
+    await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x + dx, y, button: "left", clickCount: 1 });
+    await k.sleep(1200);
+  };
+  for (const dock of ["right", "left"])
+    for (const where of ["Generating, empty, 21:9", "the Gallery, a portrait"]) {
+      await k.ev(`(setDock("${dock}"),1)`);
+      await k.sleep(1500);
+      await k.ev(
+        where.startsWith("Gen")
+          ? `(${tab("gen")},closeShown(),S.ar="21:9",sizeFrame(),1)`
+          : `(${tab("gallery")},genNav(-1),1)`,
+      );
+      await k.sleep(1500);
+      const s = dock === "right" ? 1 : -1;
+      await drag(".pedge.ri", -250 * s);
+      await drag(".pedge.po", 150 * s);
+      await k.mouse(2, 2);
+      await k.sleep(1000);
+      const w = k.ev(
+        SAMPLE(
+          900,
+          `(()=>{const p=$("plate").getBoundingClientRect(),l=$("left").getBoundingClientRect();
+            return Math.round("${dock}"==="right"?l.left-p.right:p.left-l.right)})()`,
+        ),
+      );
+      await k.ev(`($("layBtn").click(),document.querySelector('[data-lay="reset"]').click(),1)`);
+      const gaps = await w;
+      t.motion(
+        Math.max(...gaps) - Math.min(...gaps) <= 2,
+        `${dock}, ${where}: Reset layout — the prompt a pair gap from the picture on every frame`,
+        { min: Math.min(...gaps), max: Math.max(...gaps) },
+      );
+    }
+}
+resetKeepsTheGap.opts = { width: 2000, height: 1060, step: 0.05 };

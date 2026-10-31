@@ -56,8 +56,7 @@
   z-index: 1;
   pointer-events: none;
   opacity: 0;
-  transition: opacity var(--t-200) var(--e-standard);
-}
+} /* its fade is pictures.js's (one owner, one clock: no transition here) */
 /* the crop-and-reveal: both pictures at their own final size, centred; the frame is the only thing that moves */
 .frame.morph #cvx {
   width: var(--ow);

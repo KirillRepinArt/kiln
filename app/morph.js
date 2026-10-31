@@ -2,7 +2,7 @@
 /* Kiln · the picture's crop-and-reveal when its shape changes: each axis moves once, on its own step */
 import { $ } from "./dom.js";
 import { shapeBox, shapeSteps } from "./layoutmath.js";
-import { overlayGone } from "./pictures.js";
+import { overlayRelease, overlayShows } from "./pictures.js";
 import { frameDrive } from "./framebox.js";
 import { stageRect } from "./layout.js";
 
@@ -40,8 +40,7 @@ function areaLeftAtEnd() {
 /** @param {{ w: number, h: number, l: number, t: number, x?: number, y?: number }} o where the picture was: its old box
  * in its panel, and (x, y) its top-left on screen, measured before the switch moved anything */
 export function frameMorph(o) {
-  const f = $("frame"),
-    x = $("cvx");
+  const f = $("frame");
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   /** the target box sizeFrame keeps on the frame (data-tw/th/tl/tt) */
   const T0 = () => ({
@@ -72,32 +71,23 @@ export function frameMorph(o) {
   /* the glow is its picture's: with no old picture on show it comes in with the new one — the same keyframes, the same
      clock (copied from the picture's opacity every frame by the effects loop, it ran a frame ahead) */
   const fg = document.getElementById("fglow");
-  if (fg && !(x && /** @type {HTMLCanvasElement} */ (x).width > 1))
+  if (fg && !overlayShows())
     fg.animate([{ opacity: 0 }, { opacity: 0, offset: A / T }, { opacity: 1, offset: (A + S) / T }, { opacity: 1 }], {
       duration: T,
       fill: "backwards",
     }).startTime = t0;
-  /* the old picture (on its own canvas) fades out across the swap */
-  if (x) {
-    x.dataset.morph = "1";
-    x.getAnimations().forEach(q => q.cancel());
-    const xa = x.animate(
-      [
-        { opacity: 1 },
-        { opacity: 1, offset: A / T },
-        { opacity: 0, offset: (A + S) / T, easing: "ease-in-out" },
-        { opacity: 0 },
-      ],
-      { duration: T, fill: "both" },
-    );
-    xa.startTime = t0;
-    xa.onfinish = () => {
-      x.style.opacity = "0";
-      delete x.dataset.morph;
-      x.getAnimations().forEach(q => q.cancel());
-      overlayGone();
-    };
-  }
+  /* the old picture (held on the overlay) fades out across the swap — on this motion's clock, by the overlay's owner
+     (pictures.js) */
+  overlayRelease({
+    keyframes: [
+      { opacity: 1 },
+      { opacity: 1, offset: A / T },
+      { opacity: 0, offset: (A + S) / T, easing: "ease-in-out" },
+      { opacity: 0 },
+    ],
+    duration: T,
+    startTime: t0,
+  });
   const st0 = stageRect(),
     /* the old box on screen, measured before the change: right after a tab switch the layout jumps instead of gliding,
        and the old box placed in the NEW area showed the old picture 261 px off for the first frames (2026-10-27) */

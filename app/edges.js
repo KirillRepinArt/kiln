@@ -312,20 +312,26 @@ export function initEdges() {
       h.className = "sedge " + side;
       h.dataset.tip = "Drag to resize the prompt box · double-click for its default width";
       L.appendChild(h);
-      /** a Vertical side edge being dragged: where the pointer started, the box's width then
-       * @type {{ x0: number, w0: number } | null} */
+      /** a Vertical side edge being dragged: where the pointer started, the box's width then, how far it may grow
+       * (its other side stays put: up to the room's end, the window less its area gap)
+       * @type {{ x0: number, w0: number, max: number } | null} */
       let d = null;
       gesture(h, () => RESIZES.sedge, {
         cls: ["resizing", "laydrag"],
         down: ev => {
           if (!q(".app.stacked")) return false;
           ev.stopPropagation();
-          d = { x0: ev.clientX, w0: stackW() };
+          const b = $("left").getBoundingClientRect();
+          d = {
+            x0: ev.clientX,
+            w0: stackW(),
+            max: side === "r" ? innerWidth - SPACE.area - b.left : b.right - SPACE.area,
+          };
         },
         move: ev => {
           if (!d) return;
           const dx = ev.clientX - d.x0,
-            max = innerWidth - 2 * SPACE.area;
+            max = d.max;
           const w = Math.max(Math.min(PWMIN, max), Math.min(max, d.w0 + (side === "r" ? dx : -dx)));
           S.vfit = false;
           setPaneSize("box", "w", w, "vert");

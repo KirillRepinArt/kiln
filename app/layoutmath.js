@@ -82,33 +82,38 @@ export function toolColumnW(h, n) {
  * a wide picture is fitted to that (the textbook image stage: the panels keep their widths, the picture fits the rest,
  * centred; it never pushes them). Only a window too narrow even for that makes both give way, in proportion, each down
  * to its minimum.
+ * One rule for the room (v0.7c, 2026-11-02, the user: "there's clearly some space in the app … a waste"): the group
+ * may reach the room's ends (the window less its area gap each side); the prompt has no cap of its own (it was 900 px)
+ * and no least margin (24 px). A picture page keeps the edit buttons' clearance on BOTH sides at rest: the plate's
+ * centre line stays fixed while you browse shapes (the user, 2026-10-31); a drag may take the prompt's side of it
+ * (layout.js layDrag). Placed by layoutmath.js arrange — the same group maths every layout uses. (Until the fit-page
+ * rule, E: the picture page is an AREA the prompt hugs the picture inside; then the plate itself is the pane.)
  * @param {object} m what was measured
- * @param {number} m.W the room the pair has (the window less its padding)
- * @param {boolean} m.gen Generating (the area hugs the picture) or another tab (a panel)
- * @param {boolean} m.drag an edge is being dragged (the area doesn't hug the picture then)
- * @param {number} m.minR the picture area's least width
- * @param {number} [m.hug] Generating, not dragging: the width that hugs the picture
- * @param {number} [m.clear] the least margin each side: the edit buttons hang into the outer one (never room in the
- *   area — the plate is centred in it on every page); the same each side, so the pair stays centred
+ * @param {number} m.W the room the pair has (the window less its area gap each side)
+ * @param {boolean} m.gen Generating / the Gallery (a picture fitted into the area) or a panel
+ * @param {number} m.minR the picture area's least width (the tab bar sits on its plate)
+ * @param {number} [m.clear] the edit buttons' clearance beside the picture, on its outer side
+ * @param {boolean} [m.promptRight] the prompt is on the right (the page's outer side is then the left)
  * @param {{pw: number, rw: number, iw: number | null}} L your widths: prompt, panel, the picture's cap (null = none)
  * @returns {import("./types.js").Geometry}
  */
 export function pageGeometry(m, L) {
-  const { W, gen, drag, minR } = m,
-    cl = Math.max(MMIN, m.clear || 0);
-  let pw = Math.max(PWMIN, Math.min(L.pw, CARDMAX));
-  const want = gen ? (drag ? L.iw || W : Math.min(L.iw || 1e9, m.hug ?? 9999)) : L.rw;
-  let rw = Math.max(minR, want);
-  const room = W - pairGap() - 2 * cl;
-  /* a picture page: the picture fits what the prompt leaves — the plate's centre, (W + pw + gap) / 2, stays put */
-  if (gen && !drag) rw = Math.max(minR, Math.min(rw, room - pw));
-  if (pw + rw > room) {
-    const k = Math.max(0, room) / (pw + rw);
-    pw = Math.max(PWMIN, pw * k);
-    rw = Math.max(minR, Math.min(rw * k, W - pairGap() - pw));
-  }
-  const margin = Math.max(0, (W - pairGap() - pw - rw) / 2);
-  return { pw, rw, mL: margin, mR: margin, W, minR, off: 0, gen };
+  const { W, gen, minR } = m,
+    clear = Math.max(0, m.clear || 0),
+    R = !!m.promptRight,
+    box = { size: Math.max(PWMIN, L.pw), lo: Math.min(PWMIN, W), hi: W },
+    /* a picture page takes the room the prompt leaves, up to your cap: the plate's centre line stays put */
+    page = gen ? { size: null, lo: minR, hi: L.iw ? Math.max(minR, L.iw) : W } : { size: L.rw, lo: minR, hi: W },
+    a = arrange({
+      panes: R ? [page, box] : [box, page],
+      gap: pairGap(),
+      start: clear,
+      length: W - 2 * clear,
+      margin: 0,
+      anchor: "center",
+    }),
+    [p, b] = R ? a.panes : [a.panes[1], a.panes[0]];
+  return { pw: b.size, rw: p.size, mL: a.start, mR: W - a.end, W, minR, off: 0, gen, clear };
 }
 
 /**
@@ -436,7 +441,7 @@ export function limits(pane, axis, c) {
     H = c.roomH;
   const r = (/** @type {number} */ lo, /** @type {number} */ hi) => ({ lo: Math.min(lo, hi), hi });
   if (pane === "box") {
-    if (axis === "w") return r(PWMIN, c.orient === "side" ? Math.min(CARDMAX, W) : W);
+    if (axis === "w") return r(PWMIN, W); // no cap of its own (it was 900 px side by side): the room's ends
     return c.orient === "side" ? r(BOXHMIN, H) : r(c.least ?? BOXHMIN, Math.round((c.winH ?? H) * SLOTMAX));
   }
   if (axis === "h") return r(isFitPage(pane) ? PICHMIN : PANELHMIN, H);

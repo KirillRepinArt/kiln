@@ -47,41 +47,50 @@ test("the edit buttons' column grows a column when the picture is too short for 
   assert.equal(toolColumnW(20, 6), 296); // never less than one button per column
 });
 
+/* the pair side by side (v0.7c, 2026-11-02): the group may reach the room's ends (the window less its area gap); the only
+   other room kept is the edit buttons' clearance, beside the picture on its outer side; the prompt has no cap */
+const geo = (/** @type {any} */ m, /** @type {any} */ L = wide) => pageGeometry({ minR: 420, gen: false, ...m }, L);
+
 test("a wide window: your widths as set, the pair centred with even margins", () => {
-  const g = pageGeometry({ W: 1477, gen: false, drag: false, minR: 420 }, wide);
+  const g = geo({ W: 1477 });
   assert.equal(g.pw, 680);
   assert.equal(g.rw, 660);
   near(g.mL, g.mR, "the margins are even");
-  near(g.mL + g.pw + pairGap() + g.rw + g.mR, 1477, "everything adds up to the window");
+  near(g.mL + g.pw + pairGap() + g.rw + g.mR, 1477, "everything adds up to the room");
 });
 
-test("the prompt card never gets wider than CARDMAX", () => {
-  assert.equal(pageGeometry({ W: 2500, gen: false, drag: false, minR: 420 }, { ...wide, pw: 1400 }).pw, CARDMAX);
+test("the prompt has no cap of its own: up to the room (it was 900 px)", () => {
+  assert.equal(geo({ W: 2500 }, { ...wide, pw: 1400 }).pw, 1400);
 });
 
-test("too narrow: both give way in proportion, margins down to their minimum", () => {
-  const g = pageGeometry({ W: 1000, gen: false, drag: false, minR: 420 }, wide);
+test("too narrow: both give way in proportion, the margins go first (to the room's ends)", () => {
+  const g = geo({ W: 1000 });
   assert.ok(g.pw < 680 && g.rw < 660, "both shrank");
   near(g.pw / g.rw, 680 / 660, "in proportion");
-  near(g.mL, MMIN, "the margins are what's left: their minimum");
+  near(g.mL, 0, "no margins left");
 });
 
-test("very narrow: each stops at its own minimum, no margins", () => {
-  const g = pageGeometry({ W: 700, gen: false, drag: false, minR: 420 }, wide);
+test("very narrow: each stops at its own minimum", () => {
+  const g = geo({ W: 700 });
   assert.equal(g.pw, PWMIN);
   assert.equal(g.rw, 420);
-  assert.equal(g.mL, 0);
 });
 
-test("Generating: the area hugs the picture, within your cap", () => {
-  const gen = { W: 1477, gen: true, drag: false, minR: 420 };
-  assert.equal(pageGeometry({ ...gen, hug: 500 }, wide).rw, 500, "hugs the picture");
-  assert.equal(pageGeometry({ ...gen, hug: 500 }, { ...wide, iw: 450 }).rw, 450, "but never past your cap");
-  assert.equal(pageGeometry({ ...gen, hug: 300 }, wide).rw, 420, "and never narrower than its minimum");
+test("a picture page: the area takes what the prompt leaves, up to your cap; the clearance both sides at rest", () => {
+  const g = geo({ W: 1800, gen: true, clear: 36 });
+  assert.equal(g.pw, 680, "the prompt keeps its width");
+  near(g.rw, 1800 - 72 - 680 - pairGap(), "the area: the rest, less the buttons' clearance each side");
+  near(g.mL, 36, "the clearance both sides: the plate's centre line stays put while you browse");
+  near(g.mR, 36);
+  const capped = geo({ W: 1800, gen: true, clear: 36 }, { ...wide, iw: 700 });
+  assert.equal(capped.rw, 700, "your cap");
+  near(capped.mL, capped.mR, "capped: centred");
+  near(geo({ W: 2400, gen: true, clear: 36 }, { ...wide, pw: 1400 }).pw, 1400, "no 900 px cap on the prompt");
 });
 
-test("Generating while an edge is dragged: your cap, not the picture's hug", () => {
-  assert.equal(pageGeometry({ W: 1800, gen: true, drag: true, minR: 420, hug: 500 }, { ...wide, iw: 800 }).rw, 800);
+test("a panel keeps no clearance: centred, or to the room's ends", () => {
+  const g = geo({ W: 680 + 660 + pairGap() + 30, clear: 0 });
+  near(g.mL, g.mR, "centred");
 });
 
 test("Vertical: the column is as wide as a 16:9 picture at its height, within the tab bar, the prompt and the window", () => {
@@ -93,38 +102,6 @@ test("Vertical: the column is as wide as a 16:9 picture at its height, within th
     1928,
     "Generating: the whole width (the ratio sets the picture's)",
   );
-});
-
-test("a picture page: the plate's centre stays put — the prompt keeps its width, a wide picture fits what's left", () => {
-  const W = 1473,
-    at = (/** @type {number} */ hug) => pageGeometry({ W, gen: true, drag: false, minR: 420, hug, clear: 36 }, wide),
-    centre = (/** @type {any} */ g) => g.mL + g.pw + pairGap() + g.rw / 2;
-  for (const hug of [450, 600, 900, 1400]) {
-    const g = at(hug);
-    assert.equal(g.pw, 680, `hug ${hug}: the prompt keeps its width`);
-    assert.equal(g.mL, g.mR, `hug ${hug}: even margins`);
-    near(centre(g), (W + 680 + pairGap()) / 2, `hug ${hug}: the plate's centre`);
-  }
-  assert.equal(
-    at(1400).rw,
-    W - 680 - pairGap() - 72,
-    "a wide picture: the area is what the prompt and the margins leave",
-  );
-  assert.equal(at(1400).mL, 36, "…the margins at the buttons' clearance");
-});
-
-test("side by side: the margins keep the edit buttons' clearance, the same each side", () => {
-  const roomy = pageGeometry({ W: 2400, gen: true, drag: false, minR: 420, hug: 600, clear: 36 }, wide);
-  assert.equal(roomy.mL, roomy.mR, "a roomy window: centred, the clearance changes nothing");
-  const tight = pageGeometry(
-    { W: 680 + 600 + pairGap() + 50, gen: true, drag: false, minR: 420, hug: 600, clear: 36 },
-    wide,
-  );
-  assert.equal(tight.mL, 36, "tight: each side keeps the clearance");
-  assert.equal(tight.mR, 36, "…the same each side (the pair stays centred)");
-  assert.equal(tight.pw, 680, "…the prompt keeps its width; the picture's area gives way");
-  const panel = pageGeometry({ W: 680 + 660 + pairGap() + 30, gen: false, drag: false, minR: 420, clear: 0 }, wide);
-  assert.equal(panel.mL, panel.mR, "a panel: no clearance, centred as ever");
 });
 
 test("the picture and its button column sit centred together; the column away from the prompt", () => {
@@ -323,15 +300,15 @@ const pair = (
     anchor: "center",
   });
 
-test("model: the pair matches today's pageGeometry (a panel, a picture page, a narrow window)", () => {
+test("model: pageGeometry is arrange (one group maths for every layout)", () => {
   for (const [W, gen, L] of /** @type {const} */ ([
     [1800, false, wide],
     [2400, false, { pw: 700, rw: 900, iw: null }],
-    [1800, true, wide], // a picture page with no cap: it takes the room the prompt leaves
-    [1200, false, { pw: 680, rw: 900, iw: null }], // too narrow: both shrink in proportion
+    [1800, true, wide],
+    [1200, false, { pw: 680, rw: 900, iw: null }],
   ])) {
-    const g = pageGeometry({ W, gen, drag: false, minR: 420, clear: 0 }, L),
-      a = pair(W, L.pw, gen ? null : L.rw);
+    const g = pageGeometry({ W, gen, minR: 420, clear: 0 }, L),
+      a = pair(W, L.pw, gen ? null : L.rw, 420, 0);
     near(a.panes[0].size, g.pw, `${W} ${gen} prompt width`);
     near(a.panes[1].size, g.rw, `${W} ${gen} page width`);
     near(a.start, g.mL, `${W} ${gen} left margin`);
@@ -418,7 +395,7 @@ test("model: growRoom is the room between the group and the window's edge", () =
 
 test("model: limits — one place for every pane's least and largest", () => {
   const c = { orient: /** @type {const} */ ("side"), roomW: 1800, roomH: 950, minR: 420 };
-  assert.deepEqual(limits("box", "w", c), { lo: PWMIN, hi: CARDMAX });
+  assert.deepEqual(limits("box", "w", c), { lo: PWMIN, hi: 1800 }, "the prompt: up to the room (no 900 cap)");
   assert.deepEqual(limits("queue", "w", c), { lo: 420, hi: QUEUEMAX });
   assert.deepEqual(limits("loras", "w", c), { lo: 420, hi: 1800 });
   const png = limits("png", "w", c);

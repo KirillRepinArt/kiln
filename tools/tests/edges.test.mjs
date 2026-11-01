@@ -96,3 +96,40 @@ export async function eachPageItsOwnSize(k, t) {
   t.ok(await k.ev(`S.lay.v===4`), "kept in the v4 format");
 }
 eachPageItsOwnSize.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* one limit for every edge (v0.7c, the user 2026-11-02): an edge goes until its group meets the room's end — the window
+   less its area gap — and no further. Side by side the prompt stopped ~60 px short (a 900 px cap, a 24 px margin, the
+   buttons' clearance kept on its side too); in Vertical its side edges slid off the screen */
+export async function edgesReachTheRoom(k, t) {
+  const area = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area"))`);
+  /** drag a handle to the window's right edge (events stop outside it); the box's right while held, and after */
+  const toEdge = async (sel, W) => {
+    const h = await R(k, sel),
+      x = h.left + h.width / 2,
+      y = h.top + h.height / 2,
+      x1 = W - 4;
+    await ev(k, "mouseMoved", x, y, 0);
+    await ev(k, "mousePressed", x, y);
+    for (let i = 1; i <= 12; i++) await ev(k, "mouseMoved", x + ((x1 - x) * i) / 12, y);
+    await k.sleep(200);
+    const held = (await R(k, "#left")).right;
+    await ev(k, "mouseReleased", x1, y);
+    await ev(k, "mouseMoved", 8, 8, 0);
+    await k.sleep(900);
+    return { held, after: (await R(k, "#left")).right };
+  };
+  /* a panel page (on a picture page the prompt hugs the picture inside its area until the fit-page rule, E) */
+  await k.ev(`(setDock("right"),showView("queue"),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1200);
+  const W = await k.ev(`innerWidth`),
+    s = await toEdge(".pedge.po", W);
+  t.near(s.held, W - area, 3, "side by side: held, the prompt's outer edge reaches the window less one area gap", s);
+  t.ok(s.after < s.held, "let go: the pair settles back to the centre (the box keeps its new width)", s);
+  await k.ev(`(setDock("below"),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1500);
+  const v = await toEdge(".sedge.r", W);
+  t.ok(v.held <= W - area + 3, "Vertical: the box's side never leaves the window", v);
+}
+edgesReachTheRoom.opts = { width: 1680, height: 1080, step: 0.05 };

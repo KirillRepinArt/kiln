@@ -9,9 +9,9 @@ import { $ } from "./dom.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
-  CARDMAX,
   LISTMIN,
   PWMIN,
+  arrange,
   bez,
   fitInBox,
   layoutPrefsV4,
@@ -101,7 +101,7 @@ export function tbW(h) {
    cursor: while the pointer is over the picture the whole layout holds (a new picture fits inside the held area); while
    it is over the prompt the prompt holds its place and only the picture side reshapes. Leaving lets it glide. */
 /* widths are PREFERRED sizes in px (S.lay v:3): a window resize never grows a panel past what you chose — the extra
-   goes to the margins; shrinking takes the margins first (down to MMIN), then both panels in proportion, and they come
+   goes to the margins; shrinking takes the margins first (down to the room's ends), then both panels in proportion, and they come
    back when there's room (flex's "shrink, don't grow"). Shares of the window (v:2) shrank them far too early. */
 const layW = () => innerWidth - 2 * SPACE.area; /* the window less its edge on each side */
 /* the tab bar's width, as laid out now */
@@ -231,7 +231,16 @@ export function layGeo() {
     minR = minRight();
   /* Generating's area is the whole stage the prompt leaves (no hug: ownership map G6) — the picture is centred in it
      and the prompt follows the picture instead (promptFollow) */
-  return pageGeometry({ W, gen, drag: lay.drag, minR, clear: gen ? toolsClear(picH()) : 0 }, L);
+  return pageGeometry(
+    {
+      W,
+      gen,
+      minR,
+      clear: gen ? toolsClear(picH()) : 0,
+      promptRight: /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
+    },
+    L,
+  );
 }
 /* ---------- the pair's columns move on the layout's clock, here (2026-11-01, ownership map G12) ----------
    They glided on CSS's clock (a transition on grid-template-columns) while the prompt's follow offset was worked out
@@ -301,60 +310,59 @@ function layNow() {
   }
   return g;
 }
-/* an edge drag, in px from where it started. dv = the divider (the prompt's inner edge and the image area's inner edge
-   are the same boundary): one panel grows exactly as much as the other shrinks. po / ro = the outer edges: that panel
-   changes and the pair is held still (off) so the edge stays under the cursor; layRelease() lets it re-centre.
-   In Generating the right-side width written is the picture's cap (iw), elsewhere the panel width (rw). */
+/* an edge drag, in px from where it started (v0.7c, docs/decisions/0013): ONE rule for every edge and both sides.
+   dv = the divider: one panel grows exactly as much as the other shrinks, nothing outside the pair moves. po / ro = an
+   outer edge: only that panel changes, its other side PINNED where it was (the pair's place comes from layoutmath.js
+   arrange with the pin), so the edge stays under the cursor; it can go until the pair meets the room's end (the
+   window less its area gap; the edit buttons' clearance beside the picture). layRelease() drops the pin: the pair
+   settles back to its resting place. Your sizes are written through setPaneSize (the picture page: its width cap). */
 /** @param {"dv" | "po" | "ro"} edge @param {Geometry} g0 the geometry when the drag began @param {number} dx px moved */
 export function layDrag(edge, g0, dx) {
-  const g = Object.assign({}, g0),
-    R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright");
-  if (R) {
-    dx = -dx;
-    if (edge === "po" || edge === "ro") return layDragR(edge, g0, dx);
-  } /* prompt on the right: everything mirrored */
+  const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
+    gap = pairGap(),
+    clear = g0.clear || 0,
+    first = R ? "page" : "box", // the panel on the left
+    /* the room between the pair and the band's ends at grab: where an outer edge can still go */
+    freeL = g0.mL - (R ? clear : 0),
+    freeR = g0.mR - (R ? 0 : clear),
+    lb = { lo: Math.min(PWMIN, g0.W), hi: g0.W },
+    lp = { lo: g0.minR, hi: g0.W },
+    clamp = (/** @type {number} */ v, /** @type {number} */ lo, /** @type {number} */ hi) =>
+      Math.max(lo, Math.min(Math.max(lo, hi), v));
+  let pw = g0.pw,
+    rw = g0.rw;
+  /** @type {{ i: number, side: "start" | "end", at: number }} */
+  let pin = { i: 0, side: "start", at: g0.mL }; // the divider: the pair's outer sides don't move
+  const w0 = first === "box" ? g0.pw : g0.rw; // the left panel's width at grab
   if (edge === "dv") {
-    const pw = Math.max(PWMIN, Math.min(CARDMAX, g0.pw + g0.rw - g0.minR, g0.pw + dx));
-    g.rw = g0.rw - (pw - g0.pw);
-    g.pw = pw;
+    const d = first === "box" ? dx : -dx; // how much the prompt grows
+    pw = clamp(g0.pw + d, lb.lo, g0.pw + g0.rw - lp.lo);
+    rw = g0.rw - (pw - g0.pw);
+  } else {
+    const box = edge === "po",
+      left = box === (first === "box"), // the dragged panel is the left one
+      grow = left ? -dx : dx,
+      size0 = box ? g0.pw : g0.rw,
+      lim = box ? lb : lp,
+      size = clamp(size0 + grow, lim.lo, Math.min(lim.hi, size0 + (left ? freeL : freeR)));
+    if (box) pw = size;
+    else rw = size;
+    /* its other (inner) side stays where it was */
+    pin = left ? { i: 0, side: "end", at: g0.mL + w0 } : { i: 1, side: "start", at: g0.mL + w0 + gap };
   }
-  if (edge === "po") {
-    const pw = Math.max(PWMIN, Math.min(CARDMAX, g0.pw + g0.mL, g0.pw - dx));
-    g.pw = pw;
-    const W2 = g.W - pairGap() - g.pw - g.rw;
-    g.off = g0.mL - (pw - g0.pw) - W2 / 2;
-  }
-  if (edge === "ro") {
-    const rw = Math.max(g0.minR, Math.min(g0.rw + g0.mR, g0.rw + dx));
-    g.rw = rw;
-    const W2 = g.W - pairGap() - g.pw - g.rw;
-    g.off = g0.mL - W2 / 2;
-  }
-  g.mL = g.mR = Math.max(0, (g.W - pairGap() - g.pw - g.rw) / 2);
+  const sizes = first === "box" ? [pw, rw] : [rw, pw],
+    a = arrange({
+      panes: sizes.map(s => ({ size: s, lo: s, hi: s })),
+      gap,
+      start: 0,
+      length: g0.W,
+      margin: 0,
+      anchor: "center",
+      pin,
+    }),
+    g = Object.assign({}, g0, { pw, rw, mL: a.start, mR: g0.W - a.end, off: 0 });
   setPaneSize("box", "w", g.pw, "side");
   setPaneSize(pageId(), "w", g.rw, "side"); // Generating / the Gallery: the picture's width cap; a panel: its width
-  layApply(g);
-  return g;
-}
-/* prompt on the right: the left margin sits next to the image area's outer edge */
-/** @param {"dv" | "po" | "ro"} edge @param {Geometry} g0 @param {number} dx */
-function layDragR(edge, g0, dx) {
-  const g = Object.assign({}, g0);
-  if (edge === "po") {
-    const pw = Math.max(PWMIN, Math.min(CARDMAX, g0.pw + g0.mR, g0.pw - dx));
-    g.pw = pw;
-    const W2 = g.W - pairGap() - g.pw - g.rw;
-    g.off = g0.mL - W2 / 2;
-  }
-  if (edge === "ro") {
-    const rw = Math.max(g0.minR, Math.min(g0.rw + g0.mL, g0.rw + dx));
-    g.rw = rw;
-    const W2 = g.W - pairGap() - g.pw - g.rw;
-    g.off = g0.mL - (rw - g0.rw) - W2 / 2;
-  } /* dx arrives mirrored: leftwards grows it */
-  g.mL = g.mR = Math.max(0, (g.W - pairGap() - g.pw - g.rw) / 2);
-  setPaneSize("box", "w", g.pw, "side");
-  setPaneSize(pageId(), "w", g.rw, "side");
   layApply(g);
   return g;
 }

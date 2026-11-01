@@ -76,8 +76,9 @@
  * @property {number} mR     the margin right of it
  * @property {number} W      the room it was worked out for
  * @property {number} minR   the picture area's least width
- * @property {number} off    a shift of the whole pair (held still while you drag an outer edge)
+ * @property {number} off    a shift of the whole pair (0: a drag pins through layoutmath.js arrange)
  * @property {boolean} gen   worked out for Generating
+ * @property {number} [clear] the edit buttons' clearance beside the picture, on its outer side
  */
 
 /**

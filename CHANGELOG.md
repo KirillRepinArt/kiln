@@ -86,7 +86,8 @@ What you'll notice:
   parts, 8 for things attached to a box. Gaps are a little roomier. The prompt's text sits 28 px from the box's edge to
   the letters on every side; its character count and ✕ sit centred in the top margin, on the text column.
 - **One outline rule:** something you move or resize gets a dashed line 12 px outside it, its corners following the
-  plate (the prompt box's press outline now follows the box); a place to drop gets the line inside.
+  plate (the prompt box's press outline now follows the box); a place to drop gets the line inside. A divider outlines
+  both panes it resizes: the two lines run as a pair 4 px apart down its middle.
 - **Four skins:** Aurora, Embers, Matrix (was Emerald) and Starscape. Ice, Sunset and Ember shared one look in three
   colourings; a saved choice moves to the nearest skin. Embers' own effect (sparks rising from a kiln) comes later.
 - **Change the look yourself:** every colour, gap, corner, type size and timing is a named value in

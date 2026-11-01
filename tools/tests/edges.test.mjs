@@ -394,3 +394,35 @@ export async function boxHeightEdgesSnapBack(k, t) {
   t.near(v.after, v0, 2, "…and it snaps back");
 }
 boxHeightEdgesSnapBack.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* a picture's largest height is what fits both ways (2026-11-02, the user's screenshot): a 16:9 picture bound by its
+   width can't get taller — pulling its top edge only gives a little; nothing slides, the box isn't lifted */
+export async function widthBoundPictureGivesALittle(k, t) {
+  await k.ev(`(setDock("right"),1)`);
+  await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.mouse(2, 2);
+  await k.sleep(1400);
+  const f0 = await R(k, "#frame"),
+    b0 = await R(k, "#left"),
+    bar = await R(k, ".tabs"),
+    h = await R(k, ".hedge.t"),
+    x = h.left + h.width / 2,
+    y = h.top + h.height / 2;
+  await ev(k, "mouseMoved", x, y, 0);
+  await ev(k, "mousePressed", x, y);
+  for (let i = 1; i <= 10; i++) await ev(k, "mouseMoved", x, y - 30 * i);
+  await k.sleep(250);
+  const fh = await R(k, "#frame"),
+    bh = await R(k, "#left");
+  await ev(k, "mouseReleased", x, y - 300);
+  await ev(k, "mouseMoved", 8, 8, 0);
+  await k.sleep(1200);
+  t.ok(fh.top >= bar.bottom, "held: the picture never goes under the tab bar", { top: fh.top, bar: bar.bottom });
+  t.ok(f0.top - fh.top <= 13, "held: its top gives a little at most (it can't grow: its width binds)", {
+    moved: f0.top - fh.top,
+  });
+  t.ok(Math.abs(bh.top - b0.top) <= 13, "…and the box isn't lifted", { moved: b0.top - bh.top });
+  t.near((await R(k, "#frame")).top, f0.top, 2, "let go: back where it was");
+}
+widthBoundPictureGivesALittle.opts = { width: 1680, height: 1080, step: 0.05 };

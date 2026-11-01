@@ -81,6 +81,17 @@ function gesture(h, panes, { down, move, end, cls }) {
   });
 }
 
+/** a picture's largest height (2026-11-02, the user's screenshot; DEVLOG DD-2026-11-02-12 — the numbers): what fits
+ * BOTH ways — the room's height, and its widest width over its ratio. A 16:9 picture bound by its width can't get
+ * taller: past this its edges only give a little (the top edge used to slide the whole picture up under the tab bar).
+ * Its widest: side by side the room the prompt and the buttons' clearance leave; in Vertical the column.
+ * @param {HTMLElement} f the frame (the picture) */
+function picLargestH(f) {
+  const ar = f.offsetWidth / Math.max(1, f.offsetHeight),
+    g = lay.last,
+    widest = q(".app.stacked") ? lay.colW : g ? g.W - g.pw - pairGap() - 2 * (g.clear || 0) : innerWidth;
+  return Math.min(picFull(), widest / ar);
+}
 /* start-up wiring: every edge you drag, and the edit buttons' hover (called from main.js, in order) */
 export function initEdges() {
   /* the prompt box's height edges (2026-11-02, DEVLOG DD-2026-11-02-12): ordinary edges — the size within [least,
@@ -143,7 +154,7 @@ export function initEdges() {
         y0 = e.clientY;
         h0 = $("left").getBoundingClientRect().height;
         const f = $("frame");
-        pic = S.view === "gen" ? { h0: f.offsetHeight, t0: f.offsetTop, full: picFull() } : null;
+        pic = S.view === "gen" ? { h0: f.offsetHeight, t0: f.offsetTop, full: picLargestH(f) } : null;
       },
       move: e => {
         const dy = e.clientY - y0;
@@ -281,7 +292,7 @@ export function initEdges() {
             w0: f.offsetWidth,
             h0: f.offsetHeight,
             t0: f.offsetTop,
-            full: picFull(), // the room the layout gives the picture now (its insets: layout.js)
+            full: picLargestH(f), // its largest: the room's height, or its widest width over its ratio
           };
         },
         move: ev => {

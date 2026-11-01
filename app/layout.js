@@ -11,8 +11,11 @@ import { current, jobs } from "./jobs.js";
 import {
   LISTMIN,
   PWMIN,
+  RUBBER,
   arrange,
   bez,
+  rubber,
+  trade,
   fitInBox,
   layoutPrefsV4,
   framePlacement,
@@ -211,7 +214,7 @@ export function picFull(noRow = false) {
    is the live height */
 function picH(noRow = false) {
   const full = picFull(noRow);
-  if (lay.vh) return Math.min(full, lay.vh);
+  if (lay.vh) return lay.vh; // held: the edge's size, past the room too (the rubber band; it settles on release)
   const cap = S.view === "gen" ? paneSize().h : null;
   return cap ? Math.max(200, Math.min(full, cap)) : full;
 }
@@ -316,8 +319,11 @@ function layNow() {
    arrange with the pin), so the edge stays under the cursor; it can go until the pair meets the room's end (the
    window less its area gap; the edit buttons' clearance beside the picture). layRelease() drops the pin: the pair
    settles back to its resting place. Your sizes are written through setPaneSize (the picture page: its width cap). */
-/** @param {"dv" | "po" | "ro"} edge @param {Geometry} g0 the geometry when the drag began @param {number} dx px moved */
-export function layDrag(edge, g0, dx) {
+/** @param {"dv" | "po" | "ro"} edge @param {Geometry} g0 the geometry when the drag began @param {number} dx px moved
+ * @param {{ ar: number, full: number, w0: number } | null} [pic] a picture page: the picture IS the page's pane — its
+ *   width at grab (w0), its height following its ratio, never taller than its room; its area is the picture, never
+ *   narrower than the tab bar (a smaller picture sits centred in it); null: a panel */
+export function layDrag(edge, g0, dx, pic = null) {
   const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
     gap = pairGap(),
     clear = g0.clear || 0,
@@ -326,31 +332,51 @@ export function layDrag(edge, g0, dx) {
     freeL = g0.mL - (R ? clear : 0),
     freeR = g0.mR - (R ? 0 : clear),
     lb = { lo: Math.min(PWMIN, g0.W), hi: g0.W },
-    lp = { lo: g0.minR, hi: g0.W },
+    /* a picture can't be wider than its height allows: the room's height × its ratio */
+    lp = pic ? { lo: 200 * pic.ar, hi: Math.min(g0.W, pic.full * pic.ar) } : { lo: g0.minR, hi: g0.W },
+    /* the page's own size at grab: a panel's width, or the picture's (its area may be wider: the tab bar) */
+    p0 = pic ? pic.w0 : g0.rw,
+    area = (/** @type {number} */ p) => (pic ? Math.max(g0.minR, p) : p),
     clamp = (/** @type {number} */ v, /** @type {number} */ lo, /** @type {number} */ hi) =>
       Math.max(lo, Math.min(Math.max(lo, hi), v));
+  /* what you see while held (past a limit: with resistance) and what's kept (the limit) */
   let pw = g0.pw,
-    rw = g0.rw;
+    rw = p0,
+    pwKeep = pw,
+    rwKeep = rw;
   /** @type {{ i: number, side: "start" | "end", at: number }} */
   let pin = { i: 0, side: "start", at: g0.mL }; // the divider: the pair's outer sides don't move
   const w0 = first === "box" ? g0.pw : g0.rw; // the left panel's width at grab
   if (edge === "dv") {
-    const d = first === "box" ? dx : -dx; // how much the prompt grows
-    pw = clamp(g0.pw + d, lb.lo, g0.pw + g0.rw - lp.lo);
-    rw = g0.rw - (pw - g0.pw);
+    const d = first === "box" ? dx : -dx, // how much the prompt grows
+      /* the divider never takes the picture under the tab bar's width (its area would stop, the prompt overlap) */
+      lc = { lo: pic ? Math.max(lp.lo, g0.minR) : lp.lo, hi: lp.hi },
+      la = { lo: lb.lo, hi: g0.pw + p0 - lc.lo },
+      shown = trade(d, g0.pw, p0, la, lc),
+      hi = Math.min(la.hi - g0.pw, p0 - lc.lo),
+      kept = clamp(d, Math.min(hi, Math.max(la.lo - g0.pw, p0 - lc.hi)), hi);
+    pw = g0.pw + shown;
+    rw = p0 - shown;
+    pwKeep = g0.pw + kept;
+    rwKeep = p0 - kept;
   } else {
     const box = edge === "po",
       left = box === (first === "box"), // the dragged panel is the left one
       grow = left ? -dx : dx,
-      size0 = box ? g0.pw : g0.rw,
+      size0 = box ? g0.pw : p0,
       lim = box ? lb : lp,
-      size = clamp(size0 + grow, lim.lo, Math.min(lim.hi, size0 + (left ? freeL : freeR)));
-    if (box) pw = size;
-    else rw = size;
-    /* its other (inner) side stays where it was */
-    pin = left ? { i: 0, side: "end", at: g0.mL + w0 } : { i: 1, side: "start", at: g0.mL + w0 + gap };
+      hi = Math.min(lim.hi, size0 + (left ? freeL : freeR)),
+      shown = rubber(size0 + grow, lim.lo, Math.max(lim.lo, hi), RUBBER),
+      kept = clamp(size0 + grow, lim.lo, hi);
+    if (box) [pw, pwKeep] = [shown, kept];
+    else [rw, rwKeep] = [shown, kept];
+    /* its other (inner) side stays where it was — a picture's own side, even when its area is wider (the tab bar):
+       the area moves by half the difference so the picture, centred in it, keeps that side still */
+    const slack = (/** @type {number} */ p) => (pic && !box ? (area(p) - p) / 2 : 0),
+      shift = slack(p0) - slack(rw);
+    pin = left ? { i: 0, side: "end", at: g0.mL + w0 - shift } : { i: 1, side: "start", at: g0.mL + w0 + gap + shift };
   }
-  const sizes = first === "box" ? [pw, rw] : [rw, pw],
+  const sizes = first === "box" ? [pw, area(rw)] : [area(rw), pw],
     a = arrange({
       panes: sizes.map(s => ({ size: s, lo: s, hi: s })),
       gap,
@@ -360,9 +386,17 @@ export function layDrag(edge, g0, dx) {
       anchor: "center",
       pin,
     }),
-    g = Object.assign({}, g0, { pw, rw, mL: a.start, mR: g0.W - a.end, off: 0 });
-  setPaneSize("box", "w", g.pw, "side");
-  setPaneSize(pageId(), "w", g.rw, "side"); // Generating / the Gallery: the picture's width cap; a panel: its width
+    g = Object.assign({}, g0, { pw, rw: area(rw), mL: a.start, mR: g0.W - a.end, off: 0 });
+  setPaneSize("box", "w", pwKeep, "side");
+  if (edge !== "po") {
+    /* the page's size: a panel its width; a picture its box (the width, and the height its ratio gives) */
+    setPaneSize(pageId(), "w", area(rwKeep), "side");
+    if (pic) {
+      const hk = rwKeep / pic.ar;
+      setPaneSize(pageId(), "h", hk >= pic.full - 1 ? null : hk, "side");
+      lay.vh = rw / pic.ar; // held: the picture as wide as the area, past its room too (rubber)
+    }
+  }
   layApply(g);
   return g;
 }

@@ -302,8 +302,10 @@ export async function dividerKeepsTheGap(k, t) {
         gap = () =>
           k.ev(`(()=>{const p=$("plate").getBoundingClientRect(),l=$("left").getBoundingClientRect();
             return Math.round("${dock}"==="right"?l.left-p.right:p.left-l.right)})()`);
-      const gaps = [await gap()],
-        g0 = await k.ev(`$("frame").getBoundingClientRect().left`);
+      /* the picture's side at the divider (v0.7c: its outer side holds, the picture itself changes) */
+      const side = dock === "right" ? "right" : "left",
+        gaps = [await gap()],
+        g0 = await k.ev(`$("frame").getBoundingClientRect().${side}`);
       await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
       await k.send("Input.dispatchMouseEvent", {
         type: "mousePressed",
@@ -324,15 +326,14 @@ export async function dividerKeepsTheGap(k, t) {
         await k.sleep(40);
         gaps.push(await gap());
       }
-      const g1 = await k.ev(`$("frame").getBoundingClientRect().left`);
+      const g1 = await k.ev(`$("frame").getBoundingClientRect().${side}`);
       await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x + d, y, button: "left", clickCount: 1 });
       await k.sleep(1200);
       gaps.push(await gap());
-      t.ok(
-        Math.abs(g1 - g0) > 20,
-        `${dock}, ${sel} ${dx}: the drag moves the picture (a portrait: its height is the limit)`,
-        { g0, g1 },
-      );
+      t.ok(Math.abs(g1 - g0) > 20, `${dock}, ${sel} ${dx}: the drag moves the picture's side at the divider`, {
+        g0,
+        g1,
+      });
       t.ok(
         Math.max(...gaps) - Math.min(...gaps) <= 2,
         `${dock}, ${sel} ${dx}: the prompt a pair gap from the picture on every step`,

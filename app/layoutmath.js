@@ -397,6 +397,8 @@ export const BOXHMIN = 240, // the prompt box's least height side by side (you s
   QUEUEMAX = 900, // the Queue's widest: past it, lines get too long to read
   SLOTMAX = 0.7; // Vertical: the prompt box's tallest, a share of the window
 
+/** how far a size may stretch past its limit (the rubber band's d): the same for every edge */
+export const RUBBER = 160;
 /**
  * Past a limit a size moves on with resistance and springs back on release (Apple's rubber band):
  * over → d · (1 − 1 / (over · 0.55 / d + 1)), always less than over, never past d.
@@ -518,7 +520,7 @@ export function growRoom(arr, side, roomStart, roomEnd) {
 export function trade(d, a, b, la, lb) {
   const hi = Math.min(la.hi - a, b - lb.lo),
     lo = Math.min(hi, Math.max(la.lo - a, b - lb.hi));
-  return rubber(d, lo, hi, Math.min(a, b));
+  return rubber(d, lo, hi, RUBBER);
 }
 
 /**

@@ -124,12 +124,76 @@ export async function edgesReachTheRoom(k, t) {
   await k.sleep(1200);
   const W = await k.ev(`innerWidth`),
     s = await toEdge(".pedge.po", W);
-  t.near(s.held, W - area, 3, "side by side: held, the prompt's outer edge reaches the window less one area gap", s);
+  t.ok(
+    s.held >= W - area - 3 && s.held < W,
+    "side by side: held, the prompt's edge reaches the window less one area gap (past it: resistance)",
+    s,
+  );
   t.ok(s.after < s.held, "let go: the pair settles back to the centre (the box keeps its new width)", s);
   await k.ev(`(setDock("below"),1)`);
   await k.mouse(2, 2);
   await k.sleep(1500);
   const v = await toEdge(".sedge.r", W);
-  t.ok(v.held <= W - area + 3, "Vertical: the box's side never leaves the window", v);
+  t.ok(v.held < W, "Vertical: the box's side never leaves the window", v);
+  t.ok((await k.ev(`paneSize("box","vert").w`)) <= W - 2 * area + 1, "…what's kept is the limit");
 }
 edgesReachTheRoom.opts = { width: 1680, height: 1080, step: 0.05 };
+
+/** press a handle, move it by dx in steps, measure while held, let go; returns { held, after } of the given selectors */
+async function dragMeasure(k, sel, dx, what) {
+  const h = await R(k, sel),
+    x = h.left + h.width / 2,
+    y = h.top + Math.min(h.height / 2, 200);
+  await ev(k, "mouseMoved", x, y, 0);
+  await ev(k, "mousePressed", x, y);
+  for (let i = 1; i <= 12; i++) await ev(k, "mouseMoved", x + (dx * i) / 12, y);
+  await k.sleep(250);
+  const held = {};
+  for (const s of what) held[s] = await R(k, s);
+  await ev(k, "mouseReleased", x + dx, y);
+  await ev(k, "mouseMoved", 8, 8, 0);
+  await k.sleep(1200);
+  const after = {};
+  for (const s of what) after[s] = await R(k, s);
+  return { held, after };
+}
+
+/* the fit-page rule (v0.7c E, the user 2026-11-02): on a picture page the picture's edges drag the PICTURE — its
+   ratio moves its height — and the divider trades the prompt against the picture. They set the area's width: a
+   picture held by its height didn't change, and the edge bounced back */
+export async function pictureEdgesDragThePicture(k, t) {
+  await k.ev(`(setDock("left"),1)`);
+  await k.job("[fill:446688] tall", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.mouse(2, 2);
+  await k.sleep(1400);
+  const f0 = await R(k, "#frame"),
+    L0 = await R(k, "#left");
+  /* the outer edge in by 200: the picture 200 narrower, its height by its ratio; the prompt doesn't move */
+  const a = await dragMeasure(k, ".pedge.ro", -200, ["#frame", "#left"]);
+  t.near(a.held["#frame"].width, f0.width - 200, 4, "held: the picture 200 px narrower", { w: a.held["#frame"].width });
+  t.near(a.held["#frame"].height, ((f0.width - 200) * f0.height) / f0.width, 4, "…its height by its ratio");
+  t.near(a.held["#frame"].left, f0.left, 3, "…its inner side holds");
+  t.near(a.held["#left"].left, L0.left, 3, "…and the prompt doesn't move");
+  t.near(a.after["#frame"].width, f0.width - 200, 4, "let go: the picture keeps that size");
+  /* back out by 120: it grows */
+  const b = await dragMeasure(k, ".pedge.ro", 120, ["#frame"]);
+  t.near(b.held["#frame"].width, a.after["#frame"].width + 120, 4, "the outer edge out: the picture grows");
+  /* the divider toward the picture by 100: the prompt 100 wider, the picture 100 narrower, its outer side still */
+  const f1 = b.after["#frame"],
+    L1 = await R(k, "#left"),
+    c = await dragMeasure(k, ".pedge.ri", 100, ["#frame", "#left"]);
+  t.near(c.held["#left"].width, L1.width + 100, 4, "the divider: the prompt 100 px wider");
+  t.near(c.held["#frame"].width, f1.width - 100, 4, "…the picture 100 px narrower");
+  t.near(c.held["#frame"].right, f1.right, 3, "…its outer side holds");
+  /* at its full height it can't grow: the edge answers with resistance and the picture settles back */
+  await k.ev(`(setPaneSize(pageId(),"h",null),setPaneSize(pageId(),"w",null,"side"),sizeFrame(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1400);
+  const f2 = await R(k, "#frame"),
+    d = await dragMeasure(k, ".pedge.ro", 200, ["#frame"]);
+  const grew = d.held["#frame"].width - f2.width;
+  t.ok(grew > 10 && grew < 150, "at full height: the edge moves with resistance (the rubber band)", { grew });
+  t.near(d.after["#frame"].width, f2.width, 3, "…and the picture settles back on release");
+}
+pictureEdgesDragThePicture.opts = { width: 1900, height: 1300, step: 0.05 }; // a 3:4 picture wider than the tab bar

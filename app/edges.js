@@ -10,10 +10,10 @@ import { applyPH, card, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from 
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
 import { lay, layDrag, layGeo, layRelease, pageId, picFull, setPaneSize, sizeFrame } from "./layout.js";
-import { PWMIN } from "./layoutmath.js";
+import { PWMIN, RUBBER, rubber } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
-import { SPACE } from "./tokens.js";
+import { SPACE, pairGap } from "./tokens.js";
 
 /** the body classes a drag holds while it lasts (the cursor, no transitions) — removed by the gesture's end, always */
 const DRAG_CLASSES = ["resizing", "vresizing", "laydrag"];
@@ -126,10 +126,10 @@ export function initEdges() {
       move: e => {
         const dy = e.clientY - y0;
         if (pic) {
-          const nh = Math.max(200, Math.min(pic.full, pic.h0 + dy));
+          const nh = rubber(pic.h0 + dy, 200, pic.full, RUBBER); // past a limit: with resistance
           lay.vh = nh;
           lay.vtop = pic.t0;
-          setPaneSize(pageId(), "h", nh);
+          setPaneSize(pageId(), "h", Math.max(200, Math.min(pic.full, pic.h0 + dy)));
           sizeFrame();
           return;
         }
@@ -183,23 +183,36 @@ export function initEdges() {
       mk($("right"), "ro", "ro", R_TIP),
     ];
     for (const h of hs) {
-      /** the drag: which edge, where the pointer started, the geometry then @type {{ e: "dv" | "po" | "ro", x0: number, g0: import("./types.js").Geometry } | null} */
+      /** the drag: which edge, where the pointer started, the geometry then, the picture (a picture page)
+       * @type {{ e: "dv" | "po" | "ro", x0: number, g0: import("./types.js").Geometry, pic: { ar: number, full: number, w0: number } | null } | null} */
       let d = null;
       gesture(h, () => RESIZES[/** @type {string} */ (h.dataset.e)], {
         cls: ["resizing", "laydrag"],
         down: ev => {
           if (q(".app.stacked")) return false;
           ev.stopPropagation(); /* not the card's move gesture */
-          d = {
-            e: /** @type {"dv" | "po" | "ro"} */ (h.dataset.e),
-            x0: ev.clientX,
-            g0: Object.assign({}, lay.last || layGeo(), { gen: S.view === "gen" }),
-          };
+          const g0 = Object.assign({}, lay.last || layGeo(), { gen: S.view === "gen" });
+          /** @type {{ ar: number, full: number, w0: number } | null} */
+          let pic = null;
+          /* a picture page: the PICTURE is the page's pane (v0.7c, the fit-page rule) — measured where it is, so the
+             area shrinks to it and nothing moves at the press; its edges drag the picture, its ratio moves its height */
+          const f = $("frame"),
+            fr = f.getBoundingClientRect();
+          if (g0.gen && fr.width > 0 && fr.height > 0) {
+            const R = !!q(".app.pright"),
+              aw = Math.max(g0.minR, fr.width), // its area: the picture, never narrower than the tab bar
+              x = fr.left - (aw - fr.width) / 2 - SPACE.area; // in the pair's room (the window less its area gap)
+            g0.rw = aw;
+            g0.mL = R ? x : x - pairGap() - g0.pw;
+            g0.mR = g0.W - g0.mL - g0.pw - pairGap() - g0.rw;
+            pic = { ar: fr.width / fr.height, full: picFull(), w0: fr.width };
+          }
+          d = { e: /** @type {"dv" | "po" | "ro"} */ (h.dataset.e), x0: ev.clientX, g0, pic };
           lay.drag = true;
         },
         move: ev => {
           if (!d) return;
-          layDrag(d.e, d.g0, ev.clientX - d.x0);
+          layDrag(d.e, d.g0, ev.clientX - d.x0, d.e === "po" ? null : d.pic);
           lay.frameHold = true;
           sizeFrame();
           lay.frameHold = false;
@@ -207,6 +220,7 @@ export function initEdges() {
         },
         end: () => {
           d = null;
+          lay.vh = null; // the picture back to its kept size: it settles with the pair
           save();
           layRelease();
           setTimeout(() => {
@@ -258,10 +272,12 @@ export function initEdges() {
             : d.e === "b"
               ? d.h0 + dy
               : d.h0 - dy;
-          const nh = Math.max(200, Math.min(d.full, want));
+          /* past its least or its room: with resistance (the rubber band); what's kept is the limit */
+          const nh = rubber(want, 200, d.full, RUBBER);
           lay.vh = nh;
           lay.vtop = side ? d.t0 + (d.h0 - nh) / 2 : d.e === "b" ? d.t0 : d.t0 + (d.h0 - nh);
-          setPaneSize(pageId(), "h", nh);
+          if (!side && !q(".app.stacked")) setPaneSize(pageId(), "w", null, "side"); // the height decides; the width follows
+          setPaneSize(pageId(), "h", Math.max(200, Math.min(d.full, want)));
           sizeFrame();
         },
         end: () => {
@@ -270,7 +286,7 @@ export function initEdges() {
           d = null;
           lay.vh = null;
           lay.vtop = null;
-          if (nh && nh >= full * 0.995) setPaneSize(pageId(), "h", null); // the whole room: no cap
+          if (nh && nh >= full * 0.995) setPaneSize(pageId(), "h", null); // the whole room: no cap (it settles there)
           save();
           sizeFrame();
         },
@@ -332,9 +348,11 @@ export function initEdges() {
           if (!d) return;
           const dx = ev.clientX - d.x0,
             max = d.max;
-          const w = Math.max(Math.min(PWMIN, max), Math.min(max, d.w0 + (side === "r" ? dx : -dx)));
+          const want = d.w0 + (side === "r" ? dx : -dx),
+            lo = Math.min(PWMIN, max),
+            w = rubber(want, lo, max, RUBBER); // past a limit: with resistance; what's kept is the limit
           S.vfit = false;
-          setPaneSize("box", "w", w, "vert");
+          setPaneSize("box", "w", Math.max(lo, Math.min(max, want)), "vert");
           col.style.setProperty("--sw", w + "px");
           col.style.setProperty("--soff", ((side === "r" ? 1 : -1) * (w - d.w0)) / 2 + "px");
         } /* the other edge stays put */,

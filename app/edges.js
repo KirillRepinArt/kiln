@@ -1,7 +1,10 @@
 // @ts-check
 /* Kiln · the edges you drag: the prompt box's height, Vertical's slot line and side edges, the panels' widths, the
    picture's top / bottom edges — and the edit buttons beside the picture showing on hover. The sizes they set are in
-   S.lay (layout.js does the maths and applies them) */
+   S.lay (layout.js does the maths and applies them).
+   Every edge is ONE gesture (gesture() below, 2026-11-01): press → move → end, and it ends however the drag ends — the
+   button up, a cancel, the pointer's capture lost (a reload, another window taking it), a move without the button —
+   once. Each edge used to end itself on its own subset of those; a lost capture left the resize cursor stuck. */
 import { toast } from "./boot.js";
 import { applyPH, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
 import { RESIZES, outlines } from "./outlines.js";
@@ -12,6 +15,60 @@ import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { SPACE } from "./tokens.js";
 
+/** the body classes a drag holds while it lasts (the cursor, no transitions) — removed by the gesture's end, always */
+const DRAG_CLASSES = ["resizing", "vresizing", "laydrag"];
+
+/**
+ * One drag gesture on a handle — the only place an edge's press, move and end are wired.
+ * `down` may decline the press (return false); `end` runs exactly once per accepted press, however the drag ends.
+ * While hovered or held, the handle outlines the panes it resizes (outlines.js).
+ * @param {HTMLElement} h the handle
+ * @param {() => import("./outlines.js").Pane[]} panes what it resizes
+ * @param {object} fn
+ * @param {(e: PointerEvent) => boolean | void} fn.down the press (false: not a drag)
+ * @param {(e: PointerEvent) => void} fn.move a move with the button held
+ * @param {() => void} fn.end the drag is over
+ * @param {string[]} fn.cls the body classes the drag holds
+ */
+function gesture(h, panes, { down, move, end, cls }) {
+  let on = false,
+    pid = -1;
+  const stop = () => {
+    if (!on) return;
+    on = false;
+    try {
+      if (h.hasPointerCapture(pid)) h.releasePointerCapture(pid);
+    } catch (_) {}
+    document.body.classList.remove(...DRAG_CLASSES);
+    h.classList.remove("drag");
+    outlines("edge", h.matches(":hover") ? panes() : []);
+    end();
+  };
+  h.addEventListener("pointerdown", e => {
+    if (e.button !== 0 || on) return;
+    if (down(e) === false) return;
+    e.preventDefault();
+    on = true;
+    pid = e.pointerId;
+    try {
+      h.setPointerCapture(pid);
+    } catch (_) {}
+    h.classList.add("drag");
+    document.body.classList.add(...cls);
+    outlines("edge", panes());
+  });
+  h.addEventListener("pointermove", e => {
+    if (!on) return;
+    if (!(e.buttons & 1)) return stop(); // the button came up where we didn't hear it
+    move(e);
+  });
+  for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) h.addEventListener(t, stop);
+  h.addEventListener("pointerenter", () => outlines("edge", panes()));
+  h.addEventListener("pointerleave", () => {
+    if (!on) outlines("edge", []);
+  });
+}
+
 /* start-up wiring: every edge you drag, and the edit buttons' hover (called from main.js, in order) */
 export function initEdges() {
   /* the prompt box's bottom edge, side by side: its height. (Vertical has none since 2026-10-31: the prompt sits at the
@@ -20,40 +77,25 @@ export function initEdges() {
     const g = $("vedge");
     let y0 = 0,
       h0 = 0;
-    /* every handle shows the outlines of the panes it resizes (outlines.js RESIZES) while hovered or held */
-    g.addEventListener("pointerenter", () => outlines("edge", RESIZES.vedge));
-    g.addEventListener("pointerleave", () => {
-      if (!g.classList.contains("drag")) outlines("edge", []);
-    });
-    g.addEventListener("pointerdown", e => {
-      e.preventDefault();
-      g.setPointerCapture(e.pointerId);
-      g.classList.add("drag");
-      outlines("edge", RESIZES.vedge);
-      document.body.classList.add("vresizing");
-      $("left").classList.add("nodur");
-      y0 = e.clientY;
-      h0 = $("left").getBoundingClientRect().height;
-    });
-    g.addEventListener("pointermove", e => {
-      if (!g.classList.contains("drag")) return;
-      if (!(e.buttons & 1)) {
-        g.dispatchEvent(new PointerEvent("pointerup"));
-        return;
-      }
-      const max = /** @type {HTMLElement} */ ($("left").parentElement).getBoundingClientRect().height - 2 * SPACE.area;
-      S.pph = Math.max(240, Math.min(max, Math.round(h0 + e.clientY - y0)));
-      applyPH();
-    });
-    g.addEventListener("pointerup", () => {
-      if (!g.classList.contains("drag")) return;
-      g.classList.remove("drag");
-      outlines("edge", []);
-      document.body.classList.remove("vresizing");
-      $("left").classList.remove("nodur");
-      lyUnfreeze();
-      layoutLeft();
-      save();
+    gesture(g, () => RESIZES.vedge, {
+      cls: ["vresizing"],
+      down: e => {
+        $("left").classList.add("nodur");
+        y0 = e.clientY;
+        h0 = $("left").getBoundingClientRect().height;
+      },
+      move: e => {
+        const max =
+          /** @type {HTMLElement} */ ($("left").parentElement).getBoundingClientRect().height - 2 * SPACE.area;
+        S.pph = Math.max(240, Math.min(max, Math.round(h0 + e.clientY - y0)));
+        applyPH();
+      },
+      end: () => {
+        $("left").classList.remove("nodur");
+        lyUnfreeze();
+        layoutLeft();
+        save();
+      },
     });
     g.addEventListener("dblclick", () => {
       S.pph = 0;
@@ -62,40 +104,23 @@ export function initEdges() {
       toast("Prompt height back to auto");
     });
   })();
+  /* Vertical: the divider between the picture and the prompt (it resizes both: Apple HIG split view) */
   (function () {
     const g = $("hsplit");
     let y0 = 0,
       h0 = 0;
-    /* the divider resizes two panes: while it's hovered or held, both are outlined (Apple HIG split view; the picture's
-       own bottom edge used to show its outline) */
-    const both = (/** @type {boolean} */ on) => outlines("edge", on ? RESIZES.hsplit : []);
-    g.addEventListener("pointerenter", () => both(true));
-    g.addEventListener("pointerleave", () => {
-      if (!g.classList.contains("drag")) both(false);
-    });
-    g.addEventListener("pointerdown", e => {
-      e.preventDefault();
-      g.setPointerCapture(e.pointerId);
-      g.classList.add("drag");
-      document.body.classList.add("vresizing");
-      y0 = e.clientY;
-      h0 = $("left").getBoundingClientRect().height;
-    });
-    g.addEventListener("pointermove", e => {
-      if (!g.classList.contains("drag")) return;
-      if (!(e.buttons & 1)) {
-        g.dispatchEvent(new PointerEvent("pointerup"));
-        return;
-      }
-      /* the box's cap (layoutmath.js promptSlotH): between its least height and 70 % of the window */
-      S.sch = Math.max(slotLeast(), Math.min(Math.round(innerHeight * 0.7), Math.round(h0 - (e.clientY - y0))));
-      layoutLeft();
-    });
-    g.addEventListener("pointerup", () => {
-      g.classList.remove("drag");
-      document.body.classList.remove("vresizing");
-      both(false);
-      save();
+    gesture(g, () => RESIZES.hsplit, {
+      cls: ["vresizing"],
+      down: e => {
+        y0 = e.clientY;
+        h0 = $("left").getBoundingClientRect().height;
+      },
+      move: e => {
+        /* the box's cap (layoutmath.js promptSlotH): between its least height and 70 % of the window */
+        S.sch = Math.max(slotLeast(), Math.min(Math.round(innerHeight * 0.7), Math.round(h0 - (e.clientY - y0))));
+        layoutLeft();
+      },
+      end: () => save(),
     });
     g.addEventListener("dblclick", () => {
       S.sch = 0;
@@ -126,51 +151,39 @@ export function initEdges() {
       mk($("right"), "dv", "ri", D_TIP),
       mk($("right"), "ro", "ro", R_TIP),
     ];
-    /** a panel edge being dragged: which, where the pointer started, the geometry then @type {{ e: "dv" | "po" | "ro", x0: number, g0: import("./types.js").Geometry } | null} */
-    let d = null;
     for (const h of hs) {
-      h.addEventListener("pointerdown", ev => {
-        if (q(".app.stacked") || ev.button !== 0) return;
-        ev.preventDefault();
-        ev.stopPropagation();
-        h.setPointerCapture(ev.pointerId); /* not the card's move gesture */
-        d = {
-          e: /** @type {"dv" | "po" | "ro"} */ (h.dataset.e),
-          x0: ev.clientX,
-          g0: Object.assign({}, lay.last || layGeo(), { gen: S.view === "gen" }),
-        };
-        lay.drag = true;
-        h.classList.add("drag");
-        document.body.classList.add("resizing", "laydrag");
-        outlines("edge", RESIZES[/** @type {string} */ (h.dataset.e)]);
-      });
-      h.addEventListener("pointermove", ev => {
-        if (!d) return;
-        if (!(ev.buttons & 1)) {
-          up();
-          return;
-        }
-        layDrag(d.e, d.g0, ev.clientX - d.x0);
-        lay.frameHold = true;
-        sizeFrame();
-        lay.frameHold = false;
-        moveThumb(true);
-      });
-      const up = () => {
-        if (!d) return;
-        d = null;
-        h.classList.remove("drag");
-        document.body.classList.remove("resizing", "laydrag");
-        outlines("edge", []);
-        save();
-        layRelease();
-        setTimeout(() => {
+      /** the drag: which edge, where the pointer started, the geometry then @type {{ e: "dv" | "po" | "ro", x0: number, g0: import("./types.js").Geometry } | null} */
+      let d = null;
+      gesture(h, () => RESIZES[/** @type {string} */ (h.dataset.e)], {
+        cls: ["resizing", "laydrag"],
+        down: ev => {
+          if (q(".app.stacked")) return false;
+          ev.stopPropagation(); /* not the card's move gesture */
+          d = {
+            e: /** @type {"dv" | "po" | "ro"} */ (h.dataset.e),
+            x0: ev.clientX,
+            g0: Object.assign({}, lay.last || layGeo(), { gen: S.view === "gen" }),
+          };
+          lay.drag = true;
+        },
+        move: ev => {
+          if (!d) return;
+          layDrag(d.e, d.g0, ev.clientX - d.x0);
+          lay.frameHold = true;
           sizeFrame();
+          lay.frameHold = false;
           moveThumb(true);
-        }, 480);
-      }; /* after the glide */
-      h.addEventListener("pointerup", up);
-      h.addEventListener("pointercancel", up);
+        },
+        end: () => {
+          d = null;
+          save();
+          layRelease();
+          setTimeout(() => {
+            sizeFrame();
+            moveThumb(true);
+          }, 480); /* after the glide */
+        },
+      });
       h.addEventListener("dblclick", () => {
         const df = layDef();
         if (h.dataset.e !== "ro") prefs().pw = df.pw;
@@ -182,72 +195,58 @@ export function initEdges() {
         layRelease();
         moveThumb(true);
       }); /* defaults as shares of this window */
-      h.addEventListener("pointerenter", () => outlines("edge", RESIZES[/** @type {string} */ (h.dataset.e)]));
-      h.addEventListener("pointerleave", () => {
-        if (!d) outlines("edge", []);
-      });
     }
   })();
   /* the image area's top and bottom edges (Generating, side by side): the largest height the picture may be. The edge
    follows the cursor and the other one holds still; on release it all glides into place (height → width → centring). */
   (function () {
-    /** the picture's edge being dragged: which, where it started, the picture's size and top then, the room it has
-     * @type {{ e: string, x0: number, y0: number, w0: number, h0: number, t0: number, full: number } | null} */
-    let d = null;
     qa(".hedge").forEach(h => {
-      h.addEventListener("pointerenter", () => outlines("edge", RESIZES.hedge));
-      h.addEventListener("pointerleave", () => {
-        if (!d) outlines("edge", []);
+      /** the picture's edge being dragged: which, where it started, the picture's size and top then, the room it has
+       * @type {{ e: string, x0: number, y0: number, w0: number, h0: number, t0: number, full: number } | null} */
+      let d = null;
+      gesture(h, () => RESIZES.hedge, {
+        cls: ["vresizing", "laydrag"],
+        down: ev => {
+          if (S.view !== "gen") return false;
+          ev.stopPropagation();
+          const f = $("frame");
+          d = {
+            e: /** @type {string} */ (h.dataset.e),
+            x0: ev.clientX,
+            y0: ev.clientY,
+            w0: f.offsetWidth,
+            h0: f.offsetHeight,
+            t0: f.offsetTop,
+            full: picFull(), // the room the layout gives the picture now (its insets: layout.js)
+          };
+        },
+        move: ev => {
+          if (!d) return;
+          const dy = ev.clientY - d.y0,
+            dx = ev.clientX - d.x0,
+            side = d.e === "l" || d.e === "r";
+          /* a side edge (Vertical): the picture scales about its centre, its shape kept — the edge follows the cursor */
+          const want = side
+            ? ((d.w0 + 2 * (d.e === "r" ? dx : -dx)) * d.h0) / d.w0
+            : d.e === "b"
+              ? d.h0 + dy
+              : d.h0 - dy;
+          const nh = Math.max(200, Math.min(d.full, want));
+          lay.vh = nh;
+          lay.vtop = side ? d.t0 + (d.h0 - nh) / 2 : d.e === "b" ? d.t0 : d.t0 + (d.h0 - nh);
+          prefs()[q(".app.stacked") ? "vih" : "ih"] = nh / d.full;
+          sizeFrame();
+        },
+        end: () => {
+          d = null;
+          lay.vh = null;
+          lay.vtop = null;
+          if ((prefs().ih ?? 0) > 0.995) prefs().ih = null; // no cap: the same as before (no)
+          if ((prefs().vih ?? 0) > 0.995) prefs().vih = null;
+          save();
+          sizeFrame();
+        },
       });
-      h.addEventListener("pointerdown", ev => {
-        if (S.view !== "gen" || ev.button !== 0) return;
-        ev.preventDefault();
-        ev.stopPropagation();
-        h.setPointerCapture(ev.pointerId); /* Vertical too (its own limit) */
-        const f = $("frame");
-        d = {
-          e: /** @type {string} */ (h.dataset.e),
-          x0: ev.clientX,
-          y0: ev.clientY,
-          w0: f.offsetWidth,
-          h0: f.offsetHeight,
-          t0: f.offsetTop,
-          full: picFull(), // the room the layout gives the picture now (its insets: layout.js)
-        };
-        document.body.classList.add("vresizing", "laydrag");
-        outlines("edge", RESIZES.hedge);
-      });
-      h.addEventListener("pointermove", ev => {
-        if (!d) return;
-        if (!(ev.buttons & 1)) {
-          up();
-          return;
-        }
-        const dy = ev.clientY - d.y0,
-          dx = ev.clientX - d.x0,
-          side = d.e === "l" || d.e === "r";
-        /* a side edge (Vertical): the picture scales about its centre, its shape kept — the edge follows the cursor */
-        const want = side ? ((d.w0 + 2 * (d.e === "r" ? dx : -dx)) * d.h0) / d.w0 : d.e === "b" ? d.h0 + dy : d.h0 - dy;
-        const nh = Math.max(200, Math.min(d.full, want));
-        lay.vh = nh;
-        lay.vtop = side ? d.t0 + (d.h0 - nh) / 2 : d.e === "b" ? d.t0 : d.t0 + (d.h0 - nh);
-        prefs()[q(".app.stacked") ? "vih" : "ih"] = nh / d.full;
-        sizeFrame();
-      });
-      const up = () => {
-        if (!d) return;
-        d = null;
-        lay.vh = null;
-        lay.vtop = null;
-        if ((prefs().ih ?? 0) > 0.995) prefs().ih = null; // no cap: the same as before (no)
-        if ((prefs().vih ?? 0) > 0.995) prefs().vih = null;
-        document.body.classList.remove("vresizing", "laydrag");
-        outlines("edge", []);
-        save();
-        sizeFrame();
-      };
-      h.addEventListener("pointerup", up);
-      h.addEventListener("pointercancel", up);
       h.addEventListener("dblclick", () => {
         prefs()[q(".app.stacked") ? "vih" : "ih"] = null;
         save();
@@ -280,54 +279,40 @@ export function initEdges() {
   (function () {
     const L = $("left"),
       col = $("lcol");
-    /** a Vertical side edge being dragged: which side, where the pointer started, the box's width then
-     * @type {{ side: string, x0: number, w0: number } | null} */
-    let d = null;
     for (const side of ["l", "r"]) {
       const h = document.createElement("div");
       h.className = "sedge " + side;
       h.dataset.tip = "Drag to resize the prompt box · double-click for its default width";
       L.appendChild(h);
-      h.addEventListener("pointerenter", () => outlines("edge", RESIZES.sedge));
-      h.addEventListener("pointerleave", () => {
-        if (!d) outlines("edge", []);
+      /** a Vertical side edge being dragged: where the pointer started, the box's width then
+       * @type {{ x0: number, w0: number } | null} */
+      let d = null;
+      gesture(h, () => RESIZES.sedge, {
+        cls: ["resizing", "laydrag"],
+        down: ev => {
+          if (!q(".app.stacked")) return false;
+          ev.stopPropagation();
+          d = { x0: ev.clientX, w0: stackW() };
+        },
+        move: ev => {
+          if (!d) return;
+          const dx = ev.clientX - d.x0,
+            max = innerWidth - 2 * SPACE.area;
+          const w = Math.max(Math.min(PWMIN, max), Math.min(max, d.w0 + (side === "r" ? dx : -dx)));
+          S.vfit = false;
+          S.lay = S.lay || layDef();
+          prefs().sw = w;
+          col.style.setProperty("--sw", w + "px");
+          col.style.setProperty("--soff", ((side === "r" ? 1 : -1) * (w - d.w0)) / 2 + "px");
+        } /* the other edge stays put */,
+        end: () => {
+          d = null;
+          col.style.setProperty("--soff", "0px");
+          save();
+          updHm();
+          layoutLeft();
+        } /* glides back to centre */,
       });
-      h.addEventListener("pointerdown", ev => {
-        if (!q(".app.stacked") || ev.button !== 0) return;
-        ev.preventDefault();
-        ev.stopPropagation();
-        h.setPointerCapture(ev.pointerId);
-        d = { side, x0: ev.clientX, w0: stackW() };
-        document.body.classList.add("resizing", "laydrag");
-        outlines("edge", RESIZES.sedge);
-      });
-      h.addEventListener("pointermove", ev => {
-        if (!d) return;
-        if (!(ev.buttons & 1)) {
-          up();
-          return;
-        }
-        const dx = ev.clientX - d.x0,
-          max = innerWidth - 2 * SPACE.area;
-        const w = Math.max(Math.min(PWMIN, max), Math.min(max, d.w0 + (side === "r" ? dx : -dx)));
-        S.vfit = false;
-        S.lay = S.lay || layDef();
-        prefs().sw = w;
-        col.style.setProperty("--sw", w + "px");
-        col.style.setProperty("--soff", ((side === "r" ? 1 : -1) * (w - d.w0)) / 2 + "px");
-      }); /* the other edge stays put */
-      const up = () => {
-        if (!d) return;
-        d = null;
-        document.body.classList.remove("resizing", "laydrag");
-        outlines("edge", []);
-        col.style.setProperty("--soff", "0px");
-        save();
-        updHm();
-        layoutLeft();
-      }; /* glides back to centre */
-      h.addEventListener("pointerup", up);
-      h.addEventListener("pointercancel", up);
       h.addEventListener("dblclick", () => {
         if (S.lay) prefs().sw = null;
         S.vfit = false;

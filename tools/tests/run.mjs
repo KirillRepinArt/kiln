@@ -2,7 +2,7 @@
 // fresh data and output folders), driven over the DevTools protocol in real time.
 //
 //   node tools/tests/run.mjs              # all tests, several at a time
-//   node tools/tests/run.mjs cover        # tests whose file name contains "cover"
+//   node tools/tests/run.mjs cover dock   # tests whose file name contains "cover" or "dock"
 //   node tools/tests/run.mjs -j 1         # one at a time (-j N or KILN_JOBS=N; default: a third of the CPU cores, at most 3)
 //
 // Needs Node 22+ (built-in WebSocket), Python 3 and Edge or Chrome (KILN_BROWSER=path to pick one).
@@ -382,10 +382,10 @@ const ji = args.indexOf("-j"),
     1,
     +(ji >= 0 ? args.splice(ji, 2)[1] : process.env.KILN_JOBS || Math.min(3, Math.floor(availableParallelism() / 3))),
   );
-const filter = args[0] || "";
+const filters = args; // file names containing any of these (none: every test)
 const tests = [];
 for (const f of readdirSync(HERE)
-  .filter(f => f.endsWith(".test.mjs") && f.includes(filter))
+  .filter(f => f.endsWith(".test.mjs") && (!filters.length || filters.some(x => f.includes(x))))
   .sort()) {
   const mod = await import(pathToFileURL(join(HERE, f)));
   for (const [tname, fn] of Object.entries(mod))

@@ -326,3 +326,27 @@ export async function panelHeights(k, t) {
   t.near(v.after.top, v0.top, 3, "…resting at the top (Vertical's anchor)");
 }
 panelHeights.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* every limit and default comes from one place (layoutmath.js limits / paneDefault, v0.7c 3b): the Queue stops at a
+   readable width (~900 px), PNG Info keeps a fixed width (its edges give a little and settle back) — agreed 2026-11-01,
+   never enforced while each edge had its own numbers */
+export async function panelLimitsFromOnePlace(k, t) {
+  const area = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area"))`);
+  await k.ev(`(setDock("left"),showView("queue"),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1200);
+  const q0 = await R(k, "#rpanel");
+  await dragBy(k, ".pedge.ro", Math.min(500, (await k.ev(`innerWidth`)) - 8 - q0.right));
+  t.ok(
+    (await R(k, "#rpanel")).width <= 900 + 1,
+    "the Queue stops at its readable width",
+    (await R(k, "#rpanel")).width,
+  );
+  await k.ev(`(showView("png"),1)`);
+  await k.sleep(1200);
+  const p0 = await R(k, "#rpanel");
+  await dragBy(k, ".pedge.ro", 150);
+  t.near((await R(k, "#rpanel")).width, p0.width, 2, "PNG Info: a fixed width — it gives a little, then settles back");
+  t.ok(area > 0, "(the area gap reads)");
+}
+panelLimitsFromOnePlace.opts = { width: 2200, height: 1080, step: 0.05 };

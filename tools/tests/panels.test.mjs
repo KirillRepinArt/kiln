@@ -149,10 +149,16 @@ export async function dividerAndEdges(k, t) {
     "dragging the image area's left edge: it grows exactly as much as the prompt shrinks; still centred",
     { a, b },
   );
+  const sum = b.pr - b.pl + (b.rr - b.rl);
   await drag(k, ".pedge.ri", -2000);
   await k.sleep(500);
   b = await box(k);
-  t.ok(b.pr - b.pl === 360, "the prompt stops at its minimum (360)", b.pr - b.pl);
+  /* whichever limit binds first: the prompt's least (360) or the Queue's readable width (900; v0.7c, one place) */
+  t.ok(
+    Math.abs(b.pr - b.pl - Math.max(360, sum - 900)) <= 1,
+    "the prompt stops at its minimum, or where the Queue reaches its widest",
+    { prompt: b.pr - b.pl, sum },
+  );
   a = b;
   await drag(k, ".pedge.pi", 150);
   await k.sleep(500);

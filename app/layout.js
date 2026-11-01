@@ -4,13 +4,14 @@ import { SWITCH, plateFollow } from "./plate.js";
 import { placeAround } from "./around.js";
 import { frameBox, frameGoal, layE, layT, snaps } from "./framebox.js";
 import { syncH } from "./boot.js";
-import { applyMode, applyPH, layoutLeft, lyReset, stackW, updHm } from "./cardlayout.js";
+import { applyMode, applyPH, layoutLeft, lyReset, slotLeast, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
-  PWMIN,
-  PANELHMIN,
+  PICHMIN,
+  limits,
+  paneDefault,
   PIC_OVER,
   RUBBER,
   arrange,
@@ -155,9 +156,31 @@ export function migrateLayoutPrefs() {
   if (S.lay && S.lay.v !== 4) S.lay = upgradeLayoutPrefs(S.lay, layW());
   delete S.sch; // Vertical's kept prompt height (2026-11-01: the box hugs its text; the divider sizes the picture)
 }
-/** the defaults side by side: the prompt 680; a panel a 2:3 plate at the room's height, never narrower than the tab bar
- * (v0.7c, agreed 2026-11-01; it was 660 px whatever the window) */
-export const layDef = () => ({ pw: 680, rw: Math.max(minRight(), Math.round((picFull(true) * 2) / 3)) });
+/* every pane's least / largest size and its default come from ONE place, layoutmath.js (limits, paneDefault): these
+   two ask it with the page's context now (v0.7c 3b — the gestures had their own numbers) */
+/** @param {"box" | PageId} pane @param {"w" | "h"} axis @param {{ o?: Orient, roomH?: number }} [c] */
+export function paneLimits(pane, axis, c = {}) {
+  return limits(pane, axis, {
+    orient: c.o ?? orient(),
+    roomW: layW(),
+    roomH: c.roomH ?? picFull(true),
+    minR: minRight(),
+    least: slotLeast(),
+    winH: innerHeight,
+  });
+}
+/** @param {"box" | PageId} pane @param {Orient} [o] @param {number} [roomH] */
+export function paneDef(pane, o = orient(), roomH = picFull(true)) {
+  return paneDefault(pane, o, { w: layW(), h: roomH });
+}
+/** a size within its limits @param {number} v @param {{ lo: number, hi: number }} l */
+export const within = (v, l) => Math.max(l.lo, Math.min(l.hi, v));
+/** the defaults side by side: the prompt's width; a panel's (a 2:3 plate at the room's height, never narrower than the
+ * tab bar — v0.7c, agreed 2026-11-01; it was 660 px whatever the window) */
+export const layDef = () => ({
+  pw: paneDef("box", "side").w ?? 680,
+  rw: Math.max(minRight(), paneDef("queue", "side").w ?? 0),
+});
 /** @type {import("./types.js").LayoutState} */
 export const lay = {
   overImg: false,
@@ -221,7 +244,7 @@ function picH(noRow = false) {
   const full = picFull(noRow);
   if (lay.vh) return lay.vh; // held: the edge's size, past the room too (the rubber band; it settles on release)
   const cap = S.view === "gen" ? paneSize().h : null;
-  return cap ? Math.max(200, Math.min(full, cap)) : full;
+  return cap ? Math.max(PICHMIN, Math.min(full, cap)) : full;
 }
 /* the clearance the edit buttons need beyond the window's own margin (they hang outside the plate, never room in the
    area — kept whether they show or not, so nothing moves when they come) */
@@ -233,7 +256,9 @@ export function layGeo() {
   const gen = S.view === "gen",
     df = layDef(),
     page = paneSize(),
-    L = { pw: paneSize("box", "side").w ?? df.pw, rw: page.w ?? df.rw, iw: gen ? page.w : null },
+    /* a panel's width within its own limits (the Queue's readable width, PNG Info's fixed one) */
+    rw = gen ? df.rw : within(page.w ?? df.rw, paneLimits(pageId(), "w", { o: "side" })),
+    L = { pw: paneSize("box", "side").w ?? df.pw, rw, iw: gen ? page.w : null },
     /* never narrower than the tab bar: it sits on the plate's centre line (plate.js placeBar), and the plate is centred
        in the area on every page (2026-10-31; the bar used to be clamped into the area, off the plate's centre) */
     minR = minRight();
@@ -336,9 +361,11 @@ export function layDrag(edge, g0, dx, pic = null) {
     /* the room between the pair and the band's ends at grab: where an outer edge can still go */
     freeL = g0.mL - (R ? clear : 0),
     freeR = g0.mR - (R ? 0 : clear),
-    lb = { lo: Math.min(PWMIN, g0.W), hi: g0.W },
+    lb = paneLimits("box", "w", { o: "side" }),
     /* a picture can't be wider than its height allows: the room's height × its ratio */
-    lp = pic ? { lo: 200 * pic.ar, hi: Math.min(g0.W, pic.full * pic.ar) } : { lo: g0.minR, hi: g0.W },
+    lp = pic
+      ? { lo: PICHMIN * pic.ar, hi: Math.min(g0.W, pic.full * pic.ar) }
+      : paneLimits(pageId(), "w", { o: "side" }),
     /* the page's own size at grab: a panel's width, or the picture's (its area may be wider: the tab bar) */
     p0 = pic ? pic.w0 : g0.rw,
     area = (/** @type {number} */ p) => (pic ? Math.max(g0.minR, p) : p),
@@ -568,7 +595,13 @@ export function sizeFrame() {
       lay.colW =
         S.view === "gen"
           ? stackColumnW(most, minRight(), stackW(), hh, toolsClear(hh), true)
-          : Math.round(lay.vw ?? Math.max(minRight(), Math.min(most, paneSize().w ?? roomH())));
+          : Math.round(
+              lay.vw ??
+                within(
+                  paneSize().w ?? paneDef(pageId(), "vert", roomH()).w ?? roomH(),
+                  paneLimits(pageId(), "w", { o: "vert", roomH: roomH() }),
+                ),
+            );
       rt.style.width = lay.colW + "px";
     } else {
       if (rt.style.width) rt.style.width = "";
@@ -588,7 +621,7 @@ export function sizeFrame() {
       room = stk ? lay.vroom : Math.round(rt.clientHeight - (rp.offsetTop - cur)),
       panel = S.view !== "gen",
       kept = panel ? paneSize().h : null,
-      H = panel ? Math.round(lay.ph ?? (kept ? Math.max(PANELHMIN, Math.min(room, kept)) : room)) : null,
+      H = panel ? Math.round(lay.ph ?? (kept ? within(kept, paneLimits(pageId(), "h", { roomH: room })) : room)) : null,
       top = panel && H != null ? Math.round(lay.ptop ?? (stk ? 0 : (room - H) / 2)) : 0,
       h = H != null ? H + "px" : stk ? lay.vroom + "px" : "",
       mt = top ? top + "px" : "";

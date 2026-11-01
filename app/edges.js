@@ -6,7 +6,7 @@
    button up, a cancel, the pointer's capture lost (a reload, another window taking it), a move without the button —
    once. Each edge used to end itself on its own subset of those; a lost capture left the resize cursor stuck. */
 import { toast } from "./boot.js";
-import { applyPH, card, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
+import { applyPH, card, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
 import {
@@ -14,14 +14,15 @@ import {
   layDrag,
   layGeo,
   layRelease,
-  minRight,
   pageId,
+  paneLimits,
   paneSize,
   picFull,
   setPaneSize,
   sizeFrame,
+  within,
 } from "./layout.js";
-import { PANELHMIN, PIC_OVER, PWMIN, RUBBER, rubber } from "./layoutmath.js";
+import { PIC_OVER, RUBBER, rubber } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { SPACE, pairGap } from "./tokens.js";
@@ -137,15 +138,16 @@ export function initEdges() {
       move: e => {
         const dy = e.clientY - y0;
         if (pic) {
-          const nh = rubber(pic.h0 + dy, 200, pic.full, PIC_OVER); // past a limit: with resistance
+          const lo = paneLimits(pageId(), "h").lo,
+            nh = rubber(pic.h0 + dy, lo, pic.full, PIC_OVER); // past a limit: with resistance
           lay.vh = nh;
           lay.vtop = pic.t0;
-          setPaneSize(pageId(), "h", Math.max(200, Math.min(pic.full, pic.h0 + dy)));
+          setPaneSize(pageId(), "h", Math.max(lo, Math.min(pic.full, pic.h0 + dy)));
           sizeFrame();
           return;
         }
         /* between the box's least height and 70 % of the window (layoutmath.js promptSlotH) */
-        card.slotHold = Math.max(slotLeast(), Math.min(Math.round(innerHeight * 0.7), Math.round(h0 - dy)));
+        card.slotHold = within(Math.round(h0 - dy), paneLimits("box", "h", { o: "vert" }));
         layoutLeft();
       },
       end: () => {
@@ -284,11 +286,12 @@ export function initEdges() {
               ? d.h0 + dy
               : d.h0 - dy;
           /* past its least or its room: with resistance (the rubber band); what's kept is the limit */
-          const nh = rubber(want, 200, d.full, PIC_OVER);
+          const lo = paneLimits(pageId(), "h").lo,
+            nh = rubber(want, lo, d.full, PIC_OVER);
           lay.vh = nh;
           lay.vtop = side ? d.t0 + (d.h0 - nh) / 2 : d.e === "b" ? d.t0 : d.t0 + (d.h0 - nh);
           if (!side && !q(".app.stacked")) setPaneSize(pageId(), "w", null, "side"); // the height decides; the width follows
-          setPaneSize(pageId(), "h", Math.max(200, Math.min(d.full, want)));
+          setPaneSize(pageId(), "h", Math.max(lo, Math.min(d.full, want)));
           sizeFrame();
         },
         end: () => {
@@ -330,8 +333,7 @@ export function initEdges() {
           d = {
             x0: ev.clientX,
             w0: rt.getBoundingClientRect().width,
-            lo: minRight(),
-            hi: innerWidth - 2 * SPACE.area,
+            ...paneLimits(pageId(), "w", { o: "vert" }), // the tab bar .. the window (the Queue, PNG Info: their own)
           };
         },
         move: ev => {
@@ -386,10 +388,11 @@ export function initEdges() {
             top = side === "t",
             want = top ? d.h0 - dy : d.h0 + dy,
             hi = top ? d.h0 + d.t0 : d.room - d.t0, // up to the room's top (its bottom pinned) or its bottom
-            nh = rubber(want, PANELHMIN, hi, RUBBER);
+            lo = paneLimits(pageId(), "h", { roomH: d.room }).lo,
+            nh = rubber(want, lo, hi, RUBBER);
           lay.ph = nh;
           lay.ptop = top ? d.t0 + d.h0 - nh : d.t0; // the other side holds
-          setPaneSize(pageId(), "h", Math.max(PANELHMIN, Math.min(hi, want)));
+          setPaneSize(pageId(), "h", Math.max(lo, Math.min(hi, want)));
           sizeFrame();
         },
         end: () => {
@@ -461,7 +464,7 @@ export function initEdges() {
           const dx = ev.clientX - d.x0,
             max = d.max;
           const want = d.w0 + (side === "r" ? dx : -dx),
-            lo = Math.min(PWMIN, max),
+            lo = Math.min(paneLimits("box", "w", { o: "vert" }).lo, max),
             w = rubber(want, lo, max, RUBBER); // past a limit: with resistance; what's kept is the limit
           S.vfit = false;
           setPaneSize("box", "w", Math.max(lo, Math.min(max, want)), "vert");

@@ -948,3 +948,103 @@ export async function columnOneOwner(k, t) {
   }
 }
 columnOneOwner.opts = { width: 1872, height: 1080, step: 0.05 };
+
+/* Vertical: the picture's height first (2026-11-01, the user): every ratio takes the room's height and its width
+   follows ("21:9 should look exactly like 16:9, only expanded further to the sides" — it was capped at a 16:9 picture's
+   width and came out short, a hole under it); too wide for the window, it shrinks and the prompt stays one even gap
+   under it, the spare height at the window's bottom — on every frame of a ratio change. Grabbing its edge doesn't
+   contract it (V7: the column was a 16:9 picture's width at the held height) */
+const VS = (ms, expr) => `new Promise(res=>{const o=[],t0=performance.now();
+  (function s(){requestAnimationFrame(()=>setTimeout(()=>{o.push(${expr});if(performance.now()-t0<${ms})s();else res(o)},0))})()})`;
+const GLUE = `(()=>{const p=$("plate").getBoundingClientRect(),n=$("pname").getBoundingClientRect(),t=document.querySelector(".tabs").getBoundingClientRect();
+  return [Math.round(n.top-p.bottom),Math.round(p.top-t.bottom),Math.round(innerHeight-$("left").getBoundingClientRect().bottom)]})()`;
+export async function heightFirst(k, t) {
+  const empty = ar =>
+    k.ev(
+      `(setDock("below"),document.querySelector('.tab[data-v="gen"]').click(),closeShown(),S.ar="${ar}",sizeFrame(),1)`,
+    );
+  await empty("16:9");
+  await k.mouse(2, 2);
+  await k.sleep(1600);
+  const f16 = await k.rect("#frame");
+  await empty("21:9");
+  await k.sleep(1600);
+  const f21 = await k.rect("#frame");
+  t.near(f21.height, f16.height, 2, "a wide window: 21:9 as tall as 16:9", { f16: f16.height, f21: f21.height });
+  t.ok(f21.width > f16.width * 1.25, "…and wider", { f16: f16.width, f21: f21.width });
+  const g = await k.ev(GLUE);
+  t.near(g[0], g[1], 3, "the prompt's name one even gap under the picture", g);
+  /* V7: pressing the picture's top edge doesn't change its width */
+  const e = await k.rect(".hedge.t"),
+    x = e.left + e.width / 2,
+    y = e.top + e.height / 2;
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+  await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y: y + 1, button: "left", buttons: 1 });
+  await k.sleep(300);
+  const held = await k.rect("#frame");
+  await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y: y + 1, button: "left", clickCount: 1 });
+  await k.ev(`(document.querySelector(".hedge.t").dispatchEvent(new MouseEvent("dblclick",{bubbles:true})),1)`);
+  t.near(held.width, f21.width, 3, "grabbing the picture's edge doesn't contract it", {
+    before: f21.width,
+    held: held.width,
+  });
+  /* a narrow window: too wide for it — glued, the spare at the bottom, on every frame of the change */
+  await k.send("Emulation.setDeviceMetricsOverride", {
+    width: 1200,
+    height: 1060,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await empty("16:9");
+  await k.sleep(1600);
+  const w = k.ev(VS(1000, GLUE));
+  await k.ev(`(S.ar="21:9",sizeFrame(),1)`);
+  const s = await w,
+    gaps = s.map(v => v[0] - v[1]),
+    last = s.at(-1);
+  t.motion(
+    Math.max(...gaps.map(Math.abs)) <= 3,
+    "a narrow window, 16:9 → 21:9: the prompt one even gap under the picture on every frame",
+    {
+      min: Math.min(...gaps),
+      max: Math.max(...gaps),
+    },
+  );
+  t.ok(last[2] > 60, "…the spare height under the prompt, at the window's bottom", { under: last[2] });
+  /* …and dragging the divider up (the box taller, the picture's room shorter, its box unchanged): still one even gap */
+  const d = await k.rect("#hsplit"),
+    dx = d.left + d.width / 2,
+    dy = d.top + d.height / 2;
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: dx, y: dy });
+  await k.send("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    x: dx,
+    y: dy,
+    button: "left",
+    buttons: 1,
+    clickCount: 1,
+  });
+  const mid = [];
+  for (let i = 1; i <= 8; i++) {
+    await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: dx, y: dy - i * 15, button: "left", buttons: 1 });
+    await k.sleep(60);
+    mid.push(await k.ev(GLUE));
+  }
+  t.ok(
+    mid.every(v => Math.abs(v[0] - v[1]) <= 3),
+    "…while the divider is dragged, too: the prompt never overlaps the picture",
+    mid.map(v => v[0] - v[1]),
+  );
+  await k.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    x: dx,
+    y: dy - 120,
+    button: "left",
+    clickCount: 1,
+  });
+  await k.sleep(800);
+  const g2 = await k.ev(GLUE);
+  t.near(g2[0], g2[1], 3, "a divider drag with a width-limited picture: the prompt never overlaps it", g2);
+}
+heightFirst.opts = { width: 2000, height: 1060, step: 0.05 };

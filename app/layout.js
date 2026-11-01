@@ -6,6 +6,7 @@ import { frameBox, frameGoal, layE, layT, snaps } from "./framebox.js";
 import { syncH } from "./boot.js";
 import { applyMode, applyPH, layoutLeft, lyReset, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
+import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
   CARDMAX,
@@ -139,6 +140,8 @@ export const lay = {
   ins: "",
   colW: 0,
   shown: null,
+  vroom: 0,
+  vrow: 0,
 };
 /* Vertical: the even gap — the picture's plate starts this far under the tab buttons, and the prompt's name starts this
    far under the plate (or under its status row) */
@@ -482,7 +485,14 @@ export function sizeFrame() {
       /* its width from the picture's height WITHOUT the status row's room: a render starting or ending doesn't
          change it (its width glided on CSS's clock while the frame moved on its own: G6) */
       const hh = picH(true);
-      lay.colW = stackColumnW(app.clientWidth - 2 * SPACE.area, minRight(), stackW(), hh, toolsClear(hh));
+      lay.colW = stackColumnW(
+        app.clientWidth - 2 * SPACE.area,
+        minRight(),
+        stackW(),
+        hh,
+        toolsClear(hh),
+        S.view === "gen",
+      );
       rt.style.width = lay.colW + "px";
     } else {
       if (rt.style.width) rt.style.width = "";
@@ -491,8 +501,9 @@ export function sizeFrame() {
     /* every page's plate shares one top and bottom (2026-11-01, G10): in Vertical the panels' box is the picture's
        room (roomH — down to an even gap above the prompt's name), not what the column's CSS leaves: they ended ~6–12 px
        apart and the plate moved on every switch. Side by side the room IS the panel's box: nothing to set */
+    lay.vroom = stk ? Math.round(roomH()) : 0; // Vertical: the picture's room (promptFollow: the prompt follows it up)
     const rp = $("rpanel"),
-      h = stk ? Math.round(roomH()) + "px" : "";
+      h = stk ? lay.vroom + "px" : "";
     if (rp.style.height !== h) rp.style.height = h;
   }
   /* the target geometry, not a measurement: the grid may be mid-glide */
@@ -501,7 +512,7 @@ export function sizeFrame() {
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
   const PH = picH(),
     TB = tbW(PH), // the edit buttons' column: it hangs outside the plate (no room in the area — toolsClear)
-    R = ins.row ? rowRoom() : 0,
+    R = ins.row ? rowRoom() : 0, // (lay.vrow: the prompt follows the row's room too, Vertical)
     M = SPACE.mat, // the picture's mat: the plate is the picture and M round it
     { w, h } = fitInBox(ar, SW - 2 * M, PH - 2 * M),
     W = w + 2 * M, // the plate
@@ -510,6 +521,7 @@ export function sizeFrame() {
     edges clip the picture, like a container transform) without the canvas being stretched on the way */
   /* a held top / bottom edge (lay.vtop): the other edge stays put. The plate is centred in its area on every page; the
     button column hangs on the side away from the prompt (Vertical: on the right) */
+  lay.vrow = stk ? R : 0;
   const tbLeft = !stk && /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
     { top, left } = framePlacement({
       areaW: SW,
@@ -560,7 +572,7 @@ export function sizeFrame() {
   /* the status row, Show prompt, the edit buttons and the edge strips: placed from where the frame is now, and every
      frame it moves (around.js — one owner: the frame) */
   placeAround();
-  promptFollow(); // Queue / LoRAs / PNG Info, Vertical: no hug (the frame's writes keep it in Generating)
+  promptFollow(); // its other input: the room (lay.vroom / lay.vrow) — the frame's writes call it on every box change
   requestAnimationFrame(layoutLeft);
   plateFollow(); // the live plate keeps to the frame / the panel through the glide
 }
@@ -586,8 +598,11 @@ export function vAlign() {
    650 ms (a re-shift meanwhile showed only at the end, as a jump) */
 const colEase = bez(SWITCH.curve[0], SWITCH.curve[1], SWITCH.curve[2], SWITCH.curve[3]); // the switch's glide (plate.js)
 let hugX = 0, // side by side in Generating: in by the picture's inset in its area (promptFollow)
+  hugY = 0, // Vertical in Generating: up by the room the picture leaves under it (promptFollow)
   hugFrom = 0, // …catching up after a hold: from, to, since when (0: not catching up)
   hugTo = 0,
+  hugFromY = 0,
+  hugToY = 0,
   hugT0 = 0,
   slX = 0, // the slide: how far from its place it started, and when
   slY = 0,
@@ -605,11 +620,12 @@ function colApply() {
   if (hugT0) {
     const p = Math.min(1, (now - hugT0) / layT());
     hugX = Math.round(hugFrom + (hugTo - hugFrom) * colEase(p));
+    hugY = Math.round(hugFromY + (hugToY - hugFromY) * colEase(p));
     if (p >= 1) hugT0 = 0;
   }
   const k = slideLeft(now),
     x = hugX + Math.round(slX * k),
-    y = Math.round(slY * k),
+    y = hugY + Math.round(slY * k),
     t = x || y ? `translate(${x}px, ${y}px)` : "",
     col = $("lcol");
   colX = x;
@@ -624,7 +640,7 @@ function colApply() {
 export function slideCol(was, t0 = performance.now()) {
   const r = $("lcol").getBoundingClientRect();
   slX = Math.round(was.left - (r.left - colX + hugX)); // from where it was to its place (its hug included)
-  slY = Math.round(was.top - (r.top - colY));
+  slY = Math.round(was.top - (r.top - colY + hugY));
   slT0 = slX || slY ? t0 : 0;
   cancelAnimationFrame(colRaf);
   colApply();
@@ -643,9 +659,15 @@ export function promptFollow(direct = false) {
   if (!lay.drag && (lay.pressCard || document.querySelector("#left .pop.show"))) return;
   const b = frameBox(),
     app = /** @type {HTMLElement} */ (document.querySelector(".app")),
-    on = !!b && S.view === "gen" && !app.classList.contains("stacked") && !!lay.last,
+    stk = app.classList.contains("stacked"),
+    on = !!b && S.view === "gen" && !stk && !!lay.last,
     R = app.classList.contains("pright");
-  let x = 0;
+  let x = 0,
+    y = 0;
+  /* Vertical: the picture sits at the top of its room; the prompt comes up by the room it leaves under it (and under
+     its status row), so they touch — the spare height goes to the window's bottom (2026-11-01) */
+  if (b && stk && S.view === "gen" && lay.vroom)
+    y = -Math.round(Math.max(0, lay.vroom - (b.t + b.h + SPACE.mat + lay.vrow)));
   if (on && b && lay.last) {
     const M = SPACE.mat,
       inset = R ? (lay.shown || lay.last).rw - (b.l + b.w + M) : b.l - M; // the area as it is on screen now (G12)
@@ -654,12 +676,15 @@ export function promptFollow(direct = false) {
   const b2 = document.body.classList;
   if (direct || b2.contains("laysnap") || b2.contains("liveresize") || b2.contains("laydrag")) {
     hugT0 = 0;
-    if (x === hugX) return;
+    if (x === hugX && y === hugY) return;
     hugX = x;
+    hugY = y;
   } else {
-    if (x === (hugT0 ? hugTo : hugX)) return;
+    if (x === (hugT0 ? hugTo : hugX) && y === (hugT0 ? hugToY : hugY)) return;
     hugFrom = hugX;
     hugTo = x;
+    hugFromY = hugY;
+    hugToY = y;
     hugT0 = performance.now();
   }
   if (!colRaf) colApply();
@@ -727,8 +752,8 @@ export function initLayout() {
       el.addEventListener("pointerleave", off);
     }
   }
-  $("lcol").addEventListener("pointerdown", () => {
-    lay.pressCard = true;
+  $("lcol").addEventListener("pointerdown", e => {
+    if (!(e.target instanceof Element && e.target.closest(HANDLES))) lay.pressCard = true; // a handle is resizing
   });
   /* letting go anywhere (a menu choice, a click, an edge) lets the layout catch up at once */
   addEventListener("pointerup", () => {

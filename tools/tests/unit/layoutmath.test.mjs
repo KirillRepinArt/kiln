@@ -79,6 +79,11 @@ test("Vertical: the column is as wide as a 16:9 picture at its height, within th
   assert.equal(stackColumnW(2000, 420, 600, 450, 36), 800, "450 × 16/9 — the buttons take no room in it");
   assert.equal(stackColumnW(2000, 420, 1000, 450, 36), 1000, "never narrower than the prompt box");
   assert.equal(stackColumnW(700, 420, 600, 450, 36), 628, "never wider than the window less the buttons' clearance");
+  assert.equal(
+    stackColumnW(2000, 420, 600, 450, 36, true),
+    1928,
+    "Generating: the whole width (the ratio sets the picture's)",
+  );
 });
 
 test("a picture page: the plate's centre stays put — the prompt keeps its width, a wide picture fits what's left", () => {
@@ -142,6 +147,7 @@ test("Vertical: the picture itself is on the centre line", () => {
     toolsLeft: false,
   });
   assert.equal(p.left, 200);
+  assert.equal(p.top, 0, "at the top of its room: the spare height goes under the prompt");
 });
 
 test("older saved layouts become today's: shares of the window → px, once", () => {

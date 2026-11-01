@@ -1,7 +1,7 @@
 // @ts-check
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $, q } from "./dom.js";
-import { outlines, setBoxDraw } from "./outlines.js";
+import { HANDLES, outlines, setBoxDraw } from "./outlines.js";
 import { lay, minRight, setDock, sizeFrame, snapHold, vAlign } from "./layout.js";
 import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement, promptSlotH } from "./layoutmath.js";
 import { peekJob } from "./prompt.js";
@@ -284,7 +284,7 @@ export function initCardlayout() {
        name row, the LoRA row — through one listener on the column; what keeps its pointer: text, controls, chips,
        menus, the edges you drag. It used to be two targets (the box, the name row) with dead gaps between them and the
        LoRA row */
-    const NO = "input,textarea,button,a,select,.chip,.pwrapT,.vedge,.pedge,.sedge,.hsplit,.pop,.cwi",
+    const NO = "input,textarea,button,a,select,.chip,.pwrapT,.pop,.cwi," + HANDLES,
       GROUP = "#pgrip,#left,#ltitle,#chips";
     const ghosts = ["top", "mid", "bot"].map(p => {
       const g = document.createElement("div");

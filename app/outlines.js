@@ -18,6 +18,10 @@ export const RESIZES = {
   ro: ["pic"], // the image area's outer edge
   hedge: ["pic"], // the picture's own edges
 };
+/** every resize handle (the edges you drag): pressing one is resizing, never working IN the prompt (layout.js's
+ * pressCard hold) nor gripping it (cardlayout.js) — one list (2026-11-01: the divider sits inside the prompt's column, and
+ * its press held the prompt still while the picture's room changed: the prompt overlapped the picture) */
+export const HANDLES = ".pedge,.sedge,.vedge,.hsplit,.hedge";
 /** @type {Map<string, Pane[]>} who holds which panes */
 const holds = new Map();
 /** the prompt box's outline drawer (cardlayout.js registers it: it follows the box every frame) @type {(on: boolean) => void} */

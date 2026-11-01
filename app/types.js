@@ -160,6 +160,8 @@
  * @property {boolean} pressCard     a press in the prompt card (it holds its place until you let go)
  * @property {HTMLElement | null} navHold  the on-picture arrow being clicked: it stays put until the pointer leaves it
  * @property {Geometry | null} last  the geometry last applied (where the pair's columns are going)
+ * @property {number} vroom  Vertical: the picture's room (its height, px; 0 side by side)
+ * @property {number} vrow   Vertical: the room kept under the picture for its status row (px)
  * @property {{ mL: number, pw: number, rw: number, mR: number } | null} shown  where the pair's columns are on screen
  *   now (their glide, layout.js layApply: G12)
  * @property {boolean} drag          an edge is being dragged

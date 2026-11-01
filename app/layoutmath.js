@@ -112,17 +112,21 @@ export function pageGeometry(m, L) {
 }
 
 /**
- * Vertical: the picture area's column — no wider than a 16:9 picture at the height it has, never narrower than the tab
- * bar or the prompt box, never wider than the window less a clearance each side (the edit buttons hang into it, outside
- * the column: never room inside it).
+ * Vertical: the picture area's column. Generating / the Gallery (gen): the window's width less a clearance each side —
+ * the picture takes the room's height and its width follows its ratio (2026-11-01, the user: "21:9 should look exactly
+ * like 16:9, only expanded further to the sides"; it was capped at a 16:9 picture's width, so wider ratios came out
+ * short). The panels: no wider than a 16:9 picture at the height it has. Never narrower than the tab bar or the prompt
+ * box, never wider than the window less a clearance each side (the edit buttons hang into it, outside the column).
  * @param {number} full the window's room
  * @param {number} minR the tab bar's least width
  * @param {number} promptW the prompt box's width
  * @param {number} picH the picture's height
  * @param {number} clear the clearance each side, beyond the window's own margin
+ * @param {boolean} [gen] Generating / the Gallery: the whole width
  */
-export function stackColumnW(full, minR, promptW, picH, clear) {
-  return Math.round(Math.min(full - 2 * clear, Math.max(minR, promptW, (picH * 16) / 9)));
+export function stackColumnW(full, minR, promptW, picH, clear, gen = false) {
+  const most = full - 2 * clear;
+  return Math.round(gen ? most : Math.min(most, Math.max(minR, promptW, (picH * 16) / 9)));
 }
 
 /**
@@ -141,7 +145,9 @@ export function stackColumnW(full, minR, promptW, picH, clear) {
  * @param {boolean} a.toolsLeft the button column on the left (prompt on the right)
  */
 export function framePlacement({ areaW, areaH, w, h, tb, row, heldTop, stacked, toolsLeft }) {
-  const top = heldTop != null ? heldTop : Math.max(0, (areaH - h - row) / 2);
+  /* Vertical: at the top of its room — the prompt follows it up, the spare height goes to the window's bottom (the user,
+     2026-11-01: no hole between the picture and the prompt) */
+  const top = heldTop != null ? heldTop : stacked ? 0 : Math.max(0, (areaH - h - row) / 2);
   const g0 = Math.max(0, Math.floor((areaW - w - tb) / 2));
   const left = stacked ? Math.floor((areaW - w) / 2) : toolsLeft ? g0 + tb : g0;
   return { top, left, toolsX: toolsLeft ? left - tb : left + w };

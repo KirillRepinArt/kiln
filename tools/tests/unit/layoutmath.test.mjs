@@ -30,6 +30,7 @@ import {
   layoutPrefsV4,
   PAGE_IDS,
   QUEUEMAX,
+  RUBBER,
 } from "../../../app/layoutmath.js";
 
 const near = (a, b, what) => assert.ok(Math.abs(a - b) < 1e-6, `${what}: ${a} ≠ ${b}`);
@@ -383,8 +384,11 @@ test("model: the divider trades — one grows by what the other gives, within bo
     lb = { lo: 420, hi: 1800 };
   near(trade(100, 680, 660, la, lb), 100, "inside the limits: the whole move");
   near(trade(-100, 680, 660, la, lb), -100, "the other way too");
-  const past = trade(400, 680, 660, la, lb); // the page would drop to 260, under its 420: past the limit at +240
-  assert.ok(past > 240 && past < 400, "past the page's least: resistance");
+  const past = trade(400, 680, 660, la, lb); // the prompt's 900 binds first: the limit at +220
+  assert.ok(
+    past > 220 && past <= 220 + RUBBER,
+    "past a limit: a little give (one stretch at most), never the whole move",
+  );
 });
 
 test("model: growRoom is the room between the group and the window's edge", () => {

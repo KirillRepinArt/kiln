@@ -10,7 +10,7 @@ import { applyPH, card, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from 
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
 import { lay, layDrag, layGeo, layRelease, pageId, picFull, setPaneSize, sizeFrame } from "./layout.js";
-import { PWMIN, RUBBER, rubber } from "./layoutmath.js";
+import { PIC_OVER, PWMIN, RUBBER, rubber } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { SPACE, pairGap } from "./tokens.js";
@@ -126,7 +126,7 @@ export function initEdges() {
       move: e => {
         const dy = e.clientY - y0;
         if (pic) {
-          const nh = rubber(pic.h0 + dy, 200, pic.full, RUBBER); // past a limit: with resistance
+          const nh = rubber(pic.h0 + dy, 200, pic.full, PIC_OVER); // past a limit: with resistance
           lay.vh = nh;
           lay.vtop = pic.t0;
           setPaneSize(pageId(), "h", Math.max(200, Math.min(pic.full, pic.h0 + dy)));
@@ -273,7 +273,7 @@ export function initEdges() {
               ? d.h0 + dy
               : d.h0 - dy;
           /* past its least or its room: with resistance (the rubber band); what's kept is the limit */
-          const nh = rubber(want, 200, d.full, RUBBER);
+          const nh = rubber(want, 200, d.full, PIC_OVER);
           lay.vh = nh;
           lay.vtop = side ? d.t0 + (d.h0 - nh) / 2 : d.e === "b" ? d.t0 : d.t0 + (d.h0 - nh);
           if (!side && !q(".app.stacked")) setPaneSize(pageId(), "w", null, "side"); // the height decides; the width follows

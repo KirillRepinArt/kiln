@@ -397,8 +397,12 @@ export const BOXHMIN = 240, // the prompt box's least height side by side (you s
   QUEUEMAX = 900, // the Queue's widest: past it, lines get too long to read
   SLOTMAX = 0.7; // Vertical: the prompt box's tallest, a share of the window
 
-/** how far a size may stretch past its limit (the rubber band's d): the same for every edge */
-export const RUBBER = 160;
+/** how far a size may stretch past its limit (the rubber band's d): one area gap, the same for every edge — enough to
+ * feel the limit answer back (2026-11-02, the user: 160 px "way too big": it ran under the tab bar and off the window) */
+export const RUBBER = 20;
+/** how far a picture may grow past its room while held: one part gap — never more than the gap between it and the tab
+ * bar, the prompt's name or the window's edge, so the overshoot never covers another part */
+export const PIC_OVER = 12;
 /**
  * Past a limit a size moves on with resistance and springs back on release (Apple's rubber band):
  * over → d · (1 − 1 / (over · 0.55 / d + 1)), always less than over, never past d.

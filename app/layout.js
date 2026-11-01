@@ -11,6 +11,7 @@ import { current, jobs } from "./jobs.js";
 import {
   LISTMIN,
   PWMIN,
+  PIC_OVER,
   RUBBER,
   arrange,
   bez,
@@ -394,7 +395,7 @@ export function layDrag(edge, g0, dx, pic = null) {
     if (pic) {
       const hk = rwKeep / pic.ar;
       setPaneSize(pageId(), "h", hk >= pic.full - 1 ? null : hk, "side");
-      lay.vh = rw / pic.ar; // held: the picture as wide as the area, past its room too (rubber)
+      lay.vh = Math.min(rw / pic.ar, pic.full + PIC_OVER); // held: as wide as the area; past its room only a little
     }
   }
   layApply(g);

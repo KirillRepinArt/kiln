@@ -193,7 +193,41 @@ export async function pictureEdgesDragThePicture(k, t) {
   const f2 = await R(k, "#frame"),
     d = await dragMeasure(k, ".pedge.ro", 200, ["#frame"]);
   const grew = d.held["#frame"].width - f2.width;
-  t.ok(grew > 10 && grew < 150, "at full height: the edge moves with resistance (the rubber band)", { grew });
+  const area = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area"))`);
+  t.ok(grew > 2 && grew <= area, "at full height: the edge answers with a little give, one area gap at most", {
+    grew,
+  });
   t.near(d.after["#frame"].width, f2.width, 3, "…and the picture settles back on release");
 }
 pictureEdgesDragThePicture.opts = { width: 1900, height: 1300, step: 0.05 }; // a 3:4 picture wider than the tab bar
+
+/* the rubber band never covers another part (2026-11-02, the user: it ran under the tab bar and off the window): a
+   picture held past its room overshoots only into the gap round it */
+export async function rubberStaysInItsGap(k, t) {
+  await k.ev(`(setDock("below"),1)`);
+  await k.job("[fill:446688] tall", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.mouse(2, 2);
+  await k.sleep(1400);
+  const bar = await R(k, ".tabs"),
+    { held } = await (async () => {
+      const h = await R(k, ".hedge.t"),
+        x = h.left + h.width / 2,
+        y = h.top + h.height / 2;
+      await ev(k, "mouseMoved", x, y, 0);
+      await ev(k, "mousePressed", x, y);
+      for (let i = 1; i <= 12; i++) await ev(k, "mouseMoved", x, y - (300 * i) / 12);
+      await k.sleep(250);
+      const r = await R(k, "#plate");
+      await ev(k, "mouseReleased", x, y - 300);
+      await ev(k, "mouseMoved", 8, 8, 0);
+      await k.sleep(1000);
+      return { held: r };
+    })();
+  t.ok(held.top >= bar.bottom, "Vertical, the top edge pulled far up: the picture never goes under the tab bar", {
+    top: held.top,
+    bar: bar.bottom,
+  });
+  t.ok(held.bottom <= (await R(k, "#left")).top, "…nor under the prompt");
+}
+rubberStaysInItsGap.opts = { width: 1760, height: 1080, step: 0.05 };

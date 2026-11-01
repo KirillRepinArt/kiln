@@ -280,14 +280,22 @@
 .vedge::after {
   top: var(--space-1);
 }
+.vedge.t {
+  top: calc(var(--space-2) * -1);
+  bottom: auto;
+}
+.vedge.t::after {
+  top: auto;
+  bottom: var(--space-1);
+}
 .vedge:hover::after,
 .vedge.drag::after {
   opacity: 1;
 }
 .left.hm .vedge,
-.app.stacked .vedge {
+.app.stacked .vedge.t {
   display: none;
-} /* Vertical: the prompt sits at the bottom — its slot is set with the line above its name (.hsplit) */
+} /* Vertical: the box's top is the divider with the picture (.hsplit); its bottom is an edge like any other */
 .hsplit {
   display: none;
 }

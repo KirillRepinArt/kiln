@@ -236,12 +236,16 @@ export function cardHeightMode(mode, colH, CH, minH, a) {
 }
 
 /**
- * The card in the usual mode: your height (pph) or its text's, within the room. Frozen (you're working in it): the top
- * stays put and only the bottom grows — a card resting at the bottom grows upward instead.
+ * The card in the usual mode: its text's height, within the room — never a height of its own (2026-11-02, DEVLOG
+ * DD-2026-11-02-12: an edge sets a pane's size within [least, largest]; the box's least = largest = its text, so its
+ * height edges give a little and snap back). While one is held, `held` is the height shown (the rubber band) and
+ * `heldPin` the side that holds. Frozen (you're working in it): the top stays put and only the bottom grows — a card
+ * resting at the bottom grows upward instead.
  * @param {object} c
  * @param {number} c.colH the column's height
  * @param {number} c.CH the chip row (with its gap)
- * @param {number} c.pph the height you set (0 = the text's)
+ * @param {number} [c.held] a height edge held: the height shown (0 / none: the text's)
+ * @param {"top" | "bottom"} [c.heldPin] and the side that holds meanwhile
  * @param {number} c.naturalH the height the text wants
  * @param {string} c.pos where it rests: "top" | "mid" | "bot"
  * @param {boolean} c.frozen
@@ -249,12 +253,14 @@ export function cardHeightMode(mode, colH, CH, minH, a) {
  * @param {number | null} c.prevBottom the bottom it had (box + chips)
  * @param {CardAnchors} c.a
  */
-export function cardPlacement({ colH, CH, pph, naturalH, pos, frozen, prevTop, prevBottom, a }) {
+export function cardPlacement({ colH, CH, held = 0, heldPin = "top", naturalH, pos, frozen, prevTop, prevBottom, a }) {
   const room = colH - CH;
-  let H = pph ? Math.min(Math.max(240, pph), room) : Math.min(naturalH, room);
+  let H = held ? Math.min(held, room) : Math.min(naturalH, room);
   let top,
     bottom = prevBottom;
-  if (frozen && prevTop != null) {
+  if (held && prevTop != null && prevBottom != null) {
+    top = heldPin === "bottom" ? Math.max(0, prevBottom - H - CH) : prevTop; // the other side holds
+  } else if (frozen && prevTop != null) {
     if (pos === "bot" && prevBottom != null) {
       top = Math.max(0, prevBottom - H - CH);
       H = Math.min(H, room - top);

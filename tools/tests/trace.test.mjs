@@ -190,6 +190,7 @@ export async function ownershipTour(k, t) {
   await motion("the divider: the prompt against the picture", [drag(".pedge.ri", 120), "0"]);
   await motion("the prompt's outer edge past the room (the rubber band, the settle)", [drag(".pedge.po", -400), "0"]);
   await motion("the picture's top edge past its room", [drag(".hedge.t", 0, -200), "0"]);
+  await motion("the prompt box's bottom edge (its text: a little give, snaps back)", [drag("#vedge", 0, 150), "0"]);
   await k.ev(`(${tab("queue")},1)`);
   await k.sleep(1300);
   await motion("a panel's outer edge", [drag(".pedge.ro", 100), "0"]);

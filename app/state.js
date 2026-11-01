@@ -30,7 +30,6 @@ export const LORAS = []; /* filled from Forge's LoRA list (live.js loadModels) â
 /** @type {import("./types.js").Settings} */
 export const S = {
   pname: "",
-  pph: 0,
   lw: 0,
   mp: "1.5",
   ar: "3:4",

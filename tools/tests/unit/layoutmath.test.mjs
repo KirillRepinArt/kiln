@@ -182,16 +182,19 @@ test("height modes: Full = the column, Match = picture top to status line; too s
   assert.deepEqual(cardHeightMode("match", 900, 40, 200, { it: 300, ib: 400, cy: 350 }), { top: 230, H: 200 });
 });
 
-test("the card: your height or its text's, within the room", () => {
+test("the card: its text's height within the room; held, the edge's (the other side still)", () => {
   const c = { colH: 900, CH: 40, pos: "mid", frozen: false, prevTop: null, prevBottom: null, a: anchors };
-  assert.equal(cardPlacement({ ...c, pph: 0, naturalH: 300 }).H, 300, "the text's");
-  assert.equal(cardPlacement({ ...c, pph: 500, naturalH: 300 }).H, 500, "yours");
-  assert.equal(cardPlacement({ ...c, pph: 100, naturalH: 300 }).H, 240, "yours, never under 240");
-  assert.equal(cardPlacement({ ...c, pph: 0, naturalH: 2000 }).H, 860, "never more than the room");
+  assert.equal(cardPlacement({ ...c, naturalH: 300 }).H, 300, "the text's");
+  assert.equal(cardPlacement({ ...c, naturalH: 2000 }).H, 860, "never more than the room");
+  const held = { ...c, prevTop: 200, prevBottom: 540, naturalH: 300 };
+  const b = cardPlacement({ ...held, held: 312, heldPin: "top" });
+  assert.deepEqual([b.top, b.H], [200, 312], "the bottom edge held: the top holds");
+  const t2 = cardPlacement({ ...held, held: 312, heldPin: "bottom" });
+  assert.equal(t2.top + t2.H + 40, 540, "the top edge held: the bottom holds");
 });
 
 test("frozen while you work: the top stays put and only the bottom grows (a bottom card grows upward)", () => {
-  const c = { colH: 900, CH: 40, pph: 0, naturalH: 500, frozen: true, a: anchors };
+  const c = { colH: 900, CH: 40, naturalH: 500, frozen: true, a: anchors };
   const mid = cardPlacement({ ...c, pos: "mid", prevTop: 200, prevBottom: 540 });
   assert.equal(mid.top, 200, "the top where it was");
   assert.equal(mid.bottom, 540, "the remembered bottom isn't moved");

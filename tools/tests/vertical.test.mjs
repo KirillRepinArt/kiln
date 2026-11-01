@@ -805,7 +805,8 @@ export async function verticalSplitLine(k, t) {
   await k.sleep(1500);
   const slot = (await k.rect("#left")).height;
   t.near(slot, await k.ev(`Math.round(innerHeight*.4)`), 3, "a long draft: the box at its default cap (~40 %)");
-  t.ok(await k.ev(`getComputedStyle($("vedge")).display==="none"`), "the box's bottom edge is no handle in Vertical");
+  /* 2026-11-02 (DD-2026-11-02-12): every edge is an edge — the box's bottom too; its numbers make it snap back */
+  t.ok(await k.ev(`getComputedStyle($("vedge")).display!=="none"`), "the box's bottom edge is an edge in Vertical too");
   const low = await k.ev(
     `innerHeight-Math.max($("left").getBoundingClientRect().bottom,$("chips").getBoundingClientRect().bottom)`,
   );

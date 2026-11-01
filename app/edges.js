@@ -6,7 +6,7 @@
    button up, a cancel, the pointer's capture lost (a reload, another window taking it), a move without the button —
    once. Each edge used to end itself on its own subset of those; a lost capture left the resize cursor stuck. */
 import { toast } from "./boot.js";
-import { applyPH, card, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
+import { card, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
 import {
@@ -83,38 +83,48 @@ function gesture(h, panes, { down, move, end, cls }) {
 
 /* start-up wiring: every edge you drag, and the edit buttons' hover (called from main.js, in order) */
 export function initEdges() {
-  /* the prompt box's bottom edge, side by side: its height. (Vertical has none since 2026-10-31: the prompt sits at the
-   window's bottom — its slot is set with the line above its name, like a docked composer's top edge) */
+  /* the prompt box's height edges (2026-11-02, DEVLOG DD-2026-11-02-12): ordinary edges — the size within [least,
+     largest], the rubber band past either — but the box's least and largest are both its text's height (up to its
+     mode's largest), so they give a little and snap back: the box grows with what you type, never with a drag, and its
+     height is never stored. Side by side: the bottom (#vedge) and the top; in Vertical the bottom (its top is the
+     divider with the picture). While held: card.hHold (side by side) / card.slotHold (Vertical), read by layoutLeft. */
   (function () {
-    const g = $("vedge");
-    let y0 = 0,
-      h0 = 0;
-    gesture(g, () => RESIZES.vedge, {
-      cls: ["vresizing"],
-      down: e => {
-        $("left").classList.add("nodur");
-        y0 = e.clientY;
-        h0 = $("left").getBoundingClientRect().height;
-      },
-      move: e => {
-        const max =
-          /** @type {HTMLElement} */ ($("left").parentElement).getBoundingClientRect().height - 2 * SPACE.area;
-        S.pph = Math.max(240, Math.min(max, Math.round(h0 + e.clientY - y0)));
-        applyPH();
-      },
-      end: () => {
-        $("left").classList.remove("nodur");
-        lyUnfreeze();
-        layoutLeft();
-        save();
-      },
-    });
-    g.addEventListener("dblclick", () => {
-      S.pph = 0;
-      applyPH();
-      save();
-      toast("Prompt height back to auto");
-    });
+    const L = $("left"),
+      top = document.createElement("div");
+    top.className = "vedge t";
+    top.dataset.tip = "The prompt box fits its text · the Match and Full buttons make it taller";
+    L.appendChild(top);
+    for (const g of [$("vedge"), top]) {
+      const up = g === top;
+      let y0 = 0,
+        h0 = 0;
+      gesture(g, () => RESIZES.vedge, {
+        cls: ["vresizing"],
+        down: e => {
+          if (up && q(".app.stacked")) return false; // Vertical: the box's top is the divider
+          L.classList.add("nodur");
+          y0 = e.clientY;
+          h0 = L.getBoundingClientRect().height; // its text's height: its least and its largest
+        },
+        move: e => {
+          const want = h0 + (up ? -1 : 1) * (e.clientY - y0),
+            held = rubber(want, h0, h0, RUBBER);
+          if (q(".app.stacked")) card.slotHold = held;
+          else {
+            card.hHold = held;
+            card.hPin = up ? "bottom" : "top";
+          }
+          layoutLeft();
+        },
+        end: () => {
+          L.classList.remove("nodur");
+          card.hHold = 0;
+          card.slotHold = 0; // back to its text: it settles
+          lyUnfreeze();
+          layoutLeft();
+        },
+      });
+    }
   })();
   /* Vertical: the divider between the picture and the prompt. On a picture page it is the picture's bottom edge (the
      user, 2026-11-01): the picture's top holds, its bottom follows the pointer, and the box stays glued under it —

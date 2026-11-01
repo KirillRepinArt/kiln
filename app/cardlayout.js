@@ -26,6 +26,8 @@ export const card = {
   drag: false,
   slotHold: 0,
   swHold: 0,
+  hHold: 0,
+  hPin: "top",
 };
 /** the picture's lines the card lines up with (layoutmath's CardAnchors) */
 const anchors = () => ({ it: card.imgTop, ib: card.imgBottom, cy: card.cy });
@@ -199,8 +201,9 @@ export function layoutLeft() {
   const { top, H, bottom } = cardPlacement({
     colH,
     CH,
-    pph: S.pph,
-    naturalH: S.pph ? 0 : cardNaturalH(),
+    held: card.hHold,
+    heldPin: card.hPin,
+    naturalH: cardNaturalH(),
     pos: S.pos || "mid",
     frozen: card.frozen,
     prevTop: card.top,
@@ -223,7 +226,6 @@ function thaw() {
     const ed = document.activeElement && $("left").contains(document.activeElement);
     if (card.hover || ed) return;
     card.frozen = false;
-    S.pph = 0;
     layoutLeft();
   }, 500);
 }

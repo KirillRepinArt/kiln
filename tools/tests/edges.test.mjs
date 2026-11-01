@@ -350,3 +350,47 @@ export async function panelLimitsFromOnePlace(k, t) {
   t.ok(area > 0, "(the area gap reads)");
 }
 panelLimitsFromOnePlace.opts = { width: 2200, height: 1080, step: 0.05 };
+
+/* one rule for every edge, the numbers make the behaviour (2026-11-02, DEVLOG DD-2026-11-02-12): the prompt box's least
+   and largest are both its text's height, so its height edges give a little and snap back — side by side its bottom
+   (it jumped to a stored 240 px) and its top, in Vertical its bottom; nothing about its height is stored */
+export async function boxHeightEdgesSnapBack(k, t) {
+  const area = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area"))`);
+  /** drag a box edge by dy: its height while held, and after */
+  const pull = async (sel, dy) => {
+    const h = await R(k, sel),
+      x = h.left + h.width / 2,
+      y = h.top + h.height / 2;
+    await ev(k, "mouseMoved", x, y, 0);
+    await ev(k, "mousePressed", x, y);
+    for (let i = 1; i <= 10; i++) await ev(k, "mouseMoved", x, y + (dy * i) / 10);
+    await k.sleep(200);
+    const held = (await R(k, "#left")).height;
+    await ev(k, "mouseReleased", x, y + dy);
+    await ev(k, "mouseMoved", 8, 8, 0);
+    await k.sleep(900);
+    return { held, after: (await R(k, "#left")).height };
+  };
+  await k.ev(`(setDock("left"),P.value="a short prompt",draft=P.value,layoutLeft(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1200);
+  const h0 = (await R(k, "#left")).height;
+  for (const [sel, dy] of [
+    ["#vedge", 200],
+    ["#vedge", -100],
+    [".vedge.t", -200],
+  ]) {
+    const r = await pull(sel, dy);
+    t.ok(Math.abs(r.held - h0) > 1 && Math.abs(r.held - h0) <= area, `side by side, ${sel} ${dy}: a little give`, r);
+    t.near(r.after, h0, 2, `…and it snaps back to its text`);
+  }
+  t.ok(await k.ev(`!("pph" in S)`), "nothing about its height is stored");
+  await k.ev(`(setDock("below"),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1500);
+  const v0 = (await R(k, "#left")).height,
+    v = await pull("#vedge", 150);
+  t.ok(Math.abs(v.held - v0) > 1 && Math.abs(v.held - v0) <= area, "Vertical, its bottom edge: a little give", v);
+  t.near(v.after, v0, 2, "…and it snaps back");
+}
+boxHeightEdgesSnapBack.opts = { width: 1760, height: 1080, step: 0.05 };

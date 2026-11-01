@@ -106,7 +106,7 @@
  * @property {"" | "full" | "match"} [hmode]  the prompt box's height mode
  * @property {boolean} [vfit]        Vertical: the prompt box as wide as the picture (Fit width)
  * @property {number} [sch]          (old, dropped at start-up) Vertical: the prompt slot's height
- * @property {number} pph            the prompt box's height you set (0 = automatic)
+ * @property {number} [pph]          (old, dropped at start-up) a stored prompt box height
  * @property {number} [th]           the LoRA chips' thumbnail size
  * @property {number} [lw]           an old saved prompt width (before S.lay)
  * @property {number} [ph]           an old saved prompt height (dropped when the layout applies)
@@ -198,6 +198,8 @@
  * @property {number | null} imgBottom the status line under the picture — "bot" lines up with it
  * @property {boolean} drag           the card is being dragged to a new resting place
  * @property {number} [swHold]       Vertical: the box's width while a side edge is held (0: none) — layoutLeft writes it
+ * @property {number} [hHold]        side by side: the box's height while a height edge is held (0: none) — the rubber band
+ * @property {"top" | "bottom"} [hPin] and the side that holds meanwhile
  * @property {number} slotHold       Vertical: the box's height while the divider is held (0: none). Never kept: the box
  *                                    hugs its text; letting go gives the picture the size it has (edges.js)
  */

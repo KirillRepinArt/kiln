@@ -335,7 +335,7 @@ export async function handlesOutlineTheirPanes(k, t) {
       await k.mouse(x, y);
       await k.sleep(500);
       const s = await k.ev(
-        `[document.elementFromPoint(${x},${y})===document.querySelector("${sel}"),$("fithint").classList.contains("show"),$("cardhint").classList.contains("show")]`,
+        `[document.elementFromPoint(${x},${y})===document.querySelector("${sel}"),$("plate").classList.contains("hint"),$("left").classList.contains("hint")]`,
       );
       t.ok(s[0], `${dock}: ${sel} takes the pointer`);
       t.ok(
@@ -348,7 +348,7 @@ export async function handlesOutlineTheirPanes(k, t) {
       );
       await k.mouse(2, 2);
       await k.sleep(1000);
-      t.ok(!(await k.ev(`$("cardhint").classList.contains("show")`)), `${dock}: ${sel} — gone after`);
+      t.ok(!(await k.ev(`$("left").classList.contains("hint")`)), `${dock}: ${sel} — gone after`);
     }
   }
 }

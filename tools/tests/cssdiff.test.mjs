@@ -236,11 +236,11 @@ export async function cssdiff(k, t) {
   await check("viewer");
   await go(`closeViewer()`);
   // edges, drags, the dock zones (classes as the gestures set them)
-  await go(`$("right").classList.add("edgehint");$("fithint").classList.add("show")`);
+  await go(`$("plate").classList.add("hint")`);
   await k.sleep(300);
   await check("edge hint", { pseudo: false });
   await go(
-    `$("right").classList.remove("edgehint");$("fithint").classList.remove("show");document.body.classList.add("cardmove");document.querySelectorAll(".dockzone").forEach((z,i)=>z.classList.add("show",...(i===1?["near"]:[])));document.querySelectorAll(".ghost").forEach((g,i)=>g.classList.add("show",...(i===1?["near"]:[])))`,
+    `$("plate").classList.remove("hint");document.body.classList.add("cardmove");document.querySelectorAll(".dockzone").forEach((z,i)=>z.classList.add("show",...(i===1?["near"]:[])));document.querySelectorAll(".ghost").forEach((g,i)=>g.classList.add("show",...(i===1?["near"]:[])))`,
   );
   await check("dock drag", { pseudo: false });
   await go(

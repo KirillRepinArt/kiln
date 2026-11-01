@@ -139,19 +139,19 @@ export async function pressOutline(k, t) {
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
   await k.sleep(250);
-  const h = await k.rect("#cardhint"),
-    L = await k.rect("#left"),
-    O = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--outline-out"))`);
-  t.ok(await k.ev(`$("cardhint").classList.contains("show")`), "pressing the box: the outline shows");
-  const off = [L.top - h.top, L.left - h.left, h.right - L.right, h.bottom - L.bottom];
+  const O = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--outline-out"))`),
+    s = await k.ev(
+      `(()=>{const c=getComputedStyle($("left"),"::after"),b=parseFloat(getComputedStyle($("left")).borderTopWidth);return[c.top,c.left,c.right,c.bottom].map(v=>-parseFloat(v)-b)})()`,
+    );
+  t.ok(await k.ev(`$("left").classList.contains("hint")`), "pressing the box: the outline shows");
   t.ok(
-    off.every(d => Math.abs(d - O) <= 1),
-    "round the plate (the box), one outline gap outside it on every side (the outline rule, 2026-10-27)",
-    { off, O },
+    s.every(d => Math.abs(d - O) <= 0.5),
+    "round the box, one outline gap outside it on every side, drawn by the box itself (2026-11-02)",
+    { s, O },
   );
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
   await k.sleep(100);
-  t.ok(await k.ev(`!$("cardhint").classList.contains("show")`), "letting go: it goes");
+  t.ok(await k.ev(`!$("left").classList.contains("hint")`), "letting go: it goes");
 }
 
 export async function startWhileRunning(k, t) {

@@ -248,6 +248,8 @@ export async function edgeOnPicture(k, t) {
 }
 edgeOnPicture.opts = { width: 2000, height: 1023, step: 0.05 };
 
+/* the picture's outline is part of its plate (2026-11-02): the plate IS the picture's box, the outline one outline gap
+   (--outline-out) outside it on every side, drawn by the plate itself — so it can never lag behind it */
 export async function outlineIsFitBox(k, t) {
   await k.ev(`(setDock("right"),1)`);
   await k.sleep(800);
@@ -255,22 +257,20 @@ export async function outlineIsFitBox(k, t) {
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
   await k.mouse(2, 2);
   await k.sleep(900);
-  await k.ev(`($("right").classList.add("edgehint"),1)`);
-  await k.sleep(100);
-  const h = await R(k, "#fithint"),
-    f = await R(k, "#frame");
-  t.ok(h.width > 0, "the outline shows");
-  // the gap is the outline token (--outline-out), not a number of its own
-  const O = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--outline-out"))`);
+  await k.ev(`($("plate").classList.add("hint"),1)`);
+  await k.sleep(400);
+  const p = await R(k, "#plate"),
+    f = await R(k, "#frame"),
+    s = await k.ev(
+      `(()=>{const c=getComputedStyle($("plate"),"::before");return{o:+c.opacity,t:c.top,l:c.left,r:c.right,b:c.bottom}})()`,
+    ),
+    O = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--outline-out"))`);
+  t.ok(s.o > 0.9, "the outline shows");
   t.ok(O > 0, "the outline token reads as px");
-  for (const [n, d] of [
-    ["left", f.left - h.left],
-    ["right", h.right - f.right],
-    ["top", f.top - h.top],
-    ["bottom", h.bottom - f.bottom],
-  ])
-    t.near(d, O, 1, `an even --outline-out round the picture (${n})`);
-  await k.ev(`($("right").classList.remove("edgehint"),1)`);
+  for (const n of ["left", "top", "right", "bottom"]) t.near(p[n], f[n], 1, `the plate is the picture's box (${n})`);
+  for (const [n, v] of Object.entries({ top: s.t, left: s.l, right: s.r, bottom: s.b }))
+    t.near(parseFloat(v), -O, 0.5, `an even --outline-out round the picture (${n})`);
+  await k.ev(`($("plate").classList.remove("hint"),1)`);
 }
 outlineIsFitBox.opts = { width: 2000, height: 1023, step: 0.05 };
 
@@ -585,17 +585,17 @@ export async function reuseLeavesClean(k, t) {
   await k.sleep(400);
   t.ok(await k.ev(`PV.browse===null&&!$("frame").classList.contains("has")`), "✕ closes it: a clean Generating");
   // the outline: in at once, out late and slowly
-  await k.ev(`($("right").classList.add("edgehint"),1)`);
+  await k.ev(`($("plate").classList.add("hint"),1)`);
   await k.sleep(400);
-  t.ok(+(await k.ev(`getComputedStyle($("fithint")).opacity`)) > 0.9, "the outline comes in");
-  await k.ev(`($("right").classList.remove("edgehint"),1)`);
+  t.ok(+(await k.ev(`getComputedStyle($("plate"),"::before").opacity`)) > 0.9, "the outline comes in");
+  await k.ev(`($("plate").classList.remove("hint"),1)`);
   await k.sleep(150);
   t.ok(
-    +(await k.ev(`getComputedStyle($("fithint")).opacity`)) > 0.9,
+    +(await k.ev(`getComputedStyle($("plate"),"::before").opacity`)) > 0.9,
     "and is still there a moment after you leave (no blinking as you cross an edge)",
   );
   await k.sleep(1000);
-  t.ok(+(await k.ev(`getComputedStyle($("fithint")).opacity`)) < 0.05, "then fades out");
+  t.ok(+(await k.ev(`getComputedStyle($("plate"),"::before").opacity`)) < 0.05, "then fades out");
 }
 reuseLeavesClean.opts = { step: 0.05 };
 
@@ -610,7 +610,10 @@ export async function glowAndDip(k, t) {
   const he = await R(k, ".hedge.t");
   await k.mouse(he.left + he.width / 2, he.top + 6);
   await k.sleep(500);
-  t.motion(+(await k.ev(`getComputedStyle($("fithint")).opacity`)) > 0.9, "hovering the top edge shows the outline");
+  t.motion(
+    +(await k.ev(`getComputedStyle($("plate"),"::before").opacity`)) > 0.9,
+    "hovering the top edge shows the outline",
+  );
   await k.mouse(2, 2);
   // breathing: browsing to another shape dips the box
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
@@ -703,13 +706,13 @@ export async function verticalHeight(k, t) {
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: hx, y: hy });
   await k.sleep(500);
   t.ok(
-    await k.ev(`$("fithint").classList.contains("show")&&$("cardhint").classList.contains("show")`),
+    await k.ev(`$("plate").classList.contains("hint")&&$("left").classList.contains("hint")`),
     "hovering the divider: the outline round the picture and round the box",
   );
   await k.mouse(2, 2);
   await k.sleep(1500);
   t.ok(
-    await k.ev(`!$("cardhint").classList.contains("show")&&!$("right").classList.contains("edgehint")`),
+    await k.ev(`!$("left").classList.contains("hint")&&!$("plate").classList.contains("hint")`),
     "…gone when you move away",
   );
   /* double-click the divider: the picture back to its full size */

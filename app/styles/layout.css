@@ -106,7 +106,7 @@
 /* ======================= edges (drag to resize) =======================
    .pedge: the panels' vertical edges (po = the prompt's outer edge, pi/ri = the divider, ro = the picture area's outer
    edge); .sedge: the prompt box's sides in Vertical; .hedge: the picture's own edges; .vedge / .hsplit: the prompt's
-   height. No grip bars: the outline (.fithint) and the cursor are the signal. */
+   height. No grip bars: the outline (part of its pane: .plate::before, .left::after) and the cursor are the signal. */
 .pedge {
   position: absolute;
   top: 0;
@@ -263,20 +263,30 @@
 .app.stacked .hedge.b {
   display: none;
 } /* Vertical: the picture's bottom edge IS the divider (.hsplit); its own size cap stays on its top and side edges */
-/* the resize outline: on the page's bottom layer (above the sky, under the panels), 12 px round the picture
-   (stage.js places it every frame). Hover intent: in quickly, out late and slowly, so sweeping across an edge never
-   makes it blink. !important: these two transitions outrank the motion switches below on purpose */
-.fithint {
-  position: fixed;
-  display: block;
-  z-index: 0;
+/* the resize outline is PART OF ITS PANE (v0.7c, the user 2026-11-02: "dash outline should be a part of the box
+   object"): drawn by the pane itself — the plate (the picture in Generating / the Gallery, the panel elsewhere) and the
+   prompt box — it moves with it in the same frame, whatever moves it. It used to be two fixed outlines, each chasing
+   its pane with its own frame loop: a frame late (it lagged behind the box while resizing). One outline gap out,
+   concentric. On the plate it keeps the plate's layer (the page's bottom one, under the panels). Hover intent: in
+   quickly, out late and slowly, so sweeping across an edge never makes it blink. outlines.js decides which show. */
+.plate::before,
+.left::after {
+  content: "";
+  position: absolute;
   pointer-events: none;
-  opacity: 0;
   border: var(--outline);
   border-radius: calc(var(--r-panel) + var(--outline-out));
+  opacity: 0;
   transition: opacity var(--t-400) ease var(--t-300) !important;
 }
-.fithint.show {
+.plate::before {
+  inset: calc(var(--outline-out) * -1);
+}
+.left::after {
+  inset: calc((var(--outline-out) + var(--space-px)) * -1); /* outside the box's own 1 px border */
+}
+.plate.hint::before,
+.left.hint::after {
   opacity: 1;
   transition: opacity var(--t-200) ease 0s !important;
 }

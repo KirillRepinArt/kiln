@@ -1,7 +1,7 @@
 // @ts-check
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $, q } from "./dom.js";
-import { HANDLES, outlines, setBoxDraw } from "./outlines.js";
+import { HANDLES, outlines } from "./outlines.js";
 import { lay, minRight, paneSize, setDock, sizeFrame, snapHold, vAlign } from "./layout.js";
 import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement, promptSlotH } from "./layoutmath.js";
 import { peekJob } from "./prompt.js";
@@ -347,35 +347,7 @@ export function initCardlayout() {
       } catch (_) {}
       outlines("move", ["box"]);
     }
-    /* the press shows what moves: an outline round the plate (the box; its name and LoRAs move with it), like the
-       resize outline and the snap positions */
-    const ch = $("cardhint");
-    let hraf = 0;
-    setBoxDraw(on => hint(on)); // which outlines show: outlines.js (one owner)
-    /** @param {boolean} on */
-    function hint(on) {
-      cancelAnimationFrame(hraf);
-      if (!on) {
-        ch.classList.remove("show");
-        return;
-      }
-      (function tick() {
-        const rs = [L.getBoundingClientRect()],
-          O = SPACE.outline;
-        const l = Math.min(...rs.map(r => r.left)),
-          t = Math.min(...rs.map(r => r.top)),
-          r = Math.max(...rs.map(r => r.right)),
-          b = Math.max(...rs.map(r => r.bottom));
-        Object.assign(ch.style, {
-          left: l - O + "px",
-          top: t - O + "px",
-          width: r - l + 2 * O + "px",
-          height: b - t + 2 * O + "px",
-        });
-        ch.classList.add("show");
-        hraf = requestAnimationFrame(tick);
-      })();
-    }
+    /* the press shows what moves: the box's own outline (outlines.js; drawn by the box: layout.css) */
     /** @param {PointerEvent} e */
     function move(e) {
       const m = d;

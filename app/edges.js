@@ -6,7 +6,7 @@
    button up, a cancel, the pointer's capture lost (a reload, another window taking it), a move without the button —
    once. Each edge used to end itself on its own subset of those; a lost capture left the resize cursor stuck. */
 import { toast } from "./boot.js";
-import { applyPH, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
+import { applyPH, card, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
 import { lay, layDef, layDrag, layGeo, layRelease, picFull, prefs, sizeFrame } from "./layout.js";
@@ -104,7 +104,10 @@ export function initEdges() {
       toast("Prompt height back to auto");
     });
   })();
-  /* Vertical: the divider between the picture and the prompt (it resizes both: Apple HIG split view) */
+  /* Vertical: the divider between the picture and the prompt (it resizes both: Apple HIG split view). While it's held
+     the box grows and the picture gives up the room; letting go the picture KEEPS its size and the box goes back to
+     hugging its text, glued under the picture — the spare room at the window's bottom (the user, 2026-11-01: the box's
+     height is never kept; a kept one left a tall empty box and a picture that couldn't grow back) */
   (function () {
     const g = $("hsplit");
     let y0 = 0,
@@ -116,17 +119,31 @@ export function initEdges() {
         h0 = $("left").getBoundingClientRect().height;
       },
       move: e => {
-        /* the box's cap (layoutmath.js promptSlotH): between its least height and 70 % of the window */
-        S.sch = Math.max(slotLeast(), Math.min(Math.round(innerHeight * 0.7), Math.round(h0 - (e.clientY - y0))));
+        /* between the box's least height and 70 % of the window (layoutmath.js promptSlotH) */
+        card.slotHold = Math.max(
+          slotLeast(),
+          Math.min(Math.round(innerHeight * 0.7), Math.round(h0 - (e.clientY - y0))),
+        );
         layoutLeft();
       },
-      end: () => save(),
+      end: () => {
+        const keep = S.view === "gen" ? +($("frame").dataset.th || 0) : 0; // the picture's height now
+        card.slotHold = 0;
+        layoutLeft(); // the box back to its text: the picture's room grows back
+        if (keep) {
+          const full = picFull(),
+            share = keep / full;
+          prefs().vih = share >= 0.995 ? null : share; // the picture's cap: the size it has
+        }
+        save();
+        sizeFrame();
+      },
     });
     g.addEventListener("dblclick", () => {
-      S.sch = 0;
+      prefs().vih = null;
       save();
-      layoutLeft();
-      toast("Image / prompt split back to auto");
+      sizeFrame();
+      toast("The picture back to its full size");
     });
   })();
   /* the panel edges (Phase 2a): po = the prompt's outer edge, dv = the divider between the prompt and the image area

@@ -120,6 +120,7 @@ export function prefs() {
 /* saved layouts of older versions → today's (once, at start-up: main.js) */
 export function migrateLayoutPrefs() {
   S.lay = upgradeLayoutPrefs(S.lay, layW());
+  delete S.sch; // Vertical's kept prompt height (2026-11-01: the box hugs its text; the divider sizes the picture)
 }
 export const layDef = () => ({ pw: 680, rw: Math.max(LISTMIN, tabsW() + 2), iw: null, v: 3 });
 /** @type {import("./types.js").LayoutState} */
@@ -779,7 +780,6 @@ export function resetLayout() {
   /* widths, the picture's limits (iw, ih) — all back to the defaults */
   delete S.lw;
   S.pph = 0;
-  S.sch = 0;
   S.pos = "mid";
   S.hmode = "";
   updHm();

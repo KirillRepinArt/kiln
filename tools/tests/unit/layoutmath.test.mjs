@@ -442,11 +442,11 @@ test("model: defaults — panels 2:3 side by side, 1:1 in Vertical; picture page
 test("model: saved layouts v3 → v4 — every old size lands on its pane, each page its own", () => {
   const v4 = layoutPrefsV4(
     { pw: 700, rw: 640, iw: 900, ih: 0.5, vih: 0.8, sw: 820, v: 3 },
-    { pph: 300, sch: 0, roomH: 1000, vroomH: 600 },
+    { roomH: 1000, vroomH: 600 },
   );
   assert.equal(v4.v, 4);
-  assert.deepEqual(v4.side.box, { w: 700, h: 300 });
-  assert.deepEqual(v4.vert.box, { w: 820, h: null }, "an automatic slot stays automatic");
+  assert.deepEqual(v4.side.box, { w: 700, h: null }, "the box's height is never kept: it hugs its text");
+  assert.deepEqual(v4.vert.box, { w: 820, h: null });
   assert.deepEqual(v4.side.pages.generating, { w: 900, h: 500 }, "a height cap: a share of the room → px");
   assert.deepEqual(v4.side.pages.gallery, { w: 900, h: 500 }, "the Gallery had the same cap");
   assert.notEqual(v4.side.pages.gallery, v4.side.pages.generating, "but its own from now on");

@@ -24,6 +24,7 @@ export const card = {
   imgTop: null,
   imgBottom: null,
   drag: false,
+  slotHold: 0,
 };
 /** the picture's lines the card lines up with (layoutmath's CardAnchors) */
 const anchors = () => ({ it: card.imgTop, ib: card.imgBottom, cy: card.cy });
@@ -136,12 +137,14 @@ export function layoutLeft() {
   if (stk) {
     let H;
     card.top = 0;
-    /* the box is as tall as YOUR draft's text, between its least height and your cap (layoutmath.js promptSlotH — the
-     user's choice, 2026-10-31). A job's prompt shown in it never resizes it (it scrolls inside): browsing prompts of
-     different lengths never moves the picture (2026-10-19) */
+    /* the box is as tall as YOUR draft's text, from its least height up to ~40 % of the window (layoutmath.js
+     promptSlotH — the user's choice, 2026-10-31). A job's prompt shown in it never resizes it (it scrolls inside):
+     browsing prompts of different lengths never moves the picture (2026-10-19). Its height is never kept (2026-11-01,
+     the user: the box hugs its text unless an expand button is on); only while the divider is held is it the divider's
+     (card.slotHold, edges.js) */
     const least = slotLeast();
     if (!peekJob || !draftH) draftH = textBoxH();
-    const slot = promptSlotH(draftH, S.sch, innerHeight, least);
+    const slot = promptSlotH(draftH, card.slotHold, innerHeight, least);
     H = slot;
     col.style.setProperty("--sw", stackW() + "px");
     const lch = slot + TS + 2 + CH + "px",

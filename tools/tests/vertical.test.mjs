@@ -274,24 +274,58 @@ export async function outlineIsFitBox(k, t) {
 }
 outlineIsFitBox.opts = { width: 2000, height: 1023, step: 0.05 };
 
-export async function heightIsALimit(k, t) {
-  await k.ev(`(setDock("below"),S.sch=420,save(),P.value="a short prompt",draft=P.value,layoutLeft(),1)`);
+/* 2026-11-01 (the user): the box's height is never kept — it hugs its text. The divider makes the box taller and the
+   picture smaller while it's held; letting go, the picture KEEPS its size and the box goes back to its text, glued under
+   the picture (a kept height left a tall empty box, and the picture could be shrunk but never grown back) */
+export async function dividerSizesThePicture(k, t) {
+  await k.ev(`(setDock("below"),P.value="a short prompt",draft=P.value,layoutLeft(),1)`);
+  await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 });
+  await done(k, 1);
   await k.mouse(2, 2);
-  await k.sleep(800);
-  const short = (await R(k, "#left")).height;
-  /* 2026-10-31 (the user's choice): the box grows with your draft — a short prompt takes only the box's least height,
-     the picture the rest; your line above the name is the cap */
-  /* 2026-11-01 (L4): S.sch is the height you set with the divider — kept, short text or long */
-  t.near(short, 420, 3, "your height: a short prompt keeps it", { short });
-  const f0 = (await R(k, "#frame")).height;
-  await k.ev(
-    `(P.value=Array(40).fill("a long line of prompt text that keeps going").join(String.fromCharCode(10)),draft=P.value,1)`,
-  );
-  await k.sleep(900);
-  t.near((await R(k, "#left")).height, 420, 3, "a long prompt: the same height (it scrolls)");
-  t.near((await R(k, "#frame")).height, f0, 2, "…and the picture doesn't move", { f0 });
+  await k.sleep(1200);
+  const b0 = await R(k, "#left"),
+    f0 = await R(k, "#frame"),
+    g0 = b0.top - f0.bottom,
+    h = await R(k, "#hsplit"),
+    x = h.left + h.width / 2,
+    y = h.top + h.height / 2;
+  await press(k, x, y);
+  await moveTo(k, x, y, x, y - 200);
+  await k.sleep(300);
+  const bm = await R(k, "#left"),
+    fm = await R(k, "#frame");
+  t.near(bm.height, b0.height + 200, 4, "held: the box grows by the drag", { b0: b0.height, bm: bm.height });
+  t.ok(fm.height < f0.height - 150, "held: the picture gives up the room", { f0: f0.height, fm: fm.height });
+  await release(k, x, y - 200);
+  await k.mouse(2, 2);
+  await k.sleep(1300);
+  const b1 = await R(k, "#left"),
+    f1 = await R(k, "#frame");
+  t.near(b1.height, b0.height, 3, "let go: the box hugs its text again (no tall empty box)", { b1: b1.height });
+  t.near(f1.height, fm.height, 4, "…and the picture keeps the size it had", { fm: fm.height, f1: f1.height });
+  t.near(b1.top - f1.bottom, g0, 3, "…the box glued under it, one even gap");
+  t.ok(await k.ev(`!("sch" in S)&&S.lay.vih>0&&S.lay.vih<1`), "what's kept is the picture's size, not the box's");
+  /* the picture grows back with its own side edge (it couldn't: the kept box height held the room) */
+  const e = await R(k, ".hedge.r"),
+    ex = e.left + e.width / 2,
+    ey = e.top + e.height / 2;
+  await press(k, ex, ey);
+  await moveTo(k, ex, ey, ex + 300, ey);
+  await release(k, ex + 300, ey);
+  await k.mouse(2, 2);
+  await k.sleep(1300);
+  t.ok((await R(k, "#frame")).height > f1.height + 100, "the picture grows back from its edge", {
+    f1: f1.height,
+    f2: (await R(k, "#frame")).height,
+  });
+  /* an old saved height (S.sch, before 2026-11-01) is dropped at start-up */
+  await k.ev(`(S.sch=420,save(),1)`);
+  await k.reload();
+  await k.until("!!(window.LIVE&&window._jobsReady)", 15000);
+  await k.sleep(1200);
+  t.ok(await k.ev(`!("sch" in S)`), "an old kept height is dropped at start-up");
 }
-heightIsALimit.opts = { width: 2000, height: 1023 };
+dividerSizesThePicture.opts = { width: 2000, height: 1023, step: 0.05 };
 
 export async function runningThumb(k, t) {
   await k.job("[fill:446688] first", { steps: 2 });
@@ -646,9 +680,12 @@ export async function verticalHeight(k, t) {
   await k.mouse(2, 2);
   await k.sleep(800);
   const f1 = await R(k, "#frame");
-  t.near(f1.height, f0.height - 150, 3, "dragging it up makes the picture smaller", { f0: f0.height, f1: f1.height });
-  t.near((await R(k, "#left")).height, b0.height + 150, 3, "…and the prompt taller by as much");
-  t.ok(await k.ev(`S.sch>0`), "Vertical remembers the height you set");
+  t.near(f1.height, f0.height - 150, 3, "dragging it up makes the picture smaller (kept)", {
+    f0: f0.height,
+    f1: f1.height,
+  });
+  t.near((await R(k, "#left")).height, b0.height, 3, "…and the prompt hugs its text again once let go");
+  t.ok(await k.ev(`S.lay.vih>0&&S.lay.vih<1`), "Vertical remembers the picture's size, not the box's");
   /* hovering the divider outlines both panes it resizes: the picture and the prompt box (the user, 2026-11-01) */
   const hs = await R(k, "#hsplit"),
     hx = hs.left + hs.width / 2,
@@ -665,13 +702,14 @@ export async function verticalHeight(k, t) {
     await k.ev(`!$("cardhint").classList.contains("show")&&!$("right").classList.contains("edgehint")`),
     "…gone when you move away",
   );
-  /* double-click the divider: back to automatic — the box grows with your draft again (a short one: small) */
+  /* double-click the divider: the picture back to its full size */
   for (const type of ["mousePressed", "mouseReleased"])
     await k.send("Input.dispatchMouseEvent", { type, x: hx, y: hy, button: "left", clickCount: 2 });
   await k.sleep(800);
   t.ok(
-    (await k.ev(`!S.sch`)) && (await R(k, "#left")).height < b0.height + 20,
-    "double-click: back to automatic (the box as tall as your draft)",
+    (await k.ev(`S.lay.vih==null`)) && Math.abs((await R(k, "#frame")).height - f0.height) <= 3,
+    "double-click: the picture back to its full size",
+    (await R(k, "#frame")).height,
   );
   await k.ev(`(setDock("left"),1)`);
   await k.sleep(900);
@@ -775,9 +813,9 @@ export async function verticalSplitLine(k, t) {
     clickCount: 1,
   });
   await k.sleep(1200);
-  t.near(await k.ev(`S.sch`), slot + 60, 3, "the divider up 60 px: the box is 60 px taller (your height, kept)");
-  t.near((await k.rect("#left")).bottom, b0, 3, "…the box's bottom stays where it is");
-  t.ok((await k.rect("#frame")).height < p0 - 20, "…and the picture gave up the room", {
+  t.near((await k.rect("#left")).height, slot, 3, "the divider up 60 px, let go: the box hugs its text again");
+  t.ok((await k.rect("#left")).bottom < b0 - 20, "…glued under the picture: the spare room at the bottom");
+  t.ok((await k.rect("#frame")).height < p0 - 20, "…and the picture kept the smaller size", {
     p0,
     p1: (await k.rect("#frame")).height,
   });

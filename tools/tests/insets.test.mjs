@@ -133,7 +133,7 @@ export async function finishOnOneClock(k, t) {
 finishOnOneClock.opts = { step: 0.6 };
 
 export async function pillMenuOverThePicture(k, t) {
-  await k.ev(`(setDock("below"),S.sch=200,1)`);
+  await k.ev(`(setDock("below"),1)`);
   await k.job("[fill:446688] sq", { ar: "1:1", steps: 1 });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
   await k.ev(`(layoutLeft(),1)`);

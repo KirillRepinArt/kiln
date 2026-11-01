@@ -520,8 +520,8 @@ export function trade(d, a, b, la, lb) {
  * Saved layouts of v3 (one width per role, heights elsewhere) → v4 (a size per pane × page × orientation). Once, at
  * start-up. v3's picture height caps were shares of the room; v4 keeps px (a size you set means that size).
  * @param {any} L the saved layout (S.lay, v3) @param {object} o
- * @param {number} [o.pph] the prompt box's height side by side (0 = automatic)
- * @param {number} [o.sch] Vertical: the prompt slot's height (0 = automatic)
+ * The prompt box's height is never kept (2026-11-01, the user: it hugs its text unless an expand button is on), so the
+ * old pph / sch don't carry over: box.h stays null.
  * @param {number} o.roomH the picture's room height now (side by side) @param {number} o.vroomH the same in Vertical
  * @returns {LayoutV4}
  */
@@ -539,9 +539,9 @@ export function layoutPrefsV4(L, o) {
   return {
     v: 4,
     side: {
-      box: { w: l.pw ?? null, h: o.pph || null },
+      box: { w: l.pw ?? null, h: null },
       pages: pages({ generating: pic(), gallery: pic(), queue: panel(), loras: panel() }),
     },
-    vert: { box: { w: l.sw ?? null, h: o.sch || null }, pages: pages({ generating: vpic(), gallery: vpic() }) },
+    vert: { box: { w: l.sw ?? null, h: null }, pages: pages({ generating: vpic(), gallery: vpic() }) },
   };
 }

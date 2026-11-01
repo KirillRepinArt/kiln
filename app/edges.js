@@ -104,33 +104,51 @@ export function initEdges() {
       toast("Prompt height back to auto");
     });
   })();
-  /* Vertical: the divider between the picture and the prompt (it resizes both: Apple HIG split view). While it's held
-     the box grows and the picture gives up the room; letting go the picture KEEPS its size and the box goes back to
-     hugging its text, glued under the picture — the spare room at the window's bottom (the user, 2026-11-01: the box's
-     height is never kept; a kept one left a tall empty box and a picture that couldn't grow back) */
+  /* Vertical: the divider between the picture and the prompt. On a picture page it is the picture's bottom edge (the
+     user, 2026-11-01): the picture's top holds, its bottom follows the pointer, and the box stays glued under it —
+     dragging down grows the picture and pushes the box down into the spare room; letting go the picture keeps its size.
+     The box's height is never kept: it hugs its text. On a panel (no height of its own yet: E1) the box grows while it's
+     held (card.slotHold) and goes back to its text on release. */
   (function () {
     const g = $("hsplit");
     let y0 = 0,
       h0 = 0;
+    /** the picture's drag: its height and top then, the room it has @type {{ h0: number, t0: number, full: number } | null} */
+    let pic = null;
     gesture(g, () => RESIZES.hsplit, {
-      cls: ["vresizing"],
+      cls: ["vresizing", "laydrag"],
       down: e => {
         y0 = e.clientY;
         h0 = $("left").getBoundingClientRect().height;
+        const f = $("frame");
+        pic = S.view === "gen" ? { h0: f.offsetHeight, t0: f.offsetTop, full: picFull() } : null;
       },
       move: e => {
+        const dy = e.clientY - y0;
+        if (pic) {
+          const nh = Math.max(200, Math.min(pic.full, pic.h0 + dy));
+          lay.vh = nh;
+          lay.vtop = pic.t0;
+          setPaneSize(pageId(), "h", nh);
+          sizeFrame();
+          return;
+        }
         /* between the box's least height and 70 % of the window (layoutmath.js promptSlotH) */
-        card.slotHold = Math.max(
-          slotLeast(),
-          Math.min(Math.round(innerHeight * 0.7), Math.round(h0 - (e.clientY - y0))),
-        );
+        card.slotHold = Math.max(slotLeast(), Math.min(Math.round(innerHeight * 0.7), Math.round(h0 - dy)));
         layoutLeft();
       },
       end: () => {
-        const keep = S.view === "gen" ? +($("frame").dataset.th || 0) : 0; // the picture's height now
-        card.slotHold = 0;
-        layoutLeft(); // the box back to its text: the picture's room grows back
-        if (keep) setPaneSize(pageId(), "h", keep >= picFull() * 0.995 ? null : keep); // the picture's cap: its size now
+        if (pic) {
+          const nh = lay.vh,
+            full = pic.full;
+          pic = null;
+          lay.vh = null;
+          lay.vtop = null;
+          if (nh && nh >= full * 0.995) setPaneSize(pageId(), "h", null); // the whole room: no cap
+        } else {
+          card.slotHold = 0;
+          layoutLeft(); // the box back to its text
+        }
         save();
         sizeFrame();
       },

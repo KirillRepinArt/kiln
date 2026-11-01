@@ -274,9 +274,10 @@ export async function outlineIsFitBox(k, t) {
 }
 outlineIsFitBox.opts = { width: 2000, height: 1023, step: 0.05 };
 
-/* 2026-11-01 (the user): the box's height is never kept — it hugs its text. The divider makes the box taller and the
-   picture smaller while it's held; letting go, the picture KEEPS its size and the box goes back to its text, glued under
-   the picture (a kept height left a tall empty box, and the picture could be shrunk but never grown back) */
+/* 2026-11-01 (the user): the box's height is never kept — it hugs its text. On a picture page the divider is the
+   picture's bottom edge: its top holds, the bottom follows the pointer and the box stays glued under it — dragging down
+   grows the picture and pushes the box down; up shrinks it and the box comes up with it. Letting go, the picture keeps
+   its size (a kept box height left a tall empty box, and a picture that could be shrunk but never grown back) */
 export async function dividerSizesThePicture(k, t) {
   await k.ev(`(setDock("below"),P.value="a short prompt",draft=P.value,layoutLeft(),1)`);
   await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 });
@@ -285,28 +286,37 @@ export async function dividerSizesThePicture(k, t) {
   await k.sleep(1200);
   const b0 = await R(k, "#left"),
     f0 = await R(k, "#frame"),
-    g0 = b0.top - f0.bottom,
-    h = await R(k, "#hsplit"),
-    x = h.left + h.width / 2,
-    y = h.top + h.height / 2;
-  await press(k, x, y);
-  await moveTo(k, x, y, x, y - 200);
-  await k.sleep(300);
-  const bm = await R(k, "#left"),
-    fm = await R(k, "#frame");
-  t.near(bm.height, b0.height + 200, 4, "held: the box grows by the drag", { b0: b0.height, bm: bm.height });
-  t.ok(fm.height < f0.height - 150, "held: the picture gives up the room", { f0: f0.height, fm: fm.height });
-  await release(k, x, y - 200);
-  await k.mouse(2, 2);
-  await k.sleep(1300);
-  const b1 = await R(k, "#left"),
-    f1 = await R(k, "#frame");
-  t.near(b1.height, b0.height, 3, "let go: the box hugs its text again (no tall empty box)", { b1: b1.height });
-  t.near(f1.height, fm.height, 4, "…and the picture keeps the size it had", { fm: fm.height, f1: f1.height });
-  t.near(b1.top - f1.bottom, g0, 3, "…the box glued under it, one even gap");
+    g0 = b0.top - f0.bottom;
+  /** drag the divider by dy and let go; the frame and the box held, and after */
+  const divider = async dy => {
+    const h = await R(k, "#hsplit"),
+      x = h.left + h.width / 2,
+      y = h.top + h.height / 2;
+    await press(k, x, y);
+    await moveTo(k, x, y, x, y + dy);
+    await k.sleep(300);
+    const held = { f: await R(k, "#frame"), b: await R(k, "#left") };
+    await release(k, x, y + dy);
+    await k.mouse(2, 2);
+    await k.sleep(1300);
+    return { held, f: await R(k, "#frame"), b: await R(k, "#left") };
+  };
+  const up = await divider(-200);
+  t.near(up.held.f.height, f0.height - 200, 4, "held, dragged up: the picture's bottom follows", {
+    f0: f0.height,
+    held: up.held.f.height,
+  });
+  t.near(up.held.f.top, f0.top, 2, "…its top holds");
+  t.near(up.held.b.top - up.held.f.bottom, g0, 3, "…and the box rides glued under it");
+  t.near(up.b.height, b0.height, 3, "let go: the box still hugs its text (no tall empty box)");
+  t.near(up.f.height, up.held.f.height, 4, "…the picture keeps its size", { f: up.f.height });
   t.ok(await k.ev(`!("sch" in S)&&paneSize().h>0`), "what's kept is the picture's size, not the box's");
-  /* the picture grows back with its own side edge (it couldn't: the kept box height held the room) */
-  const e = await R(k, ".hedge.r"),
+  const down = await divider(120);
+  t.near(down.held.f.height, up.f.height + 120, 4, "dragged down: the picture grows", { held: down.held.f.height });
+  t.near(down.held.b.top - down.held.f.bottom, g0, 3, "…pushing the box down");
+  /* the picture grows back with its own side edge too (it couldn't: the kept box height held the room) */
+  const f1 = await R(k, "#frame"),
+    e = await R(k, ".hedge.r"),
     ex = e.left + e.width / 2,
     ey = e.top + e.height / 2;
   await press(k, ex, ey);
@@ -314,7 +324,7 @@ export async function dividerSizesThePicture(k, t) {
   await release(k, ex + 300, ey);
   await k.mouse(2, 2);
   await k.sleep(1300);
-  t.ok((await R(k, "#frame")).height > f1.height + 100, "the picture grows back from its edge", {
+  t.ok((await R(k, "#frame")).height > f1.height + 30, "the picture grows from its side edge", {
     f1: f1.height,
     f2: (await R(k, "#frame")).height,
   });

@@ -56,3 +56,43 @@ export async function dragsEndVertical(k, t) {
   await everyEdge(k, t, [".hedge.t", ".hedge.l", ".hedge.r", "#hsplit", ".sedge.l", ".sedge.r"]);
 }
 dragsEndVertical.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/** drag a handle by dx (side by side) and let go */
+async function dragBy(k, sel, dx) {
+  const h = await R(k, sel),
+    x = h.left + h.width / 2,
+    y = h.top + h.height / 2;
+  await ev(k, "mouseMoved", x, y, 0);
+  await ev(k, "mousePressed", x, y);
+  for (let i = 1; i <= 10; i++) await ev(k, "mouseMoved", x + (dx * i) / 10, y);
+  await ev(k, "mouseReleased", x + dx, y);
+  await ev(k, "mouseMoved", 8, 8, 0);
+  await k.sleep(900);
+}
+
+/* every page keeps its own size (v0.7c, the user: "each page remembers its own"): the Queue and LoRAs shared one width */
+export async function eachPageItsOwnSize(k, t) {
+  await k.ev(`(setDock("left"),showView("queue"),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1000);
+  const q0 = (await R(k, "#rpanel")).width;
+  await dragBy(k, ".pedge.ro", 80); // (narrower stops at the tab bar's width: the bar sits on the plate)
+  const q1 = (await R(k, "#rpanel")).width;
+  t.near(q1, q0 + 80, 3, "the Queue wider by the drag", { q0, q1 });
+  await k.ev(`(showView("loras"),1)`);
+  await k.sleep(1000);
+  t.near((await R(k, "#rpanel")).width, q0, 3, "LoRAs keeps its own width (the default)");
+  await dragBy(k, ".pedge.ro", 140);
+  const l1 = (await R(k, "#rpanel")).width;
+  t.near(l1, q0 + 140, 3, "LoRAs wider by its own drag", { l1 });
+  await k.ev(`(showView("queue"),1)`);
+  await k.sleep(1000);
+  t.near((await R(k, "#rpanel")).width, q1, 3, "back on the Queue: its own width");
+  await k.reload();
+  await k.until("!!(window.LIVE&&window._jobsReady)", 15000);
+  await k.ev(`(showView("loras"),1)`);
+  await k.sleep(1200);
+  t.near((await R(k, "#rpanel")).width, l1, 3, "after a restart too");
+  t.ok(await k.ev(`S.lay.v===4`), "kept in the v4 format");
+}
+eachPageItsOwnSize.opts = { width: 1760, height: 1080, step: 0.05 };

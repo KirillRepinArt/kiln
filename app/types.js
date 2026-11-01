@@ -98,7 +98,8 @@
  * @property {boolean} [privacy]     the privacy cover is on (sticky)
  * @property {number | null} [seenDone]  the newest finished job you've seen (for "finished while you were away")
  * @property {number | null} [clearedId] the finished picture you closed with ✕
- * @property {LayoutPrefs | null} [lay]  your layout sizes (null: the defaults — Reset layout)
+ * @property {LayoutPrefs | import("./layoutmath.js").LayoutV4 | null} [lay]  your layout sizes (v4 once laid out;
+ *   older versions are brought up on first use; null: the defaults — Reset layout)
  * @property {"left" | "right" | "below"} [dock]  where the prompt goes
  * @property {"top" | "mid" | "bot"} [pos]  wide window: where the prompt card rests (picture top / centre / status line)
  * @property {"" | "full" | "match"} [hmode]  the prompt box's height mode

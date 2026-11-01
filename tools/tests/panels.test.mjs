@@ -204,7 +204,12 @@ export async function dividerAndEdges(k, t) {
   const w = (await R(k, "#rpanel")).width;
   await k.ev(`(showView("loras"),1)`);
   await settle(k);
-  t.ok(Math.abs((await R(k, "#rpanel")).width - w) < 1, "LoRAs has the same width as Queue");
+  /* v0.7c: every page keeps its own width (it was one width for all three) */
+  t.ok(
+    Math.abs((await R(k, "#rpanel")).width - (await k.ev(`paneSize("loras","side").w??layDef().rw`))) < 1 &&
+      Math.abs(w - (await k.ev(`paneSize("queue","side").w`))) < 1,
+    "LoRAs keeps its own width; the Queue's is the Queue's",
+  );
   await k.reload();
   await k.sleep(800);
   await k.until("!!(window.LIVE&&window._jobsReady)", 15000);
@@ -336,7 +341,7 @@ export async function hugsThePicture(k, t) {
   await k.ev(`(showView("queue"),1)`);
   await k.sleep(900);
   t.ok(
-    Math.abs((await R(k, "#rpanel")).width - (await k.ev(`S.lay.rw`))) <= 1,
+    Math.abs((await R(k, "#rpanel")).width - (await k.ev(`paneSize("queue","side").w??layDef().rw`))) <= 1,
     "Queue keeps its own width",
     (await R(k, "#rpanel")).width,
   );
@@ -409,7 +414,8 @@ export async function capInGenerating(k, t) {
   await k.ev(`(showView("queue"),1)`);
   await k.sleep(900);
   t.ok(
-    Math.abs((await R(k, "#rpanel")).width - (await k.ev(`S.lay.rw`))) <= 1 && (await k.ev(`S.lay.iw`)) != null,
+    Math.abs((await R(k, "#rpanel")).width - (await k.ev(`paneSize("queue","side").w??layDef().rw`))) <= 1 &&
+      (await k.ev(`paneSize("generating","side").w`)) != null,
     "…without touching Queue's width",
   );
 }

@@ -288,13 +288,13 @@ export async function cssdiff(k, t) {
   await go(`setDock("left")`);
   await k.sleep(1600);
   // a narrow prompt box (the pills' and the Reuse bar's container queries)
-  await go(`S.lay.pw=380;sizeFrame();layoutLeft()`);
+  await go(`setPaneSize("box","w",380,"side");sizeFrame();layoutLeft()`);
   await k.sleep(800);
   await check("narrow prompt", { pseudo: false });
   await go(`browseTo(lastDone())`);
   await settle();
   await check("narrow prompt gallery", { pseudo: false });
-  await go(`endPeek();S.lay.pw=680;sizeFrame();layoutLeft()`);
+  await go(`endPeek();setPaneSize("box","w",null,"side");sizeFrame();layoutLeft()`);
   await k.sleep(800);
   // themes × materials
   for (const th of ["aurora", "embers", "matrix", "starscape"])

@@ -44,7 +44,7 @@ export async function sideEdges(k, t) {
   t.near(L1.left + L1.width / 2, mid, 2, "on release it is centred again");
   t.near(L1.width, 880, 2, "at the new width");
   t.near((await R(k, "#chips")).width, 880, 2, "the LoRA row follows the box");
-  t.near(await k.ev(`S.lay.sw`), 880, 1, "remembered");
+  t.near(await k.ev(`paneSize("box","vert").w`), 880, 1, "remembered");
   await k.reload();
   await k.sleep(800);
   await k.until("!!(window.LIVE&&window._jobsReady)", 15000);
@@ -304,7 +304,7 @@ export async function dividerSizesThePicture(k, t) {
   t.near(b1.height, b0.height, 3, "let go: the box hugs its text again (no tall empty box)", { b1: b1.height });
   t.near(f1.height, fm.height, 4, "…and the picture keeps the size it had", { fm: fm.height, f1: f1.height });
   t.near(b1.top - f1.bottom, g0, 3, "…the box glued under it, one even gap");
-  t.ok(await k.ev(`!("sch" in S)&&S.lay.vih>0&&S.lay.vih<1`), "what's kept is the picture's size, not the box's");
+  t.ok(await k.ev(`!("sch" in S)&&paneSize().h>0`), "what's kept is the picture's size, not the box's");
   /* the picture grows back with its own side edge (it couldn't: the kept box height held the room) */
   const e = await R(k, ".hedge.r"),
     ex = e.left + e.width / 2,
@@ -685,7 +685,7 @@ export async function verticalHeight(k, t) {
     f1: f1.height,
   });
   t.near((await R(k, "#left")).height, b0.height, 3, "…and the prompt hugs its text again once let go");
-  t.ok(await k.ev(`S.lay.vih>0&&S.lay.vih<1`), "Vertical remembers the picture's size, not the box's");
+  t.ok(await k.ev(`paneSize().h>0`), "Vertical remembers the picture's size, not the box's");
   /* hovering the divider outlines both panes it resizes: the picture and the prompt box (the user, 2026-11-01) */
   const hs = await R(k, "#hsplit"),
     hx = hs.left + hs.width / 2,
@@ -707,7 +707,7 @@ export async function verticalHeight(k, t) {
     await k.send("Input.dispatchMouseEvent", { type, x: hx, y: hy, button: "left", clickCount: 2 });
   await k.sleep(800);
   t.ok(
-    (await k.ev(`S.lay.vih==null`)) && Math.abs((await R(k, "#frame")).height - f0.height) <= 3,
+    (await k.ev(`paneSize().h==null`)) && Math.abs((await R(k, "#frame")).height - f0.height) <= 3,
     "double-click: the picture back to its full size",
     (await R(k, "#frame")).height,
   );

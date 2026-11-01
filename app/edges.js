@@ -9,7 +9,7 @@ import { toast } from "./boot.js";
 import { applyPH, card, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
-import { lay, layDef, layDrag, layGeo, layRelease, picFull, prefs, sizeFrame } from "./layout.js";
+import { lay, layDrag, layGeo, layRelease, pageId, picFull, setPaneSize, sizeFrame } from "./layout.js";
 import { PWMIN } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
@@ -130,17 +130,13 @@ export function initEdges() {
         const keep = S.view === "gen" ? +($("frame").dataset.th || 0) : 0; // the picture's height now
         card.slotHold = 0;
         layoutLeft(); // the box back to its text: the picture's room grows back
-        if (keep) {
-          const full = picFull(),
-            share = keep / full;
-          prefs().vih = share >= 0.995 ? null : share; // the picture's cap: the size it has
-        }
+        if (keep) setPaneSize(pageId(), "h", keep >= picFull() * 0.995 ? null : keep); // the picture's cap: its size now
         save();
         sizeFrame();
       },
     });
     g.addEventListener("dblclick", () => {
-      prefs().vih = null;
+      if (S.view === "gen") setPaneSize(pageId(), "h", null);
       save();
       sizeFrame();
       toast("The picture back to its full size");
@@ -202,16 +198,12 @@ export function initEdges() {
         },
       });
       h.addEventListener("dblclick", () => {
-        const df = layDef();
-        if (h.dataset.e !== "ro") prefs().pw = df.pw;
-        if (h.dataset.e !== "po") {
-          if (S.view === "gen") prefs().iw = null;
-          else prefs().rw = df.rw;
-        }
+        if (h.dataset.e !== "ro") setPaneSize("box", "w", null, "side");
+        if (h.dataset.e !== "po") setPaneSize(pageId(), "w", null, "side");
         save();
         layRelease();
         moveThumb(true);
-      }); /* defaults as shares of this window */
+      }); /* that pane (the divider: both) back to its default */
     }
   })();
   /* the image area's top and bottom edges (Generating, side by side): the largest height the picture may be. The edge
@@ -251,21 +243,22 @@ export function initEdges() {
           const nh = Math.max(200, Math.min(d.full, want));
           lay.vh = nh;
           lay.vtop = side ? d.t0 + (d.h0 - nh) / 2 : d.e === "b" ? d.t0 : d.t0 + (d.h0 - nh);
-          prefs()[q(".app.stacked") ? "vih" : "ih"] = nh / d.full;
+          setPaneSize(pageId(), "h", nh);
           sizeFrame();
         },
         end: () => {
+          const full = d ? d.full : 0,
+            nh = lay.vh;
           d = null;
           lay.vh = null;
           lay.vtop = null;
-          if ((prefs().ih ?? 0) > 0.995) prefs().ih = null; // no cap: the same as before (no)
-          if ((prefs().vih ?? 0) > 0.995) prefs().vih = null;
+          if (nh && nh >= full * 0.995) setPaneSize(pageId(), "h", null); // the whole room: no cap
           save();
           sizeFrame();
         },
       });
       h.addEventListener("dblclick", () => {
-        prefs()[q(".app.stacked") ? "vih" : "ih"] = null;
+        setPaneSize(pageId(), "h", null);
         save();
         sizeFrame();
       });
@@ -317,8 +310,7 @@ export function initEdges() {
             max = innerWidth - 2 * SPACE.area;
           const w = Math.max(Math.min(PWMIN, max), Math.min(max, d.w0 + (side === "r" ? dx : -dx)));
           S.vfit = false;
-          S.lay = S.lay || layDef();
-          prefs().sw = w;
+          setPaneSize("box", "w", w, "vert");
           col.style.setProperty("--sw", w + "px");
           col.style.setProperty("--soff", ((side === "r" ? 1 : -1) * (w - d.w0)) / 2 + "px");
         } /* the other edge stays put */,
@@ -331,7 +323,7 @@ export function initEdges() {
         } /* glides back to centre */,
       });
       h.addEventListener("dblclick", () => {
-        if (S.lay) prefs().sw = null;
+        setPaneSize("box", "w", null, "vert");
         S.vfit = false;
         save();
         updHm();

@@ -12,7 +12,7 @@ import { status } from "./effects.js";
 import { up } from "./forge.js";
 import { frameBox } from "./framebox.js";
 import { current, doneList, jobs, lastDone, replaceJobs } from "./jobs.js";
-import { BAR, lay, setDock, sizeFrame, tbW } from "./layout.js";
+import { BAR, lay, layDef, paneSize, setDock, setPaneSize, sizeFrame, tbW } from "./layout.js";
 import { api, st } from "./live.js";
 import { checkStyles } from "./livestyles.js";
 import { renderLoras } from "./loras.js";
@@ -84,6 +84,8 @@ export function installTestBridge() {
     nameUI: { get: () => nameUI },
     openViewer: { get: () => openViewer },
     P: { get: () => P },
+    paneSize: { get: () => paneSize },
+    layDef: { get: () => layDef },
     parsed: { get: () => parsed },
     peekHide: { get: () => peekHide },
     peekJob: { get: () => peekJob, set: (/** @type {any} */ v) => setPeekJob(v) },
@@ -107,6 +109,7 @@ export function installTestBridge() {
     setDock: { get: () => setDock },
     setDraft: { get: () => setDraft },
     setJustDone: { get: () => setJustDone },
+    setPaneSize: { get: () => setPaneSize },
     setPaused: { get: () => setPaused },
     setPeekJob: { get: () => setPeekJob },
     setQsAnchor: { get: () => setQsAnchor },

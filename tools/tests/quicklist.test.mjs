@@ -293,7 +293,9 @@ export async function peekModeless(k, t) {
 export async function narrowNameLine(k, t) {
   await k.job("[fill:446688] one", { steps: 2, name: "A rather long series name" });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
-  await k.ev(`(S.lay.pw=360,sizeFrame(),layoutLeft(),document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.ev(
+    `(setPaneSize("box","w",360,"side"),sizeFrame(),layoutLeft(),document.querySelector('.tab[data-v="gallery"]').click(),1)`,
+  );
   await k.mouse(2, 2);
   await k.sleep(1200);
   const r = await k.ev(`(()=>{const x=$("pkX").getBoundingClientRect(),h=$("hmodes").getBoundingClientRect(),

@@ -2,7 +2,7 @@
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $, q } from "./dom.js";
 import { HANDLES, outlines, setBoxDraw } from "./outlines.js";
-import { lay, minRight, setDock, sizeFrame, snapHold, vAlign } from "./layout.js";
+import { lay, minRight, paneSize, setDock, sizeFrame, snapHold, vAlign } from "./layout.js";
 import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement, promptSlotH } from "./layoutmath.js";
 import { peekJob } from "./prompt.js";
 import { P, S, save } from "./state.js";
@@ -105,12 +105,12 @@ export function applyMode() {
   }
   updHm();
 }
-/* Vertical: the prompt box's width — yours (S.lay.sw, set with its side edges), or the picture's (Fit width), never
+/* Vertical: the prompt box's width — yours (paneSize("box", "vert"), set with its side edges), or the picture's (Fit width), never
    narrower than the box's minimum or wider than the window */
 export function stackW() {
   const max = innerWidth - 2 * SPACE.area,
     pic = typeof lay !== "undefined" && lay.target && lay.target.w;
-  const w = S.vfit && pic ? pic : (S.lay && S.lay.sw) || 760;
+  const w = S.vfit && pic ? pic : paneSize("box", "vert").w || 760;
   return Math.round(Math.max(Math.min(PWMIN, max), Math.min(max, w)));
 }
 function cardMinH() {

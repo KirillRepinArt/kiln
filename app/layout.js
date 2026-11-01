@@ -14,6 +14,7 @@ import {
   PWMIN,
   bez,
   fitInBox,
+  layoutPrefsV4,
   framePlacement,
   pageGeometry,
   pageInsets,
@@ -81,7 +82,7 @@ export const insetsKey = () => {
   const i = insets();
   return `${i.row}:${i.tools}`;
 };
-/* Wide window = the prompt and the image area as one pair: their own widths (S.lay.pw / S.lay.rw), a fixed 18 px gap,
+/* Wide window = the prompt and the image area as one pair: their own widths (paneSize: the box's, the page's), a fixed 18 px gap,
    the pair centred in the window. A window resize only changes the margins around it. The image area is the same
    rectangle in every tab and for every image shape: Generating fits the picture into it, Queue / LoRAs / PNG Info
    fill it. Edges (composer.js): the divider between them trades width (the prompt stops at its minimum); an outer edge
@@ -112,17 +113,46 @@ export function tabsW() {
 export function minRight() {
   return Math.max(420, tabsW() + 2);
 }
-/* your sizes, as the layout keeps them — it makes them (from the defaults) the first time it lays out, at start-up,
-   so anything you can drag finds them there */
-export function prefs() {
-  return /** @type {LayoutPrefs} */ (S.lay);
+/* ---------- your sizes have ONE owner (v0.7c, docs/decisions/0013) ----------
+   A size per pane × page × orientation (S.lay v4, layoutmath.js layoutPrefsV4): the prompt box's width, each page's
+   width and height — Queue, LoRAs and PNG Info each their own, Generating and the Gallery each their own picture cap.
+   Every edge writes through setPaneSize, every reader asks paneSize; null = the default. Left and Right share "side"
+   (mirrors). The box's height is never kept (it hugs its text). */
+/** @typedef {import("./layoutmath.js").PageId} PageId @typedef {import("./layoutmath.js").Orient} Orient */
+/** side by side or Vertical, as laid out now @returns {Orient} */
+export const orient = () => (document.querySelector(".app.stacked") ? "vert" : "side");
+/** the page on show, as a pane @returns {PageId} */
+export const pageId = () =>
+  S.view === "gen" ? (picMode() === "browse" ? "gallery" : "generating") : /** @type {PageId} */ (S.view);
+/** the store, made (or brought up from an older version) the first time it's asked for */
+function sizes() {
+  if (!S.lay || S.lay.v !== 4) {
+    const room = picFull(true);
+    S.lay = layoutPrefsV4(upgradeLayoutPrefs(S.lay || (S.lw ? { pw: S.lw, v: 3 } : null), layW()), {
+      roomH: room,
+      vroomH: room,
+    });
+    delete S.lw;
+  }
+  return /** @type {import("./layoutmath.js").LayoutV4} */ (S.lay);
 }
-/* saved layouts of older versions → today's (once, at start-up: main.js) */
+/** your size of a pane (null parts: the default) @param {"box" | PageId} [pane] @param {Orient} [o] */
+export function paneSize(pane = pageId(), o = orient()) {
+  const L = sizes()[o];
+  return pane === "box" ? L.box : L.pages[pane] || (L.pages[pane] = { w: null, h: null });
+}
+/** set (or with null, forget) your size of a pane @param {"box" | PageId} pane @param {"w" | "h"} axis
+ * @param {number | null} v @param {Orient} [o] */
+export function setPaneSize(pane, axis, v, o = orient()) {
+  paneSize(pane, o)[axis] = v == null ? null : Math.round(v);
+}
+/* saved layouts of older versions → today's (once, at start-up: main.js); the sizes' own format on first use */
 export function migrateLayoutPrefs() {
-  S.lay = upgradeLayoutPrefs(S.lay, layW());
+  if (S.lay && S.lay.v !== 4) S.lay = upgradeLayoutPrefs(S.lay, layW());
   delete S.sch; // Vertical's kept prompt height (2026-11-01: the box hugs its text; the divider sizes the picture)
 }
-export const layDef = () => ({ pw: 680, rw: Math.max(LISTMIN, tabsW() + 2), iw: null, v: 3 });
+/** the defaults today (a panel's width, the prompt's) — layoutmath.js paneDefault takes over with E1 */
+export const layDef = () => ({ pw: 680, rw: Math.max(LISTMIN, tabsW() + 2) });
 /** @type {import("./types.js").LayoutState} */
 export const lay = {
   overImg: false,
@@ -176,14 +206,15 @@ function roomH() {
 export function picFull(noRow = false) {
   return roomH() - (!noRow && insets().row ? rowRoom() : 0);
 }
-/* the picture's height: picFull, capped in Generating by S.lay.ih (a share of it, set with the image area's top /
-   bottom edges; null = no cap). While such an edge is held, lay.vh is the live height */
+/* the picture's height: picFull, capped by your height for this page (Generating and the Gallery each their own, in
+   each orientation; set with the picture's edges or Vertical's divider; null = no cap). While an edge is held, lay.vh
+   is the live height */
 function picH(noRow = false) {
   const full = picFull(noRow);
   if (lay.vh) return Math.min(full, lay.vh);
-  const ih = S.lay && (document.querySelector(".app.stacked") ? S.lay.vih : S.lay.ih);
-  return S.view === "gen" && ih ? Math.max(200, Math.min(full, ih * full)) : full;
-} /* Vertical keeps its own limit (vih) */
+  const cap = S.view === "gen" ? paneSize().h : null;
+  return cap ? Math.max(200, Math.min(full, cap)) : full;
+}
 /* the clearance the edit buttons need beyond the window's own margin (they hang outside the plate, never room in the
    area — kept whether they show or not, so nothing moves when they come) */
 function toolsClear(/** @type {number} */ h) {
@@ -192,7 +223,9 @@ function toolsClear(/** @type {number} */ h) {
 export function layGeo() {
   const W = layW();
   const gen = S.view === "gen",
-    L = S.lay || (S.lay = Object.assign(layDef(), S.lw ? { pw: S.lw } : {})),
+    df = layDef(),
+    page = paneSize(),
+    L = { pw: paneSize("box", "side").w ?? df.pw, rw: page.w ?? df.rw, iw: gen ? page.w : null },
     /* never narrower than the tab bar: it sits on the plate's centre line (plate.js placeBar), and the plate is centred
        in the area on every page (2026-10-31; the bar used to be clamped into the area, off the plate's centre) */
     minR = minRight();
@@ -298,10 +331,8 @@ export function layDrag(edge, g0, dx) {
     g.off = g0.mL - W2 / 2;
   }
   g.mL = g.mR = Math.max(0, (g.W - pairGap() - g.pw - g.rw) / 2);
-  const L = /** @type {LayoutPrefs} */ (S.lay); // made by layGeo before any drag
-  L.pw = g.pw;
-  if (g0.gen) L.iw = g.rw;
-  else L.rw = g.rw;
+  setPaneSize("box", "w", g.pw, "side");
+  setPaneSize(pageId(), "w", g.rw, "side"); // Generating / the Gallery: the picture's width cap; a panel: its width
   layApply(g);
   return g;
 }
@@ -322,10 +353,8 @@ function layDragR(edge, g0, dx) {
     g.off = g0.mL - (rw - g0.rw) - W2 / 2;
   } /* dx arrives mirrored: leftwards grows it */
   g.mL = g.mR = Math.max(0, (g.W - pairGap() - g.pw - g.rw) / 2);
-  const L = /** @type {LayoutPrefs} */ (S.lay); // made by layGeo before any drag
-  L.pw = g.pw;
-  if (g0.gen) L.iw = g.rw;
-  else L.rw = g.rw;
+  setPaneSize("box", "w", g.pw, "side");
+  setPaneSize(pageId(), "w", g.rw, "side");
   layApply(g);
   return g;
 }

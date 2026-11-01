@@ -169,6 +169,7 @@
  * @property {boolean} drag          an edge is being dragged
  * @property {number | null} vh      a top / bottom edge held: the picture's live height
  * @property {number | null} vtop    …and the top that stays put meanwhile
+ * @property {number | null} [vw]    Vertical: a panel's side edge held: its live width (past its limits: the rubber band)
  * @property {{top: number, h: number, bottom: number, w: number} | null} target  where the picture is going (not
  *   where it is mid-glide): the prompt's vertical anchors use this
  * @property {boolean} frameDefer    inside one click: sizeFrame runs once, at the end

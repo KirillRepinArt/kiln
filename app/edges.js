@@ -9,7 +9,7 @@ import { toast } from "./boot.js";
 import { applyPH, card, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
-import { lay, layDrag, layGeo, layRelease, pageId, picFull, setPaneSize, sizeFrame } from "./layout.js";
+import { lay, layDrag, layGeo, layRelease, minRight, pageId, picFull, setPaneSize, sizeFrame } from "./layout.js";
 import { PIC_OVER, PWMIN, RUBBER, rubber } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
@@ -297,6 +297,52 @@ export function initEdges() {
         sizeFrame();
       });
     });
+  })();
+  /* Vertical: a panel's side edges (Queue, LoRAs, PNG Info — v0.7c). The panel widens or narrows about its centre
+     (Vertical is centred, like the picture's side edges there): the edge follows the pointer, the width changes by
+     twice the move. Each page keeps its own width in Vertical; past a limit (the tab bar, the window) with resistance,
+     what's kept is the limit. Double-click: its default (a 1:1 plate at the room's height). */
+  (function () {
+    const rt = $("right");
+    for (const side of ["l", "r"]) {
+      const h = document.createElement("div");
+      h.className = "vpedge " + side;
+      h.dataset.tip = "Drag to resize the panel · double-click for its default width";
+      rt.appendChild(h);
+      /** @type {{ x0: number, w0: number, lo: number, hi: number } | null} */
+      let d = null;
+      gesture(h, () => RESIZES.vpedge, {
+        cls: ["resizing", "laydrag"],
+        down: ev => {
+          if (!q(".app.stacked") || S.view === "gen") return false;
+          ev.stopPropagation();
+          d = {
+            x0: ev.clientX,
+            w0: rt.getBoundingClientRect().width,
+            lo: minRight(),
+            hi: innerWidth - 2 * SPACE.area,
+          };
+        },
+        move: ev => {
+          if (!d) return;
+          const want = d.w0 + 2 * (side === "r" ? 1 : -1) * (ev.clientX - d.x0);
+          lay.vw = rubber(want, d.lo, d.hi, RUBBER);
+          setPaneSize(pageId(), "w", Math.max(d.lo, Math.min(d.hi, want)), "vert");
+          sizeFrame();
+        },
+        end: () => {
+          d = null;
+          lay.vw = null; // the kept width: it settles there
+          save();
+          sizeFrame();
+        },
+      });
+      h.addEventListener("dblclick", () => {
+        setPaneSize(pageId(), "w", null, "vert");
+        save();
+        sizeFrame();
+      });
+    }
   })();
   /* the edit buttons appear while the pointer is over the picture or the column beside it (one zone, so you never chase
    them) and stay ~300 ms after it leaves, so a diagonal path doesn't lose them */

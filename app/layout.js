@@ -9,7 +9,6 @@ import { $ } from "./dom.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
-  LISTMIN,
   PWMIN,
   PIC_OVER,
   RUBBER,
@@ -155,8 +154,9 @@ export function migrateLayoutPrefs() {
   if (S.lay && S.lay.v !== 4) S.lay = upgradeLayoutPrefs(S.lay, layW());
   delete S.sch; // Vertical's kept prompt height (2026-11-01: the box hugs its text; the divider sizes the picture)
 }
-/** the defaults today (a panel's width, the prompt's) — layoutmath.js paneDefault takes over with E1 */
-export const layDef = () => ({ pw: 680, rw: Math.max(LISTMIN, tabsW() + 2) });
+/** the defaults side by side: the prompt 680; a panel a 2:3 plate at the room's height, never narrower than the tab bar
+ * (v0.7c, agreed 2026-11-01; it was 660 px whatever the window) */
+export const layDef = () => ({ pw: 680, rw: Math.max(minRight(), Math.round((picFull(true) * 2) / 3)) });
 /** @type {import("./types.js").LayoutState} */
 export const lay = {
   overImg: false,
@@ -166,6 +166,7 @@ export const lay = {
   drag: false,
   vh: null,
   vtop: null,
+  vw: null,
   target: null,
   frameDefer: false,
   framePending: false,
@@ -557,15 +558,14 @@ export function sizeFrame() {
     if (stk) {
       /* its width from the picture's height WITHOUT the status row's room: a render starting or ending doesn't
          change it (its width glided on CSS's clock while the frame moved on its own: G6) */
-      const hh = picH(true);
-      lay.colW = stackColumnW(
-        app.clientWidth - 2 * SPACE.area,
-        minRight(),
-        stackW(),
-        hh,
-        toolsClear(hh),
-        S.view === "gen",
-      );
+      const hh = picH(true),
+        most = app.clientWidth - 2 * SPACE.area;
+      /* a panel (Queue, LoRAs, PNG Info): its own width for this page in Vertical — set with its side edges; by
+         default a 1:1 plate at the room's height — never narrower than the tab bar, never wider than the window */
+      lay.colW =
+        S.view === "gen"
+          ? stackColumnW(most, minRight(), stackW(), hh, toolsClear(hh), true)
+          : Math.round(lay.vw ?? Math.max(minRight(), Math.min(most, paneSize().w ?? roomH())));
       rt.style.width = lay.colW + "px";
     } else {
       if (rt.style.width) rt.style.width = "";

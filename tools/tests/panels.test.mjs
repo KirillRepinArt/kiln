@@ -290,10 +290,11 @@ export async function resetAndDoubleClick(k, t) {
   await k.sleep(200);
   await k.ev(`(document.querySelector('[data-lay="reset"]').click(),1)`);
   await settle(k);
-  const r = await box(k);
+  const r = await box(k),
+    dw = await k.ev(`layDef().rw`); // a 2:3 plate at the room's height (v0.7c; it was 660 px)
   t.ok(
     Math.abs(r.pr - r.pl - 680) <= 1 &&
-      Math.abs(r.rr - r.rl - 660) <= 1 &&
+      Math.abs(r.rr - r.rl - dw) <= 1 &&
       r.rl - r.pr === AREA &&
       Math.abs(r.pl - AREA - (1700 - AREA - r.rr)) <= 2,
     "Layout → Reset: the default sizes for this window, centred",

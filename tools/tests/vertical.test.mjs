@@ -181,9 +181,12 @@ export async function columnCap(k, t) {
   const r = await R(k, "#right"),
     st = await R(k, "#stage"),
     W = await k.ev(`innerWidth`);
-  const cap = ((st.height - 66) * 16) / 9 + 2 * 52;
+  /* v0.7c: a panel's default in Vertical is a 1:1 plate at the room's height, never narrower than the tab bar (it was a
+     16:9 box at the picture's height); its own width once you drag its sides (edges > verticalPanelsResize) */
+  const want = Math.max(await k.ev(`minRight()`), (await R(k, "#rpanel")).height);
+  void st;
   t.ok(r.width < W - 36 - 50, "Vertical on a wide window: the panel is not edge to edge", { w: r.width, W });
-  t.near(r.width, cap, 50, "about a 16:9 box at its height", { w: r.width, cap });
+  t.near(r.width, want, 3, "a 1:1 plate at the room's height", { w: r.width, want });
   t.near(r.left + r.width / 2, W / 2, 2, "centred");
   await k.ev(`(setDock("left"),1)`);
   await k.sleep(900);

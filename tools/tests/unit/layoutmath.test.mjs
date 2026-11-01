@@ -21,6 +21,15 @@ import {
   MMIN,
   PWMIN,
   CARDMAX,
+  arrange,
+  rubber,
+  limits,
+  trade,
+  growRoom,
+  paneDefault,
+  layoutPrefsV4,
+  PAGE_IDS,
+  QUEUEMAX,
 } from "../../../app/layoutmath.js";
 
 const near = (a, b, what) => assert.ok(Math.abs(a - b) < 1e-6, `${what}: ${a} ≠ ${b}`);
@@ -292,4 +301,164 @@ test("one fade for contents everywhere: out ends at the swap, in starts there, b
   assert.equal(grow.out.delay, 0, "the swap sooner than a fade: out from the first frame");
   const crop = shapeSteps({ w: 200, h: 200 }, { w: 100, h: 100 }); // only a crop: in runs past the shape change
   assert.equal(fades(crop).T, Math.max(crop.T, crop.A + F), "the change lasts until its fade-in ends");
+});
+
+/** today's side-by-side pair as an arrangement: the prompt, then the page (null = takes the room left) */
+const pair = (
+  /** @type {number} */ W,
+  /** @type {number} */ pw,
+  /** @type {number | null} */ rw,
+  minR = 420,
+  margin = MMIN,
+) =>
+  arrange({
+    panes: [
+      { size: pw, lo: PWMIN, hi: CARDMAX },
+      { size: rw, lo: minR, hi: W },
+    ],
+    gap: pairGap(),
+    start: 0,
+    length: W,
+    margin,
+    anchor: "center",
+  });
+
+test("model: the pair matches today's pageGeometry (a panel, a picture page, a narrow window)", () => {
+  for (const [W, gen, L] of /** @type {const} */ ([
+    [1800, false, wide],
+    [2400, false, { pw: 700, rw: 900, iw: null }],
+    [1800, true, wide], // a picture page with no cap: it takes the room the prompt leaves
+    [1200, false, { pw: 680, rw: 900, iw: null }], // too narrow: both shrink in proportion
+  ])) {
+    const g = pageGeometry({ W, gen, drag: false, minR: 420, clear: 0 }, L),
+      a = pair(W, L.pw, gen ? null : L.rw);
+    near(a.panes[0].size, g.pw, `${W} ${gen} prompt width`);
+    near(a.panes[1].size, g.rw, `${W} ${gen} page width`);
+    near(a.start, g.mL, `${W} ${gen} left margin`);
+    near(W - a.end, g.mR, `${W} ${gen} right margin`);
+  }
+});
+
+test("model: too little room shrinks in proportion, never below a pane's least", () => {
+  const a = pair(1000, 680, 900);
+  assert.ok(a.panes[0].size >= PWMIN && a.panes[1].size >= 420, "both at least their least");
+  near(a.end - a.start, 1000 - 2 * MMIN, "the group fills the room less its margins");
+  const tight = pair(700, 680, 900); // can't fit: both at their least, overflowing, centred
+  near(tight.panes[0].size, PWMIN, "prompt at its least");
+  near(tight.panes[1].size, 420, "page at its least");
+  near(tight.start + tight.end, 700, "centred");
+});
+
+test("model: a pin holds one side still; nothing else changes size", () => {
+  const rest = pair(1800, 680, 660);
+  /* the page's outer edge dragged 100 px out: its inner side (by the divider) is pinned where it was */
+  const inner = rest.panes[1].start;
+  const a = arrange({
+    panes: [
+      { size: 680, lo: PWMIN, hi: CARDMAX },
+      { size: 760, lo: 420, hi: 1800 },
+    ],
+    gap: pairGap(),
+    start: 0,
+    length: 1800,
+    margin: MMIN,
+    anchor: "center",
+    pin: { i: 1, side: "start", at: inner },
+  });
+  near(a.panes[1].start, inner, "the pinned side stayed");
+  near(a.panes[1].start + a.panes[1].size, rest.panes[1].start + 660 + 100, "the dragged side moved 100");
+  near(a.panes[0].start, rest.panes[0].start, "the prompt stayed glued: it didn't move");
+  near(a.panes[0].size, 680, "and kept its size");
+});
+
+test("model: the start anchor (Vertical): the group sits a margin from the top, the spare room at the end", () => {
+  const a = arrange({
+    panes: [
+      { size: 500, lo: 200, hi: 900 },
+      { size: 160, lo: 100, hi: 600 },
+    ],
+    gap: 20,
+    start: 100,
+    length: 1000,
+    margin: 12,
+    anchor: "start",
+  });
+  near(a.panes[0].start, 112, "the picture one margin under the bar");
+  near(a.panes[1].start, 112 + 500 + 20, "the prompt glued one gap under it");
+  near(a.end, 112 + 500 + 20 + 160, "the spare room is at the bottom");
+});
+
+test("model: the rubber band answers back past a limit, never past its stretch, never backwards", () => {
+  assert.equal(rubber(500, 400, 600, 300), 500, "inside the limits: as asked");
+  let last = 600;
+  for (const x of [610, 650, 800, 2000, 1e6]) {
+    const r = rubber(x, 400, 600, 300);
+    assert.ok(r > last - 1e-9 && r < x, `${x}: further, but less than asked`);
+    assert.ok(r < 600 + 300, `${x}: never past the stretch`);
+    last = r;
+  }
+  assert.ok(rubber(300, 400, 600, 300) < 400 && rubber(300, 400, 600, 300) > 100, "below the least, the same way");
+  near(rubber(700, 650, 650, 300) - 650, 650 - rubber(600, 650, 650, 300), "a fixed size answers back both ways alike");
+});
+
+test("model: the divider trades — one grows by what the other gives, within both panes' limits", () => {
+  const la = { lo: 360, hi: 900 },
+    lb = { lo: 420, hi: 1800 };
+  near(trade(100, 680, 660, la, lb), 100, "inside the limits: the whole move");
+  near(trade(-100, 680, 660, la, lb), -100, "the other way too");
+  const past = trade(400, 680, 660, la, lb); // the page would drop to 260, under its 420: past the limit at +240
+  assert.ok(past > 240 && past < 400, "past the page's least: resistance");
+});
+
+test("model: growRoom is the room between the group and the window's edge", () => {
+  const a = pair(1800, 680, 660);
+  near(growRoom(a, "end", 0, 1800), 1800 - a.end, "toward the end");
+  near(growRoom(a, "start", 0, 1800), a.start, "toward the start");
+});
+
+test("model: limits — one place for every pane's least and largest", () => {
+  const c = { orient: /** @type {const} */ ("side"), roomW: 1800, roomH: 950, minR: 420 };
+  assert.deepEqual(limits("box", "w", c), { lo: PWMIN, hi: CARDMAX });
+  assert.deepEqual(limits("queue", "w", c), { lo: 420, hi: QUEUEMAX });
+  assert.deepEqual(limits("loras", "w", c), { lo: 420, hi: 1800 });
+  const png = limits("png", "w", c);
+  assert.equal(png.lo, png.hi, "PNG Info: a fixed width");
+  assert.equal(png.lo, Math.round((950 * 2) / 3), "its default: a 2:3 plate");
+  assert.deepEqual(limits("box", "w", { ...c, roomW: 300 }), { lo: 300, hi: 300 }, "a tiny room: never lo > hi");
+  assert.equal(
+    limits("box", "h", { ...c, orient: "vert", least: 120, winH: 1000 }).hi,
+    700,
+    "Vertical: 70 % of the window",
+  );
+});
+
+test("model: defaults — panels 2:3 side by side, 1:1 in Vertical; picture pages uncapped", () => {
+  assert.deepEqual(paneDefault("queue", "side", { w: 1800, h: 900 }), { w: 600, h: 900 });
+  assert.deepEqual(paneDefault("loras", "vert", { w: 1800, h: 700 }), { w: 700, h: 700 });
+  assert.deepEqual(paneDefault("generating", "side", { w: 1800, h: 900 }), { w: null, h: null });
+  assert.deepEqual(paneDefault("box", "side", { w: 1800, h: 900 }), { w: 680, h: null });
+});
+
+test("model: saved layouts v3 → v4 — every old size lands on its pane, each page its own", () => {
+  const v4 = layoutPrefsV4(
+    { pw: 700, rw: 640, iw: 900, ih: 0.5, vih: 0.8, sw: 820, v: 3 },
+    { pph: 300, sch: 0, roomH: 1000, vroomH: 600 },
+  );
+  assert.equal(v4.v, 4);
+  assert.deepEqual(v4.side.box, { w: 700, h: 300 });
+  assert.deepEqual(v4.vert.box, { w: 820, h: null }, "an automatic slot stays automatic");
+  assert.deepEqual(v4.side.pages.generating, { w: 900, h: 500 }, "a height cap: a share of the room → px");
+  assert.deepEqual(v4.side.pages.gallery, { w: 900, h: 500 }, "the Gallery had the same cap");
+  assert.notEqual(v4.side.pages.gallery, v4.side.pages.generating, "but its own from now on");
+  assert.deepEqual(v4.side.pages.queue, { w: 640, h: null });
+  assert.notEqual(v4.side.pages.loras, v4.side.pages.queue, "the Queue and LoRAs: each its own");
+  assert.deepEqual(v4.side.pages.png, { w: null, h: null }, "PNG Info: its default");
+  assert.deepEqual(v4.vert.pages.generating, { w: null, h: 480 });
+  assert.deepEqual(Object.keys(v4.vert.pages), [...PAGE_IDS]);
+  assert.equal(layoutPrefsV4(v4, { roomH: 1, vroomH: 1 }), v4, "v4 passes through");
+  assert.deepEqual(
+    layoutPrefsV4(null, { roomH: 1000, vroomH: 600 }).side.box,
+    { w: null, h: null },
+    "nothing saved: defaults",
+  );
 });

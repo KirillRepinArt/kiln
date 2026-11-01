@@ -371,3 +371,177 @@ export function shapeBox(o, n, q) {
     [t, h] = ax(o.t, o.h, n.t, n.h, q[1]);
   return { l, t, w, h };
 }
+
+/* ---------- v0.7c · the layout model (docs/decisions/0013-layout-tree.md) ----------
+   Three owners: SIZES (yours, per pane × page × orientation, set by edges), the GROUP (panes stick together with one
+   gap) and PLACEMENT (one resting anchor per layout). A drag adds a PIN (the grabbed pane's opposite side holds
+   still); a release drops it and the group settles. Past a limit a size moves on with resistance (rubber). Plain
+   numbers in, plain numbers out: nothing here reads the page. */
+
+/** the panes a layout holds besides the prompt box @typedef {"generating" | "gallery" | "queue" | "loras" | "png"} PageId */
+/** @typedef {"side" | "vert"} Orient side by side (Left and Right are mirrors and share one) or Vertical */
+/** a size; null = the default (for a picture page: no cap) @typedef {{ w: number | null, h: number | null }} PaneSize */
+/** @typedef {{ v: 4, side: { box: PaneSize, pages: Record<PageId, PaneSize> }, vert: { box: PaneSize, pages: Record<PageId, PaneSize> } }} LayoutV4 */
+
+export const PAGE_IDS = /** @type {const} */ (["generating", "gallery", "queue", "loras", "png"]);
+/** a picture page fits its picture inside its size (a cap); a panel fills its size @param {string} id */
+export const isFitPage = id => id === "generating" || id === "gallery";
+export const BOXHMIN = 240, // the prompt box's least height side by side (you set it with its edges)
+  PICHMIN = 200, // a picture's least height
+  PANELHMIN = 240, // a panel's least height
+  QUEUEMAX = 900, // the Queue's widest: past it, lines get too long to read
+  SLOTMAX = 0.7; // Vertical: the prompt box's tallest, a share of the window
+
+/**
+ * Past a limit a size moves on with resistance and springs back on release (Apple's rubber band):
+ * over → d · (1 − 1 / (over · 0.55 / d + 1)), always less than over, never past d.
+ * @param {number} x the size the pointer asks for
+ * @param {number} lo @param {number} hi the limits (lo = hi: a fixed size that still answers back)
+ * @param {number} d how far it can stretch at most (the pane's size at grab is a good one)
+ */
+export function rubber(x, lo, hi, d) {
+  const f = (/** @type {number} */ over) => (d > 0 ? d * (1 - 1 / ((over * 0.55) / d + 1)) : 0);
+  if (x < lo) return lo - f(lo - x);
+  if (x > hi) return hi + f(x - hi);
+  return x;
+}
+
+/**
+ * A pane's size when you haven't set one. Panels: a 2:3 plate side by side, 1:1 in Vertical, at the room's height.
+ * Picture pages: no cap (the room). The box: 680 wide side by side; its height automatic (grows with your draft).
+ * @param {"box" | PageId} pane @param {Orient} orient @param {{ w: number, h: number }} room
+ * @returns {PaneSize}
+ */
+export function paneDefault(pane, orient, room) {
+  if (pane === "box") return { w: orient === "side" ? 680 : null, h: null };
+  if (isFitPage(pane)) return { w: null, h: null };
+  return { w: Math.round(orient === "side" ? (room.h * 2) / 3 : room.h), h: room.h };
+}
+
+/**
+ * Every pane's least and largest size, in ONE place (they were literals scattered over five edge gestures).
+ * @param {"box" | PageId} pane
+ * @param {"w" | "h"} axis
+ * @param {object} c
+ * @param {Orient} c.orient
+ * @param {number} c.roomW the room the layout has (the window less its edge)
+ * @param {number} c.roomH
+ * @param {number} c.minR the tab bar's width: a page is never narrower (the bar sits on its plate)
+ * @param {number} [c.least] the prompt box's least height (its controls and ~2 lines)
+ * @param {number} [c.winH] the window's height (Vertical: the box's tallest is a share of it)
+ * @returns {{ lo: number, hi: number }}
+ */
+export function limits(pane, axis, c) {
+  const W = c.roomW,
+    H = c.roomH;
+  const r = (/** @type {number} */ lo, /** @type {number} */ hi) => ({ lo: Math.min(lo, hi), hi });
+  if (pane === "box") {
+    if (axis === "w") return r(PWMIN, c.orient === "side" ? Math.min(CARDMAX, W) : W);
+    return c.orient === "side" ? r(BOXHMIN, H) : r(c.least ?? BOXHMIN, Math.round((c.winH ?? H) * SLOTMAX));
+  }
+  if (axis === "h") return r(isFitPage(pane) ? PICHMIN : PANELHMIN, H);
+  if (pane === "queue") return r(c.minR, Math.min(QUEUEMAX, W));
+  if (pane === "png") {
+    const fixed = Math.max(c.minR, paneDefault(pane, c.orient, { w: W, h: H }).w ?? c.minR);
+    return r(fixed, fixed); // a fixed width: its edges still answer back (rubber)
+  }
+  return r(c.minR, W);
+}
+
+/**
+ * The group along one axis: panes side by side (or stacked) with one gap between neighbours, placed at the layout's
+ * resting anchor, or held by a pin while an edge is dragged.
+ * - A pane with size null takes the room left (one at most: a picture page with no cap).
+ * - Too little room: the margins go first, then every pane shrinks in proportion, none below its least.
+ * - anchor "center": the group in the middle of the room; "start": `margin` from its start (Vertical, under the bar).
+ * - pin {i, side, at}: pane i's start / end side sits at `at` (a drag keeps the side it doesn't grab still).
+ * @param {object} a
+ * @param {{ size: number | null, lo: number, hi: number }[]} a.panes
+ * @param {number} a.gap between neighbours
+ * @param {number} a.start @param {number} a.length the room along this axis
+ * @param {number} a.margin the least room kept at each end
+ * @param {"center" | "start"} a.anchor
+ * @param {{ i: number, side: "start" | "end", at: number } | null} [a.pin]
+ * @returns {{ panes: { start: number, size: number }[], start: number, end: number }}
+ */
+export function arrange(a) {
+  const n = a.panes.length,
+    avail = a.length - 2 * a.margin - a.gap * Math.max(0, n - 1),
+    clamp = (/** @type {number} */ x, /** @type {{ lo: number, hi: number }} */ p) => Math.max(p.lo, Math.min(p.hi, x));
+  const sizes = a.panes.map(p => (p.size == null ? 0 : clamp(p.size, p)));
+  const fill = a.panes.findIndex(p => p.size == null);
+  if (fill >= 0) {
+    const rest = sizes.reduce((s, x, i) => (i === fill ? s : s + x), 0);
+    sizes[fill] = clamp(avail - rest, a.panes[fill]);
+  }
+  /* too little room: shrink in proportion, none below its least (those at their least drop out of the next round) */
+  for (let round = 0; round < n; round++) {
+    const total = sizes.reduce((s, x) => s + x, 0);
+    if (total <= avail + 1e-9) break;
+    const free = sizes.map((x, i) => x > a.panes[i].lo + 1e-9),
+      flex = sizes.reduce((s, x, i) => (free[i] ? s + x : s), 0);
+    if (flex <= 0) break; // everything at its least: it overflows, centred
+    const k = Math.max(0, avail - (total - flex)) / flex;
+    sizes.forEach((x, i) => {
+      if (free[i]) sizes[i] = Math.max(a.panes[i].lo, x * k);
+    });
+  }
+  const total = sizes.reduce((s, x) => s + x, 0) + a.gap * Math.max(0, n - 1),
+    offs = sizes.map((_, i) => sizes.slice(0, i).reduce((s, x) => s + x + a.gap, 0));
+  let start = a.anchor === "center" ? a.start + (a.length - total) / 2 : a.start + a.margin;
+  if (a.pin) start = a.pin.at - (offs[a.pin.i] + (a.pin.side === "end" ? sizes[a.pin.i] : 0));
+  return { panes: sizes.map((size, i) => ({ start: start + offs[i], size })), start, end: start + total };
+}
+
+/**
+ * How far the group's end (or start) may still move toward the room's edge: what a pane at that end may grow by
+ * while its other side is pinned (a drag must not push the group out of the window).
+ * @param {{ start: number, end: number }} arr an arrangement (arrange)
+ * @param {"start" | "end"} side the group's side that moves
+ * @param {number} roomStart @param {number} roomEnd
+ */
+export function growRoom(arr, side, roomStart, roomEnd) {
+  return Math.max(0, side === "end" ? roomEnd - arr.end : arr.start - roomStart);
+}
+
+/**
+ * The divider between two neighbours: one grows exactly as much as the other shrinks. Returns the change for the
+ * first pane (the second gets minus it), within both panes' limits, with resistance past them.
+ * @param {number} d the pointer's move @param {number} a the first pane's size at grab
+ * @param {number} b the second's @param {{ lo: number, hi: number }} la @param {{ lo: number, hi: number }} lb
+ */
+export function trade(d, a, b, la, lb) {
+  const hi = Math.min(la.hi - a, b - lb.lo),
+    lo = Math.min(hi, Math.max(la.lo - a, b - lb.hi));
+  return rubber(d, lo, hi, Math.min(a, b));
+}
+
+/**
+ * Saved layouts of v3 (one width per role, heights elsewhere) → v4 (a size per pane × page × orientation). Once, at
+ * start-up. v3's picture height caps were shares of the room; v4 keeps px (a size you set means that size).
+ * @param {any} L the saved layout (S.lay, v3) @param {object} o
+ * @param {number} [o.pph] the prompt box's height side by side (0 = automatic)
+ * @param {number} [o.sch] Vertical: the prompt slot's height (0 = automatic)
+ * @param {number} o.roomH the picture's room height now (side by side) @param {number} o.vroomH the same in Vertical
+ * @returns {LayoutV4}
+ */
+export function layoutPrefsV4(L, o) {
+  if (L && L.v === 4) return L;
+  const l = L || {},
+    none = () => ({ w: null, h: null }),
+    pages = (/** @type {Partial<Record<PageId, PaneSize>>} */ s) =>
+      /** @type {Record<PageId, PaneSize>} */ (Object.fromEntries(PAGE_IDS.map(id => [id, s[id] || none()]))),
+    px = (/** @type {number | null | undefined} */ share, /** @type {number} */ room) =>
+      share ? Math.round(share * room) : null,
+    pic = () => ({ w: l.iw ?? null, h: px(l.ih, o.roomH) }),
+    vpic = () => ({ w: null, h: px(l.vih, o.vroomH) }),
+    panel = () => ({ w: l.rw ?? null, h: null });
+  return {
+    v: 4,
+    side: {
+      box: { w: l.pw ?? null, h: o.pph || null },
+      pages: pages({ generating: pic(), gallery: pic(), queue: panel(), loras: panel() }),
+    },
+    vert: { box: { w: l.sw ?? null, h: o.sch || null }, pages: pages({ generating: vpic(), gallery: vpic() }) },
+  };
+}

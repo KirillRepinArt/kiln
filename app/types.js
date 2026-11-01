@@ -197,6 +197,7 @@
  * @property {number | null} imgTop   the picture's top — "top" lines up with it
  * @property {number | null} imgBottom the status line under the picture — "bot" lines up with it
  * @property {boolean} drag           the card is being dragged to a new resting place
+ * @property {number} [swHold]       Vertical: the box's width while a side edge is held (0: none) — layoutLeft writes it
  * @property {number} slotHold       Vertical: the box's height while the divider is held (0: none). Never kept: the box
  *                                    hugs its text; letting go gives the picture the size it has (edges.js)
  */

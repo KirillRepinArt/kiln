@@ -436,48 +436,39 @@ export function initEdges() {
     }
   })();
   (function () {
-    const L = $("left"),
-      col = $("lcol");
+    const L = $("left");
     for (const side of ["l", "r"]) {
       const h = document.createElement("div");
       h.className = "sedge " + side;
       h.dataset.tip = "Drag to resize the prompt box · double-click for its default width";
       L.appendChild(h);
-      /** a Vertical side edge being dragged: where the pointer started, the box's width then, how far it may grow
-       * (its other side stays put: up to the room's end, the window less its area gap)
-       * @type {{ x0: number, w0: number, max: number } | null} */
+      /** a Vertical side edge being dragged: where the pointer started, the box's width then, its limits. The box
+       * widens or narrows about its centre (Vertical is centred: the picture's and the panels' sides work the same),
+       * the edge under the pointer; layoutLeft writes the width (card.swHold while held) — one writer
+       * @type {{ x0: number, w0: number, lo: number, hi: number } | null} */
       let d = null;
       gesture(h, () => RESIZES.sedge, {
         cls: ["resizing", "laydrag"],
         down: ev => {
           if (!q(".app.stacked")) return false;
           ev.stopPropagation();
-          const b = $("left").getBoundingClientRect();
-          d = {
-            x0: ev.clientX,
-            w0: stackW(),
-            max: side === "r" ? innerWidth - SPACE.area - b.left : b.right - SPACE.area,
-          };
+          d = { x0: ev.clientX, w0: stackW(), ...paneLimits("box", "w", { o: "vert" }) };
         },
         move: ev => {
           if (!d) return;
-          const dx = ev.clientX - d.x0,
-            max = d.max;
-          const want = d.w0 + (side === "r" ? dx : -dx),
-            lo = Math.min(paneLimits("box", "w", { o: "vert" }).lo, max),
-            w = rubber(want, lo, max, RUBBER); // past a limit: with resistance; what's kept is the limit
+          const want = d.w0 + 2 * (side === "r" ? 1 : -1) * (ev.clientX - d.x0);
           S.vfit = false;
-          setPaneSize("box", "w", Math.max(lo, Math.min(max, want)), "vert");
-          col.style.setProperty("--sw", w + "px");
-          col.style.setProperty("--soff", ((side === "r" ? 1 : -1) * (w - d.w0)) / 2 + "px");
-        } /* the other edge stays put */,
+          card.swHold = rubber(want, d.lo, d.hi, RUBBER); // past a limit: with resistance
+          setPaneSize("box", "w", Math.max(d.lo, Math.min(d.hi, want)), "vert"); // what's kept is the limit
+          layoutLeft();
+        },
         end: () => {
           d = null;
-          col.style.setProperty("--soff", "0px");
+          card.swHold = 0; // the kept width: it settles there
           save();
           updHm();
           layoutLeft();
-        } /* glides back to centre */,
+        },
       });
       h.addEventListener("dblclick", () => {
         setPaneSize("box", "w", null, "vert");

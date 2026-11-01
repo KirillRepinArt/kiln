@@ -275,7 +275,7 @@
   right: auto;
   left: 50%;
   width: min(100%, var(--sw, 760px));
-  transform: translateX(calc(-50% + var(--soff, 0px)));
+  transform: translateX(-50%); /* centred: its sides move about its centre */
 }
 .app.pright .left,
 .app.pright .ltitle,
@@ -305,7 +305,7 @@
   right: auto;
   left: 50%;
   width: min(100%, var(--sw, 760px));
-  transform: translateX(calc(-50% + var(--soff, 0px)));
+  transform: translateX(-50%); /* centred: its sides move about its centre */
   top: var(--gtop-v, 0px);
   height: calc(var(--chtop, 0px) + var(--chh, 0px) - var(--gtop-v, 0px));
 }

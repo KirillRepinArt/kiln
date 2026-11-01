@@ -25,6 +25,7 @@ export const card = {
   imgBottom: null,
   drag: false,
   slotHold: 0,
+  swHold: 0,
 };
 /** the picture's lines the card lines up with (layoutmath's CardAnchors) */
 const anchors = () => ({ it: card.imgTop, ib: card.imgBottom, cy: card.cy });
@@ -105,11 +106,14 @@ export function applyMode() {
   }
   updHm();
 }
-/* Vertical: the prompt box's width — yours (paneSize("box", "vert"), set with its side edges), or the picture's (Fit width), never
-   narrower than the box's minimum or wider than the window */
+/* Vertical: the prompt box's width — yours (paneSize("box", "vert"), set with its side edges; held: card.swHold, past a
+   limit with the rubber band), or the picture's (Fit width), never narrower than the box's minimum or wider than the
+   window. ONE writer of the box's width in Vertical: layoutLeft (--sw) asks this (2026-11-02, v0.7c 3b: the side edges
+   wrote --sw and a held offset --soff themselves) */
 export function stackW() {
   const max = innerWidth - 2 * SPACE.area,
     pic = typeof lay !== "undefined" && lay.target && lay.target.w;
+  if (card.swHold) return Math.round(card.swHold);
   const w = S.vfit && pic ? pic : paneSize("box", "vert").w || 760;
   return Math.round(Math.max(Math.min(PWMIN, max), Math.min(max, w)));
 }

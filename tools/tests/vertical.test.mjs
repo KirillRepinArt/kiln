@@ -28,29 +28,30 @@ export async function sideEdges(k, t) {
     mid = await k.ev(`innerWidth/2`);
   t.near(L0.width, 760, 2, "Vertical: the box starts at its default width");
   t.ok((await k.ev(`getComputedStyle(document.querySelector(".sedge.r")).display`)) === "block", "it has side edges");
-  // drag the right edge 120 px right: the left edge stays put while dragging, then the box glides back to centre
+  // drag the right edge 120 px right: the box widens about its centre (v0.7c 3b: Vertical's panes all work so; it held
+  // the left edge, then glided back to centre — a second writer of its width and offset)
   const h = await R(k, ".sedge.r"),
     x = h.left + h.width / 2,
     y = h.top + h.height / 2;
   await press(k, x, y);
   await moveTo(k, x, y, x + 120, y);
   const Ld = await R(k, "#left");
-  t.near(Ld.left, L0.left, 2, "while dragging, the opposite edge holds still");
-  t.near(Ld.width, L0.width + 120, 2, "and the box follows the cursor");
+  t.near(Ld.left + Ld.width / 2, L0.left + L0.width / 2, 2, "while dragging, its centre holds");
+  t.near(Ld.width, L0.width + 240, 2, "and its edge follows the cursor (240 wider)");
   await release(k, x + 120, y);
   await k.mouse(2, 2);
   await k.sleep(700);
   const L1 = await R(k, "#left");
-  t.near(L1.left + L1.width / 2, mid, 2, "on release it is centred again");
-  t.near(L1.width, 880, 2, "at the new width");
-  t.near((await R(k, "#chips")).width, 880, 2, "the LoRA row follows the box");
-  t.near(await k.ev(`paneSize("box","vert").w`), 880, 1, "remembered");
+  t.near(L1.left + L1.width / 2, mid, 2, "on release it is centred, as it was");
+  t.near(L1.width, 1000, 2, "at the new width");
+  t.near((await R(k, "#chips")).width, 1000, 2, "the LoRA row follows the box");
+  t.near(await k.ev(`paneSize("box","vert").w`), 1000, 1, "remembered");
   await k.reload();
   await k.sleep(800);
   await k.until("!!(window.LIVE&&window._jobsReady)", 15000);
   await k.sleep(800);
   t.ok(
-    await k.until(`Math.abs($("left").getBoundingClientRect().width-880)<=2`, 3000, 100),
+    await k.until(`Math.abs($("left").getBoundingClientRect().width-1000)<=2`, 3000, 100),
     "after a restart too",
     (await R(k, "#left")).width,
   );

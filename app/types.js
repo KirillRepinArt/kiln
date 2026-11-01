@@ -170,6 +170,9 @@
  * @property {number | null} vh      a top / bottom edge held: the picture's live height
  * @property {number | null} vtop    …and the top that stays put meanwhile
  * @property {number | null} [vw]    Vertical: a panel's side edge held: its live width (past its limits: the rubber band)
+ * @property {number | null} [ph]    a panel's top / bottom edge held: its live height
+ * @property {number | null} [ptop]  and its top in its room meanwhile (the other side pinned)
+ * @property {number} [proom]        the panel's room height (sizeFrame)
  * @property {{top: number, h: number, bottom: number, w: number} | null} target  where the picture is going (not
  *   where it is mid-glide): the prompt's vertical anchors use this
  * @property {boolean} frameDefer    inside one click: sizeFrame runs once, at the end

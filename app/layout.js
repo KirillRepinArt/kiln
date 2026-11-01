@@ -10,6 +10,7 @@ import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
   PWMIN,
+  PANELHMIN,
   PIC_OVER,
   RUBBER,
   arrange,
@@ -167,6 +168,8 @@ export const lay = {
   vh: null,
   vtop: null,
   vw: null,
+  ph: null,
+  ptop: null,
   target: null,
   frameDefer: false,
   framePending: false,
@@ -575,9 +578,27 @@ export function sizeFrame() {
        room (roomH — down to an even gap above the prompt's name), not what the column's CSS leaves: they ended ~6–12 px
        apart and the plate moved on every switch. Side by side the room IS the panel's box: nothing to set */
     lay.vroom = stk ? Math.round(roomH()) : 0; // Vertical: the picture's room (promptFollow: the prompt follows it up)
+    /* the panel's box (v0.7c: Queue, LoRAs and PNG Info have a height of their own, set with their top / bottom edges):
+       its room is the picture's (every page's plate shares one top and bottom when it's the whole room); a shorter
+       one rests centred side by side, at the top in Vertical (the layout's anchor); held, lay.ph / lay.ptop. ONE
+       writer of its height and offset, and of where its edge handles go (--pt / --pb on the area). The tab bar rides
+       on its plate (plate.js barFor), so the tabs come down with a shorter panel. */
     const rp = $("rpanel"),
-      h = stk ? lay.vroom + "px" : "";
+      cur = parseFloat(rp.style.marginTop) || 0,
+      room = stk ? lay.vroom : Math.round(rt.clientHeight - (rp.offsetTop - cur)),
+      panel = S.view !== "gen",
+      kept = panel ? paneSize().h : null,
+      H = panel ? Math.round(lay.ph ?? (kept ? Math.max(PANELHMIN, Math.min(room, kept)) : room)) : null,
+      top = panel && H != null ? Math.round(lay.ptop ?? (stk ? 0 : (room - H) / 2)) : 0,
+      h = H != null ? H + "px" : stk ? lay.vroom + "px" : "",
+      mt = top ? top + "px" : "";
     if (rp.style.height !== h) rp.style.height = h;
+    if (rp.style.marginTop !== mt) rp.style.marginTop = mt;
+    const fx = H != null && !stk ? "none" : ""; // side by side it grows to the room (flex: 1) unless it has a height
+    if (rp.style.flex !== fx) rp.style.flex = fx;
+    rt.style.setProperty("--pt", rp.offsetTop + "px");
+    rt.style.setProperty("--pb", rp.offsetTop + rp.offsetHeight + "px");
+    lay.proom = room;
   }
   /* the target geometry, not a measurement: the grid may be mid-glide */
   const st = stageRect(),

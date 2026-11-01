@@ -18,4 +18,4 @@ that changes later gets a new record; the old one says what replaced it.
 | [0010](0010-one-instance-own-launcher.md) | One Kiln per data folder; the launcher in Python | accepted |
 | [0011](0011-nothing-leaves-the-machine.md) | Nothing leaves the machine, checked by tests | accepted |
 | [0012](0012-one-owner-baseline.md) | One owner for every moving or visible thing, checked by tests | accepted |
-| [0013](0013-layout-tree.md) | One layout model: sizes, the group, placement; a drag pins, a release settles | proposed |
+| [0013](0013-layout-tree.md) | One layout model: sizes, the group, placement; a drag pins, a release settles | accepted (amended) |

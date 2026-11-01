@@ -9,8 +9,19 @@ import { toast } from "./boot.js";
 import { applyPH, card, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
-import { lay, layDrag, layGeo, layRelease, minRight, pageId, picFull, setPaneSize, sizeFrame } from "./layout.js";
-import { PIC_OVER, PWMIN, RUBBER, rubber } from "./layoutmath.js";
+import {
+  lay,
+  layDrag,
+  layGeo,
+  layRelease,
+  minRight,
+  pageId,
+  paneSize,
+  picFull,
+  setPaneSize,
+  sizeFrame,
+} from "./layout.js";
+import { PANELHMIN, PIC_OVER, PWMIN, RUBBER, rubber } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { SPACE, pairGap } from "./tokens.js";
@@ -343,6 +354,61 @@ export function initEdges() {
         sizeFrame();
       });
     }
+  })();
+  /* a panel's top and bottom edges (Queue, LoRAs, PNG Info — v0.7c): its height. Like the picture's: the edge follows
+     the pointer and the other side holds; past a limit (its least, its room) with resistance; on release it settles
+     to its place (centred side by side, at the top in Vertical) and keeps the height. Double-click: the whole room. */
+  (function () {
+    const rt = $("right"),
+      rp = $("rpanel");
+    for (const side of ["t", "b"]) {
+      const h = document.createElement("div");
+      h.className = "phedge " + side;
+      h.dataset.tip = "Drag to resize the panel · double-click for its full height";
+      rt.appendChild(h);
+      /** @type {{ y0: number, h0: number, t0: number, room: number } | null} */
+      let d = null;
+      gesture(h, () => RESIZES.phedge, {
+        cls: ["vresizing", "laydrag"],
+        down: ev => {
+          if (S.view === "gen") return false;
+          ev.stopPropagation();
+          d = {
+            y0: ev.clientY,
+            h0: rp.offsetHeight,
+            t0: parseFloat(rp.style.marginTop) || 0,
+            room: lay.proom || rp.offsetHeight,
+          };
+        },
+        move: ev => {
+          if (!d) return;
+          const dy = ev.clientY - d.y0,
+            top = side === "t",
+            want = top ? d.h0 - dy : d.h0 + dy,
+            hi = top ? d.h0 + d.t0 : d.room - d.t0, // up to the room's top (its bottom pinned) or its bottom
+            nh = rubber(want, PANELHMIN, hi, RUBBER);
+          lay.ph = nh;
+          lay.ptop = top ? d.t0 + d.h0 - nh : d.t0; // the other side holds
+          setPaneSize(pageId(), "h", Math.max(PANELHMIN, Math.min(hi, want)));
+          sizeFrame();
+        },
+        end: () => {
+          const room = d ? d.room : 0;
+          d = null;
+          lay.ph = null;
+          lay.ptop = null; // it settles to its place, with the height kept
+          if ((paneSizeH() ?? 0) >= room - 1) setPaneSize(pageId(), "h", null); // the whole room: no height of its own
+          save();
+          sizeFrame();
+        },
+      });
+      h.addEventListener("dblclick", () => {
+        setPaneSize(pageId(), "h", null);
+        save();
+        sizeFrame();
+      });
+    }
+    const paneSizeH = () => paneSize().h;
   })();
   /* the edit buttons appear while the pointer is over the picture or the column beside it (one zone, so you never chase
    them) and stay ~300 ms after it leaves, so a diagonal path doesn't lose them */

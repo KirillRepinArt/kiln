@@ -189,6 +189,27 @@
   display: block;
   pointer-events: auto;
 }
+/* a panel's top and bottom edges (Queue, LoRAs, PNG Info — v0.7c): where the panel is (sizeFrame sets --pt / --pb) */
+.phedge {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 16px;
+  z-index: 8;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.phedge.t {
+  top: calc(var(--pt, 0px) - var(--space-3));
+}
+.phedge.b {
+  top: calc(var(--pb, 0px) - var(--space-1));
+}
+.right:has(.rpanel.paneled) > .phedge {
+  display: block;
+  pointer-events: auto;
+}
 .hedges {
   position: absolute;
   pointer-events: none;

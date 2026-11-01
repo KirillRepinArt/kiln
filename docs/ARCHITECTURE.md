@@ -71,6 +71,15 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
   - the frame's two pictures' opacity (the old one's copy leaving, the new one coming): `pictures.js`; a shape change's
     crop-and-reveal drives the frame through `framebox.js` and hands its timing over (`morph.js`)
   - paint order: one list in `styles/glass.css` ("the page's layers")
+  - **the layout model** (v0.7c, `docs/decisions/0013-layout-tree.md`): your **sizes** — one per pane × page ×
+    orientation, kept in `S.lay` v4 — are written only through `layout.js` `setPaneSize` and read through `paneSize`;
+    the **group** and its **placement** come from `layoutmath.js` `arrange` (panes glued with one gap, a resting anchor,
+    a pin while an edge is held); past a limit `rubber` (one stretch, `RUBBER`; a picture past its room `PIC_OVER`)
+  - every edge's press → move → end: `edges.js` `gesture()` (it ends however the drag ends: button up, cancel, lost
+    capture); which outlines show: `outlines.js`; the outline itself is part of its pane (`.plate::before`,
+    `.left::after` in `styles/layout.css`)
+  - a panel's box (its height and its offset in the room) and where its edge handles go: `layout.js` `sizeFrame`;
+    the tab bar rides on the plate (`plate.js` `barFor`)
 - **The screen, by area:** `tabs`, `browse`, `morph`, `edges`, `pills`, `chips`, `peek`, `queue`, `loras`, `pnginfo`,
   `viewer`, `settings`, `keys`, `tooltips`, `editor` (CodeMirror).
 - **The server's side:** `live.js` (start), `sync.js` (polling, what changed), `actions.js` (requests), `pictures.js`

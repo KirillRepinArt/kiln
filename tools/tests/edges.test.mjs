@@ -276,3 +276,53 @@ export async function verticalPanelsResize(k, t) {
   t.near((await R(k, "#right")).width, p0.width + 200, 3, "back on the Queue: its own");
 }
 verticalPanelsResize.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* a panel's height (v0.7c, the user 2026-11-02: every pane every edge; the tab bar rides on the panel): its top and
+   bottom edges, the other side held while dragging; on release it rests centred side by side, at the top in Vertical,
+   and keeps the height; the tabs come down with it; each page its own */
+export async function panelHeights(k, t) {
+  const area = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area"))`);
+  /** drag a panel edge by dy; the panel and the tab bar while held, and after */
+  const drag = async (sel, dy) => {
+    const h = await R(k, sel),
+      x = h.left + 120,
+      y = h.top + h.height / 2;
+    await ev(k, "mouseMoved", x, y, 0);
+    await ev(k, "mousePressed", x, y);
+    for (let i = 1; i <= 10; i++) await ev(k, "mouseMoved", x, y + (dy * i) / 10);
+    await k.sleep(250);
+    const held = await R(k, "#rpanel");
+    await ev(k, "mouseReleased", x, y + dy);
+    await ev(k, "mouseMoved", 8, 8, 0);
+    await k.sleep(1000);
+    return { held, after: await R(k, "#rpanel"), bar: await R(k, ".tabs") };
+  };
+  await k.ev(`(setDock("left"),showView("queue"),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1200);
+  const p0 = await R(k, "#rpanel"),
+    b0 = await R(k, ".tabs");
+  const a = await drag(".phedge.b", -200);
+  t.near(a.held.height, p0.height - 200, 3, "side by side: the bottom edge up 200, the panel 200 shorter", {
+    h: a.held.height,
+  });
+  t.near(a.held.top, p0.top, 2, "…its top holds while dragging");
+  t.near(a.after.height, p0.height - 200, 3, "let go: the height is kept");
+  t.near(a.after.top, p0.top + 100, 3, "…and it rests centred in its room");
+  t.near(a.bar.top, b0.top + 100, 3, "…the tabs came down with it (they ride on the panel)");
+  const r = await drag(".phedge.t", -300);
+  t.ok(r.held.top >= b0.top - 1 && r.held.height <= p0.height + area, "past the room: a little give at most", {
+    held: r.held,
+  });
+  await k.ev(`(showView("loras"),1)`);
+  await k.sleep(1200);
+  t.near((await R(k, "#rpanel")).height, p0.height, 3, "LoRAs keeps its own height (the whole room)");
+  await k.ev(`(setDock("below"),showView("queue"),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1500);
+  const v0 = await R(k, "#rpanel"),
+    v = await drag(".phedge.b", -150);
+  t.near(v.after.height, v0.height - 150, 3, "Vertical: the panel 150 shorter", { h: v.after.height });
+  t.near(v.after.top, v0.top, 3, "…resting at the top (Vertical's anchor)");
+}
+panelHeights.opts = { width: 1760, height: 1080, step: 0.05 };

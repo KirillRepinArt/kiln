@@ -18,3 +18,12 @@ All of it is pure functions in `layoutmath.js` (`arrange`, `limits`, `rubber`), 
 - *A constraint solver (Cassowary / kiwi.js, as in Apple's Auto Layout).* It's the precedent for "pin while dragging, release to the rules" (edit and stay constraints), but Kiln's layouts are a simple tree with a closed-form answer. A solver would add a dependency and make results harder to explain.
 
 **Consequences.** The hand-made holds, the mirrored drag code and the scattered clamps are deleted rather than extended. Every edge behaves the same way in every layout and on every page, and the tracer can check "no gesture writes a position". Saved layouts move to a new format (v4) with a tested migration. The settle after an outer-edge drag is one visible motion (today's glide back, kept but owned by placement). More panes, a page per pane and drag-to-split become additions to the tree, not changes to it.
+
+**Status (2026-11-02): accepted, built in increments** (`forge-wiring`, b4448e9 … ec08bd9 and the panel heights). Amended on the way, by the user's calls:
+- **The prompt box's height is never stored.** It hugs its text unless an expand button is on (the composer pattern: iMessage, Slack, ChatGPT). Height drags are feedback or position choices: Vertical's divider is the picture's bottom edge (the box rides glued under it); side by side the box's top / bottom edges become position detents (iOS sheet detents) with L1.
+- **One limit for every edge:** the room's ends (the window less its area gap). The prompt's 900 px cap and the 24 px least margin are gone. A picture page keeps the edit buttons' clearance on both sides at rest (a fixed centre line while you browse); a drag may take the prompt's side of it.
+- **The picture is the pane** on a picture page: its edges drag the picture, its ratio moving the other side; the divider trades the prompt against the picture. Its area stays at least the tab bar's width; the picture may be smaller, centred in it. At rest the page is still an area the prompt hugs the picture inside — the last step of the model (ROADMAP v0.7c 3b).
+- **The rubber band is small:** one area gap of stretch (20 px), a picture past its room by one part gap (12 px) at most — never over another part (160 px ran under the tab bar).
+- **Outlines are part of their pane** (pseudo-elements): a fixed outline following its pane with a frame loop is always a frame late.
+- **Panels have heights:** every pane has every edge; a shorter panel rests centred side by side, at the top in Vertical, and the tab bar rides on it.
+

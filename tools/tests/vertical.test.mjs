@@ -260,13 +260,16 @@ export async function outlineIsFitBox(k, t) {
   const h = await R(k, "#fithint"),
     f = await R(k, "#frame");
   t.ok(h.width > 0, "the outline shows");
+  // the gap is the outline token (--outline-out), not a number of its own
+  const O = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--outline-out"))`);
+  t.ok(O > 0, "the outline token reads as px");
   for (const [n, d] of [
     ["left", f.left - h.left],
     ["right", h.right - f.right],
     ["top", f.top - h.top],
     ["bottom", h.bottom - f.bottom],
   ])
-    t.near(d, 12, 1, `an even 12 px round the picture (${n})`);
+    t.near(d, O, 1, `an even --outline-out round the picture (${n})`);
   await k.ev(`($("right").classList.remove("edgehint"),1)`);
 }
 outlineIsFitBox.opts = { width: 2000, height: 1023, step: 0.05 };

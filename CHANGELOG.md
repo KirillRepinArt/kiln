@@ -2,7 +2,7 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
-## v0.7b — tag pending (data, and one owner for everything that moves)
+## v0.7b — 2026-11-01 (data, and one owner for everything that moves)
 
 - **Every page's plate is the page minus what it needs right now.** Pages take the full height; the status row gets its
   room only while the queue works (between its jobs too — nothing changes mid-queue) and gives it back as the last

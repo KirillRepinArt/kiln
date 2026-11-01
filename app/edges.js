@@ -5,7 +5,6 @@
    Every edge is ONE gesture (gesture() below, 2026-11-01): press → move → end, and it ends however the drag ends — the
    button up, a cancel, the pointer's capture lost (a reload, another window taking it), a move without the button —
    once. Each edge used to end itself on its own subset of those; a lost capture left the resize cursor stuck. */
-import { toast } from "./boot.js";
 import { card, layoutLeft, lyUnfreeze, stackW, updHm } from "./cardlayout.js";
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
@@ -20,9 +19,8 @@ import {
   picFull,
   setPaneSize,
   sizeFrame,
-  within,
 } from "./layout.js";
-import { PIC_OVER, RUBBER, rubber } from "./layoutmath.js";
+import { PIC_OVER, RUBBER, rubber, trade } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { SPACE, pairGap } from "./tokens.js";
@@ -137,61 +135,59 @@ export function initEdges() {
       });
     }
   })();
-  /* Vertical: the divider between the picture and the prompt. On a picture page it is the picture's bottom edge (the
-     user, 2026-11-01): the picture's top holds, its bottom follows the pointer, and the box stays glued under it —
-     dragging down grows the picture and pushes the box down into the spare room; letting go the picture keeps its size.
-     The box's height is never kept: it hugs its text. On a panel (no height of its own yet: E1) the box grows while it's
-     held (card.slotHold) and goes back to its text on release. */
+  /* Vertical: the edge the picture (or a panel) and the prompt box share. One rule for every edge (DEVLOG
+     DD-2026-11-02-12/13): a shared edge TRADES size between its two panes — and the box's least and largest are both its
+     text's height, so there's nothing to trade: it gives a little (the box a few px taller or shorter, the page as much
+     the other way) and snaps back, on every page. Nothing is stored. (It used to be the picture's bottom edge and own
+     the picture's size — a special case; the picture is resized from its own top and sides.) */
   (function () {
-    const g = $("hsplit");
-    let y0 = 0,
-      h0 = 0;
-    /** the picture's drag: its height and top then, the room it has @type {{ h0: number, t0: number, full: number } | null} */
-    let pic = null;
+    const g = $("hsplit"),
+      rp = $("rpanel");
+    /** the drag: where it started, the box's height, the page's (picture or panel) height, top and limits
+     * @type {{ y0: number, b0: number, p0: number, t0: number, lp: { lo: number, hi: number }, gen: boolean } | null} */
+    let d = null;
     gesture(g, () => RESIZES.hsplit, {
       cls: ["vresizing", "laydrag"],
       down: e => {
-        y0 = e.clientY;
-        h0 = $("left").getBoundingClientRect().height;
-        const f = $("frame");
-        pic = S.view === "gen" ? { h0: f.offsetHeight, t0: f.offsetTop, full: picLargestH(f) } : null;
+        const gen = S.view === "gen",
+          f = $("frame");
+        d = {
+          y0: e.clientY,
+          b0: $("left").getBoundingClientRect().height,
+          p0: gen ? f.offsetHeight : rp.offsetHeight,
+          t0: gen ? f.offsetTop : 0,
+          lp: gen
+            ? { lo: paneLimits(pageId(), "h").lo, hi: picLargestH(f) }
+            : paneLimits(pageId(), "h", { roomH: lay.proom }),
+          gen,
+        };
       },
       move: e => {
-        const dy = e.clientY - y0;
-        if (pic) {
-          const lo = paneLimits(pageId(), "h").lo,
-            nh = rubber(pic.h0 + dy, lo, pic.full, PIC_OVER); // past a limit: with resistance
-          lay.vh = nh;
-          lay.vtop = pic.t0;
-          setPaneSize(pageId(), "h", Math.max(lo, Math.min(pic.full, pic.h0 + dy)));
-          sizeFrame();
-          return;
-        }
-        /* between the box's least height and 70 % of the window (layoutmath.js promptSlotH) */
-        card.slotHold = within(Math.round(h0 - dy), paneLimits("box", "h", { o: "vert" }));
-        layoutLeft();
-      },
-      end: () => {
-        if (pic) {
-          const nh = lay.vh,
-            full = pic.full;
-          pic = null;
-          lay.vh = null;
-          lay.vtop = null;
-          if (nh && nh >= full * 0.995) setPaneSize(pageId(), "h", null); // the whole room: no cap
+        if (!d) return;
+        /* up: the box would grow (its text says no) and the page shrink — the trade, with its resistance */
+        const box = { lo: d.b0, hi: d.b0 },
+          shown = trade(-(e.clientY - d.y0), d.b0, d.p0, box, d.lp);
+        card.slotHold = d.b0 + shown;
+        if (d.gen) {
+          lay.vh = d.p0 - shown;
+          lay.vtop = d.t0;
         } else {
-          card.slotHold = 0;
-          layoutLeft(); // the box back to its text
+          lay.ph = d.p0 - shown;
+          lay.ptop = 0;
         }
-        save();
+        layoutLeft();
         sizeFrame();
       },
-    });
-    g.addEventListener("dblclick", () => {
-      if (S.view === "gen") setPaneSize(pageId(), "h", null);
-      save();
-      sizeFrame();
-      toast("The picture back to its full size");
+      end: () => {
+        d = null;
+        card.slotHold = 0;
+        lay.vh = null;
+        lay.vtop = null;
+        lay.ph = null;
+        lay.ptop = null; // both back to their numbers: they settle
+        layoutLeft();
+        sizeFrame();
+      },
     });
   })();
   /* the panel edges (Phase 2a): po = the prompt's outer edge, dv = the divider between the prompt and the image area

@@ -150,7 +150,7 @@ export function layoutLeft() {
      (card.slotHold, edges.js) */
     const least = slotLeast();
     if (!peekJob || !draftH) draftH = textBoxH();
-    const slot = promptSlotH(draftH, card.slotHold, innerHeight, least);
+    const slot = card.slotHold ? Math.round(card.slotHold) : promptSlotH(draftH, 0, innerHeight, least); // held: the edge's give, exactly
     H = slot;
     col.style.setProperty("--sw", stackW() + "px");
     const lch = slot + TS + 2 + CH + "px",

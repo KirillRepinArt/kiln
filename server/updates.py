@@ -10,14 +10,19 @@ from typing import Any
 
 from .net import OPENER
 
-VERSION = "0.7.2"  # bumped when a roadmap phase is tagged (see CHANGELOG.md)
+VERSION = "0.7b"  # bumped when a roadmap phase is tagged (see CHANGELOG.md)
 REPO = "KirillRepinArt/kiln"
 
 
 def version_key(tag: str) -> tuple[int, ...] | None:
-    """ "v0.6" / "v0.6.1" -> (0, 6, 0) / (0, 6, 1); anything else -> None."""
-    m = re.fullmatch(r"v(\d+)\.(\d+)(?:\.(\d+))?", tag)
-    return tuple(int(x or 0) for x in m.groups()) if m else None
+    """A tag's place in the order: (major, minor, phase letter, patch). A letter is a sub-phase of the roadmap
+    (v0.7b, v0.7c), between v0.7.x and v0.8: "v0.6" -> (0, 6, 0, 0), "v0.6.1" -> (0, 6, 0, 1),
+    "v0.7b" -> (0, 7, 2, 0), "v0.7b.1" -> (0, 7, 2, 1); anything else -> None."""
+    m = re.fullmatch(r"v(\d+)\.(\d+)([a-z]?)(?:\.(\d+))?", tag)
+    if not m:
+        return None
+    major, minor, letter, patch = m.groups()
+    return (int(major), int(minor), ord(letter) - 96 if letter else 0, int(patch or 0))
 
 
 def check_update() -> dict[str, Any]:

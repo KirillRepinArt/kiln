@@ -97,19 +97,19 @@ The queue shows which variant each job got, so a good result can be traced back.
   keep a width of their own. A picture of the same shape keeps exactly its place between Generating and the Gallery.
 - **Edges:** the divider between them trades width (the prompt stops at its minimum); an outer edge follows the cursor,
   then the pair glides back to centre. The picture's own edges set the largest it may be. Hover an edge and a dashed
-  outline frames the picture; the whole band between the picture and that outline is the handle. Double-click an edge
-  for its default.
+  outline frames what it resizes (a divider: both panes, their lines a pair 4 px apart); the whole band between a pane
+  and its outline is the handle. Double-click an edge for its default.
 - A wider window never stretches the panels past the widths you chose — the margins grow; a narrower one takes the
   margins first, then shrinks both panels, and they come back when there's room.
 - **Layout menu** (the icon next to the gear): prompt on the left, on the right, or below the picture, and Reset sizes.
   Or drag the prompt by its name line onto one of the glass drop zones (pressing it outlines the whole block that
   moves). Switching cross-fades while the picture glides to its new place.
   A narrow window stacks either way.
-- **Vertical** (prompt below): the picture sits in a centred column (up to a 16:9 box at its height), with equal gaps
-  above and below; its top, bottom and side edges size it. The prompt box has its own side edges and a **Fit width**
-  button (as wide as the picture). The box fills a slot of its own height — set it with the line above its name or its
-  bottom edge (which follows the pointer; the picture gives up the room when you let go) — so the picture never moves
-  with what the prompt says.
+- **Vertical** (prompt below): the picture comes first. It takes the room's height and its width follows its shape
+  (a 21:9 spreads to the sides); too wide for the window, it sits at the top with the prompt one even gap under it and
+  the spare room at the bottom. Its top and side edges size it. One divider between the picture and the prompt sets
+  the prompt's height (double-click: automatic, growing with your draft up to ~40 % of the window). The prompt box has
+  its own side edges and a **Fit width** button (as wide as the picture). What the prompt says never moves the picture.
 - Side by side: drag the prompt by any empty spot to snap it to the top, middle or bottom of the picture, or make it
   **match the image height** / **full height**.
 - Nothing moves under the cursor: while a menu in the prompt is open the layout holds; the picture's arrow you click

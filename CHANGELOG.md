@@ -2,7 +2,7 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
-## Unreleased — v0.7b (data, and one owner for everything that moves)
+## v0.7b — tag pending (data, and one owner for everything that moves)
 
 - **Every page's plate is the page minus what it needs right now.** Pages take the full height; the status row gets its
   room only while the queue works (between its jobs too — nothing changes mid-queue) and gives it back as the last
@@ -19,6 +19,21 @@ Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when th
 - **Vertical:** the prompt sits at the window's bottom and grows with your draft — from about two lines up to your cap
   (the line above its name), then it scrolls; a shown picture's prompt never resizes it, so browsing never moves the
   picture. The picture takes everything above. The pill menus paint over the picture (they went under it).
+- **Vertical, picture first:** every ratio takes the room's height and its width follows (21:9 used to stop at a 16:9
+  picture's width, leaving a hole under it). A picture too wide for the window sits at the top, the prompt one even gap
+  under it, the spare room at the bottom. Every page's plate shares one top and bottom, so switching between Generating
+  and a panel no longer nudges it.
+- **Vertical, one divider:** the line between the picture and the prompt is a single edge. Hovering or dragging it
+  outlines both; dragging sets the prompt's height, double-click returns to automatic.
+- **Every handle outlines what it resizes:** a divider both panes (the two dashed lines run as a pair, 4 px apart,
+  never crossing), an outer edge its own pane. Side by side, dragging an edge or resetting the layout no longer lets
+  the prompt slide over the picture.
+- **Every way out of the Gallery moves the picture the same way** (the arrow past the newest, ✕, Esc, the tab): the
+  new shape crops and reveals; the old picture no longer stretches over it.
+- **The prompt grips anywhere empty:** the name row, the box and the LoRA row are one zone with the grab hand on every
+  empty point. After dragging the box to the bottom dock, its edges still respond.
+- **The empty frame's text fades** with the picture instead of blinking on and off.
+- **Queue selection:** a thin ring at rest, a glass bead when selected.
 - Fields don't take the browser's form suggestions (picking one painted the name field in the browser's autofill
   colour).
 - Under the hood: one SQLite database for the queue, history and settings, an index of every picture in the output

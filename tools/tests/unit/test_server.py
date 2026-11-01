@@ -414,8 +414,13 @@ class Misc(unittest.TestCase):
             self.assertTrue(styles_signature(Path(d), now=103.0).startswith("2."), "a new file counts too")
 
     def test_version_key(self) -> None:
-        self.assertEqual(version_key("v0.6"), (0, 6, 0))
+        self.assertEqual(version_key("v0.6"), (0, 6, 0, 0))
         self.assertGreater(version_key("v0.10"), version_key("v0.9.1"))
+        order = ["v0.7", "v0.7.2", "v0.7b", "v0.7b.1", "v0.7c", "v0.8"]  # a phase letter sits between v0.7.x and v0.8
+        keys = [version_key(t) for t in order]
+        self.assertEqual(keys, sorted(keys))  # type: ignore[type-var]
+        self.assertEqual(len(set(keys)), len(keys))
+        self.assertIsNone(version_key("v0.7B"))
         self.assertIsNone(version_key("good-2026-10-05"))
 
     def test_config_env_overrides(self) -> None:

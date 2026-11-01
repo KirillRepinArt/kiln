@@ -6,8 +6,9 @@
   gap: var(--space-2);
   margin-bottom: var(--gap-part);
   height: 52px;
-  transition: width var(--lay-t) var(--lay-e);
-} /* no glide of its place: it follows the plate (plate.js placeBar) */
+} /* as wide as its buttons; no glide of its own: it follows the plate (plate.js placeBar — its one owner). Side by side
+     it was as wide as the picture area, its width set by sizeFrame and glided by CSS while the pill moved on the tab
+     script's clock: two clocks (the tracer, 2026-11-02; ownership map G4) */
 .right .tabs {
   pointer-events: none;
   align-self: flex-start;
@@ -17,12 +18,11 @@
 }
 .app.stacked .right .tabs {
   align-self: center;
-  width: auto !important;
-} /* !important: over the inline width sizeFrame gives it side by side */
+}
 .tabs > * {
   pointer-events: auto;
-} /* the bar's box is as wide as the picture area and slides with the plate: invisible outside its buttons, it took the
-     pointer over the prompt's name row (2026-11-01) — only what you see takes it */
+} /* only what you see takes the pointer (its box used to be as wide as the picture area and took it over the prompt's
+     name row, 2026-11-01) */
 .seg {
   position: relative;
   display: flex;

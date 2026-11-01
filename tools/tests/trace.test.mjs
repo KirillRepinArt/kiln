@@ -46,12 +46,14 @@ export async function ownershipTour(k, t) {
   let writes = 0;
   /** one motion: record, act, wait (ms, or until a page condition), read. Several inputs in one motion (a click
    * mid-switch) are checked for second writers only: what follows your input may rightly turn back with it
-   * @param {string} label @param {string[] | string} steps @param {number | string} until */
+   * @param {string} label @param {(string | (() => Promise<void>))[] | string} steps (a function: a real input, e.g. a drag)
+   * @param {number | string} until */
   const motion = async (label, steps, until = 1300) => {
     const many = Array.isArray(steps) && steps.length > 1;
     await k.ev(`(__trace.start(),1)`);
     for (const st of Array.isArray(steps) ? steps : [steps])
-      if (/^\d+$/.test(st)) await k.sleep(+st);
+      if (typeof st === "function") await st();
+      else if (/^\d+$/.test(st)) await k.sleep(+st);
       else await k.ev(`(${st},1)`);
     if (typeof until === "number") await k.sleep(until);
     else await k.until(until, 20000, 50);
@@ -162,6 +164,46 @@ export async function ownershipTour(k, t) {
       await motion("Vertical: …and a short one shrinks it", `(P.value="one line",P.dispatchEvent(new Event("input")))`);
     }
   }
+  /* the edges (v0.7c): every kind of drag — a pin, a trade, the rubber band past a limit and its settle, a panel's
+     sides and height, Vertical's divider and its about-the-centre sides. Several inputs each (a drag), so they're checked
+     for second writers and two clocks (what follows your hand may rightly turn back with it) */
+  const drag =
+    (/** @type {string} */ sel, /** @type {number} */ dx, dy = 0) =>
+    async () => {
+      const h = await k.rect(sel),
+        x = h.left + h.width / 2,
+        y = h.top + Math.min(h.height / 2, 200);
+      const m = (/** @type {string} */ type, /** @type {number} */ X, /** @type {number} */ Y, b = 1) =>
+        k.send("Input.dispatchMouseEvent", { type, x: X, y: Y, button: "left", buttons: b, clickCount: 1 });
+      await m("mouseMoved", x, y, 0);
+      await m("mousePressed", x, y);
+      for (let i = 1; i <= 8; i++) {
+        await m("mouseMoved", x + (dx * i) / 8, y + (dy * i) / 8);
+        await k.sleep(30);
+      }
+      await m("mouseReleased", x + dx, y + dy, 0);
+      await m("mouseMoved", 4, 4, 0);
+    };
+  await k.ev(`(${tab("gallery")},1)`);
+  await k.sleep(1300);
+  await motion("the picture's outer edge (its inner side pinned)", [drag(".pedge.ro", -150), "0"]);
+  await motion("the divider: the prompt against the picture", [drag(".pedge.ri", 120), "0"]);
+  await motion("the prompt's outer edge past the room (the rubber band, the settle)", [drag(".pedge.po", -400), "0"]);
+  await motion("the picture's top edge past its room", [drag(".hedge.t", 0, -200), "0"]);
+  await k.ev(`(${tab("queue")},1)`);
+  await k.sleep(1300);
+  await motion("a panel's outer edge", [drag(".pedge.ro", 100), "0"]);
+  await motion("a panel's bottom edge (its height; the tabs ride on it)", [drag(".phedge.b", 0, -150), "0"]);
+  await motion("layout → below, for its edges", `setDock("below")`, 1700);
+  await k.ev(`(${tab("gallery")},1)`);
+  await k.sleep(1300);
+  await motion("Vertical: the divider (the picture's bottom edge, the box glued)", [drag("#hsplit", 0, -120), "0"]);
+  await motion("Vertical: the box's side (about its centre)", [drag(".sedge.r", 80), "0"]);
+  await k.ev(`(${tab("queue")},1)`);
+  await k.sleep(1300);
+  await motion("Vertical: a panel's side (about its centre)", [drag(".vpedge.r", 60), "0"]);
+  await k.ev(`(setDock("left"),1)`);
+  await k.sleep(1500);
   const unknown = Object.keys(found).filter(key => !(key.replace(/ \[.*$/, "") in ALLOW));
   /* a second writer or two clocks fail everywhere; what is sampled frame by frame (a reversal, a hover-only thing shown)
      is judged on a real PC — CI's machines draw a few frames a second */

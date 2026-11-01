@@ -693,9 +693,7 @@ export function sizeFrame() {
 
   /* Vertical: the picture block sits between two equal gaps — roomH() ends one even gap above the prompt's name */
   vAlign();
-  /* the tab bar: as wide as the area; WHERE it sits is the plate's business (plate.js placeBar — one owner) */
-  const tb = /** @type {HTMLElement} */ (document.querySelector(".tabs"));
-  if (tb) tb.style.width = stk ? "" : SW + "px";
+  /* the tab bar: as wide as its buttons; where it sits is the plate's business (plate.js placeBar — one owner) */
   /* the status row, Show prompt, the edit buttons and the edge strips: placed from where the frame is now, and every
      frame it moves (around.js — one owner: the frame) */
   placeAround();

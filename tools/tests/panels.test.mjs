@@ -23,10 +23,12 @@ export async function wideBasics(k, t) {
   const tk = await k.ev(
     `(()=>{const k=document.querySelector(".tabs").children,a=k[0].getBoundingClientRect(),b=k[k.length-1].getBoundingClientRect();return{l:a.left,r:b.right}})()`,
   );
+  /* v0.7c: the bar is as wide as its buttons and sits on the plate's centre line (placeBar, its one owner) */
+  const pl = await R(k, "#plate");
   t.ok(
-    Math.abs(tabs.width - Rr.width) < 2 && tk.l >= Rr.left - 1 && tk.r <= Rr.right + 1,
-    "the tab bar is as wide as the right area, its buttons inside it",
-    { tabs: [tabs.left, tabs.width], tk, R: [Rr.left, Rr.right] },
+    Math.abs((tk.l + tk.r) / 2 - (pl.left + pl.right) / 2) < 2 && tk.l >= Rr.left - 1 && tk.r <= Rr.right + 1,
+    "the tab bar's buttons sit on the plate's centre line, inside the right area",
+    { tabs: [tabs.left, tabs.width], tk, R: [Rr.left, Rr.right], plate: [pl.left, pl.right] },
   );
   t.ok(f.left >= Rr.left - 1 && f.right <= Rr.right + 1, "the image sits inside the right area");
   /* 2026-10-31: the edit buttons take no room — they hang outside the plate, into the margin's clearance */

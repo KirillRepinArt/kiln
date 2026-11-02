@@ -234,6 +234,22 @@ function roomH() {
   if (!document.querySelector(".app.stacked")) return st.height;
   return nameTop().pn - evenGap() - st.top;
 }
+/** Vertical: the room the page (picture or panel) takes when its height is YOURS — set with an edge, held or kept —
+ * or null when it simply fills what the box leaves (DEVLOG DD-2026-11-02-14: a size of yours beats a content size, a
+ * content size beats an unset one). The box's height (its text) is squeezed by it, never below the box's least.
+ * The picture's: its height, never more than its width allows (the column / its ratio), plus the status row's room. */
+export function pageYoursH() {
+  if (!document.querySelector(".app.stacked")) return null;
+  if (S.view === "gen") {
+    const cap = lay.vh ?? paneSize().h;
+    if (!cap) return null;
+    const f = $("frame"),
+      ar = f.offsetWidth / Math.max(1, f.offsetHeight),
+      h = lay.colW ? Math.min(cap, lay.colW / ar) : cap;
+    return h + (insets().row ? rowRoom() : 0);
+  }
+  return lay.ph ?? paneSize().h ?? null;
+}
 /* the picture's largest height: the room less the status row while the page keeps it (insets) */
 export function picFull(noRow = false) {
   return roomH() - (!noRow && insets().row ? rowRoom() : 0);

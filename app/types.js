@@ -200,6 +200,7 @@
  * @property {number} [swHold]       Vertical: the box's width while a side edge is held (0: none) — layoutLeft writes it
  * @property {number} [hHold]        side by side: the box's height while a height edge is held (0: none) — the rubber band
  * @property {"top" | "bottom"} [hPin] and the side that holds meanwhile
+ * @property {number} [lastSlot]     Vertical: the box's height as last laid out (the room the page and the box share)
  * @property {number} slotHold       Vertical: the box's height while the divider is held (0: none). Never kept: the box
  *                                    hugs its text; letting go gives the picture the size it has (edges.js)
  */

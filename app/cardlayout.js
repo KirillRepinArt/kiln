@@ -2,7 +2,7 @@
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $, q } from "./dom.js";
 import { HANDLES, outlines } from "./outlines.js";
-import { lay, minRight, paneSize, setDock, sizeFrame, snapHold, vAlign } from "./layout.js";
+import { lay, minRight, pageYoursH, paneSize, setDock, sizeFrame, snapHold, vAlign } from "./layout.js";
 import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement, promptSlotH } from "./layoutmath.js";
 import { peekJob } from "./prompt.js";
 import { P, S, save } from "./state.js";
@@ -28,6 +28,7 @@ export const card = {
   swHold: 0,
   hHold: 0,
   hPin: "top",
+  lastSlot: 0,
 };
 /** the picture's lines the card lines up with (layoutmath's CardAnchors) */
 const anchors = () => ({ it: card.imgTop, ib: card.imgBottom, cy: card.cy });
@@ -71,6 +72,8 @@ function textBoxH(lines) {
 }
 /** the box's least height in Vertical: its controls and two lines */
 export const slotLeast = () => textBoxH(2);
+/** Vertical: the box's height for its text (your draft's), up to its mode's largest — its content size */
+export const boxTextH = () => promptSlotH(draftH || textBoxH(), 0, innerHeight, slotLeast());
 let draftH = 0; // the height your draft's text needs (kept while a job's prompt is shown: it never resizes the box)
 export function applyMode() {
   const a = q(".app"),
@@ -150,7 +153,14 @@ export function layoutLeft() {
      (card.slotHold, edges.js) */
     const least = slotLeast();
     if (!peekJob || !draftH) draftH = textBoxH();
-    const slot = card.slotHold ? Math.round(card.slotHold) : promptSlotH(draftH, 0, innerHeight, least); // held: the edge's give, exactly
+    let slot = card.slotHold ? Math.round(card.slotHold) : promptSlotH(draftH, 0, innerHeight, least); // held: the edge's give, exactly
+    /* a page height of YOURS (the picture or a panel, set with an edge) beats the box's content: the box takes what's
+       left, its text squeezed, never below its least (DEVLOG DD-2026-11-02-14). The room: the page's room now plus the
+       box's slot now (both measured from the last layout) */
+    const yours = pageYoursH();
+    if (yours != null && !card.slotHold && card.lastSlot)
+      slot = Math.max(least, Math.min(slot, Math.round(lay.vroom + card.lastSlot - yours)));
+    card.lastSlot = slot;
     H = slot;
     col.style.setProperty("--sw", stackW() + "px");
     const lch = slot + TS + 2 + CH + "px",

@@ -278,22 +278,21 @@ export async function outlineIsFitBox(k, t) {
 }
 outlineIsFitBox.opts = { width: 2000, height: 1023, step: 0.05 };
 
-/* one rule for every edge (2026-11-02, DEVLOG DD-2026-11-02-12/13): the edge the picture and the box share TRADES size
-   between them, and the box's least and largest are both its text — nothing to trade: either way it gives a little
-   (the box a few px taller, the picture as much shorter) and snaps back; nothing is stored. The picture is resized
-   from its own top and sides (growing from a side pushes the box down into the spare room) */
+/* each axis is yours or its content's (2026-11-02, DEVLOG DD-2026-11-02-14): in Vertical the picture's height is yours
+   and the box's is its text's. The edge they share (two handles: the line above the title, the box's top) moves both:
+   the picture records it, the box takes what's left — squeezed, never below its least; past a limit the rubber band */
 export async function dividerSizesThePicture(k, t) {
-  await k.ev(`(setDock("below"),P.value="a short prompt",draft=P.value,layoutLeft(),1)`);
+  const L = "String.fromCharCode(10)";
+  await k.ev(`(setDock("below"),1)`);
   await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 });
   await done(k, 1);
+  await k.ev(`(P.value=Array(30).fill("a line of prompt text").join(${L}),P.dispatchEvent(new Event("input")),1)`);
   await k.mouse(2, 2);
-  await k.sleep(1200);
-  const area = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area"))`),
-    b0 = await R(k, "#left"),
-    f0 = await R(k, "#frame");
-  /** drag the shared edge by dy and let go; the frame and the box held, and after */
-  const divider = async dy => {
-    const h = await R(k, "#hsplit"),
+  await k.sleep(1400);
+  const area = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area"))`);
+  /** drag a handle by dy and let go; the frame and the box held, and after */
+  const pull = async (sel, dy) => {
+    const h = await R(k, sel),
       x = h.left + h.width / 2,
       y = h.top + h.height / 2;
     await press(k, x, y);
@@ -305,31 +304,45 @@ export async function dividerSizesThePicture(k, t) {
     await k.sleep(1300);
     return { held, f: await R(k, "#frame"), b: await R(k, "#left") };
   };
-  for (const dy of [-200, 150]) {
-    const r = await divider(dy);
-    const give = Math.abs(r.held.b.height - b0.height);
-    t.ok(give > 1 && give <= area, `the shared edge ${dy}: a little give (the box's text says no)`, { give });
-    t.near(
-      r.held.f.height + r.held.b.height,
-      f0.height + b0.height,
-      2,
-      "…a trade: the picture gives what the box takes",
-    );
-    t.near(r.f.height, f0.height, 2, "let go: the picture snaps back");
-    t.near(r.b.height, b0.height, 2, "…and the box to its text");
-  }
-  t.ok(await k.ev(`!("sch" in S)&&paneSize().h==null`), "nothing is stored");
-  /* the picture's own side edge grows it (and pushes the box down) */
-  const e = await R(k, ".hedge.r"),
-    ex = e.left + e.width / 2,
-    ey = e.top + e.height / 2;
-  await press(k, ex, ey);
-  await moveTo(k, ex, ey, ex - 200, ey);
-  await release(k, ex - 200, ey);
+  const f0 = await R(k, "#frame"),
+    b0 = await R(k, "#left");
+  /* a long draft: the box at its text (~40 %). Down: the picture grows, the box is squeezed */
+  const down = await pull("#hsplit", 150);
+  t.ok(down.held.f.height > f0.height + 100, "the shared edge down: the picture grows", {
+    f0: f0.height,
+    held: down.held.f.height,
+  });
+  t.ok(down.held.b.height < b0.height - 100, "…the box is squeezed (its text scrolls)", { held: down.held.b.height });
+  t.near(down.f.height, down.held.f.height, 4, "let go: the picture keeps its size (yours)");
+  t.ok(await k.ev(`paneSize().h>0&&!("sch" in S)`), "the picture's height is kept, the box's never");
+  /* the box's top edge (the same edge, below the title) up: the picture shrinks, the box grows back to its text */
+  const up = await pull(".vedge.t", -150);
+  t.near(up.f.height, f0.height, 6, "the box's top up: the picture back down", { f: up.f.height });
+  t.near(up.b.height, b0.height, 4, "…and the box back to its text");
+  /* double-click: the picture fills again */
+  const hs = await R(k, "#hsplit");
+  for (const type of ["mousePressed", "mouseReleased"])
+    await k.send("Input.dispatchMouseEvent", {
+      type,
+      x: hs.left + hs.width / 2,
+      y: hs.top + hs.height / 2,
+      button: "left",
+      clickCount: 2,
+    });
   await k.mouse(2, 2);
-  await k.sleep(1300);
-  const f1 = await R(k, "#frame");
-  t.ok(f1.height < f0.height - 50, "its side edge in: the picture smaller", { f0: f0.height, f1: f1.height });
+  await k.sleep(1000);
+  t.ok(await k.ev(`paneSize().h==null`), "double-click: no height of yours — the picture fills again");
+  /* a short draft: the box at its least — down there's nothing to squeeze: a little give */
+  await k.ev(`(P.value="a short prompt",draft=P.value,P.dispatchEvent(new Event("input")),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1400);
+  const f1 = await R(k, "#frame"),
+    s1 = await pull("#hsplit", 150);
+  t.ok(s1.held.f.height - f1.height <= area, "the box at its least: the picture gives a little at most", {
+    f1: f1.height,
+    held: s1.held.f.height,
+  });
+  t.near(s1.f.height, f1.height, 3, "…and settles back");
   /* an old saved height (S.sch, before 2026-11-01) is dropped at start-up */
   await k.ev(`(S.sch=420,save(),1)`);
   await k.reload();
@@ -676,8 +689,8 @@ export async function verticalHeight(k, t) {
   await k.job("[fill:446688] tall", { ar: "3:4", steps: 2 });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
   await k.sleep(800);
-  /* 2026-11-01 (L4): the boundary between the picture and the prompt is ONE edge; 2026-11-02 (DD-2026-11-02-13): it
-     trades, and the box's text allows no trade — dragged up, it gives a little and snaps back */
+  /* 2026-11-01 (L4): the boundary between the picture and the prompt is ONE edge; 2026-11-02 (DD-2026-11-02-14): the
+     picture's height is yours, the box's its text's — dragged up, the picture shrinks and the box rides up */
   const f0 = await R(k, "#frame"),
     b0 = await R(k, "#left"),
     h = await R(k, "#hsplit"),
@@ -695,11 +708,11 @@ export async function verticalHeight(k, t) {
   await k.mouse(2, 2);
   await k.sleep(800);
   const f1 = await R(k, "#frame");
-  t.near(f1.height, f0.height, 3, "dragged up 150 and let go: the picture as it was (nothing to trade)", {
+  t.near(f1.height, f0.height - 150, 4, "dragged up 150: the picture smaller (its height is yours)", {
     f0: f0.height,
     f1: f1.height,
   });
-  t.near((await R(k, "#left")).height, b0.height, 3, "…and the prompt hugs its text");
+  t.near((await R(k, "#left")).height, b0.height, 3, "…and the prompt still fits its text, riding up glued");
   /* hovering the divider outlines both panes it resizes: the picture and the prompt box (the user, 2026-11-01) */
   const hs = await R(k, "#hsplit"),
     hx = hs.left + hs.width / 2,
@@ -819,12 +832,12 @@ export async function verticalSplitLine(k, t) {
     clickCount: 1,
   });
   await k.sleep(1200);
-  t.near((await k.rect("#left")).height, slot, 3, "the shared edge up 60 px, let go: the box hugs its text again");
-  t.near((await k.rect("#left")).bottom, b0, 3, "…where it was");
-  t.near((await k.rect("#frame")).height, p0, 3, "…and the picture as it was (the box's text allows no trade)", {
+  t.near((await k.rect("#left")).height, slot, 3, "the shared edge up 60 px: the box still fits its text");
+  t.near((await k.rect("#frame")).height, p0 - 60, 4, "…the picture 60 smaller (yours)", {
     p0,
     p1: (await k.rect("#frame")).height,
   });
+  t.ok((await k.rect("#left")).bottom < b0 - 40, "…the box rode up glued: the spare room at the bottom");
 }
 verticalSplitLine.opts = { width: 1872, height: 1080, step: 0.05 };
 

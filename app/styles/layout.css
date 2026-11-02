@@ -292,10 +292,9 @@
 .vedge.drag::after {
   opacity: 1;
 }
-.left.hm .vedge,
-.app.stacked .vedge.t {
+.left.hm .vedge {
   display: none;
-} /* Vertical: the box's top is the divider with the picture (.hsplit); its bottom is an edge like any other */
+} /* Vertical: the box's top is the edge it shares with the picture (the same gesture as .hsplit, above the title) */
 .hsplit {
   display: none;
 }

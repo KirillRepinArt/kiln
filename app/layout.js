@@ -334,7 +334,8 @@ function layApply(g) {
 function layNow() {
   const g = layGeo();
   if (!lay.last || lay.drag) return g;
-  if (lay.vh) return lay.last; // a top / bottom edge held: the width waits for the release
+  /* (a top / bottom edge held used to freeze the area's width until release: the picture couldn't grow into room it
+     had, then jumped — 2026-11-02, the user. Held, the layout computes from the held size like every other drag.) */
   if (lay.pressCard || document.querySelector("#left .pop.show")) {
     g.pw = lay.last.pw;
     g.rw = Math.max(g.minR, Math.min(g.rw, g.W - pairGap() - g.pw)); /* the prompt keeps its place and its width */

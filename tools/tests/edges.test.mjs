@@ -426,3 +426,39 @@ export async function widthBoundPictureGivesALittle(k, t) {
   t.near((await R(k, "#frame")).top, f0.top, 2, "let go: back where it was");
 }
 widthBoundPictureGivesALittle.opts = { width: 1680, height: 1080, step: 0.05 };
+
+/* held, the layout computes from the held size (2026-11-02, the user): side by side, after the prompt is narrowed the
+   picture's bottom edge showed no growth while dragged and jumped on release (the area's width was frozen while a
+   top / bottom edge was held) */
+export async function pictureBottomGrowsWhileHeld(k, t) {
+  await k.ev(`(setDock("left"),1)`);
+  await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.mouse(2, 2);
+  await k.sleep(1400);
+  /* a capped picture with room to grow: its side edge pulled in first, then the prompt narrowed (more room) */
+  const pull = async (sel, dx, dy) => {
+    const h = await R(k, sel),
+      x = h.left + h.width / 2,
+      y = h.top + Math.min(h.height / 2, 200);
+    await ev(k, "mouseMoved", x, y, 0);
+    await ev(k, "mousePressed", x, y);
+    for (let i = 1; i <= 10; i++) await ev(k, "mouseMoved", x + (dx * i) / 10, y + (dy * i) / 10);
+    await k.sleep(250);
+    const held = await R(k, "#frame");
+    await ev(k, "mouseReleased", x + dx, y + dy);
+    await ev(k, "mouseMoved", 8, 8, 0);
+    await k.sleep(1200);
+    return { held, after: await R(k, "#frame") };
+  };
+  await pull(".pedge.ro", -300, 0); // the picture narrowed from its side: a width cap (and its height by its ratio)
+  await pull(".pedge.po", 250, 0); // the prompt narrowed: more room
+  const f0 = await R(k, "#frame"),
+    r = await pull(".hedge.b", 0, 120);
+  t.ok(r.held.height > f0.height + 60, "held: the picture grows with the edge (not after release)", {
+    f0: f0.height,
+    held: r.held.height,
+  });
+  t.near(r.after.height, r.held.height, 4, "let go: it stays where you left it (no jump)");
+}
+pictureBottomGrowsWhileHeld.opts = { width: 1760, height: 1080, step: 0.05 };

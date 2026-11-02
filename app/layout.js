@@ -338,7 +338,7 @@ export function layGeo() {
       R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
       first = R ? out.page : out.box,
       last = R ? out.box : out.page;
-    lay.pass = { pic: /** @type {Rect} */ (out.pic), strip, largest: out.largest };
+    lay.pass = { pic: /** @type {Rect} */ (out.pic), page: out.page, strip, largest: out.largest };
     return {
       pw: out.box.w,
       rw: out.page.w,
@@ -425,6 +425,20 @@ function layNow() {
   if (!lay.last || lay.drag) return g;
   /* (a top / bottom edge held used to freeze the area's width until release: the picture couldn't grow into room it
      had, then jumped — 2026-11-02, the user. Held, the layout computes from the held size like every other drag.) */
+  if ((lay.pressCard || document.querySelector("#left .pop.show")) && lay.pass && lay.last.pw === g.pw) {
+    /* a picture page side by side (v0.7c C2a): the pass's widths; the box keeps its place, the page beside it */
+    const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
+      rest = g.W - pairGap() - g.pw - g.rw;
+    if (R) {
+      g.mR = Math.min(Math.max(0, rest), lay.last.mR);
+      g.mL = rest - g.mR;
+    } else {
+      g.mL = Math.min(Math.max(0, rest), lay.last.mL);
+      g.mR = rest - g.mL;
+    }
+    g.off = 0;
+    return g;
+  }
   if (lay.pressCard || document.querySelector("#left .pop.show")) {
     g.pw = lay.last.pw;
     g.rw = Math.max(g.minR, Math.min(g.rw, g.W - pairGap() - g.pw)); /* the prompt keeps its place and its width */
@@ -742,7 +756,7 @@ export function sizeFrame() {
     button column hangs on the side away from the prompt (Vertical: on the right) */
   lay.vrow = stk ? R : 0;
   const tbLeft = !stk && /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
-    { top, left } = framePlacement({
+    { top, left: placedLeft } = framePlacement({
       areaW: SW,
       areaH: roomH(),
       w: W,
@@ -753,6 +767,10 @@ export function sizeFrame() {
       stacked: stk,
       toolsLeft: tbLeft,
     });
+  let left = placedLeft;
+  /* side by side at rest the picture's place across its area is the pass's: its strip on the outer side (C2a) — not a
+     centring inside the geometry last applied, which may be held or stale (the picture slid onto the box, 2026-11-03) */
+  if (pass) left = pass.pic.x - pass.page.x;
   Object.assign(f.dataset, { tw: w, th: h, tl: left + M, tt: top + M });
   /* where the frame belongs (the plate's place, less the mat); framebox.js moves it there (a glide, a jump, or where a
      crop-and-reveal lands) */
@@ -887,7 +905,8 @@ export function promptFollow(direct = false) {
     /* glued under the picture's KEPT bottom: the rubber band is the grabbed edge's feedback only — nothing round it
        follows the overshoot (2026-11-02, the user: the prompt twitched) */
     y = -Math.round(Math.max(0, lay.vroom - (b.t + b.h - (lay.overB || 0) + SPACE.mat + lay.vrow)));
-  if (on && b && lay.last) {
+  if (on && b && lay.last && !lay.pass) {
+    /* (side by side, a picture page: the pass places the pair — the box is already one gap from the picture) */
     const M = SPACE.mat,
       inset = R ? (lay.shown || lay.last).rw - (b.l + b.w + M) : b.l - M; // the area as it is on screen now (G12)
     x = Math.round(Math.max(0, inset)) * (R ? -1 : 1);

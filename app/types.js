@@ -181,7 +181,7 @@
  * @property {boolean} frameDefer    inside one click: sizeFrame runs once, at the end
  * @property {boolean} framePending  …and was asked for meanwhile
  * @property {boolean} frameHold     the layout is held (the prompt box's bottom edge being dragged)
- * @property {{ pic: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number } } | null} [pass]  side by side, a
+ * @property {{ pic: { x: number, y: number, w: number, h: number }, page: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number } } | null} [pass]  side by side, a
  *   picture page at rest: the single layout pass's picture and the edit buttons' strip (v0.7c C2a)
  * @property {"bar" | "none" | null} row  the row under the picture: the progress bar, or nothing
  * @property {string | null} rowView the tab the row was decided for (its fade belongs to a switch between views)

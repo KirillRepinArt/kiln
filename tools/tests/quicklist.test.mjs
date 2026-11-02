@@ -235,7 +235,13 @@ export async function peekModeless(k, t) {
   await k.sleep(300);
   const y0 = (await k.rect("#pname")).top;
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
-  await k.sleep(800);
+  /* wait for the switch to settle (a condition, not a fixed time: CI draws a few frames a second and 800 ms caught the
+     column mid-settle — failed by 1.5 px on CI only, 2026-11-02) */
+  await k.until(
+    `(()=>{const y=$("pname").getBoundingClientRect().top,o=window.__pnY;window.__pnY=y;return o!=null&&Math.abs(o-y)<0.5})()`,
+    5000,
+    150,
+  );
   t.ok(!(await k.ev(`!!document.getElementById("peekbar")`)), "no bar above the box");
   t.near((await k.rect("#pname")).top, y0, 1, "the title stays at its height");
   const g = await k.ev(`(()=>{const c=document.querySelector(".nchip").getBoundingClientRect(),t=$("ltitle"),

@@ -66,6 +66,8 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     `fades`, `shapeSteps`, `promptSlotH` — pure, unit-tested)
   - the picture frame's box: `framebox.js`; what sits round it (status row, buttons, edge strips): `around.js`
   - the glass plate, the tab bar, and every tab switch's motion (one clock): `plate.js` (`switchGlide`, `placeBar`)
+  - going to a page — a tab, the Add LoRA button, a LoRA chip, a Queue row, PNG Info's load, Reset layout, ✕ back: ONE
+    way, `tabs.js` `goView(page, then)` → `tabGo` (the switch's one motion); nothing calls `showView` on its own
   - the prompt column's place (its hug of the picture, a switch's slide): `layout.js` (`promptFollow` → `colApply`);
     "the layout lands at once" during a motion: `layout.js` `snapHold`
   - the frame's two pictures' opacity (the old one's copy leaving, the new one coming): `pictures.js`; a shape change's

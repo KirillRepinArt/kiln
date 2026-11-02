@@ -3,6 +3,7 @@
 //
 //   node tools/tests/run.mjs              # all tests, several at a time
 //   node tools/tests/run.mjs cover dock   # tests whose file name contains "cover" or "dock"
+//   node tools/tests/run.mjs cases/LeftTall   # in cases.test.mjs, the tests whose name contains "LeftTall"
 //   node tools/tests/run.mjs -j 1         # one at a time (-j N or KILN_JOBS=N; default: a third of the CPU cores, at most 3)
 //
 // Needs Node 22+ (built-in WebSocket), Python 3 and Edge or Chrome (KILN_BROWSER=path to pick one).
@@ -382,15 +383,33 @@ const ji = args.indexOf("-j"),
     1,
     +(ji >= 0 ? args.splice(ji, 2)[1] : process.env.KILN_JOBS || Math.min(3, Math.floor(availableParallelism() / 3))),
   );
-const filters = args; // file names containing any of these (none: every test)
+/* file names containing any of these (none: every test); "file/name" picks the tests in that file whose name contains
+   "name" (one case of a table: cases/LeftTall) */
+const filters = args.map(x => x.split("/"));
+/* acceptance tests for work in progress: they fail until their work lands, so a full run (and CI) skips them; name one
+   to run it. Each entry says what it waits for; remove it when that's done. */
+const PENDING = {
+  cases: "v0.7c (C), the single layout pass (ROADMAP v0.7c B1–B11)",
+};
 const tests = [];
 for (const f of readdirSync(HERE)
-  .filter(f => f.endsWith(".test.mjs") && (!filters.length || filters.some(x => f.includes(x))))
+  .filter(
+    f =>
+      f.endsWith(".test.mjs") &&
+      (filters.length ? filters.some(([x]) => f.includes(x)) : !(f.replace(".test.mjs", "") in PENDING)),
+  )
   .sort()) {
   const mod = await import(pathToFileURL(join(HERE, f)));
   for (const [tname, fn] of Object.entries(mod))
-    if (typeof fn === "function") tests.push({ file: f.replace(".test.mjs", ""), tname, fn });
+    if (
+      typeof fn === "function" &&
+      (!filters.length || filters.some(([x, n]) => f.includes(x) && (!n || tname.includes(n))))
+    )
+      tests.push({ file: f.replace(".test.mjs", ""), tname, fn });
 }
+
+if (!filters.length)
+  for (const [f, why] of Object.entries(PENDING)) console.log(`(not run: ${f}, waits for ${why}; name it to run it)`);
 
 /* one test: its own Kiln, browser and folders; returns its report as text, printed in one piece */
 /* a test that runs longer than this is stuck (waiting for something that will never happen): it fails, its processes

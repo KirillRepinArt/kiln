@@ -248,7 +248,11 @@ export function initEdges() {
              area shrinks to it and nothing moves at the press; its edges drag the picture, its ratio moves its height */
           const f = $("frame"),
             fr = f.getBoundingClientRect();
-          if (g0.gen && fr.width > 0 && fr.height > 0) {
+          if (g0.gen && fr.width > 0 && fr.height > 0 && lay.pass)
+            /* the layout pass's area (v0.7c C2a): the picture and its buttons' strip, as laid out — nothing rebuilt at
+               the press (rebuilt the old way, the picture alone, it slid under the box in the Right layout) */
+            pic = { ar: fr.width / fr.height, full: picFull(), w0: fr.width };
+          else if (g0.gen && fr.width > 0 && fr.height > 0) {
             const R = !!q(".app.pright"),
               aw = Math.max(g0.minR, fr.width), // its area: the picture, never narrower than the tab bar
               x = fr.left - (aw - fr.width) / 2 - SPACE.area; // in the pair's room (the window less its area gap)

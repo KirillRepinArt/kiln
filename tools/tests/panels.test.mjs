@@ -432,7 +432,7 @@ export async function capInGenerating(k, t) {
   await k.sleep(900);
   t.ok(
     Math.abs((await R(k, "#rpanel")).width - (await k.ev(`paneSize("queue","side").w??layDef().rw`))) <= 1 &&
-      (await k.ev(`paneSize("generating","side").w`)) != null,
+      (await k.ev(`(p=>p.w??p.s)(paneSize("generating","side"))`)) != null, // a px cap, or the scale it became
     "…without touching Queue's width",
   );
 }

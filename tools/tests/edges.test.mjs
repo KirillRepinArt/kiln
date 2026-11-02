@@ -561,3 +561,57 @@ export async function gripInFullMode(k, t) {
   await k.ev(`(S.hmode="",updHm(),layoutLeft(),1)`);
 }
 gripInFullMode.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* the Right layout (2026-11-03, the user's screenshots): pulling the prompt box's outer edge slid the picture under the
+   box — the press rebuilt the picture's area the old way (the picture alone) while its place in the area came from the
+   layout pass (its buttons' strip first, on the left in Right). The Left layout's strip is on the right: no jump there.
+   Held either way, the picture doesn't move and stays one gap from the box */
+export async function boxOuterEdgeKeepsThePicture(k, t) {
+  await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  for (const dock of ["right", "left"]) {
+    await k.ev(`(setDock(${JSON.stringify(dock)}),1)`);
+    await k.mouse(2, 2);
+    await k.sleep(1400);
+    for (const dx of dock === "right" ? [-120, 40] : [120, -40]) {
+      const f0 = await R(k, "#frame"), // where it is when this drag starts (a release re-centres the pair)
+        a = await dragMeasure(k, ".pedge.po", dx, ["#frame", "#left"]),
+        f = a.held["#frame"],
+        L = a.held["#left"];
+      /* outward here is past the room (the picture fills it): the old drag maths puts the rubber band's stretch on the
+         box's inner side, nudging the picture by that much — B1, gone with the drags' move to the pass (v0.7c C3) */
+      const outward = dock === "right" ? dx > 0 : dx < 0;
+      t.near(f.left, f0.left, outward ? 20 : 3, `${dock}, the box's outer edge by ${dx}: held, the picture stays`);
+      t.ok(dock === "right" ? f.right <= L.left - 8 : L.right <= f.left - 8, `${dock}: …clear of the box`, {
+        f: [f.left, f.right],
+        L: [L.left, L.right],
+      });
+    }
+  }
+}
+boxOuterEdgeKeepsThePicture.opts = { width: 1386, height: 1080, step: 0.05 };
+
+/* a picture's size is a share of ITS largest (C2a; the user 2026-11-03: after a drag on a 16:9, the Gallery's 3:4
+   came up the 16:9's height, 510 px of its 717). A drag left a px cap, read on the next picture by the first one's
+   ratio. A drag's release keeps the scale: the next picture, another ratio, gets the same share of its own largest */
+export async function dragKeepsAScaleNotPixels(k, t) {
+  await k.ev(`(setDock("right"),1)`);
+  const show = async (name, ar) => {
+    await k.job(`[fill:446688] ${name}`, { ar, steps: 2 });
+    await k.until(`!current()&&jobs.length&&jobs.every(j=>j.status==="done")`, 30000);
+    await k.mouse(2, 2);
+    await k.sleep(1400);
+    return R(k, "#frame");
+  };
+  const tall0 = await show("tall", "3:4"), // at its biggest: the whole room's height
+    wide0 = await show("wide", "16:9"), // at its biggest: the room's width
+    a = await dragMeasure(k, ".pedge.ro", 150, ["#frame"]), // Right: the outer edge is the left one; in by 150
+    share = a.after["#frame"].width / wide0.width;
+  t.ok(share < 0.95 && share > 0.6, "the 16:9 dragged smaller", { share });
+  const tall1 = await show("tall again", "3:4");
+  t.near(tall1.height / tall0.height, share, 0.03, "the next 3:4: the same share of its own largest", {
+    h: tall1.height,
+    full: tall0.height,
+  });
+}
+dragKeepsAScaleNotPixels.opts = { width: 1900, height: 1300, step: 0.05 };

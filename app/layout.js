@@ -151,7 +151,11 @@ export function paneSize(pane = pageId(), o = orient()) {
 /** set (or with null, forget) your size of a pane @param {"box" | PageId} pane @param {"w" | "h" | "s"} axis
  * @param {number | null} v @param {Orient} [o] */
 export function setPaneSize(pane, axis, v, o = orient()) {
-  paneSize(pane, o)[axis] = v == null ? null : axis === "s" ? v : Math.round(v); // a scale is a share, not px
+  const P = paneSize(pane, o);
+  P[axis] = v == null ? null : axis === "s" ? v : Math.round(v); // a scale is a share, not px
+  /* a picture's width or height forgotten (a double-click, the whole room): its scale too — the size it stands for
+     (C2a; a reset left the scale and the picture stayed small, 2026-11-03) */
+  if (v == null && axis !== "s" && pane !== "box" && "s" in P) P.s = null;
 }
 /* saved layouts of older versions → today's (once, at start-up: main.js); the sizes' own format on first use */
 export function migrateLayoutPrefs() {
@@ -162,10 +166,10 @@ export function migrateLayoutPrefs() {
   /* side by side, a picture page's size is a scale of its largest (v0.7c C2a, DEVLOG DD-2026-11-03-4): the px caps,
      made on one picture's ratio, limited the next — dropped once, so every picture starts at its biggest */
   const L4 = S.lay && S.lay.v === 4 ? /** @type {import("./layoutmath.js").LayoutV4} */ (S.lay) : null;
-  if (L4 && !L4.side.scaled) {
+  if (L4 && (L4.side.scaled ?? 0) < 2) {
     for (const id of /** @type {const} */ (["generating", "gallery"]))
-      Object.assign(L4.side.pages[id], { w: null, h: null });
-    L4.side.scaled = 1;
+      Object.assign(L4.side.pages[id], { w: null, h: null, s: null }); // 2: again — px caps a drag left (fixed 2026-11-03)
+    L4.side.scaled = 2;
   }
 }
 /* every pane's least / largest size and its default come from ONE place, layoutmath.js (limits, paneDefault): these
@@ -311,9 +315,18 @@ function sidePass() {
       });
   /** @type {number | undefined} */
   let scale = p.s ?? undefined;
-  if (scale == null && (p.w || p.h)) {
+  if (p.w || p.h) {
+    /* a px cap is what a drag just left (newer than the scale): it wins */
     const big = run(tbW(room), undefined).largest; // a px cap (an edge, until C3): the share of this picture's largest
     scale = Math.min(1, (p.w ?? Infinity) / big.w, (p.h ?? Infinity) / big.h);
+    /* released (nothing held): the cap becomes this picture's scale, once — kept in px it limited the next picture
+       by the first one's ratio (a 16:9's height made a 3:4 small, 2026-11-03). ONE stored size: the scale */
+    if (lay.vh == null) {
+      setPaneSize(pageId(), "w", null);
+      setPaneSize(pageId(), "h", null); // (clears the scale: set after)
+      setPaneSize(pageId(), "s", scale >= 0.999 ? null : scale);
+      save(); // the drag's end saved the px; the scale is what's kept
+    }
   }
   /* the strip's width follows the picture's height (its buttons wrap into a second column on a short picture) */
   let out = run(tbW(room), scale);
@@ -473,7 +486,9 @@ export function layDrag(edge, g0, dx, pic = null) {
       : paneLimits(pageId(), "w", { o: "side" }),
     /* the page's own size at grab: a panel's width, or the picture's (its area may be wider: the tab bar) */
     p0 = pic ? pic.w0 : g0.rw,
-    area = (/** @type {number} */ p) => (pic ? Math.max(g0.minR, p) : p),
+    /* a picture's area: the picture and its buttons' strip (the pass, C2a); before it, never narrower than the tab bar */
+    strip = pic && lay.pass ? lay.pass.strip : 0,
+    area = (/** @type {number} */ p) => (pic ? (lay.pass ? p + strip : Math.max(g0.minR, p)) : p),
     clamp = (/** @type {number} */ v, /** @type {number} */ lo, /** @type {number} */ hi) =>
       Math.max(lo, Math.min(Math.max(lo, hi), v));
   /* what you see while held (past a limit: with resistance) and what's kept (the limit) */
@@ -487,7 +502,7 @@ export function layDrag(edge, g0, dx, pic = null) {
   if (edge === "dv") {
     const d = first === "box" ? dx : -dx, // how much the prompt grows
       /* the divider never takes the picture under the tab bar's width (its area would stop, the prompt overlap) */
-      lc = { lo: pic ? Math.max(lp.lo, g0.minR) : lp.lo, hi: lp.hi },
+      lc = { lo: pic && !lay.pass ? Math.max(lp.lo, g0.minR) : lp.lo, hi: lp.hi },
       la = { lo: lb.lo, hi: g0.pw + p0 - lc.lo },
       shown = trade(d, g0.pw, p0, la, lc),
       hi = Math.min(la.hi - g0.pw, p0 - lc.lo),
@@ -509,7 +524,7 @@ export function layDrag(edge, g0, dx, pic = null) {
     else [rw, rwKeep] = [shown, kept];
     /* its other (inner) side stays where it was — a picture's own side, even when its area is wider (the tab bar):
        the area moves by half the difference so the picture, centred in it, keeps that side still */
-    const slack = (/** @type {number} */ p) => (pic && !box ? (area(p) - p) / 2 : 0),
+    const slack = (/** @type {number} */ p) => (pic && !box && !lay.pass ? (area(p) - p) / 2 : 0), // the pass: no centring
       shift = slack(p0) - slack(rw);
     pin = left ? { i: 0, side: "end", at: g0.mL + w0 - shift } : { i: 1, side: "start", at: g0.mL + w0 + gap + shift };
   }
@@ -761,7 +776,7 @@ export function sizeFrame() {
       areaH: roomH(),
       w: W,
       h: H,
-      tb: pass ? TB : 0, // the strip is in the area now (C2a): the picture on its inner side
+      tb: !stk && S.view === "gen" && lay.pass ? lay.pass.strip : 0, // the strip is in the area (C2a), held or not
       row: R,
       heldTop: lay.vtop,
       stacked: stk,

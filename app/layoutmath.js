@@ -393,7 +393,7 @@ export function shapeBox(o, n, q) {
 /** @typedef {"side" | "vert"} Orient side by side (Left and Right are mirrors and share one) or Vertical */
 /** a size; null = the default (for a picture page: no cap). s: a picture page's scale of its largest (v0.7c C2a; null =
  * the default) @typedef {{ w: number | null, h: number | null, s?: number | null }} PaneSize */
-/** @typedef {{ v: 4, side: { box: PaneSize, pages: Record<PageId, PaneSize>, scaled?: 1 }, vert: { box: PaneSize, pages: Record<PageId, PaneSize> } }} LayoutV4 */
+/** @typedef {{ v: 4, side: { box: PaneSize, pages: Record<PageId, PaneSize>, scaled?: 1 | 2 }, vert: { box: PaneSize, pages: Record<PageId, PaneSize> } }} LayoutV4 */
 
 export const PAGE_IDS = /** @type {const} */ (["generating", "gallery", "queue", "loras", "png"]);
 /** a picture page fits its picture inside its size (a cap); a panel fills its size @param {string} id */

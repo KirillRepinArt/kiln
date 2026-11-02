@@ -512,3 +512,32 @@ export async function verticalSharedEdgeAgainAndNoTwitch(k, t) {
   });
 }
 verticalSharedEdgeAgainAndNoTwitch.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* squeezed in Vertical (2026-11-02, the user's screenshot): the box's least height has one owner (the editor kept a CSS
+   min-height of its own), and the text that scrolls under the controls does so behind the fade at once (the fade
+   waited for the box to stop changing: during a drag or a settle the text slid under the controls bare) */
+export async function squeezedBoxScrollsNoOverlap(k, t) {
+  await k.ev(`(setDock("below"),1)`);
+  await k.job("[fill:446688] wide", { ar: "21:9", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.ev(
+    `(P.value=Array(9).fill("epic cinematic shot of a castle tower at night, fog, mist, moon, dark forest").join(" "),P.dispatchEvent(new Event("input")),1)`,
+  );
+  await k.mouse(2, 2);
+  await k.sleep(1400);
+  const h = await R(k, "#hsplit"),
+    x = h.left + h.width / 2,
+    y = h.top + h.height / 2;
+  await ev(k, "mouseMoved", x, y, 0);
+  await ev(k, "mousePressed", x, y);
+  for (let i = 1; i <= 10; i++) await ev(k, "mouseMoved", x, y + 30 * i);
+  await ev(k, "mouseReleased", x, y + 300);
+  await ev(k, "mouseMoved", 8, 8, 0);
+  await k.sleep(1300);
+  const r = await k.ev(
+    `(()=>{const w=document.querySelector(".pwrapT"),s=w.querySelector(".cm-scroller");return{scrolls:s.scrollHeight>s.clientHeight,more:w.classList.contains("more")}})()`,
+  );
+  t.ok(r.scrolls, "squeezed: the text scrolls inside the box", r);
+  t.ok(r.more, "…and slides under the controls behind the fade (not bare)", r);
+}
+squeezedBoxScrollsNoOverlap.opts = { width: 1760, height: 1080, step: 0.05 };

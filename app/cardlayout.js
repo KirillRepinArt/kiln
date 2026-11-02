@@ -41,18 +41,23 @@ export function lyReset() {
 export function lyUnfreeze() {
   card.frozen = false;
 }
-const EDMIN = 108; /* the editor's least height (styles/prompt.css .cm-editor min-height: its header row + a few lines) */
+/* the box's least height has ONE owner: slotLeast() — two lines of text plus the box's controls, from the text's own
+   metrics (2026-11-02, the user's screenshot: squeezed in Vertical, the editor kept a CSS min-height of 108 px of its
+   own and drew under the pills; side by side the modes used a third number, EDMIN). The editor's CSS takes what the box
+   gives it and scrolls */
+/** @returns {number} */
 function cardNaturalH() {
   const L = $("left"),
     w = q(".pwrapT", L);
   const sc = L.querySelector(".cm-scroller");
   const edH = (sc ? sc.scrollHeight : P.scrollHeight) + 16;
-  return Math.max(170, L.offsetHeight - w.offsetHeight + Math.max(EDMIN, edH));
+  /* the least from the text's metrics (the editor); the plain textarea (no editor) has its own CSS least */
+  return Math.max(sc ? slotLeast() : 170, L.offsetHeight - w.offsetHeight + edH);
 }
 /* Vertical: the height the box needs for the text in it — measured from the text itself (the editor's content and its
    paddings), never from the scroller, whose height is the box's: measured that way the box could grow but never shrink.
    `lines`: the height for that many lines instead (the box's least) */
-/** @param {number} [lines] */
+/** @param {number} [lines] @returns {number} */
 function textBoxH(lines) {
   const L = $("left"),
     w = q(".pwrapT", L),
@@ -71,6 +76,7 @@ function textBoxH(lines) {
   );
 }
 /** the box's least height in Vertical: its controls and two lines */
+/** @returns {number} */
 export const slotLeast = () => textBoxH(2);
 /** Vertical: the box's height for its text (your draft's), up to its mode's largest — its content size */
 export const boxTextH = () => promptSlotH(draftH || textBoxH(), 0, innerHeight, slotLeast());
@@ -123,8 +129,7 @@ export function stackW() {
   return Math.round(Math.max(Math.min(PWMIN, max), Math.min(max, w)));
 }
 function cardMinH() {
-  const L = $("left");
-  return L.offsetHeight - q(".pwrapT", L).offsetHeight + EDMIN;
+  return slotLeast();
 }
 export function chipsH() {
   const c = $("chips");

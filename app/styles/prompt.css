@@ -353,7 +353,7 @@ textarea#prompt.peek {
 /* CodeMirror (editor.js) — these sit beside CodeMirror's own injected styles, so they keep their specificity */
 .pwrapT .cm-editor {
   flex: 0 1 auto;
-  min-height: 108px;
+  min-height: 0; /* the box's least decides (cardlayout.js slotLeast — its one owner): the editor takes what it gets, scrolls */
   max-height: 100%;
   margin: 0 var(--space-3) var(--space-2) 0;
   outline: 0 !important;

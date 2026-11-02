@@ -251,6 +251,7 @@ export async function startEditor() {
     {
       let t = /** @type {number | undefined} */ (/** @type {unknown} */ (null));
       new ResizeObserver(() => {
+        edge(); // the fades follow the box at once (squeezed or settling, the text slid under the controls bare)
         clearTimeout(t);
         t = setTimeout(() => view.requestMeasure(), 120);
       }).observe(wrap);

@@ -6,7 +6,7 @@
 import { act, addJobs, deleteJob, removeMissing, setPaused, stopJob, vary } from "./actions.js";
 import { toast } from "./boot.js";
 import { browseTo, genNav, updNav } from "./browse.js";
-import { card, chipsH, layoutLeft, lyUnfreeze } from "./cardlayout.js";
+import { card, chipsH, layoutLeft, lyUnfreeze, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { status } from "./effects.js";
 import { up } from "./forge.js";
@@ -136,6 +136,7 @@ export function installTestBridge() {
     tbW: { get: () => tbW },
     toast: { get: () => toast },
     up: { get: () => up },
+    updHm: { get: () => updHm },
     updNav: { get: () => updNav },
     updPrompt: { get: () => updPrompt },
     vary: { get: () => vary },

@@ -125,7 +125,10 @@ export function stackW() {
   const max = innerWidth - 2 * SPACE.area,
     pic = typeof lay !== "undefined" && lay.target && lay.target.w;
   if (card.swHold) return Math.round(card.swHold);
-  const w = S.vfit && pic ? pic : paneSize("box", "vert").w || 760;
+  /* the modes act on the box's CROSS axis (DEVLOG DD-2026-11-02-16): in Vertical its width — Match: the picture's, Full:
+     the window's (less its edge gaps); side by side its height (layoutLeft) */
+  const m = S.hmode,
+    w = m === "full" ? max : m === "match" && pic ? pic : paneSize("box", "vert").w || 760;
   return Math.round(Math.max(Math.min(PWMIN, max), Math.min(max, w)));
 }
 function cardMinH() {
@@ -252,7 +255,7 @@ const HM_H =
 export function updHm() {
   const stk = !!document.querySelector(".app.stacked"),
     m = S.hmode || "",
-    fit = stk ? !!S.vfit : m === "match";
+    fit = m === "match";
   $("hmodes").classList.toggle("on", fit || m === "full");
   const b = $("hmMatch");
   if (b.dataset.ic !== String(stk)) {
@@ -268,7 +271,13 @@ export function updHm() {
     : fit
       ? "Back to normal height"
       : "Match the image height";
-  $("hmFull").dataset.tip = m === "full" ? "Back to normal height" : "Full height";
+  $("hmFull").dataset.tip = stk
+    ? m === "full"
+      ? "Back to your width"
+      : "Full width"
+    : m === "full"
+      ? "Back to normal height"
+      : "Full height";
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
@@ -289,8 +298,7 @@ export function initCardlayout() {
   $("hmodes").addEventListener("click", e => {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-hm]"));
     if (!b) return;
-    if (b.dataset.hm === "match" && document.querySelector(".app.stacked")) S.vfit = !S.vfit;
-    else S.hmode = S.hmode === b.dataset.hm ? "" : /** @type {"full" | "match"} */ (b.dataset.hm);
+    S.hmode = S.hmode === b.dataset.hm ? "" : /** @type {"full" | "match"} */ (b.dataset.hm); // one mode, both layouts
     save();
     updHm();
     card.frozen = false;
@@ -354,7 +362,15 @@ export function initCardlayout() {
     /** @param {PointerEvent} e */
     function down(e) {
       const tg = /** @type {HTMLElement} */ (e.target);
-      if (S.hmode || e.button !== 0 || !tg.closest(GROUP) || tg.closest(NO)) return;
+      /* side by side a mode fixes the box's place (its height spans the column or the picture); in Vertical a mode is
+         its width, and the box still moves */
+      if (
+        (S.hmode && !document.querySelector(".app.stacked")) ||
+        e.button !== 0 ||
+        !tg.closest(GROUP) ||
+        tg.closest(NO)
+      )
+        return;
       e.preventDefault();
       d = {
         x0: e.clientX,

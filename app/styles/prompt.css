@@ -242,9 +242,6 @@
   width: 16px;
   height: 16px;
 }
-.app.stacked #hmFull {
-  display: none;
-}
 
 /* ======================= prompt box ======================= */
 .left {

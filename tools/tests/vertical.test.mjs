@@ -113,9 +113,19 @@ export async function fitWidth(k, t) {
   await k.ev(`($("hmMatch").click(),1)`);
   await k.sleep(700);
   t.near((await R(k, "#left")).width, 760, 2, "off: back to your width");
-  await k.ev(`(setDock("left"),1)`);
+  /* Full acts on the cross axis too (DD-2026-11-02-16): in Vertical the window's width, less its edge gaps */
+  const area = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area"))`);
+  t.ok(await k.ev(`getComputedStyle($("hmFull")).display!=="none"`), "Vertical: the Full button is there");
+  t.ok(/width/.test(await k.ev(`$("hmFull").dataset.tip`)), "…it says width");
+  await k.ev(`($("hmFull").click(),1)`);
+  await k.mouse(2, 2);
   await k.sleep(800);
+  t.near((await R(k, "#left")).width, (await k.ev(`innerWidth`)) - 2 * area, 3, "Full: the window's width");
+  await k.ev(`(setDock("left"),1)`);
+  await k.sleep(1000);
+  t.ok(await k.ev(`$("left").classList.contains("hm")`), "one mode: side by side it's Full height");
   t.ok(/height/.test(await k.ev(`$("hmMatch").dataset.tip`)), "beside the picture it is Match height again");
+  await k.ev(`(S.hmode="",updHm(),layoutLeft(),1)`);
 }
 fitWidth.opts = { width: 2000, height: 1023, step: 0.05 };
 
@@ -434,7 +444,8 @@ export async function slotIsFixed(k, t) {
     "Vertical: browsing prompts of different lengths never moves or resizes the picture",
     { a: [a.left, a.top, a.height], b: [b.left, b.top, b.height] },
   );
-  t.ok((await k.ev(`getComputedStyle($("hmFull")).display`)) === "none", "no Full height in Vertical");
+  /* DD-2026-11-02-16: the modes act on the box's cross axis — in Vertical Full is its WIDTH, never its height */
+  t.ok(/width/.test(await k.ev(`$("hmFull").dataset.tip`)), "Vertical: Full is full width, not height");
 }
 slotIsFixed.opts = { width: 2000, height: 1023, step: 0.05 };
 

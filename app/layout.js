@@ -156,6 +156,7 @@ export function migrateLayoutPrefs() {
   if (S.lay && S.lay.v !== 4) S.lay = upgradeLayoutPrefs(S.lay, layW());
   delete S.sch; // Vertical's kept prompt height (2026-11-01: the box hugs its text; the divider sizes the picture)
   delete S.pph; // a kept prompt height side by side (2026-11-02, DD-2026-11-02-12: the box's height is its text's)
+  delete S.vfit; // Vertical's own fit flag (2026-11-02, DD-2026-11-02-16: one mode set, S.hmode, on the cross axis)
 }
 /* every pane's least / largest size and its default come from ONE place, layoutmath.js (limits, paneDefault): these
    two ask it with the page's context now (v0.7c 3b — the gestures had their own numbers) */
@@ -885,7 +886,6 @@ export function initLayout() {
 // column widths now come from sizeFrame()
 export function resetLayout() {
   S.lay = null;
-  S.vfit = false;
   /* widths, the picture's limits (iw, ih) — all back to the defaults */
   delete S.lw;
   S.pos = "mid";

@@ -103,8 +103,9 @@
  *   older versions are brought up on first use; null: the defaults — Reset layout)
  * @property {"left" | "right" | "below"} [dock]  where the prompt goes
  * @property {"top" | "mid" | "bot"} [pos]  wide window: where the prompt card rests (picture top / centre / status line)
- * @property {"" | "full" | "match"} [hmode]  the prompt box's height mode
- * @property {boolean} [vfit]        Vertical: the prompt box as wide as the picture (Fit width)
+ * @property {"" | "full" | "match"} [hmode]  the prompt box's mode on its cross axis: side by side its height, in Vertical
+ *   its width — Match: the picture's, Full: the room's (DD-2026-11-02-16)
+ * @property {boolean} [vfit]        (old, dropped at start-up) Vertical's own fit flag — now S.hmode
  * @property {number} [sch]          (old, dropped at start-up) Vertical: the prompt slot's height
  * @property {number} [pph]          (old, dropped at start-up) a stored prompt box height
  * @property {number} [th]           the LoRA chips' thumbnail size

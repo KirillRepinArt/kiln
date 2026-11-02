@@ -499,7 +499,7 @@ export function initEdges() {
         move: ev => {
           if (!d) return;
           const want = d.w0 + 2 * (side === "r" ? 1 : -1) * (ev.clientX - d.x0);
-          S.vfit = false;
+          S.hmode = ""; // dragging its side: the width is yours again (the mode lets go, as Figma's fixed size)
           card.swHold = rubber(want, d.lo, d.hi, RUBBER); // past a limit: with resistance
           setPaneSize("box", "w", Math.max(d.lo, Math.min(d.hi, want)), "vert"); // what's kept is the limit
           layoutLeft();
@@ -514,7 +514,7 @@ export function initEdges() {
       });
       h.addEventListener("dblclick", () => {
         setPaneSize("box", "w", null, "vert");
-        S.vfit = false;
+        S.hmode = "";
         save();
         updHm();
         layoutLeft();

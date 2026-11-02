@@ -232,16 +232,20 @@ export async function peekModeless(k, t) {
   await k.job("[fill:446688] one", { steps: 2, name: "Harbour" });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 20000);
   await k.ev(`(S.steps=7,S.ar="16:9",S.pname="",$("pname").value="",P.value="something else",draft=P.value,save(),1)`);
-  await k.sleep(300);
-  const y0 = (await k.rect("#pname")).top;
+  /* the title at rest, before and after the switch: a condition, not a fixed time (CI draws a few frames a second; fixed
+     waits caught the column mid-settle on CI only — 800 ms after the switch, 2026-11-02; 300 ms before it, 2026-11-03) */
+  const titleAtRest = async () => {
+    await k.ev(`(window.__pnY=null,1)`);
+    await k.until(
+      `(()=>{const y=$("pname").getBoundingClientRect().top,o=window.__pnY;window.__pnY=y;return o!=null&&Math.abs(o-y)<0.5})()`,
+      5000,
+      150,
+    );
+    return (await k.rect("#pname")).top;
+  };
+  const y0 = await titleAtRest();
   await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
-  /* wait for the switch to settle (a condition, not a fixed time: CI draws a few frames a second and 800 ms caught the
-     column mid-settle — failed by 1.5 px on CI only, 2026-11-02) */
-  await k.until(
-    `(()=>{const y=$("pname").getBoundingClientRect().top,o=window.__pnY;window.__pnY=y;return o!=null&&Math.abs(o-y)<0.5})()`,
-    5000,
-    150,
-  );
+  await titleAtRest();
   t.ok(!(await k.ev(`!!document.getElementById("peekbar")`)), "no bar above the box");
   t.near((await k.rect("#pname")).top, y0, 1, "the title stays at its height");
   const g = await k.ev(`(()=>{const c=document.querySelector(".nchip").getBoundingClientRect(),t=$("ltitle"),

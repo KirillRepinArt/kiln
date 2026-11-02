@@ -77,6 +77,11 @@ export async function timesAndRename(k, t) {
   );
   await k.ev(`(loadJob(jobs.find(j=>j.status==="pending")),1)`);
   t.ok(!(await k.ev(`$("pname").readOnly`)), "a waiting job's name is editable in its peek");
+  /* its field shows a plate, so the # and ✕ hug the plate, not the text inside it (the plate covered ✕, 2026-11-02) */
+  await k.sleep(300);
+  const g = await k.ev(`(()=>{const n=$("pname").getBoundingClientRect(),x=$("pkX").getBoundingClientRect(),
+    p=$("fnPre").getBoundingClientRect();return{x:x.left-n.right,pre:n.left-p.right}})()`);
+  t.ok(g.x >= 2 && g.x < 12 && g.pre >= 2 && g.pre < 12, "the # and ✕ just outside the name's plate", g);
   await k.ev(`(()=>{const n=$("pname");n.value="Renamed Series";n.dispatchEvent(new Event("input"));return 1})()`);
   t.ok(await k.ev(`$("pnSave").classList.contains("show")`), "Save name appears");
   await k.ev(`($("pnSave").click(),1)`);

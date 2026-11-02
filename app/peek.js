@@ -99,6 +99,7 @@ function titleInset() {
       measureCtx ||
       (measureCtx = /** @type {CanvasRenderingContext2D} */ (document.createElement("canvas").getContext("2d"))),
     cs = getComputedStyle(n);
+  if (cs.getPropertyValue("--hug").trim() === "box") return 0; // a field with a plate: hug the plate (prompt.css)
   c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
   /* centred text: half the spare width each side; text cut short (a narrow box): only the field's own padding */
   return Math.max(

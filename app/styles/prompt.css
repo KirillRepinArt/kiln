@@ -87,6 +87,11 @@
     background var(--t-150),
     box-shadow var(--t-150);
 }
+/* the edge of the field that the # and ✕ hug (peek.js titleInset): its text while it's bare, its box when it can show a
+   plate (an editable name: a waiting job's, your draft's); a finished picture's name shows one only while you edit it */
+.ltitle .plbl:not(.donename) .pname:not([readonly]) {
+  --hug: box;
+}
 .plbl.dimname .pname {
   color: var(--grey-69);
 }

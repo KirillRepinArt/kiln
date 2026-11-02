@@ -9,7 +9,7 @@ import { renderPills } from "./pills.js";
 import { plateFollow } from "./plate.js";
 import { harmonics, skinName } from "./skins.js";
 import { S, save } from "./state.js";
-import { moveThumb, showView } from "./tabs.js";
+import { goView, moveThumb } from "./tabs.js";
 
 /* ======================= settings / themes ======================= */
 /* a skin's colours live in its token file (app/styles/themes/): switching sets data-skin on <html>, then the harmonic
@@ -75,7 +75,7 @@ export function initSettings() {
   };
   $("rLayout").onclick = () => {
     resetLayout();
-    showView("gen");
+    goView("gen");
     $("modal").classList.remove("show");
     toast("Layout reset");
   };

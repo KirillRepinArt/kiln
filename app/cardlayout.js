@@ -362,15 +362,9 @@ export function initCardlayout() {
     /** @param {PointerEvent} e */
     function down(e) {
       const tg = /** @type {HTMLElement} */ (e.target);
-      /* side by side a mode fixes the box's place (its height spans the column or the picture); in Vertical a mode is
-         its width, and the box still moves */
-      if (
-        (S.hmode && !document.querySelector(".app.stacked")) ||
-        e.button !== 0 ||
-        !tg.closest(GROUP) ||
-        tg.closest(NO)
-      )
-        return;
+      /* the grip works in every mode (2026-11-02, the user: in Full side by side the title didn't drag while the LoRA
+         row did — two paths). A mode fixes the box's height; docking it is still yours */
+      if (e.button !== 0 || !tg.closest(GROUP) || tg.closest(NO)) return;
       e.preventDefault();
       d = {
         x0: e.clientX,

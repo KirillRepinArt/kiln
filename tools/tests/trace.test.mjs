@@ -112,6 +112,13 @@ export async function ownershipTour(k, t) {
     await k.sleep(1300);
     await motion(`${a} → ${b}`, tab(b));
   }
+  /* every other way to a page goes on the same switch (goView, 2026-11-02: the Add LoRA button jumped) */
+  await k.ev(`(${tab("gen")},1)`);
+  await k.sleep(1300);
+  await motion("the Add LoRA button → LoRAs", `document.querySelector(".chipadd").click()`);
+  await k.ev(`(${tab("queue")},1)`);
+  await k.sleep(1300);
+  await motion("a finished Queue row → the Gallery", `document.querySelector(".qi.done, .qi")?.click()`);
   /* browsing between shapes, a fast double step */
   await k.ev(`(${tab("gallery")},1)`);
   await k.sleep(1300);

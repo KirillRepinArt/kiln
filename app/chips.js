@@ -7,7 +7,7 @@ import { renderLoras } from "./loras.js";
 import { editFirst } from "./peek.js";
 import { peekJob } from "./prompt.js";
 import { IC, LORAS, S, save } from "./state.js";
-import { showView } from "./tabs.js";
+import { goView } from "./tabs.js";
 
 let chipsOpen = false;
 export function renderChips() {
@@ -102,7 +102,7 @@ export function initChips() {
     }
     if (!editFirst()) return; // a shown job's LoRAs: it becomes your draft, then this applies to it
     if (c.classList.contains("chipadd")) {
-      showView("loras");
+      goView("loras"); // the tab switch's motion, like the tab
       return;
     }
     const l = LORAS.find(l => l.name === c.dataset.n);
@@ -115,7 +115,7 @@ export function initChips() {
       return;
     }
     S.lfilter = l.folder === "people" ? "people" : "all";
-    showView("loras");
+    goView("loras");
     const el = q(`[data-ln="${l.name}"]`);
     if (el) {
       el.scrollIntoView({ block: "center" });

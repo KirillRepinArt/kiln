@@ -118,6 +118,16 @@ export function tabGo(fn) {
   }, sw.T + 300);
 }
 let tabGos = 0; // tab switches started so far
+/** go to a page — THE way a page switch happens (2026-11-02, the user: the Add LoRA button jumped "all over the place"):
+ * a tab, the Add LoRA button and a LoRA chip, a Queue row, PNG Info's load, Reset layout, ✕ back to where you came
+ * from — all on the tab switch's one motion (tabGo). `then` runs on the new page, inside the switch.
+ * @param {import("./types.js").Settings["view"]} v @param {() => void} [then] */
+export function goView(v, then) {
+  tabGo(() => {
+    showView(v);
+    if (then) then();
+  });
+}
 
 /* start-up wiring: the tab bar's clicks; the pill's place once the fonts have loaded (called from main.js, in order) */
 export function initTabs() {

@@ -541,3 +541,23 @@ export async function squeezedBoxScrollsNoOverlap(k, t) {
   t.ok(r.more, "…and slides under the controls behind the fade (not bare)", r);
 }
 squeezedBoxScrollsNoOverlap.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* the grip works in every mode (2026-11-02, the user: in Full side by side the box's title didn't drag) */
+export async function gripInFullMode(k, t) {
+  await k.ev(`(setDock("left"),S.hmode="full",updHm(),layoutLeft(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1200);
+  const tt = await R(k, "#ltitle"),
+    x = tt.left + 30,
+    y = tt.top + tt.height - 14;
+  await ev(k, "mouseMoved", x, y, 0);
+  await ev(k, "mousePressed", x, y);
+  for (let i = 1; i <= 6; i++) await ev(k, "mouseMoved", x + 10 * i, y + 10 * i);
+  await k.sleep(150);
+  t.ok(await k.ev(`document.body.classList.contains("cardmove")`), "Full: pressing the title grips the box");
+  await ev(k, "mouseReleased", x + 60, y + 60);
+  await ev(k, "mouseMoved", 8, 8, 0);
+  await k.sleep(600);
+  await k.ev(`(S.hmode="",updHm(),layoutLeft(),1)`);
+}
+gripInFullMode.opts = { width: 1760, height: 1080, step: 0.05 };

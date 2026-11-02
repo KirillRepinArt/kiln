@@ -18,7 +18,7 @@ import { PV, pv } from "./picstate.js";
 import { urlFor } from "./pictures.js";
 import { copySeed } from "./pills.js";
 import { IC, S } from "./state.js";
-import { showView } from "./tabs.js";
+import { goView } from "./tabs.js";
 
 /* Kiln · Queue tab, peek / reuse */
 export function renderQueue() {
@@ -626,16 +626,16 @@ export function initQueue() {
     if (!q) return;
     const j = /** @type {Job} */ (jobs.find(j => j.id == Number(q.dataset.id || 0))); // a row's job is in the list
     if (j.status === "running") {
-      showView("gen");
-      pv("peekRender");
+      goView("gen", () => pv("peekRender"));
       return;
     }
     if (j.status === "done") {
-      showView("gen");
-      PV.from = "queue";
-      pv("browse", j);
+      goView("gen", () => {
+        PV.from = "queue";
+        pv("browse", j);
+      });
       return;
-    } // finished: in the Gallery (✕ brings you back here)
+    } // finished: in the Gallery (✕ brings you back here) — on the switch's motion (goView)
     loadJob(j);
   });
   /* Q5: hover a finished thumbnail for a bigger look */

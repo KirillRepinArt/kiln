@@ -21,7 +21,7 @@ import { loadJob, peekHide } from "./peek.js";
 import { preload, xfadeSnap } from "./pictures.js";
 import { peekJob } from "./prompt.js";
 import { S } from "./state.js";
-import { showView, tabSync } from "./tabs.js";
+import { goView, tabSync } from "./tabs.js";
 
 /** @type {import("./types.js").PictureView} */
 export const PV = {
@@ -187,7 +187,7 @@ function pvApply(ev, arg, run) {
       {
         const back = PV.from;
         PV.from = null;
-        if (back && arg !== "arrow" && back !== "gen") showView(back);
+        if (back && arg !== "arrow" && back !== "gen") goView(back); // back where you came from: the switch's motion
       }
       break;
     case "toRender" /* the status row while a picture stands in front of a running render (Q3) */:

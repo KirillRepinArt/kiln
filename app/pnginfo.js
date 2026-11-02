@@ -6,7 +6,7 @@ import { SIZES } from "./presets.js";
 import { plateSync } from "./plate.js";
 import { setDraft } from "./prompt.js";
 import { IC, LORAS, P, S, save } from "./state.js";
-import { showView } from "./tabs.js";
+import { goView } from "./tabs.js";
 
 /* ======================= PNG info (real) ======================= */
 /** what a PNG's generation settings say (parseParams), and its series name (nameFrom)
@@ -290,7 +290,7 @@ export function initPnginfo() {
       /** @type {HTMLInputElement} */ ($("pname")).value = S.pname;
     }
     save();
-    showView("gen");
+    goView("gen");
     renderAll();
     toast(
       `Loaded into the prompt${parsed.name ? ` as “${parsed.name}”` : ""} — ${S.keepSeed ? "its seed" : "new random seed"}`,

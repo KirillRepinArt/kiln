@@ -194,6 +194,7 @@ export const lay = {
   vw: null,
   ph: null,
   ptop: null,
+  overB: 0,
   target: null,
   frameDefer: false,
   framePending: false,
@@ -241,14 +242,14 @@ function roomH() {
 export function pageYoursH() {
   if (!document.querySelector(".app.stacked")) return null;
   if (S.view === "gen") {
-    const cap = lay.vh ?? paneSize().h;
+    const cap = paneSize().h; // the KEPT size: a held overshoot (the rubber band) never squeezes the box
     if (!cap) return null;
     const f = $("frame"),
       ar = f.offsetWidth / Math.max(1, f.offsetHeight),
       h = lay.colW ? Math.min(cap, lay.colW / ar) : cap;
     return h + (insets().row ? rowRoom() : 0);
   }
-  return lay.ph ?? paneSize().h ?? null;
+  return paneSize().h ?? null;
 }
 /* the picture's largest height: the room less the status row while the page keeps it (insets) */
 export function picFull(noRow = false) {
@@ -810,7 +811,9 @@ export function promptFollow(direct = false) {
   /* Vertical: the picture sits at the top of its room; the prompt comes up by the room it leaves under it (and under
      its status row), so they touch — the spare height goes to the window's bottom (2026-11-01) */
   if (b && stk && S.view === "gen" && lay.vroom)
-    y = -Math.round(Math.max(0, lay.vroom - (b.t + b.h + SPACE.mat + lay.vrow)));
+    /* glued under the picture's KEPT bottom: the rubber band is the grabbed edge's feedback only — nothing round it
+       follows the overshoot (2026-11-02, the user: the prompt twitched) */
+    y = -Math.round(Math.max(0, lay.vroom - (b.t + b.h - (lay.overB || 0) + SPACE.mat + lay.vrow)));
   if (on && b && lay.last) {
     const M = SPACE.mat,
       inset = R ? (lay.shown || lay.last).rw - (b.l + b.w + M) : b.l - M; // the area as it is on screen now (G12)

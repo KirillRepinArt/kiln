@@ -157,7 +157,7 @@ export function initEdges() {
             least = slotLeast(),
             room = lay.vroom + (card.lastSlot || 0), // the page and the box, together
             text = boxTextH(),
-            row = gen && f.offsetHeight ? $("stage").offsetHeight - f.offsetHeight : 0, // what isn't the picture
+            row = gen ? lay.vrow || 0 : 0, // the status row's room under the picture (not the spare room)
             ar = f.offsetWidth / Math.max(1, f.offsetHeight),
             widest = gen && lay.colW ? lay.colW / ar : Infinity;
           d = {
@@ -178,6 +178,7 @@ export function initEdges() {
           if (d.gen) {
             lay.vh = shown;
             lay.vtop = d.t0; // its top holds (Vertical's anchor)
+            lay.overB = shown - kept; // the overshoot: feedback only, the box stays at the kept bottom
           } else {
             lay.ph = shown;
             lay.ptop = 0;
@@ -192,6 +193,7 @@ export function initEdges() {
           lay.vtop = null;
           lay.ph = null;
           lay.ptop = null;
+          lay.overB = 0;
           save();
           layoutLeft();
           sizeFrame();
@@ -323,8 +325,12 @@ export function initEdges() {
           /* past its least or its room: with resistance (the rubber band); what's kept is the limit */
           const lo = paneLimits(pageId(), "h").lo,
             nh = rubber(want, lo, d.full, PIC_OVER);
+          const kept = Math.max(lo, Math.min(d.full, want)),
+            { t0, h0, e } = d,
+            top = (/** @type {number} */ h) => (side ? t0 + (h0 - h) / 2 : e === "b" ? t0 : t0 + (h0 - h));
           lay.vh = nh;
-          lay.vtop = side ? d.t0 + (d.h0 - nh) / 2 : d.e === "b" ? d.t0 : d.t0 + (d.h0 - nh);
+          lay.vtop = top(nh);
+          lay.overB = top(nh) + nh - (top(kept) + kept); // feedback only: the box stays at the kept bottom
           if (!side && !q(".app.stacked")) setPaneSize(pageId(), "w", null, "side"); // the height decides; the width follows
           setPaneSize(pageId(), "h", Math.max(lo, Math.min(d.full, want)));
           sizeFrame();
@@ -335,6 +341,7 @@ export function initEdges() {
           d = null;
           lay.vh = null;
           lay.vtop = null;
+          lay.overB = 0;
           if (nh && nh >= full * 0.995) setPaneSize(pageId(), "h", null); // the whole room: no cap (it settles there)
           save();
           sizeFrame();

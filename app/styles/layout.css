@@ -281,9 +281,11 @@
   top: var(--space-1);
 }
 .vedge.t {
-  top: calc(var(--space-2) * -1);
+  top: calc(var(--space-hair) * -1);
   bottom: auto;
-}
+  height: var(--space-2);
+} /* on the box's own top border: the gap above it (between the title and the box) is the prompt's grip zone — one
+     owner per strip of screen (2026-11-02, CI: dock › gripIsTheWholeGroup) */
 .vedge.t::after {
   top: auto;
   bottom: var(--space-1);

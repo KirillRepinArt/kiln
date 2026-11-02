@@ -173,6 +173,8 @@
  * @property {number | null} [ph]    a panel's top / bottom edge held: its live height
  * @property {number | null} [ptop]  and its top in its room meanwhile (the other side pinned)
  * @property {number} [proom]        the panel's room height (sizeFrame)
+ * @property {number} [overB]        a held picture's overshoot below its kept bottom (the rubber band): feedback of the
+ *                                    grabbed edge only — what sits round the picture is placed from the limit
  * @property {{top: number, h: number, bottom: number, w: number} | null} target  where the picture is going (not
  *   where it is mid-glide): the prompt's vertical anchors use this
  * @property {boolean} frameDefer    inside one click: sizeFrame runs once, at the end

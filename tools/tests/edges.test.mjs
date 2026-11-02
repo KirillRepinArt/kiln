@@ -462,3 +462,53 @@ export async function pictureBottomGrowsWhileHeld(k, t) {
   t.near(r.after.height, r.held.height, 4, "let go: it stays where you left it (no jump)");
 }
 pictureBottomGrowsWhileHeld.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* Vertical (2026-11-02, the user): after the picture was made smaller (the box floating under it), grabbing the shared
+   edge again grew the picture only a little at a time — its limit counted the spare room as the status row's. And the
+   rubber band moved the box: the overshoot is the grabbed edge's feedback only, the box stays at the picture's kept
+   bottom */
+export async function verticalSharedEdgeAgainAndNoTwitch(k, t) {
+  await k.ev(`(setDock("below"),1)`);
+  await k.job("[fill:446688] wide", { ar: "21:9", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.ev(
+    `(P.value=Array(12).fill("a line of prompt text").join(String.fromCharCode(10)),P.dispatchEvent(new Event("input")),1)`,
+  );
+  await k.mouse(2, 2);
+  await k.sleep(1400);
+  /** drag a handle by (dx, dy); the frame and the box held, and after */
+  const pull = async (sel, dx, dy) => {
+    const h = await R(k, sel),
+      x = h.left + h.width / 2,
+      y = h.top + Math.min(h.height / 2, 200);
+    await ev(k, "mouseMoved", x, y, 0);
+    await ev(k, "mousePressed", x, y);
+    for (let i = 1; i <= 12; i++) await ev(k, "mouseMoved", x + (dx * i) / 12, y + (dy * i) / 12);
+    await k.sleep(250);
+    const held = { f: await R(k, "#frame"), b: await R(k, "#left") };
+    await ev(k, "mouseReleased", x + dx, y + dy);
+    await ev(k, "mouseMoved", 8, 8, 0);
+    await k.sleep(1300);
+    return { held, f: await R(k, "#frame"), b: await R(k, "#left") };
+  };
+  const f0 = await R(k, "#frame");
+  await pull("#hsplit", 0, -200); // the picture smaller: the box floats under it, the spare room below
+  const f1 = await R(k, "#frame"),
+    again = await pull("#hsplit", 0, 260);
+  t.ok(f1.height < f0.height - 100, "made smaller first", { f0: f0.height, f1: f1.height });
+  t.ok(again.held.f.height > f1.height + 200, "grabbed again: it grows the whole way in one drag", {
+    f1: f1.height,
+    held: again.held.f.height,
+  });
+  /* the picture at its largest: its side edge pulled out — the box mustn't move */
+  await k.ev(`(setPaneSize(pageId(),"h",null),sizeFrame(),layoutLeft(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1400);
+  const b0 = await R(k, "#left"),
+    side = await pull(".hedge.r", 300, 0);
+  t.near(side.held.b.top, b0.top, 1, "the rubber band past its largest: the box doesn't move", {
+    b0: b0.top,
+    held: side.held.b.top,
+  });
+}
+verticalSharedEdgeAgainAndNoTwitch.opts = { width: 1760, height: 1080, step: 0.05 };

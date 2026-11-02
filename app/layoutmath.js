@@ -391,8 +391,9 @@ export function shapeBox(o, n, q) {
 
 /** the panes a layout holds besides the prompt box @typedef {"generating" | "gallery" | "queue" | "loras" | "png"} PageId */
 /** @typedef {"side" | "vert"} Orient side by side (Left and Right are mirrors and share one) or Vertical */
-/** a size; null = the default (for a picture page: no cap) @typedef {{ w: number | null, h: number | null }} PaneSize */
-/** @typedef {{ v: 4, side: { box: PaneSize, pages: Record<PageId, PaneSize> }, vert: { box: PaneSize, pages: Record<PageId, PaneSize> } }} LayoutV4 */
+/** a size; null = the default (for a picture page: no cap). s: a picture page's scale of its largest (v0.7c C2a; null =
+ * the default) @typedef {{ w: number | null, h: number | null, s?: number | null }} PaneSize */
+/** @typedef {{ v: 4, side: { box: PaneSize, pages: Record<PageId, PaneSize>, scaled?: 1 }, vert: { box: PaneSize, pages: Record<PageId, PaneSize> } }} LayoutV4 */
 
 export const PAGE_IDS = /** @type {const} */ (["generating", "gallery", "queue", "loras", "png"]);
 /** a picture page fits its picture inside its size (a cap); a panel fills its size @param {string} id */
@@ -587,6 +588,8 @@ export function layoutPrefsV4(L, o) {
  * @property {number} strip the edit buttons' strip beside the picture (part of the picture's pane: DEVLOG DD-2026-11-03-5)
  * @property {{ area: number, pair: number, bar: number }} gap the window's edge, between the panes, under the tab bar
  * @property {number} picLeast a picture's least height
+ * @property {number} [roomH] the content's height, when the page keeps room of its own below it (the status row): it
+ *   replaces the window's height less the tab bar's row and the edge gap
  * @property {{ edge: string, at: number } | null} [drag] an edge held (a handle's id, as in the output's handles) and
  *   where the pointer is on its axis
  */
@@ -613,7 +616,7 @@ function roomOf(s) {
   const L = s.gap.area,
     R = s.W - s.gap.area,
     T = s.gap.area + s.bar.h + s.gap.bar,
-    B = s.H - s.gap.area;
+    B = s.roomH != null ? T + s.roomH : s.H - s.gap.area;
   return { L, R, RW: R - L, T, B, CH: B - T };
 }
 
@@ -753,7 +756,7 @@ function dragSizes(s, z) {
     } else if (who === "box" && (side === "left" || side === "right")) {
       /* the box's outer edge: the group centred, the page's size held, the box's width with the edge at the pointer */
       const half = side === "left" ? cx - d.at : d.at - cx,
-        bwWant = 2 * half - gap.pair - pageW(z.pw),
+        bwWant = 2 * half - gap.pair - z.pw, // the pair you see is centred (its strip hangs into the margin)
         /* an outer edge grows into the room only: past its end there is nothing left to give way (the pointer is at
            the window's edge), so the rubber band */
         hi = Math.min(boxWHi, RW - gap.pair - pageW(z.pw));
@@ -762,7 +765,7 @@ function dragSizes(s, z) {
     } else if (who === "page" && (side === "left" || side === "right")) {
       /* the page's outer edge (on the picture's side, not its strip): the same, for the page */
       const half = side === "left" ? cx - d.at : d.at - cx,
-        wWant = 2 * half - gap.pair - z.bw - (pic ? strip : 0);
+        wWant = 2 * half - gap.pair - z.bw; // the pair you see is centred (its strip hangs into the margin)
       setPageW(wWant, Math.min(pageWHi, RW - gap.pair - z.bw - (pic ? strip : 0)));
       if (pic && out.keptPw > RW - gap.pair - z.bw - strip)
         out.keptBw = Math.max(s.box.wLo, RW - gap.pair - strip - out.keptPw);
@@ -850,10 +853,14 @@ export function layoutPass(s) {
     z.pw = z.ph * pic.ratio;
   }
   if (!vert) {
+    /* the pair you see — the box and the picture — is centred; the buttons' strip hangs into the margin beside the
+       picture and takes room only where there is none (a picture at its widest): the group moves in by what's missing */
     const pageW = z.pw + (pic ? strip : 0),
-      total = z.bw + gap.pair + pageW,
-      x0 = L + (RW - total) / 2,
+      seen = z.bw + gap.pair + z.pw,
       right = s.dock === "right",
+      c0 = L + (RW - seen) / 2,
+      short = pic ? Math.max(0, strip - (RW - seen) / 2) : 0,
+      x0 = pic ? (right ? c0 - strip + short : c0 - short) : L + (RW - (z.bw + gap.pair + pageW)) / 2,
       px = right ? x0 : x0 + z.bw + gap.pair,
       py = z.pageY ?? T + (CH - z.ph) / 2;
     page = { x: px, y: py, w: pageW, h: z.ph };

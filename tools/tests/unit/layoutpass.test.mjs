@@ -70,6 +70,18 @@ test("everything inside the window, one area gap from its edges", () => {
     }
 });
 
+test("side by side the pair you see is centred; the buttons' strip takes room only where the margin has none", () => {
+  for (const { s, out, name } of grid()) {
+    if (s.dock === "below" || !out.pic) continue;
+    const l = Math.min(out.box.x, out.pic.x) - GAP.area,
+      r = s.W - GAP.area - Math.max(right(out.box), right(out.pic)),
+      margin = Math.min(l, r);
+    if (margin >= STRIP - EPS) assert.ok(Math.abs(l - r) <= EPS, `${name}: centred (${l} | ${r})`);
+    else
+      assert.ok(Math.abs((s.dock === "left" ? r : l) - STRIP) <= EPS, `${name}: no room: the strip takes just its own`);
+  }
+});
+
 test("the pane between them keeps one gap", () => {
   for (const { s, out, name } of grid()) {
     const d =

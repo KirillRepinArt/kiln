@@ -10,6 +10,8 @@ import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
   PICHMIN,
+  PWMIN,
+  layoutPass,
   limits,
   paneDefault,
   PIC_OVER,
@@ -146,10 +148,10 @@ export function paneSize(pane = pageId(), o = orient()) {
   const L = sizes()[o];
   return pane === "box" ? L.box : L.pages[pane] || (L.pages[pane] = { w: null, h: null });
 }
-/** set (or with null, forget) your size of a pane @param {"box" | PageId} pane @param {"w" | "h"} axis
+/** set (or with null, forget) your size of a pane @param {"box" | PageId} pane @param {"w" | "h" | "s"} axis
  * @param {number | null} v @param {Orient} [o] */
 export function setPaneSize(pane, axis, v, o = orient()) {
-  paneSize(pane, o)[axis] = v == null ? null : Math.round(v);
+  paneSize(pane, o)[axis] = v == null ? null : axis === "s" ? v : Math.round(v); // a scale is a share, not px
 }
 /* saved layouts of older versions → today's (once, at start-up: main.js); the sizes' own format on first use */
 export function migrateLayoutPrefs() {
@@ -157,6 +159,14 @@ export function migrateLayoutPrefs() {
   delete S.sch; // Vertical's kept prompt height (2026-11-01: the box hugs its text; the divider sizes the picture)
   delete S.pph; // a kept prompt height side by side (2026-11-02, DD-2026-11-02-12: the box's height is its text's)
   delete S.vfit; // Vertical's own fit flag (2026-11-02, DD-2026-11-02-16: one mode set, S.hmode, on the cross axis)
+  /* side by side, a picture page's size is a scale of its largest (v0.7c C2a, DEVLOG DD-2026-11-03-4): the px caps,
+     made on one picture's ratio, limited the next — dropped once, so every picture starts at its biggest */
+  const L4 = S.lay && S.lay.v === 4 ? /** @type {import("./layoutmath.js").LayoutV4} */ (S.lay) : null;
+  if (L4 && !L4.side.scaled) {
+    for (const id of /** @type {const} */ (["generating", "gallery"]))
+      Object.assign(L4.side.pages[id], { w: null, h: null });
+    L4.side.scaled = 1;
+  }
 }
 /* every pane's least / largest size and its default come from ONE place, layoutmath.js (limits, paneDefault): these
    two ask it with the page's context now (v0.7c 3b — the gestures had their own numbers) */
@@ -200,6 +210,7 @@ export const lay = {
   frameDefer: false,
   framePending: false,
   frameHold: false,
+  pass: null,
   row: null,
   rowView: null,
   ins: "",
@@ -270,6 +281,46 @@ function picH(noRow = false) {
 function toolsClear(/** @type {number} */ h) {
   return Math.max(0, tbW(h) - SPACE.area);
 }
+/** @typedef {import("./layoutmath.js").Rect} Rect */
+/** the single layout pass for a picture page side by side (v0.7c C2a, ux-review/16-layout-pass.md): the numbers — the
+ * picture's size (a scale of its largest), the edit buttons' strip (on its outer side only, part of its pane), the
+ * pane's width, the pair's margins — come from it; the appliers (colsWrite, framebox, plate) still write them (C2b).
+ * The tab bar is no least width any more (it overhangs a narrow picture). Until the drags move to the pass (C3), a cap
+ * a drag leaves in px is read as the scale it gives this picture. */
+function sidePass() {
+  const j = onShow() || current(),
+    [a, b] = (j ? j.ar : S.ar).split(":").map(Number),
+    ratio = a / b,
+    room = picFull(),
+    p = paneSize(),
+    df = layDef(),
+    run = (/** @type {number} */ strip, /** @type {number | undefined} */ scale) =>
+      layoutPass({
+        W: innerWidth,
+        H: innerHeight,
+        dock: /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright")
+          ? "right"
+          : "left",
+        page: { kind: "pic", ratio, scale },
+        box: { w: paneSize("box", "side").w ?? df.pw, wLo: PWMIN, text: 0, least: 0 },
+        bar: { w: tabsW(), h: 0 },
+        strip,
+        gap: { area: SPACE.area, pair: pairGap(), bar: 0 },
+        picLeast: PICHMIN,
+        roomH: room,
+      });
+  /** @type {number | undefined} */
+  let scale = p.s ?? undefined;
+  if (scale == null && (p.w || p.h)) {
+    const big = run(tbW(room), undefined).largest; // a px cap (an edge, until C3): the share of this picture's largest
+    scale = Math.min(1, (p.w ?? Infinity) / big.w, (p.h ?? Infinity) / big.h);
+  }
+  /* the strip's width follows the picture's height (its buttons wrap into a second column on a short picture) */
+  let out = run(tbW(room), scale);
+  const strip = tbW(/** @type {Rect} */ (out.pic).h);
+  if (strip !== tbW(room)) out = run(strip, scale);
+  return { out, strip };
+}
 export function layGeo() {
   const W = layW();
   const gen = S.view === "gen",
@@ -281,6 +332,26 @@ export function layGeo() {
     /* never narrower than the tab bar: it sits on the plate's centre line (plate.js placeBar), and the plate is centred
        in the area on every page (2026-10-31; the bar used to be clamped into the area, off the plate's centre) */
     minR = minRight();
+  /* a picture page: the pass (C2a) — the area is the picture and its strip, the pair centred in the room */
+  if (gen && !document.querySelector(".app.stacked")) {
+    const { out, strip } = sidePass(),
+      R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
+      first = R ? out.page : out.box,
+      last = R ? out.box : out.page;
+    lay.pass = { pic: /** @type {Rect} */ (out.pic), strip, largest: out.largest };
+    return {
+      pw: out.box.w,
+      rw: out.page.w,
+      mL: first.x - SPACE.area,
+      mR: W - (last.x + last.w - SPACE.area),
+      W,
+      minR,
+      off: 0,
+      gen,
+      clear: 0,
+    };
+  }
+  lay.pass = null;
   /* Generating's area is the whole stage the prompt leaves (no hug: ownership map G6) — the picture is centred in it
      and the prompt follows the picture instead (promptFollow) */
   return pageGeometry(
@@ -657,11 +728,12 @@ export function sizeFrame() {
   const st = stageRect(),
     SW = stk ? (lay.colW ? lay.colW - 2 : st.width) : /** @type {Geometry} */ (lay.last).rw; // wide: layApply above has set it
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
-  const PH = picH(),
-    TB = tbW(PH), // the edit buttons' column: it hangs outside the plate (no room in the area — toolsClear)
+  const pass = !stk && S.view === "gen" && !lay.vh ? lay.pass : null, // side by side at rest: the pass's numbers (C2a)
+    PH = pass ? pass.pic.h : picH(),
+    TB = pass ? pass.strip : tbW(PH), // the edit buttons' column: side by side, part of the picture's pane (C2a)
     R = ins.row ? rowRoom() : 0, // (lay.vrow: the prompt follows the row's room too, Vertical)
     M = SPACE.mat, // the picture's mat: the plate is the picture and M round it
-    { w, h } = fitInBox(ar, SW - 2 * M, PH - 2 * M),
+    { w, h } = pass ? { w: pass.pic.w - 2 * M, h: pass.pic.h - 2 * M } : fitInBox(ar, SW - 2 * M, PH - 2 * M),
     W = w + 2 * M, // the plate
     H = h + 2 * M;
   /* the picture's canvas is drawn at the box's FINAL size and centred in it: the box may glide to a new shape (its
@@ -675,7 +747,7 @@ export function sizeFrame() {
       areaH: roomH(),
       w: W,
       h: H,
-      tb: 0,
+      tb: pass ? TB : 0, // the strip is in the area now (C2a): the picture on its inner side
       row: R,
       heldTop: lay.vtop,
       stacked: stk,

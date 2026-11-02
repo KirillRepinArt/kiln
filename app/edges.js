@@ -85,6 +85,8 @@ function gesture(h, panes, { down, move, end, cls }) {
  * Its widest: side by side the room the prompt and the buttons' clearance leave; in Vertical the column.
  * @param {HTMLElement} f the frame (the picture) */
 function picLargestH(f) {
+  /* side by side at rest the picture's largest has one owner, the layout pass (v0.7c C2a) */
+  if (!q(".app.stacked") && lay.pass) return lay.pass.largest.h;
   const ar = f.offsetWidth / Math.max(1, f.offsetHeight),
     g = lay.last,
     widest = q(".app.stacked") ? lay.colW : g ? g.W - g.pw - pairGap() - 2 * (g.clear || 0) : innerWidth;

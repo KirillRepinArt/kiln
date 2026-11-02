@@ -23,19 +23,27 @@ export async function wideBasics(k, t) {
   const tk = await k.ev(
     `(()=>{const k=document.querySelector(".tabs").children,a=k[0].getBoundingClientRect(),b=k[k.length-1].getBoundingClientRect();return{l:a.left,r:b.right}})()`,
   );
-  /* v0.7c: the bar is as wide as its buttons and sits on the plate's centre line (placeBar, its one owner) */
+  /* v0.7c: the bar is as wide as its buttons and sits on the plate's centre line (placeBar, its one owner); it is its
+     own row, so over a picture narrower than it, it overhangs (v0.7c Q1: A — no least width for the page) */
   const pl = await R(k, "#plate");
   t.ok(
-    Math.abs((tk.l + tk.r) / 2 - (pl.left + pl.right) / 2) < 2 && tk.l >= Rr.left - 1 && tk.r <= Rr.right + 1,
-    "the tab bar's buttons sit on the plate's centre line, inside the right area",
+    Math.abs((tk.l + tk.r) / 2 - (pl.left + pl.right) / 2) < 2 && tk.l >= 0 && tk.r <= 1513,
+    "the tab bar's buttons sit on the plate's centre line, inside the window",
     { tabs: [tabs.left, tabs.width], tk, R: [Rr.left, Rr.right], plate: [pl.left, pl.right] },
   );
   t.ok(f.left >= Rr.left - 1 && f.right <= Rr.right + 1, "the image sits inside the right area");
-  /* 2026-10-31: the edit buttons take no room — they hang outside the plate, into the margin's clearance */
-  t.ok(Math.abs((f.left + f.right) / 2 - (Rr.left + Rr.right) / 2) < 3, "the picture is centred in it", {
-    f: [f.left, f.right],
-    R: [Rr.left, Rr.right],
-  });
+  /* v0.7c C2a: the edit buttons' strip is part of the picture's pane, on its outer side — the picture on the area's
+     inner side, the strip beyond it (DEVLOG DD-2026-11-03-5) */
+  const strip = await k.ev(`parseFloat($("gtools").style.width)`); // the width the layout gives it (hidden while idle)
+  t.ok(
+    Math.abs(f.left - Rr.left) < 2 && Math.abs(Rr.right - f.right - strip) < 3,
+    "the picture, then its buttons' strip",
+    {
+      f: [f.left, f.right],
+      R: [Rr.left, Rr.right],
+      strip,
+    },
+  );
   t.ok(
     await k.until(
       `(()=>{const p=$("prog").getBoundingClientRect(),f=$("frame").getBoundingClientRect();return Math.abs(p.left-f.left)<2&&Math.abs(p.width-f.width)<2&&p.top>f.bottom})()`,

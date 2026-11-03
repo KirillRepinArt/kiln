@@ -139,10 +139,12 @@ function caseOf(dock, page, ar) {
     const reachOf = () =>
       k.ev(`(()=>{const hs=document.querySelectorAll(${JSON.stringify(HANDLES)}),out=[];
       const panes=["#left","#plate"].map(s=>document.querySelector(s)).filter(Boolean).map(e=>e.getBoundingClientRect());
-      for(const h of ${JSON.stringify(handles)}){const r=hs[h.i].getBoundingClientRect(),x=h.axis==="x";
+      for(const h of ${JSON.stringify(handles)}){const r=hs[h.i].getBoundingClientRect(),x=h.axis==="x",
+          ov=p=>x?Math.min(r.bottom,p.bottom)-Math.max(r.top,p.top):Math.min(r.right,p.right)-Math.max(r.left,p.left);
         const line=x?r.left+r.width/2:r.top+r.height/2,
           p=panes.filter(p=>Math.abs((x?[p.left,p.right]:[p.top,p.bottom]).reduce((a,b)=>Math.abs(a-line)<Math.abs(b-line)?a:b)-line)<=40)
-            .sort((a,b)=>(x?b.height:b.width)-(x?a.height:a.width))[0];
+            .sort((a,b)=>ov(b)-ov(a))[0]; /* its pane: the one it lies along most (the widest misread a picture's top
+            as the box's when the two tops were within 40 px) */
         if(!p){out.push(h.label+": on no pane's side");continue}
         const over=x?Math.max(p.top-r.top,r.bottom-p.bottom):Math.max(p.left-r.left,r.right-p.right);
         if(over>24)out.push(h.label+": "+Math.round(over)+" px past its pane")}return out})()`);

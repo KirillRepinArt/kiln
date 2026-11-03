@@ -796,23 +796,7 @@ export function sizeFrame() {
   gt.classList.toggle("lefty", tbLeft);
   /* where the picture is going (not where it is mid-glide): the prompt's vertical anchors use this */
   lay.target = { top: st.top + top, h: H, bottom: st.top + top + H + (R ? R - 1 : 0), w: W }; // the plate: the edge you see
-  /* the area's handles sit on the picture's edges in Generating (the edges you see): the outer one on its outer edge,
-     the divider's on the edge by the prompt — the area is the whole stage, the picture centred in it */
-  {
-    const ro = /** @type {HTMLElement | null} */ (document.querySelector(".pedge.ro")),
-      ri = /** @type {HTMLElement | null} */ (document.querySelector(".pedge.ri")),
-      on = !stk && S.view === "gen",
-      outer = tbLeft ? left : SW - (left + W),
-      inner = tbLeft ? SW - (left + W) : left;
-    if (ro) {
-      ro.style.right = on && !tbLeft ? outer - 6 + "px" : "";
-      ro.style.left = on && tbLeft ? outer - 6 + "px" : "";
-    }
-    if (ri) {
-      ri.style.left = on && !tbLeft ? inner - SPACE.part + "px" : "";
-      ri.style.right = on && tbLeft ? inner - SPACE.part + "px" : "";
-    }
-  }
+  /* the page's side handles: around.js placeSideEdges (from the plate as it moves; B11) */
   /* while an edge is held or hovered: an outline round the picture itself, an even 5 px out (the edges you drag are
     the picture's own; the box it may fill showed as a frame floating off the picture) */
 

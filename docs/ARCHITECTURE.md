@@ -64,8 +64,11 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
   module that writes it; what depends on it is derived from it:
   - what a page keeps room for, its geometry and every fade's timing: `layoutmath.js` (`pageInsets`, `pageGeometry`,
     `fades`, `shapeSteps`, `promptSlotH` — pure, unit-tested)
-  - the picture frame's box: `framebox.js`; what sits round it (status row, buttons, edge strips): `around.js`
-  - the glass plate, the tab bar, and every tab switch's motion (one clock): `plate.js` (`switchGlide`, `placeBar`)
+  - the picture frame's box: `framebox.js` (where it is, `frameBox`; where the layout wants it, `frameTarget`); what sits
+    round it (status row, buttons, edge strips, and the page's side handles side by side — a picture's from the plate,
+    a panel's from its box: `placeSideEdges`): `around.js`
+  - the glass plate, the tab bar, and every tab switch's motion (one clock): `plate.js` (`switchGlide`, `placeBar`); a
+    switch's target is the frame owner's goal (`goalBox` → `frameTarget`), never the hidden frame measured
   - going to a page — a tab, the Add LoRA button, a LoRA chip, a Queue row, PNG Info's load, Reset layout, ✕ back: ONE
     way, `tabs.js` `goView(page, then)` → `tabGo` (the switch's one motion); nothing calls `showView` on its own
   - the prompt column's place (its hug of the picture, a switch's slide): `layout.js` (`promptFollow` → `colApply`);
@@ -77,6 +80,11 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     orientation, kept in `S.lay` v4 — are written only through `layout.js` `setPaneSize` and read through `paneSize`;
     the **group** and its **placement** come from `layoutmath.js` `arrange` (panes glued with one gap, a resting anchor,
     a pin while an edge is held); past a limit `rubber` (one stretch, `RUBBER`; a picture past its room `PIC_OVER`)
+  - **the single layout pass** (v0.7c C, `ux-review/16-layout-pass.md` in the design notes): `layoutmath.js`
+    `layoutPass` computes a picture page's numbers side by side — the picture's size (a scale of its largest), its
+    place, the box's, the edit buttons' strip (`stripRoom`: its room kept on both sides of the centred pair). The
+    appliers write them in a STILL area (the columns don't hug the picture: G6); side drags start from `passGeo` until
+    they move into the pass. The room side by side has one definition: `layout.js` `sideRoom`
   - every edge's press → move → end: `edges.js` `gesture()` (it ends however the drag ends: button up, cancel, lost
     capture); which outlines show: `outlines.js`; the outline itself is part of its pane (`.plate::before`,
     `.left::after` in `styles/layout.css`)

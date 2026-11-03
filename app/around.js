@@ -4,7 +4,7 @@
    from where the frame IS, every frame anything moves (the plate's follow loop, a crop-and-reveal's steps, sizeFrame).
    They used to be placed at the frame's TARGET with CSS glides of their own (or none): on a crop-and-reveal the frame
    moved frame by frame and they jumped to the end or slid on another clock */
-import { $ } from "./dom.js";
+import { $, offsetIn } from "./dom.js";
 import { frameBox } from "./framebox.js";
 import { SPACE } from "./tokens.js";
 
@@ -46,18 +46,6 @@ export function placeAround() {
   placeSideEdges({ l, t, w, h });
 }
 
-/** @param {HTMLElement} el @param {HTMLElement} to an ancestor @returns {{ x: number, y: number }} el's layout offset in it */
-function offsetIn(el, to) {
-  let x = 0,
-    y = 0;
-  for (
-    let e = /** @type {HTMLElement | null} */ (el);
-    e && e !== to;
-    e = /** @type {HTMLElement | null} */ (e.offsetParent)
-  )
-    ((x += e.offsetLeft), (y += e.offsetTop));
-  return { x, y };
-}
 /* the page's side handles side by side (.pedge.ri by the prompt, .pedge.ro on the outer side): each a strip on its
    pane's side, as long as that side (B11; they ran the column's height, 64–406 px past the picture or a shortened panel).
    ONE writer of their rect: a picture's from the plate as it is this frame (they glide with it — they used to jump to

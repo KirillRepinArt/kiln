@@ -22,3 +22,18 @@ export const field = id => /** @type {HTMLInputElement} */ (document.getElementB
 /* the form field an event happened on (an input / change event of a field) */
 /** @param {Event} e @returns {HTMLInputElement} */
 export const targetField = e => /** @type {HTMLInputElement} */ (e.target);
+/** el's layout offset inside an ancestor (offsetLeft / offsetTop: layout, not transforms — a switch's glide or the
+ * "done" pulse don't shift it) @param {HTMLElement} el @param {HTMLElement} to @returns {{ x: number, y: number }} */
+export function offsetIn(el, to) {
+  let x = 0,
+    y = 0;
+  for (
+    let e = /** @type {HTMLElement | null} */ (el);
+    e && e !== to;
+    e = /** @type {HTMLElement | null} */ (e.offsetParent)
+  ) {
+    x += e.offsetLeft;
+    y += e.offsetTop;
+  }
+  return { x, y };
+}

@@ -330,10 +330,23 @@ export async function dividerKeepsTheGap(k, t) {
       await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x + d, y, button: "left", clickCount: 1 });
       await k.sleep(1200);
       gaps.push(await gap());
-      t.ok(Math.abs(g1 - g0) > 20, `${dock}, ${sel} ${dx}: the drag moves the picture's side at the divider`, {
-        g0,
-        g1,
-      });
+      /* the picture opens at its biggest (C2a, 2026-11-03): taking room from the prompt it can't grow (height-bound), so
+         that way it gives the rubber band only; giving room to the prompt, its side follows the drag */
+      const grows = dx > 0; // the test mirrors the pointer for the Left layout (d): dx > 0 takes room from the prompt in both
+      if (grows)
+        t.ok(
+          Math.abs(g1 - g0) <= 22,
+          `${dock}, ${sel} ${dx}: at its biggest, the picture only gives (the rubber band)`,
+          {
+            g0,
+            g1,
+          },
+        );
+      else
+        t.ok(Math.abs(g1 - g0) > 20, `${dock}, ${sel} ${dx}: the drag moves the picture's side at the divider`, {
+          g0,
+          g1,
+        });
       t.ok(
         Math.max(...gaps) - Math.min(...gaps) <= 2,
         `${dock}, ${sel} ${dx}: the prompt a pair gap from the picture on every step`,

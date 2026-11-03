@@ -246,9 +246,17 @@ function rowRoom() {
 /* the height the picture's block may take: the stage; Vertical — down to one even gap above the prompt's name (the
    prompt sits at the bottom, the picture takes everything above it: 2026-10-31, it used to be pulled up under the
    picture and left the window's bottom empty) */
+/* side by side, the room a page has: the column's (#right) under the panel box's top — the same on every page. ONE
+   definition (the picture's room and a panel's): measured from the stage it was the panel box's height, which on the
+   way from a shortened Queue still had the Queue's (cleared later in the same sizeFrame) — the picture was laid out at
+   the Queue's height for the switch, then snapped to its size (the user, 2026-11-03) */
+function sideRoom() {
+  const rp = $("rpanel");
+  return Math.round($("right").clientHeight - (rp.offsetTop - (parseFloat(rp.style.marginTop) || 0)));
+}
 function roomH() {
+  if (!document.querySelector(".app.stacked")) return sideRoom();
   const st = stageRect();
-  if (!document.querySelector(".app.stacked")) return st.height;
   return nameTop().pn - evenGap() - st.top;
 }
 /** Vertical: the room the page (picture or panel) takes when its height is YOURS — set with an edge, held or kept —
@@ -334,6 +342,24 @@ function sidePass() {
   if (strip !== tbW(room)) out = run(strip, scale);
   return { out, strip };
 }
+/** the pass's pair as columns that hug it (the picture's area = the picture and its strip): where a side drag starts
+ * from until C3 moves the drags into the pass — built from the pass's numbers, never measured
+ * @param {import("./types.js").Geometry} g the geometry at rest */
+export function passGeo(g) {
+  const p = lay.pass;
+  if (!p) return g;
+  const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
+    first = R ? p.page : p.box,
+    last = R ? p.box : p.page;
+  return {
+    ...g,
+    pw: p.box.w,
+    rw: p.page.w,
+    mL: first.x - SPACE.area,
+    mR: g.W - (last.x + last.w - SPACE.area),
+    off: 0,
+  };
+}
 export function layGeo() {
   const W = layW();
   const gen = S.view === "gen",
@@ -345,24 +371,15 @@ export function layGeo() {
     /* never narrower than the tab bar: it sits on the plate's centre line (plate.js placeBar), and the plate is centred
        in the area on every page (2026-10-31; the bar used to be clamped into the area, off the plate's centre) */
     minR = minRight();
-  /* a picture page: the pass (C2a) — the area is the picture and its strip, the pair centred in the room */
+  /* a picture page side by side: the pass's numbers (C2a) in a STILL area (G6, 2026-10-31; kept 2026-11-03): the
+     columns don't hug the picture — the box's column at the room's edge, the area the whole rest — so a ratio change
+     moves nothing but the picture (on the frame's clock), and the box follows it on that clock to the pass's place
+     (promptFollow). Hugging columns resized the area on CSS's clock while the picture moved on its own: the plate
+     and the tab bar wobbled (the ownership tour's reversals, insets › stageStaysPutPromptHugs) */
   if (gen && !document.querySelector(".app.stacked")) {
-    const { out, strip } = sidePass(),
-      R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
-      first = R ? out.page : out.box,
-      last = R ? out.box : out.page;
-    lay.pass = { pic: /** @type {Rect} */ (out.pic), page: out.page, strip, largest: out.largest };
-    return {
-      pw: out.box.w,
-      rw: out.page.w,
-      mL: first.x - SPACE.area,
-      mR: W - (last.x + last.w - SPACE.area),
-      W,
-      minR,
-      off: 0,
-      gen,
-      clear: 0,
-    };
+    const { out, strip } = sidePass();
+    lay.pass = { pic: /** @type {Rect} */ (out.pic), page: out.page, box: out.box, strip, largest: out.largest };
+    return { pw: out.box.w, rw: W - pairGap() - out.box.w, mL: 0, mR: 0, W, minR, off: 0, gen, clear: 0 };
   }
   lay.pass = null;
   /* Generating's area is the whole stage the prompt leaves (no hug: ownership map G6) — the picture is centred in it
@@ -737,8 +754,7 @@ export function sizeFrame() {
        writer of its height and offset, and of where its edge handles go (--pt / --pb on the area). The tab bar rides
        on its plate (plate.js barFor), so the tabs come down with a shorter panel. */
     const rp = $("rpanel"),
-      cur = parseFloat(rp.style.marginTop) || 0,
-      room = stk ? lay.vroom : Math.round(rt.clientHeight - (rp.offsetTop - cur)),
+      room = stk ? lay.vroom : sideRoom(),
       panel = S.view !== "gen",
       kept = panel ? paneSize().h : null,
       H = panel ? Math.round(lay.ph ?? (kept ? within(kept, paneLimits(pageId(), "h", { roomH: room })) : room)) : null,
@@ -785,7 +801,10 @@ export function sizeFrame() {
   let left = placedLeft;
   /* side by side at rest the picture's place across its area is the pass's: its strip on the outer side (C2a) — not a
      centring inside the geometry last applied, which may be held or stale (the picture slid onto the box, 2026-11-03) */
-  if (pass) left = pass.pic.x - pass.page.x;
+  if (pass) {
+    const g = /** @type {Geometry} */ (lay.last); // the area's place in the window: the columns as applied
+    left = pass.pic.x - (SPACE.area + g.mL + (tbLeft ? 0 : g.pw + pairGap()));
+  }
   Object.assign(f.dataset, { tw: w, th: h, tl: left + M, tt: top + M });
   /* where the frame belongs (the plate's place, less the mat); framebox.js moves it there (a glide, a jump, or where a
      crop-and-reveal lands) */
@@ -904,8 +923,9 @@ export function promptFollow(direct = false) {
     /* glued under the picture's KEPT bottom: the rubber band is the grabbed edge's feedback only — nothing round it
        follows the overshoot (2026-11-02, the user: the prompt twitched) */
     y = -Math.round(Math.max(0, lay.vroom - (b.t + b.h - (lay.overB || 0) + SPACE.mat + lay.vrow)));
-  if (on && b && lay.last && !lay.pass) {
-    /* (side by side, a picture page: the pass places the pair — the box is already one gap from the picture) */
+  if (on && b && lay.last) {
+    /* side by side the box follows the picture, a pair gap from it, from where the frame IS (its clock; G6). Under the
+       pass that lands the box on the pass's place; while a side edge is held the columns hug the pair, so 0 */
     const M = SPACE.mat,
       inset = R ? (lay.shown || lay.last).rw - (b.l + b.w + M) : b.l - M; // the area as it is on screen now (G12)
     x = Math.round(Math.max(0, inset)) * (R ? -1 : 1);

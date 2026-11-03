@@ -677,3 +677,40 @@ export async function emptyTextFadesWithThePicture(k, t) {
   }
 }
 emptyTextFadesWithThePicture.opts = { step: 0.05 };
+
+/* from a shortened panel to a picture (the user, 2026-11-03: Generating with a 3:4 at its biggest, Queue shorter — the
+   switch "first adjusts, then snaps into max size"): the picture was laid out for the switch in the room the panel box
+   still had (the Queue's height), cropped to a 3:4 at that height, then snapped. Both axes grow here: one reveal, the
+   plate never smaller than where it started, and no jump */
+export async function switchFromShortPanelReveals(k, t) {
+  await k.job("[fill:446688] tall", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.ev(`(setDock("left"),S.ar="16:9",setPaneSize("queue","h",500,"side"),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1500);
+  const end = await k.rect("#frame");
+  await k.ev(`(document.querySelector('.tab[data-v="queue"]').click(),1)`);
+  await k.sleep(1500);
+  const start = await k.rect("#plate");
+  const rows = await k.ev(`new Promise(res=>{const out=[],t0=performance.now();
+    const tick=()=>{const r=$("plate").getBoundingClientRect();out.push([r.width,r.height]);
+      if(performance.now()-t0<1500)requestAnimationFrame(tick);else res(out)};
+    document.querySelector('.tab[data-v="gen"]').click();requestAnimationFrame(tick)})`);
+  const minW = Math.min(...rows.map(r => r[0])),
+    jumps = rows.slice(1).map((r, i) => Math.max(Math.abs(r[0] - rows[i][0]), Math.abs(r[1] - rows[i][1])));
+  t.ok(minW >= start.width - 2, "the plate never narrower than the Queue's (no crop: both axes grow)", {
+    minW,
+    start: start.width,
+  });
+  t.ok(Math.max(...jumps) < 120, "…and no jump between frames", { most: Math.max(...jumps) });
+  const last = rows[rows.length - 1];
+  t.ok(
+    Math.abs(last[0] - (end.width + 0)) <= 30 && Math.abs(last[1] - end.height) <= 30,
+    "…it lands at the picture's size",
+    {
+      last,
+      end: [end.width, end.height],
+    },
+  );
+}
+switchFromShortPanelReveals.opts = { width: 1760, height: 1080, step: 0.05 };

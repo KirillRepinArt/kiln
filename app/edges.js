@@ -12,6 +12,7 @@ import {
   lay,
   layDrag,
   layGeo,
+  passGeo,
   layRelease,
   pageId,
   paneLimits,
@@ -241,7 +242,11 @@ export function initEdges() {
         down: ev => {
           if (q(".app.stacked")) return false;
           ev.stopPropagation(); /* not the card's move gesture */
-          const g0 = Object.assign({}, lay.last || layGeo(), { gen: S.view === "gen" });
+          /* a picture page under the pass: the pair as hugging columns (the drag maths', until C3) — at rest the area is
+             the whole room (G6) */
+          const g0 = Object.assign({}, lay.pass ? passGeo(lay.last || layGeo()) : lay.last || layGeo(), {
+            gen: S.view === "gen",
+          });
           /** @type {{ ar: number, full: number, w0: number } | null} */
           let pic = null;
           /* a picture page: the PICTURE is the page's pane (v0.7c, the fit-page rule) — measured where it is, so the

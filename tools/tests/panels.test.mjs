@@ -32,18 +32,15 @@ export async function wideBasics(k, t) {
     { tabs: [tabs.left, tabs.width], tk, R: [Rr.left, Rr.right], plate: [pl.left, pl.right] },
   );
   t.ok(f.left >= Rr.left - 1 && f.right <= Rr.right + 1, "the image sits inside the right area");
-  /* v0.7c C2a: the edit buttons' strip is part of the picture's pane, on its outer side — the picture on the area's
-     inner side, the strip beyond it (DEVLOG DD-2026-11-03-5) */
+  /* v0.7c C2a: the edit buttons' strip is part of the picture's pane, on its outer side (DEVLOG DD-2026-11-03-5); the
+     area is the whole room the prompt leaves (G6, kept 2026-11-03): the strip fits between the picture and the area's
+     outer side */
   const strip = await k.ev(`parseFloat($("gtools").style.width)`); // the width the layout gives it (hidden while idle)
-  t.ok(
-    Math.abs(f.left - Rr.left) < 2 && Math.abs(Rr.right - f.right - strip) < 3,
-    "the picture, then its buttons' strip",
-    {
-      f: [f.left, f.right],
-      R: [Rr.left, Rr.right],
-      strip,
-    },
-  );
+  t.ok(f.left >= Rr.left - 1 && Rr.right - f.right >= strip - 2, "the picture, then room for its buttons' strip", {
+    f: [f.left, f.right],
+    R: [Rr.left, Rr.right],
+    strip,
+  });
   t.ok(
     await k.until(
       `(()=>{const p=$("prog").getBoundingClientRect(),f=$("frame").getBoundingClientRect();return Math.abs(p.left-f.left)<2&&Math.abs(p.width-f.width)<2&&p.top>f.bottom})()`,

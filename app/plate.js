@@ -6,8 +6,8 @@
    The plate is empty, so changing its size costs the blur, no layout of contents. PNG Info's drop line is the plate's
    too: inset on it, it changes shape with it and fades as a switch leaves (it slid inside the contents' snapshot) */
 import { placeAround } from "./around.js";
-import { $ } from "./dom.js";
-import { frameHold } from "./framebox.js";
+import { $, offsetIn } from "./dom.js";
+import { frameHold, frameTarget } from "./framebox.js";
 import { fades, shapeBox, shapeSteps } from "./layoutmath.js";
 import { SPACE } from "./tokens.js";
 
@@ -21,6 +21,17 @@ function target() {
     o = $("right").getBoundingClientRect(),
     M = panel ? 0 : SPACE.mat; // the picture sits a mat inside its plate
   return { l: r.left - o.left - M, t: r.top - o.top - M, w: r.width + 2 * M, h: r.height + 2 * M, panel };
+}
+/* where a switch goes: a picture's plate where the frame's owner is taking it (its goal, set by the layout) — not the
+   frame measured now: on a panel page the hidden frame is laid out in the panel's room, so a switch from a shortened
+   Queue cropped to a 3:4 at the Queue's height, then snapped to the real size (the user, 2026-11-03). A panel: its box */
+/** @returns {Box} */
+function goalBox() {
+  const g = frameTarget();
+  if ($("rpanel").classList.contains("paneled") || !g) return target();
+  const o = offsetIn($("stage"), $("right")),
+    M = SPACE.mat;
+  return { l: o.x + g.l - M, t: o.y + g.t - M, w: g.w + 2 * M, h: g.h + 2 * M, panel: false };
 }
 /* PNG Info's drop line: while it's empty, or a file is dragged over it */
 function dropLine() {
@@ -162,7 +173,7 @@ export function switchGlide(at, views) {
   }
   const h = document.documentElement,
     o = $("right").getBoundingClientRect(),
-    to = target(),
+    to = goalBox(),
     toS = { l: o.left + to.l, t: o.top + to.t, w: to.w, h: to.h }, // on screen
     steps = shapeSteps(at, toS), // the one choreography: crop, swap, reveal (layoutmath.js)
     T = Math.max(1, steps.T),

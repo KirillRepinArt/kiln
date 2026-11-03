@@ -626,7 +626,7 @@ function roomOf(s) {
  */
 function restSizes(s) {
   const { RW, CH } = roomOf(s),
-    { gap, strip } = s,
+    { gap } = s,
     vert = s.dock === "below",
     page = s.page,
     mode = s.box.mode || "",
@@ -639,7 +639,7 @@ function restSizes(s) {
   if (page.kind === "pic") {
     if (!vert) {
       const leastW = s.picLeast * page.ratio;
-      if (RW - bw - gap.pair - strip < leastW) bw = Math.max(s.box.wLo, RW - gap.pair - strip - leastW); // the box gives last
+      if (RW - bw - gap.pair - stripRoom(s) < leastW) bw = Math.max(s.box.wLo, RW - gap.pair - stripRoom(s) - leastW); // the box gives last
     }
     /* the largest: side by side, beside the box; in Vertical, with the box squeezed to its least (the picture wins:
        double-click). No scale kept = the default: side by side the largest, in Vertical the box keeps its text */
@@ -663,9 +663,15 @@ function restSizes(s) {
   return { bw, bh, pw, ph, scale, largest, mode };
 }
 
+/** side by side, the room a picture's buttons' strip reserves: its width on BOTH sides of the centred pair, so the pair
+ * never moves in for it (B15, the user's (a), 2026-11-03). ONE definition — the largest, the drags' limits, the box's
+ * give — they had one strip each, in six copies @param {PassState} s */
+const stripRoom = s => (s.page.kind === "pic" ? 2 * s.strip : 0);
 /**
  * A picture's largest: its ratio fitted into the room the box leaves (side by side: beside the box; Vertical: above
- * the box at the height given).
+ * the box at the height given). Side by side it keeps the strip's room on both sides of the centred pair, so the pair
+ * never has to move in for it: browsing, a picture's centre stays put (the user, 2026-10-31; B15, (a) the user's pick
+ * 2026-11-03 — the widest picture a strip narrower rather than its centre shifting).
  * @param {PassState} s @param {number} bw the box's width @param {number} bh the box's height (Vertical)
  */
 function largestPic(s, bw, bh) {
@@ -674,7 +680,7 @@ function largestPic(s, bw, bh) {
     w =
       s.dock === "below"
         ? Math.min(RW - 2 * s.strip, (CH - s.gap.pair - bh) * r)
-        : Math.min(RW - bw - s.gap.pair - s.strip, CH * r);
+        : Math.min(RW - bw - s.gap.pair - stripRoom(s), CH * r); // the strip's room both sides: the pair stays centred (B15)
   return { w: Math.max(0, w), h: Math.max(0, w) / r };
 }
 
@@ -735,8 +741,8 @@ function dragSizes(s, z) {
       gw = z.bw + gap.pair + pageW(z.pw), // the group's width at rest
       x0 = L + (RW - gw) / 2,
       /* the widest the page may be: the box gives way down to its least (the other pane, rule 3) */
-      pageWHi = Math.min(pageHi.w, RW - gap.pair - s.box.wLo - (pic ? strip : 0), pic ? CH * ratio : Infinity),
-      boxWHi = RW - gap.pair - pageW(pageLo.w);
+      pageWHi = Math.min(pageHi.w, RW - gap.pair - s.box.wLo - stripRoom(s), pic ? CH * ratio : Infinity),
+      boxWHi = RW - gap.pair - pageLo.w - stripRoom(s);
     if (d.edge === "shared") {
       /* the shared edge trades: the group's width holds, the edge at the pointer (mid-gap) */
       /* the trade happens inside the pair's own width: each side's limit is the other's least / largest */
@@ -759,16 +765,16 @@ function dragSizes(s, z) {
         bwWant = 2 * half - gap.pair - z.pw, // the pair you see is centred (its strip hangs into the margin)
         /* an outer edge grows into the room only: past its end there is nothing left to give way (the pointer is at
            the window's edge), so the rubber band */
-        hi = Math.min(boxWHi, RW - gap.pair - pageW(z.pw));
+        hi = Math.min(boxWHi, RW - gap.pair - z.pw - stripRoom(s));
       out.keptBw = clampTo(bwWant, s.box.wLo, hi);
       out.bw = rubber(bwWant, s.box.wLo, hi, RUBBER);
     } else if (who === "page" && (side === "left" || side === "right")) {
       /* the page's outer edge (on the picture's side, not its strip): the same, for the page */
       const half = side === "left" ? cx - d.at : d.at - cx,
         wWant = 2 * half - gap.pair - z.bw; // the pair you see is centred (its strip hangs into the margin)
-      setPageW(wWant, Math.min(pageWHi, RW - gap.pair - z.bw - (pic ? strip : 0)));
-      if (pic && out.keptPw > RW - gap.pair - z.bw - strip)
-        out.keptBw = Math.max(s.box.wLo, RW - gap.pair - strip - out.keptPw);
+      setPageW(wWant, Math.min(pageWHi, RW - gap.pair - z.bw - stripRoom(s)));
+      if (pic && out.keptPw > RW - gap.pair - z.bw - stripRoom(s))
+        out.keptBw = Math.max(s.box.wLo, RW - gap.pair - stripRoom(s) - out.keptPw);
     } else if (who === "page" && (side === "top" || side === "bottom")) {
       /* the page's top / bottom: centred in the room's height, the opposite side mirrors */
       const cy = T + CH / 2,
@@ -777,9 +783,9 @@ function dragSizes(s, z) {
         hHi = Math.min(pageHi.h, CH, pic ? pageWHi / ratio : Infinity);
       setPageH(hWant, hHi);
       if (pic) {
-        const room = RW - gap.pair - strip - out.keptPw;
+        const room = RW - gap.pair - stripRoom(s) - out.keptPw;
         if (room < z.bw) out.keptBw = Math.max(s.box.wLo, room);
-        out.bw = Math.max(s.box.wLo, Math.min(z.bw, RW - gap.pair - strip - out.pw));
+        out.bw = Math.max(s.box.wLo, Math.min(z.bw, RW - gap.pair - stripRoom(s) - out.pw));
       }
     } else if (who === "box" && (side === "top" || side === "bottom")) {
       out.boxGive = boxGive(s, side, d.at); // the box's height is its text's: nothing to set, the edge only gives

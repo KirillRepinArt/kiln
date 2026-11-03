@@ -100,7 +100,7 @@ test("a picture at 100 % is its largest, and its largest touches the room on its
     if (s.dock !== "below") assert.ok(Math.abs(out.pic.w - out.largest.w) <= EPS, `${name}: by default, its largest`);
     assert.ok(Math.abs(out.pic.w / out.pic.h - s.page.ratio) < 1e-6, `${name}: its ratio`);
     const CH = s.H - GAP.area - (GAP.area + BAR.h + GAP.bar),
-      roomW = s.dock === "below" ? s.W - 2 * GAP.area - 2 * STRIP : s.W - 2 * GAP.area - out.box.w - GAP.pair - STRIP,
+      roomW = s.W - 2 * GAP.area - 2 * STRIP - (s.dock === "below" ? 0 : out.box.w + GAP.pair), // side by side too: the strip's room both sides (B15)
       roomH = s.dock === "below" ? CH - GAP.pair - out.box.h : CH;
     const atW = Math.abs(out.pic.w - roomW) <= EPS,
       atH = Math.abs(out.pic.h - roomH) <= EPS;

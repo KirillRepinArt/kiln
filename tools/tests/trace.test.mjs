@@ -194,7 +194,10 @@ export async function ownershipTour(k, t) {
   await k.ev(`(${tab("gallery")},1)`);
   await k.sleep(1300);
   await motion("the picture's outer edge (its inner side pinned)", [drag(".pedge.ro", -150), "0"]);
-  await motion("the divider: the prompt against the picture", [drag(".pedge.ri", 120), "0"]);
+  /* toward the prompt: the picture (made smaller by the step above) grows within its limits. Toward the picture it ran
+     past the picture's least (since B15 (a) the widest picture is a strip narrower), the pointer went on over it, and
+     on release its buttons showed — rightly, it was hovered; drags past a limit are the edges suite's */
+  await motion("the divider: the prompt against the picture", [drag(".pedge.ri", -120), "0"]);
   await motion("the prompt's outer edge past the room (the rubber band, the settle)", [drag(".pedge.po", -400), "0"]);
   await motion("the picture's top edge past its room", [drag(".hedge.t", 0, -200), "0"]);
   await motion("the prompt box's bottom edge (its text: a little give, snaps back)", [drag("#vedge", 0, 150), "0"]);

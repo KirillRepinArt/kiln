@@ -745,3 +745,55 @@ export async function boxGluedToThePlate(k, t) {
   }
 }
 boxGluedToThePlate.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* T2a (B16; the user 2026-11-03: a double-click on a panel's edge snaps): every same-page change of a box moves on the
+   rearrangement's steps — a panel's height back to its room glides over several frames, no frame jumps most of it */
+export async function panelResetMoves(k, t) {
+  await k.ev(`(setDock("left"),showView("queue"),1)`);
+  await k.mouse(4, 4);
+  await k.sleep(1200);
+  await k.ev(`(setPaneSize("queue","h",400),save(),sizeFrame(),1)`);
+  await k.sleep(1500);
+  /* by time, not frames (CI's runners drop frames — HANDOFF): shortly after the change it's still well short of its
+     goal, it only grows (never past it, never back), and it gets there */
+  const h0 = await k.ev(`Math.round(document.getElementById("rpanel").getBoundingClientRect().height)`),
+    hs = await k.ev(`new Promise(res=>{const out=[],t0=performance.now();
+      setPaneSize("queue","h",null);sizeFrame();
+      (function f(){out.push([Math.round(performance.now()-t0),Math.round(document.getElementById("rpanel").getBoundingClientRect().height)]);
+        if(performance.now()-t0<900)requestAnimationFrame(f);else res(out)})()})`),
+    end = hs[hs.length - 1][1],
+    early = hs.filter(([ms]) => ms <= 80).map(([, h]) => h),
+    back = hs.some(([, h], i) => i && (h < hs[i - 1][1] - 1 || h > end + 1));
+  t.ok(end - h0 > 200, "the panel back to its room's height", { h0, end });
+  t.ok(
+    early.every(h => h - h0 < (end - h0) * 0.7),
+    "…not at once: 80 ms in it is still well short of it",
+    { early },
+  );
+  t.ok(!back, "…only growing, never past its goal", { hs: hs.map(([, h]) => h) });
+}
+panelResetMoves.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* T2a: one plan for every box that moves in a rearrangement (DEVLOG DD-2026-11-07-6): on Reset the box narrows (a
+   crop) and the picture grows (a reveal) — the box has finished before the picture starts, the tab switch's order.
+   They glided together on --lay-t's curve before (one start, two separate motions) */
+export async function resetIsOnePlan(k, t) {
+  await k.ev(`(setDock("left"),1)`);
+  await k.job("[fill:446688] a", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.mouse(4, 4);
+  await k.ev(`(setPaneSize("box","w",900,"side"),setPaneSize("generating","s",0.6),save(),sizeFrame(),1)`);
+  await k.sleep(1800);
+  const rows = await k.ev(`new Promise(res=>{const out=[],t0=performance.now();
+      document.querySelector('#layMenu [data-lay="reset"]').click(); // Layout → Reset
+      (function f(){out.push([Math.round(document.getElementById("left").getBoundingClientRect().width),
+          Math.round(document.getElementById("frame").getBoundingClientRect().width)]);
+        if(performance.now()-t0<1000)requestAnimationFrame(f);else res(out)})()})`),
+    [b1, f1] = rows[rows.length - 1],
+    f0 = rows[0][1],
+    boxDone = rows.findIndex(r => Math.abs(r[0] - b1) <= 1),
+    picStart = rows.findIndex(r => Math.abs(r[1] - f0) > 1);
+  t.ok(b1 < 900 && f1 > f0 + 50, "Reset: the box narrows, the picture grows", { b1, f0, f1 });
+  t.ok(picStart >= boxDone - 1, "…the box has finished before the picture starts growing", { boxDone, picStart });
+}
+resetIsOnePlan.opts = { width: 1760, height: 1080, step: 0.05 };

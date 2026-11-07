@@ -97,6 +97,14 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     the drags' maths both). The edit buttons' strip is ONE column (`toolColumnW`), and a picture's least height is that
     column (`picLeastH`): the strip never depends on the picture's height. No side-by-side edge has maths of its
     own (`layDrag` is gone); Vertical's edges keep theirs until C4. The room side by side has one definition: `layout.js` `sideRoom`
+  - **a rearrangement on the same page** (a Reset, a double-click, a panel's height, a ratio change, the room changing):
+    `rearrange.js` is the ONE applier — each owner hands it its box's from → to in the same task (`framebox.js` the
+    frame, `layout.js` `layApply` the columns, `sizeFrame` a panel's box side by side); one plan
+    (`layoutmath.js` `shapePlan`: what shrinks crops first, what grows reveals last, a pure move the switch's length)
+    and one start time; every frame the writes, then the plate and the glued box. Moves are planned in the window's
+    px and written back against the columns as they are (`layout.js` `areaX`). A tab switch keeps `plate.js`
+    `switchGlide` on the same steps. The box's name row, box and grip have no width transition (the column drives it);
+    the scrollbar's thumb shows only at rest (`editor.js`, `.settling`)
   - every edge's press → move → end: `edges.js` `gesture()` (it ends however the drag ends: button up, cancel, lost
     capture); which outlines show: `outlines.js`; the outline itself is part of its pane (`.plate::before`,
     `.left::after` in `styles/layout.css`)

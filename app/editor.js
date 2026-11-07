@@ -6,6 +6,12 @@ import { layoutLeft } from "./cardlayout.js";
 import { $ } from "./dom.js";
 
 /* called from main.js, last */
+/** @type {() => void} */
+let onBoxSizing = () => {};
+/** the box's size or place is changing (cardlayout.js boxAt): its scrollbar's thumb waits until it settles (B21) */
+export function boxSizing() {
+  onBoxSizing();
+}
 export async function startEditor() {
   let cm;
   try {
@@ -256,6 +262,33 @@ export async function startEditor() {
         t = setTimeout(() => view.requestMeasure(), 120);
       }).observe(wrap);
       $("left").addEventListener("transitionend", () => view.requestMeasure());
+      /* the scrollbar's thumb is decided at rest only (B21, the user 2026-11-06: switching to a long prompt, the thumb
+         flickered while the box grew — the text overflowed the box mid-way, not at the end). ONE decider: the box's
+         height / top moving (their transitions running) hides it; the overflow at rest shows it */
+      const box = $("left"),
+        /** the box's height / top transitions running now */
+        moving = () =>
+          box
+            .getAnimations()
+            .some(
+              a =>
+                a instanceof CSSTransition &&
+                (a.transitionProperty === "height" || a.transitionProperty === "top") &&
+                a.playState === "running",
+            ),
+        settled = () => {
+          if (!moving()) wrap.classList.remove("settling");
+        };
+      /* told at the change (the same task: no frame shows the thumb); cleared when its transitions end — or at once
+         when there were none (a snap) */
+      onBoxSizing = () => {
+        wrap.classList.add("settling");
+        requestAnimationFrame(() => requestAnimationFrame(settled));
+      };
+      for (const type of ["transitionend", "transitioncancel"])
+        box.addEventListener(type, e => {
+          if (e.target === box) settled();
+        });
     }
     document.fonts && document.fonts.ready.then(() => view.requestMeasure());
     new MutationObserver(() => view.dom.classList.toggle("peek", ta.classList.contains("peek"))).observe(ta, {

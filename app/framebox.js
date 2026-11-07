@@ -9,7 +9,8 @@ import { placeAround } from "./around.js";
 import { $ } from "./dom.js";
 import { bez } from "./layoutmath.js";
 import { plateSync } from "./plate.js";
-import { promptFollow } from "./layout.js";
+import { areaX, lay, promptFollow } from "./layout.js";
+import { moving, rearrange, stop } from "./rearrange.js";
 import { S } from "./state.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number }} Box in the stage's coordinates */
@@ -19,8 +20,6 @@ import { S } from "./state.js";
 let cur = null; // where the frame is
 /** @type {Box | null} */
 let goal = null; // where the layout wants it
-/** @type {{ from: Box, t0: number, ms: number } | null} */
-let glide = null;
 /** @type {Drive | null} */
 let drive = null;
 let raf = 0;
@@ -100,26 +99,25 @@ export function frameGoal(b) {
     goal = b; // where it goes once its view has left (frameHold)
     return;
   }
-  if (goal && same(goal, b) && (glide || drive || (cur && same(cur, b)))) return;
+  if (goal && same(goal, b) && (moving("frame") || drive || (cur && same(cur, b)))) return;
   goal = b;
   if (drive) return;
-  if (!cur || snaps()) {
-    glide = null;
+  if (!cur) {
     write(b);
     return;
   }
-  if (same(cur, b)) {
-    glide = null;
-    return;
-  }
-  glide = { from: cur, t0: performance.now(), ms: layT() };
-  run();
+  /* on the rearrangement's plan and clock, with what else moves (T2a) — planned in the window's px (the area may move
+     with the box's column) and written back in the area's, against the columns as they are each frame */
+  const x0 = areaX(),
+    x1 = areaX(lay.last && { mL: lay.last.mL, pw: lay.last.pw, rw: lay.last.rw, mR: lay.last.mR }),
+    sx = (/** @type {Box} */ v, /** @type {number} */ d) => ({ ...v, l: v.l + d });
+  rearrange("frame", sx(cur, x0), sx(b, x1), w => write(sx(w, -areaX())));
 }
 /** a crop-and-reveal: `step` gives the box every frame until it returns null; then the frame is at its goal
  * @param {Drive} step */
 export function frameDrive(step) {
   drive = step;
-  glide = null;
+  stop("frame");
   cancelAnimationFrame(raf);
   tick(performance.now()); // its first box at once: the old one, before anything is painted elsewhere
 }
@@ -138,21 +136,7 @@ function tick(now) {
     }
     drive = null;
     if (goal) write(goal);
-    return;
   }
-  if (!glide || !goal) return;
-  const p = Math.min(1, (now - glide.t0) / glide.ms),
-    e = layE(p),
-    f = glide.from,
-    g = goal,
-    at = (/** @type {number} */ a, /** @type {number} */ z) => a + (z - a) * e;
-  if (p >= 1) {
-    glide = null;
-    write(g);
-    return;
-  }
-  write({ l: at(f.l, g.l), t: at(f.t, g.t), w: at(f.w, g.w), h: at(f.h, g.h) });
-  run();
 }
 /** a tab switch leaving the picture's view: the frame (and what sits round it) stays where it was on screen while the
  * view fades — the layout has already moved on to the new tab's (it jumped 261 px with the area). null: let go, to the
@@ -161,7 +145,7 @@ export function frameHold(b) {
   if (b) {
     change = null; // its view is leaving: no crop-and-reveal there
     held = true;
-    glide = null;
+    stop("frame");
     drive = null;
     write(b);
     return;

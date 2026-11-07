@@ -8,6 +8,7 @@ import { peekJob } from "./prompt.js";
 import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { SPACE } from "./tokens.js";
+import { boxSizing } from "./editor.js";
 
 /* ======================= prompt card layout =======================
    Centred on the image's vertical centre while there's room. While the editor is focused or the pointer is over
@@ -174,9 +175,8 @@ export function layoutLeft() {
     const lch = slot + TS + 2 + CH + "px",
       chg = col.style.getPropertyValue("--lch") !== lch;
     col.style.setProperty("--lch", lch);
-    col.style.setProperty("--ltop", TS + "px");
     requestAnimationFrame(vAlign);
-    col.style.setProperty("--lh", H + "px");
+    boxAt(col, TS, H);
     col.style.setProperty("--chtop", TS + H + SPACE.tight + "px");
     /* a new line (or your cap) changes its height: the box and the picture land at once, together — a line at a time,
        like a chat app's composer (the box's own height transition and the picture's glide were two clocks) */
@@ -210,8 +210,7 @@ export function layoutLeft() {
     const { top, H } = cardHeightMode(hm, colH, CH, cardMinH(), { ...anchors(), cy: card.cy });
     card.top = top;
     card.bottom = top + H + CH;
-    col.style.setProperty("--ltop", top + TS + "px");
-    col.style.setProperty("--lh", H + "px");
+    boxAt(col, top + TS, H);
     col.style.setProperty("--chtop", top + TS + H + SPACE.tight + "px");
     return;
   }
@@ -230,9 +229,19 @@ export function layoutLeft() {
   });
   card.bottom = bottom;
   card.top = top;
-  col.style.setProperty("--ltop", top + TS + "px");
-  col.style.setProperty("--lh", H + "px");
+  boxAt(col, top + TS, H);
   col.style.setProperty("--chtop", top + TS + H + SPACE.tight + "px");
+}
+/** the box's top and height (--ltop / --lh): ONE place — a change tells the editor at once, so its scrollbar's thumb
+ * waits for the box to settle from the first frame (B21: told by the transition's own event, it lagged a frame)
+ * @param {HTMLElement} col @param {number} top @param {number} H */
+function boxAt(col, top, H) {
+  const t = top + "px",
+    h = H + "px",
+    changed = col.style.getPropertyValue("--ltop") !== t || col.style.getPropertyValue("--lh") !== h;
+  col.style.setProperty("--ltop", t);
+  col.style.setProperty("--lh", h);
+  if (changed) boxSizing();
 }
 function freeze() {
   clearTimeout(card.thawTimer);

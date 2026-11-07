@@ -1,6 +1,8 @@
 /* ======================= prompt column: the name row =======================
    The title over the box (theme title font), the file name round it on hover, the Reuse bar when you look at an old
    picture. layoutLeft() sets --ltop / --ts / --lh / --chtop. */
+/* the name row, the box and the grip zone take their width from the column (--cw): no width transition of their own —
+   the column is written every frame of a rearrangement (layout.js colsWrite, rearrange.js: one clock, T2a) */
 .ltitle {
   position: absolute;
   right: 0;
@@ -16,7 +18,6 @@
   transition:
     top var(--lay-t) var(--lay-e),
     height var(--lay-t) var(--lay-e),
-    width var(--lay-t) var(--lay-e),
     transform var(--lay-t) var(--lay-e);
 }
 .phead {
@@ -265,7 +266,6 @@
   transition:
     top var(--lay-t) var(--lay-e),
     height var(--lay-t) var(--lay-e),
-    width var(--lay-t) var(--lay-e),
     transform var(--lay-t) var(--lay-e);
 }
 .left.nodur,
@@ -300,8 +300,7 @@
   cursor: grab;
   transition:
     top var(--lay-t) var(--lay-e),
-    height var(--lay-t) var(--lay-e),
-    width var(--lay-t) var(--lay-e);
+    height var(--lay-t) var(--lay-e);
 }
 .app.stacked .pgrip {
   right: auto;
@@ -432,6 +431,9 @@ textarea#prompt.peek {
 .pwrapT.ovf .cm-scroller {
   scrollbar-gutter: stable;
 }
+.pwrapT.settling .cm-scroller::-webkit-scrollbar-thumb {
+  background: transparent;
+} /* while the box's size is still moving the thumb isn't shown: only the final overflow decides it (B21, editor.js) */
 .pwrapT .cm-scroller::-webkit-scrollbar-track {
   margin: var(--space-8) 0 var(--space-3);
 } /* starts just under the ✕ (which ends where the text starts, 28 px) */

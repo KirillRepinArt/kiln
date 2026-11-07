@@ -12,6 +12,7 @@ import {
   fades,
   MORPH,
   shapeSteps,
+  shapePlan,
   shapeBox,
   upgradeLayoutPrefs,
   promptSlotH,
@@ -446,4 +447,29 @@ test("model: saved layouts v3 → v4 — every old size lands on its pane, each 
     { w: null, h: null },
     "nothing saved: defaults",
   );
+});
+
+test("shapePlan: boxes changing together share one plan — what shrinks finishes before anything grows (T2)", () => {
+  /* the box narrows (a crop), the picture widens (a reveal): the box is done by the swap, the picture starts after it */
+  const box = { o: { l: 0, t: 0, w: 900, h: 200 }, n: { l: 0, t: 0, w: 680, h: 200 } },
+    pic = { o: { l: 920, t: 0, w: 500, h: 600 }, n: { l: 700, t: 0, w: 700, h: 840 } },
+    p = shapePlan([box, pic]);
+  assert.equal(p.A, MORPH.a);
+  assert.equal(p.B, MORPH.b);
+  assert.equal(p.q(0, p.A)[0], 1, "the box has finished narrowing at the swap");
+  assert.equal(p.q(1, p.A)[0], 0, "…and the picture hasn't started growing");
+  assert.equal(p.q(1, p.T)[0], 1, "the picture is there at the end");
+  /* one box alone is the old shapeSteps: a tab switch's steps unchanged */
+  const one = shapeSteps(pic.o, pic.n);
+  assert.equal(one.T, MORPH.one + MORPH.s, "a lone reveal");
+});
+
+test("shapePlan: a pure move takes the switch's full length, eased at both ends (DD-2026-11-07-6)", () => {
+  const p = shapePlan([{ o: { l: 0, t: 0, w: 400, h: 300 }, n: { l: 900, t: 0, w: 400, h: 300 } }]);
+  assert.equal(p.T, MORPH.a + MORPH.s + MORPH.b);
+  assert.equal(p.q(0, 0)[0], 0);
+  assert.equal(p.q(0, p.T)[0], 1);
+  assert.ok(p.q(0, p.T / 2)[0] > 0.3 && p.q(0, p.T / 2)[0] < 0.9, "…moving through the middle");
+  /* nothing changes at all: the cross-fade, as before */
+  assert.equal(shapePlan([{ o: { l: 0, t: 0, w: 4, h: 3 }, n: { l: 0, t: 0, w: 4, h: 3 } }]).T, MORPH.alone);
 });

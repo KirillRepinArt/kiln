@@ -322,31 +322,54 @@ export const MORPH = {
 const eIn = bez(0.3, 0, 0.8, 0.15),
   eOut = bez(0.05, 0.7, 0.1, 1),
   eBoth = bez(0.2, 0, 0, 1);
+/** @typedef {{ w: number, h: number, l?: number, t?: number }} ShapeBox a box's size, and its place when it has one */
 /**
- * The steps of a shape change from size o to size n: the crop (0 → A), the swap (A → A + S), the reveal (→ T), and per
- * axis how far along it is at e ms (0 → 1).
- * @param {{ w: number, h: number }} o @param {{ w: number, h: number }} n
+ * ONE plan for boxes changing together — a rearrangement (v0.7c T2, ux-review/17-t2-motion.md): the crop (0 → A) if
+ * ANY box shrinks on any axis, the swap (A → A + S), the reveal (→ T) if any grows — so what shrinks finishes before
+ * anything grows, across the boxes (the box narrows, then the picture widens), on one clock. Per box and axis: a shrinking
+ * axis moves in the crop, a growing one in the reveal, one that only moves its place over the whole plan. Nothing
+ * changing size but something moving (a pure move): the switch's full length, eased at both ends — a fixed time per kind
+ * of motion, not per pixel (iOS's springs, Material's emphasized ~500 ms; the user's pick, DEVLOG DD-2026-11-07-6).
+ * @param {{ o: ShapeBox, n: ShapeBox }[]} pairs
  */
-export function shapeSteps(o, n) {
-  const shrink = [n.w < o.w - 0.5, n.h < o.h - 0.5],
-    grow = [n.w > o.w + 0.5, n.h > o.h + 0.5],
-    crop = shrink[0] || shrink[1],
-    reveal = grow[0] || grow[1],
+export function shapePlan(pairs) {
+  const ch = pairs.map(({ o, n }) => {
+      const placed = o.l != null && n.l != null && o.t != null && n.t != null,
+        c = (/** @type {ShapeBox} */ b) => [(b.l ?? 0) + b.w / 2, (b.t ?? 0) + b.h / 2];
+      return {
+        shrink: [n.w < o.w - 0.5, n.h < o.h - 0.5],
+        grow: [n.w > o.w + 0.5, n.h > o.h + 0.5],
+        move: placed ? [Math.abs(c(n)[0] - c(o)[0]) > 0.5, Math.abs(c(n)[1] - c(o)[1]) > 0.5] : [false, false],
+      };
+    }),
+    crop = ch.some(c => c.shrink[0] || c.shrink[1]),
+    reveal = ch.some(c => c.grow[0] || c.grow[1]),
+    travel = !crop && !reveal && ch.some(c => c.move[0] || c.move[1]),
     A = crop ? (reveal ? MORPH.a : MORPH.one) : 0,
-    S = crop || reveal ? MORPH.s : MORPH.alone,
+    S = travel ? 0 : crop || reveal ? MORPH.s : MORPH.alone,
     B = reveal ? (crop ? MORPH.b : MORPH.one) : 0,
-    T = A + S + B,
+    T = travel ? MORPH.a + MORPH.s + MORPH.b : A + S + B,
     eA = reveal ? eIn : eBoth,
     eB = crop ? eOut : eBoth;
-  /** per axis [x, y], how far along at e ms @param {number} e @returns {[number, number]} */
-  const q = e => {
+  /** box i's progress per axis [x, y] at e ms (0 → 1) @param {number} i @param {number} e @returns {[number, number]} */
+  const q = (i, e) => {
     const pA = A ? eA(Math.min(1, e / A)) : 1,
       pB = B ? eB(Math.min(1, Math.max(0, e - A - S) / B)) : 1,
       pAll = eBoth(Math.min(1, e / T)),
-      at = (/** @type {number} */ i) => (shrink[i] ? pA : grow[i] ? pB : pAll);
+      c = ch[i],
+      at = (/** @type {number} */ k) => (c.shrink[k] ? pA : c.grow[k] ? pB : pAll);
     return [at(0), at(1)];
   };
   return { A, S, B, T, q };
+}
+/**
+ * The steps of a shape change from box o to box n: the crop (0 → A), the swap (A → A + S), the reveal (→ T), and per
+ * axis how far along it is at e ms (0 → 1) — the one-box plan (shapePlan).
+ * @param {ShapeBox} o @param {ShapeBox} n
+ */
+export function shapeSteps(o, n) {
+  const p = shapePlan([{ o, n }]);
+  return { A: p.A, S: p.S, B: p.B, T: p.T, q: (/** @type {number} */ e) => p.q(0, e) };
 }
 /**
  * ONE fade for contents, everywhere (2026-10-31, the user: "one fade speed everywhere") — a view's contents in a tab

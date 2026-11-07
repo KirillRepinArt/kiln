@@ -119,7 +119,10 @@ export async function finishOnOneClock(k, t) {
       .filter(Boolean)
       .concat([`ops: ${s.map(x => x.op.toFixed(2)).join(" ")}`]),
   );
-  t.motion(grow >= 0 && fade >= 0 && Math.abs(grow - fade) <= 1, "one clock: the box and the row start together", {
+  /* one plan (T2a, DEVLOG DD-2026-11-07-6): the row is contents that don't travel, so it leaves on the plan's fade,
+     ending at the swap; the picture grows into its room in the reveal, after it — the tab switch's order. (It was "start
+     together" while both glided on --lay-t: the row's fade was a clock of its own) */
+  t.motion(grow >= 0 && fade >= 0 && fade <= grow + 1, "one plan: the row starts leaving before the picture grows", {
     grow,
     fade,
   });

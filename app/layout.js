@@ -2,7 +2,8 @@
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
 import { SWITCH, plateFollow } from "./plate.js";
 import { placeAround } from "./around.js";
-import { frameBox, frameGoal, layE, layT, snaps } from "./framebox.js";
+import { movingTo, rearrange, rearrangeFade } from "./rearrange.js";
+import { frameBox, frameGoal, layT } from "./framebox.js";
 import { syncH } from "./boot.js";
 import { applyMode, applyPH, layoutLeft, lyReset, slotLeast, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
@@ -37,25 +38,12 @@ import { SPACE, pairGap } from "./tokens.js";
 /* the status block under the picture: the part gap + track 10 + 7 + status row 36 (a caption: 6 + row 36 + 4;
    nothing: 24) */
 export const BAR = () => SPACE.part + 10 + 7 + 36;
-/* the status row coming or going inside the picture's view: on the frame's clock — the same length and curve as the
-   frame's glide into (or out of) the room, started with it. ONE place (tabs.js faded it on its own for a switch) */
+/* the status row coming or going inside the picture's view: contents that don't travel, so it fades on the
+   rearrangement's plan with the frame (rearrange.js: one start time; it leaves by the swap, the picture grows into its
+   room after it — the tab switch's order). ONE place (tabs.js faded it on its own for a switch) */
 /** @param {boolean} on */
 function rowFade(on) {
-  const b = document.body.classList,
-    jump = b.contains("laysnap") || b.contains("liveresize") || b.contains("laydrag"),
-    cs = getComputedStyle(document.documentElement),
-    a = $("prog").animate(
-      [
-        { opacity: on ? 0 : 1, visibility: "visible" },
-        { opacity: on ? 1 : 0, visibility: "visible" },
-      ],
-      {
-        duration: jump ? 150 : layT(),
-        easing: jump ? "linear" : cs.getPropertyValue("--lay-e").trim() || "ease",
-        fill: "backwards", // its first keyframe holds until the clock's start (now): the row was hidden for a frame
-      },
-    );
-  a.startTime = performance.now();
+  rearrangeFade($("prog"), on); // on the rearrangement's plan: it leaves before the picture grows into its room (T2a)
 }
 /* the page on show, for its insets (layoutmath.js PAGES) */
 function page() {
@@ -415,9 +403,6 @@ export function layGeo() {
    out. Now one glide writes them every frame on the frame's curve and time, and says where they are (lay.shown) to
    what follows them, in the same frame */
 /** @typedef {{ mL: number, pw: number, rw: number, mR: number }} Cols */
-/** @type {{ from: Cols, to: Cols, t0: number, ms: number } | null} */
-let colsGlide = null;
-let colsRaf = 0;
 /** @param {Cols} c */
 function colsWrite(c) {
   const st = /** @type {HTMLElement} */ (document.querySelector(".app")).style,
@@ -429,17 +414,15 @@ function colsWrite(c) {
   st.setProperty("--cw", px(c.pw));
   lay.shown = c;
 }
-function colsTick() {
-  colsRaf = 0;
-  if (!colsGlide) return;
-  const G = colsGlide,
-    p = Math.min(1, (performance.now() - G.t0) / G.ms),
-    e = layE(p),
-    at = (/** @type {keyof Cols} */ k) => G.from[k] + (G.to[k] - G.from[k]) * e;
-  colsWrite(p >= 1 ? G.to : { mL: at("mL"), pw: at("pw"), rw: at("rw"), mR: at("mR") });
-  if (p >= 1) colsGlide = null;
-  else colsRaf = requestAnimationFrame(colsTick);
-  promptFollow(true); // the prompt follows the picture where the columns are now
+/** where the area (the page's column) starts in the window, for these columns (the ones on screen now, or a target)
+ * — a rearrangement plans every box in the window's px and writes it back in the area's (C2b / T2a: the area moves
+ * while the box's column changes width, and a picture planned in the area's px drifted with it)
+ * @param {Cols | null} [c] */
+export function areaX(c = lay.shown) {
+  const k = c || lay.last;
+  if (!k) return SPACE.area;
+  const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright");
+  return SPACE.area + k.mL + (R ? 0 : k.pw + pairGap());
 }
 /** @param {Geometry} g */
 function layApply(g) {
@@ -447,19 +430,16 @@ function layApply(g) {
     mR = Math.max(0, g.W - pairGap() - g.pw - g.rw - mL),
     to = { mL, pw: g.pw, rw: g.rw, mR };
   lay.last = Object.assign({}, g, { mL, mR, off: 0 });
-  const was = colsGlide ? colsGlide.to : lay.shown,
-    same = (/** @type {Cols | null} */ c) =>
-      !!c && c.mL === to.mL && c.pw === to.pw && c.rw === to.rw && c.mR === to.mR;
-  if (same(was)) return;
-  if (!lay.shown || snaps() || document.querySelector(".app.stacked")) {
-    colsGlide = null;
-    cancelAnimationFrame(colsRaf);
-    colsRaf = 0;
-    colsWrite(to);
-    return;
-  } /* Vertical: the columns aren't used (one column) — written at once */
-  colsGlide = { from: Object.assign({}, lay.shown), to, t0: performance.now(), ms: layT() };
-  if (!colsRaf) colsRaf = requestAnimationFrame(colsTick);
+  /* the columns as a box on the x axis: the box's column (its place, its width); the area takes the rest */
+  const box = (/** @type {Cols} */ c) => ({ l: c.mL, t: 0, w: c.pw, h: 0 }),
+    cols = (/** @type {{ l: number, w: number }} */ b) => ({ mL: b.l, pw: b.w, mR, rw: mL + g.pw + g.rw - b.l - b.w }),
+    going = movingTo("cols"),
+    was = going ? cols(going) : lay.shown;
+  if (was && was.mL === to.mL && was.pw === to.pw && was.rw === to.rw && was.mR === to.mR) return;
+  if (!lay.shown || document.querySelector(".app.stacked")) return colsWrite(to); // Vertical: one column, at once
+  /* on the rearrangement's plan and clock, with the frame or the panel (T2a); written first in each frame, so what
+     sits in the area is placed against the columns as they are */
+  rearrange("cols", box(lay.shown), box(to), b => colsWrite(cols(b)));
 }
 /* what to apply now. Holds last only while you're doing something, and the layout adjusts the moment you finish:
    flipping with the arrows on the picture holds it (so "next" stays under the cursor) until ~1 s after the last flip;
@@ -671,6 +651,27 @@ export function stageRect() {
   const m = new DOMMatrix(t);
   return new DOMRect(r.left - m.e, r.top - m.f, r.width, r.height);
 }
+/** a panel's box side by side, where it is now (the window's px); null: not a panel side by side
+ * @type {{ l: number, t: number, w: number, h: number } | null} */
+let panelAt = null;
+/** @param {string} h @param {string} mt @param {string} w @param {string} ml */
+function panelStyle(h, mt, w, ml) {
+  const rp = $("rpanel"),
+    rt = $("right");
+  if (rp.style.height !== h) rp.style.height = h;
+  if (rp.style.marginTop !== mt) rp.style.marginTop = mt;
+  if (rp.style.width !== w) rp.style.width = w;
+  if (rp.style.marginLeft !== ml) rp.style.marginLeft = ml;
+  rt.style.setProperty("--pt", rp.offsetTop + "px"); // where its top / bottom handles go
+  rt.style.setProperty("--pb", rp.offsetTop + rp.offsetHeight + "px");
+}
+/** the panel's box side by side, from the window's px @param {{ l: number, t: number, w: number, h: number }} b
+ * @param {number} roomTop where its room starts in the window */
+function panelWrite(b, roomTop) {
+  panelAt = b;
+  const r = (/** @type {number} */ v) => Math.round(v) + "px";
+  panelStyle(r(b.h), b.t - roomTop ? r(b.t - roomTop) : "", r(b.w), r(b.l - areaX()));
+}
 export function sizeFrame() {
   if (lay.frameDefer) {
     lay.framePending = true;
@@ -742,23 +743,21 @@ export function sizeFrame() {
           )
         : null,
       top = panel && H != null ? Math.round(sp ? sp.page.y - sp.roomTop : (lay.ptop ?? 0)) : 0,
-      h = H != null ? H + "px" : stk ? lay.vroom + "px" : "",
-      mt = top ? top + "px" : "";
-    if (rp.style.height !== h) rp.style.height = h;
-    if (rp.style.marginTop !== mt) rp.style.marginTop = mt;
-    /* across: side by side a panel is the pass's width at the pass's place in the still area (its columns' target, not
-       a measurement: they may be mid-glide); a picture page's panel box is the whole area; Vertical: the column's */
-    const g = /** @type {Geometry | null} */ (lay.last),
-      areaL = g ? SPACE.area + g.mL + (app.classList.contains("pright") ? 0 : g.pw + pairGap()) : 0,
-      pw = sp && g ? Math.round(sp.page.w) + "px" : "",
-      ml = sp && g ? Math.round(sp.page.x - areaL) + "px" : "";
-    if (rp.style.width !== pw) rp.style.width = pw;
-    if (rp.style.marginLeft !== ml) rp.style.marginLeft = ml;
-    const fx = H != null && !stk ? "none" : ""; // side by side it grows to the room (flex: 1) unless it has a height
+      fx = H != null && !stk ? "none" : ""; // side by side it grows to the room (flex: 1) unless it has a height
     if (rp.style.flex !== fx) rp.style.flex = fx;
-    rt.style.setProperty("--pt", rp.offsetTop + "px");
-    rt.style.setProperty("--pb", rp.offsetTop + rp.offsetHeight + "px");
     lay.proom = room;
+    if (sp) {
+      /* side by side a panel is the pass's box, in the window's px: it moves there on the rearrangement's plan and clock
+         (B16: a double-click or a Reset snapped it), written back in the area's px against the columns as they are */
+      const to = { l: sp.page.x, t: sp.page.y, w: sp.page.w, h: sp.page.h },
+        roomTop = sp.roomTop;
+      if (panelAt) rearrange("panel", panelAt, to, b => panelWrite(b, roomTop));
+      else panelWrite(to, roomTop);
+    } else {
+      /* a picture page (the whole area) or Vertical: at once */
+      panelAt = null;
+      panelStyle(H != null ? H + "px" : stk ? lay.vroom + "px" : "", top ? top + "px" : "", "", "");
+    }
   }
   /* the target geometry, not a measurement: the grid may be mid-glide */
   const st = stageRect(),

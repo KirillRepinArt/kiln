@@ -81,7 +81,12 @@ function barFor(tb, pr) {
     left = kids[0].getBoundingClientRect().left - barX,
     right = kids[kids.length - 1].getBoundingClientRect().right - barX,
     bottom = r.bottom - barY,
-    x = (pr.left + pr.right) / 2 - (left + right) / 2;
+    /* centred over the plate, inside the window (Q1: A — the layout pass's bar rule): over a small picture at the
+       window's side it ran off the window and the Layout button couldn't be pressed (ROADMAP v0.7c (p)) */
+    x = Math.min(
+      innerWidth - SPACE.area - right,
+      Math.max(SPACE.area - left, (pr.left + pr.right) / 2 - (left + right) / 2),
+    );
   return { x: Math.round(x), y: Math.round(Math.max(0, pr.top - SPACE.part - bottom)) };
 }
 /** @param {HTMLElement} tb @param {number} x @param {number} y */

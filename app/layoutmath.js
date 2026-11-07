@@ -62,17 +62,22 @@ export function pageInsets(page, s) {
   return { row, tools: !row && s.shown };
 }
 
+/** the edit buttons beside the picture (state.js sideButtons builds them; a unit test keeps the two counts the same) */
+export const EDIT_TOOLS = 6;
 /**
- * The edit buttons' column beside the picture: 40 px buttons, 6 px apart and from the picture, in as many columns as
- * the picture's height needs (none is ever cut off).
- * @param {number} h the picture's height
- * @param {number} n how many buttons
+ * The edit buttons' column beside the picture: 40 px buttons, `tight` apart and from the picture — ONE column, always.
+ * A picture is never shorter than the column (picLeastH), so the strip's width never depends on the picture's height:
+ * when it wrapped into a second column on a short picture, the strip's room grew as the picture shrank, and a drag and
+ * the rest disagreed by 48–76 px (DEVLOG DD-2026-11-07-2: a size may not depend on what depends on it — CSS's
+ * min-content, Auto Layout's compression resistance).
  */
-export function toolColumnW(h, n) {
-  const t = SPACE.tight,
-    per = Math.max(1, Math.floor((Math.max(h, 40) + t) / (40 + t))),
-    cols = Math.ceil(n / per);
-  return t + cols * (40 + t);
+export function toolColumnW() {
+  return SPACE.tight + 40 + SPACE.tight;
+}
+/** a picture's least height: its edit buttons' column (one column of EDIT_TOOLS) — the content's minimum, read from the
+ * gap token each time (initTokens may change it) */
+export function picLeastH() {
+  return EDIT_TOOLS * 40 + (EDIT_TOOLS - 1) * SPACE.tight;
 }
 
 /**
@@ -399,7 +404,6 @@ export const PAGE_IDS = /** @type {const} */ (["generating", "gallery", "queue",
 /** a picture page fits its picture inside its size (a cap); a panel fills its size @param {string} id */
 export const isFitPage = id => id === "generating" || id === "gallery";
 export const BOXHMIN = 240, // the prompt box's least height side by side (you set it with its edges)
-  PICHMIN = 200, // a picture's least height
   PANELHMIN = 240, // a panel's least height
   QUEUEMAX = 900, // the Queue's widest: past it, lines get too long to read
   SLOTMAX = 0.7; // Vertical: the prompt box's tallest, a share of the window
@@ -457,7 +461,7 @@ export function limits(pane, axis, c) {
     if (axis === "w") return r(PWMIN, W); // no cap of its own (it was 900 px side by side): the room's ends
     return c.orient === "side" ? r(BOXHMIN, H) : r(c.least ?? BOXHMIN, Math.round((c.winH ?? H) * SLOTMAX));
   }
-  if (axis === "h") return r(isFitPage(pane) ? PICHMIN : PANELHMIN, H);
+  if (axis === "h") return r(isFitPage(pane) ? picLeastH() : PANELHMIN, H);
   if (pane === "queue") return r(c.minR, Math.min(QUEUEMAX, W));
   if (pane === "png") {
     const fixed = Math.max(c.minR, paneDefault(pane, c.orient, { w: W, h: H }).w ?? c.minR);
@@ -739,9 +743,12 @@ function dragSizes(s, z) {
     const right = s.dock === "right",
       cx = L + RW / 2, // the group is centred: its middle stays (a drag of an outer edge mirrors on the far side)
       gw = z.bw + gap.pair + pageW(z.pw), // the group's width at rest
-      x0 = L + (RW - gw) / 2,
-      /* the widest the page may be: the box gives way down to its least (the other pane, rule 3) */
+      x0 = groupX(s, z.bw, z.pw), // where the group starts at rest: the same placement the rectangles use
+      /* the widest the page may be by the shared edge: the box gives way down to its least (the trade) */
       pageWHi = Math.min(pageHi.w, RW - gap.pair - s.box.wLo - stripRoom(s), pic ? CH * ratio : Infinity),
+      /* by its own outer edges: beside the box as it is — an outer edge takes no room from the other pane, only the
+         shared edge trades (the user, DEVLOG DD-2026-11-07-1) */
+      pageOwnHi = Math.min(pageHi.w, RW - gap.pair - z.bw - stripRoom(s), pic ? CH * ratio : Infinity),
       boxWHi = RW - gap.pair - pageLo.w - stripRoom(s);
     if (d.edge === "shared") {
       /* the shared edge trades: the group's width holds, the edge at the pointer (mid-gap) */
@@ -772,21 +779,14 @@ function dragSizes(s, z) {
       /* the page's outer edge (on the picture's side, not its strip): the same, for the page */
       const half = side === "left" ? cx - d.at : d.at - cx,
         wWant = 2 * half - gap.pair - z.bw; // the pair you see is centred (its strip hangs into the margin)
-      setPageW(wWant, Math.min(pageWHi, RW - gap.pair - z.bw - stripRoom(s)));
-      if (pic && out.keptPw > RW - gap.pair - z.bw - stripRoom(s))
-        out.keptBw = Math.max(s.box.wLo, RW - gap.pair - stripRoom(s) - out.keptPw);
+      setPageW(wWant, pageOwnHi);
     } else if (who === "page" && (side === "top" || side === "bottom")) {
       /* the page's top / bottom: centred in the room's height, the opposite side mirrors */
       const cy = T + CH / 2,
         hWant = 2 * (side === "top" ? cy - d.at : d.at - cy),
-        /* a picture's height is also bound by the width it may take: the box gives way to its least */
-        hHi = Math.min(pageHi.h, CH, pic ? pageWHi / ratio : Infinity);
+        /* a picture's height is also bound by the width it may take beside the box as it is (an outer edge: DD-07-1) */
+        hHi = Math.min(pageHi.h, CH, pic ? pageOwnHi / ratio : Infinity);
       setPageH(hWant, hHi);
-      if (pic) {
-        const room = RW - gap.pair - stripRoom(s) - out.keptPw;
-        if (room < z.bw) out.keptBw = Math.max(s.box.wLo, room);
-        out.bw = Math.max(s.box.wLo, Math.min(z.bw, RW - gap.pair - stripRoom(s) - out.pw));
-      }
     } else if (who === "box" && (side === "top" || side === "bottom")) {
       out.boxGive = boxGive(s, side, d.at); // the box's height is its text's: nothing to set, the edge only gives
     }
@@ -834,6 +834,24 @@ function boxGive(s, side, at) {
 }
 
 /**
+ * Side by side, where the group (the box, the gap, the page's pane) starts: the pair you see — the box and the picture —
+ * is centred; the buttons' strip hangs into the margin beside the picture and takes room only where there is none (a
+ * picture at its widest): the group moves in by what's missing (DD-2026-11-03-7). ONE definition: the rectangles and a
+ * drag's maths both use it (a drag that centred the group with its strip put the shared edge 26 px off its handle).
+ * @param {PassState} s @param {number} bw the box's width @param {number} pw the picture's (a panel's) width
+ */
+function groupX(s, bw, pw) {
+  const { L, RW } = roomOf(s),
+    pic = s.page.kind === "pic",
+    strip = pic ? s.strip : 0;
+  if (!pic) return L + (RW - (bw + s.gap.pair + pw)) / 2;
+  const seen = bw + s.gap.pair + pw,
+    c0 = L + (RW - seen) / 2,
+    short = Math.max(0, strip - (RW - seen) / 2);
+  return s.dock === "right" ? c0 - strip + short : c0 - short;
+}
+
+/**
  * Every rectangle on the layout.
  * @param {PassState} s
  * @returns {PassOut}
@@ -862,11 +880,11 @@ export function layoutPass(s) {
     /* the pair you see — the box and the picture — is centred; the buttons' strip hangs into the margin beside the
        picture and takes room only where there is none (a picture at its widest): the group moves in by what's missing */
     const pageW = z.pw + (pic ? strip : 0),
-      seen = z.bw + gap.pair + z.pw,
       right = s.dock === "right",
-      c0 = L + (RW - seen) / 2,
-      short = pic ? Math.max(0, strip - (RW - seen) / 2) : 0,
-      x0 = pic ? (right ? c0 - strip + short : c0 - short) : L + (RW - (z.bw + gap.pair + pageW)) / 2,
+      /* placed by what's kept (DD-7's strip rule acts on real sizes), the rubber band's stretch shared by both sides
+         about that centre — the mirror (DD-6). Placed by the stretched sizes, the stretch went into the strip's room
+         at a picture's widest: the grabbed edge stood still and the far side moved */
+      x0 = groupX(s, z.keptBw, z.keptPw) - (z.bw + z.pw - z.keptBw - z.keptPw) / 2,
       px = right ? x0 : x0 + z.bw + gap.pair,
       py = z.pageY ?? T + (CH - z.ph) / 2;
     page = { x: px, y: py, w: pageW, h: z.ph };

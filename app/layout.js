@@ -9,12 +9,10 @@ import { $ } from "./dom.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
-  PICHMIN,
   PWMIN,
   layoutPass,
   limits,
   paneDefault,
-  PIC_OVER,
   RUBBER,
   arrange,
   bez,
@@ -26,6 +24,7 @@ import {
   pageGeometry,
   pageInsets,
   stackColumnW,
+  picLeastH,
   toolColumnW,
   upgradeLayoutPrefs,
 } from "./layoutmath.js";
@@ -95,11 +94,9 @@ export const insetsKey = () => {
    fill it. Edges (composer.js): the divider between them trades width (the prompt stops at its minimum); an outer edge
    follows the cursor, and on release the pair glides back to centre — the same rule as resizing the window.
    (Design agreed 2026-10-18 after the first try left a growing gap in the middle.) */
-/* the edit buttons' column beside the picture: 40 px buttons, 6 px apart and from the picture. Room is kept for as many
-   columns as the picture's height needs, so none is ever cut off (the panel clips anything outside the area) */
-/** @param {number} h the picture's height */
-export function tbW(h) {
-  return toolColumnW(h, document.querySelectorAll("#sideGen button").length || 6);
+/* the edit buttons' column beside the picture: one column, always (layoutmath.js toolColumnW, picLeastH) */
+export function tbW() {
+  return toolColumnW();
 }
 /* Two remembered widths for the right side: rw = the panel width of Queue / LoRAs / PNG Info (the same for every
    picture); iw = in Generating, the largest the picture may be (null = no cap). In Generating the image area HUGS the
@@ -215,6 +212,7 @@ export const lay = {
   framePending: false,
   frameHold: false,
   pass: null,
+  pdrag: null,
   row: null,
   rowView: null,
   ins: "",
@@ -286,12 +284,12 @@ function picH(noRow = false) {
   const full = picFull(noRow);
   if (lay.vh) return lay.vh; // held: the edge's size, past the room too (the rubber band; it settles on release)
   const cap = S.view === "gen" ? paneSize().h : null;
-  return cap ? Math.max(PICHMIN, Math.min(full, cap)) : full;
+  return cap ? Math.max(picLeastH(), Math.min(full, cap)) : full;
 }
 /* the clearance the edit buttons need beyond the window's own margin (they hang outside the plate, never room in the
    area — kept whether they show or not, so nothing moves when they come) */
-function toolsClear(/** @type {number} */ h) {
-  return Math.max(0, tbW(h) - SPACE.area);
+function toolsClear() {
+  return Math.max(0, tbW() - SPACE.area);
 }
 /** @typedef {import("./layoutmath.js").Rect} Rect */
 /** the single layout pass for a picture page side by side (v0.7c C2a, ux-review/16-layout-pass.md): the numbers — the
@@ -300,7 +298,10 @@ function toolsClear(/** @type {number} */ h) {
  * The tab bar is no least width any more (it overhangs a narrow picture). Until the drags move to the pass (C3), a cap
  * a drag leaves in px is read as the scale it gives this picture. */
 function sidePass() {
-  const j = onShow() || current(),
+  const barH = /** @type {HTMLElement} */ (document.querySelector(".tabs")).offsetHeight,
+    barGap = Math.max(0, stageRect().top - SPACE.area - barH),
+    dr = lay.pdrag, // an edge held: the pass computes from the sizes at its press and the pointer (C3)
+    j = onShow() || current(),
     [a, b] = (j ? j.ar : S.ar).split(":").map(Number),
     ratio = a / b,
     room = picFull(),
@@ -314,18 +315,20 @@ function sidePass() {
           ? "right"
           : "left",
         page: { kind: "pic", ratio, scale },
-        box: { w: paneSize("box", "side").w ?? df.pw, wLo: PWMIN, text: 0, least: 0 },
-        bar: { w: tabsW(), h: 0 },
+        box: { w: dr ? dr.boxW : (paneSize("box", "side").w ?? df.pw), wLo: PWMIN, text: 0, least: 0 },
+        /* the bar's row as it is on screen (the stage's top): the pass's numbers are the window's, on both axes */
+        bar: { w: tabsW(), h: barH },
         strip,
-        gap: { area: SPACE.area, pair: pairGap(), bar: 0 },
-        picLeast: PICHMIN,
+        gap: { area: SPACE.area, pair: pairGap(), bar: barGap },
+        picLeast: picLeastH(),
         roomH: room,
+        drag: dr ? { edge: dr.edge, at: dr.at } : null,
       });
   /** @type {number | undefined} */
-  let scale = p.s ?? undefined;
-  if (p.w || p.h) {
+  let scale = dr ? dr.scale : (p.s ?? undefined);
+  if (!dr && (p.w || p.h)) {
     /* a px cap is what a drag just left (newer than the scale): it wins */
-    const big = run(tbW(room), undefined).largest; // a px cap (an edge, until C3): the share of this picture's largest
+    const big = run(tbW(), undefined).largest; // a px cap (an edge, until C3): the share of this picture's largest
     scale = Math.min(1, (p.w ?? Infinity) / big.w, (p.h ?? Infinity) / big.h);
     /* released (nothing held): the cap becomes this picture's scale, once — kept in px it limited the next picture
        by the first one's ratio (a 16:9's height made a 3:4 small, 2026-11-03). ONE stored size: the scale */
@@ -336,29 +339,9 @@ function sidePass() {
       save(); // the drag's end saved the px; the scale is what's kept
     }
   }
-  /* the strip's width follows the picture's height (its buttons wrap into a second column on a short picture) */
-  let out = run(tbW(room), scale);
-  const strip = tbW(/** @type {Rect} */ (out.pic).h);
-  if (strip !== tbW(room)) out = run(strip, scale);
-  return { out, strip };
-}
-/** the pass's pair as columns that hug it (the picture's area = the picture and its strip): where a side drag starts
- * from until C3 moves the drags into the pass — built from the pass's numbers, never measured
- * @param {import("./types.js").Geometry} g the geometry at rest */
-export function passGeo(g) {
-  const p = lay.pass;
-  if (!p) return g;
-  const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
-    first = R ? p.page : p.box,
-    last = R ? p.box : p.page;
-  return {
-    ...g,
-    pw: p.box.w,
-    rw: p.page.w,
-    mL: first.x - SPACE.area,
-    mR: g.W - (last.x + last.w - SPACE.area),
-    off: 0,
-  };
+  /* the strip: one column, never the picture's height's (picLeastH; DD-2026-11-07-2) — one run */
+  const strip = tbW();
+  return { out: run(strip, scale), strip };
 }
 export function layGeo() {
   const W = layW();
@@ -378,7 +361,15 @@ export function layGeo() {
      and the tab bar wobbled (the ownership tour's reversals, insets › stageStaysPutPromptHugs) */
   if (gen && !document.querySelector(".app.stacked")) {
     const { out, strip } = sidePass();
-    lay.pass = { pic: /** @type {Rect} */ (out.pic), page: out.page, box: out.box, strip, largest: out.largest };
+    lay.pass = {
+      pic: /** @type {Rect} */ (out.pic),
+      page: out.page,
+      box: out.box,
+      strip,
+      largest: out.largest,
+      kept: out.kept,
+      handles: out.handles,
+    };
     return { pw: out.box.w, rw: W - pairGap() - out.box.w, mL: 0, mR: 0, W, minR, off: 0, gen, clear: 0 };
   }
   lay.pass = null;
@@ -389,7 +380,7 @@ export function layGeo() {
       W,
       gen,
       minR,
-      clear: gen ? toolsClear(picH()) : 0,
+      clear: gen ? toolsClear() : 0,
       promptRight: /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
     },
     L,
@@ -478,34 +469,23 @@ function layNow() {
   }
   return g;
 }
-/* an edge drag, in px from where it started (v0.7c, docs/decisions/0013): ONE rule for every edge and both sides.
-   dv = the divider: one panel grows exactly as much as the other shrinks, nothing outside the pair moves. po / ro = an
-   outer edge: only that panel changes, its other side PINNED where it was (the pair's place comes from layoutmath.js
-   arrange with the pin), so the edge stays under the cursor; it can go until the pair meets the room's end (the
-   window less its area gap; the edit buttons' clearance beside the picture). layRelease() drops the pin: the pair
-   settles back to its resting place. Your sizes are written through setPaneSize (the picture page: its width cap). */
-/** @param {"dv" | "po" | "ro"} edge @param {Geometry} g0 the geometry when the drag began @param {number} dx px moved
- * @param {{ ar: number, full: number, w0: number } | null} [pic] a picture page: the picture IS the page's pane — its
- *   width at grab (w0), its height following its ratio, never taller than its room; its area is the picture, never
- *   narrower than the tab bar (a smaller picture sits centred in it); null: a panel */
-export function layDrag(edge, g0, dx, pic = null) {
+/* a panel's edge drag side by side, in px from where it started (v0.7c, docs/decisions/0013) — until C2a's rest puts
+   panels on the pass. dv = the divider: one panel grows exactly as much as the other shrinks, nothing outside the pair
+   moves. po / ro = an outer edge: only that panel changes, its other side PINNED where it was (the pair's place comes from
+   layoutmath.js arrange with the pin), so the edge stays under the cursor; it can go until the pair meets the room's
+   end. layRelease() drops the pin: the pair settles back to its resting place. A picture page's edges go through the
+   layout pass instead (passDragStart, C3). */
+/** @param {"dv" | "po" | "ro"} edge @param {Geometry} g0 the geometry when the drag began @param {number} dx px moved */
+export function layDrag(edge, g0, dx) {
   const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
     gap = pairGap(),
-    clear = g0.clear || 0,
     first = R ? "page" : "box", // the panel on the left
     /* the room between the pair and the band's ends at grab: where an outer edge can still go */
-    freeL = g0.mL - (R ? clear : 0),
-    freeR = g0.mR - (R ? 0 : clear),
+    freeL = g0.mL,
+    freeR = g0.mR,
     lb = paneLimits("box", "w", { o: "side" }),
-    /* a picture can't be wider than its height allows: the room's height × its ratio */
-    lp = pic
-      ? { lo: PICHMIN * pic.ar, hi: Math.min(g0.W, pic.full * pic.ar) }
-      : paneLimits(pageId(), "w", { o: "side" }),
-    /* the page's own size at grab: a panel's width, or the picture's (its area may be wider: the tab bar) */
-    p0 = pic ? pic.w0 : g0.rw,
-    /* a picture's area: the picture and its buttons' strip (the pass, C2a); before it, never narrower than the tab bar */
-    strip = pic && lay.pass ? lay.pass.strip : 0,
-    area = (/** @type {number} */ p) => (pic ? (lay.pass ? p + strip : Math.max(g0.minR, p)) : p),
+    lp = paneLimits(pageId(), "w", { o: "side" }),
+    p0 = g0.rw,
     clamp = (/** @type {number} */ v, /** @type {number} */ lo, /** @type {number} */ hi) =>
       Math.max(lo, Math.min(Math.max(lo, hi), v));
   /* what you see while held (past a limit: with resistance) and what's kept (the limit) */
@@ -518,12 +498,10 @@ export function layDrag(edge, g0, dx, pic = null) {
   const w0 = first === "box" ? g0.pw : g0.rw; // the left panel's width at grab
   if (edge === "dv") {
     const d = first === "box" ? dx : -dx, // how much the prompt grows
-      /* the divider never takes the picture under the tab bar's width (its area would stop, the prompt overlap) */
-      lc = { lo: pic && !lay.pass ? Math.max(lp.lo, g0.minR) : lp.lo, hi: lp.hi },
-      la = { lo: lb.lo, hi: g0.pw + p0 - lc.lo },
-      shown = trade(d, g0.pw, p0, la, lc),
-      hi = Math.min(la.hi - g0.pw, p0 - lc.lo),
-      kept = clamp(d, Math.min(hi, Math.max(la.lo - g0.pw, p0 - lc.hi)), hi);
+      la = { lo: lb.lo, hi: g0.pw + p0 - lp.lo },
+      shown = trade(d, g0.pw, p0, la, lp),
+      hi = Math.min(la.hi - g0.pw, p0 - lp.lo),
+      kept = clamp(d, Math.min(hi, Math.max(la.lo - g0.pw, p0 - lp.hi)), hi);
     pw = g0.pw + shown;
     rw = p0 - shown;
     pwKeep = g0.pw + kept;
@@ -539,13 +517,9 @@ export function layDrag(edge, g0, dx, pic = null) {
       kept = clamp(size0 + grow, lim.lo, hi);
     if (box) [pw, pwKeep] = [shown, kept];
     else [rw, rwKeep] = [shown, kept];
-    /* its other (inner) side stays where it was — a picture's own side, even when its area is wider (the tab bar):
-       the area moves by half the difference so the picture, centred in it, keeps that side still */
-    const slack = (/** @type {number} */ p) => (pic && !box && !lay.pass ? (area(p) - p) / 2 : 0), // the pass: no centring
-      shift = slack(p0) - slack(rw);
-    pin = left ? { i: 0, side: "end", at: g0.mL + w0 - shift } : { i: 1, side: "start", at: g0.mL + w0 + gap + shift };
+    pin = left ? { i: 0, side: "end", at: g0.mL + w0 } : { i: 1, side: "start", at: g0.mL + w0 + gap };
   }
-  const sizes = first === "box" ? [pw, area(rw)] : [area(rw), pw],
+  const sizes = first === "box" ? [pw, rw] : [rw, pw],
     a = arrange({
       panes: sizes.map(s => ({ size: s, lo: s, hi: s })),
       gap,
@@ -555,19 +529,53 @@ export function layDrag(edge, g0, dx, pic = null) {
       anchor: "center",
       pin,
     }),
-    g = Object.assign({}, g0, { pw, rw: area(rw), mL: a.start, mR: g0.W - a.end, off: 0 });
+    g = Object.assign({}, g0, { pw, rw, mL: a.start, mR: g0.W - a.end, off: 0 });
   setPaneSize("box", "w", pwKeep, "side");
-  if (edge !== "po") {
-    /* the page's size: a panel its width; a picture its box (the width, and the height its ratio gives) */
-    setPaneSize(pageId(), "w", area(rwKeep), "side");
-    if (pic) {
-      const hk = rwKeep / pic.ar;
-      setPaneSize(pageId(), "h", hk >= pic.full - 1 ? null : hk, "side");
-      lay.vh = Math.min(rw / pic.ar, pic.full + PIC_OVER); // held: as wide as the area; past its room only a little
-    }
-  }
+  if (edge !== "po") setPaneSize(pageId(), "w", rwKeep, "side");
   layApply(g);
   return g;
+}
+/* ---------- a picture page's edge drag side by side goes through the layout pass (v0.7c C3) ----------
+   ONE way for every edge of the pair (the box's outer edge, the shared edge, the picture's outer, top and bottom
+   edges): the press freezes the sizes at rest, the pointer is the drag's constraint, and the pass alone gives every
+   number, held or not — the picture's size and place, the box's width, what a release keeps. Before, each edge had
+   its own maths (layDrag's pin and slack, the top / bottom's lay.vh) and the picture's place while held came from a
+   centring in the area (B18: it slid 53 px toward the box). Release keeps the pass's `kept`: the box's width, the
+   picture's scale of its largest — nothing glides back on a centred axis (DEVLOG DD-2026-11-03-6). */
+/** @param {string} edge the pass's handle id ("box.left", "shared", "page.top", …) @param {number} pointer the pointer
+ * on the edge's axis (window px) @returns {boolean} false: not a picture page side by side (the caller's own path) */
+export function passDragStart(edge, pointer) {
+  const P = lay.pass,
+    h = P && P.handles[edge];
+  if (!P || !h || S.view !== "gen" || document.querySelector(".app.stacked")) return false;
+  const y = edge.endsWith(".top") || edge.endsWith(".bottom"),
+    line = y ? h.y + h.h / 2 : h.x + h.w / 2;
+  lay.pdrag = { edge, at: line, off: line - pointer, boxW: P.box.w, scale: P.kept.scale ?? 1 };
+  lay.drag = true;
+  return true;
+}
+/** @param {number} pointer the pointer on the edge's axis (window px) */
+export function passDragMove(pointer) {
+  if (!lay.pdrag) return;
+  lay.pdrag.at = pointer + lay.pdrag.off;
+  sizeFrame();
+}
+export function passDragEnd() {
+  const d = lay.pdrag,
+    k = lay.pass && lay.pass.kept;
+  lay.pdrag = null;
+  lay.drag = false;
+  if (d && k) {
+    /* what the edge changed: an outer edge only its own pane (DD-2026-11-07-1), the shared edge both */
+    if (d.edge === "shared" || d.edge.startsWith("box.")) setPaneSize("box", "w", k.boxW, "side");
+    if (d.edge === "shared" || d.edge.startsWith("page.")) {
+      setPaneSize(pageId(), "w", null);
+      setPaneSize(pageId(), "h", null); // (clears the scale: set after)
+      setPaneSize(pageId(), "s", k.scale == null || k.scale >= 0.999 ? null : k.scale);
+    }
+    save();
+  }
+  sizeFrame();
 }
 export function layRelease() {
   lay.drag = false;
@@ -731,7 +739,7 @@ export function sizeFrame() {
          default a 1:1 plate at the room's height — never narrower than the tab bar, never wider than the window */
       lay.colW =
         S.view === "gen"
-          ? stackColumnW(most, minRight(), stackW(), hh, toolsClear(hh), true)
+          ? stackColumnW(most, minRight(), stackW(), hh, toolsClear(), true)
           : Math.round(
               lay.vw ??
                 within(
@@ -773,9 +781,9 @@ export function sizeFrame() {
   const st = stageRect(),
     SW = stk ? (lay.colW ? lay.colW - 2 : st.width) : /** @type {Geometry} */ (lay.last).rw; // wide: layApply above has set it
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
-  const pass = !stk && S.view === "gen" && !lay.vh ? lay.pass : null, // side by side at rest: the pass's numbers (C2a)
+  const pass = !stk && S.view === "gen" ? lay.pass : null, // side by side: the pass's numbers, held or not (C2a, C3)
     PH = pass ? pass.pic.h : picH(),
-    TB = pass ? pass.strip : tbW(PH), // the edit buttons' column: side by side, part of the picture's pane (C2a)
+    TB = pass ? pass.strip : tbW(), // the edit buttons' column: side by side, part of the picture's pane (C2a)
     R = ins.row ? rowRoom() : 0, // (lay.vrow: the prompt follows the row's room too, Vertical)
     M = SPACE.mat, // the picture's mat: the plate is the picture and M round it
     { w, h } = pass ? { w: pass.pic.w - 2 * M, h: pass.pic.h - 2 * M } : fitInBox(ar, SW - 2 * M, PH - 2 * M),
@@ -787,7 +795,7 @@ export function sizeFrame() {
     button column hangs on the side away from the prompt (Vertical: on the right) */
   lay.vrow = stk ? R : 0;
   const tbLeft = !stk && /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
-    { top, left: placedLeft } = framePlacement({
+    { top: placedTop, left: placedLeft } = framePlacement({
       areaW: SW,
       areaH: roomH(),
       w: W,
@@ -798,12 +806,14 @@ export function sizeFrame() {
       stacked: stk,
       toolsLeft: tbLeft,
     });
-  let left = placedLeft;
+  let left = placedLeft,
+    top = placedTop;
   /* side by side at rest the picture's place across its area is the pass's: its strip on the outer side (C2a) — not a
      centring inside the geometry last applied, which may be held or stale (the picture slid onto the box, 2026-11-03) */
   if (pass) {
     const g = /** @type {Geometry} */ (lay.last); // the area's place in the window: the columns as applied
     left = pass.pic.x - (SPACE.area + g.mL + (tbLeft ? 0 : g.pw + pairGap()));
+    top = pass.pic.y - st.top; // held too: one source for the picture's place (B18: centred in the area while held)
   }
   Object.assign(f.dataset, { tw: w, th: h, tl: left + M, tt: top + M });
   /* where the frame belongs (the plate's place, less the mat); framebox.js moves it there (a glide, a jump, or where a

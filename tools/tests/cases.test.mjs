@@ -10,7 +10,9 @@
 //   one drag  — a single drag reaches the limit (the give-way order: empty room first, then the other panes)
 //   give      — the grabbed edge moves a little: more than nothing, at most the rubber band's reach (RUBBER)
 //   pin       — at its limit the grabbed pane's opposite side, on the drag's axis, holds still (nothing is left to
-//               give way: the empty room is used, the others are at their least)
+//               give way: the empty room is used, the others are at their least) — on a centred axis it mirrors the
+//               give instead, never more (a drag is a constraint, DEVLOG DD-2026-11-03-6: side by side every outer
+//               edge, Vertical's sides); the shared edge's outer sides always hold (the trade)
 //   no slide  — nothing moves more than the give (what rides the grabbed pane — the tab bar on its plate, the box at its
 //               anchor by the picture — may follow it by that much; a 160 px slide under the tab bar may not)
 //   back      — on release, everything is where it was (S2 vs S1)
@@ -199,12 +201,16 @@ function caseOf(dock, page, ar) {
             const db = Math.abs(S2[n][s] - S1[n][s]);
             if (db > STILL) back.push(`${n}.${s} ${db.toFixed(1)}`);
           }
-          /* the pin: a grabbed pane's side on the drag's axis that is NOT on the grabbed edge */
+          /* the pin: a grabbed pane's side on the drag's axis that is NOT on the grabbed edge — on a centred axis the
+             mirror of the give (DD-6): side by side every edge but the shared one, Vertical across */
+          const shared = !!on.box && (!!on.plate || !!on.pic),
+            centred = !shared && (dock === "below" ? h.axis === "x" : true),
+            allow = centred ? give + 2 : STILL; // the mirror, + a frame's rounding (as GIVE)
           if (moving.includes(n) && n !== "bar")
             for (const s of AXIS_SIDES[h.axis]) {
               if (s === on[n]) continue;
               const dp = Math.abs(r.held[n][s] - S1[n][s]);
-              if (dp > STILL) pinned.push(`${n}.${s} ${dp.toFixed(1)}`);
+              if (dp > allow) pinned.push(`${n}.${s} ${dp.toFixed(1)}`);
             }
           const p = r.held[n];
           if (p.left < -1 || p.top < -1 || p.right > S1.W + 1 || p.bottom > S1.H + 1)

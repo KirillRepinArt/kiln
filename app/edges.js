@@ -12,8 +12,10 @@ import {
   lay,
   layDrag,
   layGeo,
-  passGeo,
   layRelease,
+  passDragEnd,
+  passDragMove,
+  passDragStart,
   pageId,
   paneLimits,
   paneSize,
@@ -24,7 +26,7 @@ import {
 import { PIC_OVER, RUBBER, rubber } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
-import { SPACE, pairGap } from "./tokens.js";
+import { pairGap } from "./tokens.js";
 
 /** the body classes a drag holds while it lasts (the cursor, no transitions) — removed by the gesture's end, always */
 const DRAG_CLASSES = ["resizing", "vresizing", "laydrag"];
@@ -234,52 +236,45 @@ export function initEdges() {
       mk($("right"), "ro", "ro", R_TIP),
     ];
     for (const h of hs) {
-      /** the drag: which edge, where the pointer started, the geometry then, the picture (a picture page)
-       * @type {{ e: "dv" | "po" | "ro", x0: number, g0: import("./types.js").Geometry, pic: { ar: number, full: number, w0: number } | null } | null} */
+      /** a panel's drag: which edge, where the pointer started, the geometry then; pass: a picture page's (C3)
+       * @type {{ e: "dv" | "po" | "ro", x0: number, g0: import("./types.js").Geometry } | { pass: true } | null} */
       let d = null;
       gesture(h, () => RESIZES[/** @type {string} */ (h.dataset.e)], {
         cls: ["resizing", "laydrag"],
         down: ev => {
           if (q(".app.stacked")) return false;
           ev.stopPropagation(); /* not the card's move gesture */
-          /* a picture page under the pass: the pair as hugging columns (the drag maths', until C3) — at rest the area is
-             the whole room (G6) */
-          const g0 = Object.assign({}, lay.pass ? passGeo(lay.last || layGeo()) : lay.last || layGeo(), {
-            gen: S.view === "gen",
-          });
-          /** @type {{ ar: number, full: number, w0: number } | null} */
-          let pic = null;
-          /* a picture page: the PICTURE is the page's pane (v0.7c, the fit-page rule) — measured where it is, so the
-             area shrinks to it and nothing moves at the press; its edges drag the picture, its ratio moves its height */
-          const f = $("frame"),
-            fr = f.getBoundingClientRect();
-          if (g0.gen && fr.width > 0 && fr.height > 0 && lay.pass)
-            /* the layout pass's area (v0.7c C2a): the picture and its buttons' strip, as laid out — nothing rebuilt at
-               the press (rebuilt the old way, the picture alone, it slid under the box in the Right layout) */
-            pic = { ar: fr.width / fr.height, full: picFull(), w0: fr.width };
-          else if (g0.gen && fr.width > 0 && fr.height > 0) {
-            const R = !!q(".app.pright"),
-              aw = Math.max(g0.minR, fr.width), // its area: the picture, never narrower than the tab bar
-              x = fr.left - (aw - fr.width) / 2 - SPACE.area; // in the pair's room (the window less its area gap)
-            g0.rw = aw;
-            g0.mL = R ? x : x - pairGap() - g0.pw;
-            g0.mR = g0.W - g0.mL - g0.pw - pairGap() - g0.rw;
-            pic = { ar: fr.width / fr.height, full: picFull(), w0: fr.width };
+          const e = /** @type {"dv" | "po" | "ro"} */ (h.dataset.e),
+            R = !!q(".app.pright"),
+            /* the pass's name for this edge: the shared edge, the box's outer side, the page's outer side */
+            id = e === "dv" ? "shared" : e === "po" ? (R ? "box.right" : "box.left") : R ? "page.left" : "page.right";
+          /* a picture page: the layout pass gives every number while held (v0.7c C3) */
+          if (passDragStart(id, ev.clientX)) {
+            d = { pass: true };
+            return;
           }
-          d = { e: /** @type {"dv" | "po" | "ro"} */ (h.dataset.e), x0: ev.clientX, g0, pic };
+          d = { e, x0: ev.clientX, g0: Object.assign({}, lay.last || layGeo(), { gen: S.view === "gen" }) };
           lay.drag = true;
         },
         move: ev => {
           if (!d) return;
-          layDrag(d.e, d.g0, ev.clientX - d.x0, d.e === "po" ? null : d.pic);
-          lay.frameHold = true;
-          sizeFrame();
-          lay.frameHold = false;
+          if ("pass" in d) passDragMove(ev.clientX);
+          else {
+            layDrag(d.e, d.g0, ev.clientX - d.x0);
+            lay.frameHold = true;
+            sizeFrame();
+            lay.frameHold = false;
+          }
           moveThumb(true);
         },
         end: () => {
+          const was = d;
           d = null;
-          lay.vh = null; // the picture back to its kept size: it settles with the pair
+          if (was && "pass" in was) {
+            passDragEnd();
+            moveThumb(true);
+            return;
+          }
           save();
           layRelease();
           setTimeout(() => {
@@ -303,12 +298,21 @@ export function initEdges() {
     qa(".hedge").forEach(h => {
       /** the picture's edge being dragged: which, where it started, the picture's size and top then, the room it has
        * @type {{ e: string, x0: number, y0: number, w0: number, h0: number, t0: number, full: number } | null} */
-      let d = null;
+      let d = null,
+        pd = false; // held through the layout pass (side by side, C3)
       gesture(h, () => RESIZES.hedge, {
         cls: ["vresizing", "laydrag"],
         down: ev => {
           if (S.view !== "gen") return false;
           ev.stopPropagation();
+          /* side by side: the layout pass (v0.7c C3), a centred axis — the opposite edge mirrors */
+          if (!q(".app.stacked") && (h.dataset.e === "t" || h.dataset.e === "b")) {
+            if (passDragStart(h.dataset.e === "t" ? "page.top" : "page.bottom", ev.clientY)) {
+              d = null;
+              pd = true;
+              return;
+            }
+          }
           const f = $("frame");
           d = {
             e: /** @type {string} */ (h.dataset.e),
@@ -323,6 +327,7 @@ export function initEdges() {
           };
         },
         move: ev => {
+          if (pd) return passDragMove(ev.clientY);
           if (!d) return;
           const dy = ev.clientY - d.y0,
             dx = ev.clientX - d.x0,
@@ -347,6 +352,10 @@ export function initEdges() {
           sizeFrame();
         },
         end: () => {
+          if (pd) {
+            pd = false;
+            return passDragEnd();
+          }
           const full = d ? d.full : 0,
             nh = lay.vh;
           d = null;

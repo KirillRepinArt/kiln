@@ -31,6 +31,8 @@ import {
   PAGE_IDS,
   QUEUEMAX,
   RUBBER,
+  picLeastH,
+  EDIT_TOOLS,
 } from "../../../app/layoutmath.js";
 
 const near = (a, b, what) => assert.ok(Math.abs(a - b) < 1e-6, `${what}: ${a} ≠ ${b}`);
@@ -41,11 +43,10 @@ test("a picture fits its box: the side that hits first decides", () => {
   assert.deepEqual(fitInBox("16:9", 320, 1000), { w: 320, h: 180 }); // a wide one in a tall box: full width
 });
 
-test("the edit buttons' column grows a column when the picture is too short for them", () => {
+test("the edit buttons' column: one column, always; a picture is never shorter than it (DD-2026-11-07-2)", () => {
   // 40 px buttons, the tight gap (8) between them and from the picture
-  assert.equal(toolColumnW(600, 6), 56); // tall: one column (8 + 48)
-  assert.equal(toolColumnW(100, 6), 152); // two buttons per column → three columns
-  assert.equal(toolColumnW(20, 6), 296); // never less than one button per column
+  assert.equal(toolColumnW(), 56); // 8 + 40 + 8
+  assert.equal(picLeastH(), EDIT_TOOLS * 40 + (EDIT_TOOLS - 1) * 8); // 6 buttons: 280
 });
 
 /* the pair side by side (v0.7c, 2026-11-02): the group may reach the room's ends (the window less its area gap); the only

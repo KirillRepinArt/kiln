@@ -83,13 +83,19 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
   - **the single layout pass** (v0.7c C, `ux-review/16-layout-pass.md` in the design notes): `layoutmath.js`
     `layoutPass` computes a picture page's numbers side by side — the picture's size (a scale of its largest), its
     place, the box's, the edit buttons' strip (`stripRoom`: its room kept on both sides of the centred pair). The
-    appliers write them in a STILL area (the columns don't hug the picture: G6); side drags start from `passGeo` until
-    they move into the pass. The room side by side has one definition: `layout.js` `sideRoom`
+    appliers write them in a STILL area (the columns don't hug the picture: G6). Held or not: every side-by-side edge
+    of a picture page (the box's outer edge, the shared edge, the picture's outer, top and bottom edges) goes through
+    `layout.js` `passDragStart` / `passDragMove` / `passDragEnd` — the press freezes the sizes, the pointer is the
+    drag's constraint, the pass gives every number, the release keeps its `kept` (C3). An outer edge takes no room from
+    the other pane; only the shared edge trades. Where the group starts: `layoutmath.js` `groupX` (the rectangles and
+    the drags' maths both). The edit buttons' strip is ONE column (`toolColumnW`), and a picture's least height is that
+    column (`picLeastH`): the strip never depends on the picture's height. Panels side by side still drag through
+    `layDrag` until they move into the pass. The room side by side has one definition: `layout.js` `sideRoom`
   - every edge's press → move → end: `edges.js` `gesture()` (it ends however the drag ends: button up, cancel, lost
     capture); which outlines show: `outlines.js`; the outline itself is part of its pane (`.plate::before`,
     `.left::after` in `styles/layout.css`)
   - a panel's box (its height and its offset in the room) and where its edge handles go: `layout.js` `sizeFrame`;
-    the tab bar rides on the plate (`plate.js` `barFor`)
+    the tab bar rides on the plate, centred over it inside the window (`plate.js` `barFor`)
 - **The screen, by area:** `tabs`, `browse`, `morph`, `edges`, `pills`, `chips`, `peek`, `queue`, `loras`, `pnginfo`,
   `viewer`, `settings`, `keys`, `tooltips`, `editor` (CodeMirror).
 - **The server's side:** `live.js` (start), `sync.js` (polling, what changed), `actions.js` (requests), `pictures.js`

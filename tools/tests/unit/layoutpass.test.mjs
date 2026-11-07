@@ -3,7 +3,9 @@
 // cases. Run with `npm run test:unit`.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { layoutPass, HANDLE, PICHMIN, PWMIN, RUBBER } from "../../../app/layoutmath.js";
+import { layoutPass, EDIT_TOOLS, HANDLE, PWMIN, RUBBER, picLeastH } from "../../../app/layoutmath.js";
+
+const PICHMIN = picLeastH();
 
 const GAP = { area: 20, pair: 20, bar: 12 },
   BAR = { w: 604, h: 52 },
@@ -115,7 +117,13 @@ test("every ratio in the Gallery shows at its own largest (a scale, not a px cap
     for (const o of at) assert.ok(Math.abs(o.pic.w - o.largest.w) <= EPS, `${dock}: at its largest`);
     /* a scale kept from one picture means the same share for the next, whatever its ratio */
     const half = RATIOS.map(ratio => layoutPass(state({ dock, page: { kind: "pic", ratio, scale: 0.6 } })));
-    half.forEach((o, i) => assert.ok(Math.abs(o.pic.w - 0.6 * at[i].pic.w) <= EPS, `${dock}: 60 % of its own largest`));
+    /* (never under its least height: a 21:9's 60 % is, since the least became the buttons' column, DD-2026-11-07-2) */
+    half.forEach((o, i) =>
+      assert.ok(
+        Math.abs(o.pic.w - Math.max(0.6 * at[i].pic.w, PICHMIN * RATIOS[i])) <= EPS,
+        `${dock}: 60 % of its own largest`,
+      ),
+    );
   }
 });
 
@@ -211,9 +219,9 @@ test("side by side the box's height is its text's, at its anchor by the picture"
 test("too little room: the picture gives way to its least first, then the box", () => {
   const roomy = layoutPass(state({ W: 1760, page: { kind: "pic", ratio: 21 / 9 } }));
   assert.equal(roomy.box.w, 680, "room enough: your width");
-  /* 1100: the box at 680 would leave the picture under its least; at 900 even both at their least don't fit (past
-     what any layout can do: not this rule's case) */
-  const tight = layoutPass(state({ W: 1100, page: { kind: "pic", ratio: 21 / 9 } }));
+  /* 1300: the box at 680 would leave the picture under its least; at 1100 even both at their least don't fit (past
+     what any layout can do: not this rule's case — a 21:9 at its least, 280 px tall, is 653 px wide) */
+  const tight = layoutPass(state({ W: 1300, page: { kind: "pic", ratio: 21 / 9 } }));
   assert.ok(tight.box.w < 680 && tight.box.w >= PWMIN, `narrow: the box gives (${tight.box.w})`);
   assert.ok(Math.abs(tight.pic.h - PICHMIN) <= EPS, "…only once the picture is at its least");
 });
@@ -324,6 +332,78 @@ test("side by side, an outer edge mirrors on the far side (the group stays centr
   assert.ok(near(held.box.w, out.box.w + 100), "…the box grows by both");
 });
 
+test("side by side, an outer edge takes no room from the other pane: past its room, the rubber band (DD-2026-11-07-1, B17)", () => {
+  /* the page's outer edge and its top / bottom, pulled far past: the box keeps its width, held and kept; the shared edge
+     is the only one that trades. A wide picture (bound by its width) and a tall one (by its height), both docks */
+  for (const dock of ["left", "right"])
+    for (const ratio of [3 / 4, 16 / 9, 21 / 9])
+      for (const scale of [0.6, 1]) {
+        const s = state({ dock, page: { kind: "pic", ratio, scale } }),
+          out = layoutPass(s),
+          outer = dock === "left" ? "page.right" : "page.left",
+          pulls = [
+            [outer, edgeOf(out, outer).line + (dock === "left" ? 2000 : -2000)],
+            ["page.top", edgeOf(out, "page.top").line - 2000],
+            ["page.bottom", edgeOf(out, "page.bottom").line + 2000],
+          ];
+        for (const [edge, at] of pulls) {
+          const held = layoutPass({ ...s, drag: { edge, at } }),
+            tag = `${dock} ${ratio.toFixed(2)} @${scale} ${edge}`;
+          assert.ok(
+            near(held.box.w, out.box.w),
+            `${tag}: held, the box keeps its width (${held.box.w} vs ${out.box.w})`,
+          );
+          assert.ok(near(held.kept.boxW, out.box.w), `${tag}: kept, the box keeps its width (${held.kept.boxW})`);
+          assert.ok(
+            held.pic.w <= out.largest.w + 2 * RUBBER + EPS,
+            `${tag}: the picture at most its largest + the give`,
+          );
+        }
+      }
+});
+
+test("at its widest, the picture's outer edge pulled past: it gives, the far side mirrors (the stretch about the centre)", () => {
+  /* the rubber band's stretch went into the strip's room (the pair moving in for it, DD-7): the grabbed edge stood
+     still and the far side moved 16 px (the case table, a 21:9 at its widest, 2026-11-07) */
+  for (const dock of ["left", "right"])
+    for (const ratio of [16 / 9, 21 / 9]) {
+      const s = state({ dock, page: { kind: "pic", ratio, scale: 1 } }),
+        out = layoutPass(s),
+        id = dock === "left" ? "page.right" : "page.left",
+        dir = dock === "left" ? 1 : -1,
+        held = layoutPass({ ...s, drag: { edge: id, at: edgeOf(out, id).line + dir * 400 } }),
+        tag = `${dock} ${ratio.toFixed(2)}`,
+        grabbed = dock === "left" ? right(held.pic) - right(out.pic) : out.pic.x - held.pic.x,
+        far = dock === "left" ? out.box.x - held.box.x : right(held.box) - right(out.box);
+      assert.ok(grabbed >= 1 && grabbed <= RUBBER, `${tag}: the grabbed edge gives (${grabbed})`);
+      assert.ok(Math.abs(far - grabbed) <= 1, `${tag}: …the far side mirrors it (${far})`);
+    }
+});
+
+test("a press moves nothing: every handle, held at its own line, gives the layout at rest (C3)", () => {
+  /* a drag's maths and the rectangles must agree on where each edge is: the shared edge's drag centred the group with
+     the buttons' strip while the rectangles centre the pair you see, so a press jumped the box 8 px (26 px of pull) */
+  for (const dock of ["left", "right"])
+    for (const ratio of [3 / 4, 1, 16 / 9, 21 / 9])
+      for (const scale of [0.3, 0.7, 1]) {
+        const s = state({ dock, page: { kind: "pic", ratio, scale } }),
+          out = layoutPass(s);
+        for (const id of Object.keys(out.handles)) {
+          if (id === "box.top" || id === "box.bottom") continue; // the box's height edges only give (its text's)
+          const e = edgeOf(out, id),
+            held = layoutPass({ ...s, drag: { edge: id, at: e.line } }),
+            tag = `${dock} ${ratio.toFixed(2)} @${scale} ${id}`;
+          for (const k of ["x", "y", "w", "h"]) {
+            assert.ok(near(held.box[k], out.box[k], 0.6), `${tag}: the box's ${k} (${held.box[k]} vs ${out.box[k]})`);
+            assert.ok(
+              near(held.pic[k], out.pic[k], 0.6),
+              `${tag}: the picture's ${k} (${held.pic[k]} vs ${out.pic[k]})`,
+            );
+          }
+        }
+      }
+});
+
 test("the shared edge trades: the group holds, one pane grows as the other shrinks", () => {
   for (const dock of ["left", "right", "below"]) {
     /* a panel with room either way (at 900 px tall it's already at its largest in Vertical: the edge only gives) */
@@ -360,4 +440,11 @@ test("Vertical: by default the box keeps its text; at 100 % the picture wins and
   assert.ok(max.pic.h > def.pic.h, "100 %: a taller picture");
   assert.equal(max.box.h, 108, "…the box at its least (its text scrolls)");
   assert.ok(Math.abs(max.pic.w - max.largest.w) <= EPS, "…and that is its largest");
+});
+
+test("the edit buttons: the layout's count is the markup's (one column of them sets a picture's least height)", async () => {
+  const { readFileSync } = await import("node:fs"),
+    src = readFileSync(new URL("../../../app/state.js", import.meta.url), "utf8"),
+    body = src.slice(src.indexOf("function sideButtons"), src.indexOf("} /* the other buttons"));
+  assert.equal((body.match(/<button/g) || []).length, EDIT_TOOLS, "state.js sideButtons builds EDIT_TOOLS buttons");
 });

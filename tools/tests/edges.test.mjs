@@ -169,16 +169,23 @@ export async function pictureEdgesDragThePicture(k, t) {
   await k.sleep(1400);
   const f0 = await R(k, "#frame"),
     L0 = await R(k, "#left");
-  /* the outer edge in by 200: the picture 200 narrower, its height by its ratio; the prompt doesn't move */
+  /* the outer edge in by 200 (a drag is a constraint on a centred axis, DD-2026-11-03-6 — the pass, C3): the edge at
+     the pointer, the far side mirrors, so the picture is 400 narrower, its height by its ratio; the prompt keeps its
+     width (an outer edge takes nothing from the other pane, DD-2026-11-07-1) and moves with the pair's centre; a
+     release moves nothing */
   const a = await dragMeasure(k, ".pedge.ro", -200, ["#frame", "#left"]);
-  t.near(a.held["#frame"].width, f0.width - 200, 4, "held: the picture 200 px narrower", { w: a.held["#frame"].width });
-  t.near(a.held["#frame"].height, ((f0.width - 200) * f0.height) / f0.width, 4, "…its height by its ratio");
-  t.near(a.held["#frame"].left, f0.left, 3, "…its inner side holds");
-  t.near(a.held["#left"].left, L0.left, 3, "…and the prompt doesn't move");
-  t.near(a.after["#frame"].width, f0.width - 200, 4, "let go: the picture keeps that size");
-  /* back out by 120: it grows */
+  t.near(a.held["#frame"].width, f0.width - 400, 4, "held: the picture 400 px narrower (the mirror)", {
+    w: a.held["#frame"].width,
+  });
+  t.near(a.held["#frame"].height, ((f0.width - 400) * f0.height) / f0.width, 4, "…its height by its ratio");
+  t.near(a.held["#frame"].right, f0.right - 200, 3, "…its outer edge at the pointer");
+  t.near(a.held["#left"].width, L0.width, 3, "…the prompt keeps its width");
+  t.near(a.held["#left"].left, L0.left + 200, 3, "…and moves with the pair's centre");
+  t.near(a.after["#frame"].width, f0.width - 400, 4, "let go: the picture keeps that size");
+  t.near(a.after["#frame"].left, a.held["#frame"].left, 3, "…and nothing glides back");
+  /* back out by 120: it grows by both sides */
   const b = await dragMeasure(k, ".pedge.ro", 120, ["#frame"]);
-  t.near(b.held["#frame"].width, a.after["#frame"].width + 120, 4, "the outer edge out: the picture grows");
+  t.near(b.held["#frame"].width, a.after["#frame"].width + 240, 4, "the outer edge out: the picture grows");
   /* the divider toward the picture by 100: the prompt 100 wider, the picture 100 narrower, its outer side still */
   const f1 = b.after["#frame"],
     L1 = await R(k, "#left"),
@@ -574,14 +581,18 @@ export async function boxOuterEdgeKeepsThePicture(k, t) {
     await k.mouse(2, 2);
     await k.sleep(1400);
     for (const dx of dock === "right" ? [-120, 40] : [120, -40]) {
-      const f0 = await R(k, "#frame"), // where it is when this drag starts (a release re-centres the pair)
+      const f0 = await R(k, "#frame"), // where it is when this drag starts
+        L0 = await R(k, "#left"),
         a = await dragMeasure(k, ".pedge.po", dx, ["#frame", "#left"]),
         f = a.held["#frame"],
         L = a.held["#left"];
-      /* outward here is past the room (the picture fills it): the old drag maths puts the rubber band's stretch on the
-         box's inner side, nudging the picture by that much — B1, gone with the drags' move to the pass (v0.7c C3) */
-      const outward = dock === "right" ? dx > 0 : dx < 0;
-      t.near(f.left, f0.left, outward ? 20 : 3, `${dock}, the box's outer edge by ${dx}: held, the picture stays`);
+      /* B13 (the picture slid under the box) under the pass's rule (C3, DD-2026-11-03-6: a drag is a constraint, the
+         pair stays centred): the picture keeps its size and moves only by the mirror — half the box's change, away
+         from it as the box grows, toward it as it shrinks — never under the box. (Under the old pin it held still
+         and the release glided the pair to centre instead.) */
+      const dw = L.width - L0.width;
+      t.near(f.width, f0.width, 1, `${dock}, the box's outer edge by ${dx}: held, the picture keeps its size`);
+      t.near(Math.abs(f.left - f0.left), Math.abs(dw) / 2, 3, `${dock}: …and moves by the mirror only (½ of ${dw})`);
       t.ok(dock === "right" ? f.right <= L.left - 8 : L.right <= f.left - 8, `${dock}: …clear of the box`, {
         f: [f.left, f.right],
         L: [L.left, L.right],

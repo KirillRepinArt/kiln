@@ -59,15 +59,27 @@ function placeSideEdges(plate) {
     ro = /** @type {HTMLElement | null} */ (rt.querySelector(".pedge.ro"));
   if (!ri || !ro) return;
   const put = (/** @type {HTMLElement} */ e, /** @type {Record<string, string>} */ v) => {
-    for (const k of ["left", "right", "top", "height"])
+    for (const k of ["left", "right", "top", "height", "width"])
       if (e.style.getPropertyValue(k) !== (v[k] ?? "")) e.style.setProperty(k, v[k] ?? "");
   };
-  if (app.classList.contains("stacked")) return (put(ri, {}), put(ro, {})); // Vertical: hidden (its own: .hedge, .vpedge)
+  if (app.classList.contains("stacked")) {
+    /* Vertical: hidden (its own: .hedge, .vpedge); a panel's top / bottom handles back on the column's width (CSS) */
+    for (const e of [ri, ro, .../** @type {NodeListOf<HTMLElement>} */ (rt.querySelectorAll(".phedge"))]) put(e, {});
+    return;
+  }
+  const outerLeft = app.classList.contains("pright"); // Right: the page's outer side is its left
   if (rp.classList.contains("paneled")) {
-    /* a panel: its box's top and height; across, the CSS places them on the area's sides (the panel is the area) */
+    /* a panel: its box (sizeFrame's — the pass's place in the still area since C2b), the same offsets the CSS gave
+       them on the area's sides; its top / bottom handles span its width */
     const o = offsetIn(rp, rt),
-      v = { top: o.y + "px", height: rp.offsetHeight + "px" };
-    return (put(ri, v), put(ro, v));
+      L = o.x,
+      R = L + rp.offsetWidth,
+      v = { top: o.y + "px", height: rp.offsetHeight + "px", right: "auto" };
+    put(ro, { ...v, left: (outerLeft ? L - SPACE.tight : R + SPACE.tight - ro.offsetWidth) + "px" });
+    put(ri, { ...v, left: (outerLeft ? R + SPACE.part - ri.offsetWidth : L - SPACE.part) + "px" });
+    for (const e of /** @type {NodeListOf<HTMLElement>} */ (rt.querySelectorAll(".phedge")))
+      put(e, { left: L + "px", right: "auto", width: rp.offsetWidth + "px" });
+    return;
   }
   if (!plate) return;
   const { l, t, w, h } = plate;
@@ -76,8 +88,7 @@ function placeSideEdges(plate) {
   const o = offsetIn($("stage"), rt),
     L = o.x + l,
     R = L + w,
-    v = { top: o.y + t + "px", height: h + "px", right: "auto" },
-    outerLeft = app.classList.contains("pright"); // Right: the picture's outer side is its left
+    v = { top: o.y + t + "px", height: h + "px", right: "auto" };
   put(ro, { ...v, left: (outerLeft ? L - 6 : R + 6 - ro.offsetWidth) + "px" });
   put(ri, { ...v, left: (outerLeft ? R + SPACE.part - ri.offsetWidth : L - SPACE.part) + "px" });
 }

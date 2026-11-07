@@ -81,20 +81,27 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     the **group** and its **placement** come from `layoutmath.js` `arrange` (panes glued with one gap, a resting anchor,
     a pin while an edge is held); past a limit `rubber` (one stretch, `RUBBER`; a picture past its room `PIC_OVER`)
   - **the single layout pass** (v0.7c C, `ux-review/16-layout-pass.md` in the design notes): `layoutmath.js`
-    `layoutPass` computes a picture page's numbers side by side — the picture's size (a scale of its largest), its
+    `layoutPass` computes every page's numbers side by side (a panel's width, height and place too) and — the picture's size (a scale of its largest), its
     place, the box's, the edit buttons' strip (`stripRoom`: its room kept on both sides of the centred pair). The
-    appliers write them in a STILL area (the columns don't hug the picture: G6). Held or not: every side-by-side edge
+    appliers write them in a STILL area on every page (the columns never hug the page: G6; a panel's box is placed in
+    the area by `sizeFrame`, its handles by `around.js` `placeSideEdges`). **The box's place side by side has ONE rule:**
+    `layout.js` `promptFollow` glues it one pair gap from the plate as it is on screen this frame — a picture's or a
+    panel's, at rest, held, in a switch, in a resize — called by whatever moves the plate (`framebox.js` on a frame
+    write, `plate.js`'s follow loop every frame of a switch, the columns' glide); `slideCol` slides it only in Vertical.
+    Held or not: every side-by-side edge
     of a picture page (the box's outer edge, the shared edge, the picture's outer, top and bottom edges) goes through
     `layout.js` `passDragStart` / `passDragMove` / `passDragEnd` — the press freezes the sizes, the pointer is the
-    drag's constraint, the pass gives every number, the release keeps its `kept` (C3). An outer edge takes no room from
+    drag's constraint, the pass gives every number, the release keeps its `kept` (C3; a panel's edges too, its top and
+    bottom included). The room's top on screen: `layout.js` `sideRoomTop` (with `sideRoom`, one box). An outer edge takes no room from
     the other pane; only the shared edge trades. Where the group starts: `layoutmath.js` `groupX` (the rectangles and
     the drags' maths both). The edit buttons' strip is ONE column (`toolColumnW`), and a picture's least height is that
-    column (`picLeastH`): the strip never depends on the picture's height. Panels side by side still drag through
-    `layDrag` until they move into the pass. The room side by side has one definition: `layout.js` `sideRoom`
+    column (`picLeastH`): the strip never depends on the picture's height. No side-by-side edge has maths of its
+    own (`layDrag` is gone); Vertical's edges keep theirs until C4. The room side by side has one definition: `layout.js` `sideRoom`
   - every edge's press → move → end: `edges.js` `gesture()` (it ends however the drag ends: button up, cancel, lost
     capture); which outlines show: `outlines.js`; the outline itself is part of its pane (`.plate::before`,
     `.left::after` in `styles/layout.css`)
-  - a panel's box (its height and its offset in the room) and where its edge handles go: `layout.js` `sizeFrame`;
+  - a panel's box (its height and its offset in the room: the pass's side by side) and where its edge handles go:
+    `layout.js` `sizeFrame`;
     the tab bar rides on the plate, centred over it inside the window (`plate.js` `barFor`)
 - **The screen, by area:** `tabs`, `browse`, `morph`, `edges`, `pills`, `chips`, `peek`, `queue`, `loras`, `pnginfo`,
   `viewer`, `settings`, `keys`, `tooltips`, `editor` (CodeMirror).

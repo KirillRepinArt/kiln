@@ -62,24 +62,26 @@ export async function presets(k, t) {
   );
   await k.ev(`(showView("queue"),1)`);
   await k.sleep(500);
-  const a = Math.round((await R(k, "#right")).width),
-    room = Math.min(60, Math.round((await R(k, "#right")).left) - AREA - 4);
+  /* the panel itself (the area is still since C2b, the panel in it); an outer edge is a constraint on a centred axis
+     (DD-2026-11-03-6): the far side mirrors, so a pull of `room` widens it by twice that — half the free room each */
+  const a = Math.round((await R(k, "#rpanel")).width),
+    room = Math.min(30, Math.floor((Math.round((await R(k, "#rpanel")).left) - AREA - 4) / 2));
   await drag(k, ".pedge.ro", -room);
   await k.mouse(2, 2);
   await k.sleep(500);
-  const b = Math.round((await R(k, "#right")).width);
+  const b = Math.round((await R(k, "#rpanel")).width);
   t.ok(
-    room > 10 && Math.abs(b - (a + room)) <= 1,
+    room > 10 && Math.abs(b - (a + 2 * room)) <= 1,
     "mirrored edges: the image area's (now left) outer edge, dragged left, widens it",
     { a, b, room },
   );
   const pw0 = Math.round((await R(k, "#left")).width),
-    room2 = Math.min(50, 1700 - AREA - Math.round((await R(k, "#left")).right) - 4);
+    room2 = Math.min(25, Math.floor((1700 - AREA - Math.round((await R(k, "#left")).right) - 4) / 2));
   await drag(k, ".pedge.po", room2);
   await k.mouse(2, 2);
   await k.sleep(500);
   t.ok(
-    room2 > 10 && Math.abs(Math.round((await R(k, "#left")).width) - (pw0 + room2)) <= 1,
+    room2 > 10 && Math.abs(Math.round((await R(k, "#left")).width) - (pw0 + 2 * room2)) <= 1,
     "…and the prompt's (now right) outer edge, dragged right, widens the prompt",
     { pw0, room2 },
   );

@@ -614,14 +614,29 @@ boxOuterEdgeKeepsThePicture.opts = { width: 1386, height: 1080, step: 0.05 };
 /* a picture's size is a share of ITS largest (C2a; the user 2026-11-03: after a drag on a 16:9, the Gallery's 3:4
    came up the 16:9's height, 510 px of its 717). A drag left a px cap, read on the next picture by the first one's
    ratio. A drag's release keeps the scale: the next picture, another ratio, gets the same share of its own largest */
+/** the frame once it has stopped moving — a new picture of another shape crops and reveals (~1.1 s), and on CI's slower
+ * runners a fixed sleep caught it mid-way (2026-11-07: a 3:4 measured at 0.28 of its size, a 16:9 too small) */
+async function stillFrame(k) {
+  let last = "",
+    same = 0;
+  for (let i = 0; i < 50 && same < 3; i++) {
+    const r = await R(k, "#frame"),
+      key = [r.left, r.top, r.width, r.height].map(Math.round).join();
+    same = key === last ? same + 1 : 0;
+    last = key;
+    await k.sleep(100);
+  }
+  return R(k, "#frame");
+}
+
 export async function dragKeepsAScaleNotPixels(k, t) {
   await k.ev(`(setDock("right"),1)`);
   const show = async (name, ar) => {
     await k.job(`[fill:446688] ${name}`, { ar, steps: 2 });
     await k.until(`!current()&&jobs.length&&jobs.every(j=>j.status==="done")`, 30000);
     await k.mouse(2, 2);
-    await k.sleep(1400);
-    return R(k, "#frame");
+    await k.sleep(400);
+    return stillFrame(k);
   };
   const tall0 = await show("tall", "3:4"), // at its biggest: the whole room's height
     wide0 = await show("wide", "16:9"), // at its biggest: the room's width

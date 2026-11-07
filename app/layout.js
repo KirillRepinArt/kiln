@@ -388,22 +388,12 @@ export function layGeo() {
       handles: out.handles,
       roomTop,
     };
-    if (gen) return { pw: out.box.w, rw: W - pairGap() - out.box.w, mL: 0, mR: 0, W, minR, off: 0, gen, clear: 0 };
-    /* a panel: the pair's columns hug it, where the pass put it (the area is the panel) */
-    const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
-      first = R ? out.page : out.box,
-      last = R ? out.box : out.page;
-    return {
-      pw: out.box.w,
-      rw: out.page.w,
-      mL: first.x - SPACE.area,
-      mR: W - (last.x + last.w - SPACE.area),
-      W,
-      minR,
-      off: 0,
-      gen,
-      clear: 0,
-    };
+    /* every page: the area is STILL — the box's column at the room's edge, the area the whole rest (G6, every page
+       since C2b, 2026-11-07); the page's pane sits in it where the pass says (a picture: framebox; a panel: sizeFrame),
+       and the box is glued one gap from the pane's live plate (promptFollow). A panel's columns used to hug it while a
+       picture's stayed still: two rules for the box's place, and a switch between them pulled the box and the plate
+       apart on three clocks (B23) */
+    return { pw: out.box.w, rw: W - pairGap() - out.box.w, mL: 0, mR: 0, W, minR, off: 0, gen, clear: 0 };
   }
   lay.pass = null;
   /* Generating's area is the whole stage the prompt leaves (no hug: ownership map G6) — the picture is centred in it
@@ -756,6 +746,14 @@ export function sizeFrame() {
       mt = top ? top + "px" : "";
     if (rp.style.height !== h) rp.style.height = h;
     if (rp.style.marginTop !== mt) rp.style.marginTop = mt;
+    /* across: side by side a panel is the pass's width at the pass's place in the still area (its columns' target, not
+       a measurement: they may be mid-glide); a picture page's panel box is the whole area; Vertical: the column's */
+    const g = /** @type {Geometry | null} */ (lay.last),
+      areaL = g ? SPACE.area + g.mL + (app.classList.contains("pright") ? 0 : g.pw + pairGap()) : 0,
+      pw = sp && g ? Math.round(sp.page.w) + "px" : "",
+      ml = sp && g ? Math.round(sp.page.x - areaL) + "px" : "";
+    if (rp.style.width !== pw) rp.style.width = pw;
+    if (rp.style.marginLeft !== ml) rp.style.marginLeft = ml;
     const fx = H != null && !stk ? "none" : ""; // side by side it grows to the room (flex: 1) unless it has a height
     if (rp.style.flex !== fx) rp.style.flex = fx;
     rt.style.setProperty("--pt", rp.offsetTop + "px");
@@ -846,7 +844,7 @@ export function vAlign() {
    writers used to set it: vAlign's inline style, and a switch's own animation that froze the shift it started with for
    650 ms (a re-shift meanwhile showed only at the end, as a jump) */
 const colEase = bez(SWITCH.curve[0], SWITCH.curve[1], SWITCH.curve[2], SWITCH.curve[3]); // the switch's glide (plate.js)
-let hugX = 0, // side by side in Generating: in by the picture's inset in its area (promptFollow)
+let hugX = 0, // side by side: one gap from the plate, on every page (promptFollow)
   hugY = 0, // Vertical in Generating: up by the room the picture leaves under it (promptFollow)
   hugFrom = 0, // …catching up after a hold: from, to, since when (0: not catching up)
   hugTo = 0,
@@ -888,7 +886,8 @@ function colApply() {
  * measured through the running slide's offset @param {DOMRect} was */
 export function slideCol(was, t0 = performance.now()) {
   const r = $("lcol").getBoundingClientRect();
-  slX = Math.round(was.left - (r.left - colX + hugX)); // from where it was to its place (its hug included)
+  /* across: side by side the box rides the plate (promptFollow), so only Vertical's column slides */
+  slX = document.querySelector(".app.stacked") ? Math.round(was.left - (r.left - colX + hugX)) : 0;
   slY = Math.round(was.top - (r.top - colY + hugY));
   slT0 = slX || slY ? t0 : 0;
   cancelAnimationFrame(colRaf);
@@ -909,7 +908,6 @@ export function promptFollow(direct = false) {
   const b = frameBox(),
     app = /** @type {HTMLElement} */ (document.querySelector(".app")),
     stk = app.classList.contains("stacked"),
-    on = !!b && S.view === "gen" && !stk && !!lay.last,
     R = app.classList.contains("pright");
   let x = 0,
     y = 0;
@@ -919,12 +917,17 @@ export function promptFollow(direct = false) {
     /* glued under the picture's KEPT bottom: the rubber band is the grabbed edge's feedback only — nothing round it
        follows the overshoot (2026-11-02, the user: the prompt twitched) */
     y = -Math.round(Math.max(0, lay.vroom - (b.t + b.h - (lay.overB || 0) + SPACE.mat + lay.vrow)));
-  if (on && b && lay.last) {
-    /* side by side the box follows the picture, a pair gap from it, from where the frame IS (its clock; G6). Under the
-       pass that lands the box on the pass's place; while a side edge is held the columns hug the pair, so 0 */
-    const M = SPACE.mat,
-      inset = R ? (lay.shown || lay.last).rw - (b.l + b.w + M) : b.l - M; // the area as it is on screen now (G12)
-    x = Math.round(Math.max(0, inset)) * (R ? -1 : 1);
+  if (!stk && lay.last) {
+    /* side by side, EVERY page: the box is glued one pair gap from its neighbour pane's plate as it is on screen this
+       frame — a picture's or a panel's, at rest, held, in a tab switch, in a resize (C2b, B23: the model's "panes stick
+       to each other with one gap; positions inside it are derived"). Whatever moves the plate moves the box in the same
+       frame: one clock. The column's own place (its translate taken off) is where it sits in the still area */
+    const p = $("plate").getBoundingClientRect(),
+      c = $("lcol").getBoundingClientRect();
+    if (p.width > 0 && c.width > 0) {
+      const base = R ? c.left - colX : c.right - colX;
+      x = Math.round(R ? p.right + pairGap() - base : p.left - pairGap() - base);
+    } else x = hugX;
   }
   const b2 = document.body.classList;
   if (direct || b2.contains("laysnap") || b2.contains("liveresize") || b2.contains("laydrag")) {

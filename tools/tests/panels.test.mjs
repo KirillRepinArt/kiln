@@ -130,9 +130,11 @@ async function drag(k, sel, dx) {
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x + dx, y, button: "left", clickCount: 1 });
   await k.sleep(400);
 }
+/* the prompt box and the page's pane (the panel's box — since C2b the area is still on every page and the panel sits in
+   it where the layout pass says; the area used to hug the panel, so the column was measured) */
 const box = async k => {
   const L = await R(k, "#left"),
-    Rr = await R(k, "#right");
+    Rr = await R(k, "#rpanel");
   return { pl: Math.round(L.left), pr: Math.round(L.right), rl: Math.round(Rr.left), rr: Math.round(Rr.right) };
 };
 
@@ -701,3 +703,45 @@ export async function pngInfoBottomRow(k, t) {
   );
   t.ok(await k.ev(`$("pSend").disabled`), "…with nothing to send to the prompt");
 }
+
+/* ONE rule for the box's place side by side (C2b, B23 — the user, 2026-11-07: "switching PNG → Generating still
+   produces pane overlap; Gallery → Generating looks fine — other pages seem to have a separate rule set"): the box is
+   glued one gap from its neighbour pane's plate, every frame, on every page and through every switch. Measured before:
+   the gap ran 10–38 px through a switch between a panel and a picture (the box in a hugging column on one clock, the
+   plate on the switch's, the picture page's follow on a third) */
+export async function boxGluedToThePlate(k, t) {
+  await readArea(k);
+  await k.job("[fill:446688] a", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  const tab = v => `document.querySelector('.tab[data-v="${v}"]').click()`;
+  for (const dock of ["left", "right"]) {
+    await k.ev(`(setDock(${JSON.stringify(dock)}),1)`);
+    await k.mouse(4, 4);
+    await k.sleep(1600);
+    for (const [from, to] of [
+      ["png", "gen"],
+      ["gen", "png"],
+      ["queue", "gen"],
+      ["gen", "queue"],
+      ["gallery", "queue"],
+      ["loras", "gallery"],
+    ]) {
+      await k.ev(`(${tab(from)},1)`);
+      await k.mouse(4, 4);
+      await k.sleep(1500);
+      const gaps = await k.ev(`new Promise(res=>{const out=[],t0=performance.now(),R=${dock === "right"};
+        (${tab(to)});
+        (function f(){const L=document.getElementById("left").getBoundingClientRect(),
+            P=document.getElementById("plate").getBoundingClientRect();
+          out.push(Math.round((R?L.left-P.right:P.left-L.right)*10)/10);
+          if(performance.now()-t0<900)requestAnimationFrame(f);else res(out)})()})`);
+      const off = gaps.filter(g => Math.abs(g - AREA) > 1);
+      t.ok(!off.length, `${dock}, ${from} → ${to}: the box one gap from the plate every frame`, {
+        min: Math.min(...gaps),
+        max: Math.max(...gaps),
+        off: off.length + "/" + gaps.length,
+      });
+    }
+  }
+}
+boxGluedToThePlate.opts = { width: 1760, height: 1080, step: 0.05 };

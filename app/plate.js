@@ -9,6 +9,7 @@ import { placeAround } from "./around.js";
 import { $, offsetIn } from "./dom.js";
 import { frameHold, frameTarget } from "./framebox.js";
 import { fades, shapeBox, shapeSteps } from "./layoutmath.js";
+import { promptFollow } from "./layout.js";
 import { SPACE } from "./tokens.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number, panel: boolean }} Box in #right's coordinates */
@@ -125,12 +126,14 @@ export function plateSync() {
   if (!morph && !pending) put(target());
   placeAround();
 }
+/* the box beside the plate: glued to it (layout.js promptFollow) — every frame the plate may move, the same frame */
 /* the loop also carries what sits round the frame (around.js): it runs whenever the frame may be moving */
 function tick() {
   raf = 0;
   placeAround();
   if (!morph && !pending) put(target());
   else if (morph) placeBar(); // the plate is gliding (a switch): the bar follows it
+  promptFollow(true); // …and the box, one gap from it (side by side, every page: C2b)
   if (performance.now() < until) raf = requestAnimationFrame(tick);
 }
 

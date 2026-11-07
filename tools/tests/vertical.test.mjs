@@ -256,7 +256,7 @@ export async function edgeOnPicture(k, t) {
   });
   await k.ev(`(showView("queue"),1)`);
   await k.sleep(700);
-  const r = await R(k, "#right"),
+  const r = await R(k, "#rpanel"), // the panel itself: the area is still since C2b, the panel in it
     h2 = await R(k, ".pedge.ro");
   t.near(h2.left + h2.width / 2, r.right, 2, "other tabs: on the panel's edge");
 }

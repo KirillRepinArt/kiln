@@ -738,6 +738,9 @@ export async function layoutSwitchIsLive(k, t) {
       await k.mouse(4, 4);
       await k.sleep(1600);
       const rows = await k.ev(`new Promise(res=>{const out=[],t0=performance.now();setDock("${to}");
+        /* the box's fade as built: its keyframes reach 0 (a sampled minimum depends on the frame rate — CI drops
+           frames, and a frame landing on the two-frame turn isn't guaranteed) */
+        window._fadeTo=Math.min(1,...$("lcol").getAnimations().flatMap(a=>a.effect.getKeyframes()).filter(k=>k.opacity!=null).map(k=>+k.opacity));
         (function f(){const p=$("plate").getBoundingClientRect(),c=$("lcol"),L=$("left").getBoundingClientRect();
           out.push([Math.round(p.left),Math.round(p.top),getComputedStyle($("plate")).backdropFilter!=="none"?1:0,
             +getComputedStyle(c).opacity,Math.round(L.left),Math.round(L.top)]);
@@ -755,7 +758,9 @@ export async function layoutSwitchIsLive(k, t) {
         `${tag}: the plate's glass on every frame`,
       );
       t.ok(between >= 3, `${tag}: the plate travels live (frames between its two places)`, { between, p0, p1 });
-      t.ok(rows.some(r => r[3] < 0.05) && p1[3] === 1, `${tag}: the box fades through and ends shown`, {
+      const fadeTo = await k.ev(`window._fadeTo`);
+      t.ok(fadeTo === 0 && rows.some(r => r[3] < 0.5) && p1[3] === 1, `${tag}: the box fades through and ends shown`, {
+        fadeTo,
         min: Math.min(...rows.map(r => r[3])),
         last: p1[3],
       });

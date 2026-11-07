@@ -272,7 +272,8 @@ export async function outlineIsFitBox(k, t) {
   await k.mouse(2, 2);
   await k.sleep(900);
   await k.ev(`($("plate").classList.add("hint"),1)`);
-  await k.sleep(400);
+  /* until it has shown (its own fade; a fixed 400 ms caught it mid-way on CI's slower runner, 2026-11-07) */
+  await k.until(`+getComputedStyle($("plate"),"::before").opacity>0.9`, 3000, 50);
   const p = await R(k, "#plate"),
     f = await R(k, "#frame"),
     s = await k.ev(

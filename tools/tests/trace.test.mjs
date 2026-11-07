@@ -193,7 +193,10 @@ export async function ownershipTour(k, t) {
     };
   await k.ev(`(${tab("gallery")},1)`);
   await k.sleep(1300);
-  await motion("the picture's outer edge (its inner side pinned)", [drag(".pedge.ro", -150), "0"]);
+  /* within its limits: the far side mirrors (DD-2026-11-03-6), so 60 px of pull is 120 px of picture — a narrow 9:16
+     at 280 px tall (its least since DD-2026-11-07-2) is near it; pulled past, the pointer runs on over the picture and
+     its buttons rightly show */
+  await motion("the picture's outer edge (the far side mirrors)", [drag(".pedge.ro", -60), "0"]);
   /* toward the prompt: the picture (made smaller by the step above) grows within its limits. Toward the picture it ran
      past the picture's least (since B15 (a) the widest picture is a strip narrower), the pointer went on over it, and
      on release its buttons showed — rightly, it was hovered; drags past a limit are the edges suite's */

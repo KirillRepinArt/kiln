@@ -78,13 +78,14 @@ export async function eachPageItsOwnSize(k, t) {
   const q0 = (await R(k, "#rpanel")).width;
   await dragBy(k, ".pedge.ro", 80); // (narrower stops at the tab bar's width: the bar sits on the plate)
   const q1 = (await R(k, "#rpanel")).width;
-  t.near(q1, q0 + 80, 3, "the Queue wider by the drag", { q0, q1 });
+  /* a drag is a constraint on a centred axis (DD-2026-11-03-6; panels on the pass, C2a's rest): the far side mirrors */
+  t.near(q1, q0 + 160, 3, "the Queue wider by the drag (both sides)", { q0, q1 });
   await k.ev(`(showView("loras"),1)`);
   await k.sleep(1000);
   t.near((await R(k, "#rpanel")).width, q0, 3, "LoRAs keeps its own width (the default)");
   await dragBy(k, ".pedge.ro", 140);
   const l1 = (await R(k, "#rpanel")).width;
-  t.near(l1, q0 + 140, 3, "LoRAs wider by its own drag", { l1 });
+  t.near(l1, q0 + 280, 3, "LoRAs wider by its own drag (both sides)", { l1 });
   await k.ev(`(showView("queue"),1)`);
   await k.sleep(1000);
   t.near((await R(k, "#rpanel")).width, q1, 3, "back on the Queue: its own width");
@@ -310,13 +311,21 @@ export async function panelHeights(k, t) {
   const p0 = await R(k, "#rpanel"),
     b0 = await R(k, ".tabs");
   const a = await drag(".phedge.b", -200);
-  t.near(a.held.height, p0.height - 200, 3, "side by side: the bottom edge up 200, the panel 200 shorter", {
-    h: a.held.height,
-  });
-  t.near(a.held.top, p0.top, 2, "…its top holds while dragging");
-  t.near(a.after.height, p0.height - 200, 3, "let go: the height is kept");
-  t.near(a.after.top, p0.top + 100, 3, "…and it rests centred in its room");
-  t.near(a.bar.top, b0.top + 100, 3, "…the tabs came down with it (they ride on the panel)");
+  /* side by side a panel is centred in its room: a drag is a constraint there (DD-2026-11-03-6; panels on the pass,
+     C2a's rest) — the top mirrors the bottom while held, and a release moves nothing (it used to snap to centre) */
+  t.near(
+    a.held.height,
+    p0.height - 400,
+    3,
+    "side by side: the bottom edge up 200, the panel 400 shorter (both sides)",
+    {
+      h: a.held.height,
+    },
+  );
+  t.near(a.held.top, p0.top + 200, 2, "…its top mirrors it while dragging");
+  t.near(a.after.height, a.held.height, 3, "let go: the height is kept");
+  t.near(a.after.top, a.held.top, 3, "…and nothing moves on release (centred already)");
+  t.near(a.bar.top, b0.top + 200, 3, "…the tabs came down with it (they ride on the panel)");
   const r = await drag(".phedge.t", -300);
   t.ok(r.held.top >= b0.top - 1 && r.held.height <= p0.height + area, "past the room: a little give at most", {
     held: r.held,

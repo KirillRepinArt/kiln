@@ -175,7 +175,9 @@ export async function dividerAndEdges(k, t) {
     b,
   });
   a = b;
-  const room = Math.max(10, Math.min(80, 1700 - AREA - a.rr - 4)); // as far as the free space allows
+  /* an outer edge: a drag is a constraint on a centred axis (DD-2026-11-03-6; panels on the pass, C2a's rest) — the edge
+     at the pointer, the far side mirrors, the pair stays centred; a release moves nothing */
+  const room = Math.max(10, Math.min(40, (1700 - AREA - a.rr - 4) / 2)); // half the free space (both sides use it)
   const h = await R(k, ".pedge.ro"),
     x = h.left + h.width / 2,
     y = h.top + 200;
@@ -192,26 +194,26 @@ export async function dividerAndEdges(k, t) {
   await k.sleep(100);
   const mid = await box(k);
   t.ok(
-    Math.abs(mid.rr - (a.rr + room)) <= 1 && mid.pl === a.pl,
-    "an outer edge follows the cursor while you drag (the rest holds still)",
+    Math.abs(mid.rr - (a.rr + room)) <= 1 && Math.abs(mid.pl - (a.pl - room)) <= 1 && mid.pr - mid.pl === a.pr - a.pl,
+    "an outer edge follows the cursor while you drag; the far side mirrors it, the prompt keeps its width",
     { a, mid, room },
   );
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x + room, y, button: "left", clickCount: 1 });
   await k.sleep(600);
   b = await box(k);
   t.ok(
-    Math.abs(b.rr - b.rl - (a.rr - a.rl + room)) <= 1 && centred(b),
-    "…and on release the pair glides back to centre",
-    { a, b },
+    Math.abs(b.rr - b.rl - (a.rr - a.rl + 2 * room)) <= 1 && centred(b) && Math.abs(b.pl - mid.pl) <= 1,
+    "…and on release nothing moves: centred already",
+    { a, mid, b },
   );
   a = b;
-  const room2 = Math.max(10, Math.min(60, a.pl - AREA - 4));
+  const room2 = Math.max(10, Math.min(30, (a.pl - AREA - 4) / 2));
   await drag(k, ".pedge.po", -room2);
   await k.sleep(500);
   b = await box(k);
   t.ok(
-    Math.abs(b.pr - b.pl - (a.pr - a.pl + room2)) <= 1 && b.rr - b.rl === a.rr - a.rl && centred(b),
-    "the prompt's outer edge: only the prompt changes; centred as soon as you let go",
+    Math.abs(b.pr - b.pl - (a.pr - a.pl + 2 * room2)) <= 1 && b.rr - b.rl === a.rr - a.rl && centred(b),
+    "the prompt's outer edge: only the prompt changes (both sides), centred",
     { a, b, room2 },
   );
   const w = (await R(k, "#rpanel")).width;
@@ -458,9 +460,10 @@ export async function heightLimit(k, t) {
     });
   await k.sleep(150);
   const mid = await R(k, "#frame");
+  /* side by side the picture is centred in its room: the top mirrors the bottom (DD-2026-11-03-6, the pass: C3) */
   t.ok(
-    Math.abs(mid.height - (f0.height - 200)) <= 2 && Math.abs(mid.top - f0.top) <= 1,
-    "the bottom edge follows the cursor; the top holds still",
+    Math.abs(mid.height - (f0.height - 400)) <= 2 && Math.abs(mid.top - (f0.top + 200)) <= 1,
+    "the bottom edge follows the cursor; the top mirrors it",
     { f0: [f0.top, f0.height], mid: [mid.top, mid.height] },
   );
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y: y - 200, button: "left", clickCount: 1 });
@@ -468,7 +471,7 @@ export async function heightLimit(k, t) {
   await k.sleep(800);
   const f1 = await R(k, "#frame"),
     st = await R(k, "#stage");
-  t.ok(Math.abs(f1.height - (f0.height - 200)) <= 2, "the limit stays after release", f1.height);
+  t.ok(Math.abs(f1.height - (f0.height - 400)) <= 2, "the limit stays after release", f1.height);
   /* the status row's room only while the queue works (2026-10-31: insets) — idle, the picture centres in the full height */
   const bar = (await k.ev(`document.body.classList.contains("norow")`)) ? 0 : await k.ev(`BAR`);
   t.ok(Math.abs(f1.top - st.top - (st.height - bar - f1.height) / 2) <= 2, "the picture re-centres vertically", {

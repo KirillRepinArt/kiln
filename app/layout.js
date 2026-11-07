@@ -13,11 +13,7 @@ import {
   layoutPass,
   limits,
   paneDefault,
-  RUBBER,
-  arrange,
   bez,
-  rubber,
-  trade,
   fitInBox,
   layoutPrefsV4,
   framePlacement,
@@ -252,6 +248,13 @@ function sideRoom() {
   const rp = $("rpanel");
   return Math.round($("right").clientHeight - (rp.offsetTop - (parseFloat(rp.style.marginTop) || 0)));
 }
+/* side by side, where that room starts on screen (the window's px): the same box sideRoom measures, so a picture page
+   and a panel share it — the layout pass's numbers are the window's on both axes */
+function sideRoomTop() {
+  const rt = $("right"),
+    rp = $("rpanel");
+  return rt.getBoundingClientRect().top + rt.clientTop + (rp.offsetTop - (parseFloat(rp.style.marginTop) || 0));
+}
 function roomH() {
   if (!document.querySelector(".app.stacked")) return sideRoom();
   const st = stageRect();
@@ -292,31 +295,32 @@ function toolsClear() {
   return Math.max(0, tbW() - SPACE.area);
 }
 /** @typedef {import("./layoutmath.js").Rect} Rect */
-/** the single layout pass for a picture page side by side (v0.7c C2a, ux-review/16-layout-pass.md): the numbers — the
- * picture's size (a scale of its largest), the edit buttons' strip (on its outer side only, part of its pane), the
- * pane's width, the pair's margins — come from it; the appliers (colsWrite, framebox, plate) still write them (C2b).
- * The tab bar is no least width any more (it overhangs a narrow picture). Until the drags move to the pass (C3), a cap
- * a drag leaves in px is read as the scale it gives this picture. */
+/** the single layout pass side by side (v0.7c C2a; panels too since C2a's rest, 2026-11-07;
+ * ux-review/16-layout-pass.md): the numbers — a picture's size (a scale of its largest) and the edit buttons' strip
+ * (on its outer side only, part of its pane), a panel's width and height, the box's width, where the pair sits — come
+ * from it; the appliers (colsWrite, framebox, sizeFrame's panel box, plate) write them (C2b: one applier). While an
+ * edge is held (lay.pdrag), from the sizes at its press and the pointer (C3). A px cap an older version left on a
+ * picture page is read once as the scale it gives this picture. */
 function sidePass() {
-  const barH = /** @type {HTMLElement} */ (document.querySelector(".tabs")).offsetHeight,
-    barGap = Math.max(0, stageRect().top - SPACE.area - barH),
+  const roomTop = sideRoomTop(),
+    barH = /** @type {HTMLElement} */ (document.querySelector(".tabs")).offsetHeight,
+    barGap = Math.max(0, roomTop - SPACE.area - barH),
     dr = lay.pdrag, // an edge held: the pass computes from the sizes at its press and the pointer (C3)
-    j = onShow() || current(),
-    [a, b] = (j ? j.ar : S.ar).split(":").map(Number),
-    ratio = a / b,
-    room = picFull(),
+    pic = S.view === "gen",
     p = paneSize(),
     df = layDef(),
-    run = (/** @type {number} */ strip, /** @type {number | undefined} */ scale) =>
+    room = pic ? picFull() : sideRoom(),
+    strip = pic ? tbW() : 0, // one column, never the picture's height's (picLeastH; DD-2026-11-07-2)
+    run = (/** @type {import("./layoutmath.js").PassState["page"]} */ page) =>
       layoutPass({
         W: innerWidth,
         H: innerHeight,
         dock: /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright")
           ? "right"
           : "left",
-        page: { kind: "pic", ratio, scale },
+        page,
         box: { w: dr ? dr.boxW : (paneSize("box", "side").w ?? df.pw), wLo: PWMIN, text: 0, least: 0 },
-        /* the bar's row as it is on screen (the stage's top): the pass's numbers are the window's, on both axes */
+        /* the bar's row as it is on screen (the room's top): the pass's numbers are the window's, on both axes */
         bar: { w: tabsW(), h: barH },
         strip,
         gap: { area: SPACE.area, pair: pairGap(), bar: barGap },
@@ -324,24 +328,37 @@ function sidePass() {
         roomH: room,
         drag: dr ? { edge: dr.edge, at: dr.at } : null,
       });
+  if (!pic) {
+    /* a panel: its width and height are yours (by default a 2:3 plate at the room's height), within its limits */
+    const lw = paneLimits(pageId(), "w", { o: "side" }),
+      lh = paneLimits(pageId(), "h", { roomH: room });
+    return {
+      out: run({
+        kind: "panel",
+        w: dr ? (dr.w ?? df.rw) : (p.w ?? df.rw),
+        h: dr ? (dr.h ?? room) : (p.h ?? room),
+        lo: { w: lw.lo, h: lh.lo },
+        hi: { w: lw.hi, h: lh.hi },
+      }),
+      strip,
+      roomTop,
+    };
+  }
+  const j = onShow() || current(),
+    [a, b] = (j ? j.ar : S.ar).split(":").map(Number),
+    ratio = a / b;
   /** @type {number | undefined} */
   let scale = dr ? dr.scale : (p.s ?? undefined);
   if (!dr && (p.w || p.h)) {
-    /* a px cap is what a drag just left (newer than the scale): it wins */
-    const big = run(tbW(), undefined).largest; // a px cap (an edge, until C3): the share of this picture's largest
+    /* a px cap from an older version: the share of this picture's largest, kept as the scale — once */
+    const big = run({ kind: "pic", ratio, scale: undefined }).largest;
     scale = Math.min(1, (p.w ?? Infinity) / big.w, (p.h ?? Infinity) / big.h);
-    /* released (nothing held): the cap becomes this picture's scale, once — kept in px it limited the next picture
-       by the first one's ratio (a 16:9's height made a 3:4 small, 2026-11-03). ONE stored size: the scale */
-    if (lay.vh == null) {
-      setPaneSize(pageId(), "w", null);
-      setPaneSize(pageId(), "h", null); // (clears the scale: set after)
-      setPaneSize(pageId(), "s", scale >= 0.999 ? null : scale);
-      save(); // the drag's end saved the px; the scale is what's kept
-    }
+    setPaneSize(pageId(), "w", null);
+    setPaneSize(pageId(), "h", null); // (clears the scale: set after)
+    setPaneSize(pageId(), "s", scale >= 0.999 ? null : scale);
+    save();
   }
-  /* the strip: one column, never the picture's height's (picLeastH; DD-2026-11-07-2) — one run */
-  const strip = tbW();
-  return { out: run(strip, scale), strip };
+  return { out: run({ kind: "pic", ratio, scale }), strip, roomTop };
 }
 export function layGeo() {
   const W = layW();
@@ -359,18 +376,34 @@ export function layGeo() {
      moves nothing but the picture (on the frame's clock), and the box follows it on that clock to the pass's place
      (promptFollow). Hugging columns resized the area on CSS's clock while the picture moved on its own: the plate
      and the tab bar wobbled (the ownership tour's reversals, insets › stageStaysPutPromptHugs) */
-  if (gen && !document.querySelector(".app.stacked")) {
-    const { out, strip } = sidePass();
+  if (!document.querySelector(".app.stacked")) {
+    const { out, strip, roomTop } = sidePass();
     lay.pass = {
-      pic: /** @type {Rect} */ (out.pic),
+      pic: out.pic,
       page: out.page,
       box: out.box,
       strip,
       largest: out.largest,
       kept: out.kept,
       handles: out.handles,
+      roomTop,
     };
-    return { pw: out.box.w, rw: W - pairGap() - out.box.w, mL: 0, mR: 0, W, minR, off: 0, gen, clear: 0 };
+    if (gen) return { pw: out.box.w, rw: W - pairGap() - out.box.w, mL: 0, mR: 0, W, minR, off: 0, gen, clear: 0 };
+    /* a panel: the pair's columns hug it, where the pass put it (the area is the panel) */
+    const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
+      first = R ? out.page : out.box,
+      last = R ? out.box : out.page;
+    return {
+      pw: out.box.w,
+      rw: out.page.w,
+      mL: first.x - SPACE.area,
+      mR: W - (last.x + last.w - SPACE.area),
+      W,
+      minR,
+      off: 0,
+      gen,
+      clear: 0,
+    };
   }
   lay.pass = null;
   /* Generating's area is the whole stage the prompt leaves (no hug: ownership map G6) — the picture is centred in it
@@ -469,76 +502,10 @@ function layNow() {
   }
   return g;
 }
-/* a panel's edge drag side by side, in px from where it started (v0.7c, docs/decisions/0013) — until C2a's rest puts
-   panels on the pass. dv = the divider: one panel grows exactly as much as the other shrinks, nothing outside the pair
-   moves. po / ro = an outer edge: only that panel changes, its other side PINNED where it was (the pair's place comes from
-   layoutmath.js arrange with the pin), so the edge stays under the cursor; it can go until the pair meets the room's
-   end. layRelease() drops the pin: the pair settles back to its resting place. A picture page's edges go through the
-   layout pass instead (passDragStart, C3). */
-/** @param {"dv" | "po" | "ro"} edge @param {Geometry} g0 the geometry when the drag began @param {number} dx px moved */
-export function layDrag(edge, g0, dx) {
-  const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
-    gap = pairGap(),
-    first = R ? "page" : "box", // the panel on the left
-    /* the room between the pair and the band's ends at grab: where an outer edge can still go */
-    freeL = g0.mL,
-    freeR = g0.mR,
-    lb = paneLimits("box", "w", { o: "side" }),
-    lp = paneLimits(pageId(), "w", { o: "side" }),
-    p0 = g0.rw,
-    clamp = (/** @type {number} */ v, /** @type {number} */ lo, /** @type {number} */ hi) =>
-      Math.max(lo, Math.min(Math.max(lo, hi), v));
-  /* what you see while held (past a limit: with resistance) and what's kept (the limit) */
-  let pw = g0.pw,
-    rw = p0,
-    pwKeep = pw,
-    rwKeep = rw;
-  /** @type {{ i: number, side: "start" | "end", at: number }} */
-  let pin = { i: 0, side: "start", at: g0.mL }; // the divider: the pair's outer sides don't move
-  const w0 = first === "box" ? g0.pw : g0.rw; // the left panel's width at grab
-  if (edge === "dv") {
-    const d = first === "box" ? dx : -dx, // how much the prompt grows
-      la = { lo: lb.lo, hi: g0.pw + p0 - lp.lo },
-      shown = trade(d, g0.pw, p0, la, lp),
-      hi = Math.min(la.hi - g0.pw, p0 - lp.lo),
-      kept = clamp(d, Math.min(hi, Math.max(la.lo - g0.pw, p0 - lp.hi)), hi);
-    pw = g0.pw + shown;
-    rw = p0 - shown;
-    pwKeep = g0.pw + kept;
-    rwKeep = p0 - kept;
-  } else {
-    const box = edge === "po",
-      left = box === (first === "box"), // the dragged panel is the left one
-      grow = left ? -dx : dx,
-      size0 = box ? g0.pw : p0,
-      lim = box ? lb : lp,
-      hi = Math.min(lim.hi, size0 + (left ? freeL : freeR)),
-      shown = rubber(size0 + grow, lim.lo, Math.max(lim.lo, hi), RUBBER),
-      kept = clamp(size0 + grow, lim.lo, hi);
-    if (box) [pw, pwKeep] = [shown, kept];
-    else [rw, rwKeep] = [shown, kept];
-    pin = left ? { i: 0, side: "end", at: g0.mL + w0 } : { i: 1, side: "start", at: g0.mL + w0 + gap };
-  }
-  const sizes = first === "box" ? [pw, rw] : [rw, pw],
-    a = arrange({
-      panes: sizes.map(s => ({ size: s, lo: s, hi: s })),
-      gap,
-      start: 0,
-      length: g0.W,
-      margin: 0,
-      anchor: "center",
-      pin,
-    }),
-    g = Object.assign({}, g0, { pw, rw, mL: a.start, mR: g0.W - a.end, off: 0 });
-  setPaneSize("box", "w", pwKeep, "side");
-  if (edge !== "po") setPaneSize(pageId(), "w", rwKeep, "side");
-  layApply(g);
-  return g;
-}
-/* ---------- a picture page's edge drag side by side goes through the layout pass (v0.7c C3) ----------
-   ONE way for every edge of the pair (the box's outer edge, the shared edge, the picture's outer, top and bottom
-   edges): the press freezes the sizes at rest, the pointer is the drag's constraint, and the pass alone gives every
-   number, held or not — the picture's size and place, the box's width, what a release keeps. Before, each edge had
+/* ---------- an edge drag side by side goes through the layout pass (v0.7c C3; panels: C2a's rest) ----------
+   ONE way for every edge of the pair (the box's outer edge, the shared edge, the page's outer, top and bottom edges —
+   a picture or a panel): the press freezes the sizes at rest, the pointer is the drag's constraint, and the pass alone
+   gives every number, held or not — the page's size and place, the box's width, what a release keeps. Before, each edge had
    its own maths (layDrag's pin and slack, the top / bottom's lay.vh) and the picture's place while held came from a
    centring in the area (B18: it slid 53 px toward the box). Release keeps the pass's `kept`: the box's width, the
    picture's scale of its largest — nothing glides back on a centred axis (DEVLOG DD-2026-11-03-6). */
@@ -547,10 +514,18 @@ export function layDrag(edge, g0, dx) {
 export function passDragStart(edge, pointer) {
   const P = lay.pass,
     h = P && P.handles[edge];
-  if (!P || !h || S.view !== "gen" || document.querySelector(".app.stacked")) return false;
+  if (!P || !h || document.querySelector(".app.stacked")) return false;
   const y = edge.endsWith(".top") || edge.endsWith(".bottom"),
     line = y ? h.y + h.h / 2 : h.x + h.w / 2;
-  lay.pdrag = { edge, at: line, off: line - pointer, boxW: P.box.w, scale: P.kept.scale ?? 1 };
+  lay.pdrag = {
+    edge,
+    at: line,
+    off: line - pointer,
+    boxW: P.box.w,
+    scale: P.kept.scale ?? 1,
+    w: P.kept.w,
+    h: P.kept.h,
+  };
   lay.drag = true;
   return true;
 }
@@ -568,11 +543,16 @@ export function passDragEnd() {
   if (d && k) {
     /* what the edge changed: an outer edge only its own pane (DD-2026-11-07-1), the shared edge both */
     if (d.edge === "shared" || d.edge.startsWith("box.")) setPaneSize("box", "w", k.boxW, "side");
-    if (d.edge === "shared" || d.edge.startsWith("page.")) {
+    const page = d.edge === "shared" || d.edge.startsWith("page."),
+      tall = d.edge === "page.top" || d.edge === "page.bottom";
+    if (page && k.scale != null) {
+      /* a picture: its scale of its largest */
       setPaneSize(pageId(), "w", null);
       setPaneSize(pageId(), "h", null); // (clears the scale: set after)
-      setPaneSize(pageId(), "s", k.scale == null || k.scale >= 0.999 ? null : k.scale);
-    }
+      setPaneSize(pageId(), "s", k.scale >= 0.999 ? null : k.scale);
+    } else if (page && tall && k.h != null)
+      setPaneSize(pageId(), "h", k.h >= sideRoom() - 1 ? null : k.h); // a panel's height (the whole room: none of its own)
+    else if (page && k.w != null) setPaneSize(pageId(), "w", k.w, "side"); // a panel's width
     save();
   }
   sizeFrame();
@@ -765,8 +745,13 @@ export function sizeFrame() {
       room = stk ? lay.vroom : sideRoom(),
       panel = S.view !== "gen",
       kept = panel ? paneSize().h : null,
-      H = panel ? Math.round(lay.ph ?? (kept ? within(kept, paneLimits(pageId(), "h", { roomH: room })) : room)) : null,
-      top = panel && H != null ? Math.round(lay.ptop ?? (stk ? 0 : (room - H) / 2)) : 0,
+      sp = panel && !stk ? lay.pass : null, // side by side: the layout pass's (C2a's rest), held or not
+      H = panel
+        ? Math.round(
+            sp ? sp.page.h : (lay.ph ?? (kept ? within(kept, paneLimits(pageId(), "h", { roomH: room })) : room)),
+          )
+        : null,
+      top = panel && H != null ? Math.round(sp ? sp.page.y - sp.roomTop : (lay.ptop ?? 0)) : 0,
       h = H != null ? H + "px" : stk ? lay.vroom + "px" : "",
       mt = top ? top + "px" : "";
     if (rp.style.height !== h) rp.style.height = h;
@@ -781,12 +766,13 @@ export function sizeFrame() {
   const st = stageRect(),
     SW = stk ? (lay.colW ? lay.colW - 2 : st.width) : /** @type {Geometry} */ (lay.last).rw; // wide: layApply above has set it
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
-  const pass = !stk && S.view === "gen" ? lay.pass : null, // side by side: the pass's numbers, held or not (C2a, C3)
-    PH = pass ? pass.pic.h : picH(),
+  const pass = !stk && S.view === "gen" && lay.pass && lay.pass.pic ? lay.pass : null, // side by side: the pass's
+    PH = pass && pass.pic ? pass.pic.h : picH(),
     TB = pass ? pass.strip : tbW(), // the edit buttons' column: side by side, part of the picture's pane (C2a)
     R = ins.row ? rowRoom() : 0, // (lay.vrow: the prompt follows the row's room too, Vertical)
     M = SPACE.mat, // the picture's mat: the plate is the picture and M round it
-    { w, h } = pass ? { w: pass.pic.w - 2 * M, h: pass.pic.h - 2 * M } : fitInBox(ar, SW - 2 * M, PH - 2 * M),
+    { w, h } =
+      pass && pass.pic ? { w: pass.pic.w - 2 * M, h: pass.pic.h - 2 * M } : fitInBox(ar, SW - 2 * M, PH - 2 * M),
     W = w + 2 * M, // the plate
     H = h + 2 * M;
   /* the picture's canvas is drawn at the box's FINAL size and centred in it: the box may glide to a new shape (its
@@ -810,10 +796,10 @@ export function sizeFrame() {
     top = placedTop;
   /* side by side at rest the picture's place across its area is the pass's: its strip on the outer side (C2a) — not a
      centring inside the geometry last applied, which may be held or stale (the picture slid onto the box, 2026-11-03) */
-  if (pass) {
+  if (pass && pass.pic) {
     const g = /** @type {Geometry} */ (lay.last); // the area's place in the window: the columns as applied
     left = pass.pic.x - (SPACE.area + g.mL + (tbLeft ? 0 : g.pw + pairGap()));
-    top = pass.pic.y - st.top; // held too: one source for the picture's place (B18: centred in the area while held)
+    top = pass.pic.y - pass.roomTop; // held too: one source for the picture's place (B18: centred in the area while held)
   }
   Object.assign(f.dataset, { tw: w, th: h, tl: left + M, tt: top + M });
   /* where the frame belongs (the plate's place, less the mat); framebox.js moves it there (a glide, a jump, or where a

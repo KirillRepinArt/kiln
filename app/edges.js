@@ -10,8 +10,6 @@ import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
 import {
   lay,
-  layDrag,
-  layGeo,
   layRelease,
   passDragEnd,
   passDragMove,
@@ -236,51 +234,30 @@ export function initEdges() {
       mk($("right"), "ro", "ro", R_TIP),
     ];
     for (const h of hs) {
-      /** a panel's drag: which edge, where the pointer started, the geometry then; pass: a picture page's (C3)
-       * @type {{ e: "dv" | "po" | "ro", x0: number, g0: import("./types.js").Geometry } | { pass: true } | null} */
-      let d = null;
+      /** held: through the layout pass (every page side by side: C3, C2a's rest) */
+      let held = false;
       gesture(h, () => RESIZES[/** @type {string} */ (h.dataset.e)], {
         cls: ["resizing", "laydrag"],
         down: ev => {
           if (q(".app.stacked")) return false;
           ev.stopPropagation(); /* not the card's move gesture */
-          const e = /** @type {"dv" | "po" | "ro"} */ (h.dataset.e),
+          const e = h.dataset.e,
             R = !!q(".app.pright"),
             /* the pass's name for this edge: the shared edge, the box's outer side, the page's outer side */
             id = e === "dv" ? "shared" : e === "po" ? (R ? "box.right" : "box.left") : R ? "page.left" : "page.right";
-          /* a picture page: the layout pass gives every number while held (v0.7c C3) */
-          if (passDragStart(id, ev.clientX)) {
-            d = { pass: true };
-            return;
-          }
-          d = { e, x0: ev.clientX, g0: Object.assign({}, lay.last || layGeo(), { gen: S.view === "gen" }) };
-          lay.drag = true;
+          held = passDragStart(id, ev.clientX);
+          return held;
         },
         move: ev => {
-          if (!d) return;
-          if ("pass" in d) passDragMove(ev.clientX);
-          else {
-            layDrag(d.e, d.g0, ev.clientX - d.x0);
-            lay.frameHold = true;
-            sizeFrame();
-            lay.frameHold = false;
-          }
+          if (!held) return;
+          passDragMove(ev.clientX);
           moveThumb(true);
         },
         end: () => {
-          const was = d;
-          d = null;
-          if (was && "pass" in was) {
-            passDragEnd();
-            moveThumb(true);
-            return;
-          }
-          save();
-          layRelease();
-          setTimeout(() => {
-            sizeFrame();
-            moveThumb(true);
-          }, 480); /* after the glide */
+          if (!held) return;
+          held = false;
+          passDragEnd();
+          moveThumb(true);
         },
       });
       h.addEventListener("dblclick", () => {
@@ -431,12 +408,18 @@ export function initEdges() {
       h.dataset.tip = "Drag to resize the panel · double-click for its full height";
       rt.appendChild(h);
       /** @type {{ y0: number, h0: number, t0: number, room: number } | null} */
-      let d = null;
+      let d = null,
+        pd = false; // held through the layout pass (side by side)
       gesture(h, () => RESIZES.phedge, {
         cls: ["vresizing", "laydrag"],
         down: ev => {
           if (S.view === "gen") return false;
           ev.stopPropagation();
+          /* side by side: the layout pass (C2a's rest), a centred axis — the opposite edge mirrors */
+          if (!q(".app.stacked") && passDragStart(side === "t" ? "page.top" : "page.bottom", ev.clientY)) {
+            pd = true;
+            return;
+          }
           d = {
             y0: ev.clientY,
             h0: rp.offsetHeight,
@@ -445,6 +428,7 @@ export function initEdges() {
           };
         },
         move: ev => {
+          if (pd) return passDragMove(ev.clientY);
           if (!d) return;
           const dy = ev.clientY - d.y0,
             top = side === "t",
@@ -458,6 +442,10 @@ export function initEdges() {
           sizeFrame();
         },
         end: () => {
+          if (pd) {
+            pd = false;
+            return passDragEnd();
+          }
           const room = d ? d.room : 0;
           d = null;
           lay.ph = null;

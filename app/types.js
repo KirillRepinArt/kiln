@@ -181,9 +181,9 @@
  * @property {boolean} frameDefer    inside one click: sizeFrame runs once, at the end
  * @property {boolean} framePending  …and was asked for meanwhile
  * @property {boolean} frameHold     the layout is held (the prompt box's bottom edge being dragged)
- * @property {{ pic: { x: number, y: number, w: number, h: number }, page: { x: number, y: number, w: number, h: number }, box: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number }, kept: { boxW: number, scale?: number, w?: number, h?: number }, handles: Record<string, { x: number, y: number, w: number, h: number }> } | null} [pass]  side by side, a
+ * @property {{ pic: { x: number, y: number, w: number, h: number } | null, roomTop: number, page: { x: number, y: number, w: number, h: number }, box: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number }, kept: { boxW: number, scale?: number, w?: number, h?: number }, handles: Record<string, { x: number, y: number, w: number, h: number }> } | null} [pass]  side by side, a
  *   picture page: the single layout pass's numbers (v0.7c C2a), held or not (C3)
- * @property {{ edge: string, at: number, off: number, boxW: number, scale: number } | null} [pdrag]  an edge of a picture
+ * @property {{ edge: string, at: number, off: number, boxW: number, scale: number, w?: number, h?: number } | null} [pdrag]  an edge of a picture
  *   page held side by side (C3): the pass's handle id, the pointer on its axis (+ off: where on the handle it was
  *   pressed), the sizes at the press
  * @property {"bar" | "none" | null} row  the row under the picture: the progress bar, or nothing

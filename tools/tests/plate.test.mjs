@@ -632,11 +632,13 @@ picturesFadeAtOneSpeed.opts = { step: 0.05 };
    during a tab switch keeps the glides off until it has ended (+ its 300 ms) */
 export async function snapHeldUntilTheLastMotion(k, t) {
   await k.mouse(2, 2);
-  const s = await k.ev(`new Promise(res=>{const o=[],t0=performance.now(),h=document.documentElement,b=document.body;
+  const s = await k.ev(`new Promise(res=>{const o=[],t0=performance.now(),b=document.body;
     document.querySelector('.tab[data-v="queue"]').click();
     setTimeout(()=>setDock("right"),500);
-    (function s(){requestAnimationFrame(()=>setTimeout(()=>{o.push([Math.round(performance.now()-t0),b.classList.contains("laysnap"),h.classList.contains("laymorph")]);
+    (function s(){requestAnimationFrame(()=>setTimeout(()=>{o.push([Math.round(performance.now()-t0),b.classList.contains("laysnap"),performance.now()-t0>500&&$("plate").getAnimations().length>0]);
     if(performance.now()-t0<2600)s();else res(o)},0))})()})`);
+  /* the layout switch is the tab switch's system since T2b (no View Transition, decision 0014): it runs while the plate
+     moves after the layout was asked for */
   const lastMorph = s.filter(x => x[2]).at(-1),
     gap = lastMorph ? s.filter(x => x[0] <= lastMorph[0] + 250 && x[0] >= 20 && !x[1]) : [];
   t.ok(!!lastMorph, "the layout switch ran", s.slice(0, 3));
@@ -715,3 +717,50 @@ export async function switchFromShortPanelReveals(k, t) {
   );
 }
 switchFromShortPanelReveals.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* T2b (docs/decisions/0014; the user 2026-11-07: "it removes the blur first, then fades the pic in, then applies the
+   blur"): a layout switch moves the LIVE page on the tab switch's system — no View Transition (its snapshot can't hold
+   the glass's blur, and its names made the glass a backdrop root from the first frame). Per frame: the real plate
+   travels (several frames between its two places, its glass on), the prompt box only fades — while it's visible it's
+   where it was or where it lands, never a third place — and ends shown */
+export async function layoutSwitchIsLive(k, t) {
+  await k.job("[fill:446688] a", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.ev(`(window._vt=0,document.startViewTransition&&(()=>{const o=document.startViewTransition.bind(document);
+    document.startViewTransition=f=>(window._vt++,o(f))})(),1)`);
+  for (const page of ["gen", "queue"])
+    for (const [from, to] of [
+      ["left", "right"],
+      ["right", "below"],
+      ["below", "left"],
+    ]) {
+      await k.ev(`(setDock("${from}"),document.querySelector('.tab[data-v="${page}"]').click(),1)`);
+      await k.mouse(4, 4);
+      await k.sleep(1600);
+      const rows = await k.ev(`new Promise(res=>{const out=[],t0=performance.now();setDock("${to}");
+        (function f(){const p=$("plate").getBoundingClientRect(),c=$("lcol"),L=$("left").getBoundingClientRect();
+          out.push([Math.round(p.left),Math.round(p.top),getComputedStyle($("plate")).backdropFilter!=="none"?1:0,
+            +getComputedStyle(c).opacity,Math.round(L.left),Math.round(L.top)]);
+          if(performance.now()-t0<1000)requestAnimationFrame(f);else res(out)})()})`);
+      const tag = `${page}: ${from} → ${to}`,
+        [p0, p1] = [rows[0], rows.at(-1)],
+        between = rows.filter(
+          r => (r[0] - p0[0]) * (r[0] - p1[0]) < -1 || (r[1] - p0[1]) * (r[1] - p1[1]) < -1, // strictly between
+        ).length,
+        seen = rows.filter(r => r[3] > 0.05),
+        places = [seen[0], seen.at(-1)].map(r => [r[4], r[5]]),
+        third = seen.filter(r => !places.some(([x, y]) => Math.abs(r[4] - x) <= 2 && Math.abs(r[5] - y) <= 2));
+      t.ok(
+        rows.every(r => r[2]),
+        `${tag}: the plate's glass on every frame`,
+      );
+      t.ok(between >= 3, `${tag}: the plate travels live (frames between its two places)`, { between, p0, p1 });
+      t.ok(rows.some(r => r[3] < 0.05) && p1[3] === 1, `${tag}: the box fades through and ends shown`, {
+        min: Math.min(...rows.map(r => r[3])),
+        last: p1[3],
+      });
+      t.ok(!third.length, `${tag}: …visible only where it was or where it lands`, { third: third.slice(0, 3), places });
+    }
+  t.ok((await k.ev(`window._vt`)) === 0, "no View Transition started", await k.ev(`window._vt`));
+}
+layoutSwitchIsLive.opts = { width: 1760, height: 1080, step: 0.05 };

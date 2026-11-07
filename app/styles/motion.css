@@ -28,63 +28,7 @@ body.laysnap *,
 body.laysnap *::before,
 body.laysnap *::after {
   transition: none !important;
-} /* a layout switch is captured where it ends */
-/* a layout switch (Left / Right / Vertical) is a View Transition: the picture is the same object, so it MOVES to its
-   new place and size (a shared-element morph, Material's container transform); everything else fades out, then back
-   in a beat after the picture leads, clearing from a slight blur. The names exist only during a switch: a named
-   element is a backdrop root, so the glass couldn't see the sky */
-html.laymorph .app {
-  view-transition-name: kiln-app;
-}
-html.laymorph .view.on #frame {
-  view-transition-name: kiln-pic;
-}
-html.laymorph #fglow {
-  visibility: visible;
-  view-transition-name: kiln-glow;
-} /* the glow travels with the picture */
-html.laymorph #fglow[style*="display: none"] {
-  view-transition-name: none;
-}
-::view-transition-old(root) {
-  display: none;
-}
-::view-transition-new(root) {
-  animation: none;
-}
-::view-transition-group(kiln-app) {
-  animation: none;
-}
-::view-transition-old(kiln-app) {
-  animation: kfadeout var(--t-120) var(--e-accel) both;
-}
-::view-transition-new(kiln-app) {
-  animation: kfadein2 var(--t-300) var(--e-decel) var(--t-170) both;
-}
-::view-transition-group(kiln-pic) {
-  animation-duration: var(--sw-t);
-  animation-timing-function: var(--sw-e);
-  z-index: 2;
-}
-::view-transition-old(kiln-pic),
-::view-transition-new(kiln-pic) {
-  animation-duration: var(--sw-t);
-  animation-timing-function: var(--sw-e);
-  height: 100%;
-  object-fit: cover;
-} /* a box changing shape crops the pictures, never squeezes them (Gallery ↔ Generating between shapes, 2026-10-27) */
-::view-transition-group(kiln-glow) {
-  animation-duration: var(--sw-t);
-  animation-timing-function: var(--sw-e);
-  z-index: 1;
-  mix-blend-mode: screen;
-}
-::view-transition-old(kiln-glow),
-::view-transition-new(kiln-glow) {
-  animation-duration: var(--sw-t);
-  animation-timing-function: var(--sw-e);
-  height: 100%;
-}
+} /* the layout lands at once while a switch moves things itself (layout.js snapHold) */
 /* a tab switch (tabs.js, plate.js switchGlide): the leaving view stays on the page where it was, under the plate's
    clip, until it has faded; the panel doesn't cut it off meanwhile (the clip is the plate's) */
 .view.leaving {

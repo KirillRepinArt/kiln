@@ -188,8 +188,11 @@ export function layoutLeft() {
   }
   const colH = col.clientHeight - TS;
   if (colH <= 0) return;
+  /* the column's own place: its layout box, without ANY transform — a rect counted its glue and a running switch's
+     offset, and the box re-anchored against them (T2b: 348 px off the frame after a layout switch began) */
   const f = $("frame").getBoundingClientRect(),
-    c = col.getBoundingClientRect();
+    app = /** @type {HTMLElement} */ (col.offsetParent),
+    c = { top: app.getBoundingClientRect().top + col.offsetTop };
   const T =
     typeof lay !== "undefined" &&
     lay.target; /* the picture's target (it may be mid-glide): the prompt moves with it, not after it */

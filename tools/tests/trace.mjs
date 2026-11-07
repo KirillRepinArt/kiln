@@ -217,33 +217,56 @@ export function reversals(samples) {
     out = [];
   for (const [el, rows] of Object.entries(samples))
     for (let i = 0; i < NAMES.length; i++) {
-      /* only while it can be seen: a hidden element repositioned is no blink */
-      const tol = NAMES[i] === "opacity" ? 0.03 : 1.5,
-        rs = NAMES[i] === "opacity" ? rows : rows.filter(r => r[5] > 0.01),
-        v = rs.map(r => r[i + 1]);
-      if (v.length < 2) continue;
-      /* the turning points of the series, small jitter ignored */
-      let dir = 0,
-        start = v[0],
-        ext = v[0],
-        extAt = 0;
-      for (let j = 0; j < v.length; j++) {
-        const x = v[j],
-          d = x - ext;
-        if (dir === 0) {
-          if (Math.abs(x - start) > tol) {
-            dir = Math.sign(x - start);
+      /* only while it can be seen: a hidden element repositioned is no blink — and one that was fully gone between two
+         appearances (a fade-through: out at one place, in at another) is two motions, each checked on its own */
+      const tol = NAMES[i] === "opacity" ? 0.03 : 1.5;
+      /** @type {number[][][]} */
+      const runs = [];
+      if (NAMES[i] === "opacity") runs.push(rows);
+      else
+        for (const r of rows)
+          if (r[5] > 0.01)
+            (runs.length && runs.at(-1).gone === false
+              ? runs.at(-1)
+              : runs[runs.push(Object.assign([], { gone: false })) - 1]
+            ).push(r);
+          else if (runs.length) runs.at(-1).gone = true;
+      for (const rs of runs) {
+        const v = rs.map(r => r[i + 1]);
+        if (v.length < 2) continue;
+        /* the turning points of the series, small jitter ignored */
+        let dir = 0,
+          start = v[0],
+          ext = v[0],
+          extAt = 0;
+        for (let j = 0; j < v.length; j++) {
+          const x = v[j],
+            d = x - ext;
+          if (dir === 0) {
+            if (Math.abs(x - start) > tol) {
+              dir = Math.sign(x - start);
+              ext = x;
+              extAt = j;
+            }
+          } else if (Math.sign(d) === dir) {
             ext = x;
             extAt = j;
+          } else if (Math.abs(d) > tol) {
+            /* a FADE-THROUGH is no blink (the user, 2026-11-07): an opacity that turns at ~0 was gone at the turn — out
+             fully, then in (Material's definition; SwiftUI does it with two instances, removed then inserted). A blink is
+             a reversal while still seen: a dip that doesn't reach 0, or a flash (0 → shown → 0). Scan on from the turn */
+            if (NAMES[i] === "opacity" && dir < 0 && ext <= 0.05) {
+              dir = 1;
+              start = ext;
+              ext = x;
+              extAt = j;
+              continue;
+            }
+            /* when (ms from the motion's start): the turn, where it was seen again, the last sample */
+            const when = `${rs[extAt][6]}→${rs[j][6]}ms of ${rs[rs.length - 1][6]}, ${rs.length} frames`;
+            out.push({ el, what: NAMES[i], from: +start.toFixed(2), peak: +ext.toFixed(2), to: +x.toFixed(2), when });
+            break;
           }
-        } else if (Math.sign(d) === dir) {
-          ext = x;
-          extAt = j;
-        } else if (Math.abs(d) > tol) {
-          /* when (ms from the motion's start): the turn, where it was seen again, the last sample */
-          const when = `${rs[extAt][6]}→${rs[j][6]}ms of ${rs[rs.length - 1][6]}, ${rs.length} frames`;
-          out.push({ el, what: NAMES[i], from: +start.toFixed(2), peak: +ext.toFixed(2), to: +x.toFixed(2), when });
-          break;
         }
       }
     }

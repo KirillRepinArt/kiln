@@ -382,11 +382,28 @@ export function shapeSteps(o, n) {
  */
 export function fades(st) {
   const F = MORPH.fade;
+  /* a pure move has no swap: what leaves fades as the move starts, what comes as it lands (a fade-through over the
+     travel — the box in a layout switch, T2b) */
+  if (st.T > 0 && !st.A && !st.S)
+    return { out: { delay: 0, duration: F }, in: { delay: Math.max(0, st.T - F), duration: F }, T: st.T };
   return {
     out: { delay: Math.max(0, st.A + st.S - F), duration: F },
     in: { delay: st.A, duration: F },
     T: Math.max(st.T, st.A + F),
   };
+}
+
+/**
+ * A fade-through for ONE element that changes place (a layout switch's prompt box and panel view, T2b): out by the
+ * switch's out-fade, then a turn while it's fully gone (two frames: it changes place there — never seen moving back),
+ * then in. The one schedule both use.
+ * @param {{ out: { delay: number, duration: number }, in: { delay: number, duration: number } }} fd the switch's fades
+ */
+export function fadeThrough(fd) {
+  const G = 34, // ~2 frames gone
+    outEnd = fd.out.delay + fd.out.duration,
+    inStart = Math.max(outEnd + G, fd.in.delay);
+  return { outStart: fd.out.delay, outEnd, turn: outEnd + G / 2, inStart, inEnd: inStart + fd.in.duration };
 }
 
 /**

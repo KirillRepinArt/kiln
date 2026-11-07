@@ -8,7 +8,7 @@
 import { placeAround } from "./around.js";
 import { $, offsetIn } from "./dom.js";
 import { frameHold, frameTarget } from "./framebox.js";
-import { fades, shapeBox, shapeSteps } from "./layoutmath.js";
+import { fadeThrough, fades, shapeBox, shapeSteps } from "./layoutmath.js";
 import { promptFollow } from "./layout.js";
 import { SPACE } from "./tokens.js";
 
@@ -160,24 +160,62 @@ let switchAnims = [];
 // the running switch's own animations (a new switch replaces them)
 
 /** @typedef {{ old: HTMLElement, oldRect: DOMRect, neu: HTMLElement }} Views a switch between two views: the one
- * leaving (where it was on screen) and the one coming */
+ * leaving (where it was on screen) and the one coming — the SAME view for a layout switch (Left / Right / Vertical,
+ * T2b): it rides the plate live, nothing of it fades */
+/* where the prompt box's partner is (layout.js promptFollow glues the box one gap from it): the plate as it is on screen
+   — in a tab switch too, so the box rides it (B23) — except in a layout switch, where the box doesn't travel but fades
+   through (DEVLOG DD-2026-11-07-6): there its partner is the plate where it lands. ONE answer, from the switch's owner */
+/** @type {{ l: number, t: number, w: number, h: number } | null} */
+let landing = null;
+/** @returns {{ left: number, right: number, top: number, bottom: number, width: number, height: number }} */
+export function glueRect() {
+  if (!landing) return $("plate").getBoundingClientRect();
+  const b = landing;
+  return { left: b.l, right: b.l + b.w, top: b.t, bottom: b.t + b.h, width: b.w, height: b.h };
+}
 /** @type {(() => void) | null} */
 let leaveDone = null; // ends the running switch's leaving view (a new switch ends it at once)
 /** @param {{ l: number, t: number, w: number, h: number }} at where the plate was on screen (plateBefore)
  * @param {Views | null} views the two views when the switch changes view; null: the same view (Generating ↔ the
  * Gallery — the frame moves by itself, as when browsing, and the plate follows it)
- * @returns {{ t0: number, T: number }} the switch's start time (performance.now()'s clock) and its length */
-export function switchGlide(at, views) {
+ * @param {boolean} [layout] a layout switch (T2b): the prompt box's partner is where the plate lands (glueRect)
+ * @returns {{ t0: number, T: number, fd: ReturnType<typeof fades> }} the switch's start time (performance.now()'s
+ * clock), its length, and its fades (the prompt box fades through on them in a layout switch) */
+export function switchGlide(at, views, layout = false) {
   pending = false;
   for (const a of switchAnims) a.cancel();
   switchAnims = [];
   if (leaveDone) leaveDone();
+  landing = null;
   if (barAnim) barAnim.cancel();
   barAnim = null;
   if (!views) {
     put(target()); // the plate rides the frame from here (framebox.js → plateSync)
-    plateFollow(700);
-    return { t0: performance.now(), T: 600 };
+    if (!layout) {
+      plateFollow(700);
+      return { t0: performance.now(), T: 600, fd: fades({ A: 0, S: 0, T: 0 }) };
+    }
+    /* a layout switch on a picture page: the frame crops and reveals itself (morph.js — the old picture at its old size
+       crossing to the new at its own: the same picture changing size never pops), the plate rides it; this switch only
+       says where the plate lands (the box's partner) and how long, on the frame's steps */
+    const o = $("right").getBoundingClientRect(),
+      to = goalBox(),
+      toS = { l: o.left + to.l, t: o.top + to.t, w: to.w, h: to.h },
+      st = shapeSteps(at, toS),
+      t0 = performance.now(),
+      done = () => {
+        if (leaveDone !== done) return;
+        leaveDone = null;
+        landing = null;
+      };
+    landing = toS;
+    leaveDone = done;
+    plateFollow(st.T + 50);
+    const last = $("plate").animate([], { duration: Math.max(1, st.T) });
+    last.startTime = t0;
+    switchAnims.push(last);
+    last.onfinish = last.oncancel = done;
+    return { t0, T: st.T, fd: fades(st) };
   }
   const h = document.documentElement,
     o = $("right").getBoundingClientRect(),
@@ -189,8 +227,10 @@ export function switchGlide(at, views) {
        the crop is steepest just before the swap — sampled past it, the plate was still 9 px taller than the picture
        as it came in */
     at8 = Array.from({ length: Math.ceil(T / 8) + 1 }, (_, i) => Math.min(T, i * 8)),
+    same = views.old === views.neu, // a layout switch's panel: one view, riding the plate to where the layout puts it
+    ft = fadeThrough(fades(steps)), // its fade-through: the turn is a sample
     /** @type {{ offset: number, q: [number, number] }[]} */
-    samples = [...new Set([...at8, steps.A, steps.A + steps.S, T])]
+    samples = [...new Set([...at8, steps.A, steps.A + steps.S, T, ...(same ? [ft.turn, ft.turn + 0.5] : [])])]
       .filter(e => e >= 0 && e <= T)
       .sort((x, y) => x - y)
       .map(e => ({ offset: e / T, q: steps.q(e) })),
@@ -273,12 +313,15 @@ export function switchGlide(at, views) {
     rp = $("rpanel").getBoundingClientRect(),
     rpanel = $("rpanel"),
     os = old.style;
-  old.classList.add("leaving");
-  os.left = oldRect.left - rp.left - rpanel.clientLeft + "px";
-  os.top = oldRect.top - rp.top - rpanel.clientTop + "px";
-  os.width = oldRect.width + "px";
-  os.height = oldRect.height + "px";
-  os.right = os.bottom = "auto";
+  if (layout) landing = toS; // the box's partner: the plate where it lands (the box fades through, it doesn't ride)
+  if (!same) {
+    old.classList.add("leaving");
+    os.left = oldRect.left - rp.left - rpanel.clientLeft + "px";
+    os.top = oldRect.top - rp.top - rpanel.clientTop + "px";
+    os.width = oldRect.width + "px";
+    os.height = oldRect.height + "px";
+    os.right = os.bottom = "auto";
+  }
   h.classList.add("switching");
   const nr = neu.getBoundingClientRect(),
     /** the plate's box (on screen) as an inset of a view's box, 1 px inside */
@@ -302,25 +345,68 @@ export function switchGlide(at, views) {
      2026-10-28). The clip is the plate's box in the moved one */
   const centre = (/** @type {{ l: number, t: number, w: number, h: number }} */ b) => [b.l + b.w / 2, b.t + b.h / 2],
     fr = $("frame").getBoundingClientRect(), // measured before anything rides
-    rides = /** @type {[HTMLElement, DOMRect, number[]][]} */ ([
-      [old, oldRect, centre(boxes[0])],
-      [neu, nr, centre(boxes[boxes.length - 1])],
-    ]);
-  for (const [v, r, anchor] of rides) {
+    rides = /** @type {[HTMLElement, DOMRect, number[], (i: number) => boolean][]} */ (
+      same
+        ? /* the one view plays both parts (a layout switch's panel): leaving until its turn — pinned at its old size,
+             so its contents don't reflow while seen — then, gone, coming at its new size */
+          [
+            [neu, oldRect, centre(boxes[0]), (/** @type {number} */ i) => samples[i].offset * T <= ft.turn],
+            [neu, nr, centre(boxes[boxes.length - 1]), (/** @type {number} */ i) => samples[i].offset * T > ft.turn],
+          ]
+        : [
+            [old, oldRect, centre(boxes[0]), () => true],
+            [neu, nr, centre(boxes[boxes.length - 1]), () => true],
+          ]
+    );
+  /** @type {Keyframe[]} */
+  const rideKeys = [],
+    /** @type {Keyframe[]} */
+    clipKeys = [];
+  for (const [v, r, anchor, mine] of rides) {
     const sh = boxes.map(b => {
         const c = centre(b);
         return [c[0] - anchor[0], c[1] - anchor[1]];
       }),
       box = pic(v) ? fr : r, // what the plate crops: the picture in its view, else the whole view
-      moved = (/** @type {number} */ i) => new DOMRect(box.left + sh[i][0], box.top + sh[i][1], box.width, box.height);
+      moved = (/** @type {number} */ i) => new DOMRect(box.left + sh[i][0], box.top + sh[i][1], box.width, box.height),
+      k = boxes.map((_, i) => i).filter(mine),
+      ride = k.map(i => ({ offset: samples[i].offset, transform: `translate(${sh[i][0]}px, ${sh[i][1]}px)` })),
+      clip = k.map(i => ({ offset: samples[i].offset, clipPath: inset(moved(i), boxes[i]) }));
+    if (!same) {
+      go(v.animate(ride, timing));
+      go((pic(v) ? $("frame") : v).animate(clip, timing));
+    } else {
+      rideKeys.push(...ride);
+      clipKeys.push(...clip);
+    }
+  }
+  if (same) {
+    go(neu.animate(rideKeys, timing));
+    go(neu.animate(clipKeys, timing));
+    /* until its turn, pinned at its old place and size (the tab switch's leaving view, as a geometry of its own) */
+    const pin = {
+      left: oldRect.left - rp.left - rpanel.clientLeft + "px",
+      top: oldRect.top - rp.top - rpanel.clientTop + "px",
+      width: oldRect.width + "px",
+      height: oldRect.height + "px",
+      right: "auto",
+      bottom: "auto",
+    };
+    go(neu.animate([pin, pin], { duration: Math.max(1, ft.turn), fill: "backwards" }));
+    /* its contents fade through on the one schedule (the box's too: layout.js fadeCol) */
     go(
-      v.animate(
-        sh.map(([dx, dy], i) => ({ offset: samples[i].offset, transform: `translate(${dx}px, ${dy}px)` })),
-        timing,
+      neu.animate(
+        [
+          { opacity: 1, offset: 0 },
+          { opacity: 1, offset: ft.outStart / T },
+          { opacity: 0, offset: ft.outEnd / T },
+          { opacity: 0, offset: Math.min(1, ft.inStart / T) },
+          { opacity: 1, offset: Math.min(1, ft.inEnd / T) },
+          { opacity: 1, offset: 1 },
+        ],
+        { duration: T, fill: "backwards" },
       ),
     );
-    const c = boxes.map((b, i) => ({ offset: samples[i].offset, clipPath: inset(moved(i), b) }));
-    go((pic(v) ? $("frame") : v).animate(c, timing));
   }
   /* only out, from what they are now: shown by hover (the edit buttons, the arrows) or by state (the status row,
      Show prompt), a switch never shows them — faded in by it, or out from fully shown, they blinked (the user,
@@ -351,7 +437,8 @@ export function switchGlide(at, views) {
     TT = Math.max(T, fd.T), // the switch's length, its fade-in included
     goOut = { ...fd.out, easing: "linear", fill: /** @type {FillMode} */ ("both") },
     comeIn = { ...fd.in, easing: "linear", fill: /** @type {FillMode} */ ("both") };
-  const out = go(old.animate([{ opacity: 1 }, { opacity: 0 }], goOut));
+  /* the view's contents: out and in — the same view (a layout switch) stays shown, it only rides */
+  const out = go(old.animate(same ? [] : [{ opacity: 1 }, { opacity: 0 }], goOut));
   /* the picture's glow lives outside its view (a fixed layer): it comes and goes with the picture, on its fade */
   const fg = document.getElementById("fglow");
   if (fg && pic(neu) !== pic(old))
@@ -361,13 +448,16 @@ export function switchGlide(at, views) {
         pic(neu) ? comeIn : goOut,
       ),
     );
-  go(neu.animate([{ opacity: 0 }, { opacity: 1 }], comeIn));
+  if (!same) go(neu.animate([{ opacity: 0 }, { opacity: 1 }], comeIn));
   /* the leaving view goes when the switch ends (or a new switch begins): hidden, back in its place */
   const end = () => {
     if (leaveDone !== end) return;
     leaveDone = null;
-    old.classList.remove("leaving");
-    for (const p of ["left", "top", "width", "height", "right", "bottom"]) os.removeProperty(p);
+    landing = null; // the box glued to the plate as it is again
+    if (!same) {
+      old.classList.remove("leaving");
+      for (const p of ["left", "top", "width", "height", "right", "bottom"]) os.removeProperty(p);
+    }
     h.classList.remove("switching");
     frameHold(null); // the picture's frame (if its view left) to where the layout wants it
     /* the switch's own animations end with it: kept (filling), they piled up holding the views' last looks */
@@ -377,5 +467,5 @@ export function switchGlide(at, views) {
   leaveDone = end;
   const last = go(old.animate([], { duration: TT })); // the switch's length, no effect of its own
   last.onfinish = last.oncancel = out.oncancel = end;
-  return { t0, T: TT };
+  return { t0, T: TT, fd };
 }

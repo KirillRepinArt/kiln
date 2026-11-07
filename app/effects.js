@@ -647,7 +647,7 @@ export function initEffects() {
         } /* gone, not just transparent: a blended layer left in the page still costs Edge a separate compositing surface */
       }
     }
-    /* a layout switch captures the new layout at once: the halo has to be there already (stage.js layMorph) */
+    /* a layout switch lands the layout at once (the switch moves the plate): the halo has to be there already */
     window.haloNow = () => haloFrame(performance.now(), 0, skin().cover, true);
     /** @param {number} t */
     function draw(t) {

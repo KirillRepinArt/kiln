@@ -1,6 +1,6 @@
 # 0014 · No View Transitions: every rearrangement moves the live page
 
-**Status:** accepted 2026-11-07 (v0.7c T2b). **Supersedes:** the layout switch's View Transition (layout.js layMorph, since v0.6).
+**Status:** accepted and built 2026-11-07 (v0.7c T2b). **Supersedes:** the layout switch's View Transition (layout.js layMorph, since v0.6).
 
 ## Context
 

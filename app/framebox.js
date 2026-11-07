@@ -9,7 +9,7 @@ import { placeAround } from "./around.js";
 import { $ } from "./dom.js";
 import { bez } from "./layoutmath.js";
 import { plateSync } from "./plate.js";
-import { areaX, lay, promptFollow } from "./layout.js";
+import { areaX, lay, promptFollow, stageRect } from "./layout.js";
 import { moving, rearrange, stop } from "./rearrange.js";
 import { S } from "./state.js";
 
@@ -90,7 +90,10 @@ export function frameGoal(b) {
   if (change && !held) {
     const o = change;
     change = null;
-    if (cur && !same(cur, b) && S.view === "gen") {
+    /* another box — or the same box at another place on screen (a layout switch moves the area: T2b, Left ↔ Right) */
+    const st = stageRect(),
+      elsewhere = Math.abs(st.left + b.l - o.x) > 0.5 || Math.abs(st.top + b.t - o.y) > 0.5;
+    if (cur && (!same(cur, b) || elsewhere) && S.view === "gen") {
       goal = b;
       if (morphWith(o)) return; // reduced motion: it doesn't start — the jump below
     }

@@ -1,6 +1,6 @@
 // @ts-check
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
-import { SWITCH, plateFollow } from "./plate.js";
+import { SWITCH, glueRect, plateFollow } from "./plate.js";
 import { placeAround } from "./around.js";
 import { movingTo, rearrange, rearrangeFade } from "./rearrange.js";
 import { frameBox, frameGoal, layT } from "./framebox.js";
@@ -10,6 +10,7 @@ import { $ } from "./dom.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
+  fadeThrough,
   PWMIN,
   layoutPass,
   limits,
@@ -28,7 +29,7 @@ import {
 import { PV, onShow, picMode } from "./picstate.js";
 import { S, save } from "./state.js";
 import { forgeOk } from "./sync.js";
-import { moveThumb } from "./tabs.js";
+import { moveThumb, tabGo } from "./tabs.js";
 import { SPACE, pairGap } from "./tokens.js";
 
 /* Kiln · the page layout: the prompt and the picture area side by side or stacked, their widths and heights,
@@ -215,8 +216,10 @@ function evenGap() {
 /* Vertical: where the prompt's name starts (screen px) — worked out from where the column is laid out (without a
    switch's slide on it) and the name row's own height, not from where the title is mid-glide */
 function nameTop() {
+  /* the column's own place: its layout box, without ANY transform (its rect minus colY still counted a running
+     switch's offset: a layout switch into Vertical laid the picture out 624 px narrow until the switch ended) */
   const col = $("lcol"),
-    colTop = col.getBoundingClientRect().top - colY,
+    colTop = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop,
     TS = parseFloat(col.style.getPropertyValue("--ts")) || 64,
     fromBottom = $("ltitle").getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top;
   return { pn: colTop + 4 + (TS - 4 - SPACE.tight) - fromBottom, colTop };
@@ -537,7 +540,7 @@ export function layRelease() {
 /** @param {"left" | "right" | "below"} z */
 export function setDock(z) {
   if ((S.dock || "left") === z) return;
-  layMorph(() => {
+  tabGo(() => {
     S.dock = z;
     save();
     lyReset();
@@ -549,7 +552,7 @@ export function setDock(z) {
     layoutLeft();
     if (window.layMenuUI) window.layMenuUI();
     if (window.haloNow) window.haloNow();
-  });
+  }, true); // a layout switch: the tab switch's system (T2b; it was a View Transition)
 }
 /* ---------- "the layout lands at once" has ONE owner (2026-10-31, ownership map T1) ----------
    While a switch moves things itself, the layout's own glides are off (body.laysnap: it lands at once). Each motion
@@ -569,76 +572,6 @@ function snapCheck() {
   const left = Math.max(0, ...Object.values(snapUntil)) - performance.now();
   document.body.classList.toggle("laysnap", left > 0);
   if (left > 0) snapTimer = setTimeout(snapCheck, left + 1);
-}
-/* a layout switch as a View Transition: the old layout is a snapshot, the new one is applied with every glide off (so it
-   is captured where it ends, not mid-way), then they cross-fade (CSS ::view-transition-*). Without the API: a plain switch */
-let morphs = 0; // switches started so far: only the latest one ends the morph
-/** @type {ViewTransition | null} */
-let morphNow = null; // the switch running now
-/* when the running switch starts to show (its snapshots taken): motion started inside the switch waits for it — the
-   capture can take a few hundred ms, and a motion started before it was mostly over by its first frame */
-let morphClicks = false;
-/* a switch covers the page: Chrome sends every click during it to <html> (pointer-events can't change that), so quick
-   clicks — a second tab right after the first — were lost (2026-10-27). Such a click cuts the switch short and goes to
-   what is under the pointer once the real page is back */
-/** @param {MouseEvent} e */
-function clickThrough(e) {
-  const vt = morphNow;
-  if (!vt || e.target !== document.documentElement) return;
-  e.stopPropagation();
-  // found now, where the pointer is (the tab bar may still be gliding): the smallest control under it
-  /** @type {HTMLElement | null} */
-  let hit = null,
-    area = Infinity;
-  for (const c of /** @type {NodeListOf<HTMLElement>} */ (
-    document.querySelectorAll("button, a, label, input, select, [role='button']")
-  )) {
-    const r = c.getBoundingClientRect();
-    if (!r.width || e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) continue;
-    if (r.width * r.height < area) [hit, area] = [c, r.width * r.height];
-  }
-  if (!hit) return;
-  vt.skipTransition();
-  vt.finished.finally(() => hit.click());
-}
-/** @param {() => void} fn the switch itself */
-export function layMorph(fn) {
-  const h = document.documentElement,
-    me = ++morphs;
-  let ended = false;
-  const end = () => {
-    if (ended || me !== morphs) return; // a newer switch cut this one short: the classes are its now
-    ended = true;
-    h.classList.remove("laymorph");
-    snapHold("layout", 300);
-  }; /* glides stay off a moment longer: late re-measures (the editor's) must not glide after the switch */
-  setTimeout(
-    end,
-    1500,
-  ); /* whatever happens to the transition (skipped, a hidden window pausing frames), the glides come back */
-  snapHold("layout", 1500); // until it ends (end() shortens it) — the safety timeout's length
-  if (!document.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    fn();
-    end();
-    return;
-  }
-  h.classList.add("laymorph");
-  try {
-    const vt = document.startViewTransition(fn);
-    morphNow = vt;
-    vt.ready.catch(() => {}); // cut short by a click (skipTransition): not an error
-    vt.finished.finally(() => {
-      if (morphNow === vt) morphNow = null;
-      end();
-    });
-    if (!morphClicks) {
-      morphClicks = true;
-      document.addEventListener("click", clickThrough, true);
-    }
-  } catch (e) {
-    fn();
-    end();
-  }
 }
 /* the stage where the layout puts it — without a tab switch's ride (its view's transform is plate.js switchGlide's):
    measured mid-ride, the prompt column's Vertical shift jumped 24 px for a frame (2026-10-28) */
@@ -880,6 +813,51 @@ function colApply() {
   if (k > 0 || hugT0) colRaf = requestAnimationFrame(colApply);
   if (k <= 0) slT0 = 0;
 }
+/** a layout switch (T2b): the prompt box FADES THROUGH — its path would cross the picture's (Q-T1, Material's
+ * fade-through; the picture is what travels). Out where it was, by the swap (shown there by a FLIP offset added on top
+ * of its glued place, which is already where it lands: plate.js glueRect), in where it lands; on the switch's clock and
+ * fades (one start, layoutmath.js fades). Animations of its own, ended by the next switch
+ * @param {DOMRect} was the box on screen before @param {{ t0: number, T: number, fd: { out: { delay: number,
+ * duration: number }, in: { delay: number, duration: number } } }} sw the switch */
+export function fadeCol(was, sw) {
+  for (const a of colFades) a.cancel();
+  promptFollow(true); // glued to where the plate lands (the layout is settled: tabs.js tabGo)
+  /* the offset is the BOX's (its place inside the column changes too: side by side by its anchor, in Vertical at the
+     column's top), applied to the column so its name row and chips go with it */
+  const col = $("lcol"),
+    r = $("left").getBoundingClientRect(),
+    dx = Math.round(was.left - r.left),
+    dy = Math.round(was.top - r.top),
+    /* through, not across, on the ONE schedule (layoutmath.js fadeThrough — the panel view's too): out, gone two
+       frames while it changes place, in */
+    ft = fadeThrough(sw.fd),
+    T = Math.max(sw.T, ft.inEnd),
+    k = (/** @type {number} */ ms) => Math.min(1, Math.max(0, ms / T));
+  colFades = [
+    col.animate(
+      [
+        { opacity: 1, offset: 0 },
+        { opacity: 1, offset: k(ft.outStart) },
+        { opacity: 0, offset: k(ft.outEnd) },
+        { opacity: 0, offset: k(ft.inStart) },
+        { opacity: 1, offset: k(ft.inEnd) },
+        { opacity: 1, offset: 1 },
+      ],
+      { duration: T, fill: "backwards" },
+    ),
+    /* where it was, until it has faded out: added to its glued transform */
+    col.animate(
+      [
+        { transform: `translate(${dx}px, ${dy}px)`, composite: "add" },
+        { transform: `translate(${dx}px, ${dy}px)`, composite: "add" },
+      ],
+      { duration: Math.max(1, ft.turn), fill: "backwards" }, // it changes place at the turn, while gone
+    ),
+  ];
+  for (const a of colFades) a.startTime = sw.t0;
+}
+/** @type {Animation[]} */
+let colFades = [];
 /** a tab switch moved the column's place: it slides there from where it was on screen (measured before the switch —
  * mid-slide too, so a fast second switch carries on from there). Its place is worked out here, from the layout:
  * measured through the running slide's offset @param {DOMRect} was */
@@ -920,11 +898,14 @@ export function promptFollow(direct = false) {
     /* side by side, EVERY page: the box is glued one pair gap from its neighbour pane's plate as it is on screen this
        frame — a picture's or a panel's, at rest, held, in a tab switch, in a resize (C2b, B23: the model's "panes stick
        to each other with one gap; positions inside it are derived"). Whatever moves the plate moves the box in the same
-       frame: one clock. The column's own place (its translate taken off) is where it sits in the still area */
-    const p = $("plate").getBoundingClientRect(),
-      c = $("lcol").getBoundingClientRect();
+       frame: one clock. The column's own place is where the grid puts it in the still area — its layout box, without
+       ANY transform (getBoundingClientRect counted a running switch's offset too, and the glue cancelled it) */
+    const p = glueRect(), // the plate as it is — or, in a layout switch, where it lands (plate.js)
+      col = $("lcol"),
+      a = app.getBoundingClientRect(),
+      c = { left: a.left + col.offsetLeft, right: a.left + col.offsetLeft + col.offsetWidth, width: col.offsetWidth };
     if (p.width > 0 && c.width > 0) {
-      const base = R ? c.left - colX : c.right - colX;
+      const base = R ? c.left : c.right;
       x = Math.round(R ? p.right + pairGap() - base : p.left - pairGap() - base);
     } else x = hugX;
   }

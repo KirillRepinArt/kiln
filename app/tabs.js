@@ -1,7 +1,7 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $ } from "./dom.js";
-import { lay, sizeFrame, slideCol, snapHold } from "./layout.js";
+import { fadeCol, lay, sizeFrame, slideCol, snapHold } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
 import { frameBox, frameHold, pictureChange } from "./framebox.js";
@@ -9,6 +9,7 @@ import { plateBefore, plateFollow, switchGlide } from "./plate.js";
 import { placeNavs } from "./browse.js";
 import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
 import { S } from "./state.js";
+import { layoutLeft } from "./cardlayout.js";
 
 /* ======================= tabs ======================= */
 /** @param {boolean} [instant] no glide (start-up, a font change) */
@@ -73,18 +74,24 @@ export function tabSync(force) {
    picture: the frame crops and reveals by itself, as when browsing. Between views both stay on the page for the switch
    (plate.js switchGlide) */
 /** @param {() => void} fn */
-export function tabGo(fn) {
+/** @param {() => void} fn the switch itself @param {boolean} [layout] a layout switch (Left / Right / Vertical, T2b):
+ * the same view rides the plate to its new place, the prompt box fades through — the tab switch's system, not a View
+ * Transition (docs/decisions/0014) */
+export function tabGo(fn, layout = false) {
   const from = plateBefore(),
     lc0 = $("lcol").getBoundingClientRect(),
+    box0 = $("left").getBoundingClientRect(), // the box itself (its place in the column changes in a layout switch)
     v0 = /** @type {HTMLElement | null} */ (document.querySelector(".rpanel > .view.on")),
     r0 = v0 ? v0.getBoundingClientRect() : null,
     f0 = frameBox(),
     fr0 = $("frame").getBoundingClientRect(),
     me = ++tabGos;
   snapHold("tab", 10000); // the layout lands at once: the switch alone moves things (let go at its end, below)
-  document.documentElement.classList.add("tabswitch"); // a tab switch (not a layout switch): the tab pill still slides
+  if (!layout) document.documentElement.classList.add("tabswitch"); // a tab switch: the tab pill still slides
   /* a switch within Generating's view changes the frame's box: the frame's owner crops and reveals it (G11) — a switch
      to another view gives it up (frameHold) */
+  /* the picture's view: a box of another shape or size crops and reveals — in a layout switch too (T2b: the same picture
+     at another size never pops; its old copy crosses to it) */
   if (S.view === "gen" && f0) pictureChange({ ...f0, x: fr0.left, y: fr0.top });
   lay.frameDefer = true;
   try {
@@ -96,9 +103,26 @@ export function tabGo(fn) {
       sizeFrame();
     }
   }
+  /* a layout switch: the layout settled before anything is measured — the box placed (layoutLeft), then the layout
+     again: in Vertical the page's room ends above the box's name, so a room measured before the box moved was stale
+     (the switch aimed the plate at 401 px and jumped to 641 at its end; the box's offset pointed 300 px off) */
+  if (layout)
+    for (let i = 0; i < 3; i++) {
+      /* to its fixed point: in Vertical the box's place feeds the page's room and the room the box (two rounds do it;
+         a third only confirms) — one round left a 13 px nudge a frame into the switch */
+      const was = $("lcol").style.cssText + $("frame").style.cssText + $("rpanel").style.cssText;
+      layoutLeft();
+      sizeFrame();
+      if ($("lcol").style.cssText + $("frame").style.cssText + $("rpanel").style.cssText === was) break;
+    }
   const v1 = /** @type {HTMLElement | null} */ (document.querySelector(".rpanel > .view.on"));
   let sw;
-  if (v0 && v1 && r0 && v0 !== v1) {
+  if (layout && v0 && v1 && r0 && v0 === v1)
+    sw =
+      v0.id === "v-gen"
+        ? switchGlide(from, null, true) // the picture: the frame's own crop-and-reveal, the plate riding it
+        : switchGlide(from, { old: v0, oldRect: r0, neu: v1 }, true); // a panel: the view fades through, riding
+  else if (v0 && v1 && r0 && v0 !== v1) {
     if (v0.id === "v-gen" && f0) frameHold(f0); // the picture stays where it was while its view leaves
     sw = switchGlide(from, { old: v0, oldRect: r0, neu: v1 });
   } else {
@@ -107,7 +131,9 @@ export function tabGo(fn) {
        render and the Gallery keep different room (their insets). The status row's fade is the layout's (rowFade) */
   }
   placeNavs();
-  slideCol(lc0, sw.t0); // the column slides from where it was, as the real thing (FLIP)
+  if (layout)
+    fadeCol(box0, sw); // the prompt box fades out where it was and in where it lands (Q-T1)
+  else slideCol(lc0, sw.t0); // the column slides from where it was, as the real thing (FLIP)
   /* once it has landed: one more layout, still without glides (measured mid-switch, the prompt column's Vertical shift
      rested a pixel off), then the layout's glides come back */
   setTimeout(() => {

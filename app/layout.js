@@ -7,6 +7,7 @@ import { frameBox, frameGoal, layT } from "./framebox.js";
 import { syncH } from "./boot.js";
 import { applyMode, applyPH, layoutLeft, lyReset, slotLeast, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
+import { glassFade } from "./fade.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
@@ -809,12 +810,10 @@ function colApply() {
  * change; fadeCol fades it out and removes it @returns {HTMLElement} */
 export function standIn() {
   stand?.remove();
-  const col = $("lcol"),
-    layer = document.createElement("div");
+  const layer = document.createElement("div");
   layer.className = "lcol standin"; // .lcol: the parts' own rules (chips.css) hold for the copy too
   layer.inert = true;
   layer.setAttribute("aria-hidden", "true");
-  layer.style.opacity = getComputedStyle(col).opacity; // as seen: mid-fade too
   /** @type {[Element, Element][]} */
   const pairs = [];
   for (const part of [$("ltitle"), $("left"), $("chips")]) {
@@ -880,8 +879,7 @@ export function fadeCol(out, sw, was) {
     ol = out.querySelector(".left"),
     g = glueRect(),
     f = relationFade(sw.T),
-    k = (/** @type {number} */ ms) => Math.min(1, Math.max(0, ms / f.T)),
-    o = parseFloat(out.style.opacity) || 1;
+    k = (/** @type {number} */ ms) => Math.min(1, Math.max(0, ms / f.T));
   if (ol) {
     const b0 = rect(ol),
       b1 = rect($("left")),
@@ -896,26 +894,30 @@ export function fadeCol(out, sw, was) {
       r1: relationOf(b1, { l: g.left, t: g.top, w: g.width, h: g.height }, glueAnchors(S.dock || "left", pos)),
     };
   }
-  const gone = out.animate(
+  /* faded by their parts, never through an ancestor: glass under a fade loses its blur (fade.js — it popped back the
+     frame the box reached full opacity) */
+  const gone = glassFade(
+    out,
     [
-      { opacity: o, offset: 0 },
-      { opacity: 0, offset: k(f.outEnd) },
-      { opacity: 0, offset: 1 },
+      { offset: 0, opacity: 1 },
+      { offset: k(f.outEnd), opacity: 0 },
+      { offset: 1, opacity: 0 },
     ],
     { duration: f.T, fill: "forwards" },
   );
-  gone.finished.then(
+  Promise.all(gone.map(a => a.finished)).then(
     () => out.remove(),
     () => out.remove(),
   );
   colFades = [
-    gone,
-    $("lcol").animate(
+    ...gone,
+    ...glassFade(
+      $("lcol"),
       [
-        { opacity: 0, offset: 0 },
-        { opacity: 0, offset: k(f.inStart) },
-        { opacity: 1, offset: k(f.inEnd) },
-        { opacity: 1, offset: 1 },
+        { offset: 0, opacity: 0 },
+        { offset: k(f.inStart), opacity: 0 },
+        { offset: k(f.inEnd), opacity: 1 },
+        { offset: 1, opacity: 1 },
       ],
       { duration: f.T, fill: "backwards" },
     ),

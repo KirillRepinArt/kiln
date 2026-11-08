@@ -819,16 +819,30 @@ export async function boxGluedThroughLayoutSwitch(k, t) {
   );
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
   const REC = `(()=>{window.__rec=[];const t0=performance.now(),R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]},
-    V=()=>{const s=document.querySelector(".standin"),so=s?+getComputedStyle(s).opacity:0,sl=s&&s.querySelector(".left");
-      return [...(sl&&so>0.05?[so,...R(sl)]:[+getComputedStyle($("lcol")).opacity,...R($("left"))]),...R($("plate"))]},
+    /* what's seen of the box: its glass layer's opacity through every ancestor (a fade on the parts or on the column) */
+    eff=e=>{let o=+getComputedStyle(e,"::before").opacity;for(let a=e;a;a=a.parentElement)o*=+getComputedStyle(a).opacity;return o},
+    V=()=>{const s=document.querySelector(".standin"),sl=s&&s.querySelector(".left"),so=sl?eff(sl):0;
+      return [...(sl&&so>0.05?[so,...R(sl)]:[eff($("left")),...R($("left"))]),...R($("plate"))]},
     /* what's seen of the box's parts: every visible element's place and size, in order */
     seen=parts=>parts.flatMap(p=>[p,...p.querySelectorAll("*")]).filter(e=>{const r=e.getBoundingClientRect(),c=getComputedStyle(e);
       return r.width>0&&r.height>0&&c.visibility!=="hidden"&&!e.closest(HANDLES)}).map(e=>[e.tagName,...R(e)]);
-    window.__seen0=seen([$("ltitle"),$("left"),$("chips")]);window.__seen1=null;
-    (function f(){const s=document.querySelector(".standin");if(s&&!__seen1)__seen1=seen([...s.children]);
+    window.__seen0=seen([$("ltitle"),$("left"),$("chips")]);window.__seen1=null;window.__glass=[];
+    /* glass under a fade: a rendered glass layer (on itself or its ::before) with an ancestor part-way faded (fade.js;
+       an ancestor at 0 is not seen — the title row's buttons wait at 0 until the box is hovered) */
+    gl=(e,p)=>{const c=getComputedStyle(e,p);return c.backdropFilter&&c.backdropFilter!=="none"},
+    under=()=>[...document.querySelectorAll("#lcol, #lcol *, .standin, .standin *")].filter(e=>{const b=gl(e,"::before");if(!gl(e)&&!b)return false;
+      if(!e.getClientRects().length)return false; /* not rendered (a closed pop-up's) */
+      for(let a=b?e:e.parentElement;a&&a!==document.documentElement;a=a.parentElement){const o=+getComputedStyle(a).opacity;if(o>0&&o<1)return true}return false}).map(e=>e.id||e.className);
+    (function f(){const s=document.querySelector(".standin");if(s&&!__seen1)__seen1=seen([...s.children]);const u=under();if(u.length)__glass.push(u.slice(0,3));
       __rec.push(V());if(performance.now()-t0<1600)requestAnimationFrame(f)})();return 1})()`;
   /* the stand-in LOOKS like the box: every visible element of it, at its place and size (the copy has no ids — a look
      tied to an id was lost: the hidden textarea showed under the editor, the user 2026-11-08) */
+  /* the glass stays live through the fades: nothing that holds glass fades (DEVLOG DD-2026-11-08-8 — the box's blur
+     popped back the frame it reached full opacity, the user: "a light flicker when the box reappears") */
+  const glassLive = async tag => {
+    const g = await k.ev(`__glass`);
+    t.ok(!g.length, `${tag}: no glass under a fading part, any frame`, { frames: g.length, first: g[0] });
+  };
   const looksAlike = async tag => {
     const [a, b] = [await k.ev(`__seen0`), await k.ev(`__seen1`)];
     if (!b) return; // no stand-in (the old code): nothing to compare
@@ -903,6 +917,7 @@ export async function boxGluedThroughLayoutSwitch(k, t) {
     await k.sleep(1700);
     check(`the Layout menu, ${from} → ${to}`, await k.ev(`__rec`), from, to, await k.ev(`S.pos||"mid"`));
     await looksAlike(`the Layout menu, ${from} → ${to}`);
+    await glassLive(`the Layout menu, ${from} → ${to}`);
   }
   /* dragged by its name row from beside the picture to the bottom dock */
   await k.ev(`(setDock("left"),1)`);
@@ -931,5 +946,6 @@ export async function boxGluedThroughLayoutSwitch(k, t) {
   await k.sleep(1700);
   check("dragged to the bottom dock", await k.ev(`__rec`), "left", "below", await k.ev(`S.pos||"mid"`));
   await looksAlike("dragged to the bottom dock");
+  await glassLive("dragged to the bottom dock");
 }
 boxGluedThroughLayoutSwitch.opts = { width: 1400, height: 900, step: 0.05 };

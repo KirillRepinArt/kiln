@@ -149,3 +149,44 @@ export async function panelSharedEdge(k, t) {
   t.near(up.b.height, up.held.b.height, 3, "…the box too");
 }
 panelSharedEdge.opts = { width: 1400, height: 1000, step: 0.05 };
+
+/* C4d (DD-2026-11-03-5, the user 2026-11-09: "in vertical, reset grows the prompt box and not the pic — we optimise for
+   the biggest pic"): Reset layout = the defaults with the picture first (its largest; the box at its default width and
+   its text's height in what's left); double-click a picture edge = the picture at its largest, the box squeezed toward
+   its least (a height of yours is kept, clamped) */
+export async function resetPictureFirst(k, t) {
+  await k.ev(`(setDock("below"),1)`);
+  await k.job("[fill:446688] wide", { ar: "16:9", steps: 2 });
+  await done(k, 1);
+  await k.ev(LONG);
+  await k.mouse(2, 2);
+  await k.sleep(1400);
+  const f0 = await R(k, "#frame"),
+    b0 = await R(k, "#left");
+  await pull(k, "#hsplit", 0, -200); // the picture smaller, the box taller (both yours)
+  await pull(k, ".sedge.r", 100, 0); // the box wider (yours)
+  const moved = { f: await R(k, "#frame"), b: await R(k, "#left") };
+  t.ok(
+    moved.f.height < f0.height - 150 && moved.b.height > b0.height + 150,
+    "set up: a smaller picture, a taller box",
+    {
+      f: moved.f.height,
+      b: moved.b.height,
+    },
+  );
+  await k.ev(`(document.querySelector('#layMenu [data-lay="reset"]').click(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1500);
+  const f1 = await R(k, "#frame"),
+    b1 = await R(k, "#left");
+  t.near(f1.height, f0.height, 2, "Reset: the picture at its largest (the picture first)", { f0: f0.height });
+  t.near(b1.height, b0.height, 2, "…the box at its text's height in what's left (its least here)", { b0: b0.height });
+  t.near(b1.width, b0.width, 2, "…at its default width", { b0: b0.width });
+  t.ok(await k.ev(`paneSize("box","vert").h==null&&paneSize("box","vert").w==null`), "…nothing of yours kept");
+  /* the picture's edge, double-clicked: its largest; the box (taller by your height) squeezed toward its least */
+  await pull(k, "#hsplit", 0, -200);
+  await dbl(k, ".hedge.r");
+  t.near((await R(k, "#frame")).height, f0.height, 2, "double-click a picture edge: the picture at its largest");
+  t.near((await R(k, "#left")).height, b0.height, 2, "…the box squeezed to its least");
+}
+resetPictureFirst.opts = { width: 2000, height: 1023, step: 0.05 };

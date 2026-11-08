@@ -67,3 +67,41 @@ export async function thumbOnlyAtRest(k, t) {
   });
 }
 thumbOnlyAtRest.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* a scroll area ends where the controls on its surface begin (DEVLOG DD-2026-11-08-14): in a box shorter than its text,
+   the caret at the very end is never under a control — it hid behind the pills when the text ran on under them — and
+   the scroll edge's fade and blur stop at the scrollbar (the fade is the text's, the user 2026-11-08) */
+export async function caretNeverUnderAControl(k, t) {
+  await k.ev(
+    `(P.value=Array(30).fill("a long line of words that wraps across the prompt box, dusk light, fog over the water").join(String.fromCharCode(10)),1)`,
+  );
+  await k.sleep(800);
+  await k.ev(
+    `(()=>{const s=document.createElement("style");s.textContent="#left{height:180px!important}";document.head.append(s);return 1})()`,
+  );
+  await k.sleep(600);
+  await k.ev(`(document.querySelector(".pwrapT .cm-content").focus(),1)`);
+  await k.sleep(200);
+  await k.send("Input.dispatchKeyEvent", {
+    type: "rawKeyDown",
+    key: "End",
+    code: "End",
+    windowsVirtualKeyCode: 35,
+    modifiers: 2,
+  });
+  await k.send("Input.dispatchKeyEvent", {
+    type: "keyUp",
+    key: "End",
+    code: "End",
+    windowsVirtualKeyCode: 35,
+    modifiers: 2,
+  });
+  await k.sleep(500);
+  const g =
+    await k.ev(`(()=>{const sel=getSelection(),r=sel.rangeCount?sel.getRangeAt(0).getBoundingClientRect():null,ctl=document.querySelector("#left .controls").getBoundingClientRect(),
+      w=document.querySelector(".pwrapT"),sc=w.querySelector(".cm-scroller"),cs=getComputedStyle(w,"::after");
+    return {caret:r?Math.round(r.bottom):null,controls:Math.round(ctl.top),ovf:w.classList.contains("ovf"),blurRight:cs.right,scrollbar:sc.offsetWidth-sc.clientWidth}})()`);
+  t.ok(g.caret != null && g.caret <= g.controls, "the caret at the end of a long prompt stays above the controls", g);
+  t.ok(!g.ovf || parseFloat(g.blurRight) >= g.scrollbar - 1, "the scroll edge's blur stops at the scrollbar", g);
+}
+caretNeverUnderAControl.opts = { width: 1400, height: 900 };

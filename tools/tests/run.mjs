@@ -391,7 +391,7 @@ const filters = args.map(x => x.split("/"));
 const PENDING = {
   cases: "v0.7c (C), the single layout pass (ROADMAP v0.7c B1–B11)",
   layers:
-    "v0.7c T2c, the layering rule: content holds no material (the fills — the user's look call, DEVLOG DD-2026-11-08-12)",
+    "v0.7c T2c, the layering rule: the picture's overlay controls (its ✕, the edit buttons) move to the floating layer, out of the page that fades (DEVLOG DD-2026-11-08-14)",
 };
 const tests = [];
 for (const f of readdirSync(HERE)

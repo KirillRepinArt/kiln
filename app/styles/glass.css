@@ -275,24 +275,17 @@ body.glass .fg input:not([readonly]):focus {
 body.glass .fg input[readonly]:hover {
   background-color: transparent;
 }
-/* the pill row floats over the bottom of the glass box: the prompt scrolls under it, fading and blurring (Liquid
-   Glass's scroll-edge effect); the last line can always scroll clear of it */
+/* the pill row is part of the box's flow, under the text, in glass as in Solid (DEVLOG DD-2026-11-08-14): a scroll
+   area ends where the controls on its surface begin, and its scroll edge (the fade and the soft blur, prompt.css) is at
+   its own edge — content never passes under a control, so the caret never hides behind one. It used to float over the
+   box's bottom, the text scrolling under the pills' own blur */
 body.glass .left .controls {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
   z-index: 2;
 }
 body.glass .left .controls:has(.pop.show) {
   z-index: 6;
 } /* a menu open: over the prompt's ✕ (controls.css) */
-body.glass .left .pwrapT .cm-scroller {
-  padding-bottom: calc(var(--ctrlh, var(--space-16)) - var(--space-2));
-} /* the text runs on under the glass controls, almost to the box's edge */
-body.glass .left .pwrapT .cm-editor {
-  margin-bottom: 0;
-}
 /* the character count sits at the box's top (its own header strip), beside the ✕ */
 body.glass .left .privov {
   bottom: var(--ctrlh, var(--space-16));
@@ -499,3 +492,17 @@ body.laysnap .plate::after {
     border-color var(--t-150) !important;
 } /* a switch turns transitions off (the new layout lands at once): the plate's own fades — its look, its drop line —
      run through it, or they popped (motion.css body.laysnap) */
+
+/* ======================= the layering rule (DEVLOG DD-2026-11-08-12, -14) =======================
+   Materials float — the plate, the prompt box, the tab bar, pop-ups, cards — and animate themselves. What sits ON a
+   material is content: no backdrop blur of its own, a translucent fill (the material's blur shows through it, the way
+   Apple's glass panels hold their grouped rows; Kiln's queue rows were built that way already). So a page, the box's
+   contents or a pop-up's fade as one layer and never lose a blur mid-fade (an element below full opacity is a backdrop
+   root). Not content: a pop-up (a material of its own) and the scroll edge's strips (the scroll area's own edge). The
+   picture's overlay controls keep their glass: they float over media (the HIG's exception for glass over media-rich
+   content) — the picture's page is not a .panelview */
+body.glass :is(.panelview, .left, .pop, .mcard) :not(.pop),
+body.glass :is(.panelview, .left, .pop, .mcard) :not(.pop, .pwrapT)::before {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}

@@ -360,18 +360,16 @@
   transition:
     --ft var(--t-200),
     --fb var(--t-200);
-  -webkit-mask-image: linear-gradient(
-    transparent 0,
-    var(--black) var(--ft),
-    var(--black) calc(100% - var(--fb)),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    transparent 0,
-    var(--black) var(--ft),
-    var(--black) calc(100% - var(--fb)),
-    transparent 100%
-  );
+  /* the text fades at an edge where there's more of it; the scrollbar's strip (--sbw, while the text overflows) is a
+     second mask layer at full strength — the fade is the text's, never the scrollbar's (the user, 2026-11-08) */
+  -webkit-mask-image:
+    linear-gradient(transparent 0, var(--black) var(--ft), var(--black) calc(100% - var(--fb)), transparent 100%),
+    linear-gradient(to left, var(--black) var(--sbw, 0px), transparent var(--sbw, 0px));
+  mask-image:
+    linear-gradient(transparent 0, var(--black) var(--ft), var(--black) calc(100% - var(--fb)), transparent 100%),
+    linear-gradient(to left, var(--black) var(--sbw, 0px), transparent var(--sbw, 0px));
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
 }
 .pwrapT.scrolled .cm-scroller {
   --ft: 28px;
@@ -385,7 +383,7 @@
   content: "";
   position: absolute;
   left: 0;
-  right: 0;
+  right: var(--sbw, 0px); /* the soft blur is the text's edge, not the scrollbar's */
   height: 28px;
   z-index: 1;
   pointer-events: none;
@@ -413,15 +411,15 @@
 .pwrapT.ovf .cm-scroller {
   scrollbar-gutter: stable;
 }
+.pwrapT.ovf {
+  --sbw: var(--scrollbar); /* the scrollbar's strip: its gutter (base.css ::-webkit-scrollbar) */
+}
 .pwrapT.settling .cm-scroller::-webkit-scrollbar-thumb {
   background: transparent;
 } /* while the box's size is still moving the thumb isn't shown: only the final overflow decides it (B21, editor.js) */
 .pwrapT .cm-scroller::-webkit-scrollbar-track {
   margin: var(--space-8) 0 var(--space-3);
 } /* starts just under the ✕ (which ends where the text starts, 28 px) */
-body.glass .left .pwrapT .cm-scroller::-webkit-scrollbar-track {
-  margin-bottom: calc(var(--ctrlh, var(--space-16)) + var(--space-1));
-} /* the scrollbar keeps its room only while the text overflows (editor.js) */
 /* the text sits --inset-box from the box's outer edge on every side, measured to the letters: the 1 px border counts,
    and the first line is trimmed to its capitals (text-box), so the top isn't the line's empty leading */
 .pwrapT .cm-content {

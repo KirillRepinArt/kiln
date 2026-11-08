@@ -722,8 +722,9 @@ switchFromShortPanelReveals.opts = { width: 1760, height: 1080, step: 0.05 };
 /* T2b (docs/decisions/0014; the user 2026-11-07: "it removes the blur first, then fades the pic in, then applies the
    blur"): a layout switch moves the LIVE page on the tab switch's system — no View Transition (its snapshot can't hold
    the glass's blur, and its names made the glass a backdrop root from the first frame). Per frame: the real plate
-   travels (several frames between its two places, its glass on), the prompt box only fades — while it's visible it's
-   where it was or where it lands, never a third place — and ends shown */
+   travels (several frames between its two places, its glass on); the prompt box fades through its change of relation,
+   glued to the live plate all the while — the old relation while it leaves, the new while it comes (DEVLOG
+   DD-2026-11-08-7; it used to sit where it was, then where it lands, and the picture moved into it) — and ends shown */
 export async function layoutSwitchIsLive(k, t) {
   await k.job("[fill:446688] a", { ar: "3:4", steps: 2 });
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
@@ -741,19 +742,34 @@ export async function layoutSwitchIsLive(k, t) {
       const rows = await k.ev(`new Promise(res=>{const out=[],t0=performance.now();setDock("${to}");
         /* the box's fade as built: its keyframes reach 0 (a sampled minimum depends on the frame rate — CI drops
            frames, and a frame landing on the two-frame turn isn't guaranteed) */
-        window._fadeTo=Math.min(1,...$("lcol").getAnimations().flatMap(a=>a.effect.getKeyframes()).filter(k=>k.opacity!=null).map(k=>+k.opacity));
-        (function f(){const p=$("plate").getBoundingClientRect(),c=$("lcol"),L=$("left").getBoundingClientRect();
+        window._fadeTo=Math.min(1,...$("lcol").getAnimations({subtree:true}).flatMap(a=>a.effect.getKeyframes()).filter(k=>k.opacity!=null).map(k=>+k.opacity));
+        /* what's seen of the box: the stand-in's while it's there, else the box's — its glass layer's opacity through
+           every ancestor (the fade is on the parts, fade.js) */
+        const eff=e=>{let o=+getComputedStyle(e,"::before").opacity;for(let a=e;a;a=a.parentElement)o*=+getComputedStyle(a).opacity;return o};
+        (function f(){const p=$("plate").getBoundingClientRect(),s=document.querySelector(".standin .left"),so=s?eff(s):0,
+            b=s&&so>0.05?s:$("left"),L=b.getBoundingClientRect();
           out.push([Math.round(p.left),Math.round(p.top),getComputedStyle($("plate")).backdropFilter!=="none"?1:0,
-            +getComputedStyle(c).opacity,Math.round(L.left),Math.round(L.top)]);
+            b===s?so:eff(b),Math.round(L.left),Math.round(L.top),Math.round(L.width),Math.round(L.height),Math.round(p.width),Math.round(p.height)]);
           if(performance.now()-t0<1000)requestAnimationFrame(f);else res(out)})()})`);
       const tag = `${page}: ${from} → ${to}`,
         [p0, p1] = [rows[0], rows.at(-1)],
         between = rows.filter(
           r => (r[0] - p0[0]) * (r[0] - p1[0]) < -1 || (r[1] - p0[1]) * (r[1] - p1[1]) < -1, // strictly between
         ).length,
-        seen = rows.filter(r => r[3] > 0.05),
-        places = [seen[0], seen.at(-1)].map(r => [r[4], r[5]]),
-        third = seen.filter(r => !places.some(([x, y]) => Math.abs(r[4] - x) <= 2 && Math.abs(r[5] - y) <= 2));
+        pos = await k.ev(`S.pos||"mid"`),
+        box = r => ({ l: r[4], t: r[5], w: r[6], h: r[7] }),
+        plate = r => ({ l: r[0], t: r[1], w: r[8], h: r[9] }),
+        [A0, A1] = [glueAnchors(from, pos), glueAnchors(to, pos)],
+        [r0, r1] = [relationOf(box(p0), plate(p0), A0), relationOf(box(p1), plate(p1), A1)],
+        turn = rows.findIndex(r => r[3] <= 0.05),
+        on = (r, A, rel) => {
+          const x = relationOf(box(r), plate(r), A);
+          return Math.abs(x.dx - rel.dx) <= 2 && Math.abs(x.dy - rel.dy) <= 2;
+        },
+        off = [
+          ...rows.slice(0, turn < 0 ? rows.length : turn).filter(r => r[3] > 0.05 && !on(r, A0, r0)),
+          ...(turn < 0 ? [] : rows.slice(turn)).filter(r => r[3] > 0.05 && !on(r, A1, r1)),
+        ];
       t.ok(
         rows.every(r => r[2]),
         `${tag}: the plate's glass on every frame`,
@@ -765,7 +781,11 @@ export async function layoutSwitchIsLive(k, t) {
         min: Math.min(...rows.map(r => r[3])),
         last: p1[3],
       });
-      t.ok(!third.length, `${tag}: …visible only where it was or where it lands`, { third: third.slice(0, 3), places });
+      t.motion(!off.length, `${tag}: …glued to the live plate while seen (old relation, then new)`, {
+        off: off.slice(0, 3),
+        r0,
+        r1,
+      });
     }
   t.ok((await k.ev(`window._vt`)) === 0, "no View Transition started", await k.ev(`window._vt`));
 }

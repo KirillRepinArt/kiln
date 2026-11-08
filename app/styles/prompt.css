@@ -311,6 +311,10 @@
   min-height: 0;
   overflow: hidden;
   cursor: text;
+  /* what's inside a rounded surface follows its shape: the text area takes the box's inner top corners, so its scroll
+     edge's strips (a square soft blur) never show outside the curve (the user, 2026-11-09: "a visible gradient layer
+     poking out" at the box's top-left) */
+  border-radius: calc(var(--r-panel) - var(--space-px)) calc(var(--r-panel) - var(--space-px)) 0 0;
 }
 /* by class, not id: ids are for code; the look must hold for a copy too (a layout switch's stand-in, layout.js
    standIn — the copy has no ids, and showed the hidden textarea under the editor: the user, 2026-11-08) */

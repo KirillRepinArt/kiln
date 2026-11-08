@@ -142,6 +142,13 @@ export async function startEditor() {
       wrap.classList.toggle("more", sc.scrollTop + sc.clientHeight < sc.scrollHeight - 2);
     }; /* the fades at the box's edges */
     const ovf = () => {
+      /* decided at rest, like the thumb (B21): while the box's size moves the text overflows the area mid-way; switching
+         overflow on then added the scrollbar's gutter, the text rewrapped narrower and the box twitched (the user,
+         2026-11-09: "the prompt's top edge starts jumping when overflow is triggered") — decided once it settles */
+      if (wrap.classList.contains("settling")) {
+        edge();
+        return;
+      }
       const sc = view.scrollDOM,
         on = wrap.classList.contains("ovf"),
         o = sc.scrollHeight > sc.clientHeight + 1;
@@ -270,7 +277,10 @@ export async function startEditor() {
          stops moving there */
       const settled = () => {
         if (moving("box")) requestAnimationFrame(settled);
-        else wrap.classList.remove("settling");
+        else {
+          wrap.classList.remove("settling");
+          ovf(); // the overflow at rest decides the gutter
+        }
       };
       /* told at the change (the same task: no frame shows the thumb); cleared when its transitions end — or at once
          when there were none (a snap) */

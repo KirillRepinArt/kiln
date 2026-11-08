@@ -25,6 +25,14 @@ const glassy = (e, p = null) => {
   return c.backdropFilter !== "none" && c.backdropFilter !== "";
 };
 
+/** drawn now: laid out, and neither hidden nor fully transparent (a closed menu keeps its box, hidden by its visibility
+ * and opacity) @param {Element} x */
+const drawn = x => {
+  if (!x.getClientRects().length) return false;
+  const c = getComputedStyle(x);
+  return c.visibility !== "hidden" && +c.opacity > 0;
+};
+
 /** the parts of `root` to fade one by one (none of them holds glass under a fade). The root is the caller's: never
  * skipped, its keyframes as given (o 1) — it may be at 0 or hidden right now because it is about to fade in. Its
  * descendants carry their own resting opacity (a hidden one at 0, or not displayed, is skipped: nothing to fade)
@@ -37,7 +45,9 @@ export function fadeParts(root) {
     const c = getComputedStyle(e);
     if (c.display === "none" || (!top && +c.opacity === 0)) return; // not seen: nothing to fade
     const o = top ? 1 : +c.opacity,
-      holds = [...e.querySelectorAll("*")].some(x => glassy(x) || glassy(x, "::before"));
+      /* only glass that is drawn: a pill's closed menu is glass, and counted it made the walk step inside the pill — its
+         fill (::before) was never faded, and empty capsules stood while the box faded (the user, 2026-11-09) */
+      holds = [...e.querySelectorAll("*")].some(x => drawn(x) && (glassy(x) || glassy(x, "::before")));
     if (glassy(e) || (!holds && !glassy(e, "::before"))) {
       out.push({ el: e, o }); // glass on itself, or no glass in it: fades as a whole
       return;

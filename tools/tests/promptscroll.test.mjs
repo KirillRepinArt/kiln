@@ -19,7 +19,8 @@ export async function scrollProbe(k, t) {
   const hs = [...new Set(r.map(x => x[1] + "/" + x[2] + "/" + x[3]))];
   t.ok(!(await k.ev(`$("prompt").parentElement.classList.contains("ovf")`)), "a prompt that fits: no gutter");
   await k.ev(`(P.value=Array(60).fill("a long line of words").join(String.fromCharCode(10)),1)`);
-  await k.sleep(400);
+  /* overflow is decided at rest, like the thumb (DEVLOG DD-2026-11-09-1): once the box has settled */
+  await k.until(`$("prompt").parentElement.classList.contains("ovf")`, 3000).catch(() => {});
   t.ok(await k.ev(`$("prompt").parentElement.classList.contains("ovf")`), "an overflowing prompt: the gutter is kept");
   t.ok(over.length === 0, "never overflows", {
     over: over.length,
@@ -103,5 +104,13 @@ export async function caretNeverUnderAControl(k, t) {
     return {caret:r?Math.round(r.bottom):null,controls:Math.round(ctl.top),ovf:w.classList.contains("ovf"),blurRight:cs.right,scrollbar:sc.offsetWidth-sc.clientWidth}})()`);
   t.ok(g.caret != null && g.caret <= g.controls, "the caret at the end of a long prompt stays above the controls", g);
   t.ok(!g.ovf || parseFloat(g.blurRight) >= g.scrollbar - 1, "the scroll edge's blur stops at the scrollbar", g);
+  const r = await k.ev(
+    `[getComputedStyle(document.querySelector(".pwrapT")).borderTopLeftRadius,getComputedStyle(document.getElementById("left")).borderTopLeftRadius].map(parseFloat)`,
+  );
+  t.ok(
+    r[0] > 0 && r[0] >= r[1] - 2,
+    "the text area follows the box's rounded corners (its edge strips stay inside the curve)",
+    r,
+  );
 }
 caretNeverUnderAControl.opts = { width: 1400, height: 900 };

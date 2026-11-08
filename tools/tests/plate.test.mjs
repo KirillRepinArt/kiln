@@ -860,17 +860,21 @@ export async function boxGluedThroughLayoutSwitch(k, t) {
     /* what's seen of the box's parts: every visible element's place and size, in order */
     seen=parts=>parts.flatMap(p=>[p,...p.querySelectorAll("*")]).filter(e=>{const r=e.getBoundingClientRect(),c=getComputedStyle(e);
       return r.width>0&&r.height>0&&c.visibility!=="hidden"&&!e.closest(HANDLES)}).map(e=>[e.tagName,...R(e)]);
-    window.__seen0=seen([$("ltitle"),$("left"),$("chips")]);window.__seen1=null;window.__glass=[];window.__pic=1;window.__bare=[];
+    window.__seen0=seen([$("ltitle"),$("left"),$("chips")]);window.__seen1=null;window.__glass=[];window.__pic=1;window.__bare=[];window.__pills=[];
     /* the picture's canvas, seen through every ancestor */
     effEl=e=>{let o=1;for(let a=e;a;a=a.parentElement)o*=+getComputedStyle(a).opacity;return o},
     /* glass under a fade: a rendered glass layer (on itself or its ::before) with an ancestor part-way faded (fade.js;
        an ancestor at 0 is not seen — the title row's buttons wait at 0 until the box is hovered) */
     gl=(e,p)=>{const c=getComputedStyle(e,p);if(p&&(c.display==="none"||c.content==="none"))return false;return c.backdropFilter&&c.backdropFilter!=="none"},
     under=()=>[...document.querySelectorAll("#lcol, #lcol *, .standin, .standin *")].filter(e=>{const b=gl(e,"::before");if(!gl(e)&&!b)return false;
-      if(!e.getClientRects().length)return false; /* not rendered (a closed pop-up's) */
+      if(!e.getClientRects().length)return false;{const c=getComputedStyle(e);if(c.visibility==="hidden"||+c.opacity===0)return false} /* not drawn (a closed menu keeps its box) */
       for(let a=b?e:e.parentElement;a&&a!==document.documentElement;a=a.parentElement){const o=+getComputedStyle(a).opacity;if(o>0&&o<1)return true}return false}).map(e=>e.id||e.className);
     (function f(){const s=document.querySelector(".standin");if(s&&!__seen1)__seen1=seen([...s.children]);const u=under();if(u.length)__glass.push(u.slice(0,3));{const [a,b]=[effEl($("cv")),effEl($("cvx"))],c=b>0.5?$("cvx"):$("cv"),r=c.getBoundingClientRect(),f=$("frame").getBoundingClientRect();
-        __pic=Math.min(__pic,Math.max(a,b));if(r.left>f.left+1||r.top>f.top+1||r.right<f.right-1||r.bottom<f.bottom-1)__bare.push([Math.round(r.width),Math.round(r.height),Math.round(f.width),Math.round(f.height)])}
+        __pic=Math.min(__pic,Math.max(a,b));
+        /* the pills fade with their box: no pill's fill more seen than the box it sits in (they stood as empty capsules) */
+        for(const box of [document.querySelector(".standin .left"),$("left")]){if(!box)continue;const bo=eff(box);
+          for(const p of box.querySelectorAll(".pill")){let o=+getComputedStyle(p,"::before").opacity;for(let x=p;x;x=x.parentElement)o*=+getComputedStyle(x).opacity;
+            if(o>bo+0.05)__pills.push([Math.round(o*100)/100,Math.round(bo*100)/100])}}if(r.left>f.left+1||r.top>f.top+1||r.right<f.right-1||r.bottom<f.bottom-1)__bare.push([Math.round(r.width),Math.round(r.height),Math.round(f.width),Math.round(f.height)])}
       __rec.push(V());if(performance.now()-t0<1600)requestAnimationFrame(f)})();return 1})()`;
   /* the stand-in LOOKS like the box: every visible element of it, at its place and size (the copy has no ids — a look
      tied to an id was lost: the hidden textarea showed under the editor, the user 2026-11-08) */
@@ -887,6 +891,13 @@ export async function boxGluedThroughLayoutSwitch(k, t) {
     t.ok(!bare.length, `${tag}: …and covers its frame (no empty plate round it)`, {
       frames: bare.length,
       first: bare[0],
+    });
+  };
+  const pillsWithBox = async tag => {
+    const p = await k.ev(`__pills`);
+    t.ok(!p.length, `${tag}: the pills fade with their box (no fill seen more than the box)`, {
+      frames: p.length,
+      first: p[0],
     });
   };
   const glassLive = async tag => {
@@ -969,6 +980,7 @@ export async function boxGluedThroughLayoutSwitch(k, t) {
     await looksAlike(`the Layout menu, ${from} → ${to}`);
     await glassLive(`the Layout menu, ${from} → ${to}`);
     await picRides(`the Layout menu, ${from} → ${to}`);
+    await pillsWithBox(`the Layout menu, ${from} → ${to}`);
   }
   /* dragged by its name row from beside the picture to the bottom dock */
   await k.ev(`(setDock("left"),1)`);
@@ -999,6 +1011,7 @@ export async function boxGluedThroughLayoutSwitch(k, t) {
   await looksAlike("dragged to the bottom dock");
   await glassLive("dragged to the bottom dock");
   await picRides("dragged to the bottom dock");
+  await pillsWithBox("dragged to the bottom dock");
 }
 boxGluedThroughLayoutSwitch.opts = { width: 1400, height: 900, step: 0.05 };
 

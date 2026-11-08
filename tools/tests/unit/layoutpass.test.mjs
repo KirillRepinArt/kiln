@@ -485,3 +485,14 @@ test("Vertical: between the pane and the box lie its status row, the gap and the
   assert.ok(bottom(o.box) <= 1080 - 20 + EPS, "…and the box still fits the room");
   assert.ok(o.pic.h < bare.pic.h, "the picture's largest gives up that room (the picture first, the rows kept)");
 });
+
+test("Vertical: the box's LoRA row (its foot) is kept under it — the picture's largest gives it up (C4b)", () => {
+  const base = state({ dock: "below", page: { kind: "pic", ratio: 3 / 4 } }),
+    o = layoutPass({ ...base, box: { ...base.box, foot: 36 } }),
+    bare = layoutPass(base);
+  assert.ok(bottom(o.box) + 36 <= 1080 - 20 + EPS, "the box and its LoRA row fit the room", { b: bottom(o.box) });
+  assert.ok(Math.abs(bare.pic.h - o.pic.h - 36) <= EPS, "the picture gives exactly the row's height", {
+    bare: bare.pic.h,
+    h: o.pic.h,
+  });
+});

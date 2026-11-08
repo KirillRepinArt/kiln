@@ -682,10 +682,11 @@ export function layoutPrefsV4(L, o) {
  * @property {{ kind: "pic", ratio: number, scale?: number, row?: number } | { kind: "panel", w: number, h: number,
  *   lo: { w: number, h: number }, hi: { w: number, h: number }, row?: number }} page the page's pane: a picture (its ratio and your
  *   scale of its largest, default 1) or a panel (your sizes and its limits)
- * @property {{ w: number, wLo: number, text: number, least: number, hi?: number, h?: number | null, title?: number,
+ * @property {{ w: number, wLo: number, text: number, least: number, hi?: number, h?: number | null, title?: number, foot?: number,
  *   mode?: "" | "full" | "match" | "fit", anchor?: "top" | "mid" | "bot" }} box the prompt box: your width (and its
  *   least), its text's height (its least: ~2 lines; its largest in Vertical: hi), your height (h — Custom: a height you
- *   set by its edge, decision A, DEVLOG DD-2026-11-09-2; null: its mode decides), its mode, its anchor by the picture
+ *   set by its edge, decision A, DEVLOG DD-2026-11-09-2; null: its mode decides), its mode, its anchor by the picture;
+ *   in Vertical its name row over it (title: from the name's top to the box) and the LoRA row under it (foot)
  * @property {{ w: number, h: number }} bar the tab bar
  * @property {number} strip the edit buttons' strip beside the picture (part of the picture's pane: DEVLOG DD-2026-11-03-5)
  * @property {{ area: number, pair: number, bar: number }} gap the window's edge, between the panes, under the tab bar
@@ -720,6 +721,9 @@ const clampTo = (/** @type {number} */ v, /** @type {number} */ lo, /** @type {n
 function vGap(s) {
   return (s.page.row ?? 0) + s.gap.pair + (s.box.title ?? 0);
 }
+/** Vertical: all the group takes besides the pane and the box — vGap above the box and its foot (the LoRA row) under it
+ * @param {PassState} s */
+const vAround = s => vGap(s) + (s.box.foot ?? 0);
 /** the room: its sides and its height (the window's less the gaps and the bar) @param {PassState} s */
 function roomOf(s) {
   const L = s.gap.area,
@@ -765,13 +769,13 @@ function restSizes(s) {
     scale = clampTo(page.scale ?? def, lo, 1);
     pw = largest.w * scale;
     ph = pw / page.ratio;
-    if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - vGap(s) - ph)); // what's left
+    if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - vAround(s) - ph)); // what's left
   } else {
     if (!vert && RW - bw - gap.pair < page.lo.w) bw = Math.max(s.box.wLo, RW - gap.pair - page.lo.w);
     pw = clampTo(page.w, page.lo.w, Math.min(page.hi.w, vert ? RW : RW - bw - gap.pair));
     /* Vertical: the panel's height is yours, the box takes what's left (down to its least) — as for a picture */
-    ph = clampTo(page.h, page.lo.h, Math.min(page.hi.h, vert ? CH - vGap(s) - s.box.least : CH));
-    if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - vGap(s) - ph));
+    ph = clampTo(page.h, page.lo.h, Math.min(page.hi.h, vert ? CH - vAround(s) - s.box.least : CH));
+    if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - vAround(s) - ph));
   }
   if (!vert && mode === "full") bh = CH;
   return { bw, bh, pw, ph, scale, largest, mode };
@@ -793,7 +797,7 @@ function largestPic(s, bw, bh) {
     r = s.page.kind === "pic" ? s.page.ratio : 1,
     w =
       s.dock === "below"
-        ? Math.min(RW - 2 * s.strip, (CH - vGap(s) - bh) * r)
+        ? Math.min(RW - 2 * s.strip, (CH - vAround(s) - bh) * r)
         : Math.min(RW - bw - s.gap.pair - stripRoom(s), CH * r); // the strip's room both sides: the pair stays centred (B15)
   return { w: Math.max(0, w), h: Math.max(0, w) / r };
 }

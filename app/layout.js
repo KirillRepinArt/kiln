@@ -5,7 +5,7 @@ import { placeAround } from "./around.js";
 import { movingTo, rearrange, rearrangeFade } from "./rearrange.js";
 import { frameBox, frameGoal, layT } from "./framebox.js";
 import { syncH } from "./boot.js";
-import { applyMode, applyPH, layoutLeft, lyReset, slotLeast, stackW, textBoxH, updHm } from "./cardlayout.js";
+import { applyMode, applyPH, chipsH, layoutLeft, lyReset, slotLeast, stackW, textBoxH, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { glassFade } from "./fade.js";
 import { HANDLES } from "./outlines.js";
@@ -230,6 +230,10 @@ function nameTop() {
     fromBottom = $("ltitle").getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top;
   return { pn: colTop + 4 + (TS - 4 - SPACE.tight) - fromBottom, colTop };
 }
+/* Vertical: the box's name row, from the name's top to the box's (its title row less the room above the name: nameTop) */
+function nameRowH() {
+  return SPACE.tight + $("ltitle").getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top;
+}
 /* the room the status row takes under the picture while the page keeps it (the part gap + the row) */
 function rowRoom() {
   return document.querySelector(".app.stacked") ? SPACE.part + $("prog").offsetHeight : BAR();
@@ -319,7 +323,7 @@ function sidePass() {
             ? "right"
             : "left",
         /* Vertical: a picture's status row lies under it, in the group's gap (rowRoom — C4b step 1b) */
-        page: vert && page.kind === "pic" ? { ...page, row: rowRoom() } : page,
+        page: vert && page.kind === "pic" && insets().row ? { ...page, row: rowRoom() } : page,
         /* side by side the box's height is placed elsewhere (cardPlacement, C2b's rest); in Vertical the pass places
            it from its spec (C4: its width, its text's height, its least; Custom comes with C4c) */
         box: vert
@@ -329,13 +333,15 @@ function sidePass() {
               text: textBoxH(),
               least: slotLeast(),
               h: null,
-              title: parseFloat($("lcol").style.getPropertyValue("--ts")) || 64, // the name row over the box
+              title: nameRowH(), // the name row over the box, from the name's top
+              foot: chipsH() + 2, // the LoRA row under it (and the column's 2 px, as --lch)
             }
           : { w: dr ? dr.boxW : (paneSize("box", "side").w ?? df.pw), wLo: PWMIN, text: 0, least: 0 },
         /* the bar's row as it is on screen (the room's top): the pass's numbers are the window's, on both axes */
         bar: { w: tabsW(), h: barH },
         strip,
-        gap: { area: SPACE.area, pair: pairGap(), bar: barGap },
+        /* Vertical: the gap between the pane and the box's name is the even gap (the one under the tab bar) */
+        gap: { area: SPACE.area, pair: vert ? evenGap() : pairGap(), bar: barGap },
         picLeast: picLeastH(),
         /* Vertical: the whole room under the bar (none given) — never one measured from the old layout, which already took
            the box out of it (the picture shrank as the text grew, through this input: C4b's shadow run, 2026-11-09) */

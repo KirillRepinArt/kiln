@@ -390,7 +390,6 @@ const filters = args.map(x => x.split("/"));
    to run it. Each entry says what it waits for; remove it when that's done. */
 const PENDING = {
   cases: "v0.7c (C), the single layout pass (ROADMAP v0.7c B1–B11)",
-  vdrags: "v0.7c C4c, Vertical's drags through the layout pass (ux-review/16-layout-pass.md C4)",
   layers:
     "v0.7c T2c, the layering rule: the picture's overlay controls (its ✕, the edit buttons) move to the floating layer, out of the page that fades (DEVLOG DD-2026-11-08-14)",
 };

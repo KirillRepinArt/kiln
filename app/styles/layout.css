@@ -289,9 +289,12 @@
   touch-action: none;
 } /* Vertical: the one divider between the picture and the prompt — layout.js vAlign places it in the gap (L4) */
 /* no grip line (2026-11-01, the user): the outlines and the cursor are the signal, as on every other edge */
-.app.stacked .hedge.b {
+.app.stacked .hedge.b,
+.app.stacked .phedge.b,
+.app.stacked .vedge.t {
   display: none;
-} /* Vertical: the picture's bottom edge IS the divider (.hsplit); its own size cap stays on its top and side edges */
+} /* Vertical: the page's bottom and the box's top ARE the shared edge — its one handle is .hsplit, in the gap (B10: one
+     handle per strip; the box's top was a second, inert one) */
 /* the resize outline is PART OF ITS PANE (v0.7c, the user 2026-11-02: "dash outline should be a part of the box
    object"): drawn by the pane itself — the plate (the picture in Generating / the Gallery, the panel elsewhere) and the
    prompt box — it moves with it in the same frame, whatever moves it. It used to be two fixed outlines, each chasing

@@ -269,14 +269,16 @@ const edgeOf = (out, id) => {
 const release = (s, kept) => ({
   ...s,
   drag: null,
-  box: { ...s.box, w: kept.boxW },
+  box: { ...s.box, w: kept.boxW, h: kept.boxH ?? s.box.h }, // Vertical keeps the box's height too (C4c: Custom)
   page: s.page.kind === "pic" ? { ...s.page, scale: kept.scale } : { ...s.page, w: kept.w, h: kept.h },
 });
 const near = (a, b, tol = EPS) => Math.abs(a - b) <= tol;
 const sameRect = (a, b, tol = EPS) =>
   near(a.x, b.x, tol) && near(a.y, b.y, tol) && near(a.w, b.w, tol) && near(a.h, b.h, tol);
-/* the box's height edges have nothing to set (its height is its text's); Vertical's picture top fights the anchor */
+/* side by side the box's height edges have nothing to set (its height is its text's — in Vertical its bottom sets its
+   height: C4c, decision A); Vertical's picture top fights the anchor */
 const GIVES_ONLY = new Set(["box.top", "box.bottom"]);
+const givesOnly = (s, id) => GIVES_ONLY.has(id) && s.dock !== "below";
 const settles = (s, id) => s.dock === "below" && id === "page.top";
 
 function* drags() {
@@ -290,7 +292,7 @@ function* drags() {
 test("a drag within the limits: the edge follows the pointer, and letting go moves nothing", () => {
   let n = 0;
   for (const { s, out, name, id, d } of drags()) {
-    if (GIVES_ONLY.has(id)) continue;
+    if (givesOnly(s, id)) continue;
     const e = edgeOf(out, id),
       held = layoutPass({ ...s, drag: { edge: id, at: e.line + d } }),
       he = edgeOf(held, id);
@@ -495,4 +497,60 @@ test("Vertical: the box's LoRA row (its foot) is kept under it — the picture's
     bare: bare.pic.h,
     h: o.pic.h,
   });
+});
+
+/* C4c (ux-review/16-layout-pass.md C4, rule 4): Vertical's drags through the pass */
+const vState = (o = {}) => state({ dock: "below", page: { kind: "pic", ratio: 16 / 9 }, ...o });
+
+test("Vertical: the shared edge trades — the group's bottom holds, the page's loss is the box's gain, both kept (C4c)", () => {
+  const s = vState(),
+    rest = layoutPass(s),
+    line = edgeOf(rest, "shared").line,
+    held = layoutPass({ ...s, drag: { edge: "shared", at: line - 80 } });
+  assert.ok(near(bottom(held.box), bottom(rest.box), 1), "the box's bottom holds", {
+    was: bottom(rest.box),
+    now: bottom(held.box),
+  });
+  assert.ok(near(rest.page.h - held.page.h, 80, 1), "the page 80 shorter", { was: rest.page.h, now: held.page.h });
+  assert.ok(near(held.box.h - rest.box.h, 80, 1), "the box 80 taller", { was: rest.box.h, now: held.box.h });
+  const after = layoutPass(release(s, held.kept));
+  assert.ok(sameRect(after.page, held.page, 1) && sameRect(after.box, held.box, 1), "let go: nothing moves", {
+    held: [held.page, held.box],
+    after: [after.page, after.box],
+  });
+});
+
+test("Vertical: an outer edge never changes the other pane — the page's side grows into free room only (C4c, B17)", () => {
+  const s = vState({ page: { kind: "pic", ratio: 3 / 4 }, box: { ...state().box, text: 300 } }),
+    rest = layoutPass(s);
+  for (const id of ["page.left", "page.right", "page.top"])
+    for (const d of [-400, 400]) {
+      const e = edgeOf(rest, id),
+        held = layoutPass({ ...s, drag: { edge: id, at: e.line + d } });
+      assert.ok(near(held.box.h, rest.box.h, 0.5), `${id} ${d}: the box's height holds`, {
+        was: rest.box.h,
+        now: held.box.h,
+      });
+      assert.ok(held.kept.boxH == null || near(held.kept.boxH, rest.box.h, 0.5), `${id} ${d}: …and is kept as it was`);
+    }
+});
+
+test("Vertical: the box's bottom sets its height (yours) — into the free room only, its LoRA row kept, then the rubber band (C4c, A)", () => {
+  const s = vState({ page: { kind: "pic", ratio: 21 / 9 }, box: { ...state().box, foot: 36 } }), // free room under it
+    rest = layoutPass(s),
+    e = edgeOf(rest, "box.bottom"),
+    up = layoutPass({ ...s, drag: { edge: "box.bottom", at: e.line + 40 } });
+  assert.ok(near(up.kept.boxH ?? 0, rest.box.h + 40, 1), "40 down: 40 taller, kept", { kept: up.kept.boxH });
+  assert.ok(near(up.page.h, rest.page.h, 0.5), "…the page untouched");
+  const far = layoutPass({ ...s, drag: { edge: "box.bottom", at: e.line + 3000 } });
+  assert.ok(
+    (far.kept.boxH ?? 0) + far.box.y + 36 <= 1080 - 20 + EPS,
+    "far down: kept inside the room, the LoRA row under it",
+    {
+      kept: far.kept.boxH,
+    },
+  );
+  assert.ok(bottom(far.box) - (far.box.y + (far.kept.boxH ?? 0)) <= RUBBER + EPS, "…shown past it by the give only");
+  const after = layoutPass(release(s, up.kept));
+  assert.ok(sameRect(after.box, up.box, 1), "let go: the box stays (Custom)", { held: up.box, after: after.box });
 });

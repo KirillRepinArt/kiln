@@ -168,23 +168,16 @@
  * @property {{ pw: number } | null} shown  the box's width side by side, as written this frame (layout.js boxWWrite)
  *   now (their glide, layout.js layApply: G12)
  * @property {boolean} drag          an edge is being dragged
- * @property {number | null} vh      a top / bottom edge held: the picture's live height
- * @property {number | null} vtop    …and the top that stays put meanwhile
- * @property {number | null} [vw]    Vertical: a panel's side edge held: its live width (past its limits: the rubber band)
- * @property {number | null} [ph]    a panel's top / bottom edge held: its live height
- * @property {number | null} [ptop]  and its top in its room meanwhile (the other side pinned)
  * @property {number} [proom]        the panel's room height (sizeFrame)
- * @property {number} [overB]        a held picture's overshoot below its kept bottom (the rubber band): feedback of the
- *                                    grabbed edge only — what sits round the picture is placed from the limit
  * @property {{top: number, h: number, bottom: number, w: number} | null} target  where the picture is going (not
  *   where it is mid-glide): the prompt's vertical anchors use this
  * @property {boolean} frameDefer    inside one click: sizeFrame runs once, at the end
  * @property {boolean} framePending  …and was asked for meanwhile
  * @property {boolean} frameHold     the layout is held (the prompt box's bottom edge being dragged)
  * @property {{ pic: { x: number, y: number, w: number, h: number } | null, roomTop: number, page: { x: number, y: number, w: number, h: number }, box: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number }, kept: { boxW: number, scale?: number, w?: number, h?: number }, handles: Record<string, { x: number, y: number, w: number, h: number }> } | null} [pass]  side by side, a
- * @property {import("./layoutmath.js").PassOut | null} [passV] Vertical's pass, computed alongside the old maths (C4b step 1: a shadow run)
+ * @property {import("./layoutmath.js").PassOut | null} [passV] Vertical's layout pass (v0.7c C4b: its rectangles, held or not)
  *   picture page: the single layout pass's numbers (v0.7c C2a), held or not (C3)
- * @property {{ edge: string, at: number, off: number, boxW: number, scale: number, w?: number, h?: number } | null} [pdrag]  an edge of a picture
+ * @property {{ edge: string, at: number, off: number, boxW: number, bh?: number, scale: number, w?: number, h?: number } | null} [pdrag]  an edge of a picture
  *   page held side by side (C3): the pass's handle id, the pointer on its axis (+ off: where on the handle it was
  *   pressed), the sizes at the press
  * @property {"bar" | "none" | null} row  the row under the picture: the progress bar, or nothing
@@ -206,12 +199,8 @@
  * @property {number | null} imgTop   the picture's top — "top" lines up with it
  * @property {number | null} imgBottom the status line under the picture — "bot" lines up with it
  * @property {boolean} drag           the card is being dragged to a new resting place
- * @property {number} [swHold]       Vertical: the box's width while a side edge is held (0: none) — layoutLeft writes it
  * @property {number} [hHold]        side by side: the box's height while a height edge is held (0: none) — the rubber band
  * @property {"top" | "bottom"} [hPin] and the side that holds meanwhile
- * @property {number} [lastSlot]     Vertical: the box's height as last laid out (the room the page and the box share)
- * @property {number} slotHold       Vertical: the box's height while the divider is held (0: none). Never kept: the box
- *                                    hugs its text; letting go gives the picture the size it has (edges.js)
  */
 
 export {};

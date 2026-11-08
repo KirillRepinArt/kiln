@@ -19,7 +19,6 @@ import {
   shapePlan,
   shapeBox,
   upgradeLayoutPrefs,
-  promptSlotH,
   cardAnchorTop,
   cardHeightMode,
   cardPlacement,
@@ -159,16 +158,6 @@ test("older saved layouts become today's: shares of the window → px, once", ()
 
 /* ---------- the prompt card ---------- */
 const anchors = { it: 100, ib: 700, cy: 400 }; // picture top 100, status line 700, centre 400
-
-test("Vertical: the prompt box grows with your draft up to ~40 %, or takes the height you dragged it to", () => {
-  assert.equal(promptSlotH(130, 0, 1000, 150), 150, "automatic, a line of text: the box's least height");
-  assert.equal(promptSlotH(260, 0, 1000, 150), 260, "automatic, longer: as tall as the text");
-  assert.equal(promptSlotH(900, 0, 1000, 150), 400, "automatic, past ~40 % of the window: it scrolls");
-  assert.equal(promptSlotH(130, 600, 1000, 150), 600, "yours: the height you set, however short the text");
-  assert.equal(promptSlotH(900, 600, 1000, 150), 600, "yours: the text scrolls inside it");
-  assert.equal(promptSlotH(900, 900, 1000, 150), 700, "never above 70 % of the window");
-  assert.equal(promptSlotH(100, 120, 1000, 150), 150, "never below the box's least height");
-});
 
 test("the card rests at the picture's top, centre or status line — inside the column", () => {
   assert.equal(cardAnchorTop("top", 300, 900, anchors), 100);

@@ -185,23 +185,6 @@ export function upgradeLayoutPrefs(L, W) {
  */
 
 /**
- * Vertical: the prompt box's height. Automatic (2026-10-31, the user's choice — the composer pattern): as tall as YOUR
- * draft's text, from the box's least height (its controls and ~2 lines) up to ~40 % of the window, then the text
- * scrolls. Or yours (sch, 2026-11-01): the height you dragged the divider to — the one boundary between the picture and
- * the prompt — kept until you double-click it back to automatic (the box's bottom edge side by side works the same).
- * Never above 70 % of the window. The picture gets the rest.
- * @param {number} natural the height your draft's text needs
- * @param {number | undefined} sch the height you set (0 / undefined: automatic)
- * @param {number} innerH the window's height
- * @param {number} least the box's least height
- */
-export function promptSlotH(natural, sch, innerH, least) {
-  const most = Math.round(innerH * 0.7),
-    h = sch ? sch : Math.min(natural, Math.round(innerH * 0.4));
-  return Math.round(Math.max(least, Math.min(h, most)));
-}
-
-/**
  * Where a card of height H rests: "top" level with the picture's top, "bot" level with its status line, "mid" centred
  * on the picture — always inside the column.
  * @param {string} pos "top" | "mid" | "bot"
@@ -703,9 +686,11 @@ export function layoutPrefsV4(L, o) {
  * @property {Rect} box the prompt box
  * @property {Rect} bar the tab bar
  * @property {Record<string, Rect>} handles each edge's handle: "box.left", "page.top", … and "shared"
- * @property {{ boxW: number, scale?: number, w?: number, h?: number }} kept what a release keeps (the limits, never
+ * @property {{ boxW: number, boxH?: number, scale?: number, w?: number, h?: number }} kept what a release keeps (the limits, never
  *   the rubber band's stretch)
  * @property {{ w: number, h: number }} largest the picture's largest at this layout (picture pages)
+ * @property {number} roomT where the room starts (the window's px: under the tab bar's row) — the appliers place the
+ *   page's pane from it
  * @property {number} pageHi the page's room: the most height its pane can take (Vertical: with the box at its least
  *   and the rows round it; side by side: the room's) — a panel's limits and default are read against it
  */
@@ -816,7 +801,16 @@ function dragSizes(s, z) {
     vert = s.dock === "below",
     pic = s.page.kind === "pic" ? s.page : null,
     ratio = pic ? pic.ratio : 1,
-    out = { ...z, keptBw: z.bw, keptPw: z.pw, keptPh: z.ph, pageY: /** @type {number | null} */ (null), boxGive: 0 },
+    out = {
+      ...z,
+      keptBw: z.bw,
+      keptBh: z.bh,
+      keptPw: z.pw,
+      keptPh: z.ph,
+      pageY: /** @type {number | null} */ (null),
+      boxY: /** @type {number | null} */ (null),
+      boxGive: 0,
+    },
     /** the page's pane width from the picture's (its strip, or two in Vertical) */
     pageW = (/** @type {number} */ w) => w + (pic ? (vert ? 2 * strip : strip) : 0),
     pageLo = pic ? { w: s.picLeast * ratio, h: s.picLeast } : s.page.kind === "panel" ? s.page.lo : { w: 0, h: 0 },
@@ -845,8 +839,7 @@ function dragSizes(s, z) {
         out.ph = out.pw / ratio;
       }
     },
-    setPageH = (/** @type {number} */ h, /** @type {number} */ hi) => {
-      const lo = pageLo.h;
+    setPageH = (/** @type {number} */ h, /** @type {number} */ hi, lo = pageLo.h) => {
       out.keptPh = clampTo(h, lo, hi);
       out.ph = stretch("h", h, lo, hi);
       if (pic) {
@@ -907,33 +900,52 @@ function dragSizes(s, z) {
       out.boxGive = boxGive(s, side, d.at); // the box's height is its text's: nothing to set, the edge only gives
     }
   } else {
+    /* Vertical (C4c, ux-review/16-layout-pass.md C4 rule 4): the shared edge trades room between the page and the box
+       inside the group's height at the press (the box's bottom holds); an outer edge takes no room from the other pane —
+       it grows into the free room only, then the rubber band (DD-2026-11-07-1); the box's bottom sets its height (yours:
+       Custom, decision A). The box sits under the page's KEPT bottom: a stretch is the grabbed edge's feedback only */
     const cx = L + RW / 2,
-      roomH = CH - gap.pair, // the page and the box share it; the box may be squeezed to its least (rule 3)
-      pageHHi = Math.min(pageHi.h, roomH - s.box.least, pic ? (RW - 2 * strip) / ratio : Infinity);
+      g = vGap(s),
+      foot = s.box.foot ?? 0,
+      widest = pic ? (RW - 2 * strip) / ratio : Infinity, // the height the picture's width allows
+      boxHi = s.box.hi ?? CH,
+      groupB = T + z.ph + g + z.bh, // the box's bottom at the press
+      /* by its own edges: beside the box as it is */
+      ownHi = Math.min(pageHi.h, CH - vAround(s) - z.bh, widest);
     if (d.edge === "shared") {
-      /* the shared edge: the page's bottom at the pointer (mid-gap), the box takes what's left down to its least */
-      setPageH(d.at - gap.pair / 2 - T, pageHHi);
-      out.bh = clampTo(Math.min(s.box.text, s.box.hi ?? CH), s.box.least, roomH - out.keptPh);
+      /* the edge at the pointer (mid-gap): the page's bottom; the box takes the rest down to the group's bottom, within
+         its least and its largest — each side's limit is the other's */
+      const hi = Math.min(pageHi.h, groupB - T - g - s.box.least, widest),
+        lo = Math.max(pageLo.h, groupB - T - g - boxHi);
+      setPageH(d.at - g / 2 - T, hi, Math.min(lo, hi));
+      out.keptBh = groupB - (T + out.keptPh + g);
+      out.bh = out.keptBh;
+      out.boxY = T + out.keptPh + g;
     } else if (who === "page" && side === "top") {
       /* the anchored side: the drag wins over the anchor while held, the bottom holds; the release settles */
       const bottom = T + z.ph;
-      setPageH(bottom - d.at, Math.min(pageHHi, bottom - T)); // kept no higher than the anchor; shown: the rubber band
+      setPageH(bottom - d.at, Math.min(ownHi, bottom - T)); // kept no higher than the anchor; shown: the rubber band
       /* past the anchor it stretches into the gap under the bar, never past it */
       if (bottom - out.ph < T - gap.bar) {
         out.ph = bottom - (T - gap.bar);
         if (pic) out.pw = out.ph * ratio;
       }
       out.pageY = bottom - out.ph;
+      out.boxY = bottom + g; // the box holds with the bottom
     } else if (who === "page" && (side === "left" || side === "right")) {
       const wWant = 2 * (side === "left" ? cx - d.at : d.at - cx);
-      setPageW(wWant, Math.min(pageHi.w, RW - (pic ? 2 * strip : 0), pageHHi * ratio));
-      out.bh = clampTo(Math.min(s.box.text, s.box.hi ?? CH), s.box.least, roomH - out.keptPh);
+      setPageW(wWant, Math.min(pageHi.w, RW - (pic ? 2 * strip : 0), ownHi * (pic ? ratio : Infinity)));
+      out.boxY = T + out.keptPh + g;
     } else if (who === "box" && (side === "left" || side === "right")) {
       const wWant = 2 * (side === "left" ? cx - d.at : d.at - cx);
       out.keptBw = clampTo(wWant, s.box.wLo, RW);
       out.bw = rubber(wWant, s.box.wLo, RW, RUBBER);
     } else if (who === "box" && side === "bottom") {
-      out.boxGive = boxGive(s, side, d.at);
+      /* its height, yours: into the free room under it (its LoRA row kept), then the rubber band */
+      const top = T + z.ph + g,
+        hi = Math.min(boxHi, T + CH - foot - top);
+      out.keptBh = clampTo(d.at - top, s.box.least, hi);
+      out.bh = rubber(d.at - top, s.box.least, Math.max(s.box.least, hi), RUBBER);
     }
   }
   return out;
@@ -980,7 +992,16 @@ export function layoutPass(s) {
     rest = restSizes(s),
     z = s.drag
       ? dragSizes(s, rest)
-      : { ...rest, keptBw: rest.bw, keptPw: rest.pw, keptPh: rest.ph, pageY: null, boxGive: 0 },
+      : {
+          ...rest,
+          keptBw: rest.bw,
+          keptBh: rest.bh,
+          keptPw: rest.pw,
+          keptPh: rest.ph,
+          pageY: null,
+          boxY: null,
+          boxGive: 0,
+        },
     mode = rest.mode;
   /** @type {Rect} */ let page;
   /** @type {Rect} */ let box;
@@ -1016,7 +1037,8 @@ export function layoutPass(s) {
     page = { x: px, y: py, w: pageW, h: z.ph };
     if (pic) pr = { x: px + strip, y: py, w: z.pw, h: z.ph };
     const bw = mode === "fit" && pr ? pr.w : mode === "full" ? RW : z.bw;
-    box = { x: L + (RW - bw) / 2, y: py + z.ph + vGap(s), w: bw, h: z.bh }; // the pane, its status row, the gap, the name row, the box
+    /* the pane, its status row, the gap, the name row, the box — held: under the page's kept bottom (dragSizes) */
+    box = { x: L + (RW - bw) / 2, y: z.boxY ?? py + z.ph + vGap(s), w: bw, h: z.bh };
   }
   /* the box's height edges give (its height is its text's) */
   if (z.boxGive) {
@@ -1034,6 +1056,7 @@ export function layoutPass(s) {
     kept = pic
       ? { boxW: keptBw, scale: clampTo(z.keptPw / Math.max(1, big.w), Math.min(1, s.picLeast / Math.max(1, big.h)), 1) }
       : { boxW: keptBw, w: z.keptPw, h: z.keptPh };
+  if (vert) kept.boxH = z.keptBh; // Vertical: the box's height a release keeps (Custom: the shared edge, its bottom)
 
   /* the tab bar: its own row at the top, centred over the picture (or the panel), inside the window (Q1: A) */
   const over = pr || page,
@@ -1074,8 +1097,8 @@ export function layoutPass(s) {
     handles["box.left"] = Bx.left;
     handles["box.right"] = Bx.right;
     handles["box.bottom"] = Bx.bottom;
-    handles.shared = { x: lo, y: (over.y + over.h + box.y) / 2 - t, w: Math.max(0, hi - lo), h: HANDLE };
+    handles.shared = { x: lo, y: page.y + page.h + vGap(s) / 2 - t, w: Math.max(0, hi - lo), h: HANDLE }; // mid-gap (dragSizes inverts it)
   }
   const pageHi = vert ? CH - vAround(s) - s.box.least : CH;
-  return { page, pic: pr, box, bar: barR, handles, kept, largest: rest.largest, pageHi };
+  return { page, pic: pr, box, bar: barR, handles, kept, largest: rest.largest, pageHi, roomT: T };
 }

@@ -650,7 +650,11 @@ export async function verticalHeight(k, t) {
     f0: f0.height,
     f1: f1.height,
   });
-  t.near((await R(k, "#left")).height, b0.height, 3, "…and the prompt still fits its text, riding up glued");
+  /* C4 rule 4 (C4c, the user's spec 2026-11-09): the shared edge trades — the box takes what the picture gives, its
+     bottom holds (it used to keep its text's height and ride up: DD-2026-11-02-14, superseded) */
+  const b1 = await R(k, "#left");
+  t.near(b1.height, b0.height + 150, 4, "…and the box takes the 150 (the shared edge trades)", { b0: b0.height });
+  t.near(b1.bottom, b0.bottom, 3, "…its bottom holds");
   /* hovering the divider outlines both panes it resizes: the picture and the prompt box (the user, 2026-11-01) */
   const hs = await R(k, "#hsplit"),
     hx = hs.left + hs.width / 2,

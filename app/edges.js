@@ -5,26 +5,13 @@
    Every edge is ONE gesture (gesture() below, 2026-11-01): press → move → end, and it ends however the drag ends — the
    button up, a cancel, the pointer's capture lost (a reload, another window taking it), a move without the button —
    once. Each edge used to end itself on its own subset of those; a lost capture left the resize cursor stuck. */
-import { boxTextH, card, layoutLeft, lyUnfreeze, slotLeast, stackW, updHm } from "./cardlayout.js";
+import { card, layoutLeft, lyUnfreeze, updHm } from "./cardlayout.js";
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
-import {
-  lay,
-  layRelease,
-  passDragEnd,
-  passDragMove,
-  passDragStart,
-  pageId,
-  paneLimits,
-  paneSize,
-  picFull,
-  setPaneSize,
-  sizeFrame,
-} from "./layout.js";
-import { PIC_OVER, RUBBER, rubber } from "./layoutmath.js";
+import { layRelease, passDragEnd, passDragMove, passDragStart, pageId, setPaneSize, sizeFrame } from "./layout.js";
+import { RUBBER, rubber } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
-import { pairGap } from "./tokens.js";
 
 /** the body classes a drag holds while it lasts (the cursor, no transitions) — removed by the gesture's end, always */
 const DRAG_CLASSES = ["resizing", "vresizing", "laydrag"];
@@ -80,32 +67,69 @@ function gesture(h, panes, { down, move, end, cls }) {
   });
 }
 
-/** a picture's largest height (2026-11-02, the user's screenshot; DEVLOG DD-2026-11-02-12 — the numbers): what fits
- * BOTH ways — the room's height, and its widest width over its ratio. A 16:9 picture bound by its width can't get
- * taller: past this its edges only give a little (the top edge used to slide the whole picture up under the tab bar).
- * Its widest: side by side the room the prompt and the buttons' clearance leave; in Vertical the column.
- * @param {HTMLElement} f the frame (the picture) */
-function picLargestH(f) {
-  /* side by side at rest the picture's largest has one owner, the layout pass (v0.7c C2a) */
-  if (!q(".app.stacked") && lay.pass) return lay.pass.largest.h;
-  const ar = f.offsetWidth / Math.max(1, f.offsetHeight),
-    g = lay.last,
-    widest = q(".app.stacked") ? lay.colW : g ? g.W - g.pw - pairGap() - 2 * (g.clear || 0) : innerWidth;
-  return Math.min(picFull(), widest / ar);
+/**
+ * A drag through the layout pass (v0.7c C3 side by side; Vertical since C4c): ONE way for every edge of the layout — the
+ * press freezes the sizes, the pointer is the drag's constraint, the pass gives every number, the release keeps its
+ * `kept` (layout.js passDragStart / passDragMove / passDragEnd). Vertical's edges had maths and holds of their own
+ * (lay.vh / vtop / overB / ph / ptop / vw, card.slotHold / swHold) until C4c.
+ * @param {HTMLElement} h the handle @param {() => import("./outlines.js").Pane[]} panes what it resizes
+ * @param {string[]} cls the body classes the drag holds
+ * @param {() => string | null} idOf the pass's handle id for a press now (null: not an edge of this layout or page)
+ * @param {"x" | "y"} axis the pointer's axis @param {() => void} [after] also after each move and the release
+ */
+function passEdge(h, panes, cls, idOf, axis, after) {
+  let held = false;
+  const at = (/** @type {PointerEvent} */ e) => (axis === "y" ? e.clientY : e.clientX);
+  gesture(h, panes, {
+    cls,
+    down: e => {
+      const id = idOf();
+      if (!id) return false;
+      e.stopPropagation(); // not the card's move gesture
+      held = passDragStart(id, at(e));
+      return held;
+    },
+    move: e => {
+      if (!held) return;
+      passDragMove(at(e));
+      if (after) after();
+    },
+    end: () => {
+      if (!held) return;
+      held = false;
+      passDragEnd();
+      if (after) after();
+    },
+  });
 }
+const stacked = () => !!q(".app.stacked");
 /* start-up wiring: every edge you drag, and the edit buttons' hover (called from main.js, in order) */
 export function initEdges() {
   /* the prompt box's height edges (2026-11-02, DEVLOG DD-2026-11-02-12): ordinary edges — the size within [least,
      largest], the rubber band past either — but the box's least and largest are both its text's height (up to its
      mode's largest), so they give a little and snap back: the box grows with what you type, never with a drag, and its
-     height is never stored. Side by side: the bottom (#vedge) and the top; in Vertical the bottom (its top is the
-     divider with the picture). While held: card.hHold (side by side) / card.slotHold (Vertical), read by layoutLeft. */
+     height is never stored. Side by side: the bottom (#vedge) and the top, held in card.hHold (read by layoutLeft). In
+     Vertical the bottom sets the box's height — yours (Custom, decision A: C4c), through the layout pass; its top is the
+     edge it shares with the page (#hsplit), so no handle of its own there (B10) */
   (function () {
     const L = $("left"),
       top = document.createElement("div");
     top.className = "vedge t";
     top.dataset.tip = "The prompt box fits its text · the Match and Full buttons make it taller";
     L.appendChild(top);
+    passEdge(
+      $("vedge"),
+      () => RESIZES.vedge,
+      ["vresizing", "laydrag"],
+      () => (stacked() ? "box.bottom" : null),
+      "y",
+    );
+    $("vedge").addEventListener("dblclick", () => {
+      if (!stacked()) return;
+      setPaneSize("box", "h", null, "vert"); // back to its text's height
+      save();
+      sizeFrame();
+    });
     for (const g of [$("vedge"), top]) {
       const up = g === top;
       let y0 = 0,
@@ -113,104 +137,45 @@ export function initEdges() {
       gesture(g, () => RESIZES.vedge, {
         cls: ["vresizing"],
         down: e => {
-          if (up && q(".app.stacked")) return false; // Vertical: the box's top is the divider
+          if (stacked()) return false; // Vertical: its bottom through the pass (above), its top is the shared edge
           L.classList.add("nodur");
           y0 = e.clientY;
           h0 = L.getBoundingClientRect().height; // its text's height: its least and its largest
         },
         move: e => {
-          const want = h0 + (up ? -1 : 1) * (e.clientY - y0),
-            held = rubber(want, h0, h0, RUBBER);
-          if (q(".app.stacked")) card.slotHold = held;
-          else {
-            card.hHold = held;
-            card.hPin = up ? "bottom" : "top";
-          }
+          card.hHold = rubber(h0 + (up ? -1 : 1) * (e.clientY - y0), h0, h0, RUBBER);
+          card.hPin = up ? "bottom" : "top";
           layoutLeft();
         },
         end: () => {
           L.classList.remove("nodur");
-          card.hHold = 0;
-          card.slotHold = 0; // back to its text: it settles
+          card.hHold = 0; // back to its text: it settles
           lyUnfreeze();
           layoutLeft();
         },
       });
     }
   })();
-  /* Vertical: the edge the page (picture or panel) and the prompt box share — one edge, two handles on either side of
-     the title: the line above it (#hsplit) and the box's top (.vedge.t). DEVLOG DD-2026-11-02-14: each axis is yours or
-     its content's; a shared edge moves both sides; the page's height is YOURS and records it, the box's is its text's
-     and takes what's left (squeezed, never below its least: cardlayout.js). Down: the page grows, the box is squeezed;
-     up: the page shrinks, the box grows back toward its text. Past a limit (the box at its least, the page at its least
-     or its widest) the rubber band. Released where the page would be anyway with the box at its text: no height of yours
-     (the page fills again). Double-click: the same. */
-  (function () {
-    const rp = $("rpanel");
-    /** @type {{ y0: number, p0: number, t0: number, lo: number, hi: number, fill: number, gen: boolean } | null} */
-    let d = null;
-    for (const g of [$("hsplit"), /** @type {HTMLElement} */ (q(".vedge.t"))])
-      gesture(g, () => RESIZES.hsplit, {
-        cls: ["vresizing", "laydrag"],
-        down: e => {
-          if (!q(".app.stacked")) return false;
-          e.stopPropagation();
-          const gen = S.view === "gen",
-            f = $("frame"),
-            least = slotLeast(),
-            room = lay.vroom + (card.lastSlot || 0), // the page and the box, together
-            text = boxTextH(),
-            row = gen ? lay.vrow || 0 : 0, // the status row's room under the picture (not the spare room)
-            ar = f.offsetWidth / Math.max(1, f.offsetHeight),
-            widest = gen && lay.colW ? lay.colW / ar : Infinity;
-          d = {
-            y0: e.clientY,
-            p0: gen ? f.offsetHeight : rp.offsetHeight,
-            t0: gen ? f.offsetTop : 0,
-            lo: paneLimits(pageId(), "h", { roomH: room }).lo,
-            hi: Math.min(widest, room - least - Math.max(0, row)), // the box at its least
-            fill: room - text - Math.max(0, row), // where it would be anyway, the box at its text
-            gen,
-          };
-        },
-        move: e => {
-          if (!d) return;
-          const want = d.p0 + (e.clientY - d.y0),
-            shown = rubber(want, d.lo, d.hi, d.gen ? PIC_OVER : RUBBER),
-            kept = Math.max(d.lo, Math.min(d.hi, want));
-          if (d.gen) {
-            lay.vh = shown;
-            lay.vtop = d.t0; // its top holds (Vertical's anchor)
-            lay.overB = shown - kept; // the overshoot: feedback only, the box stays at the kept bottom
-          } else {
-            lay.ph = shown;
-            lay.ptop = 0;
-          }
-          setPaneSize(pageId(), "h", Math.abs(kept - d.fill) <= 2 ? null : kept); // where it would be anyway: no height of yours
-          layoutLeft();
-          sizeFrame();
-        },
-        end: () => {
-          d = null;
-          lay.vh = null;
-          lay.vtop = null;
-          lay.ph = null;
-          lay.ptop = null;
-          lay.overB = 0;
-          save();
-          layoutLeft();
-          sizeFrame();
-        },
-      });
-    for (const g of [$("hsplit"), /** @type {HTMLElement} */ (q(".vedge.t"))])
-      g.addEventListener("dblclick", () => {
-        if (!q(".app.stacked")) return;
-        setPaneSize(pageId(), "h", null);
-        save();
-        layoutLeft();
-        sizeFrame();
-      });
-  })();
+  /* Vertical: the edge the page (picture or panel) and the prompt box share — ONE handle, the line in the gap above the
+     prompt's name (#hsplit; the box's own top is not a second one: B10). It trades (C4 rule 4, through the pass): down,
+     the page grows and the box gives, down to its least; up, the page shrinks and the box takes it — the group's bottom
+     holds; both sizes become yours. Past a limit the rubber band. Double-click: both back to their defaults (the picture
+     first) */
+  passEdge(
+    $("hsplit"),
+    () => RESIZES.hsplit,
+    ["vresizing", "laydrag"],
+    () => (stacked() ? "shared" : null),
+    "y",
+  );
+  $("hsplit").addEventListener("dblclick", () => {
+    if (!stacked()) return;
+    setPaneSize(pageId(), "h", null);
+    setPaneSize("box", "h", null, "vert");
+    save();
+    layoutLeft();
+    sizeFrame();
+  });
   /* the panel edges (Phase 2a): po = the prompt's outer edge, dv = the divider between the prompt and the image area
    (a strip on each side of the gap, both the same boundary), ro = the image area's outer edge. Double-click: that
    panel back to its default width (the divider: both). */
@@ -269,200 +234,87 @@ export function initEdges() {
       }); /* that pane (the divider: both) back to its default */
     }
   })();
-  /* the image area's top and bottom edges (Generating, side by side): the largest height the picture may be. The edge
-   follows the cursor and the other one holds still; on release it all glides into place (height → width → centring). */
-  (function () {
-    qa(".hedge").forEach(h => {
-      /** the picture's edge being dragged: which, where it started, the picture's size and top then, the room it has
-       * @type {{ e: string, x0: number, y0: number, w0: number, h0: number, t0: number, full: number } | null} */
-      let d = null,
-        pd = false; // held through the layout pass (side by side, C3)
-      gesture(h, () => RESIZES.hedge, {
-        cls: ["vresizing", "laydrag"],
-        down: ev => {
-          if (S.view !== "gen") return false;
-          ev.stopPropagation();
-          /* side by side: the layout pass (v0.7c C3), a centred axis — the opposite edge mirrors */
-          if (!q(".app.stacked") && (h.dataset.e === "t" || h.dataset.e === "b")) {
-            if (passDragStart(h.dataset.e === "t" ? "page.top" : "page.bottom", ev.clientY)) {
-              d = null;
-              pd = true;
-              return;
-            }
-          }
-          const f = $("frame");
-          d = {
-            e: /** @type {string} */ (h.dataset.e),
-            x0: ev.clientX,
-            y0: ev.clientY,
-            w0: f.offsetWidth,
-            h0: f.offsetHeight,
-            t0: f.offsetTop,
-            /* its largest: the room's height, or its widest width over its ratio — and the top edge only grows into the
-               room above it (under the tab bar there's none: the rubber band) */
-            full: h.dataset.e === "t" ? Math.min(picLargestH(f), f.offsetHeight + f.offsetTop) : picLargestH(f),
-          };
-        },
-        move: ev => {
-          if (pd) return passDragMove(ev.clientY);
-          if (!d) return;
-          const dy = ev.clientY - d.y0,
-            dx = ev.clientX - d.x0,
-            side = d.e === "l" || d.e === "r";
-          /* a side edge (Vertical): the picture scales about its centre, its shape kept — the edge follows the cursor */
-          const want = side
-            ? ((d.w0 + 2 * (d.e === "r" ? dx : -dx)) * d.h0) / d.w0
-            : d.e === "b"
-              ? d.h0 + dy
-              : d.h0 - dy;
-          /* past its least or its room: with resistance (the rubber band); what's kept is the limit */
-          const lo = paneLimits(pageId(), "h").lo,
-            nh = rubber(want, lo, d.full, PIC_OVER);
-          const kept = Math.max(lo, Math.min(d.full, want)),
-            { t0, h0, e } = d,
-            top = (/** @type {number} */ h) => (side ? t0 + (h0 - h) / 2 : e === "b" ? t0 : t0 + (h0 - h));
-          lay.vh = nh;
-          lay.vtop = top(nh);
-          lay.overB = top(nh) + nh - (top(kept) + kept); // feedback only: the box stays at the kept bottom
-          if (!side && !q(".app.stacked")) setPaneSize(pageId(), "w", null, "side"); // the height decides; the width follows
-          setPaneSize(pageId(), "h", Math.max(lo, Math.min(d.full, want)));
-          sizeFrame();
-        },
-        end: () => {
-          if (pd) {
-            pd = false;
-            return passDragEnd();
-          }
-          const full = d ? d.full : 0,
-            nh = lay.vh;
-          d = null;
-          lay.vh = null;
-          lay.vtop = null;
-          lay.overB = 0;
-          if (nh && nh >= full * 0.995) setPaneSize(pageId(), "h", null); // the whole room: no cap (it settles there)
-          save();
-          sizeFrame();
-        },
-      });
-      h.addEventListener("dblclick", () => {
-        setPaneSize(pageId(), "h", null);
-        save();
-        sizeFrame();
-      });
+  /* the picture's own edges (Generating, the Gallery): its size, a scale of its largest — through the layout pass in both
+     layouts (C3; Vertical: C4c). Side by side its top and bottom (a centred axis: the other mirrors); in Vertical its top
+     (the anchored side: its bottom holds while held, the release settles) and its sides (about its centre) — its bottom
+     there is the shared edge (#hsplit). Double-click: its largest */
+  qa(".hedge").forEach(h => {
+    const e = /** @type {string} */ (h.dataset.e),
+      y = e === "t" || e === "b";
+    passEdge(
+      h,
+      () => RESIZES.hedge,
+      ["vresizing", "laydrag"],
+      () =>
+        S.view !== "gen"
+          ? null
+          : e === "t"
+            ? "page.top"
+            : e === "b"
+              ? stacked()
+                ? "shared"
+                : "page.bottom"
+              : stacked()
+                ? e === "l"
+                  ? "page.left"
+                  : "page.right"
+                : null,
+      y ? "y" : "x",
+    );
+    h.addEventListener("dblclick", () => {
+      setPaneSize(pageId(), "h", null);
+      save();
+      sizeFrame();
     });
-  })();
-  /* Vertical: a panel's side edges (Queue, LoRAs, PNG Info — v0.7c). The panel widens or narrows about its centre
-     (Vertical is centred, like the picture's side edges there): the edge follows the pointer, the width changes by
-     twice the move. Each page keeps its own width in Vertical; past a limit (the tab bar, the window) with resistance,
-     what's kept is the limit. Double-click: its default (a 1:1 plate at the room's height). */
-  (function () {
+  });
+  /* Vertical: a panel's side edges (Queue, LoRAs, PNG Info — v0.7c): it widens or narrows about its centre (Vertical is
+     centred, like the picture's sides), through the layout pass (C4c). Each page keeps its own width in Vertical; past a
+     limit (the tab bar, the window) the rubber band. Double-click: its default (a 1:1 plate at the room's height) */
+  {
     const rt = $("right");
     for (const side of ["l", "r"]) {
       const h = document.createElement("div");
       h.className = "vpedge " + side;
       h.dataset.tip = "Drag to resize the panel · double-click for its default width";
       rt.appendChild(h);
-      /** @type {{ x0: number, w0: number, lo: number, hi: number } | null} */
-      let d = null;
-      gesture(h, () => RESIZES.vpedge, {
-        cls: ["resizing", "laydrag"],
-        down: ev => {
-          if (!q(".app.stacked") || S.view === "gen") return false;
-          ev.stopPropagation();
-          d = {
-            x0: ev.clientX,
-            w0: rt.getBoundingClientRect().width,
-            ...paneLimits(pageId(), "w", { o: "vert" }), // the tab bar .. the window (the Queue, PNG Info: their own)
-          };
-        },
-        move: ev => {
-          if (!d) return;
-          const want = d.w0 + 2 * (side === "r" ? 1 : -1) * (ev.clientX - d.x0);
-          lay.vw = rubber(want, d.lo, d.hi, RUBBER);
-          setPaneSize(pageId(), "w", Math.max(d.lo, Math.min(d.hi, want)), "vert");
-          sizeFrame();
-        },
-        end: () => {
-          d = null;
-          lay.vw = null; // the kept width: it settles there
-          save();
-          sizeFrame();
-        },
-      });
+      passEdge(
+        h,
+        () => RESIZES.vpedge,
+        ["resizing", "laydrag"],
+        () => (stacked() && S.view !== "gen" ? (side === "l" ? "page.left" : "page.right") : null),
+        "x",
+      );
       h.addEventListener("dblclick", () => {
         setPaneSize(pageId(), "w", null, "vert");
         save();
         sizeFrame();
       });
     }
-  })();
-  /* a panel's top and bottom edges (Queue, LoRAs, PNG Info — v0.7c): its height. Like the picture's: the edge follows
-     the pointer and the other side holds; past a limit (its least, its room) with resistance; on release it settles
-     to its place (centred side by side, at the top in Vertical) and keeps the height. Double-click: the whole room. */
-  (function () {
-    const rt = $("right"),
-      rp = $("rpanel");
+  }
+  /* a panel's top and bottom edges (Queue, LoRAs, PNG Info — v0.7c): its height, through the layout pass in both layouts
+     (side by side a centred axis; Vertical: its top is the anchored side, its bottom the shared edge — C4c). Past a limit
+     the rubber band; the release settles it to its place and keeps the height. Double-click: the whole room */
+  {
+    const rt = $("right");
     for (const side of ["t", "b"]) {
       const h = document.createElement("div");
       h.className = "phedge " + side;
       h.dataset.tip = "Drag to resize the panel · double-click for its full height";
       rt.appendChild(h);
-      /** @type {{ y0: number, h0: number, t0: number, room: number } | null} */
-      let d = null,
-        pd = false; // held through the layout pass (side by side)
-      gesture(h, () => RESIZES.phedge, {
-        cls: ["vresizing", "laydrag"],
-        down: ev => {
-          if (S.view === "gen") return false;
-          ev.stopPropagation();
-          /* side by side: the layout pass (C2a's rest), a centred axis — the opposite edge mirrors */
-          if (!q(".app.stacked") && passDragStart(side === "t" ? "page.top" : "page.bottom", ev.clientY)) {
-            pd = true;
-            return;
-          }
-          d = {
-            y0: ev.clientY,
-            h0: rp.offsetHeight,
-            t0: parseFloat(rp.style.marginTop) || 0,
-            room: lay.proom || rp.offsetHeight,
-          };
-        },
-        move: ev => {
-          if (pd) return passDragMove(ev.clientY);
-          if (!d) return;
-          const dy = ev.clientY - d.y0,
-            top = side === "t",
-            want = top ? d.h0 - dy : d.h0 + dy,
-            hi = top ? d.h0 + d.t0 : d.room - d.t0, // up to the room's top (its bottom pinned) or its bottom
-            lo = paneLimits(pageId(), "h", { roomH: d.room }).lo,
-            nh = rubber(want, lo, hi, RUBBER);
-          lay.ph = nh;
-          lay.ptop = top ? d.t0 + d.h0 - nh : d.t0; // the other side holds
-          setPaneSize(pageId(), "h", Math.max(lo, Math.min(hi, want)));
-          sizeFrame();
-        },
-        end: () => {
-          if (pd) {
-            pd = false;
-            return passDragEnd();
-          }
-          const room = d ? d.room : 0;
-          d = null;
-          lay.ph = null;
-          lay.ptop = null; // it settles to its place, with the height kept
-          if ((paneSizeH() ?? 0) >= room - 1) setPaneSize(pageId(), "h", null); // the whole room: no height of its own
-          save();
-          sizeFrame();
-        },
-      });
+      passEdge(
+        h,
+        () => RESIZES.phedge,
+        ["vresizing", "laydrag"],
+        () => (S.view === "gen" ? null : side === "t" ? "page.top" : stacked() ? "shared" : "page.bottom"),
+        "y",
+      );
       h.addEventListener("dblclick", () => {
         setPaneSize(pageId(), "h", null);
         save();
         sizeFrame();
       });
     }
-    const paneSizeH = () => paneSize().h;
-  })();
+  }
   /* the edit buttons appear while the pointer is over the picture or the column beside it (one zone, so you never chase
    them) and stay ~300 ms after it leaves, so a diagonal path doesn't lose them */
   (function () {
@@ -485,48 +337,32 @@ export function initEdges() {
       el.addEventListener("pointerleave", off);
     }
   })();
-  (function () {
+  /* Vertical: the prompt box's side edges — its width, about its centre (Vertical is centred), through the layout pass
+     (C4c; it was card.swHold, written by layoutLeft). Dragging one lets go of a width mode (passDragStart).
+     Double-click: its default width */
+  {
     const L = $("left");
     for (const side of ["l", "r"]) {
       const h = document.createElement("div");
       h.className = "sedge " + side;
       h.dataset.tip = "Drag to resize the prompt box · double-click for its default width";
       L.appendChild(h);
-      /** a Vertical side edge being dragged: where the pointer started, the box's width then, its limits. The box
-       * widens or narrows about its centre (Vertical is centred: the picture's and the panels' sides work the same),
-       * the edge under the pointer; layoutLeft writes the width (card.swHold while held) — one writer
-       * @type {{ x0: number, w0: number, lo: number, hi: number } | null} */
-      let d = null;
-      gesture(h, () => RESIZES.sedge, {
-        cls: ["resizing", "laydrag"],
-        down: ev => {
-          if (!q(".app.stacked")) return false;
-          ev.stopPropagation();
-          d = { x0: ev.clientX, w0: stackW(), ...paneLimits("box", "w", { o: "vert" }) };
-        },
-        move: ev => {
-          if (!d) return;
-          const want = d.w0 + 2 * (side === "r" ? 1 : -1) * (ev.clientX - d.x0);
-          S.hmode = ""; // dragging its side: the width is yours again (the mode lets go, as Figma's fixed size)
-          card.swHold = rubber(want, d.lo, d.hi, RUBBER); // past a limit: with resistance
-          setPaneSize("box", "w", Math.max(d.lo, Math.min(d.hi, want)), "vert"); // what's kept is the limit
-          layoutLeft();
-        },
-        end: () => {
-          d = null;
-          card.swHold = 0; // the kept width: it settles there
-          save();
-          updHm();
-          layoutLeft();
-        },
-      });
+      passEdge(
+        h,
+        () => RESIZES.sedge,
+        ["resizing", "laydrag"],
+        () => (stacked() ? (side === "l" ? "box.left" : "box.right") : null),
+        "x",
+        updHm,
+      );
       h.addEventListener("dblclick", () => {
         setPaneSize("box", "w", null, "vert");
         S.hmode = "";
         save();
         updHm();
         layoutLeft();
+        sizeFrame();
       });
     }
-  })();
+  }
 }

@@ -213,9 +213,19 @@ export async function ownershipTour(k, t) {
   await k.sleep(1300);
   await motion("Vertical: the divider (the picture's bottom edge, the box glued)", [drag("#hsplit", 0, -120), "0"]);
   await motion("Vertical: the box's side (about its centre)", [drag(".sedge.r", 80), "0"]);
+  /* C4c: every Vertical edge through the layout pass */
+  await motion("Vertical: the box's bottom (its height, yours)", [drag("#vedge", 0, 60), "0"]);
+  await motion("Vertical: the picture's side (about its centre)", [drag(".hedge.r", -60), "0"]);
+  /* up, past the anchor (the rubber band, the settle) — down, the release leaves the pointer over the picture and its
+     buttons rightly show (as the outer edge's step above) */
+  await motion("Vertical: the picture's top past its room (its bottom holds, the settle)", [
+    drag(".hedge.t", 0, -60),
+    "0",
+  ]);
   await k.ev(`(${tab("queue")},1)`);
   await k.sleep(1300);
   await motion("Vertical: a panel's side (about its centre)", [drag(".vpedge.r", 60), "0"]);
+  await motion("Vertical: the shared edge with a panel (the trade)", [drag("#hsplit", 0, -80), "0"]);
   await k.ev(`(setDock("left"),1)`);
   await k.sleep(1500);
   const unknown = Object.keys(found).filter(key => !(key.replace(/ \[.*$/, "") in ALLOW));

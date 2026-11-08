@@ -194,12 +194,6 @@ export const lay = {
   navHold: null,
   last: null,
   drag: false,
-  vh: null,
-  vtop: null,
-  vw: null,
-  ph: null,
-  ptop: null,
-  overB: 0,
   target: null,
   frameDefer: false,
   framePending: false,
@@ -260,15 +254,6 @@ function roomH() {
 export function picFull(noRow = false) {
   return roomH() - (!noRow && insets().row ? rowRoom() : 0);
 }
-/* the picture's height: picFull, capped by your height for this page (Generating and the Gallery each their own, in
-   each orientation; set with the picture's edges or Vertical's divider; null = no cap). While an edge is held, lay.vh
-   is the live height */
-function picH(noRow = false) {
-  const full = picFull(noRow);
-  if (lay.vh) return lay.vh; // held: the edge's size, past the room too (the rubber band; it settles on release)
-  const cap = S.view === "gen" ? paneSize().h : null;
-  return cap ? Math.max(picLeastH(), Math.min(full, cap)) : full;
-}
 /* the clearance the edit buttons need beyond the window's own margin (they hang outside the plate, never room in the
    area — kept whether they show or not, so nothing moves when they come) */
 function toolsClear() {
@@ -304,15 +289,16 @@ function sidePass() {
         /* Vertical: a picture's status row lies under it, in the group's gap (rowRoom — C4b step 1b) */
         page: vert && page.kind === "pic" && insets().row ? { ...page, row: rowRoom() } : page,
         /* side by side the box's height is placed elsewhere (cardPlacement, C2b's rest); in Vertical the pass places
-           it from its spec (C4: its width, its text's height, its least; Custom comes with C4c) */
+           it from its spec (C4: its width, its text's height, its least, its largest; your height — Custom, set with
+           its bottom edge or the shared edge: C4c) — held, the sizes at the press */
         box: vert
           ? {
-              w: stackW(),
+              w: dr ? dr.boxW : stackW(),
               wLo: PWMIN,
               text: boxDraftH(), // your draft's: a job's prompt shown never resizes it
               least: slotLeast(),
               hi: paneLimits("box", "h", { o: "vert", roomH: 0 }).hi, // its spec's largest (limits)
-              h: null,
+              h: dr ? (dr.bh ?? null) : (paneSize("box", "vert").h ?? null),
               title: nameRowH(), // the name row over the box, from the name's top
               foot: chipsH() + 2, // the LoRA row under it (and the column's 2 px, as --lch)
             }
@@ -331,7 +317,7 @@ function sidePass() {
   if (!pic) {
     /* a panel: its width and height are yours (by default a 2:3 plate at the room's height side by side, 1:1 in
        Vertical), within its limits. Vertical's room is the pass's (pageHi: what the box at its least leaves; it
-       doesn't depend on the panel) — held, its edges' sizes (lay.vw / lay.ph: until C4c) */
+       doesn't depend on the panel) — held, the sizes at the press */
     const R = vert ? run({ kind: "panel", w: 0, h: 0, lo: { w: 0, h: 0 }, hi: { w: 0, h: 0 } }).pageHi : room,
       o = vert ? "vert" : "side",
       lw = paneLimits(pageId(), "w", { o, roomH: R }),
@@ -339,12 +325,8 @@ function sidePass() {
     return {
       out: run({
         kind: "panel",
-        w: dr
-          ? (dr.w ?? df.rw)
-          : vert
-            ? (lay.vw ?? within(p.w ?? paneDef(pageId(), "vert", R).w ?? R, lw))
-            : (p.w ?? df.rw),
-        h: dr ? (dr.h ?? room) : vert ? (lay.ph ?? p.h ?? R) : (p.h ?? room), // Vertical: as tall as the pass allows
+        w: dr ? (dr.w ?? df.rw) : vert ? within(p.w ?? paneDef(pageId(), "vert", R).w ?? R, lw) : (p.w ?? df.rw),
+        h: dr ? (dr.h ?? (vert ? R : room)) : (p.h ?? (vert ? R : room)), // Vertical: as tall as the pass allows
         lo: { w: lw.lo, h: lh.lo },
         hi: { w: lw.hi, h: lh.hi },
       }),
@@ -472,18 +454,22 @@ function layNow() {
    centring in the area (B18: it slid 53 px toward the box). Release keeps the pass's `kept`: the box's width, the
    picture's scale of its largest — nothing glides back on a centred axis (DEVLOG DD-2026-11-03-6). */
 /** @param {string} edge the pass's handle id ("box.left", "shared", "page.top", …) @param {number} pointer the pointer
- * on the edge's axis (window px) @returns {boolean} false: not a picture page side by side (the caller's own path) */
+ * on the edge's axis (window px) @returns {boolean} false: the layout has no such edge now (the caller does nothing) */
 export function passDragStart(edge, pointer) {
-  const P = lay.pass,
+  const vert = !!document.querySelector(".app.stacked"),
+    P = vert ? (lay.passV ?? vPass()) : lay.pass, // Vertical too since C4c: ONE way for every edge
     h = P && P.handles[edge];
-  if (!P || !h || document.querySelector(".app.stacked")) return false;
-  const y = edge.endsWith(".top") || edge.endsWith(".bottom"),
+  if (!P || !h) return false;
+  /* the edge's axis: Vertical's shared edge is a horizontal line (the pane over the box) */
+  const y = edge.endsWith(".top") || edge.endsWith(".bottom") || (vert && edge === "shared"),
     line = y ? h.y + h.h / 2 : h.x + h.w / 2;
+  if (vert && edge.startsWith("box.")) S.hmode = ""; // its width or height yours again: the mode lets go (Figma's fixed size)
   lay.pdrag = {
     edge,
     at: line,
     off: line - pointer,
-    boxW: P.box.w,
+    boxW: vert ? P.kept.boxW : P.box.w,
+    bh: vert ? P.box.h : undefined,
     scale: P.kept.scale ?? 1,
     w: P.kept.w,
     h: P.kept.h,
@@ -498,13 +484,22 @@ export function passDragMove(pointer) {
   sizeFrame();
 }
 export function passDragEnd() {
-  const d = lay.pdrag,
-    k = lay.pass && lay.pass.kept;
+  const vert = !!document.querySelector(".app.stacked"),
+    V = vert ? lay.passV : null, // Vertical's pass: its room and the box's height it keeps
+    P = vert ? V : lay.pass,
+    d = lay.pdrag,
+    k = P && P.kept,
+    o = vert ? "vert" : "side";
   lay.pdrag = null;
   lay.drag = false;
-  if (d && k) {
+  if (d && k && P) {
     /* what the edge changed: an outer edge only its own pane (DD-2026-11-07-1), the shared edge both */
-    if (d.edge === "shared" || d.edge.startsWith("box.")) setPaneSize("box", "w", k.boxW, "side");
+    if (vert) {
+      /* Vertical: the box's width by its sides, its height (yours: Custom) by its bottom or the shared edge */
+      if (d.edge === "box.left" || d.edge === "box.right") setPaneSize("box", "w", k.boxW, o);
+      const bh = V && V.kept.boxH;
+      if ((d.edge === "shared" || d.edge === "box.bottom") && bh != null) setPaneSize("box", "h", bh, o);
+    } else if (d.edge === "shared" || d.edge.startsWith("box.")) setPaneSize("box", "w", k.boxW, o);
     const page = d.edge === "shared" || d.edge.startsWith("page."),
       tall = d.edge === "page.top" || d.edge === "page.bottom";
     if (page && k.scale != null) {
@@ -512,9 +507,9 @@ export function passDragEnd() {
       setPaneSize(pageId(), "w", null);
       setPaneSize(pageId(), "h", null); // (clears the scale: set after)
       setPaneSize(pageId(), "s", k.scale >= 0.999 ? null : k.scale);
-    } else if (page && tall && k.h != null)
-      setPaneSize(pageId(), "h", k.h >= sideRoom() - 1 ? null : k.h); // a panel's height (the whole room: none of its own)
-    else if (page && k.w != null) setPaneSize(pageId(), "w", k.w, "side"); // a panel's width
+    } else if (page && (tall || (vert && d.edge === "shared")) && k.h != null)
+      setPaneSize(pageId(), "h", k.h >= (V ? V.pageHi : sideRoom()) - 1 ? null : k.h, o); // a panel's height (the whole room: none of its own)
+    else if (page && k.w != null) setPaneSize(pageId(), "w", k.w, o); // a panel's width
     save();
   }
   sizeFrame();
@@ -645,7 +640,7 @@ export function sizeFrame() {
     lay.vroom = pv ? Math.round(pv.page.h + (S.view === "gen" && ins.row ? rowRoom() : 0)) : 0;
     /* the panel's box (v0.7c: Queue, LoRAs and PNG Info have a height of their own, set with their top / bottom edges):
        its room is the picture's (every page's plate shares one top and bottom when it's the whole room); a shorter
-       one rests centred side by side, at the top in Vertical (the layout's anchor); held, lay.ph / lay.ptop. ONE
+       one rests centred side by side, at the top in Vertical (the layout's anchor) — both the pass's, held or not. ONE
        writer of its height and offset, and of where its edge handles go (--pt / --pb on the area). The tab bar rides
        on its plate (plate.js barFor), so the tabs come down with a shorter panel. */
     const rp = $("rpanel"),
@@ -658,11 +653,13 @@ export function sizeFrame() {
             sp
               ? sp.page.h
               : stk
-                ? lay.vroom // the pass's (held: lay.ph, its input)
-                : (lay.ph ?? (kept ? within(kept, paneLimits(pageId(), "h", { roomH: room })) : room)),
+                ? lay.vroom // the pass's
+                : kept
+                  ? within(kept, paneLimits(pageId(), "h", { roomH: room }))
+                  : room,
           )
         : null,
-      top = panel && H != null ? Math.round(sp ? sp.page.y - sp.roomTop : (lay.ptop ?? 0)) : 0,
+      top = panel && H != null ? Math.round(sp ? sp.page.y - sp.roomTop : pv ? pv.page.y - pv.roomT : 0) : 0, // held too
       fx = H != null && !stk ? "none" : ""; // side by side it grows to the room (flex: 1) unless it has a height
     if (rp.style.flex !== fx) rp.style.flex = fx;
     lay.proom = room;
@@ -684,9 +681,8 @@ export function sizeFrame() {
     SW = stk ? (lay.colW ? lay.colW - 2 : st.width) : /** @type {Geometry} */ (lay.last).rw; // wide: the whole room
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
   const pass = !stk && S.view === "gen" && lay.pass && lay.pass.pic ? lay.pass : null, // side by side: the pass's
-    /* Vertical: the pass's picture; held, a top / bottom edge's height (lay.vh — until C4c) */
-    vpic = pv && pv.pic && !lay.vh ? pv.pic : null,
-    PH = pass && pass.pic ? pass.pic.h : vpic ? vpic.h : picH(),
+    vpic = pv && pv.pic ? pv.pic : null, // Vertical: the pass's picture, held or not (C4c)
+    PH = pass && pass.pic ? pass.pic.h : vpic ? vpic.h : picFull(),
     TB = pass ? pass.strip : tbW(), // the edit buttons' column: side by side, part of the picture's pane (C2a)
     R = ins.row ? rowRoom() : 0, // (lay.vrow: the prompt follows the row's room too, Vertical)
     M = SPACE.mat, // the picture's mat: the plate is the picture and M round it
@@ -700,8 +696,8 @@ export function sizeFrame() {
     H = h + 2 * M;
   /* the picture's canvas is drawn at the box's FINAL size and centred in it: the box may glide to a new shape (its
     edges clip the picture, like a container transform) without the canvas being stretched on the way */
-  /* a held top / bottom edge (lay.vtop): the other edge stays put. The plate is centred in its area on every page; the
-    button column hangs on the side away from the prompt (Vertical: on the right) */
+  /* the plate is centred in its area on every page; the button column hangs on the side away from the prompt (Vertical: on
+    the right) */
   lay.vrow = stk ? R : 0;
   const tbLeft = !stk && /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
     { top: placedTop, left: placedLeft } = framePlacement({
@@ -711,7 +707,7 @@ export function sizeFrame() {
       h: H,
       tb: !stk && S.view === "gen" && lay.pass ? lay.pass.strip : 0, // the strip is in the area (C2a), held or not
       row: R,
-      heldTop: lay.vtop,
+      heldTop: pv ? pv.page.y - pv.roomT : null, // Vertical: the pass's place (a held top edge moves it down)
       stacked: stk,
       toolsLeft: tbLeft,
     });

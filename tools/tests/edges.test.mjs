@@ -337,7 +337,7 @@ export async function panelHeights(k, t) {
   await k.mouse(2, 2);
   await k.sleep(1500);
   const v0 = await R(k, "#rpanel"),
-    v = await drag(".phedge.b", -150);
+    v = await drag("#hsplit", -150); // Vertical: the panel's bottom IS the shared edge — its one handle (B10, C4c)
   t.near(v.after.height, v0.height - 150, 3, "Vertical: the panel 150 shorter", { h: v.after.height });
   t.near(v.after.top, v0.top, 3, "…resting at the top (Vertical's anchor)");
 }
@@ -551,10 +551,11 @@ export async function squeezedBoxScrollsNoOverlap(k, t) {
   await ev(k, "mouseMoved", 8, 8, 0);
   await k.sleep(1300);
   const r = await k.ev(
-    `(()=>{const w=document.querySelector(".pwrapT"),s=w.querySelector(".cm-scroller");return{scrolls:s.scrollHeight>s.clientHeight,more:w.classList.contains("more")}})()`,
+    `(()=>{const w=document.querySelector(".pwrapT"),s=w.querySelector(".cm-scroller");return{scrolls:s.scrollHeight>s.clientHeight,more:w.classList.contains("scroll-edge")&&s.classList.contains("scroll-edge-area")}})()`,
   );
   t.ok(r.scrolls, "squeezed: the text scrolls inside the box", r);
-  t.ok(r.more, "…and slides under the controls behind the fade (not bare)", r);
+  /* the fade is the scroll edge's, in CSS on the scroll position (acf4d60, DD-2026-11-09-3): the box's area is one */
+  t.ok(r.more, "…and slides under the controls behind the fade (not bare): a scroll-edge area", r);
 }
 squeezedBoxScrollsNoOverlap.opts = { width: 1760, height: 1080, step: 0.05 };
 

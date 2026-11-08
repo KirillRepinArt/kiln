@@ -3,7 +3,7 @@
 import { $, q } from "./dom.js";
 import { HANDLES, outlines } from "./outlines.js";
 import { lay, minRight, paneSize, setDock, sizeFrame, snapHold, vAlign, vPass } from "./layout.js";
-import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement, promptSlotH } from "./layoutmath.js";
+import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement } from "./layoutmath.js";
 import { peekJob } from "./prompt.js";
 import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
@@ -26,11 +26,8 @@ export const card = {
   imgTop: null,
   imgBottom: null,
   drag: false,
-  slotHold: 0,
-  swHold: 0,
   hHold: 0,
   hPin: "top",
-  lastSlot: 0,
 };
 /** the picture's lines the card lines up with (layoutmath's CardAnchors) */
 const anchors = () => ({ it: card.imgTop, ib: card.imgBottom, cy: card.cy });
@@ -80,8 +77,6 @@ export function textBoxH(lines) {
 /** the box's least height in Vertical: its controls and two lines */
 /** @returns {number} */
 export const slotLeast = () => textBoxH(2);
-/** Vertical: the box's height for its text (your draft's), up to its mode's largest — its content size */
-export const boxTextH = () => promptSlotH(draftH || textBoxH(), 0, innerHeight, slotLeast());
 let draftH = 0; // the height your draft's text needs (kept while a job's prompt is shown: it never resizes the box)
 /** Vertical: the box's text height — your draft's: a job's prompt shown in it never resizes it (it scrolls inside), so
  * browsing prompts of different lengths never moves anything (2026-10-19). The layout pass's input (C4b) */
@@ -125,14 +120,13 @@ export function applyMode() {
   }
   updHm();
 }
-/* Vertical: the prompt box's width — yours (paneSize("box", "vert"), set with its side edges; held: card.swHold, past a
-   limit with the rubber band), or the picture's (Fit width), never narrower than the box's minimum or wider than the
+/* Vertical: the prompt box's width — yours (paneSize("box", "vert"), set with its side edges through the layout pass), or
+   the picture's (Fit width), never narrower than the box's minimum or wider than the
    window. ONE writer of the box's width in Vertical: layoutLeft (--sw) asks this (2026-11-02, v0.7c 3b: the side edges
    wrote --sw and a held offset --soff themselves) */
 export function stackW() {
   const max = innerWidth - 2 * SPACE.area,
     pic = typeof lay !== "undefined" && lay.target && lay.target.w;
-  if (card.swHold) return Math.round(card.swHold);
   /* the modes act on the box's CROSS axis (DEVLOG DD-2026-11-02-16): in Vertical its width — Match: the picture's, Full:
      the window's (less its edge gaps); side by side its height (layoutLeft) */
   const m = S.hmode,
@@ -164,19 +158,17 @@ export function layoutLeft(direct = false) {
   $("ltitle").classList.toggle("hm", !!hm);
   if (stk) {
     card.top = 0;
-    col.style.setProperty("--sw", stackW() + "px");
     /* the box is placed by the layout pass, under the page's pane (v0.7c C4b, ux-review/16-layout-pass.md C4): the pane
        first, the box its text's height in the free room under it, then it scrolls — its growth never takes the pane's
        room (it had a grid row of its own sized by its text, --lch, and the page took what was left: the user's
        overlap, 2026-11-09). The column is a layer over the whole room, as side by side: the box's top is the pass's,
-       in the column's px (its layout box, without a transform). Held: the box's height edge's height (until C4c) */
+       in the column's px (its layout box, without a transform). Its width and height too: held, an edge's (C4c) */
     const was = lay.passV,
       p = vPass(),
-      colTop = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop,
-      H = card.slotHold ? Math.round(card.slotHold) : Math.round(p.box.h);
-    card.lastSlot = H;
+      colTop = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop;
+    col.style.setProperty("--sw", Math.round(p.box.w) + "px");
     requestAnimationFrame(vAlign);
-    boxAt(col, Math.round(p.box.y - colTop), H);
+    boxAt(col, Math.round(p.box.y - colTop), Math.round(p.box.h));
     /* the pane changed under it (a new limit, the window): the page follows, at once with the box */
     if (!was || Math.abs(was.page.h - p.page.h) > 0.5 || Math.abs(was.page.w - p.page.w) > 0.5) {
       snapHold("prompt", 150);

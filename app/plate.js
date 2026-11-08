@@ -8,7 +8,7 @@
 import { placeAround } from "./around.js";
 import { $, offsetIn } from "./dom.js";
 import { frameHold, frameTarget } from "./framebox.js";
-import { fadeThrough, fades, shapeBox, shapeSteps } from "./layoutmath.js";
+import { fades, shapeBox, shapeSteps } from "./layoutmath.js";
 import { promptFollow } from "./layout.js";
 import { SPACE } from "./tokens.js";
 
@@ -228,9 +228,8 @@ export function switchGlide(at, views, layout = false) {
        as it came in */
     at8 = Array.from({ length: Math.ceil(T / 8) + 1 }, (_, i) => Math.min(T, i * 8)),
     same = views.old === views.neu, // a layout switch's panel: one view, riding the plate to where the layout puts it
-    ft = fadeThrough(fades(steps)), // its fade-through: the turn is a sample
     /** @type {{ offset: number, q: [number, number] }[]} */
-    samples = [...new Set([...at8, steps.A, steps.A + steps.S, T, ...(same ? [ft.turn, ft.turn + 0.5] : [])])]
+    samples = [...new Set([...at8, steps.A, steps.A + steps.S, T])]
       .filter(e => e >= 0 && e <= T)
       .sort((x, y) => x - y)
       .map(e => ({ offset: e / T, q: steps.q(e) })),
@@ -345,68 +344,28 @@ export function switchGlide(at, views, layout = false) {
      2026-10-28). The clip is the plate's box in the moved one */
   const centre = (/** @type {{ l: number, t: number, w: number, h: number }} */ b) => [b.l + b.w / 2, b.t + b.h / 2],
     fr = $("frame").getBoundingClientRect(), // measured before anything rides
-    rides = /** @type {[HTMLElement, DOMRect, number[], (i: number) => boolean][]} */ (
+    /* a layout switch's panel (one view): its contents RIDE their pane (DEVLOG DD-2026-11-08-2) — laid out at their
+       final place and size, kept on the plate's centre and clipped by it: a pure move just travels, a size change crops
+       and reveals them (the picture's rule, morph.js). Contents fade only when they are other contents (a tab switch) */
+    rides = /** @type {[HTMLElement, DOMRect, number[]][]} */ (
       same
-        ? /* the one view plays both parts (a layout switch's panel): leaving until its turn — pinned at its old size,
-             so its contents don't reflow while seen — then, gone, coming at its new size */
-          [
-            [neu, oldRect, centre(boxes[0]), (/** @type {number} */ i) => samples[i].offset * T <= ft.turn],
-            [neu, nr, centre(boxes[boxes.length - 1]), (/** @type {number} */ i) => samples[i].offset * T > ft.turn],
-          ]
+        ? [[neu, nr, centre(boxes[boxes.length - 1])]]
         : [
-            [old, oldRect, centre(boxes[0]), () => true],
-            [neu, nr, centre(boxes[boxes.length - 1]), () => true],
+            [old, oldRect, centre(boxes[0])],
+            [neu, nr, centre(boxes[boxes.length - 1])],
           ]
     );
-  /** @type {Keyframe[]} */
-  const rideKeys = [],
-    /** @type {Keyframe[]} */
-    clipKeys = [];
-  for (const [v, r, anchor, mine] of rides) {
+  for (const [v, r, anchor] of rides) {
     const sh = boxes.map(b => {
         const c = centre(b);
         return [c[0] - anchor[0], c[1] - anchor[1]];
       }),
       box = pic(v) ? fr : r, // what the plate crops: the picture in its view, else the whole view
       moved = (/** @type {number} */ i) => new DOMRect(box.left + sh[i][0], box.top + sh[i][1], box.width, box.height),
-      k = boxes.map((_, i) => i).filter(mine),
-      ride = k.map(i => ({ offset: samples[i].offset, transform: `translate(${sh[i][0]}px, ${sh[i][1]}px)` })),
-      clip = k.map(i => ({ offset: samples[i].offset, clipPath: inset(moved(i), boxes[i]) }));
-    if (!same) {
-      go(v.animate(ride, timing));
-      go((pic(v) ? $("frame") : v).animate(clip, timing));
-    } else {
-      rideKeys.push(...ride);
-      clipKeys.push(...clip);
-    }
-  }
-  if (same) {
-    go(neu.animate(rideKeys, timing));
-    go(neu.animate(clipKeys, timing));
-    /* until its turn, pinned at its old place and size (the tab switch's leaving view, as a geometry of its own) */
-    const pin = {
-      left: oldRect.left - rp.left - rpanel.clientLeft + "px",
-      top: oldRect.top - rp.top - rpanel.clientTop + "px",
-      width: oldRect.width + "px",
-      height: oldRect.height + "px",
-      right: "auto",
-      bottom: "auto",
-    };
-    go(neu.animate([pin, pin], { duration: Math.max(1, ft.turn), fill: "backwards" }));
-    /* its contents fade through on the one schedule (the box's too: layout.js fadeCol) */
-    go(
-      neu.animate(
-        [
-          { opacity: 1, offset: 0 },
-          { opacity: 1, offset: ft.outStart / T },
-          { opacity: 0, offset: ft.outEnd / T },
-          { opacity: 0, offset: Math.min(1, ft.inStart / T) },
-          { opacity: 1, offset: Math.min(1, ft.inEnd / T) },
-          { opacity: 1, offset: 1 },
-        ],
-        { duration: T, fill: "backwards" },
-      ),
-    );
+      ride = boxes.map((_, i) => ({ offset: samples[i].offset, transform: `translate(${sh[i][0]}px, ${sh[i][1]}px)` })),
+      clip = boxes.map((b, i) => ({ offset: samples[i].offset, clipPath: inset(moved(i), b) }));
+    go(v.animate(ride, timing));
+    go((pic(v) ? $("frame") : v).animate(clip, timing));
   }
   /* only out, from what they are now: shown by hover (the edit buttons, the arrows) or by state (the status row,
      Show prompt), a switch never shows them — faded in by it, or out from fully shown, they blinked (the user,

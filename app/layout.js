@@ -794,7 +794,7 @@ export function fadeCol(was, sw) {
     r = $("left").getBoundingClientRect(),
     dx = Math.round(was.left - r.left),
     dy = Math.round(was.top - r.top),
-    /* through, not across, on the ONE schedule (layoutmath.js fadeThrough — the panel view's too): out, gone two
+    /* through, not across, on the ONE schedule (layoutmath.js fadeThrough): out, gone two
        frames while it changes place, in */
     ft = fadeThrough(sw.fd),
     T = Math.max(sw.T, ft.inEnd),

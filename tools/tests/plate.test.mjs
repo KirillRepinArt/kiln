@@ -769,3 +769,37 @@ export async function layoutSwitchIsLive(k, t) {
   t.ok((await k.ev(`window._vt`)) === 0, "no View Transition started", await k.ev(`window._vt`));
 }
 layoutSwitchIsLive.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* Contents ride their pane (DEVLOG DD-2026-11-08-2; the user: "panes don't fade — their contents shouldn't either"): in
+   a layout switch a panel's contents stay shown and keep their place on the plate's centre every frame — a pure move
+   (Left ↔ Right) just travels, a size change crops and reveals them. They used to stay pinned where they were and
+   fade out, then fade in at the new place (a second rule for the pane's contents) */
+export async function panelContentsRide(k, t) {
+  for (const [from, to] of [
+    ["left", "right"],
+    ["right", "below"],
+    ["below", "left"],
+  ]) {
+    await k.ev(`(setDock("${from}"),document.querySelector('.tab[data-v="queue"]').click(),1)`);
+    await k.mouse(4, 4);
+    await k.sleep(1600);
+    const rows = await k.ev(`new Promise(res=>{const out=[],t0=performance.now(),v=$("v-queue");setDock("${to}");
+      (function f(){setTimeout(()=>{const p=$("plate").getBoundingClientRect(),r=v.getBoundingClientRect();
+        out.push([+getComputedStyle(v).opacity,Math.round(r.left+r.width/2-(p.left+p.width/2)),
+          Math.round(r.top+r.height/2-(p.top+p.height/2)),Math.round(p.left),Math.round(p.top)]);
+        if(performance.now()-t0<1000)requestAnimationFrame(f);else res(out)},0)})()})`);
+    const tag = `Queue: ${from} → ${to}`,
+      last = rows.at(-1),
+      dim = rows.filter(r => r[0] < 0.99),
+      off = rows.filter(r => Math.abs(r[1] - last[1]) > 2 || Math.abs(r[2] - last[2]) > 2),
+      moved = rows.some(r => Math.abs(r[3] - rows[0][3]) > 20 || Math.abs(r[4] - rows[0][4]) > 20);
+    t.ok(moved, `${tag}: the plate moves (the case)`, { first: rows[0], last });
+    t.ok(!dim.length, `${tag}: its contents never fade`, { dim: dim.length + "/" + rows.length, min: dim[0] });
+    t.ok(!off.length, `${tag}: …and ride the plate every frame`, {
+      off: off.length + "/" + rows.length,
+      first: off[0],
+      last,
+    });
+  }
+}
+panelContentsRide.opts = { width: 1760, height: 1080, step: 0.05 };

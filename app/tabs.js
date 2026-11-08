@@ -121,7 +121,7 @@ export function tabGo(fn, layout = false) {
     sw =
       v0.id === "v-gen"
         ? switchGlide(from, null, true) // the picture: the frame's own crop-and-reveal, the plate riding it
-        : switchGlide(from, { old: v0, oldRect: r0, neu: v1 }, true); // a panel: the view fades through, riding
+        : switchGlide(from, { old: v0, oldRect: r0, neu: v1 }, true); // a panel: its contents ride the plate
   else if (v0 && v1 && r0 && v0 !== v1) {
     if (v0.id === "v-gen" && f0) frameHold(f0); // the picture stays where it was while its view leaves
     sw = switchGlide(from, { old: v0, oldRect: r0, neu: v1 });

@@ -102,10 +102,12 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     own (`layDrag` is gone); Vertical's edges keep theirs until C4. The room side by side has one definition: `layout.js` `sideRoom`
   - **a layout switch** (Left / Right / Vertical, the Layout menu and drag-to-dock alike): `tabs.js` `tabGo(fn, true)` —
     the tab switch's owner with the SAME view: on a picture page the frame's own crop-and-reveal (`morph.js`) moves the
-    picture and the plate rides it; on a panel `plate.js` `switchGlide` moves the plate by the steps and the one view
-    plays both parts (pinned at its old size fading out, then riding in at its new size); the prompt box and the panel
-    view fade through on one schedule (`layoutmath.js` `fadeThrough`; the box: `layout.js` `fadeCol`), the box's
-    partner meanwhile the plate where it lands (`plate.js` `glueRect`). No View Transitions (`docs/decisions/0014`)
+    picture and the plate rides it; on a panel `plate.js` `switchGlide` moves the plate by the steps and the view's
+    contents RIDE it — laid out at their final place and size, kept on the plate's centre, clipped by it (a pure move
+    travels, a size change crops and reveals: the picture's rule). Contents fade only when they are other contents (a
+    tab switch). The prompt box alone fades through (its path would cross the page's: `layoutmath.js` `fadeThrough`,
+    `layout.js` `fadeCol`), its partner meanwhile the plate where it lands (`plate.js` `glueRect`). No View
+    Transitions (`docs/decisions/0014`)
   - **a rearrangement on the same page** (a Reset, a double-click, a panel's height, a ratio change, the room changing):
     `rearrange.js` is the ONE applier — each owner hands it its box's from → to in the same task (`framebox.js` the
     frame, `layout.js` `layApply` the box's width, `sizeFrame` a panel's box side by side); one plan

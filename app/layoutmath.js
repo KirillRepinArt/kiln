@@ -682,9 +682,10 @@ export function layoutPrefsV4(L, o) {
  * @property {{ kind: "pic", ratio: number, scale?: number } | { kind: "panel", w: number, h: number,
  *   lo: { w: number, h: number }, hi: { w: number, h: number } }} page the page's pane: a picture (its ratio and your
  *   scale of its largest, default 1) or a panel (your sizes and its limits)
- * @property {{ w: number, wLo: number, text: number, least: number, hi?: number,
+ * @property {{ w: number, wLo: number, text: number, least: number, hi?: number, h?: number | null,
  *   mode?: "" | "full" | "match" | "fit", anchor?: "top" | "mid" | "bot" }} box the prompt box: your width (and its
- *   least), its text's height (its least: ~2 lines; its largest in Vertical: hi), its mode, its anchor by the picture
+ *   least), its text's height (its least: ~2 lines; its largest in Vertical: hi), your height (h — Custom: a height you
+ *   set by its edge, decision A, DEVLOG DD-2026-11-09-2; null: its mode decides), its mode, its anchor by the picture
  * @property {{ w: number, h: number }} bar the tab bar
  * @property {number} strip the edit buttons' strip beside the picture (part of the picture's pane: DEVLOG DD-2026-11-03-5)
  * @property {{ area: number, pair: number, bar: number }} gap the window's edge, between the panes, under the tab bar
@@ -733,7 +734,10 @@ function restSizes(s) {
     mode = s.box.mode || "",
     largest = { w: 0, h: 0 };
   let bw = vert ? clampTo(s.box.w, s.box.wLo, RW) : clampTo(s.box.w, s.box.wLo, RW - gap.pair),
-    bh = vert ? clampTo(s.box.text, s.box.least, s.box.hi ?? CH) : clampTo(s.box.text, s.box.least, CH),
+    /* the box's height is a spec (ux-review/16-layout-pass.md C4, rule 3): your height if you set one (Custom), else its
+       text's — clamped to its least and its largest, and in Vertical to the free room under the pane (below) */
+    want = s.box.h ?? s.box.text,
+    bh = vert ? clampTo(want, s.box.least, s.box.hi ?? CH) : clampTo(want, s.box.least, CH),
     pw,
     ph,
     scale;
@@ -742,23 +746,25 @@ function restSizes(s) {
       const leastW = s.picLeast * page.ratio;
       if (RW - bw - gap.pair - stripRoom(s) < leastW) bw = Math.max(s.box.wLo, RW - gap.pair - stripRoom(s) - leastW); // the box gives last
     }
-    /* the largest: side by side, beside the box; in Vertical, with the box squeezed to its least (the picture wins:
-       double-click). No scale kept = the default: side by side the largest, in Vertical the box keeps its text */
+    /* the largest: side by side, beside the box; in Vertical, with the box at its least. No scale kept = the default:
+       the largest in both layouts — the picture first (C4 rule 2; the user, 2026-11-09: "in vertical, reset grows the
+       prompt box and not the pic — we optimise for the biggest pic"); in Vertical the box then fits its text in what's
+       left (it used to size the picture so the box kept its whole text: Reset grew the box) */
     const L = largestPic(s, bw, vert ? s.box.least : bh);
     largest.w = L.w;
     largest.h = L.h;
     const lo = Math.min(1, s.picLeast / Math.max(1, largest.h)),
-      def = vert ? largestPic(s, bw, bh).w / Math.max(1, largest.w) : 1;
+      def = 1;
     scale = clampTo(page.scale ?? def, lo, 1);
     pw = largest.w * scale;
     ph = pw / page.ratio;
-    if (vert) bh = clampTo(s.box.text, s.box.least, Math.min(s.box.hi ?? CH, CH - gap.pair - ph)); // what's left
+    if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - gap.pair - ph)); // what's left
   } else {
     if (!vert && RW - bw - gap.pair < page.lo.w) bw = Math.max(s.box.wLo, RW - gap.pair - page.lo.w);
     pw = clampTo(page.w, page.lo.w, Math.min(page.hi.w, vert ? RW : RW - bw - gap.pair));
     /* Vertical: the panel's height is yours, the box takes what's left (down to its least) — as for a picture */
     ph = clampTo(page.h, page.lo.h, Math.min(page.hi.h, vert ? CH - gap.pair - s.box.least : CH));
-    if (vert) bh = clampTo(s.box.text, s.box.least, Math.min(s.box.hi ?? CH, CH - gap.pair - ph));
+    if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - gap.pair - ph));
   }
   if (!vert && mode === "full") bh = CH;
   return { bw, bh, pw, ph, scale, largest, mode };

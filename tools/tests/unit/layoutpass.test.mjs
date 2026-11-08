@@ -226,14 +226,35 @@ test("too little room: the picture gives way to its least first, then the box", 
   assert.ok(Math.abs(tight.pic.h - PICHMIN) <= EPS, "…only once the picture is at its least");
 });
 
-test("Vertical: the group's top one gap under the bar; the box keeps its text, the picture takes the rest", () => {
+/* Vertical on the spec (ux-review/16-layout-pass.md C4; DEVLOG DD-2026-11-08-13, DD-2026-11-09-2): the picture first,
+   the box under it in what's left; a long text never takes room from the picture — it scrolls */
+test("Vertical: the group's top one gap under the bar; the picture first, the box fits its text in what's left", () => {
   const o = layoutPass(state({ dock: "below", page: { kind: "pic", ratio: 3 / 4 } }));
   assert.equal(o.page.y, 20 + 52 + 12);
-  assert.equal(o.box.h, 150, "the box: its text");
-  assert.ok(Math.abs(bottom(o.box) - (1080 - 20)) <= EPS, "a height-bound picture fills down to the box");
+  assert.equal(o.box.h, 108, "a height-bound picture at its largest leaves the box its least (its text scrolls)");
+  assert.ok(Math.abs(bottom(o.box) - (1080 - 20)) <= EPS, "the box under the picture, down to the room's bottom");
   assert.ok(Math.abs(o.pic.x + o.pic.w / 2 - 880) <= EPS, "centred");
-  const tall = layoutPass(state({ dock: "below", box: { ...state({}).box, text: 2000 } }));
-  assert.equal(tall.box.h, 600, "a long text: up to its largest, then it scrolls");
+  const tall = layoutPass(
+    state({ dock: "below", page: { kind: "pic", ratio: 3 / 4 }, box: { ...state({}).box, text: 2000 } }),
+  );
+  assert.deepEqual(tall.pic, o.pic, "a long text never changes the picture (content growth takes only free room)");
+  assert.ok(
+    tall.box.h <= 600 && bottom(tall.box) <= 1080 - 20 + EPS,
+    "…the box within its largest and the room: it scrolls",
+  );
+  const wide = layoutPass(
+      state({ dock: "below", page: { kind: "pic", ratio: 21 / 9 }, box: { ...state({}).box, text: 2000 } }),
+    ),
+    free = 1080 - 20 - (wide.page.y + wide.page.h);
+  assert.ok(
+    wide.box.h > 108 && wide.box.h <= Math.min(600, free) + EPS,
+    "a width-bound picture leaves free room: the text grows into it",
+    { h: wide.box.h, free },
+  );
+  const yours = layoutPass(
+    state({ dock: "below", page: { kind: "pic", ratio: 21 / 9 }, box: { ...state({}).box, h: 140 } }),
+  );
+  assert.equal(yours.box.h, 140, "Custom: the height you set (decision A)");
 });
 
 /* ---- a drag (rule 3): a constraint — the grabbed edge at the pointer, the rest by the layout's rules ---- */
@@ -433,13 +454,16 @@ test("Vertical: the picture's top fights the anchor — its bottom holds while h
   assert.equal(after.page.y, out.page.y, "let go: the group back under the bar");
 });
 
-test("Vertical: by default the box keeps its text; at 100 % the picture wins and the box is squeezed to its least", () => {
+test("Vertical: the default is the picture at its largest (picture first — Reset), the box at its least below it", () => {
   const def = layoutPass(state({ dock: "below", page: { kind: "pic", ratio: 3 / 4 } })),
     max = layoutPass(state({ dock: "below", page: { kind: "pic", ratio: 3 / 4, scale: 1 } }));
-  assert.equal(def.box.h, 150, "default: the box keeps its text");
-  assert.ok(max.pic.h > def.pic.h, "100 %: a taller picture");
-  assert.equal(max.box.h, 108, "…the box at its least (its text scrolls)");
-  assert.ok(Math.abs(max.pic.w - max.largest.w) <= EPS, "…and that is its largest");
+  assert.deepEqual(
+    def.pic,
+    max.pic,
+    "the default IS 100 %: the biggest picture (it used to shrink it for the box's text)",
+  );
+  assert.equal(def.box.h, 108, "…the box at its least (its text scrolls)");
+  assert.ok(Math.abs(def.pic.w - def.largest.w) <= EPS, "…and that is its largest");
 });
 
 test("the edit buttons: the layout's count is the markup's (one column of them sets a picture's least height)", async () => {

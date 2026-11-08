@@ -140,6 +140,37 @@ function tracer() {
         }
       }
   };
+  /* how much of an element is SEEN: its own opacity — or, while it (or a group it is in) is faded by its parts
+     (app/fade.js: glass never fades through an ancestor, DEVLOG DD-2026-11-08-8), as much as its most-seen part inside
+     it, through the ancestors between that part and it. Its own opacity alone read a view faded by its parts as fully shown until it was hidden (a "cut")
+     and the prompt column as seen while its parts were at 0 (its glue's jumps) */
+  /** @param {Element} el @param {CSSStyleDeclaration} cs */
+  const seenOpacity = (el, cs) => {
+    if (cs.visibility === "hidden" || cs.display === "none") return 0;
+    const own = +cs.opacity,
+      /* a fade started on this element or on a group it is in (the box inside the faded prompt column) — its parts inside
+         it say how much of it is seen. Not a fade started below it: a container of two views crossing read their parts'
+         crossing as a dip */
+      parts = el.getAnimations({ subtree: true }).filter(a => {
+        const r = /** @type {any} */ (a).fadeRoot;
+        return a.id === "glassFade" && r && r.contains(el) && a.effect && a.effect.target;
+      });
+    if (!parts.length) return own;
+    let most = 0;
+    for (const a of parts) {
+      const fx = /** @type {KeyframeEffect} */ (a.effect),
+        t = /** @type {Element} */ (fx.target),
+        pe = fx.pseudoElement;
+      if (t === el && !pe) {
+        most = 1; // the element itself is the part: its own opacity says it
+        continue;
+      }
+      let o = +getComputedStyle(t, pe || null).opacity;
+      for (let x = pe ? t : t.parentElement; x && x !== el; x = x.parentElement) o *= +getComputedStyle(x).opacity;
+      most = Math.max(most, o);
+    }
+    return own * most;
+  };
   /* every frame while on, after the frame's own writes: each watched element's box and opacity, and the CSS transitions
      running on a watched property (a writer on the browser's own clock) */
   const sample = () => {
@@ -147,7 +178,7 @@ function tracer() {
       for (const [el, n] of T.names) {
         const r = el.getBoundingClientRect(),
           cs = getComputedStyle(el),
-          op = cs.visibility === "hidden" || cs.display === "none" ? 0 : +cs.opacity;
+          op = seenOpacity(el, cs);
         (T.samples[n] ||= []).push([
           T.frame,
           r.left,

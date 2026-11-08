@@ -10,6 +10,9 @@
 
 /** @typedef {{ el: Element, pseudo?: "::before", o: number }} FadePart a part to fade, and its own opacity at rest */
 
+/* every fade made here is named, so a reader (the ownership tracer, a test) can tell a fade by parts from another
+   owner's animation */
+export const FADE_ID = "glassFade";
 /** @param {Element} e @param {string | null} [p] */
 const glassy = (e, p = null) => {
   const c = getComputedStyle(e, p);
@@ -19,35 +22,46 @@ const glassy = (e, p = null) => {
   return c.backdropFilter !== "none" && c.backdropFilter !== "";
 };
 
-/** the parts of `root` to fade one by one (none of them holds glass under a fade) @param {Element} root
- * @returns {FadePart[]} */
+/** the parts of `root` to fade one by one (none of them holds glass under a fade). The root is the caller's: never
+ * skipped, its keyframes as given (o 1) — it may be at 0 or hidden right now because it is about to fade in. Its
+ * descendants carry their own resting opacity (a hidden one at 0, or not displayed, is skipped: nothing to fade)
+ * @param {Element} root @returns {FadePart[]} */
 export function fadeParts(root) {
   /** @type {FadePart[]} */
   const out = [];
-  /** @param {Element} e */
-  const walk = e => {
+  /** @param {Element} e @param {boolean} top */
+  const walk = (e, top) => {
+    /* its opacity has an owner of its own (data-fade-owner, in the markup: the picture's layers are pictures.js's) — it
+       fades its layers with their view itself (pictures.js pictureWithView); writing them here was a second writer
+       (the tracer, 2026-11-08) */
+    if (!top && e instanceof HTMLElement && e.dataset.fadeOwner) return;
     const c = getComputedStyle(e);
-    if (c.display === "none" || c.visibility === "hidden" || +c.opacity === 0) return; // not seen: nothing to fade
-    const holds = [...e.querySelectorAll("*")].some(x => glassy(x) || glassy(x, "::before"));
+    if (c.display === "none" || (!top && +c.opacity === 0)) return; // not seen: nothing to fade
+    const o = top ? 1 : +c.opacity,
+      holds = [...e.querySelectorAll("*")].some(x => glassy(x) || glassy(x, "::before"));
     if (glassy(e) || (!holds && !glassy(e, "::before"))) {
-      out.push({ el: e, o: +c.opacity }); // glass on itself, or no glass in it: fades as a whole
+      out.push({ el: e, o }); // glass on itself, or no glass in it: fades as a whole
       return;
     }
     if (glassy(e, "::before")) out.push({ el: e, pseudo: "::before", o: +getComputedStyle(e, "::before").opacity });
-    for (const k of e.children) walk(k);
+    for (const k of e.children) walk(k, false);
   };
-  walk(root);
+  walk(root, true);
   return out;
 }
 
-/** fade `root` by its parts: each part's opacity runs through `keys` (0…1), scaled by its own opacity at rest
+/** fade `root` by its parts: each part's opacity runs through `keys` (the root's, as given), a descendant's scaled by
+ * its own opacity at rest
  * @param {Element} root @param {{ offset: number, opacity: number }[]} keys @param {KeyframeAnimationOptions} timing
  * @returns {Animation[]} */
 export function glassFade(root, keys, timing) {
-  return fadeParts(root).map(p =>
-    p.el.animate(
+  return fadeParts(root).map(p => {
+    const a = p.el.animate(
       keys.map(k => ({ offset: k.offset, opacity: k.opacity * p.o })),
       p.pseudo ? { ...timing, pseudoElement: p.pseudo } : timing,
-    ),
-  );
+    );
+    a.id = FADE_ID;
+    /** @type {Animation & { fadeRoot?: Element }} */ (a).fadeRoot = root; // the group it fades (the tracer reads it)
+    return a;
+  });
 }

@@ -65,7 +65,7 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
   - what a page keeps room for, its geometry and every fade's timing: `layoutmath.js` (`pageInsets`, `pageGeometry`,
     `fades`, `shapeSteps`, `promptSlotH`; the prompt box's glue as a relation to its plate and its change of relation,
     `glueAnchors` / `relationOf` / `glued` / `relationFade` — pure, unit-tested)
-  - every fade of something that holds glass: `fade.js` (`glassFade` — by its parts, never an ancestor's opacity)
+  - every fade of something that holds glass: `fade.js` (`glassFade` — by its parts, never an ancestor's opacity; an element whose opacity has an owner of its own says so in the markup, `data-fade-owner` — the picture's canvas, its copy and the empty-frame text are `pictures.js`'s, which fades them with their view itself, `pictureWithView`, added to its own fades)
   - the picture frame's box: `framebox.js` (where it is, `frameBox`; where the layout wants it, `frameTarget`); what sits
     round it (status row, buttons, edge strips, and the page's side handles side by side — a picture's from the plate,
     a panel's from its box: `placeSideEdges`): `around.js`

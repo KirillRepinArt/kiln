@@ -8,6 +8,7 @@
    (framebox), the columns on a copy of it (colsGlide), a panel's box snapped (B16) — three clocks, two curves, one snap.
    What follows the boxes (the plate, what sits round the picture, the glued prompt box) is placed after the writes of
    each frame, in the same frame. A tab switch keeps its own owner (plate.js switchGlide) on the same steps. */
+import { glassFade } from "./fade.js";
 import { MORPH, fades, shapeBox, shapePlan } from "./layoutmath.js";
 import { snaps } from "./framebox.js";
 import { plateSync } from "./plate.js";
@@ -98,14 +99,19 @@ export function rearrangeFade(el, on) {
 /** @param {HTMLElement} el @param {boolean} on @param {number} delay @param {number} ms @param {string} easing
  * @param {number} t0 */
 function fadeNow(el, on, delay, ms, easing, t0) {
-  const a = el.animate(
+  const timing = { delay, duration: ms, easing, fill: /** @type {FillMode} */ ("backwards") }; // its first keyframe holds until its start
+  /* by its parts (fade.js): the status row holds glass, and faded as a whole its blur was off until the fade ended
+     (DEVLOG DD-2026-11-08-8); shown throughout the fade on the row itself (visibility is no backdrop root) */
+  for (const a of glassFade(
+    el,
     [
-      { opacity: on ? 0 : 1, visibility: "visible" },
-      { opacity: on ? 1 : 0, visibility: "visible" },
+      { offset: 0, opacity: on ? 0 : 1 },
+      { offset: 1, opacity: on ? 1 : 0 },
     ],
-    { delay, duration: ms, easing, fill: "backwards" }, // its first keyframe holds until its start
-  );
-  a.startTime = t0;
+    timing,
+  ))
+    a.startTime = t0;
+  el.animate([{ visibility: "visible" }, { visibility: "visible" }], timing).startTime = t0;
 }
 /** `key` stops moving (another motion takes it over: a crop-and-reveal, a switch's hold) @param {string} key */
 export function stop(key) {

@@ -2,8 +2,8 @@
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $, q } from "./dom.js";
 import { HANDLES, outlines } from "./outlines.js";
-import { lay, minRight, paneSize, setDock, sizeFrame, vAlign, vPass } from "./layout.js";
-import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement } from "./layoutmath.js";
+import { lay, minRight, paneSize, setDock, sideBoxPass, sizeFrame, vAlign, vPass } from "./layout.js";
+import { PWMIN, cardAnchorTop } from "./layoutmath.js";
 import { peekJob } from "./prompt.js";
 import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
@@ -22,20 +22,16 @@ export const card = {
   thawTimer: undefined,
   top: null,
   bottom: null,
-  cy: null,
-  imgTop: null,
-  imgBottom: null,
   drag: false,
   hHold: 0,
   hPin: "top",
 };
-/** the picture's lines the card lines up with (layoutmath's CardAnchors) */
-const anchors = () => ({ it: card.imgTop, ib: card.imgBottom, cy: card.cy });
+/** the pane's lines the box lines up with — the layout pass's (C2b's rest; the grip's resting places read them) */
+const anchors = () => (lay.pass && lay.pass.anchors) || { it: null, ib: null, cy: null };
 /* the card's held layout let go: frozen while you work, its top and centre forgotten (also from other files) */
 export function lyReset() {
   card.frozen = false;
   card.top = null;
-  card.cy = null;
 }
 export function lyUnfreeze() {
   card.frozen = false;
@@ -45,7 +41,7 @@ export function lyUnfreeze() {
    own and drew under the pills; side by side the modes used a third number, EDMIN). The editor's CSS takes what the box
    gives it and scrolls */
 /** @returns {number} */
-function cardNaturalH() {
+export function cardNaturalH() {
   const L = $("left"),
     w = q(".pwrapT", L);
   const sc = L.querySelector(".cm-scroller");
@@ -133,9 +129,6 @@ export function stackW() {
     w = m === "full" ? max : m === "match" && pic ? pic : paneSize("box", "vert").w || 760;
   return Math.round(Math.max(Math.min(PWMIN, max), Math.min(max, w)));
 }
-function cardMinH() {
-  return slotLeast();
-}
 export function chipsH() {
   const c = $("chips");
   return c.childElementCount ? c.offsetHeight + SPACE.tight : 0;
@@ -175,52 +168,15 @@ export function layoutLeft(direct = false) {
     if (!was || Math.abs(was.page.h - p.page.h) > 0.5 || Math.abs(was.page.w - p.page.w) > 0.5) sizeFrame();
     return;
   }
-  const colH = col.clientHeight - TS;
-  if (colH <= 0) return;
-  /* the column's own place: its layout box, without ANY transform — a rect counted its glue and a running switch's
-     offset, and the box re-anchored against them (T2b: 348 px off the frame after a layout switch began) */
-  const f = $("frame").getBoundingClientRect(),
-    app = /** @type {HTMLElement} */ (col.offsetParent),
-    c = { top: app.getBoundingClientRect().top + col.offsetTop };
-  const T =
-    typeof lay !== "undefined" &&
-    lay.target; /* the picture's target (it may be mid-glide): the prompt moves with it, not after it */
-  if (S.view === "gen" && f.height > 0) {
-    if (T) {
-      card.cy = T.top + T.h / 2 - c.top - TS;
-      card.imgTop = T.top - c.top - TS;
-      card.imgBottom = T.bottom - c.top - TS;
-    } else {
-      card.cy = f.top + f.height / 2 - c.top - TS;
-      card.imgTop = f.top - c.top - TS;
-      const pb = $("prog").getBoundingClientRect();
-      card.imgBottom = (pb.height ? pb.bottom : f.bottom) - c.top - TS;
-    }
-  }
-  if (card.cy == null) card.cy = colH / 2;
-  if (hm) {
-    const { top, H } = cardHeightMode(hm, colH, CH, cardMinH(), { ...anchors(), cy: card.cy });
-    card.top = top;
-    card.bottom = top + H + CH;
-    boxAt(col, top + TS, H);
-    return;
-  }
-  // the box and its chip row are placed as one group (the text's height is measured only when it's used)
-  const { top, H, bottom } = cardPlacement({
-    colH,
-    CH,
-    held: card.hHold,
-    heldPin: card.hPin,
-    naturalH: cardNaturalH(),
-    pos: S.pos || "mid",
-    frozen: card.frozen,
-    prevTop: card.top,
-    prevBottom: card.bottom,
-    a: anchors(),
-  });
-  card.bottom = bottom;
-  card.top = top;
-  boxAt(col, top + TS, H);
+  if (col.clientHeight - TS <= 0) return;
+  /* side by side the box's place beside its pane is the layout pass's — ONE rule (cardPlacement, its modes
+     cardHeightMode), called by the pass with the column and the moment's state (C2b's rest: the pass had a copy of its
+     own, and this measured the picture's lines itself) */
+  const p = sideBoxPass(),
+    c0 = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop;
+  card.top = p.box.y - c0 - TS;
+  card.bottom = card.top + p.box.h + CH;
+  boxAt(col, p.box.y - c0, p.box.h);
 }
 /** where the box is in its column now (its top and height; its width is --cw) — null until it's first laid out
  * @type {{ l: number, t: number, w: number, h: number } | null} */

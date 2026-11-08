@@ -257,7 +257,7 @@ export async function verticalPanelsResize(k, t) {
   await k.ev(`(setDock("below"),1)`);
   await k.mouse(2, 2);
   await k.sleep(1500);
-  const p0 = await R(k, "#right");
+  const p0 = await R(k, "#rpanel"); // the panel itself: the page area is the whole room since C2b's rest
   t.near(p0.width, (await R(k, "#rpanel")).height, 3, "Vertical: a 1:1 plate at the room's height", {
     w: p0.width,
   });
@@ -268,20 +268,20 @@ export async function verticalPanelsResize(k, t) {
   await ev(k, "mousePressed", x, y);
   for (let i = 1; i <= 10; i++) await ev(k, "mouseMoved", x + (100 * i) / 10, y);
   await k.sleep(250);
-  const held = await R(k, "#right");
+  const held = await R(k, "#rpanel");
   await ev(k, "mouseReleased", x + 100, y);
   await ev(k, "mouseMoved", 8, 8, 0);
   await k.sleep(900);
   t.near(held.width, p0.width + 200, 3, "its right edge out by 100: 200 wider, about its centre", { w: held.width });
   t.near(held.left + held.width / 2, p0.left + p0.width / 2, 2, "…its centre stays");
   t.near(held.right, p0.right + 100, 3, "…the edge under the pointer");
-  t.near((await R(k, "#right")).width, p0.width + 200, 3, "kept");
+  t.near((await R(k, "#rpanel")).width, p0.width + 200, 3, "kept");
   await k.ev(`(showView("loras"),1)`);
   await k.sleep(1200);
-  t.near((await R(k, "#right")).width, p0.width, 3, "LoRAs keeps its own width in Vertical");
+  t.near((await R(k, "#rpanel")).width, p0.width, 3, "LoRAs keeps its own width in Vertical");
   await k.ev(`(showView("queue"),1)`);
   await k.sleep(1200);
-  t.near((await R(k, "#right")).width, p0.width + 200, 3, "back on the Queue: its own");
+  t.near((await R(k, "#rpanel")).width, p0.width + 200, 3, "back on the Queue: its own");
 }
 verticalPanelsResize.opts = { width: 1760, height: 1080, step: 0.05 };
 

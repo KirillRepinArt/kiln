@@ -647,7 +647,7 @@ export function layoutPrefsV4(L, o) {
  * @property {{ kind: "pic", ratio: number, scale?: number, row?: number } | { kind: "panel", w: number, h: number,
  *   lo: { w: number, h: number }, hi: { w: number, h: number }, row?: number }} page the page's pane: a picture (its ratio and your
  *   scale of its largest, default 1) or a panel (your sizes and its limits)
- * @property {{ w: number, wLo: number, text: number, least: number, hi?: number, h?: number | null, title?: number, foot?: number,
+ * @property {{ w: number, wLo: number, text: number, least: number, hi?: number, h?: number | null, title?: number, foot?: number, place?: BoxPlace,
  *   mode?: "" | "full" | "match" | "fit", anchor?: "top" | "mid" | "bot" }} box the prompt box: your width (and its
  *   least), its text's height (its least: ~2 lines; its largest in Vertical: hi), your height (h — Custom: a height you
  *   set by its edge, decision A, DEVLOG DD-2026-11-09-2; null: its mode decides), its mode, its anchor by the picture;
@@ -671,6 +671,8 @@ export function layoutPrefsV4(L, o) {
  * @property {{ boxW: number, boxH?: number, scale?: number, w?: number, h?: number }} kept what a release keeps (the limits, never
  *   the rubber band's stretch)
  * @property {{ w: number, h: number }} largest the picture's largest at this layout (picture pages)
+ * @property {{ it: number, ib: number, cy: number } | null} anchors side by side: the pane's lines the box anchors to (its column's px, under
+ *   its name row: `place.colTop`) — the grip's resting places use them too
  * @property {number} roomT where the room starts (the window's px: under the tab bar's row) — the appliers place the
  *   page's pane from it
  * @property {number} pageHi the page's room: the most height its pane can take (Vertical: with the box at its least
@@ -683,6 +685,34 @@ export const HANDLE = 16;
 const clampTo = (/** @type {number} */ v, /** @type {number} */ lo, /** @type {number} */ hi) =>
   Math.max(lo, Math.min(Math.max(lo, hi), v));
 
+/**
+ * @typedef {object} BoxPlace side by side, what the box's place rule (cardPlacement) reads besides the pane
+ * @property {number} colTop where its column starts (the window's px, under its name row)
+ * @property {number} colH the column's height
+ * @property {number} chips its LoRA row (with its gap)
+ * @property {number} below the room under the pane its "bottom" lines up with (the status row)
+ * @property {number} [held] its height edge held: the height shown
+ * @property {"top" | "bottom"} [heldPin] and the side that holds
+ * @property {boolean} [frozen] you're working in it: its top holds
+ * @property {number | null} [prevTop] its top last laid out (column px)
+ * @property {number | null} [prevBottom] its bottom last laid out, LoRA row included
+ */
+/** the box's place inputs side by side, the room's by default @param {PassState} s @param {number} T @param {number} CH
+ * @returns {BoxPlace} */
+function sidePlace(s, T, CH) {
+  return {
+    colTop: T,
+    colH: CH,
+    chips: 0,
+    below: 0,
+    held: 0,
+    heldPin: "top",
+    frozen: false,
+    prevTop: null,
+    prevBottom: null,
+    ...s.box.place,
+  };
+}
 /** the room: the window less its edge gap, under the tab bar's row @param {PassState} s */
 /** Vertical: what lies between the pane's bottom and the box's top — the page's status row (a picture's), the pair
  * gap, the box's name row — ONE definition, for the sizes and the places alike (C4b step 1b: the box sat one bare gap
@@ -746,7 +776,6 @@ function restSizes(s) {
     ph = clampTo(page.h, page.lo.h, Math.min(page.hi.h, vert ? CH - vAround(s) - s.box.least : CH));
     if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - vAround(s) - ph));
   }
-  if (!vert && mode === "full") bh = CH;
   return { bw, bh, pw, ph, scale, largest, mode };
 }
 
@@ -987,6 +1016,9 @@ export function layoutPass(s) {
     mode = rest.mode;
   /** @type {Rect} */ let page;
   /** @type {Rect} */ let box;
+  /** @type {{ it: number, ib: number, cy: number } | null} the pane's lines the box anchors to, in its column's px
+   * (side by side) */
+  let anchors = null;
   /** @type {Rect | null} */ let pr = null;
 
   /* a picture stretched past its room by the rubber band: never past the gap to the next part (the bar above, the
@@ -1008,10 +1040,33 @@ export function layoutPass(s) {
       py = z.pageY ?? T + (CH - z.ph) / 2;
     page = { x: px, y: py, w: pageW, h: z.ph };
     if (pic) pr = { x: right ? px + strip : px, y: py, w: z.pw, h: z.ph };
-    const bh = mode === "full" ? CH : mode === "match" ? z.ph : z.bh,
-      a = s.box.anchor || "top",
-      by = mode === "full" ? T : a === "mid" ? py + (z.ph - bh) / 2 : a === "bot" ? py + z.ph - bh : py;
-    box = { x: right ? x0 + pageW + gap.pair : x0, y: clampTo(by, T, B - bh), w: z.bw, h: bh };
+    /* the box's place beside its pane: ONE rule, the card's (cardPlacement; its modes: cardHeightMode) — anchored to
+       the pane's lines (its top, its centre, its bottom with the status row under it), the box with its LoRA row as one
+       group, held still while you work in it or hold its height edge (C2b's rest: the pass had a copy of its own, which
+       knew none of that) */
+    const pl = sidePlace(s, T, CH),
+      over = pr || page;
+    anchors = {
+      it: over.y - pl.colTop,
+      ib: over.y + over.h + pl.below - pl.colTop,
+      cy: over.y + over.h / 2 - pl.colTop,
+    };
+    const r =
+      mode === "full" || mode === "match"
+        ? cardHeightMode(mode, pl.colH, pl.chips, s.box.least, anchors)
+        : cardPlacement({
+            colH: pl.colH,
+            CH: pl.chips,
+            held: pl.held,
+            heldPin: pl.heldPin,
+            naturalH: Math.max(s.box.text, s.box.least), // its spec's least (the card's text measure included it)
+            pos: s.box.anchor || "mid",
+            frozen: !!pl.frozen,
+            prevTop: pl.prevTop ?? null,
+            prevBottom: pl.prevBottom ?? null,
+            a: anchors,
+          });
+    box = { x: right ? x0 + pageW + gap.pair : x0, y: pl.colTop + r.top, w: z.bw, h: r.H };
   } else {
     const pageW = z.pw + (pic ? 2 * strip : 0),
       px = L + (RW - pageW) / 2,
@@ -1082,5 +1137,5 @@ export function layoutPass(s) {
     handles.shared = { x: lo, y: page.y + page.h + vGap(s) / 2 - t, w: Math.max(0, hi - lo), h: HANDLE }; // mid-gap (dragSizes inverts it)
   }
   const pageHi = vert ? CH - vAround(s) - s.box.least : CH;
-  return { page, pic: pr, box, bar: barR, handles, kept, largest: rest.largest, pageHi, roomT: T };
+  return { page, pic: pr, box, bar: barR, handles, kept, largest: rest.largest, pageHi, roomT: T, anchors };
 }

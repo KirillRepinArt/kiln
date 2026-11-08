@@ -174,7 +174,7 @@
  * @property {boolean} frameDefer    inside one click: sizeFrame runs once, at the end
  * @property {boolean} framePending  …and was asked for meanwhile
  * @property {boolean} frameHold     the layout is held (the prompt box's bottom edge being dragged)
- * @property {{ pic: { x: number, y: number, w: number, h: number } | null, roomTop: number, page: { x: number, y: number, w: number, h: number }, box: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number }, kept: { boxW: number, scale?: number, w?: number, h?: number }, handles: Record<string, { x: number, y: number, w: number, h: number }> } | null} [pass]  side by side, a
+ * @property {{ pic: { x: number, y: number, w: number, h: number } | null, roomTop: number, page: { x: number, y: number, w: number, h: number }, box: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number }, kept: { boxW: number, scale?: number, w?: number, h?: number }, handles: Record<string, { x: number, y: number, w: number, h: number }>, anchors?: { it: number, ib: number, cy: number } | null } | null} [pass]  side by side, a
  * @property {import("./layoutmath.js").PassOut | null} [passV] Vertical's layout pass (v0.7c C4b: its rectangles, held or not)
  *   picture page: the single layout pass's numbers (v0.7c C2a), held or not (C3)
  * @property {{ edge: string, at: number, off: number, boxW: number, bh?: number, scale: number, w?: number, h?: number } | null} [pdrag]  an edge of a picture
@@ -194,9 +194,6 @@
  * @property {number | undefined} thawTimer
  * @property {number | null} top      its top (column coordinates)
  * @property {number | null} bottom   its bottom, chip row included
- * @property {number | null} cy       the picture's vertical centre — what "mid" centres on
- * @property {number | null} imgTop   the picture's top — "top" lines up with it
- * @property {number | null} imgBottom the status line under the picture — "bot" lines up with it
  * @property {boolean} drag           the card is being dragged to a new resting place
  * @property {number} [hHold]        side by side: the box's height while a height edge is held (0: none) — the rubber band
  * @property {"top" | "bottom"} [hPin] and the side that holds meanwhile

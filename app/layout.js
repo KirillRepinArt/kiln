@@ -5,7 +5,19 @@ import { placeAround } from "./around.js";
 import { movingTo, rearrange, rearrangeFade } from "./rearrange.js";
 import { frameGoal, layT } from "./framebox.js";
 import { syncH } from "./boot.js";
-import { applyMode, applyPH, boxDraftH, chipsH, layoutLeft, lyReset, slotLeast, stackW, updHm } from "./cardlayout.js";
+import {
+  applyMode,
+  applyPH,
+  boxDraftH,
+  card,
+  cardNaturalH,
+  chipsH,
+  layoutLeft,
+  lyReset,
+  slotLeast,
+  stackW,
+  updHm,
+} from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { glassFade } from "./fade.js";
 import { HANDLES } from "./outlines.js";
@@ -300,7 +312,17 @@ function sidePass() {
               title: nameRowH(), // the name row over the box, from the name's top
               foot: chipsH() + 2, // the LoRA row under it (and the column's 2 px, as --lch)
             }
-          : { w: dr ? dr.boxW : (paneSize("box", "side").w ?? df.pw), wLo: PWMIN, text: 0, least: 0 },
+          : {
+              w: dr ? dr.boxW : (paneSize("box", "side").w ?? df.pw),
+              wLo: PWMIN,
+              /* its place beside the pane (C2b's rest): the card's rule, in the pass — its text, its least, its mode,
+                 its anchor, its column and the moment's state (held, frozen, last laid out) */
+              text: cardNaturalH(),
+              least: slotLeast(),
+              mode: S.hmode === "full" || S.hmode === "match" ? S.hmode : "",
+              anchor: /** @type {"top" | "mid" | "bot"} */ (S.pos || "mid"),
+              place: boxPlace(),
+            },
         /* the bar's row as it is on screen (the room's top): the pass's numbers are the window's, on both axes */
         bar: { w: tabsW(), h: barH },
         strip,
@@ -348,6 +370,29 @@ function sidePass() {
   }
   return { out: run({ kind: "pic", ratio, scale }), strip, roomTop };
 }
+/** side by side, the box's column and the moment's state its place rule reads (C2b's rest): the column's layout box
+ * (without a transform) under its name row, the LoRA row, the status row under the pane, the card's holds
+ * @returns {import("./layoutmath.js").BoxPlace} */
+function boxPlace() {
+  const col = $("lcol"),
+    TS = parseFloat(col.style.getPropertyValue("--ts")) || 64,
+    R = insets().row ? rowRoom() : 0;
+  return {
+    colTop: /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop + TS,
+    colH: col.clientHeight - TS,
+    chips: chipsH(),
+    below: R ? R - 1 : 0, // the status row: a box resting at the bottom lines up with it
+    held: card.hHold || 0,
+    heldPin: card.hPin || "top",
+    frozen: card.frozen,
+    prevTop: card.top,
+    prevBottom: card.bottom,
+  };
+}
+/** side by side, the layout pass's rectangles now — the box's place (layoutLeft) @returns {import("./layoutmath.js").PassOut} */
+export function sideBoxPass() {
+  return sidePass().out;
+}
 /** Vertical: the layout pass's rectangles now (v0.7c C4b) — the page's pane on top, the box under it; kept in
  * lay.passV for the appliers (sizeFrame: the page; layoutLeft: the box) @returns {import("./layoutmath.js").PassOut} */
 export function vPass() {
@@ -379,6 +424,7 @@ export function layGeo() {
       largest: out.largest,
       kept: out.kept,
       handles: out.handles,
+      anchors: out.anchors,
       roomTop,
     };
     /* every page: the area is the WHOLE ROOM and never moves (one coordinate space, DEVLOG DD-2026-11-08-1); the

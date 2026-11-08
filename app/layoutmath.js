@@ -464,19 +464,6 @@ export function relationFade(motion) {
 }
 
 /**
- * A fade-through for ONE element that changes place (a layout switch's prompt box and panel view, T2b): out by the
- * switch's out-fade, then a turn while it's fully gone (two frames: it changes place there — never seen moving back),
- * then in. The one schedule both use.
- * @param {{ out: { delay: number, duration: number }, in: { delay: number, duration: number } }} fd the switch's fades
- */
-export function fadeThrough(fd) {
-  const G = 34, // ~2 frames gone
-    outEnd = fd.out.delay + fd.out.duration,
-    inStart = Math.max(outEnd + G, fd.in.delay);
-  return { outStart: fd.out.delay, outEnd, turn: outEnd + G / 2, inStart, inEnd: inStart + fd.in.duration };
-}
-
-/**
  * The box at a point of a shape change: each axis moves its centre and its size by its own progress.
  * @param {{ l: number, t: number, w: number, h: number }} o @param {{ l: number, t: number, w: number, h: number }} n
  * @param {[number, number]} q

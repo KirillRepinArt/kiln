@@ -1,6 +1,7 @@
 // The glass plate (v0.7.2, the user's pick over snapshot switches): one glass object under the right column — the
 // frame's shape in Generating, the panel's elsewhere — that changes shape on a tab switch instead of being a snapshot
 // (a snapshot can't blur what's behind it: the glass went clear for the switch).
+import { glueAnchors, relationOf } from "../../app/layoutmath.js";
 const R = (k, sel) =>
   k.ev(`JSON.parse(JSON.stringify(document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect()))`);
 const near = (a, b, d = 2) => ["left", "top", "width", "height"].every(p => Math.abs(a[p] - b[p]) <= d);
@@ -804,12 +805,14 @@ export async function panelContentsRide(k, t) {
 }
 panelContentsRide.opts = { width: 1760, height: 1080, step: 0.05 };
 
-/* a layout switch (Q-T1, DEVLOG DD-2026-11-08-4/5): the prompt box you SEE never changes place or shape while it's seen —
-   it fades out exactly as it was and in exactly where it lands. Measured on what's on screen (the stand-in while it's
-   there, else the box), every frame: through the Layout menu with a prompt that wraps differently at the two widths (the
-   layout measured the old shape mid-switch and the page moved under the box: 18 px), and through a drag to the bottom
-   dock (the release started the switch while the press still held the box's glue: 56 px) */
-export async function boxLeavesAsItWas(k, t) {
+/* a layout switch (DEVLOG DD-2026-11-08-5, -7): the prompt box you SEE is GLUED to the live plate every frame — by its
+   old relation (beside / under) and at its old shape while it leaves, by its new one and at its new shape while it
+   comes — and never seen changing relation. Measured on what's on screen (the stand-in while it's there, else the box)
+   against the plate, every frame: through the Layout menu with a prompt that wraps differently at the two widths (the
+   layout measured the old shape mid-switch: an 18 px jump), and through a drag to the bottom dock (the press still held
+   the glue: a 56 px jump). The user's report that set the rule: side by side → Vertical, the box sat still while the
+   picture moved into it */
+export async function boxGluedThroughLayoutSwitch(k, t) {
   await k.job(
     "[fill:446688] birds eye view. epic cinematic shot of a castle, nighttime, cinematic light, fog, mist, atmosphere, lights, spooky, moon, birds eye view of a castle on a hill above a lake with boats",
     { ar: "3:4", steps: 2 },
@@ -817,7 +820,7 @@ export async function boxLeavesAsItWas(k, t) {
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
   const REC = `(()=>{window.__rec=[];const t0=performance.now(),R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]},
     V=()=>{const s=document.querySelector(".standin"),so=s?+getComputedStyle(s).opacity:0,sl=s&&s.querySelector(".left");
-      return sl&&so>0.05?[so,...R(sl)]:[+getComputedStyle($("lcol")).opacity,...R($("left"))]},
+      return [...(sl&&so>0.05?[so,...R(sl)]:[+getComputedStyle($("lcol")).opacity,...R($("left"))]),...R($("plate"))]},
     /* what's seen of the box's parts: every visible element's place and size, in order */
     seen=parts=>parts.flatMap(p=>[p,...p.querySelectorAll("*")]).filter(e=>{const r=e.getBoundingClientRect(),c=getComputedStyle(e);
       return r.width>0&&r.height>0&&c.visibility!=="hidden"&&!e.closest(HANDLES)}).map(e=>[e.tagName,...R(e)]);
@@ -835,21 +838,48 @@ export async function boxLeavesAsItWas(k, t) {
         : a.map((e, i) => [e, b[i]]).filter(([e, f]) => e.some((v, j) => (j ? Math.abs(v - f[j]) > 1 : v !== f[j])));
     t.ok(!diff.length, `${tag}: the stand-in looks exactly like the box`, { diff: diff.slice(0, 4) });
   };
-  const check = (tag, rows) => {
+  const box = r => ({ l: r[1], t: r[2], w: r[3], h: r[4] }),
+    plate = r => ({ l: r[5], t: r[6], w: r[7], h: r[8] });
+  /* per frame, sampled in real time: judged on a real PC (t.motion). Known until T2c-4: about one run in three, one
+     frame of the fade-in reads ~2.5 px off — the frame and the plate are written by two loops (framebox's drive, the
+     plate's tick), and the box rides the plate as it was in between (ux-review/17-t2-motion.md) */
+  const check = (tag, rows, from, to, pos) => {
     const [a, z] = [rows[0], rows.at(-1)],
+      [A0, A1] = [glueAnchors(from, pos), glueAnchors(to, pos)],
+      [r0, r1] = [relationOf(box(a), plate(a), A0), relationOf(box(z), plate(z), A1)],
       turn = rows.findIndex(r => r[0] <= 0.05),
-      same = (r, b) => [1, 2, 3, 4].every(i => Math.abs(r[i] - b[i]) <= 1),
-      before = rows.slice(0, turn < 0 ? rows.length : turn),
-      after = turn < 0 ? [] : rows.slice(turn).filter(r => r[0] > 0.05),
-      wrongOut = before.filter(r => !same(r, a)),
-      wrongIn = after.filter(r => !same(r, z));
-    t.ok(!same(a, z), `${tag}: the box changes place (the case)`, { a, z });
-    t.ok(turn > 0 && !wrongOut.length, `${tag}: it fades out exactly as it was`, {
+      /* on its relation to the plate as it is in that frame, at its shape */
+      on = (r, A, rel, shape) => {
+        const x = relationOf(box(r), plate(r), A);
+        return (
+          Math.abs(x.dx - rel.dx) <= 2 &&
+          Math.abs(x.dy - rel.dy) <= 2 &&
+          Math.abs(r[3] - shape[3]) <= 1 &&
+          Math.abs(r[4] - shape[4]) <= 1
+        );
+      },
+      seenOut = rows.slice(0, turn < 0 ? rows.length : turn).filter(r => r[0] > 0.05),
+      seenIn = turn < 0 ? [] : rows.slice(turn).filter(r => r[0] > 0.05),
+      offOut = seenOut.filter(r => !on(r, A0, r0, a)),
+      offIn = seenIn.filter(r => !on(r, A1, r1, z)),
+      plateMoved = seenOut.some(r => Math.abs(r[5] - a[5]) + Math.abs(r[6] - a[6]) > 4);
+    t.ok(
+      Math.abs(box(a).l - box(z).l) + Math.abs(box(a).t - box(z).t) > 20,
+      `${tag}: the box changes place (the case)`,
+      { a, z },
+    );
+    t.motion(turn > 0 && !offOut.length, `${tag}: leaving, it rides the plate by its old relation, at its old shape`, {
       turn,
-      wrongOut: wrongOut.slice(0, 3),
-      a,
+      plateMoved,
+      off: offOut.slice(0, 3),
+      r0,
     });
-    t.ok(!wrongIn.length, `${tag}: …and in exactly where it lands`, { wrongIn: wrongIn.slice(0, 3), z });
+    t.motion(!offIn.length, `${tag}: …coming, by its new relation, at its new shape`, {
+      off: offIn.slice(0, 3),
+      r1,
+      z,
+      near: offIn.length ? rows.slice(Math.max(0, rows.indexOf(offIn[0]) - 2), rows.indexOf(offIn[0]) + 3) : [],
+    });
   };
   const click = async (x, y) => {
     await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
@@ -871,7 +901,7 @@ export async function boxLeavesAsItWas(k, t) {
     await k.ev(REC);
     await click(o.left + o.width / 2, o.top + o.height / 2);
     await k.sleep(1700);
-    check(`the Layout menu, ${from} → ${to}`, await k.ev(`__rec`));
+    check(`the Layout menu, ${from} → ${to}`, await k.ev(`__rec`), from, to, await k.ev(`S.pos||"mid"`));
     await looksAlike(`the Layout menu, ${from} → ${to}`);
   }
   /* dragged by its name row from beside the picture to the bottom dock */
@@ -899,7 +929,7 @@ export async function boxLeavesAsItWas(k, t) {
   await k.ev(REC);
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: X, y: Y, button: "left", clickCount: 1 });
   await k.sleep(1700);
-  check("dragged to the bottom dock", await k.ev(`__rec`));
+  check("dragged to the bottom dock", await k.ev(`__rec`), "left", "below", await k.ev(`S.pos||"mid"`));
   await looksAlike("dragged to the bottom dock");
 }
-boxLeavesAsItWas.opts = { width: 1400, height: 900, step: 0.05 };
+boxGluedThroughLayoutSwitch.opts = { width: 1400, height: 900, step: 0.05 };

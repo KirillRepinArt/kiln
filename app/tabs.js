@@ -83,6 +83,7 @@ export function tabGo(fn, layout = false) {
     /* a layout switch: the box's stand-in, made before anything changes — it fades out as the box was, while the box
        itself is laid out where it lands from the first frame */
     stand = layout ? standIn() : null,
+    dock0 = /** @type {"left" | "right" | "below"} */ (S.dock || "left"), // the box's relation before (T2c)
     v0 = /** @type {HTMLElement | null} */ (document.querySelector(".rpanel > .view.on")),
     r0 = v0 ? v0.getBoundingClientRect() : null,
     f0 = frameBox(),
@@ -134,7 +135,7 @@ export function tabGo(fn, layout = false) {
   }
   placeNavs();
   if (layout)
-    fadeCol(/** @type {HTMLElement} */ (stand), sw); // the stand-in out as it was, the box in where it lands (Q-T1)
+    fadeCol(/** @type {HTMLElement} */ (stand), sw, { plate: from, dock: dock0 }); // glued, through its relation change
   else slideCol(lc0, sw.t0); // the column slides from where it was, as the real thing (FLIP)
   /* once it has landed: one more layout, still without glides (measured mid-switch, the prompt column's Vertical shift
      rested a pixel off), then the layout's glides come back */

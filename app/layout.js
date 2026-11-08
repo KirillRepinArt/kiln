@@ -10,7 +10,10 @@ import { $ } from "./dom.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
-  fadeThrough,
+  glueAnchors,
+  glued,
+  relationFade,
+  relationOf,
   PWMIN,
   layoutPass,
   limits,
@@ -768,15 +771,32 @@ function colApply() {
     hugY = Math.round(hugFromY + (hugToY - hugFromY) * colEase(p));
     if (p >= 1) hugT0 = 0;
   }
+  /* a relation change (a layout switch, T2c): the box rides the LIVE plate — its leaving copy by the old relation, the
+     box itself by the new — on top of its place where it lands (its glue to where the plate lands) */
+  let rx = 0,
+    ry = 0;
+  if (relation) {
+    if (now - relation.t0 >= relation.T) relation = null;
+    else {
+      const p = $("plate").getBoundingClientRect(),
+        live = { l: p.left, t: p.top, w: p.width, h: p.height },
+        g0 = glued(live, relation.r0, relation.b0),
+        g1 = glued(live, relation.r1, relation.b1),
+        st = `translate(${Math.round(g0.l - relation.b0.l)}px, ${Math.round(g0.t - relation.b0.t)}px)`;
+      if (relation.out.style.transform !== st) relation.out.style.transform = st;
+      rx = Math.round(g1.l - relation.b1.l);
+      ry = Math.round(g1.t - relation.b1.t);
+    }
+  }
   const k = slideLeft(now),
-    x = hugX + Math.round(slX * k),
-    y = hugY + Math.round(slY * k),
+    x = hugX + Math.round(slX * k) + rx,
+    y = hugY + Math.round(slY * k) + ry,
     t = x || y ? `translate(${x}px, ${y}px)` : "",
     col = $("lcol");
   colX = x;
   colY = y;
   if (col.style.transform !== t) col.style.transform = t;
-  if (k > 0 || hugT0) colRaf = requestAnimationFrame(colApply);
+  if (k > 0 || hugT0 || relation) colRaf = requestAnimationFrame(colApply);
   if (k <= 0) slT0 = 0;
 }
 /** the box's STAND-IN for a layout switch (DEVLOG DD-2026-11-08-5): a copy of what's on screen now — the name row, the
@@ -836,28 +856,54 @@ export function standIn() {
 }
 /** @type {HTMLElement | null} the stand-in on screen now */
 let stand = null;
-/** a layout switch (T2b): the prompt box FADES THROUGH — its path would cross the picture's (Q-T1, Material's
- * fade-through; the picture is what travels). Its stand-in fades out where it was, the box in where it lands — on the
- * switch's clock and fades (one start, layoutmath.js fades). Animations of its own, ended by the next switch
- * @param {HTMLElement} out the stand-in (standIn) @param {{ t0: number, T: number, fd: { out: { delay: number,
- * duration: number }, in: { delay: number, duration: number } } }} sw the switch */
-export function fadeCol(out, sw) {
+/** @typedef {{ l: number, t: number, w: number, h: number }} Box4 */
+/** a relation change running: since when, how long, the leaving copy and both relations with the box's rect on each
+ * (the old one as it was, the new one where it lands) @type {{ t0: number, T: number, out: HTMLElement, b0: Box4,
+ * r0: import("./layoutmath.js").Relation, b1: Box4, r1: import("./layoutmath.js").Relation } | null} */
+let relation = null;
+/** a layout switch (T2b, T2c-2): the prompt box stays GLUED to its partner's live plate and fades through its change
+ * of RELATION (beside ↔ under; DEVLOG DD-2026-11-08-7 — the user: "box slides with it and fades first, then reappears
+ * in the required position"): its stand-in rides the plate by the old relation and fades out early, gone ~2 frames,
+ * then the box rides it by the new one and fades in as the plate lands (layoutmath.js relationFade — Material's
+ * container transform). It sat still before, on the contents' fade (gone only at the swap): the picture moved into it.
+ * Placed by the column's one writer (colApply); on the switch's clock (one start)
+ * @param {HTMLElement} out the stand-in (standIn) @param {{ t0: number, T: number }} sw the switch
+ * @param {{ plate: Box4, dock: "left" | "right" | "below" }} was the plate on screen and the dock before the change */
+export function fadeCol(out, sw, was) {
   for (const a of colFades) a.cancel();
-  promptFollow(true); // glued to where the plate lands (the layout is settled: tabs.js tabGo)
-  /* through, not across, on the ONE schedule (layoutmath.js fadeThrough): out, gone two frames, in */
-  const ft = fadeThrough(sw.fd),
-    T = Math.max(sw.T, ft.inEnd),
-    k = (/** @type {number} */ ms) => Math.min(1, Math.max(0, ms / T)),
-    o = parseFloat(out.style.opacity) || 1,
-    gone = out.animate(
-      [
-        { opacity: o, offset: 0 },
-        { opacity: o, offset: k(ft.outStart) },
-        { opacity: 0, offset: k(ft.outEnd) },
-        { opacity: 0, offset: 1 },
-      ],
-      { duration: T, fill: "forwards" },
-    );
+  relation = null;
+  promptFollow(true); // its place where it lands: glued to where the plate lands (the layout is settled: tabs.js tabGo)
+  const rect = (/** @type {Element} */ e) => {
+      const r = e.getBoundingClientRect();
+      return { l: r.left, t: r.top, w: r.width, h: r.height };
+    },
+    ol = out.querySelector(".left"),
+    g = glueRect(),
+    f = relationFade(sw.T),
+    k = (/** @type {number} */ ms) => Math.min(1, Math.max(0, ms / f.T)),
+    o = parseFloat(out.style.opacity) || 1;
+  if (ol) {
+    const b0 = rect(ol),
+      b1 = rect($("left")),
+      pos = S.pos || "mid";
+    relation = {
+      t0: sw.t0,
+      T: f.T,
+      out,
+      b0,
+      r0: relationOf(b0, was.plate, glueAnchors(was.dock, pos)),
+      b1,
+      r1: relationOf(b1, { l: g.left, t: g.top, w: g.width, h: g.height }, glueAnchors(S.dock || "left", pos)),
+    };
+  }
+  const gone = out.animate(
+    [
+      { opacity: o, offset: 0 },
+      { opacity: 0, offset: k(f.outEnd) },
+      { opacity: 0, offset: 1 },
+    ],
+    { duration: f.T, fill: "forwards" },
+  );
   gone.finished.then(
     () => out.remove(),
     () => out.remove(),
@@ -867,14 +913,16 @@ export function fadeCol(out, sw) {
     $("lcol").animate(
       [
         { opacity: 0, offset: 0 },
-        { opacity: 0, offset: k(ft.inStart) },
-        { opacity: 1, offset: k(ft.inEnd) },
+        { opacity: 0, offset: k(f.inStart) },
+        { opacity: 1, offset: k(f.inEnd) },
         { opacity: 1, offset: 1 },
       ],
-      { duration: T, fill: "backwards" },
+      { duration: f.T, fill: "backwards" },
     ),
   ];
   for (const a of colFades) a.startTime = sw.t0;
+  cancelAnimationFrame(colRaf);
+  colApply(); // its first frame: the copy where it was (the plate hasn't moved yet)
 }
 /** @type {Animation[]} */
 let colFades = [];
@@ -932,7 +980,7 @@ export function promptFollow(direct = false) {
   const b2 = document.body.classList;
   if (direct || b2.contains("laysnap") || b2.contains("liveresize") || b2.contains("laydrag")) {
     hugT0 = 0;
-    if (x === hugX && y === hugY) return;
+    if (x === hugX && y === hugY && !relation) return;
     hugX = x;
     hugY = y;
   } else {
@@ -943,7 +991,11 @@ export function promptFollow(direct = false) {
     hugToY = y;
     hugT0 = performance.now();
   }
-  if (!colRaf) colApply();
+  if (relation) {
+    /* riding the live plate: placed now, in the frame the plate moved (its own frame would read it a frame late) */
+    cancelAnimationFrame(colRaf);
+    colApply();
+  } else if (!colRaf) colApply();
 }
 // live resize: everything follows the window edge directly; animations return ~150 ms after the last resize event
 

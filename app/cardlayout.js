@@ -60,7 +60,7 @@ function cardNaturalH() {
    paddings), never from the scroller, whose height is the box's: measured that way the box could grow but never shrink.
    `lines`: the height for that many lines instead (the box's least) */
 /** @param {number} [lines] @returns {number} */
-function textBoxH(lines) {
+export function textBoxH(lines) {
   const L = $("left"),
     w = q(".pwrapT", L),
     sc = /** @type {HTMLElement | null} */ (L.querySelector(".cm-scroller")),

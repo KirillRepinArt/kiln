@@ -5,7 +5,7 @@ import { placeAround } from "./around.js";
 import { movingTo, rearrange, rearrangeFade } from "./rearrange.js";
 import { frameBox, frameGoal, layT } from "./framebox.js";
 import { syncH } from "./boot.js";
-import { applyMode, applyPH, layoutLeft, lyReset, slotLeast, stackW, updHm } from "./cardlayout.js";
+import { applyMode, applyPH, layoutLeft, lyReset, slotLeast, stackW, textBoxH, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { glassFade } from "./fade.js";
 import { HANDLES } from "./outlines.js";
@@ -208,6 +208,8 @@ export const lay = {
   colW: 0,
   shown: null,
   vroom: 0,
+  /** @type {import("./layoutmath.js").PassOut | null} Vertical's pass, computed alongside the old maths (C4b step 1) */
+  passV: null,
   vrow: 0,
 };
 /* Vertical: the even gap — the picture's plate starts this far under the tab buttons, and the prompt's name starts this
@@ -297,7 +299,8 @@ function toolsClear() {
  * edge is held (lay.pdrag), from the sizes at its press and the pointer (C3). A px cap an older version left on a
  * picture page is read once as the scale it gives this picture. */
 function sidePass() {
-  const roomTop = sideRoomTop(),
+  const vert = !!document.querySelector(".app.stacked"),
+    roomTop = sideRoomTop(),
     barH = /** @type {HTMLElement} */ (document.querySelector(".tabs")).offsetHeight,
     barGap = Math.max(0, roomTop - SPACE.area - barH),
     dr = lay.pdrag, // an edge held: the pass computes from the sizes at its press and the pointer (C3)
@@ -310,28 +313,36 @@ function sidePass() {
       layoutPass({
         W: innerWidth,
         H: innerHeight,
-        dock: /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright")
-          ? "right"
-          : "left",
+        dock: vert
+          ? "below"
+          : /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright")
+            ? "right"
+            : "left",
         page,
-        box: { w: dr ? dr.boxW : (paneSize("box", "side").w ?? df.pw), wLo: PWMIN, text: 0, least: 0 },
+        /* side by side the box's height is placed elsewhere (cardPlacement, C2b's rest); in Vertical the pass places
+           it from its spec (C4: its width, its text's height, its least; Custom comes with C4c) */
+        box: vert
+          ? { w: stackW(), wLo: PWMIN, text: textBoxH(), least: slotLeast(), h: null }
+          : { w: dr ? dr.boxW : (paneSize("box", "side").w ?? df.pw), wLo: PWMIN, text: 0, least: 0 },
         /* the bar's row as it is on screen (the room's top): the pass's numbers are the window's, on both axes */
         bar: { w: tabsW(), h: barH },
         strip,
         gap: { area: SPACE.area, pair: pairGap(), bar: barGap },
         picLeast: picLeastH(),
-        roomH: room,
+        /* Vertical: the whole room under the bar (none given) — never one measured from the old layout, which already took
+           the box out of it (the picture shrank as the text grew, through this input: C4b's shadow run, 2026-11-09) */
+        roomH: vert ? undefined : room,
         drag: dr ? { edge: dr.edge, at: dr.at } : null,
       });
   if (!pic) {
     /* a panel: its width and height are yours (by default a 2:3 plate at the room's height), within its limits */
     const lw = paneLimits(pageId(), "w", { o: "side" }),
-      lh = paneLimits(pageId(), "h", { roomH: room });
+      lh = paneLimits(pageId(), "h", { roomH: vert ? innerHeight : room });
     return {
       out: run({
         kind: "panel",
         w: dr ? (dr.w ?? df.rw) : (p.w ?? df.rw),
-        h: dr ? (dr.h ?? room) : (p.h ?? room),
+        h: dr ? (dr.h ?? room) : (p.h ?? (vert ? innerHeight : room)), // Vertical: as tall as the pass allows
         lo: { w: lw.lo, h: lh.lo },
         hi: { w: lw.hi, h: lh.hi },
       }),
@@ -601,6 +612,9 @@ export function sizeFrame() {
   const j = onShow() || current();
   const ar = j ? j.ar : S.ar;
   if (!stk && !lay.frameHold) layApply(layNow());
+  /* Vertical (C4b, step 1 — a SHADOW run): the pass computes Vertical's rectangles too, kept for comparison while the
+     old maths still lays the page out; the next steps make it the source */
+  if (stk) lay.passV = sidePass().out;
   /* Vertical: the picture's area (and Queue / LoRAs / PNG Info) is a centred column no wider than a 16:9 picture at the
     height it has (plus its button column each side), never narrower than the tab bar or the prompt box — not edge to edge */
   {

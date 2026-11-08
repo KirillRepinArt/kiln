@@ -182,6 +182,7 @@
  * @property {boolean} framePending  …and was asked for meanwhile
  * @property {boolean} frameHold     the layout is held (the prompt box's bottom edge being dragged)
  * @property {{ pic: { x: number, y: number, w: number, h: number } | null, roomTop: number, page: { x: number, y: number, w: number, h: number }, box: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number }, kept: { boxW: number, scale?: number, w?: number, h?: number }, handles: Record<string, { x: number, y: number, w: number, h: number }> } | null} [pass]  side by side, a
+ * @property {import("./layoutmath.js").PassOut | null} [passV] Vertical's pass, computed alongside the old maths (C4b step 1: a shadow run)
  *   picture page: the single layout pass's numbers (v0.7c C2a), held or not (C3)
  * @property {{ edge: string, at: number, off: number, boxW: number, scale: number, w?: number, h?: number } | null} [pdrag]  an edge of a picture
  *   page held side by side (C3): the pass's handle id, the pointer on its axis (+ off: where on the handle it was

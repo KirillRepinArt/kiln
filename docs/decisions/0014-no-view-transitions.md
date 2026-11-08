@@ -1,6 +1,6 @@
 # 0014 · No View Transitions: every rearrangement moves the live page
 
-**Status:** accepted and built 2026-11-07 (v0.7c T2b). **Supersedes:** the layout switch's View Transition (layout.js layMorph, since v0.6).
+**Status:** accepted and built 2026-11-07 (v0.7c T2b). **Supersedes:** the layout switch's View Transition (layout.js layMorph, since v0.6). **Amended by:** [0015](0015-one-transition.md) (2026-11-08) — the prompt box stays glued to the plate and fades through its change of relation; it no longer fades out where it was and in where it lands.
 
 ## Context
 

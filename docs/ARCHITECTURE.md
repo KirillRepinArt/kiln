@@ -63,7 +63,9 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
 - **One owner for everything that moves or shows** (`docs/decisions/0012-one-owner-baseline.md`) — each property has one
   module that writes it; what depends on it is derived from it:
   - what a page keeps room for, its geometry and every fade's timing: `layoutmath.js` (`pageInsets`, `pageGeometry`,
-    `fades`, `shapeSteps`, `promptSlotH` — pure, unit-tested)
+    `fades`, `shapeSteps`, `promptSlotH`; the prompt box's glue as a relation to its plate and its change of relation,
+    `glueAnchors` / `relationOf` / `glued` / `relationFade` — pure, unit-tested)
+  - every fade of something that holds glass: `fade.js` (`glassFade` — by its parts, never an ancestor's opacity)
   - the picture frame's box: `framebox.js` (where it is, `frameBox`; where the layout wants it, `frameTarget`); what sits
     round it (status row, buttons, edge strips, and the page's side handles side by side — a picture's from the plate,
     a panel's from its box: `placeSideEdges`): `around.js`
@@ -101,13 +103,28 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     column (`picLeastH`): the strip never depends on the picture's height. No side-by-side edge has maths of its
     own (`layDrag` is gone); Vertical's edges keep theirs until C4. The room side by side has one definition: `layout.js` `sideRoom`
   - **a layout switch** (Left / Right / Vertical, the Layout menu and drag-to-dock alike): `tabs.js` `tabGo(fn, true)` —
-    the tab switch's owner with the SAME view: on a picture page the frame's own crop-and-reveal (`morph.js`) moves the
-    picture and the plate rides it; on a panel `plate.js` `switchGlide` moves the plate by the steps and the view's
-    contents RIDE it — laid out at their final place and size, kept on the plate's centre, clipped by it (a pure move
-    travels, a size change crops and reveals: the picture's rule). Contents fade only when they are other contents (a
-    tab switch). The prompt box stays glued to the live plate and fades through its change of relation — out by the old relation (beside / under), in by the new one as the plate lands (`layoutmath.js` `glueAnchors` / `relationOf` / `glued` / `relationFade`, placed every frame by `layout.js` `colApply`; DEVLOG DD-2026-11-08-7), faded by its parts — anything that holds glass fades through `fade.js` `glassFade`, never by an ancestor's opacity (an element below 1 is a backdrop root: the glass inside loses its blur; DD-2026-11-08-8); the material is one layer — in glass mode a glass element's tint, ring and shadow are all on its `::before`, the element paints nothing (`glass.css`; DD-2026-11-08-9). The picture in a layout switch leaves as its own copy at its old size (`pictures.js` `xfadeSnap`, declared by `tabs.js` `tabGo`), like every change of what's on show (its path would cross the page's,
-    `layout.js` `fadeCol`); its place where it lands is glued to where the plate lands (`plate.js` `glueRect`), and the relation's offset from the live plate rides on top of it every frame. What fades out is its STAND-IN (`layout.js` `standIn`: a copy of the name row, the box and the chips where they were, made before the change, in a layer over the page; nothing reads or writes it), while the box itself is laid out where it lands from the first frame — so everything that measures the box measures the truth (Android's overlay for a leaving view, UIKit's snapshotView; a copy of the elements, not a picture, so the glass stays live). Letting go ends a press before anything acts on the release (`layout.js`: the pointerup's capture phase). No View
-    Transitions (`docs/decisions/0014`)
+    the tab switch's owner with the SAME view. The plate: on a picture page the frame's own crop-and-reveal (`morph.js`)
+    moves the picture and the plate rides it — the same picture leaves as its own copy at its old size (`pictures.js`
+    `xfadeSnap`, declared by `tabGo`, like every change of what's on show), so the old size is cropped and the new
+    revealed; on a panel `plate.js` `switchGlide` moves the plate by the steps and the view's contents RIDE it — laid out
+    at their final place and size, kept on the plate's centre, clipped by it (a pure move travels, a size change crops
+    and reveals: the picture's rule). Contents fade only when they are other contents (a tab switch).
+    The prompt box stays GLUED to the live plate and fades through its change of relation (beside / under): out by the
+    old relation, in by the new one as the plate lands (`layoutmath.js` `glueAnchors` / `relationOf` / `glued` /
+    `relationFade`; `layout.js` `fadeCol` sets it, `colApply` — the column's one writer — places the box every frame
+    the plate moves; DEVLOG DD-2026-11-08-7). Its place where it lands is glued to where the plate lands (`plate.js`
+    `glueRect`) and the relation's offset from the live plate rides on top of it. What leaves is its STAND-IN
+    (`layout.js` `standIn`: a copy of the name row, the box and the chips where they were, made before the change, in a
+    layer over the page; nothing reads or writes it), while the box itself is laid out where it lands from the first
+    frame — everything that measures the box measures the truth (Android's overlay for a leaving view, UIKit's
+    snapshotView; a copy of the elements, not a picture, so the glass stays live). Letting go ends a press before
+    anything acts on the release (`layout.js`: the pointerup's capture phase).
+    **Glass fades by its parts:** anything that holds glass fades through `fade.js` `glassFade` — each glass layer by its
+    own opacity, each glass-free part as a whole, never by an ancestor's opacity (an element below 1 is a backdrop root:
+    the glass inside loses its blur; DD-2026-11-08-8). **The material is one layer:** in glass mode a glass element's
+    tint, ring and shadow are all on its `::before`, the element paints nothing (`glass.css`; DD-2026-11-08-9). No View
+    Transitions (`docs/decisions/0014`). Still several engines (the plate's keyframes, the frame's crop-and-reveal, the
+    plate's loop, the column's own): one driver for every change is T2c (`ux-review/17-t2-motion.md` in the design notes)
   - **a rearrangement on the same page** (a Reset, a double-click, a panel's height, a ratio change, the room changing):
     `rearrange.js` is the ONE applier — each owner hands it its box's from → to in the same task (`framebox.js` the
     frame, `layout.js` `layApply` the box's width, `sizeFrame` a panel's box side by side); one plan

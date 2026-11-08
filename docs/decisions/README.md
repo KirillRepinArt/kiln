@@ -19,3 +19,5 @@ that changes later gets a new record; the old one says what replaced it.
 | [0011](0011-nothing-leaves-the-machine.md) | Nothing leaves the machine, checked by tests | accepted |
 | [0012](0012-one-owner-baseline.md) | One owner for every moving or visible thing, checked by tests | accepted |
 | [0013](0013-layout-tree.md) | One layout model: sizes, the group, placement; a drag pins, a release settles | accepted (amended) |
+| [0014](0014-no-view-transitions.md) | No View Transitions: every rearrangement moves the live page | accepted (amended by 0015) |
+| [0015](0015-one-transition.md) | One transition per change: roles, copies for what leaves, glass faded by its parts | accepted, partly built |

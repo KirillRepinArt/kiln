@@ -49,7 +49,7 @@ export async function startEditor() {
       if (rfq) return;
       rfq = requestAnimationFrame(() => {
         rfq = 0;
-        layoutLeft();
+        layoutLeft(true); // the text is the clock: the box follows it at once (DEVLOG DD-2026-11-09-2)
       });
     }; // text set from code never fired "input", so the card kept its old height
 
@@ -166,6 +166,12 @@ export async function startEditor() {
         extensions: [
           history(),
           EditorView.lineWrapping,
+          /* the line being edited is never under a fade: scrolling to the caret keeps it a fade's length clear of both
+             edges (the user, 2026-11-09: "this is the active line where I have the cursor — it should be clean") */
+          EditorView.scrollMargins.of(() => {
+            const f = parseFloat(getComputedStyle(wrap).getPropertyValue("--edge-fade")) || 0;
+            return { top: f, bottom: f };
+          }),
           EditorView.contentAttributes.of({ spellcheck: "true", autocorrect: "off", autocapitalize: "off" }),
           placeholder("Describe what you want to see…"),
           deco,

@@ -375,11 +375,14 @@
   -webkit-mask-composite: source-over;
   mask-composite: add;
 }
+.pwrapT {
+  --edge-fade: 28px; /* the scroll edge's length: the fades and their soft blur here, the caret's scroll margins in editor.js */
+}
 .pwrapT.scrolled .cm-scroller {
-  --ft: 28px;
+  --ft: var(--edge-fade);
 }
 .pwrapT.more .cm-scroller {
-  --fb: 28px;
+  --fb: var(--edge-fade);
 } /* the fade is the inset: the 28 px margin stays a margin while the text scrolls through it */ /* text fades at an edge only where there's more of it */
 /* …and slides under a gradual blur there first (the glass "scroll edge"): a thin layer whose blur ramps up toward the edge */
 .pwrapT::before,
@@ -388,7 +391,7 @@
   position: absolute;
   left: 0;
   right: var(--sbw, 0px); /* the soft blur is the text's edge, not the scrollbar's */
-  height: 28px;
+  height: var(--edge-fade);
   z-index: 1;
   pointer-events: none;
   -webkit-backdrop-filter: blur(0px);

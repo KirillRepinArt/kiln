@@ -140,8 +140,11 @@ export function chipsH() {
   const c = $("chips");
   return c.childElementCount ? c.offsetHeight + SPACE.tight : 0;
 } // the row always shows ("LoRA +") // the chip row under the box, and its gap
-export function layoutLeft() {
+/** @param {boolean} [direct] the user's hand is the clock (typing): the box follows at once, as under a drag — a change
+ * the system makes (a layout switch, a Reset) moves on the rearrangement's plan */
+export function layoutLeft(direct = false) {
   if (card.drag) return;
+  layDirect = direct;
   const L = $("left"),
     col = $("lcol"),
     CH = chipsH();
@@ -249,12 +252,16 @@ function boxWrite(col, b) {
   boxNow = b;
   if (changed) boxSizing();
 }
+/** whether the layout now being placed is the user's own direct change (layoutLeft's `direct`) */
+let layDirect = false;
 /** where the layout wants the box: side by side it moves there on the rearrangement's plan and clock, on the progress of
  * the picture it's anchored to (T2: it glided on CSS's --lay-t, a clock of its own, and fell behind); in Vertical, while
  * dragged, or the first time, at once @param {HTMLElement} col @param {number} top @param {number} H */
 function boxAt(col, top, H) {
   const to = { l: 0, t: top, w: 0, h: H };
-  if (!boxNow || card.drag || document.querySelector(".app.stacked")) {
+  /* at once: the first time, under a drag or typing (the hand is the clock — composers grow with the text; animated, the
+     box lagged its text and the text overflowed mid-growth, DEVLOG DD-2026-11-09-2), and in Vertical (C4's) */
+  if (!boxNow || card.drag || layDirect || document.querySelector(".app.stacked")) {
     stop("box");
     boxWrite(col, to);
   } else {

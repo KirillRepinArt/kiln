@@ -101,8 +101,10 @@ export async function caretNeverUnderAControl(k, t) {
   const g =
     await k.ev(`(()=>{const sel=getSelection(),r=sel.rangeCount?sel.getRangeAt(0).getBoundingClientRect():null,ctl=document.querySelector("#left .controls").getBoundingClientRect(),
       w=document.querySelector(".pwrapT"),sc=w.querySelector(".cm-scroller"),cs=getComputedStyle(w,"::after");
-    return {caret:r?Math.round(r.bottom):null,controls:Math.round(ctl.top),ovf:w.classList.contains("ovf"),blurRight:cs.right,scrollbar:sc.offsetWidth-sc.clientWidth}})()`);
+    const sr=sc.getBoundingClientRect(),fade=parseFloat(getComputedStyle(w).getPropertyValue("--edge-fade"))||0;
+    return {clean:!w.classList.contains("more")||(r&&r.bottom<=sr.bottom-fade+1),caret:r?Math.round(r.bottom):null,controls:Math.round(ctl.top),ovf:w.classList.contains("ovf"),blurRight:cs.right,scrollbar:sc.offsetWidth-sc.clientWidth}})()`);
   t.ok(g.caret != null && g.caret <= g.controls, "the caret at the end of a long prompt stays above the controls", g);
+  t.ok(g.clean, "the line being edited is never under the fade", g);
   t.ok(!g.ovf || parseFloat(g.blurRight) >= g.scrollbar - 1, "the scroll edge's blur stops at the scrollbar", g);
   const r = await k.ev(
     `[getComputedStyle(document.querySelector(".pwrapT")).borderTopLeftRadius,getComputedStyle(document.getElementById("left")).borderTopLeftRadius].map(parseFloat)`,
@@ -114,3 +116,50 @@ export async function caretNeverUnderAControl(k, t) {
   );
 }
 caretNeverUnderAControl.opts = { width: 1400, height: 900 };
+
+/* typing grows the box at once (the user's call, DEVLOG DD-2026-11-09-2): the text is the clock — composers grow with
+   their text; animated, the box lagged its text and the text overflowed mid-growth */
+export async function typingGrowsAtOnce(k, t) {
+  await k.ev(`(P.value="one line",1)`);
+  await k.sleep(1200);
+  await k.ev(`(document.querySelector(".pwrapT .cm-content").focus(),1)`);
+  await k.send("Input.dispatchKeyEvent", {
+    type: "rawKeyDown",
+    key: "End",
+    code: "End",
+    windowsVirtualKeyCode: 35,
+    modifiers: 2,
+  });
+  await k.send("Input.dispatchKeyEvent", {
+    type: "keyUp",
+    key: "End",
+    code: "End",
+    windowsVirtualKeyCode: 35,
+    modifiers: 2,
+  });
+  await k.sleep(300);
+  await k.ev(
+    `(window.__h=[],(function f(){__h.push(document.getElementById("left").offsetHeight);if(__h.length<40)requestAnimationFrame(f)})(),1)`,
+  );
+  await k.send("Input.dispatchKeyEvent", {
+    type: "rawKeyDown",
+    key: "Enter",
+    code: "Enter",
+    windowsVirtualKeyCode: 13,
+  });
+  await k.send("Input.dispatchKeyEvent", { type: "char", text: String.fromCharCode(13) });
+  await k.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+  await k.send("Input.insertText", { text: "two" });
+  await k.sleep(900);
+  const h = await k.ev(`__h`),
+    end = h.at(-1),
+    first = h.findIndex(v => v !== h[0]),
+    at = h.findIndex(v => v === end);
+  t.ok(end > h[0], "a new line grows the box", { from: h[0], to: end });
+  t.ok(first >= 0 && at - first <= 1, "…at once: its new height within a frame of the first change (no glide)", {
+    first,
+    at,
+    path: [...new Set(h)],
+  });
+}
+typingGrowsAtOnce.opts = { width: 1400, height: 900 };

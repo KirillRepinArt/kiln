@@ -62,7 +62,7 @@ export function initPromptBox() {
     toast("Prompt cleared", "Undo", () => put(was), "gen"); // your draft's news: under the Generating tab
   };
   P.addEventListener("input", () => {
-    requestAnimationFrame(layoutLeft);
+    requestAnimationFrame(() => layoutLeft()); // a prompt shown (not typed): the layout's own clock
     if (!peekJob) {
       setDraft(P.value);
       save();

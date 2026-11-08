@@ -3,15 +3,16 @@
 import { SWITCH, glueRect, plateFollow } from "./plate.js";
 import { placeAround } from "./around.js";
 import { movingTo, rearrange, rearrangeFade } from "./rearrange.js";
-import { frameBox, frameGoal, layT } from "./framebox.js";
+import { frameGoal, layT } from "./framebox.js";
 import { syncH } from "./boot.js";
-import { applyMode, applyPH, chipsH, layoutLeft, lyReset, slotLeast, stackW, textBoxH, updHm } from "./cardlayout.js";
+import { applyMode, applyPH, boxDraftH, chipsH, layoutLeft, lyReset, slotLeast, stackW, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { glassFade } from "./fade.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
   glueAnchors,
+  isFitPage,
   glued,
   relationFade,
   relationOf,
@@ -120,7 +121,9 @@ export const pageId = () =>
 /** the store, made (or brought up from an older version) the first time it's asked for */
 function sizes() {
   if (!S.lay || S.lay.v !== 4) {
-    const room = picFull(true);
+    /* the room old shares are read against (a pre-v4 store, once): in Vertical the window's less its edge gaps — its
+       real room is the layout pass's, which reads these sizes (C4b) */
+    const room = orient() === "vert" ? innerHeight - 2 * SPACE.area : picFull(true);
     S.lay = layoutPrefsV4(upgradeLayoutPrefs(S.lay || (S.lw ? { pw: S.lw, v: 3 } : null), layW()), {
       roomH: room,
       vroomH: room,
@@ -171,9 +174,10 @@ export function paneLimits(pane, axis, c = {}) {
     winH: innerHeight,
   });
 }
-/** @param {"box" | PageId} pane @param {Orient} [o] @param {number} [roomH] */
-export function paneDef(pane, o = orient(), roomH = picFull(true)) {
-  return paneDefault(pane, o, { w: layW(), h: roomH });
+/** @param {"box" | PageId} pane @param {Orient} [o] @param {number} [roomH] the room's height (read for a panel only:
+ * measured for the box or a picture page, it asked Vertical's layout pass from inside it) */
+export function paneDef(pane, o = orient(), roomH) {
+  return paneDefault(pane, o, { w: layW(), h: roomH ?? (pane === "box" || isFitPage(pane) ? 0 : picFull(true)) });
 }
 /** a size within its limits @param {number} v @param {{ lo: number, hi: number }} l */
 export const within = (v, l) => Math.max(l.lo, Math.min(l.hi, v));
@@ -219,18 +223,7 @@ function evenGap() {
     tbs = /** @type {HTMLElement} */ (document.querySelector(".tabs"));
   return SPACE.part + (tbs.getBoundingClientRect().bottom - seg.getBoundingClientRect().bottom);
 }
-/* Vertical: where the prompt's name starts (screen px) — worked out from where the column is laid out (without a
-   switch's slide on it) and the name row's own height, not from where the title is mid-glide */
-function nameTop() {
-  /* the column's own place: its layout box, without ANY transform (its rect minus colY still counted a running
-     switch's offset: a layout switch into Vertical laid the picture out 624 px narrow until the switch ended) */
-  const col = $("lcol"),
-    colTop = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop,
-    TS = parseFloat(col.style.getPropertyValue("--ts")) || 64,
-    fromBottom = $("ltitle").getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top;
-  return { pn: colTop + 4 + (TS - 4 - SPACE.tight) - fromBottom, colTop };
-}
-/* Vertical: the box's name row, from the name's top to the box's (its title row less the room above the name: nameTop) */
+/* Vertical: the box's name row, from the name's top to the box's (the column's title row less the room above the name) */
 function nameRowH() {
   return SPACE.tight + $("ltitle").getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top;
 }
@@ -256,26 +249,12 @@ function sideRoomTop() {
     rp = $("rpanel");
   return rt.getBoundingClientRect().top + rt.clientTop + (rp.offsetTop - (parseFloat(rp.style.marginTop) || 0));
 }
+/* the page's room: side by side the column's; Vertical, the most height the page's pane can take — the layout pass's
+   (the box at its least under it: C4b). It was measured above the prompt's name, whose row was sized by the box's text:
+   the box's growth came out of the page's room */
 function roomH() {
   if (!document.querySelector(".app.stacked")) return sideRoom();
-  const st = stageRect();
-  return nameTop().pn - evenGap() - st.top;
-}
-/** Vertical: the room the page (picture or panel) takes when its height is YOURS — set with an edge, held or kept —
- * or null when it simply fills what the box leaves (DEVLOG DD-2026-11-02-14: a size of yours beats a content size, a
- * content size beats an unset one). The box's height (its text) is squeezed by it, never below the box's least.
- * The picture's: its height, never more than its width allows (the column / its ratio), plus the status row's room. */
-export function pageYoursH() {
-  if (!document.querySelector(".app.stacked")) return null;
-  if (S.view === "gen") {
-    const cap = paneSize().h; // the KEPT size: a held overshoot (the rubber band) never squeezes the box
-    if (!cap) return null;
-    const f = $("frame"),
-      ar = f.offsetWidth / Math.max(1, f.offsetHeight),
-      h = lay.colW ? Math.min(cap, lay.colW / ar) : cap;
-    return h + (insets().row ? rowRoom() : 0);
-  }
-  return paneSize().h ?? null;
+  return (lay.passV ?? vPass()).pageHi;
 }
 /* the picture's largest height: the room less the status row while the page keeps it (insets) */
 export function picFull(noRow = false) {
@@ -310,8 +289,8 @@ function sidePass() {
     dr = lay.pdrag, // an edge held: the pass computes from the sizes at its press and the pointer (C3)
     pic = S.view === "gen",
     p = paneSize(),
-    df = layDef(),
-    room = pic ? picFull() : sideRoom(),
+    df = vert ? { pw: 0, rw: 0 } : layDef(), // side by side's defaults (in Vertical they'd ask the pass's own room)
+    room = vert ? 0 : pic ? picFull() : sideRoom(), // side by side (Vertical's is the pass's own: roomH would ask it)
     strip = pic ? tbW() : 0, // one column, never the picture's height's (picLeastH; DD-2026-11-07-2)
     run = (/** @type {import("./layoutmath.js").PassState["page"]} */ page) =>
       layoutPass({
@@ -330,8 +309,9 @@ function sidePass() {
           ? {
               w: stackW(),
               wLo: PWMIN,
-              text: textBoxH(),
+              text: boxDraftH(), // your draft's: a job's prompt shown never resizes it
               least: slotLeast(),
+              hi: paneLimits("box", "h", { o: "vert", roomH: 0 }).hi, // its spec's largest (limits)
               h: null,
               title: nameRowH(), // the name row over the box, from the name's top
               foot: chipsH() + 2, // the LoRA row under it (and the column's 2 px, as --lch)
@@ -349,14 +329,22 @@ function sidePass() {
         drag: dr ? { edge: dr.edge, at: dr.at } : null,
       });
   if (!pic) {
-    /* a panel: its width and height are yours (by default a 2:3 plate at the room's height), within its limits */
-    const lw = paneLimits(pageId(), "w", { o: "side" }),
-      lh = paneLimits(pageId(), "h", { roomH: vert ? innerHeight : room });
+    /* a panel: its width and height are yours (by default a 2:3 plate at the room's height side by side, 1:1 in
+       Vertical), within its limits. Vertical's room is the pass's (pageHi: what the box at its least leaves; it
+       doesn't depend on the panel) — held, its edges' sizes (lay.vw / lay.ph: until C4c) */
+    const R = vert ? run({ kind: "panel", w: 0, h: 0, lo: { w: 0, h: 0 }, hi: { w: 0, h: 0 } }).pageHi : room,
+      o = vert ? "vert" : "side",
+      lw = paneLimits(pageId(), "w", { o, roomH: R }),
+      lh = paneLimits(pageId(), "h", { roomH: R });
     return {
       out: run({
         kind: "panel",
-        w: dr ? (dr.w ?? df.rw) : (p.w ?? df.rw),
-        h: dr ? (dr.h ?? room) : (p.h ?? (vert ? innerHeight : room)), // Vertical: as tall as the pass allows
+        w: dr
+          ? (dr.w ?? df.rw)
+          : vert
+            ? (lay.vw ?? within(p.w ?? paneDef(pageId(), "vert", R).w ?? R, lw))
+            : (p.w ?? df.rw),
+        h: dr ? (dr.h ?? room) : vert ? (lay.ph ?? p.h ?? R) : (p.h ?? room), // Vertical: as tall as the pass allows
         lo: { w: lw.lo, h: lh.lo },
         hi: { w: lw.hi, h: lh.hi },
       }),
@@ -379,6 +367,11 @@ function sidePass() {
     save();
   }
   return { out: run({ kind: "pic", ratio, scale }), strip, roomTop };
+}
+/** Vertical: the layout pass's rectangles now (v0.7c C4b) — the page's pane on top, the box under it; kept in
+ * lay.passV for the appliers (sizeFrame: the page; layoutLeft: the box) @returns {import("./layoutmath.js").PassOut} */
+export function vPass() {
+  return (lay.passV = sidePass().out);
 }
 export function layGeo() {
   const W = layW();
@@ -626,39 +619,30 @@ export function sizeFrame() {
   const j = onShow() || current();
   const ar = j ? j.ar : S.ar;
   if (!stk && !lay.frameHold) layApply(layNow());
-  /* Vertical (C4b, step 1 — a SHADOW run): the pass computes Vertical's rectangles too, kept for comparison while the
-     old maths still lays the page out; the next steps make it the source */
-  if (stk) lay.passV = sidePass().out;
+  /* Vertical: the layout pass's rectangles (v0.7c C4b) — the page's pane and its room; the box's are placed by
+     layoutLeft from the same run */
+  const pv = stk ? vPass() : null;
   /* Vertical: the picture's area (and Queue / LoRAs / PNG Info) is a centred column no wider than a 16:9 picture at the
     height it has (plus its button column each side), never narrower than the tab bar or the prompt box — not edge to edge */
   {
     const rt = $("right");
     if (stk) {
-      /* its width from the picture's height WITHOUT the status row's room: a render starting or ending doesn't
-         change it (its width glided on CSS's clock while the frame moved on its own: G6) */
-      const hh = picH(true),
-        most = app.clientWidth - 2 * SPACE.area;
-      /* a panel (Queue, LoRAs, PNG Info): its own width for this page in Vertical — set with its side edges; by
-         default a 1:1 plate at the room's height — never narrower than the tab bar, never wider than the window */
+      /* a picture page: the whole width (less the buttons' clearance); a panel (Queue, LoRAs, PNG Info): the pass's
+         width — its own for this page in Vertical, set with its side edges; by default a 1:1 plate at the room's
+         height — never narrower than the tab bar, never wider than the window */
+      const most = app.clientWidth - 2 * SPACE.area,
+        v = /** @type {import("./layoutmath.js").PassOut} */ (pv);
       lay.colW =
-        S.view === "gen"
-          ? stackColumnW(most, minRight(), stackW(), hh, toolsClear(), true)
-          : Math.round(
-              lay.vw ??
-                within(
-                  paneSize().w ?? paneDef(pageId(), "vert", roomH()).w ?? roomH(),
-                  paneLimits(pageId(), "w", { o: "vert", roomH: roomH() }),
-                ),
-            );
+        S.view === "gen" ? stackColumnW(most, minRight(), stackW(), 0, toolsClear(), true) : Math.round(v.page.w);
       rt.style.width = lay.colW + "px";
     } else {
       if (rt.style.width) rt.style.width = "";
       lay.colW = 0;
     }
-    /* every page's plate shares one top and bottom (2026-11-01, G10): in Vertical the panels' box is the picture's
-       room (roomH — down to an even gap above the prompt's name), not what the column's CSS leaves: they ended ~6–12 px
-       apart and the plate moved on every switch. Side by side the room IS the panel's box: nothing to set */
-    lay.vroom = stk ? Math.round(roomH()) : 0; // Vertical: the picture's room (promptFollow: the prompt follows it up)
+    /* Vertical: the page's pane as the pass gives it — a panel's height, or the picture and its status row's room
+       (the stage holds both); the box sits under it (layoutLeft). It was the room above the prompt's name, which the
+       box's text sized. Side by side the room IS the panel's box: nothing to set */
+    lay.vroom = pv ? Math.round(pv.page.h + (S.view === "gen" && ins.row ? rowRoom() : 0)) : 0;
     /* the panel's box (v0.7c: Queue, LoRAs and PNG Info have a height of their own, set with their top / bottom edges):
        its room is the picture's (every page's plate shares one top and bottom when it's the whole room); a shorter
        one rests centred side by side, at the top in Vertical (the layout's anchor); held, lay.ph / lay.ptop. ONE
@@ -671,7 +655,11 @@ export function sizeFrame() {
       sp = panel && !stk ? lay.pass : null, // side by side: the layout pass's (C2a's rest), held or not
       H = panel
         ? Math.round(
-            sp ? sp.page.h : (lay.ph ?? (kept ? within(kept, paneLimits(pageId(), "h", { roomH: room })) : room)),
+            sp
+              ? sp.page.h
+              : stk
+                ? lay.vroom // the pass's (held: lay.ph, its input)
+                : (lay.ph ?? (kept ? within(kept, paneLimits(pageId(), "h", { roomH: room })) : room)),
           )
         : null,
       top = panel && H != null ? Math.round(sp ? sp.page.y - sp.roomTop : (lay.ptop ?? 0)) : 0,
@@ -696,12 +684,18 @@ export function sizeFrame() {
     SW = stk ? (lay.colW ? lay.colW - 2 : st.width) : /** @type {Geometry} */ (lay.last).rw; // wide: the whole room
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
   const pass = !stk && S.view === "gen" && lay.pass && lay.pass.pic ? lay.pass : null, // side by side: the pass's
-    PH = pass && pass.pic ? pass.pic.h : picH(),
+    /* Vertical: the pass's picture; held, a top / bottom edge's height (lay.vh — until C4c) */
+    vpic = pv && pv.pic && !lay.vh ? pv.pic : null,
+    PH = pass && pass.pic ? pass.pic.h : vpic ? vpic.h : picH(),
     TB = pass ? pass.strip : tbW(), // the edit buttons' column: side by side, part of the picture's pane (C2a)
     R = ins.row ? rowRoom() : 0, // (lay.vrow: the prompt follows the row's room too, Vertical)
     M = SPACE.mat, // the picture's mat: the plate is the picture and M round it
     { w, h } =
-      pass && pass.pic ? { w: pass.pic.w - 2 * M, h: pass.pic.h - 2 * M } : fitInBox(ar, SW - 2 * M, PH - 2 * M),
+      pass && pass.pic
+        ? { w: pass.pic.w - 2 * M, h: pass.pic.h - 2 * M }
+        : vpic
+          ? { w: vpic.w - 2 * M, h: vpic.h - 2 * M }
+          : fitInBox(ar, SW - 2 * M, PH - 2 * M),
     W = w + 2 * M, // the plate
     H = h + 2 * M;
   /* the picture's canvas is drawn at the box's FINAL size and centred in it: the box may glide to a new shape (its
@@ -712,7 +706,7 @@ export function sizeFrame() {
   const tbLeft = !stk && /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
     { top: placedTop, left: placedLeft } = framePlacement({
       areaW: SW,
-      areaH: roomH(),
+      areaH: stk ? lay.vroom : roomH(),
       w: W,
       h: H,
       tb: !stk && S.view === "gen" && lay.pass ? lay.pass.strip : 0, // the strip is in the area (C2a), held or not
@@ -743,31 +737,30 @@ export function sizeFrame() {
   /* while an edge is held or hovered: an outline round the picture itself, an even 5 px out (the edges you drag are
     the picture's own; the box it may fill showed as a frame floating off the picture) */
 
-  /* Vertical: the picture block sits between two equal gaps — roomH() ends one even gap above the prompt's name */
+  /* Vertical: the divider in the gap between the page and the prompt's name */
   vAlign();
   /* the tab bar: as wide as its buttons; where it sits is the plate's business (plate.js placeBar — one owner) */
   /* the status row, Show prompt, the edit buttons and the edge strips: placed from where the frame is now, and every
      frame it moves (around.js — one owner: the frame) */
   placeAround();
-  promptFollow(); // its other input: the room (lay.vroom / lay.vrow) — the frame's writes call it on every box change
+  promptFollow(); // side by side: one gap from the plate — the frame's writes call it on every box change
   layoutLeft(); // the box, in the same task as the picture it's anchored to: one rearrangement, one plan (T2)
   plateFollow(); // the live plate keeps to the frame / the panel through the glide
 }
-/* Vertical: the prompt-slot line, just above the title, clear of the picture's bottom edge. The prompt column itself
-   stays where the page puts it — at the bottom; the picture's room ends one even gap above its name (roomH). It used
-   to be shifted UP under the picture to make that gap (2026-10-31: the window's bottom stayed empty, and the shift's
-   transform put the pill menus under the picture) */
+/* Vertical: the ONE divider between the page and the prompt (2026-11-01, L4) — the gap from the page's pane (and its
+   status row) down to just above the prompt's name, both from the layout pass (C4b): the name's top is the box's top
+   less its name row. The prompt's grip zone starts under it (cardlayout.js, prompt.css .pgrip) */
 export function vAlign() {
   if (!document.querySelector(".app.stacked")) return;
-  const { pn, colTop } = nameTop();
-  /* the ONE divider between the picture and the prompt (2026-11-01, L4): the whole gap from the picture's room down to
-     just above the name — the picture's bottom-edge strip used to share it (and won nowhere, overlapped) */
-  const A = evenGap(),
+  const p = lay.passV ?? vPass(),
+    col = $("lcol"),
+    colTop = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop,
+    pn = p.box.y - nameRowH(),
+    A = evenGap(),
     hs = $("hsplit").style;
   hs.top = pn - A - colTop + "px";
   hs.height = Math.max(6, A - 2) + "px";
-  /* the prompt's grip zone starts under the split line (cardlayout.js, prompt.css .pgrip) */
-  $("lcol").style.setProperty("--gtop-v", pn - colTop - 2 + "px");
+  col.style.setProperty("--gtop-v", pn - colTop - 2 + "px");
 }
 /* ---------- the prompt column's place has ONE owner (2026-10-28) ----------
    Its transform = its hug of the picture (below) + what is left of a tab switch's slide, written here only. Two
@@ -775,11 +768,9 @@ export function vAlign() {
    650 ms (a re-shift meanwhile showed only at the end, as a jump) */
 const colEase = bez(SWITCH.curve[0], SWITCH.curve[1], SWITCH.curve[2], SWITCH.curve[3]); // the switch's glide (plate.js)
 let hugX = 0, // side by side: one gap from the plate, on every page (promptFollow)
-  hugY = 0, // Vertical in Generating: up by the room the picture leaves under it (promptFollow)
+  hugY = 0, // Vertical: riding its pane's plate while it moves (promptFollow; 0 at rest) — never glided: the plate is its clock
   hugFrom = 0, // …catching up after a hold: from, to, since when (0: not catching up)
   hugTo = 0,
-  hugFromY = 0,
-  hugToY = 0,
   hugT0 = 0,
   slX = 0, // the slide: how far from its place it started, and when
   slY = 0,
@@ -797,7 +788,6 @@ function colApply() {
   if (hugT0) {
     const p = Math.min(1, (now - hugT0) / layT());
     hugX = Math.round(hugFrom + (hugTo - hugFrom) * colEase(p));
-    hugY = Math.round(hugFromY + (hugToY - hugFromY) * colEase(p));
     if (p >= 1) hugT0 = 0;
   }
   /* a relation change (a layout switch, T2c): the box rides the LIVE plate — its leaving copy by the old relation, the
@@ -980,18 +970,20 @@ export function promptFollow(direct = false) {
   /* an edge being dragged is NOT working in the prompt (the divider's handle sits in it): the prompt follows the
      picture through it — held, the picture slid under the prompt (2026-11-01) */
   if (!lay.drag && (lay.pressCard || document.querySelector("#left .pop.show"))) return;
-  const b = frameBox(),
-    app = /** @type {HTMLElement} */ (document.querySelector(".app")),
+  const app = /** @type {HTMLElement} */ (document.querySelector(".app")),
     stk = app.classList.contains("stacked"),
     R = app.classList.contains("pright");
   let x = 0,
     y = 0;
-  /* Vertical: the picture sits at the top of its room; the prompt comes up by the room it leaves under it (and under
-     its status row), so they touch — the spare height goes to the window's bottom (2026-11-01) */
-  if (b && stk && S.view === "gen" && lay.vroom)
-    /* glued under the picture's KEPT bottom: the rubber band is the grabbed edge's feedback only — nothing round it
-       follows the overshoot (2026-11-02, the user: the prompt twitched) */
-    y = -Math.round(Math.max(0, lay.vroom - (b.t + b.h - (lay.overB || 0) + SPACE.mat + lay.vrow)));
+  /* Vertical: the box's place is the layout pass's, under its pane (C4b) — and it rides that pane's plate as it is on
+     screen this frame: in a glide (a ratio change, a page's height) one clock with it, glued one gap under its bottom;
+     at rest the plate is where the pass put it, so nothing. (It used to be pulled up to the picture from the bottom of a
+     grid row of its own: a hug by the room left, not a glue) */
+  if (stk && lay.passV) {
+    const p = glueRect(),
+      pg = lay.passV.page;
+    if (p.height > 0) y = Math.round(p.bottom - (pg.y + pg.h));
+  }
   if (!stk && lay.last) {
     /* side by side, EVERY page: the box is glued one pair gap from its neighbour pane's plate as it is on screen this
        frame — a picture's or a panel's, at rest, held, in a tab switch, in a resize (C2b, B23: the model's "panes stick
@@ -1014,11 +1006,10 @@ export function promptFollow(direct = false) {
     hugX = x;
     hugY = y;
   } else {
-    if (x === (hugT0 ? hugTo : hugX) && y === (hugT0 ? hugToY : hugY)) return;
+    if (x === (hugT0 ? hugTo : hugX) && y === hugY) return;
+    hugY = y; // a glue, at once (its catch-up glide put the box 113 px off the plate's first frame of a ratio change)
     hugFrom = hugX;
     hugTo = x;
-    hugFromY = hugY;
-    hugToY = y;
     hugT0 = performance.now();
   }
   if (relation) {

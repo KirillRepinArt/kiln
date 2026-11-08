@@ -706,6 +706,8 @@ export function layoutPrefsV4(L, o) {
  * @property {{ boxW: number, scale?: number, w?: number, h?: number }} kept what a release keeps (the limits, never
  *   the rubber band's stretch)
  * @property {{ w: number, h: number }} largest the picture's largest at this layout (picture pages)
+ * @property {number} pageHi the page's room: the most height its pane can take (Vertical: with the box at its least
+ *   and the rows round it; side by side: the room's) — a panel's limits and default are read against it
  */
 
 /** a handle's thickness (px): a strip centred on its pane's side */
@@ -1074,5 +1076,6 @@ export function layoutPass(s) {
     handles["box.bottom"] = Bx.bottom;
     handles.shared = { x: lo, y: (over.y + over.h + box.y) / 2 - t, w: Math.max(0, hi - lo), h: HANDLE };
   }
-  return { page, pic: pr, box, bar: barR, handles, kept, largest: rest.largest };
+  const pageHi = vert ? CH - vAround(s) - s.box.least : CH;
+  return { page, pic: pr, box, bar: barR, handles, kept, largest: rest.largest, pageHi };
 }

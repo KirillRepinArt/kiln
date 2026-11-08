@@ -2,7 +2,7 @@
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $, q } from "./dom.js";
 import { HANDLES, outlines } from "./outlines.js";
-import { lay, minRight, pageYoursH, paneSize, setDock, sizeFrame, snapHold, vAlign } from "./layout.js";
+import { lay, minRight, paneSize, setDock, sizeFrame, snapHold, vAlign, vPass } from "./layout.js";
 import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement, promptSlotH } from "./layoutmath.js";
 import { peekJob } from "./prompt.js";
 import { P, S, save } from "./state.js";
@@ -83,6 +83,12 @@ export const slotLeast = () => textBoxH(2);
 /** Vertical: the box's height for its text (your draft's), up to its mode's largest — its content size */
 export const boxTextH = () => promptSlotH(draftH || textBoxH(), 0, innerHeight, slotLeast());
 let draftH = 0; // the height your draft's text needs (kept while a job's prompt is shown: it never resizes the box)
+/** Vertical: the box's text height — your draft's: a job's prompt shown in it never resizes it (it scrolls inside), so
+ * browsing prompts of different lengths never moves anything (2026-10-19). The layout pass's input (C4b) */
+export function boxDraftH() {
+  if (!peekJob || !draftH) draftH = textBoxH();
+  return draftH;
+}
 export function applyMode() {
   const a = q(".app"),
     was = a.classList.contains("stacked");
@@ -157,33 +163,22 @@ export function layoutLeft(direct = false) {
   L.classList.toggle("hm", !!hm);
   $("ltitle").classList.toggle("hm", !!hm);
   if (stk) {
-    let H;
     card.top = 0;
-    /* the box is as tall as YOUR draft's text, from its least height up to ~40 % of the window (layoutmath.js
-     promptSlotH — the user's choice, 2026-10-31). A job's prompt shown in it never resizes it (it scrolls inside):
-     browsing prompts of different lengths never moves the picture (2026-10-19). Its height is never kept (2026-11-01,
-     the user: the box hugs its text unless an expand button is on); only while the divider is held is it the divider's
-     (card.slotHold, edges.js) */
-    const least = slotLeast();
-    if (!peekJob || !draftH) draftH = textBoxH();
-    let slot = card.slotHold ? Math.round(card.slotHold) : promptSlotH(draftH, 0, innerHeight, least); // held: the edge's give, exactly
-    /* a page height of YOURS (the picture or a panel, set with an edge) beats the box's content: the box takes what's
-       left, its text squeezed, never below its least (DEVLOG DD-2026-11-02-14). The room: the page's room now plus the
-       box's slot now (both measured from the last layout) */
-    const yours = pageYoursH();
-    if (yours != null && !card.slotHold && card.lastSlot)
-      slot = Math.max(least, Math.min(slot, Math.round(lay.vroom + card.lastSlot - yours)));
-    card.lastSlot = slot;
-    H = slot;
     col.style.setProperty("--sw", stackW() + "px");
-    const lch = slot + TS + 2 + CH + "px",
-      chg = col.style.getPropertyValue("--lch") !== lch;
-    col.style.setProperty("--lch", lch);
+    /* the box is placed by the layout pass, under the page's pane (v0.7c C4b, ux-review/16-layout-pass.md C4): the pane
+       first, the box its text's height in the free room under it, then it scrolls — its growth never takes the pane's
+       room (it had a grid row of its own sized by its text, --lch, and the page took what was left: the user's
+       overlap, 2026-11-09). The column is a layer over the whole room, as side by side: the box's top is the pass's,
+       in the column's px (its layout box, without a transform). Held: the box's height edge's height (until C4c) */
+    const was = lay.passV,
+      p = vPass(),
+      colTop = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop,
+      H = card.slotHold ? Math.round(card.slotHold) : Math.round(p.box.h);
+    card.lastSlot = H;
     requestAnimationFrame(vAlign);
-    boxAt(col, TS, H);
-    /* a new line (or your cap) changes its height: the box and the picture land at once, together — a line at a time,
-       like a chat app's composer (the box's own height transition and the picture's glide were two clocks) */
-    if (chg) {
+    boxAt(col, Math.round(p.box.y - colTop), H);
+    /* the pane changed under it (a new limit, the window): the page follows, at once with the box */
+    if (!was || Math.abs(was.page.h - p.page.h) > 0.5 || Math.abs(was.page.w - p.page.w) > 0.5) {
       snapHold("prompt", 150);
       requestAnimationFrame(sizeFrame);
     }

@@ -3,7 +3,9 @@
    Overlay: what moves in a transition lives in one still space, never in a parent that moves too). Side by side the page
    area (#right) is the whole room and never moves; the prompt column (#lcol) is a layer over the same room — the box in
    it has its own width (--cw) and is glued one gap from the page's plate (layout.js promptFollow); the column takes the
-   pointer only on its parts. Vertical (.stacked): the picture on top, the prompt under it. */
+   pointer only on its parts. Vertical (.stacked) the same (C4b): the page's pane on top, the box placed under it by the
+   layout pass (cardlayout.js) — it used to be a grid row of its own sized by the box's text, and the page took what
+   was left. */
 .app {
   position: relative;
   z-index: 1;
@@ -15,20 +17,14 @@
   align-items: stretch;
   grid-template-columns: minmax(0, 1fr);
 }
-.app.stacked {
-  grid-template-rows: minmax(0, 1fr) auto;
-}
+/* both layers fill the one cell, in both layouts: the page area under, the prompt column over it */
 .app > .lcol,
 .app > .right {
   position: relative;
+  grid-row: 1;
 }
 .app > * {
   grid-column: 1/-1;
-}
-/* side by side both layers fill the one cell: the page area under, the prompt column over it */
-.app:not(.stacked) > .lcol,
-.app:not(.stacked) > .right {
-  grid-row: 1;
 }
 .lcol {
   min-height: 0;
@@ -36,8 +32,6 @@
 }
 .app.stacked .lcol {
   order: 2;
-  height: var(--lch, 320px);
-  margin-top: var(--space-2);
 }
 #lcol {
   pointer-events: none;

@@ -84,16 +84,16 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     the **group** and its **placement** come from `layoutmath.js` `arrange` (panes glued with one gap, a resting anchor,
     a pin while an edge is held); past a limit `rubber` (one stretch, `RUBBER`; a picture past its room `PIC_OVER`)
   - **the single layout pass** (v0.7c C, `ux-review/16-layout-pass.md` in the design notes): `layoutmath.js`
-    `layoutPass` computes every page's numbers side by side (a panel's width, height and place too) and — the picture's size (a scale of its largest), its
+    `layoutPass` computes every page's numbers side by side (a panel's width, height and place too) and in Vertical at rest (C4b: the page's pane on top, the box under it — its text's height in the free room only, then it scrolls; `layout.js` `vPass` → `lay.passV`) — the picture's size (a scale of its largest), its
     place, the box's, the edit buttons' strip (`stripRoom`: its room kept on both sides of the centred pair). The
     appliers write them in ONE coordinate space: side by side the page area (`#right`) is the whole room and never
-    moves; the prompt column (`#lcol`) is a layer over the same room, taking the pointer only on its parts, and the box
+    moves (in Vertical a centred column); the prompt column (`#lcol`) is a layer over the same room in both layouts (no grid row of its own in Vertical since C4b), taking the pointer only on its parts, and the box
     in it has its own width (`--cw`, `layout.js` `boxWWrite`) — no grid columns (DEVLOG DD-2026-11-08-1; the
     platforms' rule: what moves in a transition lives in one still space). A panel's box is placed in
     the area by `sizeFrame`, its handles by `around.js` `placeSideEdges`). **The box's place side by side has ONE rule:**
     `layout.js` `promptFollow` glues it one pair gap from the plate as it is on screen this frame — a picture's or a
     panel's, at rest, held, in a switch, in a resize — called by whatever moves the plate (`framebox.js` on a frame
-    write, `plate.js`'s follow loop every frame of a switch, the box's width on the rearrangement); `slideCol` slides it only in Vertical.
+    write, `plate.js`'s follow loop every frame of a switch, the box's width on the rearrangement); `slideCol` slides it only in Vertical. **In Vertical** the box's place is the pass's (`cardlayout.js` `layoutLeft` writes it), and `promptFollow` rides it on its pane's plate as it is on screen (its offset from the pass's bottom, at once — the plate is its clock); the divider (`vAlign`) from the pass too.
     Held or not: every side-by-side edge
     of a picture page (the box's outer edge, the shared edge, the picture's outer, top and bottom edges) goes through
     `layout.js` `passDragStart` / `passDragMove` / `passDragEnd` — the press freezes the sizes, the pointer is the
@@ -102,7 +102,7 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     the other pane; only the shared edge trades. Where the group starts: `layoutmath.js` `groupX` (the rectangles and
     the drags' maths both). The edit buttons' strip is ONE column (`toolColumnW`), and a picture's least height is that
     column (`picLeastH`): the strip never depends on the picture's height. No side-by-side edge has maths of its
-    own (`layDrag` is gone); Vertical's edges keep theirs until C4. The room side by side has one definition: `layout.js` `sideRoom`
+    own (`layDrag` is gone); Vertical's edges keep theirs until C4c (their held values: `lay.vh`, `lay.ph`, `lay.vw`, `card.slotHold`). The room side by side has one definition: `layout.js` `sideRoom`
   - **a layout switch** (Left / Right / Vertical, the Layout menu and drag-to-dock alike): `tabs.js` `tabGo(fn, true)` —
     the tab switch's owner with the SAME view. The plate: on a picture page the frame's own crop-and-reveal (`morph.js`)
     moves the picture and the plate rides it — the same picture leaves as its own copy at its old size (`pictures.js`

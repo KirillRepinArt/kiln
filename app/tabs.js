@@ -4,6 +4,7 @@ import { $ } from "./dom.js";
 import { fadeCol, lay, sizeFrame, slideCol, snapHold, standIn } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
+import { xfadeSnap } from "./pictures.js";
 import { frameBox, frameHold, pictureChange } from "./framebox.js";
 import { plateBefore, plateFollow, switchGlide } from "./plate.js";
 import { placeNavs } from "./browse.js";
@@ -95,7 +96,13 @@ export function tabGo(fn, layout = false) {
      to another view gives it up (frameHold) */
   /* the picture's view: a box of another shape or size crops and reveals — in a layout switch too (T2b: the same picture
      at another size never pops; its old copy crosses to it) */
-  if (S.view === "gen" && f0) pictureChange({ ...f0, x: fr0.left, y: fr0.top });
+  if (S.view === "gen" && f0) {
+    /* a layout switch: the same picture leaves as its own copy, taken now at its old size (pictures.js — every change of
+       what's on show does), so the crop-and-reveal crops the old size and reveals the new. With no copy it was treated
+       as a picture coming into an empty frame — hidden until the swap: the plate travelled empty (the user, 2026-11-08) */
+    if (layout) xfadeSnap(false);
+    pictureChange({ ...f0, x: fr0.left, y: fr0.top });
+  }
   lay.frameDefer = true;
   try {
     fn();

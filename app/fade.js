@@ -13,6 +13,9 @@
 /** @param {Element} e @param {string | null} [p] */
 const glassy = (e, p = null) => {
   const c = getComputedStyle(e, p);
+  /* a pseudo-element counts only when it's drawn: a hidden one still reports its backdrop-filter (Start keeps its glass on
+     itself while it has something to queue, its ::before hidden) */
+  if (p && (c.display === "none" || c.content === "none")) return false;
   return c.backdropFilter !== "none" && c.backdropFilter !== "";
 };
 

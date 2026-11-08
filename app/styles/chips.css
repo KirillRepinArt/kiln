@@ -21,7 +21,7 @@
 }
 .app.stacked .lcol > .chips {
   left: 50%;
-  width: min(100%, var(--sw, 760px));
+  width: var(--sw, 760px); /* the layout pass's: within the room at rest, past it only by the rubber band */
   transform: translateX(-50%); /* centred: its sides move about its centre */
 }
 body.liveresize .lcol > .chips,

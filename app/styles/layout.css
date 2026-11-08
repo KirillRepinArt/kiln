@@ -75,8 +75,7 @@
   flex: none;
 } /* Vertical: its height is the picture's room (layout.js sizeFrame) — every page's plate ends at the same line */
 .app.stacked > .right {
-  justify-self: center;
-  max-width: 100%;
+  justify-self: center; /* its width is the layout pass's (within the room at rest; past it only by the rubber band) */
   transition: width var(--lay-t) var(--lay-e);
 } /* Vertical: a centred column (stage.js sets its width) */
 
@@ -145,12 +144,12 @@
   display: block;
 }
 /* Vertical: a panel's side edges (Queue, LoRAs, PNG Info — v0.7c): it widens or narrows about its centre, like the
-   picture's in Vertical */
+   picture's in Vertical — as long as the panel's sides (B11; the column is the whole room's height since C4b) */
 .vpedge {
   display: none;
   position: absolute;
-  top: 0;
-  bottom: 0;
+  top: var(--pt, 0px);
+  height: calc(var(--pb, 0px) - var(--pt, 0px));
   width: 16px;
   z-index: 8;
   cursor: ew-resize;

@@ -390,6 +390,8 @@ const filters = args.map(x => x.split("/"));
    to run it. Each entry says what it waits for; remove it when that's done. */
 const PENDING = {
   cases: "v0.7c (C), the single layout pass (ROADMAP v0.7c B1–B11)",
+  layers:
+    "v0.7c T2c, the layering rule: content holds no material (the fills — the user's look call, DEVLOG DD-2026-11-08-12)",
 };
 const tests = [];
 for (const f of readdirSync(HERE)

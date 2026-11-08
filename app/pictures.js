@@ -124,26 +124,6 @@ function idleFade(on, fade) {
     a.cancel();
   };
 }
-/** the picture's layers (the canvas, its copy, the empty frame's text) with their VIEW in a tab switch — T2c's swaps
- * role, this module's (DEVLOG DD-2026-11-08-11). A group fade (fade.js) leaves them here (data-fade-owner); the
- * switch hands over the view's fade (in or out, its timing) and it is ADDED to what these layers are doing (a picture
- * coming in, the text): opacity + (k − 1), so the view's fade and the picture's own fades compose instead of one
- * replacing the other. Coming in, a held copy of the picture before goes at once — the arriving view never showed it,
- * so there's nothing to cross-fade from (faded in with the view while its own release faded it out, it rose and fell:
- * a blink, the tracer 2026-11-08). Returned for the switch's clock
- * @param {boolean} on the view comes in (else it leaves) @param {KeyframeAnimationOptions} timing @returns {Animation[]} */
-export function pictureWithView(on, timing) {
-  if (on && ov !== "idle") overlayRelease({ delay: 0, duration: 1 });
-  return (on ? ["cv", "idle"] : ["cv", "cvx", "idle"]).map(id =>
-    $(id).animate(
-      [
-        { offset: 0, opacity: on ? -1 : 0, composite: /** @type {const} */ ("add") },
-        { offset: 1, opacity: on ? 0 : -1, composite: /** @type {const} */ ("add") },
-      ],
-      timing,
-    ),
-  );
-}
 /** the frame has a picture now (the status loop): the text goes — with the picture's own fade if one is coming in
  * (pictureIn), else the one fade now (a render starting) */
 export function frameFilled() {

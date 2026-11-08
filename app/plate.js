@@ -9,7 +9,6 @@ import { placeAround } from "./around.js";
 import { $, offsetIn } from "./dom.js";
 import { frameHold, frameTarget } from "./framebox.js";
 import { glassFade } from "./fade.js";
-import { pictureWithView } from "./pictures.js";
 import { fades, shapeBox, shapeSteps } from "./layoutmath.js";
 import { promptFollow } from "./layout.js";
 import { SPACE } from "./tokens.js";
@@ -417,18 +416,12 @@ export function switchGlide(at, views, layout = false) {
     TT = Math.max(T, fd.T), // the switch's length, its fade-in included
     goOut = { ...fd.out, easing: "linear", fill: /** @type {FillMode} */ ("both") },
     comeIn = { ...fd.in, easing: "linear", fill: /** @type {FillMode} */ ("both") };
-  /* the view's contents: out and in — the same view (a layout switch) stays shown, it only rides. Faded by their parts
-     (fade.js): a view faded as a whole is a backdrop root, and the glass in it lost its blur until the fade ended
-     (DEVLOG DD-2026-11-08-8 — glass.css had turned the views' own CSS fade off in glass mode for that reason) */
-  const out = go(old.animate([], goOut)); // the leaving fade's clock (its end ends the switch)
-  if (!same) {
-    const outKeys = [
-      { offset: 0, opacity: 1 },
-      { offset: 1, opacity: 0 },
-    ];
-    for (const a of glassFade(old, outKeys, goOut)) go(a);
-    if (pic(old)) for (const a of pictureWithView(false, goOut)) go(a); // the picture's layers: their owner's
-  }
+  /* the view's contents: out and in, as ONE layer — one opacity on the view, one clock: a page is content, and content
+     fades as one, with whatever it draws a frame later (DEVLOG DD-2026-11-08-12: faded by its parts, a page's list of
+     parts was a snapshot — rows drawn after the switch began showed at once, the user: "plates of the queue items are
+     there right away"). The same view (a layout switch) stays shown, it only rides. Glass inside a page loses its
+     blur under this fade: the layering rule — content holds no material — is ux-review/17-t2-motion.md T2c */
+  const out = go(old.animate(same ? [] : [{ opacity: 1 }, { opacity: 0 }], goOut));
   /* the picture's glow lives outside its view (a fixed layer): it comes and goes with the picture, on its fade (no glass
      in it, and at 0 between pictures: a plain fade — fade.js would skip what rests at 0) */
   const fg = document.getElementById("fglow");
@@ -439,14 +432,7 @@ export function switchGlide(at, views, layout = false) {
         pic(neu) ? comeIn : goOut,
       ),
     );
-  if (!same) {
-    const inKeys = [
-      { offset: 0, opacity: 0 },
-      { offset: 1, opacity: 1 },
-    ];
-    for (const a of glassFade(neu, inKeys, comeIn)) go(a);
-    if (pic(neu)) for (const a of pictureWithView(true, comeIn)) go(a);
-  }
+  if (!same) go(neu.animate([{ opacity: 0 }, { opacity: 1 }], comeIn));
   /* the leaving view goes when the switch ends (or a new switch begins): hidden, back in its place */
   const end = () => {
     if (leaveDone !== end) return;

@@ -1002,30 +1002,33 @@ export async function boxGluedThroughLayoutSwitch(k, t) {
 }
 boxGluedThroughLayoutSwitch.opts = { width: 1400, height: 900, step: 0.05 };
 
-/* glass never fades through an ancestor, in tab switches too (DEVLOG DD-2026-11-08-8; T2c-3a): a view, the status row,
-   the edit buttons faded by their container's opacity turn the glass inside them into flat tint until the fade ends —
-   the blur pops back (glass.css already turned the views' own CSS fade off in glass mode for that reason; the switch's
-   animations faded them anyway). Every frame of switches between every page: no rendered glass layer has an ancestor
-   part-way faded */
-export async function tabSwitchGlassLive(k, t) {
-  for (let i = 0; i < 4; i++) await k.job("[fill:446688] a" + i, { ar: "3:4", steps: 1 });
-  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=4`, 60000);
+/* a page fades as ONE layer (DEVLOG DD-2026-11-08-12; the user, 2026-11-08: "Generating to Queue — plates of the queue
+   items are there right away, while the rest of the content is loading … content is now separated from its page and
+   has different clocks"): while the arriving page fades in, nothing of it is already fully shown — rows drawn a frame
+   after the switch began included (faded by its parts, the page's list of parts was a snapshot and they escaped it) */
+export async function pageFadesAsOne(k, t) {
+  for (let i = 0; i < 8; i++) await k.job("[fill:446688] a" + i, { ar: "3:4", steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=8`, 90000);
   await k.mouse(4, 4);
-  const tour = ["queue", "gen", "loras", "png", "gallery", "queue", "png", "gen"];
-  await k.ev(`(document.querySelector('.tab[data-v="${tour[0]}"]').click(),1)`);
-  await k.sleep(1200);
-  for (let i = 1; i < tour.length; i++) {
-    const [from, to] = [tour[i - 1], tour[i]];
-    const bad =
-      await k.ev(`new Promise(res=>{const gl=(e,p)=>{const c=getComputedStyle(e,p);if(p&&(c.display==="none"||c.content==="none"))return false;return c.backdropFilter&&c.backdropFilter!=="none"},
-        all=[...document.querySelectorAll("body *")].filter(e=>gl(e)||gl(e,"::before")),out=[],t0=performance.now();
-      document.querySelector('.tab[data-v="${to}"]').click();
-      (function f(){for(const e of all){if(!e.getClientRects().length)continue;const b=gl(e,"::before");
-          for(let a=b?e:e.parentElement;a&&a!==document.documentElement;a=a.parentElement){const o=+getComputedStyle(a).opacity;
-            if(o>0&&o<1){out.push((e.id||e.className)+" under "+(a.id||a.className)+" "+o.toFixed(2));break}}}
-        if(performance.now()-t0<900)requestAnimationFrame(f);else res([...new Set(out)])})()})`);
-    await k.sleep(400);
-    t.ok(!bad.length, `${from} → ${to}: no glass under a part-way faded ancestor, any frame`, bad.slice(0, 4));
+  for (const [from, to] of [
+    ["gen", "queue"],
+    ["gallery", "queue"],
+    ["queue", "loras"],
+    ["png", "queue"],
+  ]) {
+    await k.ev(`(document.querySelector('.tab[data-v="${from}"]').click(),1)`);
+    await k.sleep(1300);
+    const r =
+      await k.ev(`new Promise(res=>{const eff=e=>{let o=1;for(let a=e;a;a=a.parentElement)o*=+getComputedStyle(a).opacity;return o},
+        out={frames:0,ahead:[]},t0=performance.now();document.querySelector('.tab[data-v="${to}"]').click();
+      (function f(){const v=document.querySelector(".rpanel > .view.on"),els=[...v.querySelectorAll("*")].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=="hidden"),
+          ops=els.map(eff),mid=ops.some(o=>o>0.1&&o<0.9);
+        if(mid){out.frames++;const i=ops.findIndex(o=>o>0.97);if(i>=0)out.ahead.push((els[i].id||els[i].className)+" "+ops[i].toFixed(2)+" at "+Math.round(performance.now()-t0)+"ms")}
+        if(performance.now()-t0<900)requestAnimationFrame(f);else res(out)})()})`);
+    t.ok(r.frames > 0 && !r.ahead.length, `${from} → ${to}: nothing of the page is fully shown while it fades in`, {
+      frames: r.frames,
+      ahead: r.ahead.slice(0, 4),
+    });
   }
 }
-tabSwitchGlassLive.opts = { width: 1400, height: 900 };
+pageFadesAsOne.opts = { width: 1400, height: 900 };

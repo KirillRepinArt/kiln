@@ -6,7 +6,10 @@
    an ancestor (UIKit's UIVisualEffectView: no alpha below 1 on the view or its superviews — animate the effect itself).
    So a group is faded by its parts: a glass layer by its own opacity (on itself, or on its ::before), a part with no
    glass in it as a whole, and nothing that holds glass. Which parts are glass is read from their computed styles —
-   glass.css stays the one home of the look. */
+   glass.css stays the one home of the look. For a SURFACE whose material must animate itself (the prompt box, the
+   status row, the edit buttons): a small group that exists for the whole fade. Never a page: a page is content and
+   fades as one layer (its list of parts was a snapshot — content drawn after the fade began escaped it, DEVLOG
+   DD-2026-11-08-12). */
 
 /** @typedef {{ el: Element, pseudo?: "::before", o: number }} FadePart a part to fade, and its own opacity at rest */
 
@@ -31,10 +34,6 @@ export function fadeParts(root) {
   const out = [];
   /** @param {Element} e @param {boolean} top */
   const walk = (e, top) => {
-    /* its opacity has an owner of its own (data-fade-owner, in the markup: the picture's layers are pictures.js's) — it
-       fades its layers with their view itself (pictures.js pictureWithView); writing them here was a second writer
-       (the tracer, 2026-11-08) */
-    if (!top && e instanceof HTMLElement && e.dataset.fadeOwner) return;
     const c = getComputedStyle(e);
     if (c.display === "none" || (!top && +c.opacity === 0)) return; // not seen: nothing to fade
     const o = top ? 1 : +c.opacity,

@@ -183,7 +183,6 @@
  * @property {"bar" | "none" | null} row  the row under the picture: the progress bar, or nothing
  * @property {string | null} rowView the tab the row was decided for (its fade belongs to a switch between views)
  * @property {string} ins            the page's insets last laid out ("row:tools"): a change lays out again
- * @property {number} colW           Vertical: the picture column's width (0 otherwise)
  */
 
 /**

@@ -189,13 +189,12 @@ export async function columnCap(k, t) {
   await k.sleep(900);
   await k.ev(`(showView("queue"),1)`);
   await k.sleep(800);
-  const r = await R(k, "#right"),
-    st = await R(k, "#stage"),
+  /* the panel itself (#rpanel): the page area (#right) is the whole room in both layouts since C2b's rest */
+  const r = await R(k, "#rpanel"),
     W = await k.ev(`innerWidth`);
   /* v0.7c: a panel's default in Vertical is a 1:1 plate at the room's height, never narrower than the tab bar (it was a
      16:9 box at the picture's height); its own width once you drag its sides (edges > verticalPanelsResize) */
-  const want = Math.max(await k.ev(`minRight()`), (await R(k, "#rpanel")).height);
-  void st;
+  const want = Math.max(await k.ev(`minRight()`), r.height);
   t.ok(r.width < W - 36 - 50, "Vertical on a wide window: the panel is not edge to edge", { w: r.width, W });
   t.near(r.width, want, 3, "a 1:1 plate at the room's height", { w: r.width, want });
   t.near(r.left + r.width / 2, W / 2, 2, "centred");

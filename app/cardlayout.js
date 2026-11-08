@@ -2,7 +2,7 @@
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $, q } from "./dom.js";
 import { HANDLES, outlines } from "./outlines.js";
-import { lay, minRight, paneSize, setDock, sizeFrame, snapHold, vAlign, vPass } from "./layout.js";
+import { lay, minRight, paneSize, setDock, sizeFrame, vAlign, vPass } from "./layout.js";
 import { PWMIN, cardAnchorTop, cardHeightMode, cardPlacement } from "./layoutmath.js";
 import { peekJob } from "./prompt.js";
 import { P, S, save } from "./state.js";
@@ -169,11 +169,10 @@ export function layoutLeft(direct = false) {
     col.style.setProperty("--sw", Math.round(p.box.w) + "px");
     requestAnimationFrame(vAlign);
     boxAt(col, Math.round(p.box.y - colTop), Math.round(p.box.h));
-    /* the pane changed under it (a new limit, the window): the page follows, at once with the box */
-    if (!was || Math.abs(was.page.h - p.page.h) > 0.5 || Math.abs(was.page.w - p.page.w) > 0.5) {
-      snapHold("prompt", 150);
-      requestAnimationFrame(sizeFrame);
-    }
+    /* the pane changed under it (a size of yours, Reset, a new limit): its owner lays the page out in this task — on the
+       rearrangement's plan, one motion with the box riding its plate. (Not with the layout held at once: the old
+       column's text-sized row needed that, and it snapped every Reset in Vertical — B16) */
+    if (!was || Math.abs(was.page.h - p.page.h) > 0.5 || Math.abs(was.page.w - p.page.w) > 0.5) sizeFrame();
     return;
   }
   const colH = col.clientHeight - TS;

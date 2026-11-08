@@ -87,7 +87,7 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     `layoutPass` computes every page's numbers side by side (a panel's width, height and place too) and in Vertical at rest (C4b: the page's pane on top, the box under it — its text's height in the free room only, then it scrolls; `layout.js` `vPass` → `lay.passV`) — the picture's size (a scale of its largest), its
     place, the box's, the edit buttons' strip (`stripRoom`: its room kept on both sides of the centred pair). The
     appliers write them in ONE coordinate space: side by side the page area (`#right`) is the whole room and never
-    moves (in Vertical a centred column); the prompt column (`#lcol`) is a layer over the same room in both layouts (no grid row of its own in Vertical since C4b), taking the pointer only on its parts, and the box
+    moves (in Vertical too since C2b's rest: a panel is the pass's rectangle there as well, written by `sizeFrame`'s `panelWrite` on the rearrangement — no centred column, no CSS width transition); the prompt column (`#lcol`) is a layer over the same room in both layouts (no grid row of its own in Vertical since C4b), taking the pointer only on its parts, and the box
     in it has its own width (`--cw`, `layout.js` `boxWWrite`) — no grid columns (DEVLOG DD-2026-11-08-1; the
     platforms' rule: what moves in a transition lives in one still space). A panel's box is placed in
     the area by `sizeFrame`, its handles by `around.js` `placeSideEdges`). **The box's place side by side has ONE rule:**

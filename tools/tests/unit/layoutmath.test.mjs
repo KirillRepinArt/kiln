@@ -6,7 +6,6 @@ import {
   fitInBox,
   toolColumnW,
   pageGeometry,
-  stackColumnW,
   framePlacement,
   pageInsets,
   fades,
@@ -97,17 +96,6 @@ test("a picture page: the area takes what the prompt leaves, up to your cap; the
 test("a panel keeps no clearance: centred, or to the room's ends", () => {
   const g = geo({ W: 680 + 660 + pairGap() + 30, clear: 0 });
   near(g.mL, g.mR, "centred");
-});
-
-test("Vertical: the column is as wide as a 16:9 picture at its height, within the tab bar, the prompt and the window", () => {
-  assert.equal(stackColumnW(2000, 420, 600, 450, 36), 800, "450 × 16/9 — the buttons take no room in it");
-  assert.equal(stackColumnW(2000, 420, 1000, 450, 36), 1000, "never narrower than the prompt box");
-  assert.equal(stackColumnW(700, 420, 600, 450, 36), 628, "never wider than the window less the buttons' clearance");
-  assert.equal(
-    stackColumnW(2000, 420, 600, 450, 36, true),
-    1928,
-    "Generating: the whole width (the ratio sets the picture's)",
-  );
 });
 
 test("the picture and its button column sit centred together; the column away from the prompt", () => {

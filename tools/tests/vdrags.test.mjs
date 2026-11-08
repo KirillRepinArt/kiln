@@ -190,3 +190,32 @@ export async function resetPictureFirst(k, t) {
   t.near((await R(k, "#left")).height, b0.height, 2, "…the box squeezed to its least");
 }
 resetPictureFirst.opts = { width: 2000, height: 1023, step: 0.05 };
+
+/* B16 in Vertical (C2b's rest): a panel's size change from a gesture (Reset, a double-click) moves on the rearrangement's
+   plan — no snap. It was written at once (the panel) and on a CSS transition of its own (the column's width) */
+export async function panelResetGlides(k, t) {
+  await k.ev(`(setDock("below"),1)`);
+  await k.ev(`(document.querySelector('.tab[data-v="queue"]').click(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1400);
+  await pull(k, "#hsplit", 0, -200); // a shorter Queue
+  await pull(k, ".vpedge.r", 150, 0); // a wider one
+  const p0 = await R(k, "#rpanel");
+  const w = k.ev(
+    `new Promise(res=>{const o=[],t0=performance.now();(function s(){requestAnimationFrame(()=>setTimeout(()=>{const r=$("rpanel").getBoundingClientRect();o.push([r.width,r.height]);if(performance.now()-t0<1200)s();else res(o)},0))})();document.querySelector('#layMenu [data-lay="reset"]').click()})`,
+  ); // Reset clicked in the same evaluation: the harness runs one at a time (a second one waited for the sampling to end)
+  /* from the size before the click: a snap lands before the first sampled frame */
+  const s = [[p0.width, p0.height], ...(await w)],
+    p1 = await R(k, "#rpanel"),
+    /* each axis on its own: the biggest jump in one frame, against that axis's whole change */
+    axis = (/** @type {number} */ i, /** @type {number} */ d) => ({
+      change: Math.round(d),
+      biggest: Math.round(Math.max(...s.slice(1).map((v, j) => Math.abs(v[i] - s[j][i])))),
+    }),
+    W = axis(0, p1.width - p0.width),
+    H = axis(1, p1.height - p0.height);
+  t.ok(Math.abs(W.change) > 100 && Math.abs(H.change) > 100, "Reset changed the Queue's width and height", { W, H });
+  t.motion(W.biggest < 0.6 * Math.abs(W.change), "…its width in a motion, not a snap", W);
+  t.motion(H.biggest < 0.6 * Math.abs(H.change), "…its height in a motion, not a snap", H);
+}
+panelResetGlides.opts = { width: 1400, height: 1000, step: 0.05 };

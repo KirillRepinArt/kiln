@@ -26,7 +26,6 @@ import {
   framePlacement,
   pageGeometry,
   pageInsets,
-  stackColumnW,
   picLeastH,
   toolColumnW,
   upgradeLayoutPrefs,
@@ -203,7 +202,6 @@ export const lay = {
   row: null,
   rowView: null,
   ins: "",
-  colW: 0,
   shown: null,
   vroom: 0,
   /** @type {import("./layoutmath.js").PassOut | null} Vertical's pass, computed alongside the old maths (C4b step 1) */
@@ -579,8 +577,10 @@ function panelStyle(h, mt, w, ml) {
   if (rp.style.marginTop !== mt) rp.style.marginTop = mt;
   if (rp.style.width !== w) rp.style.width = w;
   if (rp.style.marginLeft !== ml) rp.style.marginLeft = ml;
-  rt.style.setProperty("--pt", rp.offsetTop + "px"); // where its top / bottom handles go
+  rt.style.setProperty("--pt", rp.offsetTop + "px"); // where its handles go: its top / bottom, its sides (Vertical)
   rt.style.setProperty("--pb", rp.offsetTop + rp.offsetHeight + "px");
+  rt.style.setProperty("--pl", rp.offsetLeft + "px");
+  rt.style.setProperty("--pr", rp.offsetLeft + rp.offsetWidth + "px");
 }
 /** the panel's box side by side, from the window's px @param {{ l: number, t: number, w: number, h: number }} b
  * @param {number} roomTop where its room starts in the window */
@@ -617,23 +617,12 @@ export function sizeFrame() {
   /* Vertical: the layout pass's rectangles (v0.7c C4b) — the page's pane and its room; the box's are placed by
      layoutLeft from the same run */
   const pv = stk ? vPass() : null;
-  /* Vertical: the picture's area (and Queue / LoRAs / PNG Info) is a centred column no wider than a 16:9 picture at the
-    height it has (plus its button column each side), never narrower than the tab bar or the prompt box — not edge to edge */
+  /* the page area (#right) is the whole room in both layouts (one coordinate space, DD-2026-11-08-1; Vertical since C2b's
+     rest): the page's pane is placed in it by the pass. Vertical's was a centred column as wide as its panel, gliding
+     on a CSS transition of its own (a second clock) — and its panel snapped (B16) */
   {
     const rt = $("right");
-    if (stk) {
-      /* a picture page: the whole width (less the buttons' clearance); a panel (Queue, LoRAs, PNG Info): the pass's
-         width — its own for this page in Vertical, set with its side edges; by default a 1:1 plate at the room's
-         height — never narrower than the tab bar, never wider than the window */
-      const most = app.clientWidth - 2 * SPACE.area,
-        v = /** @type {import("./layoutmath.js").PassOut} */ (pv);
-      lay.colW =
-        S.view === "gen" ? stackColumnW(most, minRight(), stackW(), 0, toolsClear(), true) : Math.round(v.page.w);
-      rt.style.width = lay.colW + "px";
-    } else {
-      if (rt.style.width) rt.style.width = "";
-      lay.colW = 0;
-    }
+    if (rt.style.width) rt.style.width = "";
     /* Vertical: the page's pane as the pass gives it — a panel's height, or the picture and its status row's room
        (the stage holds both); the box sits under it (layoutLeft). It was the room above the prompt's name, which the
        box's text sized. Side by side the room IS the panel's box: nothing to set */
@@ -647,39 +636,33 @@ export function sizeFrame() {
       room = stk ? lay.vroom : sideRoom(),
       panel = S.view !== "gen",
       kept = panel ? paneSize().h : null,
-      sp = panel && !stk ? lay.pass : null, // side by side: the layout pass's (C2a's rest), held or not
+      /* the layout pass's, held or not, in both layouts (side by side: C2a's rest; Vertical: C2b's rest) */
+      sp = !panel ? null : pv ? { page: pv.page, roomTop: pv.roomT } : lay.pass,
       H = panel
-        ? Math.round(
-            sp
-              ? sp.page.h
-              : stk
-                ? lay.vroom // the pass's
-                : kept
-                  ? within(kept, paneLimits(pageId(), "h", { roomH: room }))
-                  : room,
-          )
+        ? Math.round(sp ? sp.page.h : kept ? within(kept, paneLimits(pageId(), "h", { roomH: room })) : room)
         : null,
-      top = panel && H != null ? Math.round(sp ? sp.page.y - sp.roomTop : pv ? pv.page.y - pv.roomT : 0) : 0, // held too
+      top = panel && H != null ? Math.round(sp ? sp.page.y - sp.roomTop : 0) : 0, // held too
       fx = H != null && !stk ? "none" : ""; // side by side it grows to the room (flex: 1) unless it has a height
     if (rp.style.flex !== fx) rp.style.flex = fx;
     lay.proom = room;
     if (sp) {
-      /* side by side a panel is the pass's box, in the window's px: it moves there on the rearrangement's plan and clock
-         (B16: a double-click or a Reset snapped it) — the area's px are the window's less one constant (areaX) */
+      /* a panel is the pass's box, in the window's px: it moves there on the rearrangement's plan and clock (B16: a
+         double-click or a Reset snapped it — in Vertical until C2b's rest) — the area's px are the window's less one
+         constant (areaX) */
       const to = { l: sp.page.x, t: sp.page.y, w: sp.page.w, h: sp.page.h },
         roomTop = sp.roomTop;
       if (panelAt) rearrange("panel", panelAt, to, b => panelWrite(b, roomTop));
       else panelWrite(to, roomTop);
     } else {
-      /* a picture page (the whole area) or Vertical: at once */
+      /* a picture page: the whole area (Vertical: the pane and its status row's room) */
       panelAt = null;
       panelStyle(H != null ? H + "px" : stk ? lay.vroom + "px" : "", top ? top + "px" : "", "", "");
     }
   }
   /* the target geometry, not a measurement: the grid may be mid-glide */
   const st = stageRect(),
-    SW = stk ? (lay.colW ? lay.colW - 2 : st.width) : /** @type {Geometry} */ (lay.last).rw; // wide: the whole room
-  const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
+    SW = stk ? st.width : /** @type {Geometry} */ (lay.last).rw; // the whole room
+  const f = $("frame");
   const pass = !stk && S.view === "gen" && lay.pass && lay.pass.pic ? lay.pass : null, // side by side: the pass's
     vpic = pv && pv.pic ? pv.pic : null, // Vertical: the pass's picture, held or not (C4c)
     PH = pass && pass.pic ? pass.pic.h : vpic ? vpic.h : picFull(),
@@ -713,11 +696,14 @@ export function sizeFrame() {
     });
   let left = placedLeft,
     top = placedTop;
-  /* side by side at rest the picture's place across its area is the pass's: its strip on the outer side (C2a) — not a
-     centring inside the geometry last applied, which may be held or stale (the picture slid onto the box, 2026-11-03) */
-  if (pass && pass.pic) {
-    left = pass.pic.x - areaX(); // the area's px: the window's less the room's edge
-    top = pass.pic.y - pass.roomTop; // held too: one source for the picture's place (B18: centred in the area while held)
+  /* the picture's place is the pass's in both layouts: side by side its strip on the outer side (C2a), in Vertical
+     centred under the bar (C2b's rest: it was centred in the column — 2 px off the pass) — not a centring inside the
+     geometry last applied, which may be held or stale (the picture slid onto the box, 2026-11-03) */
+  const pp =
+    pass && pass.pic ? { pic: pass.pic, roomTop: pass.roomTop } : vpic && pv ? { pic: vpic, roomTop: pv.roomT } : null;
+  if (pp) {
+    left = pp.pic.x - areaX(); // the area's px: the window's less the room's edge
+    top = pp.pic.y - pp.roomTop; // held too: one source for the picture's place (B18: centred in the area while held)
   }
   Object.assign(f.dataset, { tw: w, th: h, tl: left + M, tt: top + M });
   /* where the frame belongs (the plate's place, less the mat); framebox.js moves it there (a glide, a jump, or where a

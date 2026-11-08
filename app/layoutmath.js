@@ -122,24 +122,6 @@ export function pageGeometry(m, L) {
 }
 
 /**
- * Vertical: the picture area's column. Generating / the Gallery (gen): the window's width less a clearance each side —
- * the picture takes the room's height and its width follows its ratio (2026-11-01, the user: "21:9 should look exactly
- * like 16:9, only expanded further to the sides"; it was capped at a 16:9 picture's width, so wider ratios came out
- * short). The panels: no wider than a 16:9 picture at the height it has. Never narrower than the tab bar or the prompt
- * box, never wider than the window less a clearance each side (the edit buttons hang into it, outside the column).
- * @param {number} full the window's room
- * @param {number} minR the tab bar's least width
- * @param {number} promptW the prompt box's width
- * @param {number} picH the picture's height
- * @param {number} clear the clearance each side, beyond the window's own margin
- * @param {boolean} [gen] Generating / the Gallery: the whole width
- */
-export function stackColumnW(full, minR, promptW, picH, clear, gen = false) {
-  const most = full - 2 * clear;
-  return Math.round(gen ? most : Math.min(most, Math.max(minR, promptW, (picH * 16) / 9)));
-}
-
-/**
  * Where the picture goes in its area: picture + button column as one group, centred; the column on the side away
  * from the prompt. Vertical: the picture itself on the centre line (its column hangs in the margin). No column or row
  * in the page's insets right now: pass 0 for it.

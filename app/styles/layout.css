@@ -74,10 +74,6 @@
 .app.stacked .rpanel {
   flex: none;
 } /* Vertical: its height is the picture's room (layout.js sizeFrame) — every page's plate ends at the same line */
-.app.stacked > .right {
-  justify-self: center; /* its width is the layout pass's (within the room at rest; past it only by the rubber band) */
-  transition: width var(--lay-t) var(--lay-e);
-} /* Vertical: a centred column (stage.js sets its width) */
 
 /* ======================= edges (drag to resize) =======================
    .pedge: the panels' vertical edges (po = the prompt's outer edge, pi/ri = the divider, ro = the picture area's outer
@@ -156,11 +152,16 @@
   touch-action: none;
 }
 .vpedge.l {
-  left: calc(var(--space-3) * -1);
+  left: calc(var(--pl, 0px) - var(--space-3));
 }
 .vpedge.r {
-  right: calc(var(--space-3) * -1);
-}
+  left: calc(var(--pr, 0px) - var(--space-1));
+} /* on the panel's sides (--pl / --pr: sizeFrame's panelStyle) — the area is the whole room (C2b's rest) */
+.app.stacked .phedge {
+  left: var(--pl, 0px);
+  right: auto;
+  width: calc(var(--pr, 0px) - var(--pl, 0px));
+} /* Vertical: as long as the panel's top (side by side: around.js placeSideEdges) */
 .app.stacked .right:has(.rpanel.paneled) > .vpedge {
   display: block;
   pointer-events: auto;

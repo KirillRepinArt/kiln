@@ -679,10 +679,10 @@ export function layoutPrefsV4(L, o) {
  * @property {number} W the window's width
  * @property {number} H the window's height
  * @property {"left" | "right" | "below"} dock
- * @property {{ kind: "pic", ratio: number, scale?: number } | { kind: "panel", w: number, h: number,
- *   lo: { w: number, h: number }, hi: { w: number, h: number } }} page the page's pane: a picture (its ratio and your
+ * @property {{ kind: "pic", ratio: number, scale?: number, row?: number } | { kind: "panel", w: number, h: number,
+ *   lo: { w: number, h: number }, hi: { w: number, h: number }, row?: number }} page the page's pane: a picture (its ratio and your
  *   scale of its largest, default 1) or a panel (your sizes and its limits)
- * @property {{ w: number, wLo: number, text: number, least: number, hi?: number, h?: number | null,
+ * @property {{ w: number, wLo: number, text: number, least: number, hi?: number, h?: number | null, title?: number,
  *   mode?: "" | "full" | "match" | "fit", anchor?: "top" | "mid" | "bot" }} box the prompt box: your width (and its
  *   least), its text's height (its least: ~2 lines; its largest in Vertical: hi), your height (h — Custom: a height you
  *   set by its edge, decision A, DEVLOG DD-2026-11-09-2; null: its mode decides), its mode, its anchor by the picture
@@ -714,6 +714,13 @@ const clampTo = (/** @type {number} */ v, /** @type {number} */ lo, /** @type {n
   Math.max(lo, Math.min(Math.max(lo, hi), v));
 
 /** the room: the window less its edge gap, under the tab bar's row @param {PassState} s */
+/** Vertical: what lies between the pane's bottom and the box's top — the page's status row (a picture's), the pair
+ * gap, the box's name row — ONE definition, for the sizes and the places alike (C4b step 1b: the box sat one bare gap
+ * under the picture, the name row on it) @param {PassState} s */
+function vGap(s) {
+  return (s.page.row ?? 0) + s.gap.pair + (s.box.title ?? 0);
+}
+/** the room: its sides and its height (the window's less the gaps and the bar) @param {PassState} s */
 function roomOf(s) {
   const L = s.gap.area,
     R = s.W - s.gap.area,
@@ -758,13 +765,13 @@ function restSizes(s) {
     scale = clampTo(page.scale ?? def, lo, 1);
     pw = largest.w * scale;
     ph = pw / page.ratio;
-    if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - gap.pair - ph)); // what's left
+    if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - vGap(s) - ph)); // what's left
   } else {
     if (!vert && RW - bw - gap.pair < page.lo.w) bw = Math.max(s.box.wLo, RW - gap.pair - page.lo.w);
     pw = clampTo(page.w, page.lo.w, Math.min(page.hi.w, vert ? RW : RW - bw - gap.pair));
     /* Vertical: the panel's height is yours, the box takes what's left (down to its least) — as for a picture */
-    ph = clampTo(page.h, page.lo.h, Math.min(page.hi.h, vert ? CH - gap.pair - s.box.least : CH));
-    if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - gap.pair - ph));
+    ph = clampTo(page.h, page.lo.h, Math.min(page.hi.h, vert ? CH - vGap(s) - s.box.least : CH));
+    if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - vGap(s) - ph));
   }
   if (!vert && mode === "full") bh = CH;
   return { bw, bh, pw, ph, scale, largest, mode };
@@ -786,7 +793,7 @@ function largestPic(s, bw, bh) {
     r = s.page.kind === "pic" ? s.page.ratio : 1,
     w =
       s.dock === "below"
-        ? Math.min(RW - 2 * s.strip, (CH - s.gap.pair - bh) * r)
+        ? Math.min(RW - 2 * s.strip, (CH - vGap(s) - bh) * r)
         : Math.min(RW - bw - s.gap.pair - stripRoom(s), CH * r); // the strip's room both sides: the pair stays centred (B15)
   return { w: Math.max(0, w), h: Math.max(0, w) / r };
 }
@@ -1003,7 +1010,7 @@ export function layoutPass(s) {
     page = { x: px, y: py, w: pageW, h: z.ph };
     if (pic) pr = { x: px + strip, y: py, w: z.pw, h: z.ph };
     const bw = mode === "fit" && pr ? pr.w : mode === "full" ? RW : z.bw;
-    box = { x: L + (RW - bw) / 2, y: py + z.ph + gap.pair, w: bw, h: z.bh };
+    box = { x: L + (RW - bw) / 2, y: py + z.ph + vGap(s), w: bw, h: z.bh }; // the pane, its status row, the gap, the name row, the box
   }
   /* the box's height edges give (its height is its text's) */
   if (z.boxGive) {

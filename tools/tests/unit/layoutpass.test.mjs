@@ -472,3 +472,16 @@ test("the edit buttons: the layout's count is the markup's (one column of them s
     body = src.slice(src.indexOf("function sideButtons"), src.indexOf("} /* the other buttons"));
   assert.equal((body.match(/<button/g) || []).length, EDIT_TOOLS, "state.js sideButtons builds EDIT_TOOLS buttons");
 });
+
+test("Vertical: between the pane and the box lie its status row, the gap and the box's name row (C4b step 1b)", () => {
+  const base = state({ dock: "below", page: { kind: "pic", ratio: 3 / 4 } }),
+    o = layoutPass({ ...base, page: { ...base.page, row: 30 }, box: { ...base.box, title: 64 } }),
+    bare = layoutPass(base);
+  assert.ok(
+    Math.abs(o.box.y - bottom(o.page) - (30 + base.gap.pair + 64)) <= EPS,
+    "the box's top: the pane, its row, the gap, the name row",
+    { y: o.box.y, pageBottom: bottom(o.page) },
+  );
+  assert.ok(bottom(o.box) <= 1080 - 20 + EPS, "…and the box still fits the room");
+  assert.ok(o.pic.h < bare.pic.h, "the picture's largest gives up that room (the picture first, the rows kept)");
+});

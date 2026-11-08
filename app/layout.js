@@ -318,11 +318,19 @@ function sidePass() {
           : /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright")
             ? "right"
             : "left",
-        page,
+        /* Vertical: a picture's status row lies under it, in the group's gap (rowRoom — C4b step 1b) */
+        page: vert && page.kind === "pic" ? { ...page, row: rowRoom() } : page,
         /* side by side the box's height is placed elsewhere (cardPlacement, C2b's rest); in Vertical the pass places
            it from its spec (C4: its width, its text's height, its least; Custom comes with C4c) */
         box: vert
-          ? { w: stackW(), wLo: PWMIN, text: textBoxH(), least: slotLeast(), h: null }
+          ? {
+              w: stackW(),
+              wLo: PWMIN,
+              text: textBoxH(),
+              least: slotLeast(),
+              h: null,
+              title: parseFloat($("lcol").style.getPropertyValue("--ts")) || 64, // the name row over the box
+            }
           : { w: dr ? dr.boxW : (paneSize("box", "side").w ?? df.pw), wLo: PWMIN, text: 0, least: 0 },
         /* the bar's row as it is on screen (the room's top): the pass's numbers are the window's, on both axes */
         bar: { w: tabsW(), h: barH },

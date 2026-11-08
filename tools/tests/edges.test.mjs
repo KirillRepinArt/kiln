@@ -551,11 +551,11 @@ export async function squeezedBoxScrollsNoOverlap(k, t) {
   await ev(k, "mouseMoved", 8, 8, 0);
   await k.sleep(1300);
   const r = await k.ev(
-    `(()=>{const w=document.querySelector(".pwrapT"),s=w.querySelector(".cm-scroller");return{scrolls:s.scrollHeight>s.clientHeight,more:w.classList.contains("scroll-edge")&&s.classList.contains("scroll-edge-area")}})()`,
+    `(()=>{const w=document.querySelector(".pwrapT"),s=w.querySelector(".cm-scroller");return{scrolls:s.scrollHeight>s.clientHeight,more:(parseFloat(getComputedStyle(s).getPropertyValue("--fb"))||0)>0}})()`,
   );
   t.ok(r.scrolls, "squeezed: the text scrolls inside the box", r);
-  /* the fade is the scroll edge's, in CSS on the scroll position (acf4d60, DD-2026-11-09-3): the box's area is one */
-  t.ok(r.more, "…and slides under the controls behind the fade (not bare): a scroll-edge area", r);
+  /* the fade is the scroll edge's, in CSS on the scroll position (acf4d60, DD-2026-11-09-3): its bottom fade is on */
+  t.ok(r.more, "…and slides under the controls behind the fade (not bare): the bottom edge fades", r);
 }
 squeezedBoxScrollsNoOverlap.opts = { width: 1760, height: 1080, step: 0.05 };
 

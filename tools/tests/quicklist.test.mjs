@@ -210,19 +210,18 @@ export async function promptEdges(k, t) {
     `(P.value=Array(40).fill("a long line of prompt text").join(String.fromCharCode(10)),draft=P.value,layoutLeft(),1)`,
   );
   await k.sleep(800);
-  const w = () => k.ev(`[...$("prompt").parentElement.classList].join(" ")`);
-  t.ok(
-    /more/.test(await w()) && !/scrolled/.test(await w()),
-    "overflowing, at the top: the bottom fades, the top doesn't",
-    await w(),
-  );
+  /* the fades are the scroll edge's: --ft / --fb on the scroller, driven by its scroll timeline (scrolledge.css,
+     DEVLOG DD-2026-11-09-3 — they were classes set by script, "more" / "scrolled") */
+  const w = () =>
+    k.ev(
+      `(()=>{const s=getComputedStyle(document.querySelector(".pwrapT .cm-scroller"));return{top:parseFloat(s.getPropertyValue("--ft"))||0,bottom:parseFloat(s.getPropertyValue("--fb"))||0}})()`,
+    );
+  const a = await w();
+  t.ok(a.bottom > 0 && a.top === 0, "overflowing, at the top: the bottom fades, the top doesn't", a);
   await k.ev(`(document.querySelector(".pwrapT .cm-scroller").scrollTop=99999,1)`);
   await k.sleep(300);
-  t.ok(
-    /scrolled/.test(await w()) && !/more/.test(await w()),
-    "scrolled to the end: the top fades, the bottom doesn't",
-    await w(),
-  );
+  const b = await w();
+  t.ok(b.top > 0 && b.bottom === 0, "scrolled to the end: the top fades, the bottom doesn't", b);
 }
 
 /* modeless (2026-10-27, the user): a shown picture's prompt has no bar — change anything (a pill, a LoRA, the text) and

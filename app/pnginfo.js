@@ -173,16 +173,7 @@ export function initPnginfo() {
   $("file").onchange = e =>
     /** @type {FileList} */ (targetField(e).files)[0] && readPng(/** @type {FileList} */ (targetField(e).files)[0]);
   $("pChoose").onclick = () => $("file").click();
-  /* the text's scroll edges: faded and blurred where there's more of it (styles: pnginfo.css, as the prompt's) */
-  const po = $("pout"),
-    edges = () => {
-      const w = /** @type {HTMLElement} */ (po.parentElement);
-      w.classList.toggle("scrolled", po.scrollTop > 2);
-      w.classList.toggle("more", po.scrollTop + po.clientHeight < po.scrollHeight - 2);
-    };
-  po.addEventListener("scroll", edges, { passive: true });
-  new ResizeObserver(edges).observe(po);
-  new MutationObserver(edges).observe(po, { childList: true, subtree: true, characterData: true });
+  /* the text's scroll edges: one rule for every scroll area, in CSS (scrolledge.css; the classes in index.html) */
   /* the whole panel takes a drop; dragleave fires on every child crossed, so only leaving the panel counts */
   const wrap = /** @type {HTMLElement} */ (drop.parentElement),
     over = (/** @type {boolean} */ on) => {

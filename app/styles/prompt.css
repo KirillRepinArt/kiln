@@ -347,76 +347,16 @@
   background: transparent;
   font: inherit;
 } /* !important: CodeMirror's focus outline */
-@property --ft {
-  syntax: "<length>";
-  inherits: true;
-  initial-value: 0px;
-}
-@property --fb {
-  syntax: "<length>";
-  inherits: true;
-  initial-value: 0px;
-}
 .pwrapT .cm-scroller {
   overflow: auto;
   font-family: inherit;
   line-height: 1.62;
-  transition:
-    --ft var(--t-200),
-    --fb var(--t-200);
-  /* the text fades at an edge where there's more of it; the scrollbar's strip (--sbw, while the text overflows) is a
-     second mask layer at full strength — the fade is the text's, never the scrollbar's (the user, 2026-11-08) */
-  -webkit-mask-image:
-    linear-gradient(transparent 0, var(--black) var(--ft), var(--black) calc(100% - var(--fb)), transparent 100%),
-    linear-gradient(to left, var(--black) var(--sbw, 0px), transparent var(--sbw, 0px));
-  mask-image:
-    linear-gradient(transparent 0, var(--black) var(--ft), var(--black) calc(100% - var(--fb)), transparent 100%),
-    linear-gradient(to left, var(--black) var(--sbw, 0px), transparent var(--sbw, 0px));
-  -webkit-mask-composite: source-over;
-  mask-composite: add;
-}
+} /* its scroll edge: scrolledge.css (the editor gives it the classes) */
 .pwrapT {
-  --edge-fade: 28px; /* the scroll edge's length: the fades and their soft blur here, the caret's scroll margins in editor.js */
-}
-.pwrapT.scrolled .cm-scroller {
-  --ft: var(--edge-fade);
-}
-.pwrapT.more .cm-scroller {
-  --fb: var(--edge-fade);
-} /* the fade is the inset: the 28 px margin stays a margin while the text scrolls through it */ /* text fades at an edge only where there's more of it */
-/* …and slides under a gradual blur there first (the glass "scroll edge"): a thin layer whose blur ramps up toward the edge */
-.pwrapT::before,
-.pwrapT::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: var(--sbw, 0px); /* the soft blur is the text's edge, not the scrollbar's */
-  height: var(--edge-fade);
-  z-index: 1;
-  pointer-events: none;
-  -webkit-backdrop-filter: blur(0px);
-  backdrop-filter: blur(0px);
-  transition:
-    backdrop-filter var(--t-200),
-    -webkit-backdrop-filter var(--t-200);
-}
-.pwrapT::before {
-  /* the scroll edge is the text's, not the surface's: it starts inside the box's rim, so its soft blur never smudges
-     the box's own light edge (the user, 2026-11-09: "a gradient applied on top of the edge glow when overflow is
-     triggered") */
-  top: var(--space-px);
-  -webkit-mask-image: linear-gradient(var(--black), transparent);
-  mask-image: linear-gradient(var(--black), transparent);
-}
-.pwrapT::after {
-  bottom: 0;
-  -webkit-mask-image: linear-gradient(transparent, var(--black));
-  mask-image: linear-gradient(transparent, var(--black));
-}
-.pwrapT.scrolled::before,
-.pwrapT.more::after {
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  line-height: 1.62; /* the text's: the scroll edge's length is three quarters of its line (scrolledge.css) */
+  --edge-top: var(
+    --space-px
+  ); /* the scroll edge starts inside the box's rim: its blur never smudges the box's light edge */
 }
 .pwrapT.ovf .cm-scroller {
   scrollbar-gutter: stable;
@@ -433,7 +373,7 @@
 /* the text sits --inset-box from the box's outer edge on every side, measured to the letters: the 1 px border counts,
    and the first line is trimmed to its capitals (text-box), so the top isn't the line's empty leading */
 .pwrapT .cm-content {
-  padding: calc(var(--inset-box) - var(--space-px)) 0 var(--space-3) 0;
+  padding: calc(var(--inset-box) - var(--space-px)) 0 0 0; /* no padding at the bottom: its fade is the edge (scrolledge.css) */
   text-box: trim-start cap alphabetic;
   caret-color: var(--white);
   font-size: var(--fs-15);

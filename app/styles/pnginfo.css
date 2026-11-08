@@ -56,58 +56,10 @@
     calc(var(--inset-box) - var(--space-px));
   font-size: var(--fs-14);
   color: var(--grey-85);
-  transition:
-    --ft var(--t-200),
-    --fb var(--t-200);
-  -webkit-mask-image: linear-gradient(
-    transparent 0,
-    var(--black) var(--ft),
-    var(--black) calc(100% - var(--fb)),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    transparent 0,
-    var(--black) var(--ft),
-    var(--black) calc(100% - var(--fb)),
-    transparent 100%
-  );
 } /* the scrollbar sits in the right margin: the letters end --inset-box from the panel's edge either way */
-.poutw.scrolled .pout {
-  --ft: var(--gap-area);
+.poutw {
+  font-size: var(--fs-14); /* the text's size: its scroll edge (scrolledge.css) is three quarters of its line */
 }
-.poutw.more .pout {
-  --fb: var(--gap-area);
-}
-.poutw::before,
-.poutw::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: var(--scrollbar);
-  height: var(--gap-area);
-  z-index: 1;
-  pointer-events: none;
-  -webkit-backdrop-filter: blur(0px);
-  backdrop-filter: blur(0px);
-  transition:
-    backdrop-filter var(--t-200),
-    -webkit-backdrop-filter var(--t-200);
-}
-.poutw::before {
-  top: 0;
-  -webkit-mask-image: linear-gradient(var(--black), transparent);
-  mask-image: linear-gradient(var(--black), transparent);
-}
-.poutw::after {
-  bottom: 0;
-  -webkit-mask-image: linear-gradient(transparent, var(--black));
-  mask-image: linear-gradient(transparent, var(--black));
-}
-.poutw.scrolled::before,
-.poutw.more::after {
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-} /* the prompt's scroll edge (prompt.css): the text fades and slides under a gradual blur where there's more of it */
 .pout:empty,
 .poutw:has(.pout:empty) {
   display: none;

@@ -1,0 +1,116 @@
+/* ======================= the scroll edge: ONE rule for every scroll area (DEVLOG DD-2026-11-09-3) =======================
+   Where a scroll area has more to show, its text fades out at that edge and slides under a soft blur (Apple's scroll
+   edge effect). It is a property of the area, defined once here; an area takes it with two classes — .scroll-edge on
+   its wrapper, .scroll-edge-area on the scroller itself:
+   - it follows the scroll position IN THE SAME FRAME: a CSS scroll timeline drives the fades and the blur (it was
+     classes set by script after the scroll, eased over 200 ms: the text stood at the edge unfaded first — the user,
+     2026-11-09: "I can see the text jumping first and then a bit later the gradient applies");
+   - it is sized in LINES, not pixels (--edge-fade: three quarters of a line): a two-line box keeps its two lines (28 px
+     ate one, the user's "half of the box unused");
+   - it is the text's: never over the scrollbar (--sbw, its strip at full strength), and it starts inside the surface's
+     rim (--edge-top);
+   - the area has no padding at a faded edge: the fade IS the edge (the editor keeps the caret a fade's length clear —
+     editor.js scrollMargins reads --edge-fade). */
+@property --edge-fade {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+@property --ft {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+@property --fb {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+.scroll-edge {
+  position: relative;
+  timeline-scope: --edge;
+  --edge-fade: 0.75lh;
+}
+.scroll-edge-area {
+  scroll-timeline: --edge y;
+  /* the text fades over the first fade's length of scroll at the top, and the last at the bottom; with nothing to
+     scroll the timeline is inactive and both are 0 */
+  animation:
+    edge-top linear both,
+    edge-bottom linear both;
+  animation-timeline: --edge, --edge;
+  animation-range:
+    0 var(--edge-fade),
+    calc(100% - var(--edge-fade)) 100%;
+  -webkit-mask-image:
+    linear-gradient(transparent 0, var(--black) var(--ft), var(--black) calc(100% - var(--fb)), transparent 100%),
+    linear-gradient(to left, var(--black) var(--sbw, 0px), transparent var(--sbw, 0px));
+  mask-image:
+    linear-gradient(transparent 0, var(--black) var(--ft), var(--black) calc(100% - var(--fb)), transparent 100%),
+    linear-gradient(to left, var(--black) var(--sbw, 0px), transparent var(--sbw, 0px));
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+}
+@keyframes edge-top {
+  from {
+    --ft: 0px;
+  }
+  to {
+    --ft: var(--edge-fade);
+  }
+}
+@keyframes edge-bottom {
+  from {
+    --fb: var(--edge-fade);
+  }
+  to {
+    --fb: 0px;
+  }
+}
+/* the soft blur: a thin layer at each edge whose blur ramps up toward it, on the same timeline */
+.scroll-edge::before,
+.scroll-edge::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: var(--sbw, 0px);
+  height: var(--edge-fade);
+  z-index: 1;
+  pointer-events: none;
+}
+.scroll-edge::before {
+  top: var(--edge-top, 0px);
+  -webkit-mask-image: linear-gradient(var(--black), transparent);
+  mask-image: linear-gradient(var(--black), transparent);
+  animation: edge-blur-in linear both;
+  animation-timeline: --edge;
+  animation-range: 0 var(--edge-fade);
+}
+.scroll-edge::after {
+  bottom: 0;
+  -webkit-mask-image: linear-gradient(transparent, var(--black));
+  mask-image: linear-gradient(transparent, var(--black));
+  animation: edge-blur-out linear both;
+  animation-timeline: --edge;
+  animation-range: calc(100% - var(--edge-fade)) 100%;
+}
+@keyframes edge-blur-in {
+  from {
+    -webkit-backdrop-filter: blur(0px);
+    backdrop-filter: blur(0px);
+  }
+  to {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+}
+@keyframes edge-blur-out {
+  from {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+  to {
+    -webkit-backdrop-filter: blur(0px);
+    backdrop-filter: blur(0px);
+  }
+}

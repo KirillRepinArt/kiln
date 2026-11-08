@@ -136,19 +136,11 @@ export async function startEditor() {
 
     /* the scrollbar's room is kept only while the text overflows: a prompt that fits has no gutter strip at all (on glass
     it flickered as the backdrop repainted). Sticky until clearly short again, so the edge of fitting doesn't toggle it */
-    const edge = () => {
-      const sc = view.scrollDOM;
-      wrap.classList.toggle("scrolled", sc.scrollTop > 2);
-      wrap.classList.toggle("more", sc.scrollTop + sc.clientHeight < sc.scrollHeight - 2);
-    }; /* the fades at the box's edges */
     const ovf = () => {
       /* decided at rest, like the thumb (B21): while the box's size moves the text overflows the area mid-way; switching
          overflow on then added the scrollbar's gutter, the text rewrapped narrower and the box twitched (the user,
          2026-11-09: "the prompt's top edge starts jumping when overflow is triggered") — decided once it settles */
-      if (wrap.classList.contains("settling")) {
-        edge();
-        return;
-      }
+      if (wrap.classList.contains("settling")) return;
       const sc = view.scrollDOM,
         on = wrap.classList.contains("ovf"),
         o = sc.scrollHeight > sc.clientHeight + 1;
@@ -157,7 +149,6 @@ export async function startEditor() {
           "ovf",
           o,
         ); /* off once it fits AND the editor has room left in the box (it sizes to its text: "fits by N px" never happened) */
-      edge();
     };
     const view = new EditorView({
       parent: wrap,
@@ -271,7 +262,6 @@ export async function startEditor() {
     {
       let t = /** @type {number | undefined} */ (/** @type {unknown} */ (null));
       new ResizeObserver(() => {
-        edge(); // the fades follow the box at once (squeezed or settling, the text slid under the controls bare)
         clearTimeout(t);
         t = setTimeout(() => view.requestMeasure(), 120);
       }).observe(wrap);
@@ -308,7 +298,10 @@ export async function startEditor() {
         view.scrollDOM.scrollTop = v;
       },
     });
-    view.scrollDOM.addEventListener("scroll", edge, { passive: true });
+    /* its scroll edges: one rule for every scroll area, in CSS — the fades follow the scroll in the same frame
+       (scrolledge.css; DEVLOG DD-2026-11-09-3) */
+    wrap.classList.add("scroll-edge");
+    view.scrollDOM.classList.add("scroll-edge-area");
     window.__cm = view;
   }
 }

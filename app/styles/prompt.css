@@ -398,7 +398,10 @@
     -webkit-backdrop-filter var(--t-200);
 }
 .pwrapT::before {
-  top: 0;
+  /* the scroll edge is the text's, not the surface's: it starts inside the box's rim, so its soft blur never smudges
+     the box's own light edge (the user, 2026-11-09: "a gradient applied on top of the edge glow when overflow is
+     triggered") */
+  top: var(--space-px);
   -webkit-mask-image: linear-gradient(var(--black), transparent);
   mask-image: linear-gradient(var(--black), transparent);
 }

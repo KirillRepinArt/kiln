@@ -11,6 +11,10 @@ import {
   pageInsets,
   fades,
   MORPH,
+  glueAnchors,
+  relationOf,
+  glued,
+  relationFade,
   shapeSteps,
   shapePlan,
   shapeBox,
@@ -472,4 +476,44 @@ test("shapePlan: a pure move takes the switch's full length, eased at both ends 
   assert.ok(p.q(0, p.T / 2)[0] > 0.3 && p.q(0, p.T / 2)[0] < 0.9, "…moving through the middle");
   /* nothing changes at all: the cross-fade, as before */
   assert.equal(shapePlan([{ o: { l: 0, t: 0, w: 4, h: 3 }, n: { l: 0, t: 0, w: 4, h: 3 } }]).T, MORPH.alone);
+});
+
+/* ---------- T2c: the glue and its relation change (DEVLOG DD-2026-11-08-7) ---------- */
+test("glue: a relation captured from where the box is puts it back exactly there, for every layout and anchor", () => {
+  const plate = { l: 400, t: 120, w: 600, h: 800 },
+    cases = [
+      ["left", "top", { l: 40, t: 160, w: 340, h: 180 }],
+      ["left", "mid", { l: 40, t: 430, w: 340, h: 180 }],
+      ["left", "bot", { l: 40, t: 700, w: 340, h: 180 }],
+      ["right", "top", { l: 1020, t: 160, w: 340, h: 180 }],
+      ["below", undefined, { l: 320, t: 950, w: 760, h: 150 }],
+    ];
+  for (const [dock, pos, box] of cases) {
+    const r = relationOf(box, plate, glueAnchors(dock, pos));
+    assert.deepEqual(glued(plate, r, box), box, `${dock} ${pos}`);
+  }
+});
+test("glue: the box rides its plate — beside it keeps its gap on its side, under it stays under and centred", () => {
+  const plate = { l: 400, t: 120, w: 600, h: 800 },
+    moved = { l: 500, t: 60, w: 400, h: 500 }, // the plate mid-motion: moved and smaller
+    left = { l: 40, t: 160, w: 340, h: 180 },
+    r = relationOf(left, plate, glueAnchors("left", "top")),
+    b = glued(moved, r, left);
+  assert.equal(moved.l - (b.l + b.w), plate.l - (left.l + left.w), "beside: the same gap");
+  assert.equal(b.t - moved.t, left.t - plate.t, "by its top");
+  const under = { l: 320, t: 950, w: 760, h: 150 },
+    u = glued(moved, relationOf(under, plate, glueAnchors("below")), under);
+  assert.equal(u.t - (moved.t + moved.h), under.t - (plate.t + plate.h), "under: the same gap below");
+  assert.equal(u.l + u.w / 2 - (moved.l + moved.w / 2), 0, "centred under it");
+});
+test("relation change: out early, gone ~2 frames, in over the motion's last fade — never seen changing relation", () => {
+  for (const motion of [540, 320, 0]) {
+    const f = relationFade(motion);
+    assert.equal(f.outEnd, MORPH.out, `${motion}: out by ${MORPH.out} ms`);
+    assert.ok(f.turn > f.outEnd && f.turn < f.inStart, `${motion}: the turn while gone`);
+    assert.ok(f.inStart - f.outEnd >= MORPH.gone, `${motion}: gone at least ${MORPH.gone} ms`);
+    assert.equal(f.inEnd - f.inStart, MORPH.fade, `${motion}: in over one fade`);
+    assert.equal(f.T, Math.max(motion, f.inEnd), `${motion}: the schedule's length`);
+  }
+  assert.equal(relationFade(540).inEnd, 540, "a full switch: in as the plate lands");
 });

@@ -316,6 +316,8 @@ export const MORPH = {
   b: 280, // the reveal (decelerating out of it)
   one: 320, // only a crop, or only a reveal: one move, eased at both ends
   fade: 200, // a view's contents fading out or in, in EVERY switch: one speed (the user, 2026-10-31 — the Queue ↔ PNG Info one)
+  out: 150, // a glued element leaving its old relation: gone early in the motion (Material fade-through's outgoing share)
+  gone: 34, // ~2 frames fully gone while its relation changes: never seen jumping
 };
 /* Material's emphasized curves: into the swap accelerating, out of it decelerating — with the swap between, it reads as
    one move; a lone crop or reveal is eased at both ends */
@@ -391,6 +393,74 @@ export function fades(st) {
     in: { delay: st.A, duration: F },
     T: Math.max(st.T, st.A + F),
   };
+}
+
+/* ---------- the glue (v0.7c T2c, DEVLOG DD-2026-11-08-7) ----------
+   The prompt box is ALWAYS glued to its partner pane's live plate, by a RELATION: which of the plate's edges it keeps
+   its distance to, on each axis. A tab switch or a Reset keeps the relation (the box rides); a layout switch changes
+   it, and the box fades through the change — out on the old relation, in on the new, glued all the while
+   (ux-review/17-t2-motion.md, T2c). Plain numbers: nothing here reads the page. */
+/** an axis's anchor: the plate's edge (or centre) the box keeps its distance to — "before" / "after": the box's far
+ * edge to the plate's near one (beside it); "below": the box's top to the plate's bottom (under it)
+ * @typedef {{ x: "before" | "after" | "centre", y: "top" | "centre" | "bottom" | "below" }} GlueAnchors */
+/** @typedef {GlueAnchors & { dx: number, dy: number }} Relation the anchors and the box's distances to them */
+/** @typedef {{ l: number, t: number, w: number, h: number }} GlueBox a box on screen (rearrange.js Box) */
+
+/** the anchors of a layout: Left / Right beside the plate by the box's vertical place (top / middle / bottom),
+ * Vertical under it, centred @param {"left" | "right" | "below"} dock @param {string} [pos] the box's place (S.pos)
+ * @returns {GlueAnchors} */
+export function glueAnchors(dock, pos) {
+  if (dock === "below") return { x: "centre", y: "below" };
+  return { x: dock === "right" ? "after" : "before", y: pos === "bot" ? "bottom" : pos === "mid" ? "centre" : "top" };
+}
+/** the box's relation to the plate as they are: its distances to the anchored edges (captured where it IS — at rest,
+ * or where a layout puts it — so placing it again from the same plate puts it exactly there)
+ * @param {GlueBox} box @param {GlueBox} plate @param {GlueAnchors} a @returns {Relation} */
+export function relationOf(box, plate, a) {
+  const dx =
+      a.x === "before"
+        ? plate.l - (box.l + box.w)
+        : a.x === "after"
+          ? box.l - (plate.l + plate.w)
+          : box.l + box.w / 2 - (plate.l + plate.w / 2),
+    dy =
+      a.y === "top"
+        ? box.t - plate.t
+        : a.y === "bottom"
+          ? plate.t + plate.h - (box.t + box.h)
+          : a.y === "below"
+            ? box.t - (plate.t + plate.h)
+            : box.t + box.h / 2 - (plate.t + plate.h / 2);
+  return { ...a, dx, dy };
+}
+/** where the box is, glued to the plate as it is now: its size is its own, its place the relation's
+ * @param {GlueBox} plate @param {Relation} r @param {{ w: number, h: number }} size @returns {GlueBox} */
+export function glued(plate, r, size) {
+  const l =
+      r.x === "before"
+        ? plate.l - r.dx - size.w
+        : r.x === "after"
+          ? plate.l + plate.w + r.dx
+          : plate.l + plate.w / 2 + r.dx - size.w / 2,
+    t =
+      r.y === "top"
+        ? plate.t + r.dy
+        : r.y === "bottom"
+          ? plate.t + plate.h - r.dy - size.h
+          : r.y === "below"
+            ? plate.t + plate.h + r.dy
+            : plate.t + plate.h / 2 + r.dy - size.h / 2;
+  return { l, t, w: size.w, h: size.h };
+}
+/** a glued element changing its relation (a layout switch's prompt box): out on the old relation from the first frame,
+ * gone ~2 frames while it changes, in on the new over the motion's last fade so it lands with its plate. A motion too
+ * short for that is outlasted: `T` is the schedule's own length. Times in ms from the motion's start
+ * @param {number} motion the motion's length (its plan's T) */
+export function relationFade(motion) {
+  const outEnd = MORPH.out,
+    inStart = Math.max(outEnd + MORPH.gone, motion - MORPH.fade),
+    inEnd = inStart + MORPH.fade;
+  return { outEnd, turn: outEnd + MORPH.gone / 2, inStart, inEnd, T: Math.max(motion, inEnd) };
 }
 
 /**

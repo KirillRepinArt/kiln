@@ -165,7 +165,7 @@
  * @property {Geometry | null} last  the geometry last applied (where the pair's columns are going)
  * @property {number} vroom  Vertical: the picture's room (its height, px; 0 side by side)
  * @property {number} vrow   Vertical: the room kept under the picture for its status row (px)
- * @property {{ mL: number, pw: number, rw: number, mR: number } | null} shown  where the pair's columns are on screen
+ * @property {{ pw: number } | null} shown  the box's width side by side, as written this frame (layout.js boxWWrite)
  *   now (their glide, layout.js layApply: G12)
  * @property {boolean} drag          an edge is being dragged
  * @property {number | null} vh      a top / bottom edge held: the picture's live height

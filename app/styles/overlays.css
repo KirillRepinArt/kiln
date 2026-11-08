@@ -184,7 +184,7 @@
 /* moving the prompt box: the three places it snaps to, and the dock zones */
 .ghost {
   position: absolute;
-  right: 0;
+  left: 0;
   width: min(100%, var(--cw, 680px));
   border-radius: var(--r-panel);
   outline: var(--outline);

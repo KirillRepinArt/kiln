@@ -746,6 +746,64 @@ export async function boxGluedToThePlate(k, t) {
 }
 boxGluedToThePlate.opts = { width: 1760, height: 1080, step: 0.05 };
 
+/* One coordinate space (DEVLOG DD-2026-11-08-1): the page area is the whole room and never moves; the box is a layer
+   over it with its own width. A change of the box's width moved the area with it (it was the room less the box's
+   column), and the picture — placed in the area's px — was converted mid-motion and landed 3–10 px off (2026-11-07).
+   Per frame through a box-width change, both docks: the area stays put, the box stays one gap from the plate, and the
+   picture moves one way only (no correction at the end) */
+export async function areaNeverMoves(k, t) {
+  await readArea(k);
+  await k.job("[fill:446688] a", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  for (const dock of ["left", "right"]) {
+    await k.ev(`(setDock(${JSON.stringify(dock)}),1)`);
+    await k.mouse(4, 4);
+    await k.sleep(1600);
+    for (const w of [440, null]) {
+      const rows = await k.ev(`new Promise(res=>{const out=[],t0=performance.now(),R=${dock === "right"};
+        setPaneSize("box","w",${w},"side");save();sizeFrame();
+        (function f(){setTimeout(()=>{const S=document.getElementById("stage").getBoundingClientRect(),
+            L=document.getElementById("left").getBoundingClientRect(),
+            P=document.getElementById("plate").getBoundingClientRect(),
+            F=document.getElementById("frame").getBoundingClientRect();
+          out.push([S.left,Math.round((R?L.left-P.right:P.left-L.right)*10)/10,F.left,L.width]);
+          if(performance.now()-t0<1000)requestAnimationFrame(f);else res(out)},0)})()})`);
+      const st = rows.map(r => r[0]),
+        widths = rows.map(r => r[3]),
+        gaps = rows.map(r => r[1]),
+        fl = rows.map(r => r[2]),
+        steps = fl
+          .slice(1)
+          .map((v, i) => v - fl[i])
+          .filter(d => Math.abs(d) > 0.5),
+        back = steps.filter(d => Math.sign(d) !== Math.sign(steps[0])),
+        off = gaps.filter(g => Math.abs(g - AREA) > 1);
+      t.ok(
+        Math.abs(widths[widths.length - 1] - widths[0]) > 40,
+        `${dock}, box → ${w ?? "default"}: its width changed`,
+        {
+          from: widths[0],
+          to: widths[widths.length - 1],
+        },
+      );
+      t.ok(Math.max(...st) - Math.min(...st) < 0.5, `${dock}, box → ${w ?? "default"}: the area never moves`, {
+        min: Math.min(...st),
+        max: Math.max(...st),
+      });
+      t.ok(!off.length, `${dock}, box → ${w ?? "default"}: the box one gap from the plate every frame`, {
+        min: Math.min(...gaps),
+        max: Math.max(...gaps),
+        off: off.length + "/" + gaps.length,
+      });
+      t.ok(!back.length, `${dock}, box → ${w ?? "default"}: the picture moves one way, no correction`, {
+        back,
+        frames: fl.length,
+      });
+    }
+  }
+}
+areaNeverMoves.opts = { width: 1760, height: 1080, step: 0.05 };
+
 /* T2a (B16; the user 2026-11-03: a double-click on a panel's edge snaps): every same-page change of a box moves on the
    rearrangement's steps — a panel's height back to its room glides over several frames, no frame jumps most of it */
 export async function panelResetMoves(k, t) {

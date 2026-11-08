@@ -1,11 +1,12 @@
 /* ======================= prompt column: the name row =======================
    The title over the box (theme title font), the file name round it on hover, the Reuse bar when you look at an old
    picture. layoutLeft() sets --ltop / --ts / --lh / --chtop. */
-/* the name row, the box and the grip zone take their width from the column (--cw): no width transition of their own —
-   the column is written every frame of a rearrangement (layout.js colsWrite, rearrange.js: one clock, T2a) */
+/* the name row, the box and the grip zone take the box's width (--cw) and rest at the column's left edge — side by side
+   the column is the whole room and the glue (layout.js promptFollow) moves them to the plate. No width transition of
+   their own: --cw is written every frame of a rearrangement (layout.js boxWWrite, rearrange.js: one clock, T2a) */
 .ltitle {
   position: absolute;
-  right: 0;
+  left: 0;
   width: min(100%, var(--cw, 680px));
   top: calc(var(--ltop, 0px) - var(--ts, var(--space-16)) + var(--space-1));
   height: calc(var(--ts, var(--space-16)) - var(--space-1) - var(--gap-tight)); /* ends one tight gap above the box */
@@ -252,7 +253,7 @@
 /* ======================= prompt box ======================= */
 .left {
   position: absolute;
-  right: 0;
+  left: 0;
   width: min(100%, var(--cw, 680px));
   top: var(--ltop, 0px);
   height: var(--lh, auto);
@@ -274,17 +275,9 @@
 }
 .app.stacked .left,
 .app.stacked .ltitle {
-  right: auto;
   left: 50%;
   width: min(100%, var(--sw, 760px));
   transform: translateX(-50%); /* centred: its sides move about its centre */
-}
-.app.pright .left,
-.app.pright .ltitle,
-.app.pright .ghost,
-.app.pright #lcol > .chips {
-  right: auto;
-  left: 0;
 }
 /* the prompt's grip is ONE zone (2026-11-01, L3): the group's rectangle — from the name row to the LoRA row, the box's
    width — behind its parts, so every empty point of it grips (the gaps, the LoRA row's empty part, the name row's
@@ -293,7 +286,7 @@
    under the split line, clear of the picture's bottom edge */
 .pgrip {
   position: absolute;
-  right: 0;
+  left: 0;
   width: min(100%, var(--cw, 680px));
   top: calc(var(--ltop, 0px) - var(--ts, var(--space-16)) + var(--space-1));
   height: calc(var(--chtop, 0px) + var(--chh, 0px) - var(--ltop, 0px) + var(--ts, var(--space-16)) - var(--space-1));
@@ -303,16 +296,11 @@
     height var(--lay-t) var(--lay-e);
 }
 .app.stacked .pgrip {
-  right: auto;
   left: 50%;
   width: min(100%, var(--sw, 760px));
   transform: translateX(-50%); /* centred: its sides move about its centre */
   top: var(--gtop-v, 0px);
   height: calc(var(--chtop, 0px) + var(--chh, 0px) - var(--gtop-v, 0px));
-}
-.app.pright .pgrip {
-  right: auto;
-  left: 0;
 }
 .app .left,
 .app .ltitle {

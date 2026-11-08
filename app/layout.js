@@ -379,12 +379,12 @@ export function layGeo() {
       handles: out.handles,
       roomTop,
     };
-    /* every page: the area is STILL — the box's column at the room's edge, the area the whole rest (G6, every page
-       since C2b, 2026-11-07); the page's pane sits in it where the pass says (a picture: framebox; a panel: sizeFrame),
-       and the box is glued one gap from the pane's live plate (promptFollow). A panel's columns used to hug it while a
-       picture's stayed still: two rules for the box's place, and a switch between them pulled the box and the plate
-       apart on three clocks (B23) */
-    return { pw: out.box.w, rw: W - pairGap() - out.box.w, mL: 0, mR: 0, W, minR, off: 0, gen, clear: 0 };
+    /* every page: the area is the WHOLE ROOM and never moves (one coordinate space, DEVLOG DD-2026-11-08-1); the
+       page's pane sits in it where the pass says (a picture: framebox; a panel: sizeFrame), and the box — a layer over
+       the same room, its own width — is glued one gap from the pane's live plate (promptFollow). The area used to be
+       the room less the box's column: it moved whenever the box's width changed, and every motion converted between
+       the two (3–10 px drifts mid-motion, 2026-11-07) */
+    return { pw: out.box.w, rw: W, mL: 0, mR: 0, W, minR, off: 0, gen, clear: 0 };
   }
   lay.pass = null;
   /* Generating's area is the whole stage the prompt leaves (no hug: ownership map G6) — the picture is centred in it
@@ -400,49 +400,34 @@ export function layGeo() {
     L,
   );
 }
-/* ---------- the pair's columns move on the layout's clock, here (2026-11-01, ownership map G12) ----------
-   They glided on CSS's clock (a transition on grid-template-columns) while the prompt's follow offset was worked out
-   from where they were GOING and applied at once: on Reset layout the prompt sat ~200 px over the picture, then slid
-   out. Now one glide writes them every frame on the frame's curve and time, and says where they are (lay.shown) to
-   what follows them, in the same frame */
-/** @typedef {{ mL: number, pw: number, rw: number, mR: number }} Cols */
-/** @param {Cols} c */
-function colsWrite(c) {
-  const st = /** @type {HTMLElement} */ (document.querySelector(".app")).style,
-    px = (/** @type {number} */ v) => Math.round(v * 10) / 10 + "px";
-  st.setProperty("--mL", px(c.mL));
-  st.setProperty("--pw", px(c.pw));
-  st.setProperty("--rw", px(c.rw));
-  st.setProperty("--mR", px(c.mR));
-  st.setProperty("--cw", px(c.pw));
+/* ---------- the box's width moves on the rearrangement's clock, here (G12; one coordinate space since 2026-11-08) ----------
+   It glided on CSS's clock (a transition on the grid's columns) while the prompt's follow offset was worked out from
+   where they were GOING. Now the rearrangement writes it every frame on the plan's curve and time (rearrange.js), and
+   says what it is (lay.shown) to what follows it, in the same frame. It is the box's own width (--cw) — no grid column:
+   nothing else moves with it */
+/** @typedef {{ pw: number }} BoxW the box's width side by side, as written */
+/** @param {BoxW} c */
+function boxWWrite(c) {
+  const st = /** @type {HTMLElement} */ (document.querySelector(".app")).style;
+  st.setProperty("--cw", Math.round(c.pw * 10) / 10 + "px");
   lay.shown = c;
 }
-/** where the area (the page's column) starts in the window, for these columns (the ones on screen now, or a target)
- * — a rearrangement plans every box in the window's px and writes it back in the area's (C2b / T2a: the area moves
- * while the box's column changes width, and a picture planned in the area's px drifted with it)
- * @param {Cols | null} [c] */
-export function areaX(c = lay.shown) {
-  const k = c || lay.last;
-  if (!k) return SPACE.area;
-  const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright");
-  return SPACE.area + k.mL + (R ? 0 : k.pw + pairGap());
+/** where the page area starts in the window (its px are the window's less this): the room's edge — the area is the
+ * whole room and never moves (DD-2026-11-08-1), so nothing converts mid-motion */
+export function areaX() {
+  return SPACE.area;
 }
 /** @param {Geometry} g */
 function layApply(g) {
-  const mL = Math.max(0, g.mL + (g.off || 0)),
-    mR = Math.max(0, g.W - pairGap() - g.pw - g.rw - mL),
-    to = { mL, pw: g.pw, rw: g.rw, mR };
-  lay.last = Object.assign({}, g, { mL, mR, off: 0 });
-  /* the columns as a box on the x axis: the box's column (its place, its width); the area takes the rest */
-  const box = (/** @type {Cols} */ c) => ({ l: c.mL, t: 0, w: c.pw, h: 0 }),
-    cols = (/** @type {{ l: number, w: number }} */ b) => ({ mL: b.l, pw: b.w, mR, rw: mL + g.pw + g.rw - b.l - b.w }),
-    going = movingTo("cols"),
-    was = going ? cols(going) : lay.shown;
-  if (was && was.mL === to.mL && was.pw === to.pw && was.rw === to.rw && was.mR === to.mR) return;
-  if (!lay.shown || document.querySelector(".app.stacked")) return colsWrite(to); // Vertical: one column, at once
-  /* on the rearrangement's plan and clock, with the frame or the panel (T2a); written first in each frame, so what
-     sits in the area is placed against the columns as they are */
-  rearrange("cols", box(lay.shown), box(to), b => colsWrite(cols(b)));
+  const to = { pw: g.pw };
+  lay.last = Object.assign({}, g, { off: 0 });
+  const going = movingTo("boxw"),
+    was = going ? { pw: going.w } : lay.shown;
+  if (was && was.pw === to.pw) return;
+  if (!lay.shown || document.querySelector(".app.stacked")) return boxWWrite(to); // Vertical: --sw is its width
+  /* on the rearrangement's plan and clock, with the frame or the panel (T2a): the box's width as a box on the x axis */
+  const box = (/** @type {BoxW} */ c) => ({ l: 0, t: 0, w: c.pw, h: 0 });
+  rearrange("boxw", box(lay.shown), box(to), b => boxWWrite({ pw: b.w }));
 }
 /* what to apply now. Holds last only while you're doing something, and the layout adjusts the moment you finish:
    flipping with the arrows on the picture holds it (so "next" stays under the cursor) until ~1 s after the last flip;
@@ -452,27 +437,9 @@ function layNow() {
   if (!lay.last || lay.drag) return g;
   /* (a top / bottom edge held used to freeze the area's width until release: the picture couldn't grow into room it
      had, then jumped — 2026-11-02, the user. Held, the layout computes from the held size like every other drag.) */
-  if ((lay.pressCard || document.querySelector("#left .pop.show")) && lay.pass && lay.last.pw === g.pw) {
-    /* a picture page side by side (v0.7c C2a): the pass's widths; the box keeps its place, the page beside it */
-    const R = /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
-      rest = g.W - pairGap() - g.pw - g.rw;
-    if (R) {
-      g.mR = Math.min(Math.max(0, rest), lay.last.mR);
-      g.mL = rest - g.mR;
-    } else {
-      g.mL = Math.min(Math.max(0, rest), lay.last.mL);
-      g.mR = rest - g.mL;
-    }
-    g.off = 0;
-    return g;
-  }
-  if (lay.pressCard || document.querySelector("#left .pop.show")) {
-    g.pw = lay.last.pw;
-    g.rw = Math.max(g.minR, Math.min(g.rw, g.W - pairGap() - g.pw)); /* the prompt keeps its place and its width */
-    g.mL = g.mR = Math.max(0, (g.W - pairGap() - g.pw - g.rw) / 2);
-    g.off = lay.last.mL - g.mL;
-    return g;
-  }
+  /* working in the prompt (a press in it, one of its menus open): the box keeps its width — its place holds too
+     (promptFollow) */
+  if (lay.pressCard || document.querySelector("#left .pop.show")) g.pw = lay.last.pw;
   return g;
 }
 /* ---------- an edge drag side by side goes through the layout pass (v0.7c C3; panels: C2a's rest) ----------
@@ -681,7 +648,7 @@ export function sizeFrame() {
     lay.proom = room;
     if (sp) {
       /* side by side a panel is the pass's box, in the window's px: it moves there on the rearrangement's plan and clock
-         (B16: a double-click or a Reset snapped it), written back in the area's px against the columns as they are */
+         (B16: a double-click or a Reset snapped it) — the area's px are the window's less one constant (areaX) */
       const to = { l: sp.page.x, t: sp.page.y, w: sp.page.w, h: sp.page.h },
         roomTop = sp.roomTop;
       if (panelAt) rearrange("panel", panelAt, to, b => panelWrite(b, roomTop));
@@ -694,7 +661,7 @@ export function sizeFrame() {
   }
   /* the target geometry, not a measurement: the grid may be mid-glide */
   const st = stageRect(),
-    SW = stk ? (lay.colW ? lay.colW - 2 : st.width) : /** @type {Geometry} */ (lay.last).rw; // wide: layApply above has set it
+    SW = stk ? (lay.colW ? lay.colW - 2 : st.width) : /** @type {Geometry} */ (lay.last).rw; // wide: the whole room
   const f = $("frame"); /* Vertical: the column's target width (it may be mid-glide), less the panel's 1 px borders */
   const pass = !stk && S.view === "gen" && lay.pass && lay.pass.pic ? lay.pass : null, // side by side: the pass's
     PH = pass && pass.pic ? pass.pic.h : picH(),
@@ -727,8 +694,7 @@ export function sizeFrame() {
   /* side by side at rest the picture's place across its area is the pass's: its strip on the outer side (C2a) — not a
      centring inside the geometry last applied, which may be held or stale (the picture slid onto the box, 2026-11-03) */
   if (pass && pass.pic) {
-    const g = /** @type {Geometry} */ (lay.last); // the area's place in the window: the columns as applied
-    left = pass.pic.x - (SPACE.area + g.mL + (tbLeft ? 0 : g.pw + pairGap()));
+    left = pass.pic.x - areaX(); // the area's px: the window's less the room's edge
     top = pass.pic.y - pass.roomTop; // held too: one source for the picture's place (B18: centred in the area while held)
   }
   Object.assign(f.dataset, { tw: w, th: h, tl: left + M, tt: top + M });
@@ -898,16 +864,16 @@ export function promptFollow(direct = false) {
     /* side by side, EVERY page: the box is glued one pair gap from its neighbour pane's plate as it is on screen this
        frame — a picture's or a panel's, at rest, held, in a tab switch, in a resize (C2b, B23: the model's "panes stick
        to each other with one gap; positions inside it are derived"). Whatever moves the plate moves the box in the same
-       frame: one clock. The column's own place is where the grid puts it in the still area — its layout box, without
-       ANY transform (getBoundingClientRect counted a running switch's offset too, and the glue cancelled it) */
+       frame: one clock. The box rests at the column's left edge (the column is the whole room, DD-2026-11-08-1): its
+       place there is its layout box, without ANY transform (getBoundingClientRect counted a running switch's offset
+       too, and the glue cancelled it); its width is --cw as written this frame */
     const p = glueRect(), // the plate as it is — or, in a layout switch, where it lands (plate.js)
       col = $("lcol"),
-      a = app.getBoundingClientRect(),
-      c = { left: a.left + col.offsetLeft, right: a.left + col.offsetLeft + col.offsetWidth, width: col.offsetWidth };
-    if (p.width > 0 && c.width > 0) {
-      const base = R ? c.left : c.right;
-      x = Math.round(R ? p.right + pairGap() - base : p.left - pairGap() - base);
-    } else x = hugX;
+      box = $("left"),
+      left = app.getBoundingClientRect().left + col.offsetLeft + box.offsetLeft,
+      w = box.offsetWidth;
+    if (p.width > 0 && w > 0) x = Math.round(R ? p.right + pairGap() - left : p.left - pairGap() - (left + w));
+    else x = hugX;
   }
   const b2 = document.body.classList;
   if (direct || b2.contains("laysnap") || b2.contains("liveresize") || b2.contains("laydrag")) {

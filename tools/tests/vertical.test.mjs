@@ -175,7 +175,7 @@ export async function tabsOnPicture(k, t) {
   });
   await k.ev(`(showView("queue"),1)`);
   await k.sleep(700);
-  const r = await R(k, "#right"),
+  const r = await R(k, "#rpanel"), // the panel's box (#right is the whole room: one coordinate space, DD-2026-11-08-1)
     tabs2 = await k.ev(
       `(()=>{const k=document.querySelector(".tabs").children,a=k[0].getBoundingClientRect(),b=k[k.length-1].getBoundingClientRect();return{l:a.left,r:b.right}})()`,
     );

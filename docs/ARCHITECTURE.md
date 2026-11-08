@@ -83,11 +83,14 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
   - **the single layout pass** (v0.7c C, `ux-review/16-layout-pass.md` in the design notes): `layoutmath.js`
     `layoutPass` computes every page's numbers side by side (a panel's width, height and place too) and — the picture's size (a scale of its largest), its
     place, the box's, the edit buttons' strip (`stripRoom`: its room kept on both sides of the centred pair). The
-    appliers write them in a STILL area on every page (the columns never hug the page: G6; a panel's box is placed in
+    appliers write them in ONE coordinate space: side by side the page area (`#right`) is the whole room and never
+    moves; the prompt column (`#lcol`) is a layer over the same room, taking the pointer only on its parts, and the box
+    in it has its own width (`--cw`, `layout.js` `boxWWrite`) — no grid columns (DEVLOG DD-2026-11-08-1; the
+    platforms' rule: what moves in a transition lives in one still space). A panel's box is placed in
     the area by `sizeFrame`, its handles by `around.js` `placeSideEdges`). **The box's place side by side has ONE rule:**
     `layout.js` `promptFollow` glues it one pair gap from the plate as it is on screen this frame — a picture's or a
     panel's, at rest, held, in a switch, in a resize — called by whatever moves the plate (`framebox.js` on a frame
-    write, `plate.js`'s follow loop every frame of a switch, the columns' glide); `slideCol` slides it only in Vertical.
+    write, `plate.js`'s follow loop every frame of a switch, the box's width on the rearrangement); `slideCol` slides it only in Vertical.
     Held or not: every side-by-side edge
     of a picture page (the box's outer edge, the shared edge, the picture's outer, top and bottom edges) goes through
     `layout.js` `passDragStart` / `passDragMove` / `passDragEnd` — the press freezes the sizes, the pointer is the
@@ -105,11 +108,11 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     partner meanwhile the plate where it lands (`plate.js` `glueRect`). No View Transitions (`docs/decisions/0014`)
   - **a rearrangement on the same page** (a Reset, a double-click, a panel's height, a ratio change, the room changing):
     `rearrange.js` is the ONE applier — each owner hands it its box's from → to in the same task (`framebox.js` the
-    frame, `layout.js` `layApply` the columns, `sizeFrame` a panel's box side by side); one plan
+    frame, `layout.js` `layApply` the box's width, `sizeFrame` a panel's box side by side); one plan
     (`layoutmath.js` `shapePlan`: what shrinks crops first, what grows reveals last, a pure move the switch's length)
-    and one start time; every frame the writes, then the plate and the glued box. Moves are planned in the window's
-    px and written back against the columns as they are (`layout.js` `areaX`). A tab switch keeps `plate.js`
-    `switchGlide` on the same steps. The box's name row, box and grip have no width transition (the column drives it);
+    and one start time; every frame the writes, then the plate and the glued box. The area's px are the window's less
+    one constant (`layout.js` `areaX`): nothing converts mid-motion. A tab switch keeps `plate.js`
+    `switchGlide` on the same steps. The box's name row, box and grip have no width transition (`--cw` drives it);
     the scrollbar's thumb shows only at rest (`editor.js`, `.settling`)
   - every edge's press → move → end: `edges.js` `gesture()` (it ends however the drag ends: button up, cancel, lost
     capture); which outlines show: `outlines.js`; the outline itself is part of its pane (`.plate::before`,

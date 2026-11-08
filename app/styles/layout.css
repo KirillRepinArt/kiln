@@ -1,6 +1,9 @@
 /* ======================= app layout =======================
-   Side by side: the prompt and the picture area are one centred pair (stage.js layGeo sets the widths and margins);
-   Vertical (.stacked): the picture on top, the prompt under it; .pright mirrors the pair. */
+   ONE coordinate space (v0.7c, DEVLOG DD-2026-11-08-1; the platforms' rule — UIKit's transition container, Flutter's
+   Overlay: what moves in a transition lives in one still space, never in a parent that moves too). Side by side the page
+   area (#right) is the whole room and never moves; the prompt column (#lcol) is a layer over the same room — the box in
+   it has its own width (--cw) and is glued one gap from the page's plate (layout.js promptFollow); the column takes the
+   pointer only on its parts. Vertical (.stacked): the picture on top, the prompt under it. */
 .app {
   position: relative;
   z-index: 1;
@@ -10,52 +13,22 @@
   margin: 0 auto;
   padding: var(--gap-area);
   align-items: stretch;
-  grid-template-columns: var(--mL, 1fr) var(--pw, 680px) var(--gap-area) var(--rw, 660px) var(--mR, 1fr);
-} /* no CSS transition: layout.js layApply glides the columns on the layout's clock (G12) */
-.app.pright {
-  grid-template-columns: var(--mL, 1fr) var(--rw, 660px) var(--gap-area) var(--pw, 680px) var(--mR, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 .app.stacked {
-  grid-template-columns: 1fr;
   grid-template-rows: minmax(0, 1fr) auto;
 }
 .app > .lcol,
 .app > .right {
   position: relative;
 }
-.app > .lcol {
-  grid-column: 2;
-}
-.app > .split {
-  grid-column: 3;
-}
-.app > .right {
-  grid-column: 4;
-}
-.app.pright > .lcol {
-  grid-column: 4;
-}
-.app.pright > .right {
-  grid-column: 2;
-}
-.app.stacked > * {
+.app > * {
   grid-column: 1/-1;
 }
-/* side by side everything sits in row 1: auto-placement can't go back left, so with the prompt on the right the
-   picture area would wrap onto a second row */
+/* side by side both layers fill the one cell: the page area under, the prompt column over it */
 .app:not(.stacked) > .lcol,
-.app:not(.stacked) > .split,
 .app:not(.stacked) > .right {
   grid-row: 1;
-}
-.split {
-  position: relative;
-  touch-action: none;
-  pointer-events: none;
-  cursor: default;
-} /* the gap between the panels (its edges are .pedge) */
-.app.stacked .split {
-  display: none;
 }
 .lcol {
   min-height: 0;
@@ -66,17 +39,19 @@
   height: var(--lch, 320px);
   margin-top: var(--space-2);
 }
-.app.stacked #lcol {
+#lcol {
   pointer-events: none;
 }
-.app.stacked #lcol > #left,
-.app.stacked #lcol > .chips,
-.app.stacked #lcol > .hsplit,
-.app.stacked #lcol > .pgrip {
+#lcol > #left,
+#lcol > .chips,
+#lcol > .hsplit,
+#lcol > .ltitle,
+#lcol > .pgrip {
   pointer-events: auto;
-} /* its empty parts let the pointer through to the picture's edges; only these parts take it — NAMED, not "every
-     child": the drag's snap ghosts (invisible once it ends, keeping their size) sat over the box's right edge after a
-     drag to the bottom dock and took its pointer (2026-11-01) */
+} /* its empty parts let the pointer through to the page under it (side by side the column is the whole room; in
+     Vertical the picture's edges); only these parts take it — NAMED, not "every child": the drag's snap ghosts
+     (invisible once it ends, keeping their size) sat over the box's right edge after a drag to the bottom dock and took
+     its pointer (2026-11-01) */
 .app.stacked #lcol > .ltitle {
   pointer-events: none;
 }

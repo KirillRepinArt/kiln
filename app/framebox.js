@@ -9,7 +9,7 @@ import { placeAround } from "./around.js";
 import { $ } from "./dom.js";
 import { bez } from "./layoutmath.js";
 import { plateSync } from "./plate.js";
-import { areaX, lay, promptFollow, stageRect } from "./layout.js";
+import { promptFollow, stageRect } from "./layout.js";
 import { moving, rearrange, stop } from "./rearrange.js";
 import { S } from "./state.js";
 
@@ -109,12 +109,9 @@ export function frameGoal(b) {
     write(b);
     return;
   }
-  /* on the rearrangement's plan and clock, with what else moves (T2a) — planned in the window's px (the area may move
-     with the box's column) and written back in the area's, against the columns as they are each frame */
-  const x0 = areaX(),
-    x1 = areaX(lay.last && { mL: lay.last.mL, pw: lay.last.pw, rw: lay.last.rw, mR: lay.last.mR }),
-    sx = (/** @type {Box} */ v, /** @type {number} */ d) => ({ ...v, l: v.l + d });
-  rearrange("frame", sx(cur, x0), sx(b, x1), w => write(sx(w, -areaX())));
+  /* on the rearrangement's plan and clock, with what else moves (T2a) — in the area's px, which never move
+     (DD-2026-11-08-1: it used to convert through the window's while the area moved with the box's column) */
+  rearrange("frame", cur, b, write);
 }
 /** a crop-and-reveal: `step` gives the box every frame until it returns null; then the frame is at its goal
  * @param {Drive} step */

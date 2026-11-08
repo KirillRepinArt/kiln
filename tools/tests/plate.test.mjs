@@ -804,42 +804,102 @@ export async function panelContentsRide(k, t) {
 }
 panelContentsRide.opts = { width: 1760, height: 1080, step: 0.05 };
 
-/* a leaving box shows its START values (DEVLOG DD-2026-11-08-4; the user, 2026-11-08: "the prompt box first gets the
-   final shape while in the original place, then fades and reappears"): in a layout switch it fades out as it was — its
-   old width and height — and comes in at its new ones; no frame shows the new shape at the old place */
+/* a layout switch (Q-T1, DEVLOG DD-2026-11-08-4/5): the prompt box you SEE never changes place or shape while it's seen —
+   it fades out exactly as it was and in exactly where it lands. Measured on what's on screen (the stand-in while it's
+   there, else the box), every frame: through the Layout menu with a prompt that wraps differently at the two widths (the
+   layout measured the old shape mid-switch and the page moved under the box: 18 px), and through a drag to the bottom
+   dock (the release started the switch while the press still held the box's glue: 56 px) */
 export async function boxLeavesAsItWas(k, t) {
-  await k.job("[fill:446688] a", { ar: "3:4", steps: 2 });
+  await k.job(
+    "[fill:446688] birds eye view. epic cinematic shot of a castle, nighttime, cinematic light, fog, mist, atmosphere, lights, spooky, moon, birds eye view of a castle on a hill above a lake with boats",
+    { ar: "3:4", steps: 2 },
+  );
   await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
-  for (const [from, to] of [
-    ["left", "below"],
-    ["below", "right"],
-  ]) {
-    await k.ev(`(setDock("${from}"),1)`);
-    await k.mouse(4, 4);
-    await k.sleep(1600);
-    const rows = await k.ev(`new Promise(res=>{const L0=$("left").getBoundingClientRect(),
-        out=[[1,Math.round(L0.width),Math.round(L0.height)]],t0=performance.now();setDock("${to}"); // the first row: before
-      (function f(){setTimeout(()=>{const L=$("left").getBoundingClientRect();
-        out.push([+getComputedStyle($("lcol")).opacity,Math.round(L.width),Math.round(L.height)]);
-        if(performance.now()-t0<1000)requestAnimationFrame(f);else res(out)},0)})()})`);
-    const tag = `${from} → ${to}`,
-      [a, z] = [rows[0], rows.at(-1)],
+  const REC = `(()=>{window.__rec=[];const t0=performance.now(),R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]},
+    V=()=>{const s=document.querySelector(".standin"),so=s?+getComputedStyle(s).opacity:0,sl=s&&s.querySelector(".left");
+      return sl&&so>0.05?[so,...R(sl)]:[+getComputedStyle($("lcol")).opacity,...R($("left"))]},
+    /* what's seen of the box's parts: every visible element's place and size, in order */
+    seen=parts=>parts.flatMap(p=>[p,...p.querySelectorAll("*")]).filter(e=>{const r=e.getBoundingClientRect(),c=getComputedStyle(e);
+      return r.width>0&&r.height>0&&c.visibility!=="hidden"&&!e.closest(HANDLES)}).map(e=>[e.tagName,...R(e)]);
+    window.__seen0=seen([$("ltitle"),$("left"),$("chips")]);window.__seen1=null;
+    (function f(){const s=document.querySelector(".standin");if(s&&!__seen1)__seen1=seen([...s.children]);
+      __rec.push(V());if(performance.now()-t0<1600)requestAnimationFrame(f)})();return 1})()`;
+  /* the stand-in LOOKS like the box: every visible element of it, at its place and size (the copy has no ids — a look
+     tied to an id was lost: the hidden textarea showed under the editor, the user 2026-11-08) */
+  const looksAlike = async tag => {
+    const [a, b] = [await k.ev(`__seen0`), await k.ev(`__seen1`)];
+    if (!b) return; // no stand-in (the old code): nothing to compare
+    const diff =
+      a.length !== b.length
+        ? [a.length, b.length]
+        : a.map((e, i) => [e, b[i]]).filter(([e, f]) => e.some((v, j) => (j ? Math.abs(v - f[j]) > 1 : v !== f[j])));
+    t.ok(!diff.length, `${tag}: the stand-in looks exactly like the box`, { diff: diff.slice(0, 4) });
+  };
+  const check = (tag, rows) => {
+    const [a, z] = [rows[0], rows.at(-1)],
       turn = rows.findIndex(r => r[0] <= 0.05),
-      before = rows.slice(0, turn < 0 ? rows.length : turn).filter(r => r[0] > 0.05),
+      same = (r, b) => [1, 2, 3, 4].every(i => Math.abs(r[i] - b[i]) <= 1),
+      before = rows.slice(0, turn < 0 ? rows.length : turn),
       after = turn < 0 ? [] : rows.slice(turn).filter(r => r[0] > 0.05),
-      sameAs = (r, b) => Math.abs(r[1] - b[1]) <= 1 && Math.abs(r[2] - b[2]) <= 1,
-      wrongOut = before.filter(r => !sameAs(r, a)),
-      wrongIn = after.filter(r => !sameAs(r, z));
-    t.ok(Math.abs(a[1] - z[1]) > 20 || Math.abs(a[2] - z[2]) > 20, `${tag}: the box changes shape (the case)`, {
-      a,
-      z,
-    });
-    t.ok(turn > 0 && !wrongOut.length, `${tag}: it fades out at its old shape`, {
+      wrongOut = before.filter(r => !same(r, a)),
+      wrongIn = after.filter(r => !same(r, z));
+    t.ok(!same(a, z), `${tag}: the box changes place (the case)`, { a, z });
+    t.ok(turn > 0 && !wrongOut.length, `${tag}: it fades out exactly as it was`, {
       turn,
       wrongOut: wrongOut.slice(0, 3),
       a,
     });
-    t.ok(!wrongIn.length, `${tag}: …and in at its new one`, { wrongIn: wrongIn.slice(0, 3), z });
+    t.ok(!wrongIn.length, `${tag}: …and in exactly where it lands`, { wrongIn: wrongIn.slice(0, 3), z });
+  };
+  const click = async (x, y) => {
+    await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+    await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+    await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
+  };
+  for (const [from, to] of [
+    ["left", "below"],
+    ["below", "left"],
+    ["left", "right"],
+    ["right", "below"],
+  ]) {
+    await k.ev(`(setDock("${from}"),1)`);
+    await k.mouse(4, 4);
+    await k.sleep(1600);
+    await k.ev(`($("layBtn").click(),1)`);
+    await k.sleep(300);
+    const o = await k.rect(`#layMenu [data-lay="${to}"]`);
+    await k.ev(REC);
+    await click(o.left + o.width / 2, o.top + o.height / 2);
+    await k.sleep(1700);
+    check(`the Layout menu, ${from} → ${to}`, await k.ev(`__rec`));
+    await looksAlike(`the Layout menu, ${from} → ${to}`);
   }
+  /* dragged by its name row from beside the picture to the bottom dock */
+  await k.ev(`(setDock("left"),1)`);
+  await k.mouse(4, 4);
+  await k.sleep(1600);
+  const n = await k.rect("#ltitle"),
+    [x, y] = [n.left + 20, n.top + n.height / 2],
+    [X, Y] = [700, 880];
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+  await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+  for (let i = 1; i <= 10; i++)
+    await k.send("Input.dispatchMouseEvent", {
+      type: "mouseMoved",
+      x: x + ((X - x) * i) / 10,
+      y: y + ((Y - y) * i) / 10,
+      button: "left",
+      buttons: 1,
+    });
+  t.ok(
+    (await k.ev(`(document.querySelector(".dockzone.near")||{dataset:{}}).dataset.z`)) === "below",
+    "the drag is over the bottom dock",
+  );
+  await k.sleep(100);
+  await k.ev(REC);
+  await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: X, y: Y, button: "left", clickCount: 1 });
+  await k.sleep(1700);
+  check("dragged to the bottom dock", await k.ev(`__rec`));
+  await looksAlike("dragged to the bottom dock");
 }
-boxLeavesAsItWas.opts = { width: 1760, height: 1080, step: 0.05 };
+boxLeavesAsItWas.opts = { width: 1400, height: 900, step: 0.05 };

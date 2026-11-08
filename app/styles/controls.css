@@ -79,7 +79,7 @@
 .left.peeking .pill .il {
   color: var(--grey-53);
 }
-.left.peeking #pN {
+.left.peeking .pn {
   display: none;
 }
 /* Start: the theme gradient with a dark triangle; nothing to queue — plain, a grey triangle; while a job runs — plain,

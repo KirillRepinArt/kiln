@@ -779,67 +779,99 @@ function colApply() {
   if (k > 0 || hugT0) colRaf = requestAnimationFrame(colApply);
   if (k <= 0) slT0 = 0;
 }
-/** the box's START VALUES (its top, height, chips row, grip and width as written now): a layout switch captures them
- * before it changes anything, and the box fades out showing them (DEVLOG DD-2026-11-08-4 — the platforms' rule for a
- * leaving element: Android's captureStartValues, UIKit's snapshot "afterScreenUpdates: false", SwiftUI's removed view
- * keeping its last state; held as values, not a snapshot: decision 0014) */
-export function boxStart() {
-  const c = $("lcol").style,
-    w = $("left").offsetWidth + "px",
-    /** @type {Record<string, string>} */
-    v = { "--cw": w, "--sw": w };
-  for (const k of ["--ltop", "--lh", "--chtop", "--chh", "--gtop-v"]) {
-    const x = c.getPropertyValue(k);
-    if (x) v[k] = x;
+/** the box's STAND-IN for a layout switch (DEVLOG DD-2026-11-08-5): a copy of what's on screen now — the name row, the
+ * box, the LoRA chips — at their place and size, in a layer of its own over the page. The box itself is laid out where
+ * it lands from the first frame, so everything that measures it measures the truth; what's seen leaving is the copy,
+ * which nothing reads or writes. The platforms' rule for a leaving element: Android fades it in the ViewGroupOverlay
+ * (out of the layout), UIKit fades a snapshotView(afterScreenUpdates: false). A copy of the elements, not a picture of
+ * them: the glass's blur stays live (decision 0014). (Its old values held ON the box — DD-4 — had the layout measure
+ * the old shape mid-switch: the page moved under the box while it was seen, the user 2026-11-08.) Made before the
+ * change; fadeCol fades it out and removes it @returns {HTMLElement} */
+export function standIn() {
+  stand?.remove();
+  const col = $("lcol"),
+    layer = document.createElement("div");
+  layer.className = "lcol standin"; // .lcol: the parts' own rules (chips.css) hold for the copy too
+  layer.inert = true;
+  layer.setAttribute("aria-hidden", "true");
+  layer.style.opacity = getComputedStyle(col).opacity; // as seen: mid-fade too
+  /** @type {[Element, Element][]} */
+  const pairs = [];
+  for (const part of [$("ltitle"), $("left"), $("chips")]) {
+    const r = part.getBoundingClientRect();
+    if (!r.width || !r.height) continue;
+    const c = /** @type {HTMLElement} */ (part.cloneNode(true));
+    Object.assign(c.style, {
+      position: "absolute",
+      left: r.left + "px",
+      top: r.top + "px",
+      width: r.width + "px",
+      height: r.height + "px",
+      right: "auto",
+      bottom: "auto",
+      margin: "0",
+      transform: "none",
+      transition: "none",
+      boxSizing: "border-box",
+    });
+    c.querySelectorAll(HANDLES).forEach(h => h.remove()); // what's seen only: the edges' handles are a gesture's, never seen
+    const cs = c.querySelectorAll("*");
+    pairs.push([part, c]);
+    [...part.querySelectorAll("*")].filter(e => !e.closest(HANDLES)).forEach((e, i) => pairs.push([e, cs[i]]));
+    layer.append(c);
   }
-  return v;
+  document.body.append(layer);
+  /* what cloning leaves out: ids (one of each in the page), scroll offsets and typed values */
+  for (const [o, c] of pairs) {
+    c.removeAttribute("id");
+    if (o.scrollTop || o.scrollLeft) {
+      c.scrollTop = o.scrollTop;
+      c.scrollLeft = o.scrollLeft;
+    }
+    if (o instanceof HTMLInputElement || o instanceof HTMLTextAreaElement || o instanceof HTMLSelectElement)
+      /** @type {HTMLInputElement} */ (c).value = o.value;
+  }
+  stand = layer;
+  return layer;
 }
+/** @type {HTMLElement | null} the stand-in on screen now */
+let stand = null;
 /** a layout switch (T2b): the prompt box FADES THROUGH — its path would cross the picture's (Q-T1, Material's
- * fade-through; the picture is what travels). Out where it was, by the swap (shown there by a FLIP offset added on top
- * of its glued place, which is already where it lands: plate.js glueRect), in where it lands; on the switch's clock and
- * fades (one start, layoutmath.js fades). Animations of its own, ended by the next switch
- * @param {DOMRect} was the box on screen before @param {Record<string, string>} start its start values (boxStart)
- * @param {{ t0: number, T: number, fd: { out: { delay: number,
+ * fade-through; the picture is what travels). Its stand-in fades out where it was, the box in where it lands — on the
+ * switch's clock and fades (one start, layoutmath.js fades). Animations of its own, ended by the next switch
+ * @param {HTMLElement} out the stand-in (standIn) @param {{ t0: number, T: number, fd: { out: { delay: number,
  * duration: number }, in: { delay: number, duration: number } } }} sw the switch */
-export function fadeCol(was, start, sw) {
+export function fadeCol(out, sw) {
   for (const a of colFades) a.cancel();
   promptFollow(true); // glued to where the plate lands (the layout is settled: tabs.js tabGo)
-  /* until its turn it shows its START VALUES (its old shape), layered over the new ones the layout already has: the
-     leaving box never takes the new shape while it's seen (it did: the user, 2026-11-08 — "first gets the final shape
-     in the original place, then fades") */
-  const hold = $("lcol").animate([start, start], { duration: 1, fill: "backwards" });
-  /* the offset is the BOX's (its place inside the column changes too: side by side by its anchor, in Vertical at the
-     column's top), applied to the column so its name row and chips go with it */
-  const col = $("lcol"),
-    r = $("left").getBoundingClientRect(), // as the hold shows it: its old shape, glued where it lands
-    dx = Math.round(was.left - r.left),
-    dy = Math.round(was.top - r.top),
-    /* through, not across, on the ONE schedule (layoutmath.js fadeThrough): out, gone two
-       frames while it changes place, in */
-    ft = fadeThrough(sw.fd),
+  /* through, not across, on the ONE schedule (layoutmath.js fadeThrough): out, gone two frames, in */
+  const ft = fadeThrough(sw.fd),
     T = Math.max(sw.T, ft.inEnd),
-    k = (/** @type {number} */ ms) => Math.min(1, Math.max(0, ms / T));
-  hold.effect?.updateTiming({ duration: Math.max(1, ft.turn) }); // it changes shape at the turn, while gone
-  colFades = [
-    hold,
-    col.animate(
+    k = (/** @type {number} */ ms) => Math.min(1, Math.max(0, ms / T)),
+    o = parseFloat(out.style.opacity) || 1,
+    gone = out.animate(
       [
-        { opacity: 1, offset: 0 },
-        { opacity: 1, offset: k(ft.outStart) },
+        { opacity: o, offset: 0 },
+        { opacity: o, offset: k(ft.outStart) },
         { opacity: 0, offset: k(ft.outEnd) },
+        { opacity: 0, offset: 1 },
+      ],
+      { duration: T, fill: "forwards" },
+    );
+  gone.finished.then(
+    () => out.remove(),
+    () => out.remove(),
+  );
+  colFades = [
+    gone,
+    $("lcol").animate(
+      [
+        { opacity: 0, offset: 0 },
         { opacity: 0, offset: k(ft.inStart) },
         { opacity: 1, offset: k(ft.inEnd) },
         { opacity: 1, offset: 1 },
       ],
       { duration: T, fill: "backwards" },
-    ),
-    /* where it was, until it has faded out: added to its glued transform */
-    col.animate(
-      [
-        { transform: `translate(${dx}px, ${dy}px)`, composite: "add" },
-        { transform: `translate(${dx}px, ${dy}px)`, composite: "add" },
-      ],
-      { duration: Math.max(1, ft.turn), fill: "backwards" }, // it changes place at the turn, while gone
     ),
   ];
   for (const a of colFades) a.startTime = sw.t0;
@@ -893,9 +925,7 @@ export function promptFollow(direct = false) {
       col = $("lcol"),
       box = $("left"),
       left = app.getBoundingClientRect().left + col.offsetLeft + box.offsetLeft,
-      /* its width from its owner (boxWWrite), not measured: a layout switch shows the box's old width while it fades
-         out (fadeCol's hold) — the glue is where it lands */
-      w = lay.shown ? lay.shown.pw : box.offsetWidth;
+      w = lay.shown ? lay.shown.pw : box.offsetWidth; // its width from its owner (boxWWrite), as written this frame
     if (p.width > 0 && w > 0) x = Math.round(R ? p.right + pairGap() - left : p.left - pairGap() - (left + w));
     else x = hugX;
   }
@@ -945,11 +975,17 @@ export function initLayout() {
   $("lcol").addEventListener("pointerdown", e => {
     if (!(e.target instanceof Element && e.target.closest(HANDLES))) lay.pressCard = true; // a handle is resizing
   });
-  /* letting go anywhere (a menu choice, a click, an edge) lets the layout catch up at once */
-  addEventListener("pointerup", () => {
-    lay.pressCard = false;
-    setTimeout(sizeFrame, 0);
-  });
+  /* letting go anywhere (a menu choice, a click, an edge) lets the layout catch up at once — and it ends the press
+     BEFORE anything acts on the release (the capture phase): a drag to a dock started its layout switch while the
+     press still held the box's glue, and the box jumped by the old glue while it was seen (the user, 2026-11-08) */
+  addEventListener(
+    "pointerup",
+    () => {
+      lay.pressCard = false;
+      setTimeout(sizeFrame, 0);
+    },
+    true,
+  );
   addEventListener("click", () => setTimeout(sizeFrame, 0));
   window.addEventListener("resize", () => {
     document.body.classList.add("liveresize");

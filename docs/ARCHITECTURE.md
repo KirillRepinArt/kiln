@@ -105,8 +105,8 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     picture and the plate rides it; on a panel `plate.js` `switchGlide` moves the plate by the steps and the view's
     contents RIDE it — laid out at their final place and size, kept on the plate's centre, clipped by it (a pure move
     travels, a size change crops and reveals: the picture's rule). Contents fade only when they are other contents (a
-    tab switch). The prompt box alone fades through, out as it was — its start values captured before the change (`layout.js` `boxStart`) and held until the fade's turn (the platforms' captured start values, without a snapshot) — (its path would cross the page's: `layoutmath.js` `fadeThrough`,
-    `layout.js` `fadeCol`), its partner meanwhile the plate where it lands (`plate.js` `glueRect`). No View
+    tab switch). The prompt box alone fades through (its path would cross the page's: `layoutmath.js` `fadeThrough`,
+    `layout.js` `fadeCol`), its partner meanwhile the plate where it lands (`plate.js` `glueRect`). What fades out is its STAND-IN (`layout.js` `standIn`: a copy of the name row, the box and the chips where they were, made before the change, in a layer over the page; nothing reads or writes it), while the box itself is laid out where it lands from the first frame — so everything that measures the box measures the truth (Android's overlay for a leaving view, UIKit's snapshotView; a copy of the elements, not a picture, so the glass stays live). Letting go ends a press before anything acts on the release (`layout.js`: the pointerup's capture phase). No View
     Transitions (`docs/decisions/0014`)
   - **a rearrangement on the same page** (a Reset, a double-click, a panel's height, a ratio change, the room changing):
     `rearrange.js` is the ONE applier — each owner hands it its box's from → to in the same task (`framebox.js` the

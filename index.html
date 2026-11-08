@@ -87,7 +87,12 @@
             ><button class="pclear" id="pclear" title="Clear the prompt — Undo (or Ctrl+Z) brings it back"
               ><svg viewBox="4.8 4.8 14.4 14.4" stroke="currentColor" stroke-width="2.4" fill="none">
                 <path d="M6 6l12 12M18 6L6 18" /></svg></button
-            ><textarea id="prompt" spellcheck="true" placeholder="Describe what you want to see…"></textarea>
+            ><textarea
+              class="ptext"
+              id="prompt"
+              spellcheck="true"
+              placeholder="Describe what you want to see…"
+            ></textarea>
           </div>
           <div class="controls">
             <button class="play" id="play" title="Add to queue (Ctrl+Enter)">
@@ -145,7 +150,7 @@
                 ><span class="val"><span class="il">Seed</span><span id="vSD"></span></span
                 ><div class="pop" id="popSD" style="min-width: 240px"></div
               ></button>
-              <button class="pill" id="pN"
+              <button class="pill pn" id="pN"
                 ><span class="val" id="vN"></span><div class="pop" id="popN" style="min-width: 260px"></div
               ></button>
             </div>

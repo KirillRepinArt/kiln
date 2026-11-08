@@ -28,6 +28,7 @@ import {
 import { api, st } from "./live.js";
 import { checkStyles } from "./livestyles.js";
 import { renderLoras } from "./loras.js";
+import { HANDLES } from "./outlines.js";
 import { editFirst, endPeek, fnLayout, loadJob, peekHide, reuse, updPrompt } from "./peek.js";
 import { PV, browsed, justDone, pvSync, setJustDone } from "./picstate.js";
 import { __imgsN, img, missing } from "./pictures.js";
@@ -69,6 +70,7 @@ export function installTestBridge() {
     endPeek: { get: () => endPeek },
     fnLayout: { get: () => fnLayout },
     frame: { get: () => frame },
+    HANDLES: { get: () => HANDLES },
     frameBox: { get: () => frameBox },
     genNav: { get: () => genNav },
     img: { get: () => img },

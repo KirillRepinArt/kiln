@@ -5,7 +5,7 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-#lcol > .chips {
+.lcol > .chips {
   position: absolute;
   cursor: grab; /* its empty part is the prompt group's grip too (L3); a chip keeps its own */
   left: 0;
@@ -16,16 +16,16 @@
   padding: 0 var(--space-4);
   transition: transform var(--lay-t) var(--lay-e); /* its top and width: the box's, every frame (T2) */
 }
-#lcol > .chips:empty {
+.lcol > .chips:empty {
   display: none;
 }
-.app.stacked #lcol > .chips {
+.app.stacked .lcol > .chips {
   left: 50%;
   width: min(100%, var(--sw, 760px));
   transform: translateX(-50%); /* centred: its sides move about its centre */
 }
-body.liveresize #lcol > .chips,
-body.cardmove #lcol > .chips {
+body.liveresize .lcol > .chips,
+body.cardmove .lcol > .chips {
   transition: none;
 }
 .chip {

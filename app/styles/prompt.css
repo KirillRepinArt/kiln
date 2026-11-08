@@ -312,7 +312,9 @@
   overflow: hidden;
   cursor: text;
 }
-textarea#prompt {
+/* by class, not id: ids are for code; the look must hold for a copy too (a layout switch's stand-in, layout.js
+   standIn — the copy has no ids, and showed the hidden textarea under the editor: the user, 2026-11-08) */
+.ptext {
   field-sizing: content;
   flex: 1 1 auto;
   min-height: 200px;
@@ -325,10 +327,10 @@ textarea#prompt {
   line-height: 1.62;
   overflow: auto;
 }
-textarea#prompt.peek {
+.ptext.peek {
   color: var(--grey-79);
 }
-.pwrapT.cm-on textarea#prompt {
+.pwrapT.cm-on .ptext {
   display: none;
 }
 /* CodeMirror (editor.js) — these sit beside CodeMirror's own injected styles, so they keep their specificity */

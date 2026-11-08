@@ -718,7 +718,7 @@ export function sizeFrame() {
      frame it moves (around.js — one owner: the frame) */
   placeAround();
   promptFollow(); // its other input: the room (lay.vroom / lay.vrow) — the frame's writes call it on every box change
-  requestAnimationFrame(layoutLeft);
+  layoutLeft(); // the box, in the same task as the picture it's anchored to: one rearrangement, one plan (T2)
   plateFollow(); // the live plate keeps to the frame / the panel through the glide
 }
 /* Vertical: the prompt-slot line, just above the title, clear of the picture's bottom edge. The prompt column itself
@@ -779,19 +779,39 @@ function colApply() {
   if (k > 0 || hugT0) colRaf = requestAnimationFrame(colApply);
   if (k <= 0) slT0 = 0;
 }
+/** the box's START VALUES (its top, height, chips row, grip and width as written now): a layout switch captures them
+ * before it changes anything, and the box fades out showing them (DEVLOG DD-2026-11-08-4 — the platforms' rule for a
+ * leaving element: Android's captureStartValues, UIKit's snapshot "afterScreenUpdates: false", SwiftUI's removed view
+ * keeping its last state; held as values, not a snapshot: decision 0014) */
+export function boxStart() {
+  const c = $("lcol").style,
+    w = $("left").offsetWidth + "px",
+    /** @type {Record<string, string>} */
+    v = { "--cw": w, "--sw": w };
+  for (const k of ["--ltop", "--lh", "--chtop", "--chh", "--gtop-v"]) {
+    const x = c.getPropertyValue(k);
+    if (x) v[k] = x;
+  }
+  return v;
+}
 /** a layout switch (T2b): the prompt box FADES THROUGH — its path would cross the picture's (Q-T1, Material's
  * fade-through; the picture is what travels). Out where it was, by the swap (shown there by a FLIP offset added on top
  * of its glued place, which is already where it lands: plate.js glueRect), in where it lands; on the switch's clock and
  * fades (one start, layoutmath.js fades). Animations of its own, ended by the next switch
- * @param {DOMRect} was the box on screen before @param {{ t0: number, T: number, fd: { out: { delay: number,
+ * @param {DOMRect} was the box on screen before @param {Record<string, string>} start its start values (boxStart)
+ * @param {{ t0: number, T: number, fd: { out: { delay: number,
  * duration: number }, in: { delay: number, duration: number } } }} sw the switch */
-export function fadeCol(was, sw) {
+export function fadeCol(was, start, sw) {
   for (const a of colFades) a.cancel();
   promptFollow(true); // glued to where the plate lands (the layout is settled: tabs.js tabGo)
+  /* until its turn it shows its START VALUES (its old shape), layered over the new ones the layout already has: the
+     leaving box never takes the new shape while it's seen (it did: the user, 2026-11-08 — "first gets the final shape
+     in the original place, then fades") */
+  const hold = $("lcol").animate([start, start], { duration: 1, fill: "backwards" });
   /* the offset is the BOX's (its place inside the column changes too: side by side by its anchor, in Vertical at the
      column's top), applied to the column so its name row and chips go with it */
   const col = $("lcol"),
-    r = $("left").getBoundingClientRect(),
+    r = $("left").getBoundingClientRect(), // as the hold shows it: its old shape, glued where it lands
     dx = Math.round(was.left - r.left),
     dy = Math.round(was.top - r.top),
     /* through, not across, on the ONE schedule (layoutmath.js fadeThrough): out, gone two
@@ -799,7 +819,9 @@ export function fadeCol(was, sw) {
     ft = fadeThrough(sw.fd),
     T = Math.max(sw.T, ft.inEnd),
     k = (/** @type {number} */ ms) => Math.min(1, Math.max(0, ms / T));
+  hold.effect?.updateTiming({ duration: Math.max(1, ft.turn) }); // it changes shape at the turn, while gone
   colFades = [
+    hold,
     col.animate(
       [
         { opacity: 1, offset: 0 },
@@ -871,7 +893,9 @@ export function promptFollow(direct = false) {
       col = $("lcol"),
       box = $("left"),
       left = app.getBoundingClientRect().left + col.offsetLeft + box.offsetLeft,
-      w = box.offsetWidth;
+      /* its width from its owner (boxWWrite), not measured: a layout switch shows the box's old width while it fades
+         out (fadeCol's hold) — the glue is where it lands */
+      w = lay.shown ? lay.shown.pw : box.offsetWidth;
     if (p.width > 0 && w > 0) x = Math.round(R ? p.right + pairGap() - left : p.left - pairGap() - (left + w));
     else x = hugX;
   }

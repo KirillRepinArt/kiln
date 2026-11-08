@@ -15,9 +15,10 @@ import { promptFollow } from "./layout.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number }} Box */
 /** @typedef {(b: Box) => void} Write */
-/** @typedef {{ from: Box, to: Box, cur: Box, write: Write, off?: boolean }} Move off: taken over by another motion */
+/** @typedef {{ from: Box, to: Box, cur: Box, write: Write, off?: boolean, with?: string }} Move off: taken over by
+ * another motion; with: a dependent's source — it moves on its source's progress (the box anchored to the picture) */
 
-/** @type {Map<string, { from: Box, to: Box, write: Write }>} asked for in this task */
+/** @type {Map<string, { from: Box, to: Box, write: Write, with?: string }>} asked for in this task */
 const asked = new Map();
 /** @type {Map<HTMLElement, boolean>} contents that don't travel, fading in (true) or out in this task */
 const fading = new Map();
@@ -28,18 +29,56 @@ let raf = 0,
 
 /** `key`'s box moves from `from` (where it is now) to `to` in the coming rearrangement; written at once when the layout
  * jumps on purpose (snaps: a switch, a drag, a live resize, reduced motion) @param {string} key @param {Box} from
- * @param {Box} to @param {Write} write */
-export function rearrange(key, from, to, write) {
+ * @param {Box} to @param {Write} write @param {string} [source] a dependent: it moves on this box's progress when that
+ * moves too (the prompt box anchored to the picture keeps its anchor every frame; on the plan's own curve for a box
+ * that only moves, it fell behind a picture that grows) */
+export function rearrange(key, from, to, write, source) {
   if (snaps() || same(from, to)) {
     stop(key);
     write(to);
     return;
   }
-  asked.set(key, { from, to, write });
+  if (retarget(key, to, write)) return;
+  asked.set(key, { from, to, write, with: source });
   if (!queued) {
     queued = true;
     queueMicrotask(start);
   }
+}
+/** a new goal for a box ALREADY MOVING bends its remaining path, on the same plan and clock: from where it is at this
+ * moment's progress to the new goal (the start is solved so the plan's curve passes through both — no jump). Nothing
+ * else restarts. A new plan for every ask restarted everything still moving, and a box growing waits for the plan's
+ * reveal: the prompt box's height follows its text, which rewraps while its width moves, so it asked a slightly new goal
+ * every few frames and the picture never landed (2026-11-08; the platforms retarget the same way — UIKit's
+ * beginFromCurrentState, a CSS transition given a new value). false: not moving, or an axis that has finished would
+ * have to move again — the ask starts a new plan from where everything is
+ * @param {string} key @param {Box} to @param {Write} write */
+function retarget(key, to, write) {
+  if (!run) return false;
+  const i = run.moves.findIndex(([k, m]) => k === key && !m.off);
+  if (i < 0) return false;
+  const m = run.moves[i][1],
+    index = new Map(run.moves.map(([k], j) => [k, j])),
+    src = m.with != null ? index.get(m.with) : undefined,
+    e = performance.now() - run.t0;
+  if (e >= run.T) return false;
+  const q = run.q(src ?? i, e),
+    at = shapeBox(m.from, m.to, q),
+    from = { ...m.from };
+  for (const [k, ax] of /** @type {const} */ ([
+    ["l", 0],
+    ["w", 0],
+    ["t", 1],
+    ["h", 1],
+  ])) {
+    if (Math.abs(to[k] - m.to[k]) < 0.5) continue;
+    if (q[ax] >= 0.999) return false;
+    from[k] = (at[k] - to[k] * q[ax]) / (1 - q[ax]); // the plan's line through where it is now and the new goal
+  }
+  m.from = from;
+  m.to = to;
+  m.write = write;
+  return true;
 }
 /** `el` (contents that don't travel: the status row) comes or goes in the coming rearrangement — on its plan's fades
  * (layoutmath.js fades: what leaves ends at the swap, what comes starts at it), from its start time: the row used to fade
@@ -108,9 +147,11 @@ function tick(now) {
   if (!run) return;
   const e = now - run.t0,
     end = e >= run.T;
+  const index = new Map(run.moves.map(([k], i) => [k, i]));
   run.moves.forEach(([, m], i) => {
     if (m.off) return;
-    const b = end ? m.to : shapeBox(m.from, m.to, run ? run.q(i, e) : [1, 1]);
+    const src = m.with != null ? index.get(m.with) : undefined, // a dependent: its source's progress
+      b = end ? m.to : shapeBox(m.from, m.to, run ? run.q(src ?? i, e) : [1, 1]);
     m.cur = b;
     m.write(b);
   });

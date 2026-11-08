@@ -14,10 +14,7 @@
   justify-content: flex-start;
   align-items: center;
   padding: 0 var(--space-4);
-  transition:
-    top var(--lay-t) var(--lay-e),
-    width var(--lay-t) var(--lay-e),
-    transform var(--lay-t) var(--lay-e);
+  transition: transform var(--lay-t) var(--lay-e); /* its top and width: the box's, every frame (T2) */
 }
 #lcol > .chips:empty {
   display: none;

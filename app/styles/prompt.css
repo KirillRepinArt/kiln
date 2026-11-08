@@ -2,8 +2,9 @@
    The title over the box (theme title font), the file name round it on hover, the Reuse bar when you look at an old
    picture. layoutLeft() sets --ltop / --ts / --lh / --chtop. */
 /* the name row, the box and the grip zone take the box's width (--cw) and rest at the column's left edge — side by side
-   the column is the whole room and the glue (layout.js promptFollow) moves them to the plate. No width transition of
-   their own: --cw is written every frame of a rearrangement (layout.js boxWWrite, rearrange.js: one clock, T2a) */
+   the column is the whole room and the glue (layout.js promptFollow) moves them to the plate. Their top / height are
+   the box's (--ltop / --lh). No transitions of their own: both are written every frame of a rearrangement (layout.js
+   boxWWrite, cardlayout.js boxWrite, rearrange.js: one clock, T2) */
 .ltitle {
   position: absolute;
   left: 0;
@@ -16,10 +17,7 @@
   justify-content: flex-end;
   align-items: center;
   container-type: inline-size;
-  transition:
-    top var(--lay-t) var(--lay-e),
-    height var(--lay-t) var(--lay-e),
-    transform var(--lay-t) var(--lay-e);
+  transition: transform var(--lay-t) var(--lay-e);
 }
 .phead {
   display: flex;
@@ -264,10 +262,7 @@
   border: 1px solid var(--grey-33);
   border-radius: var(--r-panel);
   container-type: inline-size;
-  transition:
-    top var(--lay-t) var(--lay-e),
-    height var(--lay-t) var(--lay-e),
-    transform var(--lay-t) var(--lay-e);
+  transition: transform var(--lay-t) var(--lay-e);
 }
 .left.nodur,
 .ltitle.nodur {
@@ -291,9 +286,6 @@
   top: calc(var(--ltop, 0px) - var(--ts, var(--space-16)) + var(--space-1));
   height: calc(var(--chtop, 0px) + var(--chh, 0px) - var(--ltop, 0px) + var(--ts, var(--space-16)) - var(--space-1));
   cursor: grab;
-  transition:
-    top var(--lay-t) var(--lay-e),
-    height var(--lay-t) var(--lay-e);
 }
 .app.stacked .pgrip {
   left: 50%;

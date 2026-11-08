@@ -105,7 +105,7 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     picture and the plate rides it; on a panel `plate.js` `switchGlide` moves the plate by the steps and the view's
     contents RIDE it — laid out at their final place and size, kept on the plate's centre, clipped by it (a pure move
     travels, a size change crops and reveals: the picture's rule). Contents fade only when they are other contents (a
-    tab switch). The prompt box alone fades through (its path would cross the page's: `layoutmath.js` `fadeThrough`,
+    tab switch). The prompt box alone fades through, out as it was — its start values captured before the change (`layout.js` `boxStart`) and held until the fade's turn (the platforms' captured start values, without a snapshot) — (its path would cross the page's: `layoutmath.js` `fadeThrough`,
     `layout.js` `fadeCol`), its partner meanwhile the plate where it lands (`plate.js` `glueRect`). No View
     Transitions (`docs/decisions/0014`)
   - **a rearrangement on the same page** (a Reset, a double-click, a panel's height, a ratio change, the room changing):
@@ -115,7 +115,12 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     and one start time; every frame the writes, then the plate and the glued box. The area's px are the window's less
     one constant (`layout.js` `areaX`): nothing converts mid-motion. A tab switch keeps `plate.js`
     `switchGlide` on the same steps. The box's name row, box and grip have no width transition (`--cw` drives it);
-    the scrollbar's thumb shows only at rest (`editor.js`, `.settling`)
+    the scrollbar's thumb shows only at rest (`editor.js`, `.settling`, while `rearrange.js` moves the box — told by
+    the box's owner when the move is asked). The box's top, height and chips row: ONE writer, `cardlayout.js`
+    `boxWrite` (its drag too), moved by the rearrangement on the progress of the picture it's anchored to
+    (`rearrange(…, "frame")`: a dependent moves on its source's progress). A new goal for a box already moving bends
+    its remaining path on the same plan and clock (`rearrange.js` `retarget`); only a box not yet moving starts a new
+    plan
   - every edge's press → move → end: `edges.js` `gesture()` (it ends however the drag ends: button up, cancel, lost
     capture); which outlines show: `outlines.js`; the outline itself is part of its pane (`.plate::before`,
     `.left::after` in `styles/layout.css`)

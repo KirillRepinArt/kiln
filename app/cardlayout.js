@@ -9,6 +9,7 @@ import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { SPACE } from "./tokens.js";
 import { boxSizing } from "./editor.js";
+import { rearrange, stop } from "./rearrange.js";
 
 /* ======================= prompt card layout =======================
    Centred on the image's vertical centre while there's room. While the editor is focused or the pointer is over
@@ -177,7 +178,6 @@ export function layoutLeft() {
     col.style.setProperty("--lch", lch);
     requestAnimationFrame(vAlign);
     boxAt(col, TS, H);
-    col.style.setProperty("--chtop", TS + H + SPACE.tight + "px");
     /* a new line (or your cap) changes its height: the box and the picture land at once, together — a line at a time,
        like a chat app's composer (the box's own height transition and the picture's glide were two clocks) */
     if (chg) {
@@ -214,7 +214,6 @@ export function layoutLeft() {
     card.top = top;
     card.bottom = top + H + CH;
     boxAt(col, top + TS, H);
-    col.style.setProperty("--chtop", top + TS + H + SPACE.tight + "px");
     return;
   }
   // the box and its chip row are placed as one group (the text's height is measured only when it's used)
@@ -233,18 +232,37 @@ export function layoutLeft() {
   card.bottom = bottom;
   card.top = top;
   boxAt(col, top + TS, H);
-  col.style.setProperty("--chtop", top + TS + H + SPACE.tight + "px");
 }
-/** the box's top and height (--ltop / --lh): ONE place — a change tells the editor at once, so its scrollbar's thumb
- * waits for the box to settle from the first frame (B21: told by the transition's own event, it lagged a frame)
- * @param {HTMLElement} col @param {number} top @param {number} H */
-function boxAt(col, top, H) {
-  const t = top + "px",
-    h = H + "px",
+/** where the box is in its column now (its top and height; its width is --cw) — null until it's first laid out
+ * @type {{ l: number, t: number, w: number, h: number } | null} */
+let boxNow = null;
+/** the box's top and height — and the LoRA chips' row under it, which goes with it: ONE writer (--ltop / --lh /
+ * --chtop; the name row and the grip follow --ltop). A change tells the editor at once (its scrollbar's thumb waits
+ * for the box to settle, B21) @param {HTMLElement} col @param {{ l: number, t: number, w: number, h: number }} b */
+function boxWrite(col, b) {
+  const t = b.t + "px",
+    h = b.h + "px",
     changed = col.style.getPropertyValue("--ltop") !== t || col.style.getPropertyValue("--lh") !== h;
   col.style.setProperty("--ltop", t);
   col.style.setProperty("--lh", h);
+  col.style.setProperty("--chtop", b.t + b.h + SPACE.tight + "px");
+  boxNow = b;
   if (changed) boxSizing();
+}
+/** where the layout wants the box: side by side it moves there on the rearrangement's plan and clock, on the progress of
+ * the picture it's anchored to (T2: it glided on CSS's --lay-t, a clock of its own, and fell behind); in Vertical, while
+ * dragged, or the first time, at once @param {HTMLElement} col @param {number} top @param {number} H */
+function boxAt(col, top, H) {
+  const to = { l: 0, t: top, w: 0, h: H };
+  if (!boxNow || card.drag || document.querySelector(".app.stacked")) {
+    stop("box");
+    boxWrite(col, to);
+  } else {
+    /* the box is changing from the moment it's asked to (its move may wait for the plan's reveal): the editor's thumb
+       waits from now — told at the first write, it showed for the frames before it (B21) */
+    if (to.t !== boxNow.t || to.h !== boxNow.h) boxSizing();
+    rearrange("box", boxNow, to, b => boxWrite(col, b), "frame");
+  }
 }
 function freeze() {
   clearTimeout(card.thawTimer);
@@ -421,8 +439,8 @@ export function initCardlayout() {
       zones.forEach(z => z.classList.toggle("near", z.dataset.z === m.zone));
       if (m.stk) return;
       const t = Math.max(0, Math.min(colH - H - chipsH(), m.t0 + dy));
-      col.style.setProperty("--ltop", t + TS + "px");
-      col.style.setProperty("--chtop", t + TS + H + SPACE.tight + "px");
+      stop("box");
+      boxWrite(col, { l: 0, t: t + TS, w: 0, h: H }); // the box's one writer, the pointer its clock
       m.t = t;
       const n = nearest(t, H, colH);
       ghosts.forEach(g => g.classList.toggle("near", !m.zone && g.dataset.p === n));

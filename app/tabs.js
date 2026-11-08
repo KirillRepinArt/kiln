@@ -1,7 +1,7 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $ } from "./dom.js";
-import { fadeCol, lay, sizeFrame, slideCol, snapHold } from "./layout.js";
+import { boxStart, fadeCol, lay, sizeFrame, slideCol, snapHold } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
 import { frameBox, frameHold, pictureChange } from "./framebox.js";
@@ -81,6 +81,7 @@ export function tabGo(fn, layout = false) {
   const from = plateBefore(),
     lc0 = $("lcol").getBoundingClientRect(),
     box0 = $("left").getBoundingClientRect(), // the box itself (its place in the column changes in a layout switch)
+    start0 = layout ? boxStart() : null, // its start values: it fades out as it was (a layout switch)
     v0 = /** @type {HTMLElement | null} */ (document.querySelector(".rpanel > .view.on")),
     r0 = v0 ? v0.getBoundingClientRect() : null,
     f0 = frameBox(),
@@ -132,7 +133,7 @@ export function tabGo(fn, layout = false) {
   }
   placeNavs();
   if (layout)
-    fadeCol(box0, sw); // the prompt box fades out where it was and in where it lands (Q-T1)
+    fadeCol(box0, /** @type {Record<string, string>} */ (start0), sw); // out as it was, in where it lands (Q-T1)
   else slideCol(lc0, sw.t0); // the column slides from where it was, as the real thing (FLIP)
   /* once it has landed: one more layout, still without glides (measured mid-switch, the prompt column's Vertical shift
      rested a pixel off), then the layout's glides come back */

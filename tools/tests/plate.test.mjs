@@ -803,3 +803,43 @@ export async function panelContentsRide(k, t) {
   }
 }
 panelContentsRide.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* a leaving box shows its START values (DEVLOG DD-2026-11-08-4; the user, 2026-11-08: "the prompt box first gets the
+   final shape while in the original place, then fades and reappears"): in a layout switch it fades out as it was — its
+   old width and height — and comes in at its new ones; no frame shows the new shape at the old place */
+export async function boxLeavesAsItWas(k, t) {
+  await k.job("[fill:446688] a", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  for (const [from, to] of [
+    ["left", "below"],
+    ["below", "right"],
+  ]) {
+    await k.ev(`(setDock("${from}"),1)`);
+    await k.mouse(4, 4);
+    await k.sleep(1600);
+    const rows = await k.ev(`new Promise(res=>{const L0=$("left").getBoundingClientRect(),
+        out=[[1,Math.round(L0.width),Math.round(L0.height)]],t0=performance.now();setDock("${to}"); // the first row: before
+      (function f(){setTimeout(()=>{const L=$("left").getBoundingClientRect();
+        out.push([+getComputedStyle($("lcol")).opacity,Math.round(L.width),Math.round(L.height)]);
+        if(performance.now()-t0<1000)requestAnimationFrame(f);else res(out)},0)})()})`);
+    const tag = `${from} → ${to}`,
+      [a, z] = [rows[0], rows.at(-1)],
+      turn = rows.findIndex(r => r[0] <= 0.05),
+      before = rows.slice(0, turn < 0 ? rows.length : turn).filter(r => r[0] > 0.05),
+      after = turn < 0 ? [] : rows.slice(turn).filter(r => r[0] > 0.05),
+      sameAs = (r, b) => Math.abs(r[1] - b[1]) <= 1 && Math.abs(r[2] - b[2]) <= 1,
+      wrongOut = before.filter(r => !sameAs(r, a)),
+      wrongIn = after.filter(r => !sameAs(r, z));
+    t.ok(Math.abs(a[1] - z[1]) > 20 || Math.abs(a[2] - z[2]) > 20, `${tag}: the box changes shape (the case)`, {
+      a,
+      z,
+    });
+    t.ok(turn > 0 && !wrongOut.length, `${tag}: it fades out at its old shape`, {
+      turn,
+      wrongOut: wrongOut.slice(0, 3),
+      a,
+    });
+    t.ok(!wrongIn.length, `${tag}: …and in at its new one`, { wrongIn: wrongIn.slice(0, 3), z });
+  }
+}
+boxLeavesAsItWas.opts = { width: 1760, height: 1080, step: 0.05 };

@@ -855,3 +855,31 @@ export async function resetIsOnePlan(k, t) {
   t.ok(picStart >= boxDone - 1, "…the box has finished before the picture starts growing", { boxDone, picStart });
 }
 resetIsOnePlan.opts = { width: 1760, height: 1080, step: 0.05 };
+
+/* T2: the box's vertical place moves with the picture it's anchored to, on the picture's progress — anchored by its
+   top, its top is the picture's every frame while the picture grows back to its largest (it glided on CSS's --lay-t, a
+   clock of its own, and fell behind the picture) */
+export async function boxRidesThePicture(k, t) {
+  await k.ev(`(setDock("left"),1)`);
+  await k.job("[fill:446688] a", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.mouse(4, 4);
+  await k.ev(`(S.pos="top",setPaneSize("generating","s",0.55),save(),sizeFrame(),layoutLeft(),1)`);
+  await k.sleep(1800);
+  const rows = await k.ev(`new Promise(res=>{const out=[],t0=performance.now();
+      setPaneSize("generating","s",null);sizeFrame(); // back to its largest (what a double-click does)
+      (function f(){const L=$("left").getBoundingClientRect(),F=$("frame").getBoundingClientRect();
+        out.push([Math.round(L.top-F.top),Math.round(F.height)]);
+        if(performance.now()-t0<900)requestAnimationFrame(f);else res(out)})()})`),
+    grew = rows.at(-1)[1] - rows[0][1],
+    rest = rows.at(-1)[0],
+    off = rows.filter(r => Math.abs(r[0] - rest) > 2);
+  t.ok(grew > 100, "the picture grows back to its largest", { grew });
+  t.ok(!off.length, "…and the box's top stays on the picture's every frame", {
+    off: off.length,
+    of: rows.length,
+    rest,
+    worst: Math.max(...rows.map(r => Math.abs(r[0] - rest))),
+  });
+}
+boxRidesThePicture.opts = { width: 1760, height: 1080, step: 0.05 };

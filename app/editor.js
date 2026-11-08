@@ -4,6 +4,7 @@
 import { addJobs } from "./actions.js";
 import { layoutLeft } from "./cardlayout.js";
 import { $ } from "./dom.js";
+import { moving } from "./rearrange.js";
 
 /* called from main.js, last */
 /** @type {() => void} */
@@ -265,30 +266,18 @@ export async function startEditor() {
       /* the scrollbar's thumb is decided at rest only (B21, the user 2026-11-06: switching to a long prompt, the thumb
          flickered while the box grew — the text overflowed the box mid-way, not at the end). ONE decider: the box's
          height / top moving (their transitions running) hides it; the overflow at rest shows it */
-      const box = $("left"),
-        /** the box's height / top transitions running now */
-        moving = () =>
-          box
-            .getAnimations()
-            .some(
-              a =>
-                a instanceof CSSTransition &&
-                (a.transitionProperty === "height" || a.transitionProperty === "top") &&
-                a.playState === "running",
-            ),
-        settled = () => {
-          if (!moving()) wrap.classList.remove("settling");
-        };
+      /* the box's size and place move on the rearrangement (cardlayout.js boxAt → rearrange.js): settled once it
+         stops moving there */
+      const settled = () => {
+        if (moving("box")) requestAnimationFrame(settled);
+        else wrap.classList.remove("settling");
+      };
       /* told at the change (the same task: no frame shows the thumb); cleared when its transitions end — or at once
          when there were none (a snap) */
       onBoxSizing = () => {
         wrap.classList.add("settling");
         requestAnimationFrame(() => requestAnimationFrame(settled));
       };
-      for (const type of ["transitionend", "transitioncancel"])
-        box.addEventListener(type, e => {
-          if (e.target === box) settled();
-        });
     }
     document.fonts && document.fonts.ready.then(() => view.requestMeasure());
     new MutationObserver(() => view.dom.classList.toggle("peek", ta.classList.contains("peek"))).observe(ta, {

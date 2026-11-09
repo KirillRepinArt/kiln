@@ -8,14 +8,9 @@
 import { TRACER, reversals, secondWriters, twoClocks } from "./trace.mjs";
 
 /** known second writers / reversals: "el.prop" (or "el~what" for a reversal) → the map's id and why it's there */
-const ALLOW = /** @type {Record<string, string>} */ ({
-  /* a second tab click mid-switch that changes only the picture (Gallery → Generating) cancels the first switch's fades:
-     the leaving list and the coming view cut. Known to the user (2026-11-01); needs its own model — which parts of the
-     running switch carry on */
-  "vGen~cut": "F3 — a same-view switch mid-switch cuts the running switch's view fades",
-  "vQueue~cut": "F3 — a same-view switch mid-switch cuts the running switch's view fades",
-  "picture~cut": "F3 — a same-view switch mid-switch cuts the running switch's view fades",
-});
+const ALLOW = /** @type {Record<string, string>} */ (
+  {/* empty since T2c's acceptance (F3 resolved: a same-view switch mid-switch lets the running one carry on) */}
+);
 
 const WATCH = `__trace.watch({
   plate: $("plate"), rim: $("rim"), frame: $("frame"), cv: $("cv"), cvx: $("cvx"), fglow: $("fglow"),

@@ -10,7 +10,7 @@ import { $, offsetIn } from "./dom.js";
 import { frameHold, frameTarget } from "./framebox.js";
 import { glassFade } from "./fade.js";
 import { fades, shapeSteps } from "./layoutmath.js";
-import { flush, follow, moving, progress, progressXY, travel } from "./rearrange.js";
+import { bend, flush, follow, moving, progress, progressXY, travel } from "./rearrange.js";
 import { SPACE } from "./tokens.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number, panel: boolean }} Box in #right's coordinates */
@@ -178,13 +178,23 @@ let leaveDone = null; // ends the running switch's leaving view (a new switch en
  * clock), its length, and its fades (the prompt box fades through on them in a layout switch) */
 export function switchGlide(at, views, layout = false) {
   pending = false;
-  for (const a of switchAnims) a.cancel();
-  switchAnims = [];
-  if (leaveDone) leaveDone();
+  /* only the picture changes (Gallery ↔ Generating, one view): a switch still running carries on from where it is — its
+     views' fades and its leaving view on their clock, the plate's travel bent to the new goal (F3: this cancelled them,
+     the leaving list cut 0.97 → 0 and the coming view 0 → 1 in one frame) */
+  const picOnly = !views && !layout;
+  if (!picOnly) {
+    for (const a of switchAnims) a.cancel();
+    switchAnims = [];
+    if (leaveDone) leaveDone();
+    barFlip = null;
+  }
   landing = null;
-  barFlip = null;
   if (!views) {
-    put(target()); // the plate rides the frame from here (framebox.js → plateSync)
+    if (picOnly && moving("plate")) {
+      const o = $("right").getBoundingClientRect(),
+        to = goalBox();
+      bend("plate", { l: o.left + to.l, t: o.top + to.t, w: to.w, h: to.h });
+    } else put(target()); // the plate rides the frame from here (framebox.js → plateSync)
     if (!layout) {
       return { t0: performance.now(), T: 600, fd: fades({ A: 0, S: 0, T: 0 }) };
     }

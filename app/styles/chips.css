@@ -14,7 +14,6 @@
   justify-content: flex-start;
   align-items: center;
   padding: 0 var(--space-4);
-  transition: transform var(--lay-t) var(--lay-e); /* its top and width: the box's, every frame (T2) */
 }
 .lcol > .chips:empty {
   display: none;
@@ -23,10 +22,6 @@
   left: 50%;
   width: var(--sw, 760px); /* the layout pass's: within the room at rest, past it only by the rubber band */
   transform: translateX(-50%); /* centred: its sides move about its centre */
-}
-body.liveresize .lcol > .chips,
-body.cardmove .lcol > .chips {
-  transition: none;
 }
 .chip {
   display: inline-flex;

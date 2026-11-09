@@ -1080,15 +1080,35 @@ export async function plateIsItsElement(k, t) {
   await k.job("[fill:884466] b", { ar: "16:9", steps: 2 });
   await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
   await k.sleep(1200);
+  /* the parts that move with the page (a role each — travels, rides, follows): their geometry is written by their owner
+     on the driver's frames, never by a CSS transition or animation of its own (T2c-5) */
+  await k.ev(`(window.PARTS="#plate,#rim,#frame,#rpanel,#lcol,#left,#ltitle,#chips,.pgrip,nav.tabs,#gtools,#hedges,#prog,#showP,.gnav",
+    window.GEO=["left","top","width","height","right","bottom","inset","transform","translate","scale"],window.__geo=[],1)`);
   await k.ev(`(()=>{window.__off=[];window.__act="";const M=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--mat"))||0;
     (function f(){setTimeout(()=>{if(!document.documentElement.classList.contains("switching")){const rp=$("rpanel"),pan=rp.classList.contains("paneled"),
       e=(pan?rp:$("frame")).getBoundingClientRect(),p=$("plate").getBoundingClientRect(),m=pan?0:M;
       const d=Math.max(Math.abs(p.left-(e.left-m)),Math.abs(p.top-(e.top-m)),Math.abs(p.width-(e.width+2*m)),Math.abs(p.height-(e.height+2*m)));
-      if(d>0.5&&e.width>0)__off.push([__act,Math.round(d*10)/10])}requestAnimationFrame(f)},0)})();return 1})()`);
+      if(d>0.5&&e.width>0)__off.push([__act,Math.round(d*10)/10])}
+      for(const el of document.querySelectorAll(PARTS))for(const a of el.getAnimations()){const ps=a instanceof CSSTransition?[a.transitionProperty]:(a.effect&&a.effect.getKeyframes?a.effect.getKeyframes().flatMap(k=>Object.keys(k)):[]);
+        const g=ps.filter(x=>GEO.includes(x));if(g.length&&a.playState==="running")__geo.push([__act,(el.id||el.className).toString().slice(0,30),g.join("+")])}
+      requestAnimationFrame(f)},0)})();return 1})()`);
   const act = async (name, js, wait = 1500) => {
     await k.ev(`(window.__act=${JSON.stringify(name)},${js},1)`);
     await k.sleep(wait);
   };
+  /* an arrow held while you click through (it stays under the pointer while the picture changes), then let go: it
+     catches up with the picture's new edge. Set up directly: the pointer off the picture (on it, the layout holds) */
+  await k.mouse(4, 4);
+  await k.sleep(300);
+  await k.ev(`(lay.navHold=document.querySelector(".gnav.prev"),genNav(-1),updNav(),1)`);
+  await k.sleep(900);
+  const held = await k.ev(
+    `(()=>{const e=document.querySelector(".gnav.prev"),r=$("frame").getBoundingClientRect();return Math.abs(parseFloat(e.style.left)-Math.round(r.left+10))})()`,
+  );
+  t.ok(held > 20, "an arrow held while the picture changed: it stayed where it was", { off: held });
+  await k.ev(`(window.__act="an arrow let go",1)`);
+  await k.mouse(10, 10); // a move off it: let go
+  await k.sleep(1200);
   for (const dock of ["left", "right", "below"]) {
     await act(`${dock}: the dock`, `setDock(${JSON.stringify(dock)})`);
     for (const v of ["queue", "gallery", "png", "loras", "gen"]) await act(`${dock}: tab ${v}`, tab(v));
@@ -1103,5 +1123,9 @@ export async function plateIsItsElement(k, t) {
     by = {};
   for (const [a, d] of off) by[a] = Math.max(by[a] || 0, d);
   t.ok(!off.length, "after every frame's writes the plate is its element (outside a switch's travel)", by);
+  const geo = await k.ev(`__geo`),
+    gby = {};
+  for (const [a, el, g] of geo) gby[`${a}: ${el}`] = g;
+  t.ok(!geo.length, "no moving part glides on a clock of its own (a CSS transition or animation of its geometry)", gby);
 }
 plateIsItsElement.opts = { width: 1600, height: 950, step: 0.05, limitMin: 5 };

@@ -316,13 +316,6 @@ body.notools #v-gen:not(.leaving) .gtools,
   translate: none; /* placed exactly by browse.js: not centred by the .nav rule */
   z-index: 20;
 }
-.gnav.glide {
-  transition:
-    opacity var(--t-150),
-    background var(--t-150),
-    left var(--lay-t) var(--lay-e),
-    top var(--lay-t) var(--lay-e);
-} /* only the one you let go of glides */
 body.navs .gnav:not(.off) {
   opacity: 1;
 }

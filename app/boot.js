@@ -118,8 +118,6 @@ export function initBoot() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches)
     document.querySelector("#playFlow animateTransform")?.remove();
   applyMode();
-  $("left").classList.add("nodur");
-  setTimeout(() => $("left").classList.remove("nodur"), 400);
   applyFont();
   applyGlass();
   applyPH();

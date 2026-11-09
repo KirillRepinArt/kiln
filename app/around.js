@@ -6,6 +6,7 @@
    moved frame by frame and they jumped to the end or slid on another clock */
 import { $, offsetIn } from "./dom.js";
 import { frameBox } from "./framebox.js";
+import { placeNavs } from "./browse.js";
 import { SPACE } from "./tokens.js";
 
 /** @param {CSSStyleDeclaration} s @param {string} p @param {number} v */
@@ -24,6 +25,7 @@ export function placeAround() {
     t = b.t - M,
     w = b.w + 2 * M,
     h = b.h + 2 * M;
+  placeNavs(); // the picture's arrows on its side edges (browse.js: the one you hold stays put)
   const gt = $("gtools"),
     he = $("hedges"),
     pr = $("prog"),

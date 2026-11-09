@@ -137,7 +137,6 @@ export function initEdges() {
         cls: ["vresizing"],
         down: e => {
           if (stacked()) return false; // Vertical: its bottom through the pass (above), its top is the shared edge
-          L.classList.add("nodur");
           y0 = e.clientY;
           h0 = L.getBoundingClientRect().height; // its text's height: its least and its largest
         },
@@ -147,7 +146,6 @@ export function initEdges() {
           layoutLeft();
         },
         end: () => {
-          L.classList.remove("nodur");
           card.hHold = 0; // back to its text: it settles
           lyUnfreeze();
           layoutLeft();

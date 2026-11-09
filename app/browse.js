@@ -3,6 +3,7 @@
 import { $, hit } from "./dom.js";
 import { doneList } from "./jobs.js";
 import { lay } from "./layout.js";
+import { moving, rearrange } from "./rearrange.js";
 import { PV, browsed, onShow, picMode, pv } from "./picstate.js";
 import { S } from "./state.js";
 import { tabGo } from "./tabs.js";
@@ -70,37 +71,33 @@ export function browseStatus() {
 
 /* start-up wiring: the on-picture arrows (held under the pointer while you click them), ← / → (called from main.js, in order) */
 export function initBrowse() {
-  /* the picture's arrows live on a fixed layer: while they show they follow the picture's side edges every frame (it
-   glides), but while you're clicking through with them they hold their place on SCREEN (Photos / Lightroom: navigation
-   never runs away from the pointer); ~1 s after the last click they glide to the new picture's edges */
+  /* the picture's arrows live on a fixed layer: they follow the picture's side edges (around.js placeAround places them
+   with everything round the picture, in the frame the frame is written), but while you're clicking through with them
+   they hold their place on SCREEN (Photos / Lightroom: navigation never runs away from the pointer) */
   (function () {
     /* the arrow you clicked stays exactly where it is for as long as your pointer is on it (click as fast as you like);
     move off it and it slides to the picture's edge. The other one follows the picture at once. Keys don't hold anything */
     /* …until the pointer really leaves it: a switch covers the page with its layers, which Chrome reports as the pointer
        leaving whatever it was over — the held arrow let go and ran 261 px to the new picture's edge (2026-10-28). So
        the hold ends on a real move off the arrow, never during a switch */
-    /** @param {HTMLElement & { _t?: number }} el */
+    /* let go: it catches up with the picture's edge on the driver (rearrange.js — one plan and clock with whatever else
+       moves; a new goal meanwhile bends it). T2c-5: it glided on a CSS transition, the other arrow on a frame loop of
+       its own that ran for the page's life */
+    /** @param {HTMLElement} el */
     const letGo = el => {
       lay.navHold = null;
-      el.classList.add("glide");
-      clearTimeout(el._t);
-      el._t = setTimeout(() => el.classList.remove("glide"), 460);
+      placeNavs(el);
     };
     document.addEventListener(
       "pointermove",
       e => {
-        const el = /** @type {(HTMLElement & { _t?: number }) | null} */ (lay.navHold);
+        const el = /** @type {HTMLElement | null} */ (lay.navHold);
         if (!el) return;
         const r = el.getBoundingClientRect();
         if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) letGo(el);
       },
       { passive: true },
     );
-    function tick() {
-      placeNavs();
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
   })();
   document.addEventListener(
     "click",
@@ -129,19 +126,28 @@ export function initBrowse() {
 
 /* the picture's arrows on its side edges (the one you hold stays where it is): every frame, and at once for a switch's
    capture (tabs.js) */
-export function placeNavs() {
+/** @param {HTMLElement} [caught] the arrow just let go of: it catches up on the driver (the other is placed at once) */
+export function placeNavs(caught) {
   /* always, shown or not: they come in where the picture is, never from where they last were */
   const [pv, nx] = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".gnav")),
     r = $("frame").getBoundingClientRect(),
-    y = Math.round(r.top + r.height / 2 - 20) + "px";
-  for (const [el, x] of /** @type {[HTMLElement, string][]} */ ([
-    [pv, Math.round(r.left + 10) + "px"],
-    [nx, Math.round(r.right - 50) + "px"],
-  ]))
-    if (el !== lay.navHold && (el.style.left !== x || el.style.top !== y)) {
-      el.style.left = x;
-      el.style.top = y;
-    }
+    y = Math.round(r.top + r.height / 2 - 20);
+  for (const [el, x, key] of /** @type {[HTMLElement, number, string][]} */ ([
+    [pv, Math.round(r.left + 10), "navL"],
+    [nx, Math.round(r.right - 50), "navR"],
+  ])) {
+    if (el === lay.navHold) continue;
+    const write = (/** @type {{ l: number, t: number }} */ b) => {
+        el.style.left = Math.round(b.l) + "px";
+        el.style.top = Math.round(b.t) + "px";
+      },
+      to = { l: x, t: y, w: 0, h: 0 },
+      placed = el.style.left !== "",
+      at = { l: parseFloat(el.style.left), t: parseFloat(el.style.top), w: 0, h: 0 };
+    if (placed && (el === caught || moving(key)))
+      rearrange(key, at, to, write); // catching up (or bent to a new goal)
+    else if (!placed || at.l !== x || at.t !== y) write(to);
+  }
 }
 
 /** @param {import("./types.js").Job} j */

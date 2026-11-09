@@ -17,7 +17,6 @@
   justify-content: flex-end;
   align-items: center;
   container-type: inline-size;
-  transition: transform var(--lay-t) var(--lay-e);
 }
 .phead {
   display: flex;
@@ -262,11 +261,6 @@
   border: 1px solid var(--grey-33);
   border-radius: var(--r-panel);
   container-type: inline-size;
-  transition: transform var(--lay-t) var(--lay-e);
-}
-.left.nodur,
-.ltitle.nodur {
-  transition: none;
 }
 .app.stacked .left,
 .app.stacked .ltitle {

@@ -96,11 +96,7 @@ export function applyMode() {
   $("ltitle").dataset.tip = st ? "" : "Drag to move the prompt box: top · middle · bottom";
   if (a.classList.contains("stacked") !== st) {
     a.classList.toggle("stacked", st);
-    // switching layouts: place the image first, then the card, without the glide (it would start from stale positions)
-    const L = $("left"),
-      T = $("ltitle");
-    L.classList.add("nodur");
-    T.classList.add("nodur");
+    // switching layouts: place the image first, then the card
     lyReset();
     sizeFrame();
     layoutLeft();
@@ -108,10 +104,6 @@ export function applyMode() {
     requestAnimationFrame(() => {
       sizeFrame();
       layoutLeft();
-      requestAnimationFrame(() => {
-        L.classList.remove("nodur");
-        T.classList.remove("nodur");
-      });
     });
   }
   updHm();
@@ -300,7 +292,6 @@ export function initCardlayout() {
   updHm();
   (function () {
     const L = $("left"),
-      T = $("ltitle"),
       col = $("lcol");
     /** the card being pressed / dragged: where it started, whether it moved, where it would go
      * @type {{ x0: number, y0: number, t0: number, moved: boolean, stk: boolean, zone?: "left" | "right" | "below" | null, t?: number } | null} */
@@ -387,8 +378,6 @@ export function initCardlayout() {
       if (!m.moved) {
         m.moved = true;
         card.drag = true;
-        L.classList.add("nodur");
-        T.classList.add("nodur");
         document.body.classList.add("cardmove");
         zones.forEach(z => z.classList.toggle("show", z.dataset.z !== (m.stk ? "below" : dockOf())));
         if (!m.stk)
@@ -415,8 +404,6 @@ export function initCardlayout() {
       outlines("move", []);
       if (!was.moved) return;
       card.drag = false;
-      L.classList.remove("nodur");
-      T.classList.remove("nodur");
       document.body.classList.remove("cardmove");
       ghosts.forEach(g => g.classList.remove("show", "near"));
       zones.forEach(z => z.classList.remove("show", "near"));

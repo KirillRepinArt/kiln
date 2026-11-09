@@ -520,6 +520,30 @@ test("Vertical: the shared edge trades — the group's bottom holds, the page's 
   });
 });
 
+/* C6 (the user, DEVLOG DD-2026-11-09-19): the shared edge uses the empty room first — a short page (a panel) with room
+   under the box: down, the box keeps its size and moves into the room; past the room's bottom it gives, down to its
+   least; let go after a pure push, its height isn't kept as yours */
+test("Vertical: the shared edge pushes the box into the empty room first, then trades (C6)", () => {
+  const s = vState({ page: { kind: "panel", w: 800, h: 300, lo: { w: 300, h: 200 }, hi: { w: 1600, h: 1000 } } }),
+    rest = layoutPass(s),
+    roomB = 1080 - 20, // the window less the area gap
+    line = edgeOf(rest, "shared").line;
+  assert.ok(bottom(rest.box) < roomB - 100, "the case: empty room under the box", { b: bottom(rest.box) });
+  const held = layoutPass({ ...s, drag: { edge: "shared", at: line + 40 } });
+  assert.ok(near(held.page.h - rest.page.h, 40, 1), "the page 40 taller", { was: rest.page.h, now: held.page.h });
+  assert.ok(near(held.box.h, rest.box.h, 0.5), "the box keeps its size", { was: rest.box.h, now: held.box.h });
+  assert.ok(near(held.box.y - rest.box.y, 40, 1), "…and moves down with the edge", {
+    was: rest.box.y,
+    now: held.box.y,
+  });
+  const far = layoutPass({ ...s, drag: { edge: "shared", at: line + 2000 } });
+  assert.ok(near(far.box.h, s.box.least, 1), "pushed past the room's bottom: the box gives, down to its least", {
+    h: far.box.h,
+    least: s.box.least,
+  });
+  assert.ok(bottom(far.box) <= roomB + 1, "…and stays in the room", { b: bottom(far.box) });
+});
+
 test("Vertical: an outer edge never changes the other pane — the page's side grows into free room only (C4c, B17)", () => {
   const s = vState({ page: { kind: "pic", ratio: 3 / 4 }, box: { ...state().box, text: 300 } }),
     rest = layoutPass(s);

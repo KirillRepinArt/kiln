@@ -225,11 +225,25 @@ export function cardHeightMode(mode, colH, CH, minH, a) {
  */
 export function cardPlacement({ colH, CH, held = 0, heldPin = "top", naturalH, pos, frozen, prevTop, prevBottom, a }) {
   const room = colH - CH;
-  let H = held ? Math.min(held, room) : Math.min(naturalH, room);
+  let H = held ? held : Math.min(naturalH, room);
   let top,
     bottom = prevBottom;
   if (held && prevTop != null && prevBottom != null) {
-    top = heldPin === "bottom" ? Math.max(0, prevBottom - H - CH) : prevTop; // the other side holds
+    /* a height edge held (C6): the other side holds — until the grabbed side reaches the column's end; then it gives
+       way, the box growing into the far side's empty room (the give-way order, DEVLOG DD-2026-11-03-1: from the middle a
+       pull stopped at the column's end, the release re-centred it, and it took four pulls to reach the room); past the
+       whole room the grabbed side shows the rubber band (`held` past it) */
+    if (pos === "mid") {
+      /* resting in the middle (a centred axis): it grows about its centre — the far side mirrors the grabbed one (DD-6,
+         as every centred edge), each side giving way where the column ends; past the room, the give on both */
+      const c = (prevTop + prevBottom) / 2,
+        free = colH - H - CH;
+      top = free >= 0 ? Math.max(0, Math.min(free, c - (H + CH) / 2)) : free / 2;
+    } else
+      top =
+        heldPin === "bottom"
+          ? Math.max(prevBottom, Math.min(colH, H + CH)) - H - CH
+          : Math.min(prevTop, Math.max(0, colH - H - CH));
   } else if (frozen && prevTop != null) {
     if (pos === "bot" && prevBottom != null) {
       top = Math.max(0, prevBottom - H - CH);
@@ -926,14 +940,19 @@ function dragSizes(s, z) {
       /* by its own edges: beside the box as it is */
       ownHi = Math.min(pageHi.h, CH - vAround(s) - z.bh, widest);
     if (d.edge === "shared") {
-      /* the edge at the pointer (mid-gap): the page's bottom; the box takes the rest down to the group's bottom, within
-         its least and its largest — each side's limit is the other's */
-      const hi = Math.min(pageHi.h, groupB - T - g - s.box.least, widest),
+      /* the edge at the pointer (mid-gap): the page's bottom. The box's bottom holds where it was at the press — except
+         that the box at its own size pushes it down into the empty room under it; only past the room's bottom does it
+         give, down to its least (the give-way order on every edge: the empty room is no one's, it goes first — the
+         user, DEVLOG DD-2026-11-09-19; it traded at once, and a short page left the room unreachable). Up, the box takes
+         the room (the trade) */
+      const roomB = T + CH - foot, // the lowest the box's bottom goes
+        hi = Math.min(pageHi.h, roomB - T - g - s.box.least, widest),
         lo = Math.max(pageLo.h, groupB - T - g - boxHi);
       setPageH(d.at - g / 2 - T, hi, Math.min(lo, hi));
-      out.keptBh = groupB - (T + out.keptPh + g);
+      const top = T + out.keptPh + g;
+      out.keptBh = Math.max(groupB, Math.min(roomB, top + z.bh)) - top;
       out.bh = out.keptBh;
-      out.boxY = T + out.keptPh + g;
+      out.boxY = top;
     } else if (who === "page" && side === "top") {
       /* the anchored side: the drag wins over the anchor while held, the bottom holds; the release settles */
       const bottom = T + z.ph;
@@ -1061,7 +1080,9 @@ export function layoutPass(s) {
             CH: pl.chips,
             held: pl.held,
             heldPin: pl.heldPin,
-            naturalH: Math.max(s.box.text, s.box.least), // its spec's least (the card's text measure included it)
+            /* its spec's height: yours if you set one (Custom: its top or bottom edge, C6), else its text's — never below
+               its least (the card's text measure included it) */
+            naturalH: Math.max(s.box.h ?? s.box.text, s.box.least),
             pos: s.box.anchor || "mid",
             frozen: !!pl.frozen,
             prevTop: pl.prevTop ?? null,

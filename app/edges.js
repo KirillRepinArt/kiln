@@ -8,9 +8,9 @@
 import { card, layoutLeft, lyUnfreeze, updHm } from "./cardlayout.js";
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
-import { passDouble, passDragEnd, passDragMove, passDragStart } from "./layout.js";
+import { passDouble, passDragEnd, passDragMove, passDragStart, setPaneSize, sideBoxH } from "./layout.js";
 import { RUBBER, rubber } from "./layoutmath.js";
-import { S } from "./state.js";
+import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 
 /** the body classes a drag holds while it lasts (the cursor, no transitions) — removed by the gesture's end, always */
@@ -110,17 +110,17 @@ function passEdge(h, panes, cls, idOf, axis, after) {
 const stacked = () => !!q(".app.stacked");
 /* start-up wiring: every edge you drag, and the edit buttons' hover (called from main.js, in order) */
 export function initEdges() {
-  /* the prompt box's height edges (2026-11-02, DEVLOG DD-2026-11-02-12): ordinary edges — the size within [least,
-     largest], the rubber band past either — but the box's least and largest are both its text's height (up to its
-     mode's largest), so they give a little and snap back: the box grows with what you type, never with a drag, and its
-     height is never stored. Side by side: the bottom (#vedge) and the top, held in card.hHold (read by layoutLeft). In
+  /* the prompt box's height edges: ordinary edges — the size within [least, largest] (its least, the room), the rubber
+     band past either. Side by side: the bottom (#vedge) and the top, held in card.hHold (the pass's one placement rule
+     reads it: the other side holds); let go, your height (Custom: the spec, ux-review/16-layout-pass.md rule 3 — C6; it
+     was its text's only, DD-2026-11-02-12, so these edges only gave a little and snapped back). In
      Vertical the bottom sets the box's height — yours (Custom, decision A: C4c), through the layout pass; its top is the
      edge it shares with the page (#hsplit), so no handle of its own there (B10) */
   (function () {
     const L = $("left"),
       top = document.createElement("div");
     top.className = "vedge t";
-    top.dataset.tip = "The prompt box fits its text · the Match and Full buttons make it taller";
+    top.dataset.tip = "Drag to set the prompt box's height · double-click: back to its text's";
     L.appendChild(top);
     passEdge(
       $("vedge"),
@@ -132,24 +132,41 @@ export function initEdges() {
     for (const g of [$("vedge"), top]) {
       const up = g === top;
       let y0 = 0,
-        h0 = 0;
+        h0 = 0,
+        want = 0,
+        lim = { lo: 0, hi: 0 };
       gesture(g, () => RESIZES.vedge, {
         cls: ["vresizing"],
         down: e => {
           if (stacked()) return false; // Vertical: its bottom through the pass (above), its top is the shared edge
           y0 = e.clientY;
-          h0 = L.getBoundingClientRect().height; // its text's height: its least and its largest
+          h0 = want = L.getBoundingClientRect().height;
+          lim = sideBoxH();
         },
         move: e => {
-          card.hHold = rubber(h0 + (up ? -1 : 1) * (e.clientY - y0), h0, h0, RUBBER);
+          /* resting in the middle the far side mirrors (layoutmath.js cardPlacement): the grabbed edge at the pointer */
+          want = h0 + (up ? -1 : 1) * (e.clientY - y0) * ((S.pos || "mid") === "mid" ? 2 : 1);
+          card.hHold = rubber(want, lim.lo, lim.hi, RUBBER);
           card.hPin = up ? "bottom" : "top";
           layoutLeft();
         },
         end: () => {
-          card.hHold = 0; // back to its text: it settles
+          card.hHold = 0;
+          /* your height, within its limits (Custom): the mode lets go, as a box edge does in Vertical; the box settles to
+             its anchor on the rearrangement */
+          if (Math.abs(want - h0) > 1) {
+            setPaneSize("box", "h", Math.round(Math.max(lim.lo, Math.min(lim.hi, want))), "side");
+            S.hmode = "";
+            save();
+            updHm();
+          }
           lyUnfreeze();
           layoutLeft();
         },
+      });
+      /* its double-click: back to its text's height — ONE owner (layout.js passDouble) */
+      g.addEventListener("dblclick", () => {
+        if (!stacked()) passDouble(up ? "box.top" : "box.bottom");
       });
     }
   })();

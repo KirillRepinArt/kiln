@@ -10,7 +10,11 @@
 .pills {
   display: flex;
   gap: var(--space-1);
-  flex-wrap: wrap;
+  /* one row, always (C6, the user's choice 2026-11-09: "stop before the wrap"): at the box's least width (PWMIN, 360)
+     the pills' compact labels fit (349 px measured; their container query shortens them when narrow); wrapping grew the
+     box's least height a row and moved the page in Vertical (B17). Past the least, the rubber band clips the last pill
+     by a few px */
+  flex-wrap: nowrap;
   justify-content: flex-start;
   flex: 0 1 auto;
   min-width: 0;

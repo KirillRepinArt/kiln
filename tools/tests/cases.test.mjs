@@ -181,7 +181,33 @@ function caseOf(dock, page, ar) {
       t.ok(!reach.length, `${when}: every edge's handle lies on its pane's side`, reach);
     };
     await reachCheck("at rest");
-    for (const h of handles)
+    /* how much each edge changed its panes' sizes, either way (C6: an edge that changes nothing is dead — the box's
+       height edges side by side only gave a little and snapped back, and every check below passed them) */
+    /** @type {Record<string, number>} */
+    const changed = {};
+    for (const h of handles) {
+      /* each edge from the layout you meet — the defaults (Reset): after the edge before it, a pane could rest at its
+         limit, and an edge looked dead only because of the order (C6: Vertical's panel top after its bottom) */
+      await k.ev(`(document.querySelector('[data-lay="reset"]').click(),1)`);
+      await k.mouse(4, 4);
+      await k.sleep(1400);
+      /* Vertical's shared edge with empty room under the box (C6, DEVLOG DD-2026-11-09-19): a short pull down pushes the
+         box into the room at its own size — it doesn't trade first */
+      if (dock === "below" && h.label.includes("hsplit")) {
+        const m0 = await measure(k);
+        if (m0.box && m0.H - 20 - m0.box.bottom > 120) {
+          const r = await pull(k, h, 40),
+            m1 = r.after;
+          /* judged only if the page grew (a picture bound by its width can't: the edge doesn't move) */
+          if (m1.plate && m1.plate.bottom - m0.plate.bottom > 20)
+            t.ok(
+              Math.abs(m1.box.bottom - m1.box.top - (m0.box.bottom - m0.box.top)) <= 2 &&
+                Math.abs(m1.box.top - m0.box.top - 40) <= 3,
+              `${h.label}: with empty room under the box, a pull down moves it at its own size (the room first)`,
+              { before: round(m0.box), after: round(m1.box) },
+            );
+        }
+      }
       for (const dir of [1, -1]) {
         const name = `${h.label} ${h.axis === "x" ? (dir > 0 ? "→" : "←") : dir > 0 ? "↓" : "↑"}`;
         /* to its limit. Side by side the group re-centres on release, which can free room again (the limit is the
@@ -197,8 +223,14 @@ function caseOf(dock, page, ar) {
           prev = now;
         }
         if (pulls > 2) t.note(`${h.label} ${dir > 0 ? "+" : "−"}: ${pulls - 1} pulls to reach its limit at rest`);
-        const S1 = await measure(k),
-          r = await pull(k, h, dir * FAR), // past it again, from there
+        const S1 = await measure(k);
+        changed[h.label] = Math.max(
+          changed[h.label] ?? 0,
+          ...size(S1)
+            .flat()
+            .map((v, i) => Math.abs(v - size(S0).flat()[i])),
+        );
+        const r = await pull(k, h, dir * FAR), // past it again, from there
           S2 = r.after,
           on = touching(S1, h.axis, r.start),
           moving = Object.keys(on),
@@ -275,6 +307,19 @@ function caseOf(dock, page, ar) {
         t.ok(lay === "ok", `${name}: at rest, the Layout button can be pressed`, lay);
         if (dir < 0) await reachCheck(`after ${h.label}`);
       }
+      /* (Vertical's box bottom at the defaults: the page takes all the room the box's least leaves — the box is at its
+         least with no empty room under it, so its outer edge has nothing to give by the rule, DD-2026-11-07-1) */
+      if (dock === "below" && h.label.startsWith("#vedge") && changed[h.label] <= GIVE)
+        t.note(`${h.label}: still at the defaults — the page takes the room, the box is at its least`);
+      else
+        t.ok(
+          changed[h.label] > GIVE,
+          `${h.label}: it changes its pane's size, one way or the other (not a dead edge)`,
+          {
+            most: Math.round(changed[h.label]),
+          },
+        );
+    }
     /* C5 (DD-2026-11-03-14): every edge's double-click — its DD-5 size, in one motion */
     for (const h of handles) {
       const kind = dd5(h.label, dock, h.axis),

@@ -165,15 +165,25 @@ test("height modes: Full = the column, Match = picture top to status line; too s
   assert.deepEqual(cardHeightMode("match", 900, 40, 200, { it: 300, ib: 400, cy: 350 }), { top: 230, H: 200 });
 });
 
-test("the card: its text's height within the room; held, the edge's (the other side still)", () => {
+test("the card: its text's height within the room; held, the edge's — the other side still, or mirrored in the middle (C6)", () => {
   const c = { colH: 900, CH: 40, pos: "mid", frozen: false, prevTop: null, prevBottom: null, a: anchors };
   assert.equal(cardPlacement({ ...c, naturalH: 300 }).H, 300, "the text's");
   assert.equal(cardPlacement({ ...c, naturalH: 2000 }).H, 860, "never more than the room");
-  const held = { ...c, prevTop: 200, prevBottom: 540, naturalH: 300 };
+  /* resting at the top: the other side holds — until the grabbed side reaches the column's end, then it gives way */
+  const held = { ...c, pos: "top", prevTop: 200, prevBottom: 540, naturalH: 300 };
   const b = cardPlacement({ ...held, held: 312, heldPin: "top" });
   assert.deepEqual([b.top, b.H], [200, 312], "the bottom edge held: the top holds");
   const t2 = cardPlacement({ ...held, held: 312, heldPin: "bottom" });
   assert.equal(t2.top + t2.H + 40, 540, "the top edge held: the bottom holds");
+  const g = cardPlacement({ ...held, held: 760, heldPin: "top" });
+  assert.equal(g.top + g.H + 40, 900, "past the column's end the top gives way (the far side's room)");
+  /* resting in the middle: it grows about its centre (the far side mirrors), within the column; past the room, the
+     give on both sides */
+  const mid = { ...c, prevTop: 200, prevBottom: 540, naturalH: 300 };
+  const m = cardPlacement({ ...mid, held: 400, heldPin: "top" });
+  assert.equal(m.top + (m.H + 40) / 2, 370, "the centre holds");
+  const full = cardPlacement({ ...mid, held: 880, heldPin: "top" });
+  assert.deepEqual([full.top, full.top + full.H + 40], [-10, 910], "past the room: the give, on both sides");
 });
 
 test("frozen while you work: the top stays put and only the bottom grows (a bottom card grows upward)", () => {

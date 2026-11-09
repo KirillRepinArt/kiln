@@ -23,12 +23,12 @@ import { glassFade } from "./fade.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
+  PWMIN,
   glueAnchors,
   isFitPage,
   glued,
   relationFade,
   relationOf,
-  PWMIN,
   layoutPass,
   limits,
   paneDefault,
@@ -318,6 +318,7 @@ function sidePass() {
                  its anchor, its column and the moment's state (held, frozen, last laid out) */
               text: cardNaturalH(),
               least: slotLeast(),
+              h: paneSize("box", "side").h ?? null, // yours (Custom, C6): its top or bottom edge
               mode: S.hmode === "full" || S.hmode === "match" ? S.hmode : "",
               anchor: /** @type {"top" | "mid" | "bot"} */ (S.pos || "mid"),
               place: boxPlace(),
@@ -387,6 +388,12 @@ function boxPlace() {
     prevTop: card.top,
     prevBottom: card.bottom,
   };
+}
+/** side by side, the box's height limits for its top / bottom edge (C6): its least, and the room — its column less the
+ * LoRA row @returns {{ lo: number, hi: number }} */
+export function sideBoxH() {
+  const p = boxPlace();
+  return { lo: slotLeast(), hi: Math.max(slotLeast(), p.colH - p.chips) };
 }
 /** side by side, the layout pass's rectangles now — the box's place (layoutLeft) @returns {import("./layoutmath.js").PassOut} */
 export function sideBoxPass() {
@@ -542,7 +549,13 @@ export function passDragEnd() {
       /* Vertical: the box's width by its sides, its height (yours: Custom) by its bottom or the shared edge */
       if (d.edge === "box.left" || d.edge === "box.right") setPaneSize("box", "w", k.boxW, o);
       const bh = V && V.kept.boxH;
-      if ((d.edge === "shared" || d.edge === "box.bottom") && bh != null) setPaneSize("box", "h", bh, o);
+      /* (the shared edge: only if the box's height changed — pushed into the empty room at its own size, it stays its
+         text's) */
+      if (
+        bh != null &&
+        (d.edge === "box.bottom" || (d.edge === "shared" && (d.bh == null || Math.abs(bh - d.bh) > 0.5)))
+      )
+        setPaneSize("box", "h", bh, o);
     } else if (d.edge === "shared" || d.edge.startsWith("box.")) setPaneSize("box", "w", k.boxW, o);
     const page = d.edge === "shared" || d.edge.startsWith("page."),
       tall = d.edge === "page.top" || d.edge === "page.bottom";
@@ -579,7 +592,7 @@ export function passDouble(edge) {
     if (across) {
       setPaneSize("box", "w", null, o);
       S.hmode = ""; // its width yours again: the mode lets go
-    } else if (vert) setPaneSize("box", "h", null, o);
+    } else setPaneSize("box", "h", null, o); // its top or bottom: its text's height again (Fit)
   } else if (P.pic) {
     setPaneSize(pageId(), "w", null, o);
     setPaneSize(pageId(), "h", null, o); // its scale: its largest

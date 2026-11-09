@@ -367,10 +367,12 @@ export async function panelLimitsFromOnePlace(k, t) {
 }
 panelLimitsFromOnePlace.opts = { width: 2200, height: 1080, step: 0.05 };
 
-/* one rule for every edge, the numbers make the behaviour (2026-11-02, DEVLOG DD-2026-11-02-12): the prompt box's least
-   and largest are both its text's height, so its height edges give a little and snap back — side by side its bottom
-   (it jumped to a stored 240 px) and its top, in Vertical its bottom; nothing about its height is stored */
-export async function boxHeightEdgesSnapBack(k, t) {
+/* the box's height is a spec, the same in both layouts (ux-review/16-layout-pass.md rule 3; C6): side by side its bottom
+   and its top set your height (Custom) within its least and the room — it keeps the height you let go at, the other
+   side holding while you drag — and a double-click puts it back to its text's. (Before C6 it was its text's only,
+   DEVLOG DD-2026-11-02-12: these edges gave a little and snapped back.) In Vertical, with no free room under the
+   picture, its bottom only gives a little */
+export async function boxHeightEdges(k, t) {
   const area = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area"))`);
   /** drag a box edge by dy: its height while held, and after */
   const pull = async (sel, dy) => {
@@ -391,16 +393,40 @@ export async function boxHeightEdgesSnapBack(k, t) {
   await k.mouse(2, 2);
   await k.sleep(1200);
   const h0 = (await R(k, "#left")).height;
+  let was = h0;
   for (const [sel, dy] of [
     ["#vedge", 200],
     ["#vedge", -100],
-    [".vedge.t", -200],
+    [".vedge.t", -60],
   ]) {
     const r = await pull(sel, dy);
-    t.ok(Math.abs(r.held - h0) > 1 && Math.abs(r.held - h0) <= area, `side by side, ${sel} ${dy}: a little give`, r);
-    t.near(r.after, h0, 2, `…and it snaps back to its text`);
+    t.near(
+      r.after,
+      /* resting in the middle (the default) it grows about its centre: the far side mirrors, twice the pull */
+      was + 2 * Math.abs(dy) * (dy > 0 === (sel === "#vedge") ? 1 : -1),
+      3,
+      `side by side, ${sel} ${dy}: it keeps the height you let go at`,
+    );
+    was = r.after;
   }
-  t.ok(await k.ev(`!("pph" in S)`), "nothing about its height is stored");
+  /* a double-click on its bottom: its text's height again */
+  const v1 = await R(k, "#vedge"),
+    [dx, dy1] = [v1.left + v1.width / 2, v1.top + v1.height / 2];
+  await ev(k, "mouseMoved", dx, dy1, 0);
+  for (const c of [1, 2]) {
+    await k.send("Input.dispatchMouseEvent", {
+      type: "mousePressed",
+      x: dx,
+      y: dy1,
+      button: "left",
+      buttons: 1,
+      clickCount: c,
+    });
+    await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: dx, y: dy1, button: "left", clickCount: c });
+  }
+  await ev(k, "mouseMoved", 8, 8, 0);
+  await k.sleep(900);
+  t.near((await R(k, "#left")).height, h0, 2, "double-click: back to its text's height");
   await k.ev(`(setDock("below"),1)`);
   await k.mouse(2, 2);
   await k.sleep(1500);
@@ -409,7 +435,7 @@ export async function boxHeightEdgesSnapBack(k, t) {
   t.ok(Math.abs(v.held - v0) > 1 && Math.abs(v.held - v0) <= area, "Vertical, its bottom edge: a little give", v);
   t.near(v.after, v0, 2, "…and it snaps back");
 }
-boxHeightEdgesSnapBack.opts = { width: 1760, height: 1080, step: 0.05 };
+boxHeightEdges.opts = { width: 1760, height: 1080, step: 0.05 };
 
 /* a picture's largest height is what fits both ways (2026-11-02, the user's screenshot): a 16:9 picture bound by its
    width can't get taller — pulling its top edge only gives a little; nothing slides, the box isn't lifted */

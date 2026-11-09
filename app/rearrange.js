@@ -7,7 +7,8 @@
    share a plan; a new one mid-way starts from where everything is. Before: the frame glided on --lay-t's curve
    (framebox), the columns on a copy of it (colsGlide), a panel's box snapped (B16) — three clocks, two curves, one snap.
    What follows the boxes (the plate, what sits round the picture, the glued prompt box) is placed after the writes of
-   each frame, in the same frame. A tab switch keeps its own owner (plate.js switchGlide) on the same steps. */
+   each frame, in the same frame. A switch's own motion goes through here too (T2c-3b: the plate travels — travel(); what
+   rides it follows — follow()): ONE driver, one clock. */
 import { glassFade } from "./fade.js";
 import { MORPH, fades, shapeBox, shapePlan } from "./layoutmath.js";
 import { snaps } from "./framebox.js";
@@ -25,6 +26,9 @@ const asked = new Map();
 const fading = new Map();
 /** @type {{ t0: number, T: number, q: (i: number, e: number) => [number, number], moves: [string, Move][] } | null} */
 let run = null;
+/** what follows the travellers, placed after their writes every frame of the run (the views riding the plate in a
+ * switch): each called once more as the run lands, then let go @type {Set<() => void>} */
+const followers = new Set();
 let raf = 0,
   queued = false;
 
@@ -45,6 +49,48 @@ export function rearrange(key, from, to, write, source) {
     queued = true;
     queueMicrotask(start);
   }
+}
+/** a switch's own move (T2c-3b): `key` travels from `from` to `to` on the driver, while the layout itself lands at once
+ * (laysnap) — so not subject to snaps(), only to reduced motion. A new plan for it (a new switch starts from where the
+ * box is: the caller measures `from` on screen), never a retarget @param {string} key @param {Box} from @param {Box} to
+ * @param {Write} write */
+export function travel(key, from, to, write) {
+  stop(key);
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || same(from, to)) {
+    write(to);
+    return;
+  }
+  asked.set(key, { from, to, write });
+  if (!queued) {
+    queued = true;
+    queueMicrotask(start);
+  }
+}
+/** plan what was asked in this task NOW (not at the task's end): a switch times its fades on the plan's clock, in the
+ * same task @returns {{ t0: number, plan: ReturnType<typeof shapePlan> } | null} */
+export function flush() {
+  if (!queued) return run ? { t0: run.t0, plan: /** @type {any} */ (run).plan } : null;
+  start();
+  return run ? { t0: run.t0, plan: /** @type {any} */ (run).plan } : null;
+}
+/** while the run moves: `fn` places what follows the travellers, every frame after their writes (and once as it lands)
+ * @param {() => void} fn @returns {() => void} let go of it (its switch ended, or a newer one took over) */
+export function follow(fn) {
+  followers.add(fn);
+  fn();
+  return () => followers.delete(fn);
+}
+/** how far `key`'s move has come on each axis, 0 → 1 ([1, 1]: not moving) @param {string} key @returns {[number, number]} */
+export function progressXY(key) {
+  if (!run) return [1, 1];
+  const i = run.moves.findIndex(([k, m]) => k === key && !m.off);
+  if (i < 0) return [1, 1];
+  return run.q(i, Math.min(run.T, performance.now() - run.t0));
+}
+/** how far `key`'s move has come, its axes averaged (1: not moving) @param {string} key */
+export function progress(key) {
+  const q = progressXY(key);
+  return (q[0] + q[1]) / 2;
 }
 /** a new goal for a box ALREADY MOVING bends its remaining path, on the same plan and clock: from where it is at this
  * moment's progress to the new goal (the start is solved so the plan's curve passes through both — no jump). Nothing
@@ -128,6 +174,7 @@ const same = (/** @type {Box} */ a, /** @type {Box} */ b) =>
 
 /* one plan for everything asked in this task, and for what was still moving: from where it is now */
 function start() {
+  if (!queued) return;
   queued = false;
   /** @type {Map<string, Move>} */
   const all = new Map();
@@ -142,9 +189,11 @@ function start() {
   fading.clear();
   if (!moves.length) {
     run = null;
+    for (const fn of followers) fn();
+    followers.clear();
     return;
   }
-  run = { t0, T: plan.T, q: plan.q, moves };
+  run = /** @type {any} */ ({ t0, T: plan.T, q: plan.q, moves, plan });
   if (!raf) raf = requestAnimationFrame(tick);
 }
 /** @param {number} now */
@@ -163,6 +212,9 @@ function tick(now) {
   });
   plateSync(); // the plate rides the frame or the panel, the tab bar the plate
   promptFollow(true); // the prompt box, glued one gap from the plate (C2b)
-  if (end) run = null;
-  else raf = requestAnimationFrame(tick);
+  for (const fn of followers) fn(); // what rides the travellers (a switch's views)
+  if (end) {
+    run = null;
+    followers.clear();
+  } else raf = requestAnimationFrame(tick);
 }

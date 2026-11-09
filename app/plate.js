@@ -9,7 +9,8 @@ import { placeAround } from "./around.js";
 import { $, offsetIn } from "./dom.js";
 import { frameHold, frameTarget } from "./framebox.js";
 import { glassFade } from "./fade.js";
-import { fades, shapeBox, shapeSteps } from "./layoutmath.js";
+import { fades, shapeSteps } from "./layoutmath.js";
+import { flush, follow, moving, progress, progressXY, travel } from "./rearrange.js";
 import { promptFollow } from "./layout.js";
 import { SPACE } from "./tokens.js";
 
@@ -99,21 +100,32 @@ function setBar(tb, x, y) {
 }
 export function placeBar() {
   const tb = /** @type {HTMLElement | null} */ (document.querySelector(".tabs"));
-  if (!tb || !tb.children.length || barAnim) return; // during a switch it moves with the plate (plateMorph)
+  if (!tb || !tb.children.length) return;
   const pr = $("plate").getBoundingClientRect();
   if (!pr.width) return;
-  const { x, y } = barFor(tb, pr);
+  let { x, y } = barFor(tb, pr);
+  /* a switch: the bar starts where its buttons were on screen (its box changes width with the tab: from its box it was
+     off by up to 57 px) — that first gap closes as the plate travels, on the plate's progress (T2c-3b: it had keyframes
+     of its own, sampled in advance) */
+  if (barFlip) {
+    const k = progress("plate");
+    if (k >= 1) barFlip = null;
+    else {
+      x = Math.round(x + barFlip.dx * (1 - k));
+      y = Math.round(y + barFlip.dy * (1 - k));
+    }
+  }
   if (x !== barX || y !== barY) setBar(tb, x, y);
 }
-/** @type {Animation | null} */
-let barAnim = null;
+/** a switch's opening offset of the bar (where its buttons were, less where the plate puts it) @type {{ dx: number, dy: number } | null} */
+let barFlip = null;
 /** @type {DOMRect | null} */
 let barBefore = null; // where the tab buttons (#seg) were on screen when a switch began
 
 /* at rest the plate follows its element; only while something moves (a resize, a glide, a crop-and-reveal) does it
-   look every frame — the loop runs until `ms` after the last call */
-/** @type {Animation | null} */
-let morph = null;
+   look every frame — the loop runs until `ms` after the last call. While a switch moves it, it's the driver's
+   (rearrange.js travel: moving("plate")) */
+const driven = () => moving("plate");
 let until = 0,
   raf = 0;
 /** @param {number} [ms] */
@@ -124,7 +136,7 @@ export function plateFollow(ms = 700) {
 /* right now, in step with whoever just moved the frame (a crop-and-reveal calls it each frame after placing the box:
    the follow loop runs before it in the frame, so on its own it drew where the frame was a frame ago) */
 export function plateSync() {
-  if (!morph && !pending) put(target());
+  if (!driven() && !pending) put(target());
   placeAround();
 }
 /* the box beside the plate: glued to it (layout.js promptFollow) — every frame the plate may move, the same frame */
@@ -132,8 +144,8 @@ export function plateSync() {
 function tick() {
   raf = 0;
   placeAround();
-  if (!morph && !pending) put(target());
-  else if (morph) placeBar(); // the plate is gliding (a switch): the bar follows it
+  if (!driven() && !pending) put(target());
+  else if (driven()) placeBar(); // the plate is travelling (a switch): the bar follows it
   promptFollow(true); // …and the box, one gap from it (side by side, every page: C2b)
   if (performance.now() < until) raf = requestAnimationFrame(tick);
 }
@@ -188,8 +200,7 @@ export function switchGlide(at, views, layout = false) {
   switchAnims = [];
   if (leaveDone) leaveDone();
   landing = null;
-  if (barAnim) barAnim.cancel();
-  barAnim = null;
+  barFlip = null;
   if (!views) {
     put(target()); // the plate rides the frame from here (framebox.js → plateSync)
     if (!layout) {
@@ -222,32 +233,33 @@ export function switchGlide(at, views, layout = false) {
     o = $("right").getBoundingClientRect(),
     to = goalBox(),
     toS = { l: o.left + to.l, t: o.top + to.t, w: to.w, h: to.h }, // on screen
-    steps = shapeSteps(at, toS), // the one choreography: crop, swap, reveal (layoutmath.js)
+    same = views.old === views.neu; // a layout switch's panel: one view, riding the plate to where the layout puts it
+  const dropWas = $("plate").classList.contains("drop");
+  put(to); // its look for where it goes (a panel's glass, the drop line); its box is the driver's from here
+  /* the plate TRAVELS on the one driver (rearrange.js, T2c-3b): from where it was on screen to where it belongs, on the
+     plan's clock — written by its own write (put) every frame; what rides it follows its live box after (the views
+     and their clip, the tab bar). It had keyframes of its own, sampled every 8 ms in advance (and the rim, the bar and
+     the views each a set of their own) */
+  /** the plate's box on screen as last written (what rides it reads it: no layout read per frame) */
+  let live = { ...at };
+  const writePlate = (/** @type {{ l: number, t: number, w: number, h: number }} */ b) => {
+    live = b;
+    put({ l: b.l - o.left, t: b.t - o.top, w: b.w, h: b.h, panel: to.panel });
+  };
+  travel("plate", at, toS, writePlate);
+  writePlate(at); // its first box now, before anything is painted
+  const fl = flush(),
+    steps = fl ? fl.plan : shapeSteps(at, toS), // the one choreography: crop, swap, reveal (layoutmath.js)
     T = Math.max(1, steps.T),
-    /* keyframes every 8 ms, and exactly on the steps' ends: between two samples the box goes in a straight line, and
-       the crop is steepest just before the swap — sampled past it, the plate was still 9 px taller than the picture
-       as it came in */
-    at8 = Array.from({ length: Math.ceil(T / 8) + 1 }, (_, i) => Math.min(T, i * 8)),
-    same = views.old === views.neu, // a layout switch's panel: one view, riding the plate to where the layout puts it
-    /** @type {{ offset: number, q: [number, number] }[]} */
-    samples = [...new Set([...at8, steps.A, steps.A + steps.S, T])]
-      .filter(e => e >= 0 && e <= T)
-      .sort((x, y) => x - y)
-      .map(e => ({ offset: e / T, q: steps.q(e) })),
-    /* the clock starts NOW, and everything holds its first keyframe until then (fill: backwards): read as the current
-       frame's start, the first frame shown was already ~30 ms in — the prompt column's first step 34 px */
-    t0 = performance.now(),
+    t0 = fl ? fl.t0 : performance.now(), // the driver's clock: every fade of the switch starts on it
     /** @type {{ duration: number, easing: string, fill: FillMode }} */
-    timing = { duration: T, easing: "linear", fill: "backwards" }, // the keyframes carry the curves
-    px = (/** @type {number} */ v) => v + "px",
+    timing = { duration: T, easing: "linear", fill: "backwards" },
     /** one clock: every animation of the switch starts at t0 */
     go = (/** @type {Animation} */ a) => {
       a.startTime = t0;
       switchAnims.push(a);
       return a;
     };
-  const dropWas = $("plate").classList.contains("drop");
-  put(to);
   /* PNG Info's drop line leaving with its panel: it fades across the crop, to the swap (its own 150 ms fade at the
      start read as vanishing, the user, 2026-10-28); coming in, its own fade is the one the user liked */
   if (dropWas && !$("plate").classList.contains("drop"))
@@ -259,52 +271,23 @@ export function switchGlide(at, views, layout = false) {
         pseudoElement: "::after",
       }),
     );
-  plateFollow(T + 50); // every frame of the glide: the bar's resting place follows the plate
+  plateFollow(T + 50); // every frame of the travel: what sits round the plate
   /* the plate's look changing with it (a panel's glass and ring coming in) and the selected tab's pill: their own CSS
      transitions, put on the switch's clock (they began a frame later) */
   for (const el of [$("plate"), $("rim"), $("thumb")]) {
     void getComputedStyle(el).boxShadow; // starts the transitions the change above set off
     for (const a of el.getAnimations()) if (a instanceof CSSTransition) a.startTime = t0;
   }
-  /* the plate and its rim: one set of keyframes, on screen → in the right column */
-  const boxes = samples.map(s => shapeBox(at, toS, s.q)),
-    keys = boxes.map((b, i) => ({
-      offset: samples[i].offset,
-      left: px(b.l - o.left),
-      top: px(b.t - o.top),
-      width: px(b.w),
-      height: px(b.h),
-    }));
-  const m = go($("plate").animate(keys, timing));
-  morph = m;
-  go($("rim").animate(keys, timing));
-  m.onfinish = m.oncancel = () => {
-    if (morph === m) morph = null;
-    plateFollow(300);
-  };
-  /* the tab bar over the plate all the way, starting where its buttons were on screen (the bar's box changes width on
-     a switch: worked out from the box it was off by up to 57 px) — that first gap closes as the plate moves */
+  /* the tab bar over the plate all the way (placeBar, its one writer), starting where its buttons were on screen */
   const tb = /** @type {HTMLElement} */ (document.querySelector(".tabs")),
     goal = barFor(tb, { left: toS.l, right: toS.l + toS.w, top: toS.t });
   setBar(tb, goal.x, goal.y);
   const now = $("seg").getBoundingClientRect(),
     fx = barBefore ? Math.round(goal.x + barBefore.left - now.left) : goal.x,
     fy = barBefore ? Math.round(goal.y + barBefore.top - now.top) : goal.y,
-    over = boxes.map(b => barFor(tb, { left: b.l, right: b.l + b.w, top: b.t })),
-    dx = fx - over[0].x,
-    dy = fy - over[0].y,
-    barKeys = over.map((g, i) => {
-      const k = 1 - (samples[i].q[0] + samples[i].q[1]) / 2;
-      return { offset: samples[i].offset, transform: `translate(${g.x + dx * k}px, ${g.y + dy * k}px)` };
-    });
-  if (barKeys.some(k => k.transform !== barKeys[barKeys.length - 1].transform)) {
-    const a = go(tb.animate(barKeys, timing));
-    barAnim = a;
-    a.onfinish = a.oncancel = () => {
-      if (barAnim === a) barAnim = null;
-      placeBar();
-    };
-  }
+    start0 = barFor(tb, { left: at.l, right: at.l + at.w, top: at.t });
+  barFlip = { dx: fx - start0.x, dy: fy - start0.y };
+  placeBar();
   /* the two views, live (no snapshots: glass, the picture's arrows and buttons stay real — a View Transition's
      pictures of them blinked, 2026-10-28). The leaving one stays where it was on screen at its size (its contents
      don't reflow), the coming one where it belongs; both inside the plate as it glides (1 px in, so its rim shows),
@@ -350,24 +333,46 @@ export function switchGlide(at, views, layout = false) {
        and reveals them (the picture's rule, morph.js). Contents fade only when they are other contents (a tab switch) */
     rides = /** @type {[HTMLElement, DOMRect, number[]][]} */ (
       same
-        ? [[neu, nr, centre(boxes[boxes.length - 1])]]
+        ? [[neu, nr, centre(toS)]] // (its start: where it was on screen, oldRect — `lead` below)
         : [
-            [old, oldRect, centre(boxes[0])],
-            [neu, nr, centre(boxes[boxes.length - 1])],
+            [old, oldRect, centre(at)],
+            [neu, nr, centre(toS)],
           ]
     );
-  for (const [v, r, anchor] of rides) {
-    const sh = boxes.map(b => {
-        const c = centre(b);
-        return [c[0] - anchor[0], c[1] - anchor[1]];
-      }),
-      box = pic(v) ? fr : r, // what the plate crops: the picture in its view, else the whole view
-      moved = (/** @type {number} */ i) => new DOMRect(box.left + sh[i][0], box.top + sh[i][1], box.width, box.height),
-      ride = boxes.map((_, i) => ({ offset: samples[i].offset, transform: `translate(${sh[i][0]}px, ${sh[i][1]}px)` })),
-      clip = boxes.map((b, i) => ({ offset: samples[i].offset, clipPath: inset(moved(i), b) }));
-    go(v.animate(ride, timing));
-    go((pic(v) ? $("frame") : v).animate(clip, timing));
-  }
+  /* every frame, after the plate's write: each view on the plate's live centre, clipped by its live box (T2c-3b: a
+     follower of the plate, on the driver's frame — it was a set of keyframes per view, sampled in advance) */
+  /* a layout switch's one view starts where it WAS on screen (its old place, oldRect) and lands where it belongs: its
+     offset is the start's, times how far the plate's centre still has to go on that axis (the plan's progress where the
+     centre doesn't move) — so it travels in step with its plate and never past. Centred on the old plate from the first
+     frame, a resized Queue jumped ~71 px (2026-11-09: the tracer saw it once the views became the driver's writes); on
+     the plan's progress number it drifted 7 px out and back (the plate's height and centre don't advance in exact
+     proportion to it). A tab switch's views ride the plate's centre (they are where they are already) */
+  const start = [oldRect.left - nr.left, oldRect.top - nr.top],
+    left = (/** @type {number} */ i, /** @type {number[]} */ c, /** @type {number} */ q) => {
+      const a0 = centre(at)[i],
+        a1 = centre(toS)[i];
+      return Math.abs(a1 - a0) < 0.5 ? 1 - q : Math.min(1, Math.max(0, (a1 - c[i]) / (a1 - a0)));
+    },
+    ride = () => {
+      const q = progressXY("plate"),
+        c = centre(live);
+      for (const [v, r, anchor] of rides) {
+        const dx = same ? start[0] * left(0, c, q[0]) : c[0] - anchor[0],
+          dy = same ? start[1] * left(1, c, q[1]) : c[1] - anchor[1],
+          box = pic(v) ? fr : r, // what the plate crops: the picture in its view, else the whole view
+          moved = new DOMRect(box.left + dx, box.top + dy, box.width, box.height);
+        v.style.transform = `translate(${dx}px, ${dy}px)`;
+        (pic(v) ? $("frame") : v).style.clipPath = inset(moved, live);
+      }
+    };
+  const letGo = follow(ride),
+    unride = () => {
+      letGo();
+      for (const [v] of rides) {
+        v.style.transform = "";
+        (pic(v) ? $("frame") : v).style.clipPath = "";
+      }
+    };
   /* only out, from what they are now: shown by hover (the edit buttons, the arrows) or by state (the status row,
      Show prompt), a switch never shows them — faded in by it, or out from fully shown, they blinked (the user,
      2026-10-28: "the only reason for them to be shown is hovering the picture") */
@@ -443,6 +448,7 @@ export function switchGlide(at, views, layout = false) {
       for (const p of ["left", "top", "width", "height", "right", "bottom"]) os.removeProperty(p);
     }
     h.classList.remove("switching");
+    unride(); // the views back in their places, unclipped
     frameHold(null); // the picture's frame (if its view left) to where the layout wants it
     /* the switch's own animations end with it: kept (filling), they piled up holding the views' last looks */
     for (const a of switchAnims) a.cancel();

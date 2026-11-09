@@ -639,10 +639,14 @@ picturesFadeAtOneSpeed.opts = { step: 0.05 };
    during a tab switch keeps the glides off until it has ended (+ its 300 ms) */
 export async function snapHeldUntilTheLastMotion(k, t) {
   await k.mouse(2, 2);
-  const s = await k.ev(`new Promise(res=>{const o=[],t0=performance.now(),b=document.body;
+  /* "the plate moves" from its box changing between frames — the motion itself, whatever drives it (it read the plate's
+     own animations: since T2c-3b the plate travels on the driver's writes) */
+  const s = await k.ev(`new Promise(res=>{const o=[],t0=performance.now(),b=document.body;let pr=null;
     document.querySelector('.tab[data-v="queue"]').click();
     setTimeout(()=>setDock("right"),500);
-    (function s(){requestAnimationFrame(()=>setTimeout(()=>{o.push([Math.round(performance.now()-t0),b.classList.contains("laysnap"),performance.now()-t0>500&&$("plate").getAnimations().length>0]);
+    (function s(){requestAnimationFrame(()=>setTimeout(()=>{const p=$("plate").getBoundingClientRect(),
+      mv=!!pr&&(Math.abs(p.left-pr.left)+Math.abs(p.top-pr.top)+Math.abs(p.width-pr.width)+Math.abs(p.height-pr.height))>0.5;pr=p;
+      o.push([Math.round(performance.now()-t0),b.classList.contains("laysnap"),performance.now()-t0>500&&mv]);
     if(performance.now()-t0<2600)s();else res(o)},0))})()})`);
   /* the layout switch is the tab switch's system since T2b (no View Transition, decision 0014): it runs while the plate
      moves after the layout was asked for */
@@ -802,6 +806,10 @@ layoutSwitchIsLive.opts = { width: 1760, height: 1080, step: 0.05 };
    (Left ↔ Right) just travels, a size change crops and reveals them. They used to stay pinned where they were and
    fade out, then fade in at the new place (a second rule for the pane's contents) */
 export async function panelContentsRide(k, t) {
+  /* the rule as amended in T2c-3b (2026-11-09): a layout switch's panel contents ride their pane — laid out at their new
+     place and size, clipped by the plate — starting WHERE THEY WERE on screen: the difference shrinks with the plate's
+     progress on each axis (centred on the old plate from the first frame, a resized Queue jumped ~71 px — DD-2026-11-08-2
+     as first written). Never faded */
   for (const [from, to] of [
     ["left", "right"],
     ["right", "below"],
@@ -810,22 +818,36 @@ export async function panelContentsRide(k, t) {
     await k.ev(`(setDock("${from}"),document.querySelector('.tab[data-v="queue"]').click(),1)`);
     await k.mouse(4, 4);
     await k.sleep(1600);
-    const rows = await k.ev(`new Promise(res=>{const out=[],t0=performance.now(),v=$("v-queue");setDock("${to}");
+    const rows =
+      await k.ev(`new Promise(res=>{const out=[],t0=performance.now(),v=$("v-queue"),b=v.getBoundingClientRect();
+      out.push([1,0,0,0,0,b.left,b.top]);setDock("${to}");
       (function f(){setTimeout(()=>{const p=$("plate").getBoundingClientRect(),r=v.getBoundingClientRect();
         out.push([+getComputedStyle(v).opacity,Math.round(r.left+r.width/2-(p.left+p.width/2)),
-          Math.round(r.top+r.height/2-(p.top+p.height/2)),Math.round(p.left),Math.round(p.top)]);
+          Math.round(r.top+r.height/2-(p.top+p.height/2)),Math.round(p.left),Math.round(p.top),r.left,r.top]);
         if(performance.now()-t0<1000)requestAnimationFrame(f);else res(out)},0)})()})`);
     const tag = `Queue: ${from} → ${to}`,
-      last = rows.at(-1),
-      dim = rows.filter(r => r[0] < 0.99),
-      off = rows.filter(r => Math.abs(r[1] - last[1]) > 2 || Math.abs(r[2] - last[2]) > 2),
-      moved = rows.some(r => Math.abs(r[3] - rows[0][3]) > 20 || Math.abs(r[4] - rows[0][4]) > 20);
-    t.ok(moved, `${tag}: the plate moves (the case)`, { first: rows[0], last });
-    t.ok(!dim.length, `${tag}: its contents never fade`, { dim: dim.length + "/" + rows.length, min: dim[0] });
-    t.ok(!off.length, `${tag}: …and ride the plate every frame`, {
-      off: off.length + "/" + rows.length,
-      first: off[0],
-      last,
+      before = rows[0],
+      seen = rows.slice(1),
+      last = seen.at(-1),
+      dim = seen.filter(r => r[0] < 0.99),
+      moved = seen.some(r => Math.abs(r[3] - seen[0][3]) > 20 || Math.abs(r[4] - seen[0][4]) > 20),
+      /* each axis: its distance from where it lands never grows (past and back = a reversal) */
+      back = seen.filter(
+        (r, i) =>
+          i &&
+          (Math.abs(r[5] - last[5]) > Math.abs(seen[i - 1][5] - last[5]) + 1 ||
+            Math.abs(r[6] - last[6]) > Math.abs(seen[i - 1][6] - last[6]) + 1),
+      );
+    t.ok(moved, `${tag}: the plate moves (the case)`, { first: seen[0], last });
+    t.ok(!dim.length, `${tag}: its contents never fade`, { dim: dim.length + "/" + seen.length, min: dim[0] });
+    t.ok(
+      Math.abs(seen[0][5] - before[5]) <= 3 && Math.abs(seen[0][6] - before[6]) <= 3,
+      `${tag}: …start where they were (no jump at the first frame)`,
+      { before: before.slice(5), first: seen[0].slice(5) },
+    );
+    t.ok(!back.length, `${tag}: …and travel to where they land, never past and back`, {
+      back: back.length + "/" + seen.length,
+      at: back[0],
     });
   }
 }

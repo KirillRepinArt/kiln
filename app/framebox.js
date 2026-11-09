@@ -27,7 +27,8 @@ export const layE = bez(0.05, 0.7, 0.1, 1); // --lay-e: the layout's curve (the 
    picture was; the next goal decides once: a box of another shape or size in Generating crops and reveals (morph.js),
    the same box doesn't move. Leaving the Gallery with the arrow (and ✕, Esc) used to glide the frame with the old
    picture stretched in it, while the tab cropped and revealed: each caller chose its own motion */
-/** @typedef {Box & { x: number, y: number }} WasBox the old box, and its top-left on screen before anything moved */
+/** @typedef {Box & { x: number, y: number, scale?: boolean }} WasBox the old box, and its top-left on screen before anything
+ * moved; scale: the same picture at another size (a layout switch) — it scales with the frame, no crop-and-reveal */
 /** @type {(o: WasBox) => boolean} the crop-and-reveal (morph.js registers it): false when it didn't start */
 let morphWith = () => false;
 /** @param {(o: WasBox) => boolean} fn */

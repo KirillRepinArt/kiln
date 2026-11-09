@@ -1168,3 +1168,36 @@ export async function verticalSwitchesKeepTheBoxGlued(k, t) {
   }
 }
 verticalSwitchesKeepTheBoxGlued.opts = { width: 1600, height: 950 };
+
+/* the same picture scales with its pane in a layout switch (the user, 2026-11-10: "we should see picture being scaled up
+   and down at the same time as the pane does"; DEVLOG DD-2026-11-10-2): every frame the picture covers exactly its
+   frame, no copy of it shows, the picture itself is fully seen. It cropped and revealed at its own two sizes, its copy
+   crossing over it — "the pic seems to lag, it's clearly not a part of the page" */
+export async function samePictureScalesWithItsPane(k, t) {
+  await k.job("[fill:446688] a", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.ev(`(setDock("left"),1)`);
+  await k.mouse(4, 4);
+  await k.sleep(1600);
+  for (const to of ["below", "right", "left"]) {
+    const f = await k.ev(`new Promise(res=>{const out=[],t0=performance.now();setDock(${JSON.stringify(to)});
+      const seen=e=>{let o=+getComputedStyle(e).opacity;for(let a=e.parentElement;a;a=a.parentElement)o*=+getComputedStyle(a).opacity;return o};
+      (function g(){requestAnimationFrame(()=>setTimeout(()=>{const c=$("cv").getBoundingClientRect(),fr=$("frame").getBoundingClientRect();
+        out.push([Math.max(Math.abs(c.left-fr.left),Math.abs(c.top-fr.top),Math.abs(c.width-fr.width),Math.abs(c.height-fr.height)),seen($("cvx")),seen($("cv")),fr.width,fr.left]);
+        if(performance.now()-t0<1300)g();else res(out)},0))})()})`);
+    const off = f.filter(x => x[0] > 1.5),
+      copy = f.filter(x => x[1] > 0.05),
+      dim = f.filter(x => x[2] < 0.95),
+      span = (/** @type {number} */ i) => Math.max(...f.map(x => x[i])) - Math.min(...f.map(x => x[i]));
+    t.ok(span(3) > 20 || span(4) > 20, `→ ${to}: the frame changes size or place (the case)`);
+    t.motion(!off.length, `→ ${to}: the picture covers exactly its frame every frame (it scales with its pane)`, {
+      frames: off.length,
+      most: Math.round(Math.max(0, ...off.map(x => x[0]))),
+    });
+    t.motion(!copy.length && !dim.length, `→ ${to}: no copy shows, the picture fully seen`, {
+      copy: copy.length,
+      dim: dim.length,
+    });
+  }
+}
+samePictureScalesWithItsPane.opts = { width: 1400, height: 900 };

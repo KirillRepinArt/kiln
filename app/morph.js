@@ -16,8 +16,9 @@ import { stageRect } from "./layout.js";
    morph written in the panel's coordinates drifted with it — lopsided. Each frame the box is placed on screen and the
    panel's current offset taken off. The target is read from the frame's data (sizeFrame keeps it there while a morph
    runs, so a re-layout mid-way just updates where it lands) */
-/** @param {{ w: number, h: number, l: number, t: number, x?: number, y?: number }} o where the picture was: its old box
- * in its panel, and (x, y) its top-left on screen, measured before the switch moved anything */
+/** @param {{ w: number, h: number, l: number, t: number, x?: number, y?: number, scale?: boolean }} o where the picture was: its old box
+ * in its panel, and (x, y) its top-left on screen, measured before the switch moved anything; scale: the same picture at
+ * another size (a layout switch) */
 export function frameMorph(o) {
   const f = $("frame");
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
@@ -30,6 +31,16 @@ export function frameMorph(o) {
     }),
     n0 = T0();
   if (!(n0.w > 0 && n0.h > 0 && o.w > 0 && o.h > 0)) return false;
+  if (o.scale) {
+    /* the same picture at another size (a layout switch): the frame travels on the driver and the picture fills it
+       every frame — it scales with its pane (its ratio is fixed: exact); no copy, no swap, no fades. A crop-and-reveal
+       still running lets go of its own sizes */
+    morphs++;
+    f.classList.remove("morph");
+    const st = stageRect();
+    frameTravel({ l: (o.x ?? st.left + o.l) - st.left, t: (o.y ?? st.top + o.t) - st.top, w: o.w, h: o.h }, n0);
+    return true;
+  }
   const px = (/** @type {number} */ v) => v + "px";
   f.style.setProperty("--ow", px(o.w));
   f.style.setProperty("--oh", px(o.h));

@@ -4,7 +4,6 @@ import { $ } from "./dom.js";
 import { fadeCol, lay, sizeFrame, snapHold, standIn } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
-import { xfadeSnap } from "./pictures.js";
 import { frameBox, frameHold, pictureChange } from "./framebox.js";
 import { plateBefore, switchGlide } from "./plate.js";
 import { placeNavs } from "./browse.js";
@@ -92,15 +91,12 @@ export function tabGo(fn, layout = false) {
   if (!layout) document.documentElement.classList.add("tabswitch"); // a tab switch: the tab pill still slides
   /* a switch within Generating's view changes the frame's box: the frame's owner crops and reveals it (G11) — a switch
      to another view gives it up (frameHold) */
-  /* the picture's view: a box of another shape or size crops and reveals — in a layout switch too (T2b: the same picture
-     at another size never pops; its old copy crosses to it) */
-  if (S.view === "gen" && f0) {
-    /* a layout switch: the same picture leaves as its own copy, taken now at its old size (pictures.js — every change of
-       what's on show does), so the crop-and-reveal crops the old size and reveals the new. With no copy it was treated
-       as a picture coming into an empty frame — hidden until the swap: the plate travelled empty (the user, 2026-11-08) */
-    if (layout) xfadeSnap(false);
-    pictureChange({ ...f0, x: fr0.left, y: fr0.top });
-  }
+  /* the picture's view: a box of another shape or size crops and reveals; a layout switch keeps the SAME picture, which
+     scales with its pane — the frame travels and the picture fills it the whole way, no copy, no swap (the user,
+     2026-11-10: "we should see picture being scaled up and down at the same time as the pane does" — iOS Photos' zoom,
+     Material's container transform; DEVLOG DD-2026-11-10-2. It cropped and revealed at its own sizes, its copy crossing:
+     "the pic seems to lag, it's clearly not a part of the page") */
+  if (S.view === "gen" && f0) pictureChange({ ...f0, x: fr0.left, y: fr0.top, scale: layout });
   lay.frameDefer = true;
   try {
     fn();

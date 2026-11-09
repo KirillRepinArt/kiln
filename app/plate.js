@@ -163,11 +163,10 @@ export function plateBefore() {
    Everything that moves in a switch is started here, from one geometry (the plate's box where it was on screen → where
    it belongs) and on ONE clock (one start time, the plate's curve): the plate and its rim, the tab bar, the switch's own
    layers (the View Transition's groups — the contents, a picture that travels, its glow, the picture's arrows — timed
-   from here, not from CSS), the contents' clip to the plate, and the prompt column's slide (layout.js slideCol, given
-   the start time). Five things used to time themselves — CSS keyframes, the browser's groups, three scripts — each from
+   from here, not from CSS), the contents' clip to the plate, and the prompt box riding the plate (layout.js promptFollow, in
+   the driver's frames). Five things used to time themselves — CSS keyframes, the browser's groups, three scripts — each from
    its own numbers and clock: the clip ran ~20 px off the plate, the rim's line crossed the picture, the plate sat empty
    ~200 ms waiting for the contents. The CSS keeps the look (fades, corners), not the motion */
-export const SWITCH = { ms: 650, curve: [0.05, 0.7, 0.1, 1] }; // the prompt column's slide (layout.js): --t-650, --lay-e
 /** @type {Animation[]} */
 let switchAnims = [];
 // the running switch's own animations (a new switch replaces them)

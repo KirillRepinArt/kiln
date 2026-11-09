@@ -181,6 +181,10 @@ export function stop(key) {
 }
 /** `key`'s box is moving now (its goal is what the last ask said) @param {string} key */
 export const moving = key => asked.has(key) || (!!run && run.moves.some(([k, m]) => k === key && !m.off));
+/** a switch's own move is on (travel(): a crop-and-reveal's frame, a switch's plate) — what it carries is at its end
+ * state from the first frame (DD-4) */
+export const travelling = () =>
+  [...asked.values()].some(a => a.travel) || (!!run && run.moves.some(([, m]) => m.travel && !m.off));
 /** where `key` is going, while it moves @param {string} key */
 export const movingTo = key => asked.get(key)?.to ?? run?.moves.find(([k, m]) => k === key && !m.off)?.[1].to ?? null;
 

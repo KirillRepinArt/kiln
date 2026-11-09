@@ -1,9 +1,9 @@
 // @ts-check
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
-import { SWITCH, glueRect, plateFollow } from "./plate.js";
+import { glueRect, plateFollow } from "./plate.js";
 import { placeAround } from "./around.js";
-import { driving, follow, movingTo, rearrange, rearrangeFade } from "./rearrange.js";
-import { frameGoal, layT } from "./framebox.js";
+import { driving, follow, moving, movingTo, rearrange, rearrangeFade, stop, travelling } from "./rearrange.js";
+import { frameGoal } from "./framebox.js";
 import { syncH } from "./boot.js";
 import {
   applyMode,
@@ -32,7 +32,6 @@ import {
   layoutPass,
   limits,
   paneDefault,
-  bez,
   fitInBox,
   layoutPrefsV4,
   framePlacement,
@@ -833,21 +832,16 @@ export function vAlign() {
    Its transform = its hug of the picture (below) + what is left of a tab switch's slide, written here only. Two
    writers used to set it: vAlign's inline style, and a switch's own animation that froze the shift it started with for
    650 ms (a re-shift meanwhile showed only at the end, as a jump) */
-const colEase = bez(SWITCH.curve[0], SWITCH.curve[1], SWITCH.curve[2], SWITCH.curve[3]); // the switch's glide (plate.js)
-let hugX = 0, // side by side: one gap from the plate, on every page (promptFollow)
+let hugX = 0, // side by side: one gap from the plate, on every page (promptFollow); catching up after a hold, the driver's ("hug")
   hugY = 0, // riding its pane's plate on the height axis while it moves (Vertical; side by side in a switch — promptFollow; 0 at rest): never glided, the plate is its clock
-  hugFrom = 0, // …catching up after a hold: from, to, since when (0: not catching up)
-  hugTo = 0,
-  hugT0 = 0,
   colRaf = 0;
+/** the box's catch-up after a hold, written by the driver (rearrange.js "hug") @param {{ l: number }} b */
+const hugWrite = b => {
+  hugX = b.l;
+};
 function colApply() {
   colRaf = 0;
   const now = performance.now();
-  if (hugT0) {
-    const p = Math.min(1, (now - hugT0) / layT());
-    hugX = Math.round(hugFrom + (hugTo - hugFrom) * colEase(p));
-    if (p >= 1) hugT0 = 0;
-  }
   /* a relation change (a layout switch, T2c): the box rides the LIVE plate — its leaving copy by the old relation, the
      box itself by the new — on top of its place where it lands (its glue to where the plate lands) */
   let rx = 0,
@@ -873,7 +867,7 @@ function colApply() {
   /* its own frames only for what the driver doesn't move: a relation change rides the driver's frames while it runs
      (T2c-3b-2: after the plate's write, never a frame before it — its own loop could run first and read the plate a
      frame late), and its own after (the fade-in outlasting the travel) */
-  if (hugT0 || (relation && !driving())) colRaf = requestAnimationFrame(colApply);
+  if (relation && !driving()) colRaf = requestAnimationFrame(colApply);
 }
 /** the box's STAND-IN for a layout switch (DEVLOG DD-2026-11-08-5): a copy of what's on screen now — the name row, the
  * box, the LoRA chips — at their place and size, in a layer of its own over the page. The box itself is laid out where
@@ -1057,19 +1051,23 @@ export function promptFollow(direct = false) {
       y = glued({ l: p.left, t: p.top, w: p.width, h: p.height }, r, b).t - b.t;
     }
   }
-  const b2 = document.body.classList;
-  if (direct || b2.contains("laysnap") || b2.contains("liveresize") || b2.contains("laydrag")) {
-    hugT0 = 0;
-    if (x === hugX && y === hugY && !relation) return;
+  const b2 = document.body.classList,
+    /* at once: under your hand, and in a switch — the box's place there is the switch's (the plate's travel, the
+       relation change: DD-4, the end state from the first frame); a catch-up asked mid-switch re-planned the switch */
+    snap = b2.contains("laysnap") || b2.contains("liveresize") || b2.contains("laydrag") || travelling() || !!relation,
+    at = (/** @type {number} */ l) => ({ l, t: 0, w: 0, h: 0 }),
+    still = x === hugX && y === hugY && !relation;
+  hugY = y; // a glue, at once (a catch-up glide on it put the box 113 px off the plate's first frame of a ratio change)
+  /* across, the glue — at once in the driver's frames and under your hand; off it (a hold let go: the plate moved while
+     you worked in the prompt), the box catches up on the driver, one plan and clock with whatever else moves, and a new
+     goal meanwhile (the driver's frames, the plate still moving) bends its path — never a jump (T2c-3b-4: it glided on
+     a clock of its own, and the driver's next frame snapped it to the glue when the plate was still moving) */
+  if (moving("hug") && !snap) rearrange("hug", at(hugX), at(x), hugWrite);
+  else if (direct || snap) {
+    stop("hug");
+    if (still) return;
     hugX = x;
-    hugY = y;
-  } else {
-    if (x === (hugT0 ? hugTo : hugX) && y === hugY) return;
-    hugY = y; // a glue, at once (its catch-up glide put the box 113 px off the plate's first frame of a ratio change)
-    hugFrom = hugX;
-    hugTo = x;
-    hugT0 = performance.now();
-  }
+  } else if (x !== hugX) rearrange("hug", at(hugX), at(x), hugWrite);
   if (relation) {
     /* riding the live plate: placed now, in the frame the plate moved (its own frame would read it a frame late) */
     cancelAnimationFrame(colRaf);

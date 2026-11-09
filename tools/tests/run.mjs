@@ -389,8 +389,6 @@ const filters = args.map(x => x.split("/"));
 /* acceptance tests for work in progress: they fail until their work lands, so a full run (and CI) skips them; name one
    to run it. Each entry says what it waits for; remove it when that's done. */
 const PENDING = {
-  cases:
-    "v0.7c T2c-3b: every check green but the double-click's one motion — the box's width in Vertical has no motion owner, and side by side it moves on the rearrangement while its place rides the plate (C5, 2026-11-09; DEVLOG DD-2026-11-03-14: its acceptance is C5 and T2)",
   layers:
     "v0.7c T2c, the layering rule: the picture's overlay controls (its ✕, the edit buttons) move to the floating layer, out of the page that fades (DEVLOG DD-2026-11-08-14)",
 };

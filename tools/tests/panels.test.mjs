@@ -417,6 +417,48 @@ export async function holdsWhileYouWork(k, t) {
   });
 }
 
+/* T2c-3b-4: a hold let go while the plate still moves (a picture arrived with a menu open in the prompt: the plate grew,
+   the box held; the menu closed mid-glide): the box catches up on the driver — no frame takes most of its move — and
+   lands glued, one gap from the plate. It glided on a clock of its own, and the driver's next frame snapped it to the
+   glue */
+export async function holdLetGoMidGlide(k, t) {
+  await viewport(k, 1700, 950);
+  await readArea(k);
+  await k.job("[fill:dc2828] portrait", { ar: "3:4", steps: 2 });
+  await done(k, 1);
+  await k.mouse(2, 2);
+  await k.sleep(900);
+  await k.ev(`($("pAR").click(),1)`);
+  await k.sleep(200);
+  t.ok(await k.ev(`$("popAR").classList.contains("show")`), "the ratio menu is open");
+  /* sampled from before the job; the menu closes 100 ms after the plate starts to move */
+  const run = k.ev(`new Promise(res=>{const out=[];let w0=0,moved=0,t0=performance.now();
+    (function g(){const L=$("left").getBoundingClientRect(),P=$("plate").getBoundingClientRect(),now=performance.now();
+      if(!w0)w0=P.width;
+      if(!moved&&Math.abs(P.width-w0)>2){moved=now;setTimeout(()=>{closePops();document.body.click()},100)}
+      out.push([Math.round(L.left*10)/10,Math.round((P.left-L.right)*10)/10,Math.round(now-t0)]);
+      if(!moved?now-t0<30000:now-moved<1500)requestAnimationFrame(g);else res({out,moved:!!moved})})()})`);
+  await k.job("[fill:2850e6] landscape", { ar: "16:9", steps: 2 });
+  const { out: f, moved } = await run;
+  t.ok(moved, "the plate moved while the menu was open");
+  /* the catch-up alone: from the last frame the box was held (off its glue) to the first it's one gap from the plate
+     again — the picture landing later moves the box again, glued, and isn't part of it */
+  const held = f.findIndex(x => Math.abs(x[1] - AREA) > 2),
+    r = f.findIndex((x, i) => i > held && x[0] !== f[held][0]),
+    e = f.findIndex((x, i) => i >= r && Math.abs(x[1] - AREA) <= 1),
+    xs = f.slice(r - 1, e + 1).map(x => x[0]),
+    total = Math.abs(xs[xs.length - 1] - xs[0]),
+    step = Math.max(...xs.slice(1).map((x, i) => Math.abs(x - xs[i]))),
+    gap = f[f.length - 1][1];
+  t.ok(total > 20, "the box had somewhere to go (the plate grew while it was held)", { total });
+  t.motion(step <= 0.6 * total, "let go mid-glide, the box catches up in one motion (no frame takes most of it)", {
+    step,
+    total,
+    frames: f.length,
+  });
+  t.ok(Math.abs(gap - AREA) <= 1, "…and lands one gap from the plate", { gap, AREA });
+}
+
 export async function capInGenerating(k, t) {
   await viewport(k, 1700, 950);
   await k.mouse(2, 2);

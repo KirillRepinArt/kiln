@@ -9,7 +9,7 @@ import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { SPACE } from "./tokens.js";
 import { boxSizing } from "./editor.js";
-import { rearrange, stop } from "./rearrange.js";
+import { rearrange, stop, travelling } from "./rearrange.js";
 
 /* ======================= prompt card layout =======================
    Centred on the image's vertical centre while there's room. While the editor is focused or the pointer is over
@@ -159,7 +159,7 @@ export function layoutLeft(direct = false) {
     const was = lay.passV,
       p = vPass(),
       colTop = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop;
-    col.style.setProperty("--sw", Math.round(p.box.w) + "px");
+    swAt(col, Math.round(p.box.w));
     requestAnimationFrame(vAlign);
     boxAt(col, Math.round(p.box.y - colTop), Math.round(p.box.h));
     /* the pane changed under it (a size of yours, Reset, a new limit): its owner lays the page out in this task — on the
@@ -177,6 +177,20 @@ export function layoutLeft(direct = false) {
   card.top = p.box.y - c0 - TS;
   card.bottom = card.top + p.box.h + CH;
   boxAt(col, p.box.y - c0, p.box.h);
+}
+/** Vertical: the box's width (--sw) — ONE writer, this; a change the system makes (a double-click, Reset, a new limit)
+ * moves it on the rearrangement's plan and clock with the page it sits under (T2c-3b-4: it was written at once, a 200 px
+ * jump in one frame — C5's case table); your hand (a drag, typing) at once, and a switch (the plate travelling): the
+ * box is at its end shape from the switch's first frame (a crop-and-reveal's frame or the plate travelling), its relation change carries it (DD-4's whole rule — late in a
+ * switch a 1–2 px settle of --sw on the driver slid the centred box off its relation) @param {HTMLElement} col
+ * @param {number} w */
+function swAt(col, w) {
+  const now = parseFloat(col.style.getPropertyValue("--sw")),
+    write = (/** @type {{ w: number }} */ b) => col.style.setProperty("--sw", Math.round(b.w * 10) / 10 + "px");
+  if (!now || card.drag || layDirect || travelling()) {
+    stop("sw");
+    write({ w });
+  } else rearrange("sw", { l: 0, t: 0, w: now, h: 0 }, { l: 0, t: 0, w, h: 0 }, write);
 }
 /** where the box is in its column now (its top and height; its width is --cw) — null until it's first laid out
  * @type {{ l: number, t: number, w: number, h: number } | null} */

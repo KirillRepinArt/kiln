@@ -74,7 +74,7 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     switch's target is the frame owner's goal (`goalBox` → `frameTarget`), never the hidden frame measured
   - going to a page — a tab, the Add LoRA button, a LoRA chip, a Queue row, PNG Info's load, Reset layout, ✕ back: ONE
     way, `tabs.js` `goView(page, then)` → `tabGo` (the switch's one motion); nothing calls `showView` on its own
-  - the prompt column's place (its hug of the picture, a switch's slide): `layout.js` (`promptFollow` → `colApply`);
+  - the prompt column's place (its glue to the plate; its catch-up after a hold on the driver, `"hug"`): `layout.js` (`promptFollow` → `colApply`);
     "the layout lands at once" during a motion: `layout.js` `snapHold`
   - the frame's two pictures' opacity (the old one's copy leaving, the new one coming): `pictures.js`; a shape change's
     crop-and-reveal drives the frame through `framebox.js` and hands its timing over (`morph.js`)
@@ -93,7 +93,7 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     the area by `sizeFrame`, its handles by `around.js` `placeSideEdges`). **The box's place side by side has ONE rule:**
     `layout.js` `promptFollow` glues it one pair gap from the plate as it is on screen this frame — a picture's or a
     panel's, at rest, held, in a switch, in a resize — called by whatever moves the plate (`framebox.js` on a frame
-    write, `plate.js`'s follow loop every frame of a switch, the box's width on the rearrangement); `slideCol` slides it only in Vertical. **In Vertical** the box's place is the pass's (`cardlayout.js` `layoutLeft` writes it), and `promptFollow` rides it on its pane's plate as it is on screen (its offset from the pass's bottom, at once — the plate is its clock); the divider (`vAlign`) from the pass too.
+    write, `plate.js`'s follow loop every frame of a switch, the box's width on the rearrangement, the driver's frames); in a switch it rides the travelling plate by its relation; a hold let go (the plate moved while you worked in the prompt) catches up on the driver (`"hug"`), bent by a new goal, never a jump. **In Vertical** the box's place is the pass's (`cardlayout.js` `layoutLeft` writes it; its width `--sw` through `swAt`, on the driver for a change the system makes, at once under your hand), and `promptFollow` rides it on its pane's plate as it is on screen (its offset from the pass's bottom, at once — the plate is its clock); the divider (`vAlign`) from the pass too.
     Held or not: every side-by-side edge
     of a picture page (the box's outer edge, the shared edge, the picture's outer, top and bottom edges) goes through
     `layout.js` `passDragStart` / `passDragMove` / `passDragEnd` — the press freezes the sizes, the pointer is the

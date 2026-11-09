@@ -1129,3 +1129,42 @@ export async function plateIsItsElement(k, t) {
   t.ok(!geo.length, "no moving part glides on a clock of its own (a CSS transition or animation of its geometry)", gby);
 }
 plateIsItsElement.opts = { width: 1600, height: 950, step: 0.05, limitMin: 5 };
+
+/* T2c's acceptance (the user, 2026-11-09: "constant rubber bands in vertical when switching the pages"): in Vertical,
+   with each page its own height, a page switch keeps the box glued under the plate — one gap every frame — and moving
+   one way only. On 8c373ca the box slid on a clock of its own: the gap ran from −93 (over the page) to 211 px and the box
+   overshot and came back (down 290, back 31) */
+export async function verticalSwitchesKeepTheBoxGlued(k, t) {
+  await k.job("[fill:446688] a", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.ev(
+    `(setDock("below"),setPaneSize("queue","h",300,"vert"),setPaneSize("loras","h",420,"vert"),save(),sizeFrame(),1)`,
+  );
+  await k.mouse(4, 4);
+  await k.sleep(1500);
+  const tab = v => `document.querySelector('.tab[data-v="${v}"]').click()`;
+  for (const v of ["queue", "gen", "loras", "png", "gen"]) {
+    const f = await k.ev(`new Promise(res=>{const out=[],t0=performance.now();(${tab(v)});
+      (function g(){requestAnimationFrame(()=>setTimeout(()=>{const b=$("left").getBoundingClientRect(),p=$("plate").getBoundingClientRect();
+        out.push([b.top,p.bottom]);if(performance.now()-t0<1300)g();else res(out)},0))})()})`);
+    const gaps = f.map(([b, p]) => b - p),
+      g0 = gaps.at(-1),
+      off = gaps.filter(g => Math.abs(g - g0) > 2),
+      tops = f.map(([b]) => b);
+    let dir = 0,
+      back = 0;
+    for (let j = 1; j < tops.length; j++) {
+      const d = tops[j] - tops[j - 1];
+      if (Math.abs(d) < 0.6) continue;
+      if (dir && Math.sign(d) !== dir) back += Math.abs(d);
+      dir = Math.sign(d);
+    }
+    t.motion(!off.length, `Vertical, tab ${v}: the box one gap under the plate every frame`, {
+      gap: Math.round(g0),
+      min: Math.round(Math.min(...gaps)),
+      max: Math.round(Math.max(...gaps)),
+    });
+    t.motion(back <= 2, `…and it moves one way only (no rubber band)`, { back: Math.round(back) });
+  }
+}
+verticalSwitchesKeepTheBoxGlued.opts = { width: 1600, height: 950 };

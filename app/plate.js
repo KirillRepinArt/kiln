@@ -11,7 +11,6 @@ import { frameHold, frameTarget } from "./framebox.js";
 import { glassFade } from "./fade.js";
 import { fades, shapeSteps } from "./layoutmath.js";
 import { flush, follow, moving, progress, progressXY, travel } from "./rearrange.js";
-import { promptFollow } from "./layout.js";
 import { SPACE } from "./tokens.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number, panel: boolean }} Box in #right's coordinates */
@@ -122,32 +121,16 @@ let barFlip = null;
 /** @type {DOMRect | null} */
 let barBefore = null; // where the tab buttons (#seg) were on screen when a switch began
 
-/* at rest the plate follows its element; only while something moves (a resize, a glide, a crop-and-reveal) does it
-   look every frame — the loop runs until `ms` after the last call. While a switch moves it, it's the driver's
-   (rearrange.js travel: moving("plate")) */
+/* the plate is derived from its element (the picture's frame, a panel's box): whoever writes that element tells it in
+   the same frame — framebox.js write, layout.js panelWrite, the driver's frames (rearrange.js tick) — and what sits
+   round it follows (around.js). While a switch moves it, it's the driver's (rearrange.js travel: moving("plate")).
+   T2c-4: it had a loop of its own that looked every frame for 0.7–1.5 s after a change; measured over 30 actions it
+   only ever corrected a 1 px error of its own goal (dom.js offsetIn missed the panel's border) */
 const driven = () => moving("plate");
-let until = 0,
-  raf = 0;
-/** @param {number} [ms] */
-export function plateFollow(ms = 700) {
-  until = Math.max(until, performance.now() + ms);
-  if (!raf) raf = requestAnimationFrame(tick);
-}
-/* right now, in step with whoever just moved the frame (a crop-and-reveal calls it each frame after placing the box:
-   the follow loop runs before it in the frame, so on its own it drew where the frame was a frame ago) */
+/* right now, in step with whoever just moved the element */
 export function plateSync() {
   if (!driven() && !pending) put(target());
   placeAround();
-}
-/* the box beside the plate: glued to it (layout.js promptFollow) — every frame the plate may move, the same frame */
-/* the loop also carries what sits round the frame (around.js): it runs whenever the frame may be moving */
-function tick() {
-  raf = 0;
-  placeAround();
-  if (!driven() && !pending) put(target());
-  else if (driven()) placeBar(); // the plate is travelling (a switch): the bar follows it
-  promptFollow(true); // …and the box, one gap from it (side by side, every page: C2b)
-  if (performance.now() < until) raf = requestAnimationFrame(tick);
 }
 
 /* a tab switch: the plate's box ON SCREEN before it (call before the switch changes anything) — the column the plate
@@ -203,7 +186,6 @@ export function switchGlide(at, views, layout = false) {
   if (!views) {
     put(target()); // the plate rides the frame from here (framebox.js → plateSync)
     if (!layout) {
-      plateFollow(700);
       return { t0: performance.now(), T: 600, fd: fades({ A: 0, S: 0, T: 0 }) };
     }
     /* a layout switch on a picture page: the frame crops and reveals itself (morph.js — the old picture at its old size
@@ -221,7 +203,6 @@ export function switchGlide(at, views, layout = false) {
       };
     landing = toS;
     leaveDone = done;
-    plateFollow(st.T + 50);
     const last = $("plate").animate([], { duration: Math.max(1, st.T) });
     last.startTime = t0;
     switchAnims.push(last);
@@ -270,7 +251,6 @@ export function switchGlide(at, views, layout = false) {
         pseudoElement: "::after",
       }),
     );
-  plateFollow(T + 50); // every frame of the travel: what sits round the plate
   /* the plate's look changing with it (a panel's glass and ring coming in) and the selected tab's pill: their own CSS
      transitions, put on the switch's clock (they began a frame later) */
   for (const el of [$("plate"), $("rim"), $("thumb")]) {

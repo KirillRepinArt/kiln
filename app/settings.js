@@ -6,7 +6,7 @@ import { $, hit, target, targetField } from "./dom.js";
 import { current } from "./jobs.js";
 import { resetLayout, setDock, sizeFrame } from "./layout.js";
 import { renderPills } from "./pills.js";
-import { plateFollow } from "./plate.js";
+import { plateSync } from "./plate.js";
 import { harmonics, skinName } from "./skins.js";
 import { S, save } from "./state.js";
 import { goView, moveThumb } from "./tabs.js";
@@ -132,7 +132,9 @@ export function initSettings() {
     });
   });
   applyStepsPill();
-  plateFollow(1500); // the glass plate finds its place once the page is laid out (plate.js)
+  /* what changes after start-up without a writer telling the plate: the fonts (the tab bar's width) — the standard hook
+     (it had a 1.5 s frame loop, plate.js plateFollow) */
+  document.fonts.ready.then(plateSync);
   const sSteps = /** @type {HTMLInputElement} */ ($("sSteps"));
   sSteps.value = String(S.steps);
   sSteps.onchange = () => {

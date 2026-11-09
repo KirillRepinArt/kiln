@@ -93,7 +93,7 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     the area by `sizeFrame`, its handles by `around.js` `placeSideEdges`). **The box's place side by side has ONE rule:**
     `layout.js` `promptFollow` glues it one pair gap from the plate as it is on screen this frame — a picture's or a
     panel's, at rest, held, in a switch, in a resize — called by whatever moves the plate (`framebox.js` on a frame
-    write, `plate.js`'s follow loop every frame of a switch, the box's width on the rearrangement, the driver's frames); in a switch it rides the travelling plate by its relation; a hold let go (the plate moved while you worked in the prompt) catches up on the driver (`"hug"`), bent by a new goal, never a jump. **In Vertical** the box's place is the pass's (`cardlayout.js` `layoutLeft` writes it; its width `--sw` through `swAt`, on the driver for a change the system makes, at once under your hand), and `promptFollow` rides it on its pane's plate as it is on screen (its offset from the pass's bottom, at once — the plate is its clock); the divider (`vAlign`) from the pass too.
+    write, the driver's frames in a switch, the box's width on the rearrangement, the driver's frames); in a switch it rides the travelling plate by its relation; a hold let go (the plate moved while you worked in the prompt) catches up on the driver (`"hug"`), bent by a new goal, never a jump. **In Vertical** the box's place is the pass's (`cardlayout.js` `layoutLeft` writes it; its width `--sw` through `swAt`, on the driver for a change the system makes, at once under your hand), and `promptFollow` rides it on its pane's plate as it is on screen (its offset from the pass's bottom, at once — the plate is its clock); the divider (`vAlign`) from the pass too.
     Held or not: every side-by-side edge
     of a picture page (the box's outer edge, the shared edge, the picture's outer, top and bottom edges) goes through
     `layout.js` `passDragStart` / `passDragMove` / `passDragEnd` — the press freezes the sizes, the pointer is the
@@ -124,8 +124,9 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     own opacity, each glass-free part as a whole, never by an ancestor's opacity (an element below 1 is a backdrop root:
     the glass inside loses its blur; DD-2026-11-08-8). **The material is one layer:** in glass mode a glass element's
     tint, ring and shadow are all on its `::before`, the element paints nothing (`glass.css`; DD-2026-11-08-9). No View
-    Transitions (`docs/decisions/0014`). Still several engines (the plate's keyframes, the frame's crop-and-reveal, the
-    plate's loop, the column's own): one driver for every change is T2c (`ux-review/17-t2-motion.md` in the design notes)
+    Transitions (`docs/decisions/0014`). Every change moves on ONE driver (`rearrange.js`): the plate travels on it in
+    a switch, the frame's crop-and-reveal too, the box follows; the plate is derived from its element — whoever writes
+    the frame or a panel's box calls `plateSync` in the same frame (no loop of its own since T2c-4)
   - **a rearrangement on the same page** (a Reset, a double-click, a panel's height, a ratio change, the room changing):
     `rearrange.js` is the ONE applier — each owner hands it its box's from → to in the same task (`framebox.js` the
     frame, `layout.js` `layApply` the box's width, `sizeFrame` a panel's box side by side); one plan

@@ -23,7 +23,10 @@ export const field = id => /** @type {HTMLInputElement} */ (document.getElementB
 /** @param {Event} e @returns {HTMLInputElement} */
 export const targetField = e => /** @type {HTMLInputElement} */ (e.target);
 /** el's layout offset inside an ancestor (offsetLeft / offsetTop: layout, not transforms — a switch's glide or the
- * "done" pulse don't shift it) @param {HTMLElement} el @param {HTMLElement} to @returns {{ x: number, y: number }} */
+ * "done" pulse don't shift it), from `to`'s padding edge. offsetLeft counts from its offset parent's PADDING edge, so
+ * each parent's border on the way is added (clientLeft / clientTop): the panel's 1 px border put the plate's switch goal
+ * and the picture's side handles 1 px off (T2c-4's measure, 2026-11-09) @param {HTMLElement} el @param {HTMLElement} to
+ * @returns {{ x: number, y: number }} */
 export function offsetIn(el, to) {
   let x = 0,
     y = 0;
@@ -34,6 +37,11 @@ export function offsetIn(el, to) {
   ) {
     x += e.offsetLeft;
     y += e.offsetTop;
+    const p = /** @type {HTMLElement | null} */ (e.offsetParent);
+    if (p && p !== to) {
+      x += p.clientLeft;
+      y += p.clientTop;
+    }
   }
   return { x, y };
 }

@@ -1,6 +1,6 @@
 // @ts-check
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
-import { glueRect, plateFollow } from "./plate.js";
+import { glueRect, plateSync } from "./plate.js";
 import { placeAround } from "./around.js";
 import { driving, follow, moving, movingTo, rearrange, rearrangeFade, stop, travelling } from "./rearrange.js";
 import { frameGoal } from "./framebox.js";
@@ -664,6 +664,7 @@ function panelWrite(b, roomTop) {
   panelAt = b;
   const r = (/** @type {number} */ v) => Math.round(v) + "px";
   panelStyle(r(b.h), b.t - roomTop ? r(b.t - roomTop) : "", r(b.w), r(b.l - areaX()));
+  plateSync(); // the plate rides the panel, in the frame it's written (as framebox.js write does for the frame)
 }
 export function sizeFrame() {
   if (lay.frameDefer) {
@@ -803,7 +804,7 @@ export function sizeFrame() {
   placeAround();
   promptFollow(); // side by side: one gap from the plate — the frame's writes call it on every box change
   layoutLeft(); // the box, in the same task as the picture it's anchored to: one rearrangement, one plan (T2)
-  plateFollow(); // the live plate keeps to the frame / the panel through the glide
+  plateSync(); // the plate on its element as written now (a glide's frames place it from the driver)
 }
 /* Vertical: the ONE divider between the page and the prompt (2026-11-01, L4) — the gap from the page's pane (and its
    status row) down to just above the prompt's name, both from the layout pass (C4b): the name's top is the box's top

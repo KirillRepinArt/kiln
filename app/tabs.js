@@ -6,7 +6,7 @@ import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
 import { xfadeSnap } from "./pictures.js";
 import { frameBox, frameHold, pictureChange } from "./framebox.js";
-import { plateBefore, plateFollow, switchGlide } from "./plate.js";
+import { plateBefore, switchGlide } from "./plate.js";
 import { placeNavs } from "./browse.js";
 import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
 import { S } from "./state.js";
@@ -54,8 +54,7 @@ export function showView(v) {
   }
   /* opening it: no slide to measure for, nothing to rebuild if nothing changed */
   if (v === "loras") renderLoras();
-  sizeFrame();
-  plateFollow(800);
+  sizeFrame(); // the plate follows the page's element in the same task (panelWrite / the frame's write → plateSync)
 }
 /* Gallery isn't a page of its own (yet): it's the name for browsing finished pictures in the picture view — the
    state ← and the arrows already put you in. Clicking it opens the last finished picture; Generating = the live view */

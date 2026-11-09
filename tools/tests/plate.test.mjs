@@ -1067,3 +1067,41 @@ export async function pageFadesAsOne(k, t) {
   }
 }
 pageFadesAsOne.opts = { width: 1400, height: 900 };
+
+/* T2c-4: the plate IS its element (the picture's frame, a panel's box) — whoever writes the element tells the plate in
+   the same frame, so after every frame's writes (rAF → setTimeout 0) the plate sits on it, a mat out for a picture,
+   outside a switch's own travel. Through tab switches, layout switches, a ratio change, browsing, Reset and a window
+   resize. The plate had a loop of its own that corrected it for 0.7–1.5 s after a change: it hid a 1 px error of the
+   switch's goal (dom.js offsetIn missed the panel's border) */
+export async function plateIsItsElement(k, t) {
+  const tab = v => `document.querySelector('.tab[data-v="${v}"]').click()`;
+  await k.job("[fill:446688] a", { ar: "3:4", steps: 2 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.job("[fill:884466] b", { ar: "16:9", steps: 2 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 30000);
+  await k.sleep(1200);
+  await k.ev(`(()=>{window.__off=[];window.__act="";const M=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--mat"))||0;
+    (function f(){setTimeout(()=>{if(!document.documentElement.classList.contains("switching")){const rp=$("rpanel"),pan=rp.classList.contains("paneled"),
+      e=(pan?rp:$("frame")).getBoundingClientRect(),p=$("plate").getBoundingClientRect(),m=pan?0:M;
+      const d=Math.max(Math.abs(p.left-(e.left-m)),Math.abs(p.top-(e.top-m)),Math.abs(p.width-(e.width+2*m)),Math.abs(p.height-(e.height+2*m)));
+      if(d>0.5&&e.width>0)__off.push([__act,Math.round(d*10)/10])}requestAnimationFrame(f)},0)})();return 1})()`);
+  const act = async (name, js, wait = 1500) => {
+    await k.ev(`(window.__act=${JSON.stringify(name)},${js},1)`);
+    await k.sleep(wait);
+  };
+  for (const dock of ["left", "right", "below"]) {
+    await act(`${dock}: the dock`, `setDock(${JSON.stringify(dock)})`);
+    for (const v of ["queue", "gallery", "png", "loras", "gen"]) await act(`${dock}: tab ${v}`, tab(v));
+    await act(`${dock}: a ratio`, `(S.ar=S.ar==="3:4"?"16:9":"3:4",sizeFrame())`);
+    await act(`${dock}: browsing`, `(genNav(-1),updNav())`);
+    await act(`${dock}: Reset`, `document.querySelector('[data-lay="reset"]').click()`);
+  }
+  await k.ev(`(window.__act="the window",1)`);
+  await k.send("Emulation.setDeviceMetricsOverride", { width: 1250, height: 820, deviceScaleFactor: 1, mobile: false });
+  await k.sleep(1500);
+  const off = await k.ev(`__off`),
+    by = {};
+  for (const [a, d] of off) by[a] = Math.max(by[a] || 0, d);
+  t.ok(!off.length, "after every frame's writes the plate is its element (outside a switch's travel)", by);
+}
+plateIsItsElement.opts = { width: 1600, height: 950, step: 0.05, limitMin: 5 };

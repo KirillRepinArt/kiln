@@ -554,3 +554,20 @@ test("Vertical: the box's bottom sets its height (yours) — into the free room 
   const after = layoutPass(release(s, up.kept));
   assert.ok(sameRect(after.box, up.box, 1), "let go: the box stays (Custom)", { held: up.box, after: after.box });
 });
+
+test("side by side, a picture edge's double-click: the picture at its largest, the box squeezed toward its least (C5, DD-5)", () => {
+  /* a wide picture beside a wide box: the box gives what the picture's largest needs, never below its least */
+  const s = state({ page: { kind: "pic", ratio: 21 / 9 }, box: { ...state({}).box, w: 900 } }),
+    o = layoutPass(s);
+  assert.ok(o.squeezeW != null && o.squeezeW < 900 && o.squeezeW >= PWMIN, "the box gives", { squeezeW: o.squeezeW });
+  const after = layoutPass({ ...s, box: { ...s.box, w: o.squeezeW } });
+  const least = layoutPass({ ...s, box: { ...s.box, w: PWMIN } });
+  assert.ok(Math.abs(after.pic.w - least.pic.w) <= EPS, "…and the picture is as large as with the box at its least", {
+    after: after.pic.w,
+    least: least.pic.w,
+  });
+  /* a tall picture bound by the room's height: nothing to take, the box keeps its width */
+  const tall = layoutPass(state({ page: { kind: "pic", ratio: 3 / 4 }, box: { ...state({}).box, w: 680 } }));
+  assert.equal(tall.squeezeW, 680, "a picture bound by its height: the box keeps its width");
+  assert.equal(layoutPass(state({ dock: "below" })).squeezeW, null, "Vertical: none (its box is under the picture)");
+});

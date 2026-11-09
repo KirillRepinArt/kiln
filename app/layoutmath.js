@@ -673,6 +673,8 @@ export function layoutPrefsV4(L, o) {
  * @property {{ w: number, h: number }} largest the picture's largest at this layout (picture pages)
  * @property {{ it: number, ib: number, cy: number } | null} anchors side by side: the pane's lines the box anchors to (its column's px, under
  *   its name row: `place.colTop`) — the grip's resting places use them too
+ * @property {number | null} squeezeW side by side, a picture page: the box's width a picture edge's double-click keeps
+ *   (the picture at its largest, the box squeezed toward its least — DD-2026-11-03-5)
  * @property {number} roomT where the room starts (the window's px: under the tab bar's row) — the appliers place the
  *   page's pane from it
  * @property {number} pageHi the page's room: the most height its pane can take (Vertical: with the box at its least
@@ -1136,6 +1138,12 @@ export function layoutPass(s) {
     handles["box.bottom"] = Bx.bottom;
     handles.shared = { x: lo, y: page.y + page.h + vGap(s) / 2 - t, w: Math.max(0, hi - lo), h: HANDLE }; // mid-gap (dragSizes inverts it)
   }
-  const pageHi = vert ? CH - vAround(s) - s.box.least : CH;
-  return { page, pic: pr, box, bar: barR, handles, kept, largest: rest.largest, pageHi, roomT: T, anchors };
+  const pageHi = vert ? CH - vAround(s) - s.box.least : CH,
+    /* a picture edge's double-click side by side (DD-2026-11-03-5): the picture as large as it can be, the box squeezed
+       toward its least — to the width the picture at that size leaves it, never wider than it is */
+    squeezeW =
+      pic && !vert
+        ? Math.max(s.box.wLo, Math.min(s.box.w, RW - gap.pair - stripRoom(s) - largestPic(s, s.box.wLo, 0).w))
+        : null;
+  return { page, pic: pr, box, bar: barR, handles, kept, largest: rest.largest, pageHi, roomT: T, anchors, squeezeW };
 }

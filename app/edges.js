@@ -8,9 +8,9 @@
 import { card, layoutLeft, lyUnfreeze, updHm } from "./cardlayout.js";
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
-import { layRelease, passDragEnd, passDragMove, passDragStart, pageId, setPaneSize, sizeFrame } from "./layout.js";
+import { passDouble, passDragEnd, passDragMove, passDragStart } from "./layout.js";
 import { RUBBER, rubber } from "./layoutmath.js";
-import { S, save } from "./state.js";
+import { S } from "./state.js";
 import { moveThumb } from "./tabs.js";
 
 /** the body classes a drag holds while it lasts (the cursor, no transitions) — removed by the gesture's end, always */
@@ -101,6 +101,11 @@ function passEdge(h, panes, cls, idOf, axis, after) {
       if (after) after();
     },
   });
+  /* its double-click: the same edge, ONE owner (layout.js passDouble, DD-2026-11-03-5) */
+  h.addEventListener("dblclick", () => {
+    const id = idOf();
+    if (id) passDouble(id);
+  });
 }
 const stacked = () => !!q(".app.stacked");
 /* start-up wiring: every edge you drag, and the edit buttons' hover (called from main.js, in order) */
@@ -124,12 +129,6 @@ export function initEdges() {
       () => (stacked() ? "box.bottom" : null),
       "y",
     );
-    $("vedge").addEventListener("dblclick", () => {
-      if (!stacked()) return;
-      setPaneSize("box", "h", null, "vert"); // back to its text's height
-      save();
-      sizeFrame();
-    });
     for (const g of [$("vedge"), top]) {
       const up = g === top;
       let y0 = 0,
@@ -168,14 +167,6 @@ export function initEdges() {
     () => (stacked() ? "shared" : null),
     "y",
   );
-  $("hsplit").addEventListener("dblclick", () => {
-    if (!stacked()) return;
-    setPaneSize(pageId(), "h", null);
-    setPaneSize("box", "h", null, "vert");
-    save();
-    layoutLeft();
-    sizeFrame();
-  });
   /* the panel edges (Phase 2a): po = the prompt's outer edge, dv = the divider between the prompt and the image area
    (a strip on each side of the gap, both the same boundary), ro = the image area's outer edge. Double-click: that
    panel back to its default width (the divider: both). */
@@ -226,12 +217,14 @@ export function initEdges() {
         },
       });
       h.addEventListener("dblclick", () => {
-        if (h.dataset.e !== "ro") setPaneSize("box", "w", null, "side");
-        if (h.dataset.e !== "po") setPaneSize(pageId(), "w", null, "side");
-        save();
-        layRelease();
-        moveThumb(true);
-      }); /* that pane (the divider: both) back to its default */
+        if (q(".app.stacked")) return;
+        const e = h.dataset.e,
+          R = !!q(".app.pright");
+        passDouble(
+          e === "dv" ? "shared" : e === "po" ? (R ? "box.right" : "box.left") : R ? "page.left" : "page.right",
+        );
+      }); /* DD-5, one owner: the box's default, the shared edge both, the page's outer edge its pane's (a picture: its
+             largest, the box squeezed) */
     }
   })();
   /* the picture's own edges (Generating, the Gallery): its size, a scale of its largest — through the layout pass in both
@@ -261,11 +254,6 @@ export function initEdges() {
                 : null,
       y ? "y" : "x",
     );
-    h.addEventListener("dblclick", () => {
-      setPaneSize(pageId(), "h", null);
-      save();
-      sizeFrame();
-    });
   });
   /* Vertical: a panel's side edges (Queue, LoRAs, PNG Info — v0.7c): it widens or narrows about its centre (Vertical is
      centred, like the picture's sides), through the layout pass (C4c). Each page keeps its own width in Vertical; past a
@@ -284,11 +272,6 @@ export function initEdges() {
         () => (stacked() && S.view !== "gen" ? (side === "l" ? "page.left" : "page.right") : null),
         "x",
       );
-      h.addEventListener("dblclick", () => {
-        setPaneSize(pageId(), "w", null, "vert");
-        save();
-        sizeFrame();
-      });
     }
   }
   /* a panel's top and bottom edges (Queue, LoRAs, PNG Info — v0.7c): its height, through the layout pass in both layouts
@@ -308,11 +291,6 @@ export function initEdges() {
         () => (S.view === "gen" ? null : side === "t" ? "page.top" : stacked() ? "shared" : "page.bottom"),
         "y",
       );
-      h.addEventListener("dblclick", () => {
-        setPaneSize(pageId(), "h", null);
-        save();
-        sizeFrame();
-      });
     }
   }
   /* the edit buttons appear while the pointer is over the picture or the column beside it (one zone, so you never chase
@@ -355,14 +333,6 @@ export function initEdges() {
         "x",
         updHm,
       );
-      h.addEventListener("dblclick", () => {
-        setPaneSize("box", "w", null, "vert");
-        S.hmode = "";
-        save();
-        updHm();
-        layoutLeft();
-        sizeFrame();
-      });
     }
   }
 }

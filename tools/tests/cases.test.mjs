@@ -19,6 +19,9 @@
 //   apart     — parts that don't overlap at rest don't overlap while held; nothing leaves the window
 //   let go    — nothing stays held after release
 //   reachable — at rest, the Layout button can be pressed (ROADMAP v0.7c (p): a small picture covered it)
+// And each edge's double-click (DEVLOG DD-2026-11-03-14, C5): it puts its pane at its DD-5 size — a picture edge the
+// picture at its largest (side by side the box squeezed toward its least), a box edge the box's default, a panel edge
+// that panel's default, the shared edge both — in ONE motion: no frame takes most of a change (no snap).
 // The parts: the tab bar, the prompt box, the page's plate, the picture.
 
 const RUBBER = 20, // layoutmath.js RUBBER: the rubber band's reach
@@ -120,6 +123,29 @@ const overlap = (a, b) =>
   Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
   Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
 const round = m => JSON.parse(JSON.stringify(m, (_, v) => (typeof v === "number" ? Math.round(v * 10) / 10 : v)));
+
+/** the DD-5 size an edge's double-click keeps (DD-2026-11-03-5), as the stored sizes say it: what kind of edge a handle
+ * is, by its label — the box's sides, Vertical's box bottom, the shared edge, the page's own; null: nothing to keep
+ * (side by side the box's height edges: its height is its text's) */
+const dd5 = (label, dock, axis) => {
+  const vert = dock === "below";
+  if (/\.pedge\.po|\.sedge\./.test(label)) return "box.w";
+  if (/#vedge|\.vedge\.t/.test(label)) return vert ? "box.h" : null;
+  if (/\.pedge\.(pi|ri)|#hsplit/.test(label)) return "shared";
+  return axis === "x" ? "page.x" : "page.y";
+};
+/** double-click handle h, sampling every part's rect each frame from just before it (in one evaluation: the harness
+ * runs one at a time) — and what the stored sizes say after */
+const doubleClick = (k, h) =>
+  k.ev(`new Promise(res=>{const parts=${JSON.stringify(PARTS)},m=()=>{const o={};for(const[n,s]of Object.entries(parts)){
+      const e=document.querySelector(s);if(!e)continue;const r=e.getBoundingClientRect();if(r.width<1||r.height<1)continue;
+      o[n]=[r.left,r.top,r.right,r.bottom]}return o};
+    const e=document.querySelectorAll(${JSON.stringify(HANDLES)})[${h.i}],frames=[m()],t0=performance.now();
+    e.dispatchEvent(new MouseEvent("dblclick",{bubbles:true}));
+    (function s(){requestAnimationFrame(()=>setTimeout(()=>{frames.push(m());if(performance.now()-t0<1300)s();else{
+      const o=document.querySelector(".app.stacked")?"vert":"side",b=paneSize("box",o),p=paneSize(pageId(),o);
+      res({frames,box:{w:b.w,h:b.h},page:{w:p.w,h:p.h,s:p.s},pic:pageId()==="generating"||pageId()==="gallery",
+        squeezeW:lay.pass&&lay.pass.squeezeW!=null?Math.round(lay.pass.squeezeW):null})}},0))})()})`);
 
 /** one case: a layout × a page */
 function caseOf(dock, page, ar) {
@@ -249,6 +275,40 @@ function caseOf(dock, page, ar) {
         t.ok(lay === "ok", `${name}: at rest, the Layout button can be pressed`, lay);
         if (dir < 0) await reachCheck(`after ${h.label}`);
       }
+    /* C5 (DD-2026-11-03-14): every edge's double-click — its DD-5 size, in one motion */
+    for (const h of handles) {
+      const kind = dd5(h.label, dock, h.axis),
+        d = await doubleClick(k, h),
+        name = `${h.label} double-click`;
+      const p = d.page,
+        want = {
+          "box.w": d.box.w == null,
+          "box.h": d.box.h == null,
+          "shared": p.w == null && p.h == null && !p.s && (dock === "below" ? d.box.h == null : d.box.w == null),
+          "page.x": d.pic ? p.w == null && p.h == null && !p.s : p.w == null,
+          "page.y": d.pic ? p.w == null && p.h == null && !p.s : p.h == null,
+        };
+      if (kind) t.ok(want[kind], `${name}: its pane at its DD-5 size (${kind})`, { kind, box: d.box, page: p });
+      if (kind && kind.startsWith("page") && d.pic && dock !== "below")
+        t.ok(
+          d.squeezeW == null || Math.abs((d.box.w ?? 0) - d.squeezeW) <= 1 || d.box.w == null,
+          `${name}: …the box squeezed toward its least (the picture first)`,
+          { box: d.box.w, squeezeW: d.squeezeW },
+        );
+      /* one motion: for every side of every part that moves more than 20 px, no frame takes most of it */
+      const f = d.frames,
+        snaps = [];
+      for (const n of Object.keys(PARTS))
+        for (let i = 0; i < 4; i++) {
+          const v = f.filter(x => x[n]).map(x => x[n][i]);
+          if (v.length < 2) continue;
+          const total = Math.abs(v[v.length - 1] - v[0]),
+            step = Math.max(...v.slice(1).map((x, j) => Math.abs(x - v[j])));
+          if (total > 20 && step > 0.6 * total)
+            snaps.push(`${n}.${["left", "top", "right", "bottom"][i]} ${Math.round(step)} of ${Math.round(total)}`);
+        }
+      t.motion(!snaps.length, `${name}: in one motion (no snap)`, { snaps, frames: f.length });
+    }
   };
   fn.opts = { width: ar === "21:9" && dock === "below" ? 1440 : 1760, height: 1080, step: 0.05, limitMin: 6 };
   return fn;

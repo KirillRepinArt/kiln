@@ -425,6 +425,7 @@ export function layGeo() {
       kept: out.kept,
       handles: out.handles,
       anchors: out.anchors,
+      squeezeW: out.squeezeW,
       roomTop,
     };
     /* every page: the area is the WHOLE ROOM and never moves (one coordinate space, DEVLOG DD-2026-11-08-1); the
@@ -558,9 +559,39 @@ export function passDragEnd() {
   }
   sizeFrame();
 }
-export function layRelease() {
-  lay.drag = false;
+/** a double-click on an edge (DD-2026-11-03-5) — ONE owner for every edge of both layouts, by the pass's handle id (the
+ * same as its drag's): a picture edge, the picture at its largest (side by side the box squeezed toward its least: the
+ * pass's squeezeW); a box edge, the box's default width (Vertical's bottom: its text's height); a panel edge, that
+ * panel's default on that axis; the shared edge, both panes' defaults. The sizes are kept, and the layout moves there on
+ * the rearrangement's one plan, as for Reset. Each handle had its own handler before C5 (seven), and a picture edge's
+ * left the box as it was @param {string} edge */
+export function passDouble(edge) {
+  const vert = !!document.querySelector(".app.stacked"),
+    P = vert ? (lay.passV ?? vPass()) : lay.pass,
+    o = vert ? "vert" : "side",
+    [who, side] = edge.split("."),
+    across = side === "left" || side === "right";
+  if (!P) return;
+  if (edge === "shared") {
+    setPaneSize(pageId(), "w", null, o); // (a picture: its scale too)
+    setPaneSize(pageId(), "h", null, o);
+    setPaneSize("box", vert ? "h" : "w", null, o);
+  } else if (who === "box") {
+    if (across) {
+      setPaneSize("box", "w", null, o);
+      S.hmode = ""; // its width yours again: the mode lets go
+    } else if (vert) setPaneSize("box", "h", null, o);
+  } else if (P.pic) {
+    setPaneSize(pageId(), "w", null, o);
+    setPaneSize(pageId(), "h", null, o); // its scale: its largest
+    const sw = !vert && lay.pass ? lay.pass.squeezeW : null;
+    if (sw != null) setPaneSize("box", "w", sw, o);
+  } else setPaneSize(pageId(), across ? "w" : "h", null, o);
+  save();
+  updHm();
+  layoutLeft();
   sizeFrame();
+  moveThumb(true);
 }
 /* the prompt's place: "left" / "right" beside the picture (horizontal) or "below" it (vertical). Switching is a
    fade-through (Material's pattern for elements whose paths would cross): the old layout fades out, the new one fades in

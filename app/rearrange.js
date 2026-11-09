@@ -17,10 +17,11 @@ import { promptFollow } from "./layout.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number }} Box */
 /** @typedef {(b: Box) => void} Write */
-/** @typedef {{ from: Box, to: Box, cur: Box, write: Write, off?: boolean, with?: string }} Move off: taken over by
- * another motion; with: a dependent's source — it moves on its source's progress (the box anchored to the picture) */
+/** @typedef {{ from: Box, to: Box, cur: Box, write: Write, off?: boolean, with?: string, travel?: boolean }} Move off:
+ * taken over by another motion; with: a dependent's source — it moves on its source's progress (the box anchored to the
+ * picture); travel: a switch's or a crop-and-reveal's own move (travel(): not held by laysnap, bent by bend()) */
 
-/** @type {Map<string, { from: Box, to: Box, write: Write, with?: string }>} asked for in this task */
+/** @type {Map<string, { from: Box, to: Box, write: Write, with?: string, travel?: boolean }>} asked for in this task */
 const asked = new Map();
 /** @type {Map<HTMLElement, boolean>} contents that don't travel, fading in (true) or out in this task */
 const fading = new Map();
@@ -60,11 +61,23 @@ export function travel(key, from, to, write) {
     write(to);
     return;
   }
-  asked.set(key, { from, to, write });
+  asked.set(key, { from, to, write, travel: true });
   if (!queued) {
     queued = true;
     queueMicrotask(start);
   }
+}
+/** a travelling box's goal changed (the layout settling mid-switch, a re-layout during a crop-and-reveal): its path
+ * bends to the new goal on the same plan and clock (retarget) — never a jump, whatever holds the layout at once.
+ * false: not travelling (the caller's usual way) @param {string} key @param {Box} to */
+export function bend(key, to) {
+  const a = asked.get(key);
+  if (a && a.travel) {
+    a.to = to;
+    return true;
+  }
+  const m = run ? run.moves.find(([k, mv]) => k === key && !mv.off)?.[1] : null;
+  return !!m && !!m.travel && retarget(key, to, m.write);
 }
 /** plan what was asked in this task NOW (not at the task's end): a switch times its fades on the plan's clock, in the
  * same task @returns {{ t0: number, plan: ReturnType<typeof shapePlan> } | null} */
@@ -80,6 +93,8 @@ export function follow(fn) {
   fn();
   return () => followers.delete(fn);
 }
+/** a run is moving things now (what follows it is placed in its frames) */
+export const driving = () => !!run;
 /** how far `key`'s move has come on each axis, 0 → 1 ([1, 1]: not moving) @param {string} key @returns {[number, number]} */
 export function progressXY(key) {
   if (!run) return [1, 1];
@@ -212,9 +227,8 @@ function tick(now) {
   });
   plateSync(); // the plate rides the frame or the panel, the tab bar the plate
   promptFollow(true); // the prompt box, glued one gap from the plate (C2b)
-  for (const fn of followers) fn(); // what rides the travellers (a switch's views)
-  if (end) {
-    run = null;
-    followers.clear();
-  } else raf = requestAnimationFrame(tick);
+  if (end) run = null; // (before the followers' last call: they see the run has landed)
+  for (const fn of followers) fn(); // what rides the travellers (a switch's views, the box's relation change)
+  if (end) followers.clear();
+  else raf = requestAnimationFrame(tick);
 }

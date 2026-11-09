@@ -2,7 +2,7 @@
 /** @typedef {import("./types.js").Geometry} Geometry @typedef {import("./types.js").LayoutPrefs} LayoutPrefs */
 import { SWITCH, glueRect, plateFollow } from "./plate.js";
 import { placeAround } from "./around.js";
-import { movingTo, rearrange, rearrangeFade } from "./rearrange.js";
+import { driving, follow, movingTo, rearrange, rearrangeFade } from "./rearrange.js";
 import { frameGoal, layT } from "./framebox.js";
 import { syncH } from "./boot.js";
 import {
@@ -870,8 +870,8 @@ function colApply() {
         g1 = glued(live, relation.r1, relation.b1),
         st = `translate(${Math.round(g0.l - relation.b0.l)}px, ${Math.round(g0.t - relation.b0.t)}px)`;
       if (relation.out.style.transform !== st) relation.out.style.transform = st;
-      rx = Math.round(g1.l - relation.b1.l);
-      ry = Math.round(g1.t - relation.b1.t);
+      rx = g1.l - relation.b1.l;
+      ry = g1.t - relation.b1.t;
     }
   }
   const k = slideLeft(now),
@@ -882,7 +882,10 @@ function colApply() {
   colX = x;
   colY = y;
   if (col.style.transform !== t) col.style.transform = t;
-  if (k > 0 || hugT0 || relation) colRaf = requestAnimationFrame(colApply);
+  /* its own frames only for what the driver doesn't move: a relation change rides the driver's frames while it runs
+     (T2c-3b-2: after the plate's write, never a frame before it — its own loop could run first and read the plate a
+     frame late), and its own after (the fade-in outlasting the travel) */
+  if (k > 0 || hugT0 || (relation && !driving())) colRaf = requestAnimationFrame(colApply);
   if (k <= 0) slT0 = 0;
 }
 /** the box's STAND-IN for a layout switch (DEVLOG DD-2026-11-08-5): a copy of what's on screen now — the name row, the
@@ -1009,7 +1012,9 @@ export function fadeCol(out, sw, was) {
   ];
   for (const a of colFades) a.startTime = sw.t0;
   cancelAnimationFrame(colRaf);
-  colApply(); // its first frame: the copy where it was (the plate hasn't moved yet)
+  if (driving())
+    follow(colApply); // in the driver's frames, after the plate's write (and its first frame now)
+  else colApply(); // its first frame: the copy where it was (the plate hasn't moved yet)
 }
 /** @type {Animation[]} */
 let colFades = [];

@@ -392,12 +392,17 @@ const PENDING = {
   layers:
     "v0.7c T2c, the layering rule: the picture's overlay controls (its ✕, the edit buttons) move to the floating layer, out of the page that fades (DEVLOG DD-2026-11-08-14)",
 };
+/* files a full run leaves to a job of their own (CI: KILN_SKIP=cases — the case table runs in parallel, each job under
+   its time limit) */
+const SKIP = (process.env.KILN_SKIP || "").split(",").filter(Boolean);
 const tests = [];
 for (const f of readdirSync(HERE)
   .filter(
     f =>
       f.endsWith(".test.mjs") &&
-      (filters.length ? filters.some(([x]) => f.includes(x)) : !(f.replace(".test.mjs", "") in PENDING)),
+      (filters.length
+        ? filters.some(([x]) => f.includes(x))
+        : !(f.replace(".test.mjs", "") in PENDING) && !SKIP.includes(f.replace(".test.mjs", ""))),
   )
   .sort()) {
   const mod = await import(pathToFileURL(join(HERE, f)));

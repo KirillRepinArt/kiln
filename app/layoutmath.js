@@ -838,8 +838,6 @@ function dragSizes(s, z) {
       boxY: /** @type {number | null} */ (null),
       boxGive: 0,
     },
-    /** the page's pane width from the picture's (its strip, or two in Vertical) */
-    pageW = (/** @type {number} */ w) => w + (pic ? (vert ? 2 * strip : strip) : 0),
     pageLo = pic ? { w: s.picLeast * ratio, h: s.picLeast } : s.page.kind === "panel" ? s.page.lo : { w: 0, h: 0 },
     pageHi = s.page.kind === "panel" ? s.page.hi : { w: Infinity, h: Infinity },
     /** set the page's main size (a picture: its height by its ratio), shown with the rubber band past [lo, hi] */
@@ -878,26 +876,66 @@ function dragSizes(s, z) {
   if (!vert) {
     const right = s.dock === "right",
       cx = L + RW / 2, // the group is centred: its middle stays (a drag of an outer edge mirrors on the far side)
-      gw = z.bw + gap.pair + pageW(z.pw), // the group's width at rest
-      x0 = groupX(s, z.bw, z.pw), // where the group starts at rest: the same placement the rectangles use
-      /* the widest the page may be by the shared edge: the box gives way down to its least (the trade) */
-      pageWHi = Math.min(pageHi.w, RW - gap.pair - s.box.wLo - stripRoom(s), pic ? CH * ratio : Infinity),
       /* by its own outer edges: beside the box as it is — an outer edge takes no room from the other pane, only the
          shared edge trades (the user, DEVLOG DD-2026-11-07-1) */
       pageOwnHi = Math.min(pageHi.w, RW - gap.pair - z.bw - stripRoom(s), pic ? CH * ratio : Infinity),
       boxWHi = RW - gap.pair - pageLo.w - stripRoom(s);
     if (d.edge === "shared") {
-      /* the shared edge trades: the group's width holds, the edge at the pointer (mid-gap) */
-      /* the trade happens inside the pair's own width: each side's limit is the other's least / largest */
-      const first = d.at - gap.pair / 2 - x0, // the left pane's new width
-        bwWant = right ? gw - gap.pair - first : first,
-        sw = pic ? strip : 0,
-        hi = Math.min(boxWHi, gw - gap.pair - sw - pageLo.w),
-        lo = Math.max(s.box.wLo, gw - gap.pair - sw - pageWHi);
-      out.keptBw = clampTo(bwWant, lo, hi);
-      out.bw = rubber(bwWant, lo, hi, RUBBER);
-      out.keptPw = gw - gap.pair - sw - out.keptBw;
-      out.pw = gw - gap.pair - sw - out.bw;
+      /* the shared edge, at the pointer (mid-gap): the pane it moves away from grows, up to its own largest, and the other
+         is PUSHED at its own width — the group stays centred, so the grown pane's far side mirrors (DD-6) and both sides'
+         empty room is used; once the pair fills the room, the pushed pane gives, down to its least; then the rubber band
+         (one rule for every edge, the user, DEVLOG DD-2026-11-10-2: the dragged pane gets what it asks for — it traded
+         inside the group's width at once, and the room beside the box was unreachable). Held, the layout is the rest
+         layout of the sizes it keeps: letting go moves nothing */
+      const sw = pic ? strip : 0,
+        [lw0, rw0] = right ? [z.pw + sw, z.bw] : [z.bw, z.pw + sw],
+        boxLim = { lo: s.box.wLo, hi: boxWHi },
+        pageLim = { lo: pageLo.w + sw, hi: Math.min(pageHi.w, pic ? CH * ratio : Infinity) + sw },
+        [lL, rL] = right ? [pageLim, boxLim] : [boxLim, pageLim],
+        /* the pair's total, as seen, at most what fits at rest (centred, the picture's buttons' column kept in the
+           margin: stripRoom) */
+        avail = RW - stripRoom(s) + sw,
+        toBP = (/** @type {number} */ l, /** @type {number} */ r) => (right ? [r, l - sw] : [l, r - sw]),
+        /* where the edge sits at rest for these widths (the rectangles' own placement) */
+        edgeAt = (/** @type {number} */ l, /** @type {number} */ r) => {
+          const [bw, pw] = toBP(l, r);
+          return groupX(s, bw, pw) + l + gap.pair / 2;
+        },
+        grows = d.at >= edgeAt(lw0, rw0) ? "l" : "r",
+        [gL, pL, p0] = grows === "l" ? [lL, rL, rw0] : [rL, lL, lw0],
+        place = (/** @type {number} */ g, /** @type {number} */ p) => (grows === "l" ? [g, p] : [p, g]),
+        /* the grower's width that puts the edge at the pointer, the other at width p (the edge moves half as fast as a
+           centred pane grows: two steps of Newton's on the placement itself, strip and all) */
+        solve = (/** @type {number} */ p) => {
+          let g = grows === "l" ? lw0 : rw0;
+          for (let i = 0; i < 3; i++) {
+            const [l, r] = place(g, p),
+              e = edgeAt(l, r);
+            g += (grows === "l" ? 2 : -2) * (d.at - e);
+          }
+          return g;
+        };
+      /* (A) pushed at its own width, both sides' room used; (B) the pair fills the room: the pushed pane gives */
+      let want = solve(p0),
+        p = p0;
+      if (want + gap.pair + p0 > avail) {
+        const [l, r] = place(avail - gap.pair - p0, p0),
+          start = edgeAt(l, r) - l - gap.pair / 2; // the full pair's start: it depends on the total only
+        want = grows === "l" ? d.at - gap.pair / 2 - start : start + avail - (d.at + gap.pair / 2);
+        p = Math.max(pL.lo, Math.min(p0, avail - gap.pair - Math.min(want, gL.hi))); // pushed: never wider than it was
+      }
+      const hi = Math.max(gL.lo, Math.min(gL.hi, avail - gap.pair - pL.lo)),
+        gK = clampTo(want, gL.lo, hi),
+        gS = rubber(want, gL.lo, hi, RUBBER),
+        pK = Math.max(pL.lo, Math.min(p, avail - gap.pair - gK)),
+        [lK, rK] = place(gK, pK),
+        [lS, rS] = place(gS, pK),
+        [bwK, pwK] = toBP(lK, rK),
+        [bwS, pwS] = toBP(lS, rS);
+      out.keptBw = bwK;
+      out.bw = bwS;
+      out.keptPw = pwK;
+      out.pw = pwS;
       if (pic) {
         out.keptPh = out.keptPw / ratio;
         out.ph = out.pw / ratio;

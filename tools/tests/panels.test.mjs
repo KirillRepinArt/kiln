@@ -150,33 +150,41 @@ export async function dividerAndEdges(k, t) {
   await settle(k);
   let a = await box(k);
   t.ok(b0ok(a), "default: a centred pair, the area gap between", a);
+  /* the divider (C6b, DEVLOG DD-2026-11-10-2): the dragged pane gets the room first — the other pushed at its own
+     width, the pair centred (its far side mirrors), so the Queue grows by twice the pull */
   await drag(k, ".pedge.ri", -100);
   await k.sleep(500);
   let b = await box(k);
   t.ok(
-    b.rr - b.rl === a.rr - a.rl + 100 && b.pr - b.pl === a.pr - a.pl - 100 && b.rl - b.pr === AREA && centred(b),
-    "dragging the image area's left edge: it grows exactly as much as the prompt shrinks; still centred",
+    b.rr - b.rl === a.rr - a.rl + 200 && b.pr - b.pl === a.pr - a.pl && b.rl - b.pr === AREA && centred(b),
+    "the divider pulled into the prompt: the Queue grows by twice the pull, the prompt pushed at its own width; centred",
     { a, b },
   );
-  const sum = b.pr - b.pl + (b.rr - b.rl);
+  const p0 = b.pr - b.pl;
   await drag(k, ".pedge.ri", -2000);
   await k.sleep(500);
   b = await box(k);
-  /* whichever limit binds first: the prompt's least (360) or the Queue's readable width (900; v0.7c, one place) */
+  /* pulled far: the Queue stops at its readable widest (900; v0.7c, one place); the prompt gives only if the room runs
+     out first — down to its least (360) */
+  const promptWant = Math.max(360, Math.min(p0, 1700 - 3 * AREA - 900));
   t.ok(
-    Math.abs(b.pr - b.pl - Math.max(360, sum - 900)) <= 1,
-    "the prompt stops at its minimum, or where the Queue reaches its widest",
-    { prompt: b.pr - b.pl, sum },
+    Math.abs(b.rr - b.rl - 900) <= 1 && Math.abs(b.pr - b.pl - promptWant) <= 1,
+    "pulled far: the Queue at its widest, the prompt kept — it gives only when the room runs out",
+    { queue: b.rr - b.rl, prompt: b.pr - b.pl, promptWant },
   );
   a = b;
   await drag(k, ".pedge.pi", 150);
   await k.sleep(500);
   b = await box(k);
-  t.ok(b.pr - b.pl === a.pr - a.pl + 150 && b.rl - b.pr === AREA, "the prompt's right edge is the same divider", {
-    a,
-    b,
-  });
-  a = b;
+  t.ok(
+    b.pr - b.pl > a.pr - a.pl && b.rl - b.pr === AREA && b.pl >= AREA - 1 && b.rr <= 1700 - AREA + 1,
+    "the prompt's right edge is the same divider: the prompt grows, the gap holds, the pair stays in the room",
+    { a, b },
+  );
+  /* the outer edges from a centred pair with room either side (the divider's steps above can fill the room) */
+  await k.ev(`(document.querySelector('[data-lay="reset"]').click(),1)`);
+  await settle(k);
+  a = await box(k);
   /* an outer edge: a drag is a constraint on a centred axis (DD-2026-11-03-6; panels on the pass, C2a's rest) — the edge
      at the pointer, the far side mirrors, the pair stays centred; a release moves nothing */
   const room = Math.max(10, Math.min(40, (1700 - AREA - a.rr - 4) / 2)); // half the free space (both sides use it)

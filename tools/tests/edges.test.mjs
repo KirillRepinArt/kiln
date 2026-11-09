@@ -187,13 +187,14 @@ export async function pictureEdgesDragThePicture(k, t) {
   /* back out by 120: it grows by both sides */
   const b = await dragMeasure(k, ".pedge.ro", 120, ["#frame"]);
   t.near(b.held["#frame"].width, a.after["#frame"].width + 240, 4, "the outer edge out: the picture grows");
-  /* the divider toward the picture by 100: the prompt 100 wider, the picture 100 narrower, its outer side still */
+  /* the divider toward the picture by 100 (C6b, DEVLOG DD-2026-11-10-2): the prompt gets the room first — it grows by
+     twice the pull (the pair centred, its far side mirrors), the picture pushed at its own size */
   const f1 = b.after["#frame"],
     L1 = await R(k, "#left"),
     c = await dragMeasure(k, ".pedge.ri", 100, ["#frame", "#left"]);
-  t.near(c.held["#left"].width, L1.width + 100, 4, "the divider: the prompt 100 px wider");
-  t.near(c.held["#frame"].width, f1.width - 100, 4, "…the picture 100 px narrower");
-  t.near(c.held["#frame"].right, f1.right, 3, "…its outer side holds");
+  t.near(c.held["#left"].width, L1.width + 200, 4, "the divider: the prompt 200 px wider (twice the pull)");
+  t.near(c.held["#frame"].width, f1.width, 4, "…the picture keeps its size");
+  t.near(c.held["#frame"].right, f1.right + 100, 3, "…pushed by the pull");
   /* at its full height it can't grow: the edge answers with resistance and the picture settles back */
   await k.ev(`(setPaneSize(pageId(),"h",null),setPaneSize(pageId(),"w",null,"side"),sizeFrame(),1)`);
   await k.mouse(2, 2);

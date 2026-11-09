@@ -427,7 +427,7 @@ test("a press moves nothing: every handle, held at its own line, gives the layou
       }
 });
 
-test("the shared edge trades: the group holds, one pane grows as the other shrinks", () => {
+test("the shared edge: the dragged pane gets the room first — the other pushed at its own width, then it gives (C6b)", () => {
   for (const dock of ["left", "right", "below"]) {
     /* a panel with room either way (at 900 px tall it's already at its largest in Vertical: the edge only gives) */
     const s = state({ dock, page: { ...PANEL, h: 500 } }),
@@ -435,13 +435,30 @@ test("the shared edge trades: the group holds, one pane grows as the other shrin
       e = edgeOf(out, "shared"),
       held = layoutPass({ ...s, drag: { edge: "shared", at: e.line + 30 } });
     assert.ok(near(edgeOf(held, "shared").line, e.line + 30), `${dock}: the edge at the pointer`);
-    if (dock !== "below") {
-      assert.ok(
-        near(Math.min(held.box.x, held.page.x), Math.min(out.box.x, out.page.x)),
-        `${dock}: the group's start holds`,
-      );
-      assert.ok(near(held.box.w + held.page.w, out.box.w + out.page.w), `${dock}: the total holds`);
-    }
+    const after = layoutPass(release(s, held.kept));
+    assert.ok(sameRect(after.page, held.page, 1) && sameRect(after.box, held.box, 1), `${dock}: let go, nothing moves`);
+    if (dock === "below") continue;
+    /* side by side, room on both sides: the pushed pane keeps its width, the grown one takes twice the pointer's travel
+       (the group centred: its far side mirrors, DD-6) */
+    const [grown, pushed] = dock === "left" ? ["box", "page"] : ["page", "box"];
+    assert.ok(near(held[pushed].w, out[pushed].w, 0.5), `${dock}: the ${pushed} pushed at its own width`, {
+      was: out[pushed].w,
+      now: held[pushed].w,
+    });
+    assert.ok(near(held[grown].w - out[grown].w, 60, 1), `${dock}: the ${grown} grows by twice the pull`, {
+      was: out[grown].w,
+      now: held[grown].w,
+    });
+    /* far: the pair fills the room, the pushed pane gives down to its least — the edge still at the pointer */
+    const far = layoutPass({ ...s, drag: { edge: "shared", at: e.line + 2000 } }),
+      least = pushed === "box" ? s.box.wLo : s.page.lo.w,
+      largest = grown === "box" ? Infinity : s.page.hi.w;
+    /* …unless the grown pane reaches its own largest first (it takes nothing it can't use) */
+    assert.ok(
+      far[pushed].w <= least + 1 || far[grown].w >= largest - 1,
+      `${dock}: pulled far, the ${pushed} gives down to its least — or the ${grown} is at its largest`,
+      { pushed: far[pushed].w, least, grown: far[grown].w, largest },
+    );
   }
 });
 

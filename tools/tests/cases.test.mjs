@@ -193,6 +193,23 @@ function caseOf(dock, page, ar) {
       await k.sleep(1400);
       /* Vertical's shared edge with empty room under the box (C6, DEVLOG DD-2026-11-09-19): a short pull down pushes the
          box into the room at its own size — it doesn't trade first */
+      /* side by side, the divider with empty room beside the box (C6b, DEVLOG DD-2026-11-10-2): a short pull toward the
+         box pushes it at its own width */
+      if (dock !== "below" && /\.pedge\.(pi|ri)/.test(h.label)) {
+        const m0 = await measure(k),
+          d = dock === "left" ? -40 : 40;
+        if (m0.box && (dock === "left" ? m0.box.left - 20 : m0.W - 20 - m0.box.right) > 120) {
+          const m1 = (await pull(k, h, d)).after;
+          /* judged only if the page grew (a picture at its largest takes nothing more: the edge doesn't move) */
+          if (m1.plate && m1.plate.right - m1.plate.left - (m0.plate.right - m0.plate.left) > 20)
+            t.ok(
+              Math.abs(m1.box.right - m1.box.left - (m0.box.right - m0.box.left)) <= 2 &&
+                Math.abs(m1.box.left - m0.box.left - d) <= 4,
+              `${h.label}: with empty room beside the box, a pull toward it pushes it at its own width (the room first)`,
+              { before: round(m0.box), after: round(m1.box) },
+            );
+        }
+      }
       if (dock === "below" && h.label.includes("hsplit")) {
         const m0 = await measure(k);
         if (m0.box && m0.H - 20 - m0.box.bottom > 120) {
@@ -262,7 +279,9 @@ function caseOf(dock, page, ar) {
           /* the pin: a grabbed pane's side on the drag's axis that is NOT on the grabbed edge — on a centred axis the
              mirror of the give (DD-6): side by side every edge but the shared one, Vertical across */
           const shared = !!on.box && (!!on.plate || !!on.pic),
-            centred = !shared && (dock === "below" ? h.axis === "x" : true),
+            /* side by side every edge is on a centred axis — the shared edge too since C6b (the push keeps the group
+               centred, its far side mirrors); Vertical's shared edge is anchored at the top */
+            centred = dock === "below" ? !shared && h.axis === "x" : true,
             allow = centred ? give + 2 : STILL; // the mirror, + a frame's rounding (as GIVE)
           if (moving.includes(n) && n !== "bar")
             for (const s of AXIS_SIDES[h.axis]) {

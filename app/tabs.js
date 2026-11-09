@@ -1,7 +1,7 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $ } from "./dom.js";
-import { fadeCol, lay, sizeFrame, slideCol, snapHold, standIn } from "./layout.js";
+import { fadeCol, lay, sizeFrame, snapHold, standIn } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
 import { xfadeSnap } from "./pictures.js";
@@ -80,7 +80,6 @@ export function tabSync(force) {
  * Transition (docs/decisions/0014) */
 export function tabGo(fn, layout = false) {
   const from = plateBefore(),
-    lc0 = $("lcol").getBoundingClientRect(),
     /* a layout switch: the box's stand-in, made before anything changes — it fades out as the box was, while the box
        itself is laid out where it lands from the first frame */
     stand = layout ? standIn() : null,
@@ -141,9 +140,9 @@ export function tabGo(fn, layout = false) {
        render and the Gallery keep different room (their insets). The status row's fade is the layout's (rowFade) */
   }
   placeNavs();
-  if (layout)
-    fadeCol(/** @type {HTMLElement} */ (stand), sw, { plate: from, dock: dock0 }); // glued, through its relation change
-  else slideCol(lc0, sw.t0); // the column slides from where it was, as the real thing (FLIP)
+  /* the box: a layout switch changes its relation to the plate (glued, fading through); a tab switch keeps it — it rides
+     the travelling plate (layout.js promptFollow, in the driver's frames; it slid on a clock of its own, slideCol) */
+  if (layout) fadeCol(/** @type {HTMLElement} */ (stand), sw, { plate: from, dock: dock0 });
   /* once it has landed: one more layout, still without glides (measured mid-switch, the prompt column's Vertical shift
      rested a pixel off), then the layout's glides come back */
   setTimeout(() => {

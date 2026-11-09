@@ -835,20 +835,11 @@ export function vAlign() {
    650 ms (a re-shift meanwhile showed only at the end, as a jump) */
 const colEase = bez(SWITCH.curve[0], SWITCH.curve[1], SWITCH.curve[2], SWITCH.curve[3]); // the switch's glide (plate.js)
 let hugX = 0, // side by side: one gap from the plate, on every page (promptFollow)
-  hugY = 0, // Vertical: riding its pane's plate while it moves (promptFollow; 0 at rest) — never glided: the plate is its clock
+  hugY = 0, // riding its pane's plate on the height axis while it moves (Vertical; side by side in a switch — promptFollow; 0 at rest): never glided, the plate is its clock
   hugFrom = 0, // …catching up after a hold: from, to, since when (0: not catching up)
   hugTo = 0,
   hugT0 = 0,
-  slX = 0, // the slide: how far from its place it started, and when
-  slY = 0,
-  slT0 = 0,
-  colX = 0, // the offset written last (taken off a measurement to find where the column is laid out)
-  colY = 0,
   colRaf = 0;
-/** how much of the slide is still to go, 1 → 0 @param {number} now */
-function slideLeft(now) {
-  return slT0 ? 1 - colEase(Math.min(1, Math.max(0, now - slT0) / SWITCH.ms)) : 0;
-}
 function colApply() {
   colRaf = 0;
   const now = performance.now();
@@ -874,19 +865,15 @@ function colApply() {
       ry = g1.t - relation.b1.t;
     }
   }
-  const k = slideLeft(now),
-    x = hugX + Math.round(slX * k) + rx,
-    y = hugY + Math.round(slY * k) + ry,
+  const x = hugX + rx,
+    y = hugY + ry,
     t = x || y ? `translate(${x}px, ${y}px)` : "",
     col = $("lcol");
-  colX = x;
-  colY = y;
   if (col.style.transform !== t) col.style.transform = t;
   /* its own frames only for what the driver doesn't move: a relation change rides the driver's frames while it runs
      (T2c-3b-2: after the plate's write, never a frame before it — its own loop could run first and read the plate a
      frame late), and its own after (the fade-in outlasting the travel) */
-  if (k > 0 || hugT0 || (relation && !driving())) colRaf = requestAnimationFrame(colApply);
-  if (k <= 0) slT0 = 0;
+  if (hugT0 || (relation && !driving())) colRaf = requestAnimationFrame(colApply);
 }
 /** the box's STAND-IN for a layout switch (DEVLOG DD-2026-11-08-5): a copy of what's on screen now — the name row, the
  * box, the LoRA chips — at their place and size, in a layer of its own over the page. The box itself is laid out where
@@ -1018,18 +1005,6 @@ export function fadeCol(out, sw, was) {
 }
 /** @type {Animation[]} */
 let colFades = [];
-/** a tab switch moved the column's place: it slides there from where it was on screen (measured before the switch —
- * mid-slide too, so a fast second switch carries on from there). Its place is worked out here, from the layout:
- * measured through the running slide's offset @param {DOMRect} was */
-export function slideCol(was, t0 = performance.now()) {
-  const r = $("lcol").getBoundingClientRect();
-  /* across: side by side the box rides the plate (promptFollow), so only Vertical's column slides */
-  slX = document.querySelector(".app.stacked") ? Math.round(was.left - (r.left - colX + hugX)) : 0;
-  slY = Math.round(was.top - (r.top - colY + hugY));
-  slT0 = slX || slY ? t0 : 0;
-  cancelAnimationFrame(colRaf);
-  colApply();
-}
 /* side by side in Generating the prompt sits a pair gap from the PICTURE: the area is the whole stage and the picture
    is centred in it (2026-10-31, ownership map G6 — the area used to hug the picture and glide its grid columns on CSS's
    clock while the frame moved on its own: two clocks, a wobble). The column moves in by the plate's inset, worked out
@@ -1070,6 +1045,17 @@ export function promptFollow(direct = false) {
       w = lay.shown ? lay.shown.pw : box.offsetWidth; // its width from its owner (boxWWrite), as written this frame
     if (p.width > 0 && w > 0) x = Math.round(R ? p.right + pairGap() - left : p.left - pairGap() - (left + w));
     else x = hugX;
+    /* a switch (the plate travelling on the driver): the box rides it on its height axis too, by its relation to the
+       plate — its anchor (top / middle / bottom) kept to the plate's live lines, the relation it has where the plate
+       lands (T2c-3b-3: it slid there on a clock of its own, slideCol). The same rule as a layout switch's relation
+       change (layoutmath.js relationOf / glued), with the relation unchanged */
+    const goal = movingTo("plate");
+    if (goal && p.height > 0 && w > 0) {
+      const top = app.getBoundingClientRect().top + col.offsetTop + box.offsetTop,
+        b = { l: left, t: top, w, h: box.offsetHeight },
+        r = relationOf(b, goal, glueAnchors(R ? "right" : "left", S.pos || "mid"));
+      y = glued({ l: p.left, t: p.top, w: p.width, h: p.height }, r, b).t - b.t;
+    }
   }
   const b2 = document.body.classList;
   if (direct || b2.contains("laysnap") || b2.contains("liveresize") || b2.contains("laydrag")) {

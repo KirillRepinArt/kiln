@@ -388,10 +388,7 @@ const ji = args.indexOf("-j"),
 const filters = args.map(x => x.split("/"));
 /* acceptance tests for work in progress: they fail until their work lands, so a full run (and CI) skips them; name one
    to run it. Each entry says what it waits for; remove it when that's done. */
-const PENDING = {
-  layers:
-    "v0.7c T2c, the layering rule: the picture's overlay controls (its ✕, the edit buttons) move to the floating layer, out of the page that fades (DEVLOG DD-2026-11-08-14)",
-};
+const PENDING = {};
 /* files a full run leaves to a job of their own (CI: KILN_SKIP=cases — the case table runs in parallel, each job under
    its time limit) */
 const SKIP = (process.env.KILN_SKIP || "").split(",").filter(Boolean);

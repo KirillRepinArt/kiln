@@ -325,7 +325,7 @@ export function initEdges() {
           document.body.classList.remove("navs");
         }, 300);
       };
-    for (const el of [$("frame"), $("gtools"), ...qa(".gnav")]) {
+    for (const el of [$("frame"), $("gtools"), ...qa(".gnav"), $("cbtn"), $("bclose")]) {
       el.addEventListener("pointerenter", on);
       el.addEventListener("pointerleave", off);
     }

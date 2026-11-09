@@ -147,11 +147,12 @@
   color: var(--faint);
   max-width: 340px;
 }
-/* buttons on the picture: the eye (privacy) top right, ✕ top left */
+/* buttons on the picture: the eye (privacy) top right, ✕ top left — on the floating layer over it (the layering rule:
+   glass is never inside the page that fades), placed on its corners by around.js; "the pointer is on the picture" is
+   body.navs (edges.js — the frame, the edit buttons, the arrows and these) */
 .cbtn,
 .bclose {
-  position: absolute;
-  top: var(--space-3);
+  position: fixed;
   width: 40px;
   height: 40px;
   border-radius: var(--r-14);
@@ -159,18 +160,25 @@
   backdrop-filter: blur(6px);
   display: none;
   place-items: center;
-  z-index: 6;
+  z-index: 6; /* over the picture, under every edge handle (the picture's strips 7, the panes' 8: one home per strip) */
 }
 .cbtn {
-  right: var(--space-3);
   opacity: 0;
   transition:
     opacity var(--t-150),
     background var(--t-150);
 }
 .bclose {
-  left: var(--space-3);
   transition: background var(--t-150);
+}
+/* only with the picture's view (as the arrows) */
+body:not(:has(#v-gen.on, #v-gen.leaving)) .cbtn,
+body:not(:has(#v-gen.on, #v-gen.leaving)) .bclose,
+body:has(.modal.show) .cbtn,
+body:has(.modal.show) .bclose,
+body:has(.viewer.show) .cbtn,
+body:has(.viewer.show) .bclose {
+  display: none !important;
 }
 .cbtn svg {
   width: 20px;
@@ -184,36 +192,36 @@
 .bclose:hover {
   background: var(--on-picture-hover);
 }
-.frame.has .cbtn,
+body:has(.frame.has) .cbtn,
 body.private .cbtn {
   display: grid;
 }
-.frame.has:hover .cbtn {
+body.navs:has(.frame.has) .cbtn {
   opacity: 1;
 }
-.frame.held .cbtn {
+body:has(.frame.held) .cbtn {
   opacity: 0.55;
 }
-.frame.held:hover .cbtn {
+body.navs:has(.frame.held) .cbtn {
   opacity: 1;
 }
-.frame.has .cbtn.lit {
+body:has(.frame.has) .cbtn.lit {
   opacity: 0.7;
 }
-.frame.has:hover .cbtn.lit {
+body.navs:has(.frame.has) .cbtn.lit {
   opacity: 1;
 }
 body.private .cbtn {
   opacity: 0.7;
 }
-body.private .frame:hover .cbtn {
+body.private.navs .cbtn {
   opacity: 1;
 }
-.frame.missing .cbtn {
+body:has(.frame.missing) .cbtn {
   display: none;
 }
-.frame.browsing .bclose,
-.frame.clearable:hover .bclose {
+body:has(.frame.browsing) .bclose,
+body.navs:has(.frame.clearable) .bclose {
   display: grid;
 }
 /* the edit buttons: a column OUTSIDE the picture, on the side away from the prompt; shown on hover of the picture or the
@@ -221,8 +229,8 @@ body.private .frame:hover .cbtn {
    picture, or the queue at work), hidden when they can't act (private, file gone). A short picture wraps the column
    outward. The column itself is part of the hover zone; its buttons take clicks once shown */
 .gtools {
-  position: absolute;
-  z-index: 6;
+  position: fixed; /* the floating layer, beside the picture (around.js places it) — the layering rule */
+  z-index: 6; /* over the picture, under every edge handle (the picture's strips 7, the panes' 8: one home per strip) */
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap; /* one column, always: the picture is never shorter than it (layoutmath.js picLeastH) */
@@ -236,12 +244,15 @@ body.private .frame:hover .cbtn {
   padding-left: 0;
   padding-right: var(--space-2);
 }
-.stage.tools .gtools {
+body:has(#stage.tools) .gtools {
   opacity: 1;
 }
-body.notools #v-gen:not(.leaving) .gtools,
-.stage:has(.frame.held) .gtools,
-.stage:has(.frame.missing) .gtools {
+body.notools:not(:has(#v-gen.leaving)) .gtools,
+body:has(.frame.held) .gtools,
+body:has(.frame.missing) .gtools,
+body:not(:has(#v-gen.on, #v-gen.leaving)) .gtools,
+body:has(.modal.show) .gtools,
+body:has(.viewer.show) .gtools {
   display: none;
 }
 .gtools .side {
@@ -266,7 +277,7 @@ body.notools #v-gen:not(.leaving) .gtools,
   background: var(--on-picture-hover);
   opacity: 1;
 }
-.stage.tools .gtools .side button {
+body:has(#stage.tools) .gtools .side button {
   pointer-events: auto;
 }
 .gtools button svg {
@@ -479,9 +490,9 @@ body[data-pic="still"] .prog.run .meta {
 .cbtn {
   display: grid;
 }
-.frame:hover .cbtn {
+body.navs .cbtn {
   opacity: 1;
 }
-.frame.missing .cbtn {
+body:has(.frame.missing) .cbtn {
   display: none;
 }

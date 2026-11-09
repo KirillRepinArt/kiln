@@ -135,13 +135,15 @@ tabBarFollowsThePlate.opts = { step: 0.05 };
 /* what sits round the frame follows it (2026-10-28, one owner): the status row, Show prompt, the edit buttons and the
    edge strips are placed from the frame's live box every frame it moves. They used to aim at its TARGET with CSS glides
    of their own: on a crop-and-reveal they jumped to the end, or slid on another clock. Compared on computed styles (the
-   values mid-glide, transforms left out), in the stage's coordinates (the stage fills Generating's view) */
+   values mid-glide, transforms left out), in the stage's coordinates (the stage fills Generating's view) — the edit buttons
+   on screen: they float over the page (the layering rule) */
 const AROUND =
   ms => `new Promise(res=>{let m=0,n=0,why="";const t0=performance.now(),px=(e,p)=>parseFloat(getComputedStyle(e)[p]);
   (function s(){const f=$("frame"),l=px(f,"left"),t=px(f,"top"),w=px(f,"width"),h=px(f,"height"),gt=$("gtools"),
     tb=px(gt,"width"),gl=gt.classList.contains("lefty")?l-tb:l+w,he=$("hedges"),pr=$("prog"),sp=$("showP"),
-    d={hedges:Math.max(Math.abs(px(he,"left")-l),Math.abs(px(he,"top")-t),Math.abs(px(he,"width")-w),Math.abs(px(he,"height")-h)),
-      tools:Math.max(Math.abs(px(gt,"left")-gl),Math.abs(px(gt,"top")-t)),
+    so=(a=>{let x=0,y=0;for(let e=a;e&&e.id!=="rpanel";e=e.offsetParent){x+=e.offsetLeft;y+=e.offsetTop;const p=e.offsetParent;if(p&&p.id!=="rpanel"){x+=p.clientLeft;y+=p.clientTop}}return{x,y}})($("stage")), /* the strips float in #rpanel */
+    d={hedges:Math.max(Math.abs(px(he,"left")-(l+so.x)),Math.abs(px(he,"top")-(t+so.y)),Math.abs(px(he,"width")-w),Math.abs(px(he,"height")-h)),
+      tools:(st=>Math.max(Math.abs(px(gt,"left")-(st.left+gl)),Math.abs(px(gt,"top")-(st.top+t))))($("stage").getBoundingClientRect()), /* the floating layer: on screen */
       prog:Math.max(Math.abs(px(pr,"left")-l),Math.abs(px(pr,"width")-w),Math.abs(px(pr,"top")-(t+h+12))),
       showP:Math.max(Math.abs(px(sp,"left")-(l+w/2)),Math.abs(px(sp,"top")-(t+h+12)))};
     for(const k in d)if(d[k]>m){m=d[k];why=k}n++;

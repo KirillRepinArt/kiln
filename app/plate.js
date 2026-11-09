@@ -306,7 +306,7 @@ export function switchGlide(at, views, layout = false) {
        edit buttons, the status row, Show prompt, the arrows — fades on its own, quickly: out at the start, in as the
        plate lands (clipped, they were cut off at the first frame) */
     pic = (/** @type {HTMLElement} */ v) => v.id === "v-gen",
-    around = () => [$("gtools"), $("prog"), $("showP")],
+    around = () => [$("gtools"), $("prog"), $("showP"), $("cbtn"), $("bclose")],
     /* the picture's arrows: shown by hover alone (browse.js); a switch only takes them out with their view — faded
        in by the switch too, they showed where they last were (the screen's edge) while hover hadn't shown them */
     navs = () => [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".gnav"))],

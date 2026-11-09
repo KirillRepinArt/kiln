@@ -26,18 +26,31 @@ export function placeAround() {
     w = b.w + 2 * M,
     h = b.h + 2 * M;
   placeNavs(); // the picture's arrows on its side edges (browse.js: the one you hold stays put)
+  /* its controls on its top corners (the floating layer: the eye top right, ✕ top left — a part gap in) */
+  const fr = $("frame").getBoundingClientRect(),
+    eye = $("cbtn"),
+    x = $("bclose");
+  set(eye.style, "left", Math.round(fr.right - SPACE.part - 40));
+  set(eye.style, "top", Math.round(fr.top + SPACE.part));
+  set(x.style, "left", Math.round(fr.left + SPACE.part));
+  set(x.style, "top", Math.round(fr.top + SPACE.part));
   const gt = $("gtools"),
     he = $("hedges"),
     pr = $("prog"),
     sp = $("showP"),
     tb = parseFloat(gt.style.width) || 0, // the button column's width: the layout's (sizeFrame)
     below = t + h + SPACE.part;
-  set(he.style, "left", l);
-  set(he.style, "top", t);
+  /* the picture's edge strips: handles, in the floating layer over the page (#rpanel's own layer, above its controls —
+     one home per strip): the stage's coordinates moved into #rpanel's */
+  const so = offsetIn($("stage"), $("rpanel"));
+  set(he.style, "left", l + so.x);
+  set(he.style, "top", t + so.y);
   set(he.style, "width", w);
   set(he.style, "height", h);
-  set(gt.style, "left", gt.classList.contains("lefty") ? l - tb : l + w);
-  set(gt.style, "top", t);
+  /* (the floating layer: the stage's coordinates on screen) */
+  const st = $("stage").getBoundingClientRect();
+  set(gt.style, "left", Math.round(st.left + (gt.classList.contains("lefty") ? l - tb : l + w)));
+  set(gt.style, "top", Math.round(st.top + t));
   set(gt.style, "height", Math.max(40, h));
   set(pr.style, "left", l);
   set(pr.style, "width", w);

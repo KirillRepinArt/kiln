@@ -1,6 +1,6 @@
 /* Kiln · the styles. index.html loads these files in this order (the order matters where rules meet):
-   tokens · base · layout · prompt · controls · chips · tabs · picture · queue · loras · pnginfo · dialogs · overlays ·
-   glass · skins · motion. One rule per thing, grouped by part of the screen.
+   tokens · base · layout · scrolledge · prompt · controls · chips · tabs · picture · queue · loras · pnginfo · dialogs ·
+   overlays · glass · themes/* · motion. One rule per thing, grouped by part of the screen.
    States are classes JS sets (body.glass / .private / .jobrun…, .app.stacked / .pright, .frame.has / .held…).
    !important is kept only where a rule must beat an inline style or every other rule (cursor and transition
    switches while you drag, the morph); each one says why. */
@@ -20,7 +20,7 @@
   /* the theme's colours --a1 --a2 --a3 --ink: in its skin file (themes/) */
   --grad: linear-gradient(135deg in oklch, var(--a1), var(--a2) 55%, var(--a3));
   --flow: linear-gradient(90deg in oklch, var(--a1), var(--a2), var(--a3), var(--a2), var(--a1));
-  /* SPACING — one scale for every gap, inset and offset: the 4-pt grid (decided 2026-10-27). Every step is a whole
+  /* SPACING — one scale for every gap, inset and offset: the 4-pt grid. Every step is a whole
      number of screen pixels at 100 / 125 / 150 / 200 % Windows scaling, and neighbouring steps look clearly different.
      1 and 2 px are for hairlines and optical nudges only. */
   --space-px: 1px;
@@ -40,13 +40,12 @@
   --gap-area: var(--space-5); /* between areas: the window's edge, the prompt column ↔ the picture area */
   --gap-part: var(--space-3); /* an area and its own parts: the tab bar ↔ the picture ↔ its status row */
   --gap-tight: var(--space-2); /* attached to a box: the LoRA chips under the prompt, the picture's edit buttons */
-  /* text inside a box: this far from the box's outer edge to the letters, on every side (2026-10-27) */
+  /* text inside a box: this far from the box's outer edge to the letters, on every side */
   --inset-box: var(--space-7);
   /* OUTLINES — one rule: something you move or resize = a dashed line one part gap OUTSIDE its plate, the corners
      concentric; a place to drop = a plate with the line one part gap INSIDE (the scripts read --outline-out too).
      A divider outlines both panes it resizes: the two lines run as a pair one scale step apart down its middle, never
-     crossing (2026-11-01, the user picked the 4 px channel — "contrasty"; 12 + 12 crossed in the 20 px gap). So: never
-     more than half of (the gap less one step) */
+     crossing — so never more than half of (the gap less one step) */
   --outline-out: min(var(--gap-part), calc((var(--gap-area) - var(--space-1)) / 2));
   /* the picture's mat: how far it sits inside its glass plate (the plate's ring shows round it). 0 = edge to edge,
      the ring drawn over the picture (the rim, plate.js). The picture's corners stay concentric with the plate's */
@@ -152,8 +151,8 @@
   --black-60: rgba(0, 0, 0, 0.6);
   --black-70: rgba(0, 0, 0, 0.7);
   --black-90: rgba(0, 0, 0, 0.9);
-  /* GREYS — one ramp, named by perceived lightness (OKLab L × 100: 0 = black, 100 = white). Shades closer than the eye
-     can tell apart were merged (2026-10-27): 59 greys → these 25. */
+  /* GREYS — one ramp, named by perceived lightness (OKLab L × 100: 0 = black, 100 = white); shades closer than the eye
+     can tell apart are one */
   --grey-13: #07070a;
   --grey-15: #0b0b0e;
   --grey-18: #111111;
@@ -213,17 +212,16 @@
   --liw: calc(
     var(--th, 48px) + 250px
   ); /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
-  /* ---------- THE DROP MAP (L1b, 2026-11-11 — ux-review/18-box-placement.md; layoutmath.js dropTiles) ----------
-     the first of the numbers' one home (v0.7d): read by the code (tokens.js tok), never copied into it */
+  /* ---------- THE DROP MAP (layoutmath.js dropTiles; ux-review/18-box-placement.md) ----------
+     read by the code (tokens.js tok), never copied into it */
   --drop-cover: 0.25; /* a tile over the picture covers at most this share of it */
   --drop-room-min: 160px; /* under this much free room beside the picture, its column lies over it */
   --drop-hit-min: 96px; /* never narrower than a comfortable target */
   --drop-token: 0.35; /* the box in the hand: its scale (the map shows behind it) */
-  /* ---------- THE LAYERS (P2, ROADMAP v0.7c step 8 — DEVLOG DD-2026-11-11-2) ----------
+  /* ---------- THE LAYERS (ARCHITECTURE › paint order; DD-2026-11-11-2) ----------
      Paint order is ONE list per stacking context, bottom to top, by NAME: a z-index anywhere else is var(--z-…) (Stylelint
-     rejects a number). A z-index only competes within its stacking context, so a context has a list of its own — a
-     global scale would read as if the prompt box's menu (40) were over the toast (200), which it never meets. 54
-     hand-picked numbers held it before; the drop map's lanes got one that put their glass over the box. */
+     rejects a number). A z-index only competes within its stacking context, so each context has a list of its own — one
+     global scale would order things that never meet. */
   /* THE WINDOW (the page's top level) */
   --z-win-stars: 0;
   --z-win-app: 1;
@@ -241,9 +239,9 @@
   --z-page-ambient: 0;
   --z-app-panel: 1;
   --z-app-rim: 2;
-  --z-app-drop-map: 3; /* RESERVED for L1: the drop map's tiles — over the page, under the prompt column (and the box in the hand) */
-  --z-app-prompt: 4; /* (3 before the drop map's slot — the order unchanged) */
-  --z-app-tabs: 5; /* (4 before) */
+  --z-app-drop-map: 3; /* the drop map's tiles — over the page, under the prompt column (and the box in the hand) */
+  --z-app-prompt: 4;
+  --z-app-tabs: 5;
   /* THE PICTURE'S AREA (its stage and the floating layer over it) */
   --z-pic-stage: 1;
   --z-pic-picture: 1;

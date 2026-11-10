@@ -30,10 +30,9 @@
    row) is a light capsule. Glass that holds glass of its own carries it on a ::before layer, not on itself: in
    Chromium an element with a backdrop-filter becomes the backdrop of its children, so glass inside glass could not blur
    what is really under it (the prompt under a pop-up, the text under the pills). */
-/* the material is ONE layer (DEVLOG DD-2026-11-08-9): its tint, its ring and its shadow are all on the glass layer
-   (::before), the element that holds it paints nothing — so the material fades as one (fade.js). The box's ring and
-   shadow on the element itself stayed on screen as an empty outline while its glass and contents faded out (the user,
-   2026-11-08: "some sort of a trace during these layout changes") */
+/* the material is ONE layer (DD-2026-11-08-9): its tint, its ring and its shadow are all on the glass layer (::before),
+   the element that holds it paints nothing — so the material fades as one (fade.js); a ring left on the element stays
+   on screen as an empty outline while the glass fades */
 body.glass .left,
 body.glass .mcard,
 body.glass .seg {
@@ -58,8 +57,7 @@ body.glass .play::before {
 }
 /* the ones with a ring cover their element's border box and draw the ring as their own border, the tint clipped inside
    it: the ring sits over the backdrop and the inner highlights one pixel in, exactly as when the element drew the ring
-   (a refactor that changes nothing on screen — the first try stacked all three on the outer pixel: one crisper line, the
-   user noticed, 2026-11-08) */
+   (not all three on the outer pixel: that reads as one crisper line) */
 body.glass .left::before,
 body.glass .mcard::before,
 body.glass .seg::before {
@@ -270,8 +268,7 @@ body.glass .fg input[readonly]:hover {
 }
 /* the pill row is part of the box's flow, under the text, in glass as in Solid (DEVLOG DD-2026-11-08-14): a scroll
    area ends where the controls on its surface begin, and its scroll edge (the fade and the soft blur, prompt.css) is at
-   its own edge — content never passes under a control, so the caret never hides behind one. It used to float over the
-   box's bottom, the text scrolling under the pills' own blur */
+   its own edge — content never passes under a control, so the caret never hides behind one */
 body.glass .left .controls {
   position: relative;
   z-index: var(--z-box-controls);
@@ -412,13 +409,10 @@ body.glass .play.gen::before {
     background var(--t-250) var(--ease),
     box-shadow var(--t-250) var(--ease);
 }
-/* the page's layers, bottom to top (their numbers: tokens.css, THE LAYERS — the app's list): the plate, the panel's
-   contents (.rpanel, its own stacking context, tabs.css), the rim, the drop map's slot, the prompt column, the tab bar.
-   Set by name, never left to the order of the page: the
-   contents' own z-indexes stayed above the plate only while nothing made the panel a stacking context — a switch's name
-   did, and the plate's glass blurred PNG Info's text (2026-10-28). The prompt column is a layer of its own for the same
-   reason: a slide's transform made it a stacking context at layer 0, and its pill menus went under the picture
-   (Vertical, 2026-10-31) — it sits over the picture area, under the tab bar (and its Layout menu) */
+/* the page's layers, bottom to top (tokens.css, THE LAYERS — the app's list): the plate, the panel's contents (.rpanel,
+   its own stacking context, tabs.css), the rim, the drop map, the prompt column, the tab bar. Set by name, never left to
+   the order of the page: a transform or a switch makes a part a stacking context, and its contents' own z-indexes
+   stop counting against the plate (its glass blurred PNG Info's text; the prompt's pill menus went under the picture) */
 .plate {
   z-index: var(--z-app-plate);
 }
@@ -439,7 +433,7 @@ body.glass .plate.panel {
 }
 /* the plate's ring is its rim (plate.js places both): one layer ABOVE what the plate holds, so it is the same line on
    every plate — the empty frame, a picture (over its edge, or round it with a mat), a panel — and stays put while a
-   switch cross-fades the contents (the Gallery's picture drew a line of its own that faded in with it, 2026-10-28) */
+   switch cross-fades the contents */
 .rim {
   z-index: var(--z-app-rim);
   box-shadow: inset 0 0 0 1px var(--grey-23);

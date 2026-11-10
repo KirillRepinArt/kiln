@@ -1,5 +1,6 @@
 // @ts-check
-/* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
+/* Kiln · the prompt box's layout: its least height and width, its place from the layout pass (one writer of its top,
+   height and Vertical width), the hold while you work in it, and moving it (the drop map) */
 import { $, q } from "./dom.js";
 import { HANDLES, outlines } from "./outlines.js";
 import {
@@ -27,9 +28,10 @@ import { DRAG_START, gesture as drag } from "./gesture.js";
 import { rearrange, stop, travelling } from "./rearrange.js";
 
 /* ======================= prompt card layout =======================
-   Centred on the image's vertical centre while there's room. While the editor is focused or the pointer is over
-   the card it is FROZEN: it only grows downward (then scrolls), so nothing moves under the cursor. ~0.5 s after the
-   pointer leaves (and the editor isn't focused) it glides back to centre and re-expands to use the space. */
+   Side by side it rests at its anchor (S.pos: top / middle / bottom — layoutmath.js cardPlacement). While the editor
+   is focused or the pointer is over it, it is FROZEN: its top holds (its bottom, resting at the bottom) and it grows
+   away from it, then scrolls — nothing moves under the cursor. 0.5 s after the pointer leaves (and the editor isn't
+   focused) it goes back to its anchor */
 /** @type {import("./types.js").CardState} */
 export const card = {
   frozen: false,
@@ -50,9 +52,7 @@ export function lyUnfreeze() {
   card.frozen = false;
 }
 /* the box's least height has ONE owner: slotLeast() — two lines of text plus the box's controls, from the text's own
-   metrics (2026-11-02, the user's screenshot: squeezed in Vertical, the editor kept a CSS min-height of 108 px of its
-   own and drew under the pills; side by side the modes used a third number, EDMIN). The editor's CSS takes what the box
-   gives it and scrolls */
+   metrics. The editor's CSS takes what the box gives it and scrolls */
 /** @returns {number} */
 export function cardNaturalH() {
   const L = $("left"),
@@ -86,10 +86,8 @@ export function textBoxH(lines) {
 /** the box's least height in Vertical: its controls and two lines */
 /** @returns {number} */
 export const slotLeast = () => textBoxH(2);
-/** the box's least width: what its bottom row needs — Start and the pills at their compact labels (the container
- * queries' short forms: no "Seed", no "Ratio"), its insets and gaps — never under PWMIN. ONE source for every reader
- * (the layout pass, the limits, Vertical's width): a fixed 360 let the last pill run under Start once the Steps pill
- * showed (the user, 2026-11-10; 9 px measured) */
+/** the box's least width — ARCHITECTURE › the prompt box's least width: what its bottom row needs (Start and the
+ * pills at their compact labels — the container queries' short forms — its insets and gaps), never under PWMIN */
 export function boxWLeast() {
   const c = /** @type {HTMLElement | null} */ (document.querySelector("#left .controls")),
     play = $("play");
@@ -119,7 +117,7 @@ export function boxWLeast() {
 }
 let draftH = 0; // the height your draft's text needs (kept while a job's prompt is shown: it never resizes the box)
 /** Vertical: the box's text height — your draft's: a job's prompt shown in it never resizes it (it scrolls inside), so
- * browsing prompts of different lengths never moves anything (2026-10-19). The layout pass's input (C4b) */
+ * browsing prompts of different lengths never moves anything. The layout pass's input */
 export function boxDraftH() {
   if (!peekJob || !draftH) draftH = textBoxH();
   return draftH;
@@ -152,10 +150,9 @@ export function applyMode() {
   }
   updHm();
 }
-/* Vertical: the prompt box's width — yours (paneSize("box", "vert"), set with its side edges through the layout pass), or
-   the picture's (Fit width), never narrower than the box's minimum or wider than the
-   window. ONE writer of the box's width in Vertical: layoutLeft (--sw) asks this (2026-11-02, v0.7c 3b: the side edges
-   wrote --sw and a held offset --soff themselves) */
+/* Vertical: the prompt box's width — yours (paneSize("box", "vert"), set with its side edges through the layout pass),
+   or a mode's (Match: the picture's, Full: the window's), never narrower than the box's least or wider than the window.
+   The layout pass asks it; its one writer is swAt (--sw), from the pass */
 export function stackW() {
   const max = innerWidth - 2 * SPACE.area,
     pic = typeof lay !== "undefined" && lay.target && lay.target.w;
@@ -168,7 +165,7 @@ export function stackW() {
 export function chipsH() {
   const c = $("chips");
   return c.childElementCount ? c.offsetHeight + SPACE.tight : 0;
-} // the row always shows ("LoRA +") // the chip row under the box, and its gap
+} // the chip row under the box, and its gap (the row always shows: "LoRA +")
 /** @param {boolean} [direct] the user's hand is the clock (typing): the box follows at once, as under a drag — a change
  * the system makes (a layout switch, a Reset) moves on the rearrangement's plan */
 export function layoutLeft(direct = false) {
@@ -187,11 +184,9 @@ export function layoutLeft(direct = false) {
   $("ltitle").classList.toggle("hm", !!hm);
   if (stk) {
     card.top = 0;
-    /* the box is placed by the layout pass, under the page's pane (v0.7c C4b, ux-review/16-layout-pass.md C4): the pane
-       first, the box its text's height in the free room under it, then it scrolls — its growth never takes the pane's
-       room (it had a grid row of its own sized by its text, --lch, and the page took what was left: the user's
-       overlap, 2026-11-09). The column is a layer over the whole room, as side by side: the box's top is the pass's,
-       in the column's px (its layout box, without a transform). Its width and height too: held, an edge's (C4c) */
+    /* the box is placed by the layout pass, under the page's pane — ARCHITECTURE › the single layout pass: the pane
+       first, the box its text's height in the free room under it, then it scrolls. Its top is the pass's, in the
+       column's px (its layout box, without a transform); its width and height too — held, an edge's */
     const was = lay.passV,
       p = vPass(),
       colTop = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop;
@@ -199,27 +194,23 @@ export function layoutLeft(direct = false) {
     requestAnimationFrame(vAlign);
     boxAt(col, Math.round(p.box.y - colTop), Math.round(p.box.h));
     /* the pane changed under it (a size of yours, Reset, a new limit): its owner lays the page out in this task — on the
-       rearrangement's plan, one motion with the box riding its plate. (Not with the layout held at once: the old
-       column's text-sized row needed that, and it snapped every Reset in Vertical — B16) */
+       rearrangement's plan, one motion with the box riding its plate (B16) */
     if (!was || Math.abs(was.page.h - p.page.h) > 0.5 || Math.abs(was.page.w - p.page.w) > 0.5) sizeFrame();
     return;
   }
   if (col.clientHeight - TS <= 0) return;
   /* side by side the box's place beside its pane is the layout pass's — ONE rule (cardPlacement, its modes
-     cardHeightMode), called by the pass with the column and the moment's state (C2b's rest: the pass had a copy of its
-     own, and this measured the picture's lines itself) */
+     cardHeightMode), called by the pass with the column and the moment's state */
   const p = sideBoxPass(),
     c0 = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop;
   card.top = p.box.y - c0 - TS;
   card.bottom = card.top + p.box.h + CH;
   boxAt(col, p.box.y - c0, p.box.h);
 }
-/** Vertical: the box's width (--sw) — ONE writer, this; a change the system makes (a double-click, Reset, a new limit)
- * moves it on the rearrangement's plan and clock with the page it sits under (T2c-3b-4: it was written at once, a 200 px
- * jump in one frame — C5's case table); your hand (a drag, typing) at once, and a switch (the plate travelling): the
- * box is at its end shape from the switch's first frame (a crop-and-reveal's frame or the plate travelling), its relation change carries it (DD-4's whole rule — late in a
- * switch a 1–2 px settle of --sw on the driver slid the centred box off its relation) @param {HTMLElement} col
- * @param {number} w */
+/** Vertical: the box's width (--sw) — ONE writer, this. A change the system makes (a double-click, Reset, a new limit)
+ * moves on the rearrangement's plan and clock with the page it sits under; your hand (a drag, typing) at once; in a
+ * switch (the plate travelling) it is at its end shape from the first frame and its relation change carries it (DD-4:
+ * a late settle of --sw slid the centred box off its relation) @param {HTMLElement} col @param {number} w */
 function swAt(col, w) {
   const now = parseFloat(col.style.getPropertyValue("--sw")),
     write = (/** @type {{ w: number }} */ b) => col.style.setProperty("--sw", Math.round(b.w * 10) / 10 + "px");
@@ -246,18 +237,15 @@ function boxWrite(col, b) {
 }
 /** whether the layout now being placed is the user's own direct change (layoutLeft's `direct`) */
 let layDirect = false;
-/** where the layout wants the box: a change the system makes (a double-click, Reset, a new limit) moves it on the
- * rearrangement's plan and clock — side by side on the progress of the picture it's anchored to (T2: it glided on CSS's
- * --lay-t, a clock of its own, and fell behind); in Vertical its top rides its pane's plate (layout.js promptFollow: the
- * plate's live bottom is its clock), so only its height moves on the plan (it was written at once: a #vedge double-click
- * moved the box's bottom 394 px in one frame — the case table). At once: the first time, under your hand, and in
- * Vertical during a switch (the plate travelling: the box at its end shape from the first frame, DD-4's whole rule — as
- * its width, swAt) @param {HTMLElement} col @param {number} top @param {number} H */
+/** where the layout wants the box: a change the system makes moves it on the rearrangement — ARCHITECTURE › a
+ * rearrangement on the same page (side by side on the picture's progress; in Vertical its top rides its pane's plate,
+ * only its height on the plan). At once: the first time, under your hand, and in Vertical during a switch (DD-4, as its
+ * width) @param {HTMLElement} col @param {number} top @param {number} H */
 function boxAt(col, top, H) {
   const to = { l: 0, t: top, w: 0, h: H },
     vert = !!document.querySelector(".app.stacked");
-  /* at once: the first time, under a drag or typing (the hand is the clock — composers grow with the text; animated, the
-     box lagged its text and the text overflowed mid-growth, DEVLOG DD-2026-11-09-2) */
+  /* at once: the first time, under a drag or typing (the hand is the clock: animated, the box lagged its text —
+     DD-2026-11-09-2) */
   if (!boxNow || card.drag || layDirect || (vert && travelling())) {
     stop("box");
     boxWrite(col, to);
@@ -343,20 +331,16 @@ export function initCardlayout() {
   (function () {
     const L = $("left"),
       col = $("lcol");
-    /* MOVING A PANE — the drop map (L1b, 2026-11-11: ux-review/18-box-placement.md, sketch E; L1's one state and one
-       drag, agreed 2026-10-31). Carried, the box shrinks to a token under your hand (layout.js liftToken — the column's
-       one writer) and a MAP of where it can go shows behind it: an ideogram, not its footprint (the final state can't
-       be shown before it happens) — its partner's edges unfolded (layoutmath.js dropTiles), in the app's own layer
-       under the box (tokens.css --z-app-drop-map). The tile under the pointer is the target. Let go there: its own lane,
-       another spot — it moves there; another lane — the layout switch carries it, travelling on from where you let it go
-       (layoutmath.js relationMotion, L1a); nowhere — it goes home. Esc: home. (It was lanes and a footprint, each from
-       the layout pass for its own place — four layouts on one screen, over the box: the user's "mush", 2026-11-10.) */
+    /* MOVING A PANE — the drop map: ARCHITECTURE › the prompt column's place (the model: ux-review/18-box-placement.md,
+       sketch E). Carried, the box shrinks to a token under your hand and a map of where it can go shows behind it; the
+       tile under the pointer is the target. Let go there: its own lane, another spot — it moves there; another lane — a
+       layout switch by your hand, travelling on from where you let it go; nowhere, or Esc — home */
     /** @typedef {import("./layoutmath.js").DropTile} Tile @typedef {import("./layoutmath.js").DropLane} Lane */
     /** the lift: where the box was, the point of it you grabbed, how far it's been carried, its scale (the token), the
      * map, the target @typedef {{ dx: number, dy: number, r0: DOMRect, gx: number, gy: number, s: number, tiles: Tile[],
      * lanes: Lane[], at: Tile | null }} Lift */
-    /* the grip is ONE zone (2026-11-01, L3): the box's name row, the box, its LoRA row — through one listener on the
-       column; what keeps its pointer: text, controls, chips, menus, the edges you drag (their bands: B19) */
+    /* the grip is ONE zone: the box's name row, the box, its LoRA row — through one listener on the column; what keeps
+       its pointer: text, controls, chips, menus, the edges you drag */
     const NO = "input,textarea,button,a,select,.chip,.pwrapT,.pop,.cwi," + HANDLES,
       GROUP = "#pgrip,#left,#ltitle,#chips",
       app = /** @type {HTMLElement} */ (document.querySelector(".app")),
@@ -386,8 +370,7 @@ export function initCardlayout() {
       cls: ["cardmove"],
       accept: e => {
         const tg = /** @type {HTMLElement} */ (e.target);
-        /* the grip works in every mode (2026-11-02, the user: in Full side by side the title didn't drag while the LoRA
-           row did — two paths). A mode fixes the box's height; moving it is still yours */
+        /* the grip works in every mode: a mode fixes the box's height; moving it is still yours */
         if (!tg.closest(GROUP) || tg.closest(NO)) return false;
         outlines("move", ["box"]); // the press shows what moves: the box's own outline (outlines.js; drawn by the box)
         const r0 = L.getBoundingClientRect();
@@ -466,7 +449,7 @@ export function initCardlayout() {
         save();
         if (at.dock !== now) {
           /* another lane: the layout switch carries it — by your hand, so it travels on from where you let it go (its
-             token growing back on the way: tabs.js tabGo, L1a) */
+             token growing back on the way: tabs.js tabGo) */
           card.drag = false;
           setDock(at.dock, "hand");
           return;

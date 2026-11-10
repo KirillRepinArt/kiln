@@ -1,12 +1,10 @@
 // @ts-check
-/* Kiln · THE leaving copy (R2, the re-read 2026-11-10 — DEVLOG DD-2026-11-10-11). What is leaving is shown by a COPY of
-   what was on screen, while the real thing is at its end state from the first frame — so everything that measures it
-   measures the truth (DD-5's whole rule; UIKit's snapshotView(afterScreenUpdates: false), Android's ViewGroupOverlay).
-   One way to make the copy, place it, fade it and be rid of it: the prompt box's stand-in in a layout switch and the
-   status row leaving (G11) were each made by hand — one of them lingered, laid out, after it had left (CI's glass test
-   saw its copied Stop), the other vanished at once when a second switch came. A copy of the elements, not a picture:
-   the glass's blur stays live (decision 0014). The picture's own copy (#cvx) is the named exception: it lives inside
-   the frame so the crop-and-reveal clips it with the picture, and holds until the next picture arrives (pictures.js). */
+/* Kiln · THE leaving copy (R2 — ARCHITECTURE › every leaving copy; DD-2026-11-10-11). What is leaving is shown by a
+   COPY of what was on screen, while the real thing is at its end state from the first frame — so everything that
+   measures it measures the truth (UIKit's snapshotView(afterScreenUpdates: false), Android's ViewGroupOverlay). One way
+   to make the copy, place it, fade it and be rid of it: a copy lives exactly as long as its leaving. A copy of the
+   elements, not a picture: the glass's blur stays live (decision 0014). Named exception: the picture's own copy (#cvx),
+   inside the frame so the crop-and-reveal clips it with the picture (pictures.js) */
 import { fade } from "./fade.js";
 import { HANDLES } from "./outlines.js";
 

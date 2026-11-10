@@ -25,6 +25,8 @@ import { promptFollow } from "./layout.js";
 const asked = new Map();
 /** @type {Map<HTMLElement, boolean>} contents that don't travel, fading in (true) or out in this task */
 const fading = new Map();
+/** what to call when a queued fade is over (rearrangeFade's `done`) @type {Map<HTMLElement, () => void>} */
+const fadeDone = new Map();
 /** @type {{ t0: number, T: number, q: (i: number, e: number) => [number, number], moves: [string, Move][] } | null} */
 let run = null;
 /** what follows the travellers, placed after their writes every frame of the run (the views riding the plate in a
@@ -145,27 +147,34 @@ function retarget(key, to, write) {
 /** `el` (contents that don't travel: the status row) comes or goes in the coming rearrangement — on its plan's fades
  * (layoutmath.js fades: what leaves ends at the swap, what comes starts at it), from its start time: the row used to fade
  * on --lay-t's own curve while the picture moved on the plan (insets › finishOnOneClock) @param {HTMLElement} el
- * @param {boolean} on */
-export function rearrangeFade(el, on) {
+ * @param {boolean} on @param {() => void} [done] when its fade is over or cancelled (a leaving copy: leave.js drop) */
+export function rearrangeFade(el, on, done) {
   if (snaps()) {
-    fadeNow(el, on, 0, 150, "linear", performance.now()); // the layout jumps on purpose: a short fade, no plan
+    fadeNow(el, on, 0, 150, "linear", performance.now(), done); // the layout jumps on purpose: a short fade, no plan
     return;
   }
   fading.set(el, on);
+  if (done) fadeDone.set(el, done);
   if (!queued) {
     queued = true;
     queueMicrotask(start);
   }
 }
 /** @param {HTMLElement} el @param {boolean} on @param {number} delay @param {number} ms @param {string} easing
- * @param {number} t0 */
-function fadeNow(el, on, delay, ms, easing, t0) {
+ * @param {number} t0 @param {() => void} [done] */
+function fadeNow(el, on, delay, ms, easing, t0, done) {
   const timing = { delay, duration: ms, easing, fill: /** @type {FillMode} */ ("backwards") }; // its first keyframe holds until its start
   /* by its parts (fade.js): the status row holds glass, and faded as a whole its blur was off until the fade ended
      (DEVLOG DD-2026-11-08-8); shown throughout the fade on the row itself (visibility is no backdrop root) */
   /* from what is on screen (fade.js fade, R1): a second fade carries on from the first's value (F5: it restarted from 1
      / 0 — a finish then a start, or pause / resume, blinked the row); fresh, it comes from hidden or leaves from shown */
-  for (const a of fade(el, on ? 1 : 0, timing, { glass: true, from: on ? 0 : 1 })) a.startTime = t0;
+  const anims = fade(el, on ? 1 : 0, timing, { glass: true, from: on ? 0 : 1 });
+  for (const a of anims) a.startTime = t0;
+  if (done)
+    Promise.all(anims.map(a => a.finished)).then(
+      () => done(),
+      () => done(),
+    );
   el.animate([{ visibility: "visible" }, { visibility: "visible" }], timing).startTime = t0;
 }
 /** `key` stops moving (another motion takes it over: a crop-and-reveal, a switch's hold) @param {string} key */
@@ -198,8 +207,10 @@ function start() {
     plan = shapePlan(moves.map(([, m]) => ({ o: m.from, n: m.to }))), // nothing moving: a plain cross-fade's
     t0 = performance.now(),
     f = fades(plan);
-  for (const [el, on] of fading) fadeNow(el, on, on ? f.in.delay : f.out.delay, MORPH.fade, "linear", t0);
+  for (const [el, on] of fading)
+    fadeNow(el, on, on ? f.in.delay : f.out.delay, MORPH.fade, "linear", t0, fadeDone.get(el));
   fading.clear();
+  fadeDone.clear();
   if (!moves.length) {
     run = null;
     for (const fn of followers) fn();

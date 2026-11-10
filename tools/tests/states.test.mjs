@@ -496,7 +496,7 @@ export async function statusRowLeavesWhole(k, t) {
   await k.ev(`(addJobs(),1)`);
   await k.until(`!!current()&&!!current().preview_rev`, 20000, 50);
   await k.ev(`(()=>{window.__g=[];const seen=e=>{if(!e)return 0;const s=getComputedStyle(e);return s.visibility==="hidden"||s.display==="none"?0:+s.opacity};
-    (function f(){const p=$("prog"),x=$("progx"),a=seen(p),b=seen(x),el=b>a?x:p,m=el.querySelector(".meta"),tr=el.querySelector(".track");
+    (function f(){const p=$("prog"),x=document.querySelector('[data-copy-of="prog"]'),a=seen(p),b=seen(x),el=b>a?x:p,m=el.querySelector(".meta"),tr=el.querySelector(".track");
       window.__g.push({o:Math.max(a,b),txt:m?m.textContent.trim():"",bar:!!tr&&getComputedStyle(tr).visibility==="visible"});
       if(window.__g.length<2000&&(current()||window.__g.length<1e9))requestAnimationFrame(f)})();return 1})()`);
   await k.until(`!current()`, 30000, 50);
@@ -517,4 +517,6 @@ export async function statusRowLeavesWhole(k, t) {
     g.length,
   );
   t.ok(!swaps.length, "the row never switches its contents while it's seen — it fades out whole", swaps.slice(0, 3));
+  /* R2: a copy lives exactly as long as its leaving (it lingered, laid out and hidden, with a copied Stop) */
+  t.ok(!(await k.ev(`!!document.querySelector("[data-copy-of]")`)), "once it has left, its copy is gone");
 }

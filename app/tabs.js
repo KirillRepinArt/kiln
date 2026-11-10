@@ -138,7 +138,7 @@ export function tabGo(fn, layout = false) {
   placeNavs();
   /* the box: a layout switch changes its relation to the plate (glued, fading through); a tab switch keeps it — it rides
      the travelling plate (layout.js promptFollow, in the driver's frames; it slid on a clock of its own, slideCol) */
-  if (layout) fadeCol(/** @type {HTMLElement} */ (stand), sw, { plate: from, dock: dock0 });
+  if (layout) fadeCol(/** @type {import("./leave.js").Copy} */ (stand), sw, { plate: from, dock: dock0 });
   /* once it has landed: one more layout, still without glides (measured mid-switch, the prompt column's Vertical shift
      rested a pixel off), then the layout's glides come back */
   setTimeout(() => {

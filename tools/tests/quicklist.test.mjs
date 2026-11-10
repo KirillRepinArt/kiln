@@ -624,3 +624,22 @@ export async function fadeTurnsBackFromScreen(k, t) {
   t.near(r.mid, 0.75, 0.02, "…and goes on from there", r);
   t.ok(r.firstGone === "idle", "the first fade is replaced (one fade per element)", r);
 }
+
+/* R2: the box's stand-in in a layout switch is gone once the switch is over — and one interrupted lives out its own
+   fade (it was removed at once when a second switch came) */
+export async function leavingCopiesGo(k, t) {
+  await k.mouse(2, 2);
+  await k.sleep(1000);
+  await k.ev(`(setDock("right"),1)`);
+  await k.sleep(120);
+  const mid = await k.ev(`document.querySelectorAll(".standin").length`);
+  await k.ev(`(setDock("below"),1)`);
+  await k.sleep(30);
+  const both = await k.ev(`document.querySelectorAll(".standin").length`);
+  await k.sleep(2000);
+  const after = await k.ev(`document.querySelectorAll(".standin, [data-copy-of]").length`);
+  t.ok(mid === 1, "mid-switch: the box's copy is leaving", mid);
+  t.ok(both === 2, "a second switch: the first copy still leaving beside the new one (not cut)", both);
+  t.ok(after === 0, "once the switches are over: no copy left", after);
+  await k.ev(`(setDock("left"),1)`);
+}

@@ -22,7 +22,7 @@ function tracer() {
     decl: new WeakMap(),
     /** @type {{ el: string, p: string, by: string, f: number }[]} */
     writes: [],
-    /** @type {Record<string, number[][]>} per element: [frame, left, top, width, height, opacity] */
+    /** @type {Record<string, number[][]>} per element: [frame, left, top, width, height, opacity (with its copies), ms, its own opacity] */
     samples: {},
   };
   window.__trace = T;
@@ -180,8 +180,14 @@ function tracer() {
     if (T.on) {
       for (const [el, n] of T.names) {
         const r = el.getBoundingClientRect(),
-          cs = getComputedStyle(el),
-          op = seenOpacity(el, cs);
+          cs = getComputedStyle(el);
+        /* an element and its leaving copies are ONE thing on screen (app/leave.js: a copy says what it stands for,
+           data-copy-of — the real one is at its end state, the copy shows what it was): seen = 1 − (1 − it)(1 − copies) */
+        const own = seenOpacity(el, cs);
+        let op = own;
+        if (el.id)
+          for (const c of el.ownerDocument.querySelectorAll(`[data-copy-of="${el.id}"]`))
+            op = 1 - (1 - op) * (1 - seenOpacity(c, getComputedStyle(c)));
         (T.samples[n] ||= []).push([
           T.frame,
           r.left,
@@ -190,6 +196,7 @@ function tracer() {
           r.height,
           op,
           Math.round(performance.now() - T.t0),
+          own, // its own: where IT is matters only while it is seen (a copy shows the leaving one's place)
         ]);
         for (const a of el.getAnimations())
           if (a instanceof CSSTransition && a.playState === "running" && WATCHED.has(camel(a.transitionProperty)))
@@ -259,7 +266,8 @@ export function reversals(samples) {
       if (NAMES[i] === "opacity") runs.push(rows);
       else
         for (const r of rows)
-          if (r[5] > 0.01)
+          if ((r[7] ?? r[5]) > 0.01)
+            // its own seen: a hidden element repositioned while its copy leaves is no blink
             (runs.length && runs.at(-1).gone === false
               ? runs.at(-1)
               : runs[runs.push(Object.assign([], { gone: false })) - 1]

@@ -153,9 +153,13 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     the tab bar rides on the plate, centred over it inside the window (`plate.js` `barFor`)
   - the prompt box's least width: what its bottom row needs (Start, the pills at their compact labels, the insets) —
     `cardlayout.js` `boxWLeast`, never under `PWMIN`; every limit, the pass and Vertical's width read it
-  - the status row leaving (a render's end): its copy `#progx` shows what it showed and fades on the plan — written
-    only by `layout.js` `rowFade`; the row itself hides at once (`body.norow`) and `progress.js` keeps writing its
-    contents (the leaving element shows its start values, as the frame's `#cvx`)
+  - **every leaving copy: `leave.js` `leaveCopy(parts)` — the one way** (R2, 2026-11-10): what leaves is a copy of
+    what was on screen (clones in a layer of their own, each marked `data-copy-of` its original), the real thing at
+    its end state from the first frame; `release(timing)` fades it through `fade()` and removes it when that fade is
+    over or cancelled — a copy lives exactly as long as its leaving. Users: the prompt box's stand-in in a layout
+    switch (`layout.js` standIn → fadeCol), the status row leaving (`rowFade`, G11). Named exception: the picture's
+    `#cvx` (it lives in the frame, clipped by the crop-and-reveal, and holds until the next picture — `pictures.js`).
+    The tracer reads an element and its copies as one thing
   - where a message shows (the toast, the finished note): ONE placer, `boot.js` `placeMessage(el, anchor)` — it writes
     left / top only; under its anchor (a tab, the Layout button), else by the prompt box (Vertical: the top-right corner)
 - **The screen, by area:** `tabs`, `browse`, `morph`, `edges`, `pills`, `chips`, `peek`, `queue`, `loras`, `pnginfo`,

@@ -21,6 +21,7 @@ import {
 } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { fade, fadeValue } from "./fade.js";
+import { leaveCopy } from "./leave.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
@@ -64,17 +65,13 @@ function rowFade(on) {
     rearrangeFade(p, true); // on the rearrangement's plan: it comes as the picture has made its room (T2a)
     return;
   }
-  /* leaving: what it showed leaves as its copy (#progx, written here only), on the plan — before the picture grows into
+  /* leaving: what it showed leaves as its copy (leave.js — R2's one way), on the plan — before the picture grows into
      its room; the row itself is at its end state at once (hidden by body.norow, its contents free to change). Faded
      itself, its contents changed under the fade: the bar and Stop went and "Step 59/60" became the picture's caption in
      one frame at full opacity, then the caption faded (G11, the re-read; DD-5's whole rule — the frame's pictures do
      the same, cv / cvx) */
-  const x = $("progx");
-  x.className = p.className + " progx";
-  x.innerHTML = p.innerHTML;
-  for (const e of x.querySelectorAll("[id]")) e.removeAttribute("id");
-  x.style.cssText = p.style.cssText;
-  rearrangeFade(x, false);
+  const c = leaveCopy([p]);
+  rearrangeFade(c.el, false, c.drop); // on the plan; the copy is gone when its fade is (an earlier one lives out its own)
 }
 /* the page on show, for its insets (layoutmath.js PAGES) */
 function page() {
@@ -933,54 +930,11 @@ function colApply() {
  * (out of the layout), UIKit fades a snapshotView(afterScreenUpdates: false). A copy of the elements, not a picture of
  * them: the glass's blur stays live (decision 0014). (Its old values held ON the box — DD-4 — had the layout measure
  * the old shape mid-switch: the page moved under the box while it was seen, the user 2026-11-08.) Made before the
- * change; fadeCol fades it out and removes it @returns {HTMLElement} */
+ * change; fadeCol fades it out (leave.js: one way to make, fade and be rid of a leaving copy, R2)
+ * @returns {import("./leave.js").Copy} */
 export function standIn() {
-  stand?.remove();
-  const layer = document.createElement("div");
-  layer.className = "lcol standin"; // .lcol: the parts' own rules (chips.css) hold for the copy too
-  layer.inert = true;
-  layer.setAttribute("aria-hidden", "true");
-  /** @type {[Element, Element][]} */
-  const pairs = [];
-  for (const part of [$("ltitle"), $("left"), $("chips")]) {
-    const r = part.getBoundingClientRect();
-    if (!r.width || !r.height) continue;
-    const c = /** @type {HTMLElement} */ (part.cloneNode(true));
-    Object.assign(c.style, {
-      position: "absolute",
-      left: r.left + "px",
-      top: r.top + "px",
-      width: r.width + "px",
-      height: r.height + "px",
-      right: "auto",
-      bottom: "auto",
-      margin: "0",
-      transform: "none",
-      transition: "none",
-      boxSizing: "border-box",
-    });
-    c.querySelectorAll(HANDLES).forEach(h => h.remove()); // what's seen only: the edges' handles are a gesture's, never seen
-    const cs = c.querySelectorAll("*");
-    pairs.push([part, c]);
-    [...part.querySelectorAll("*")].filter(e => !e.closest(HANDLES)).forEach((e, i) => pairs.push([e, cs[i]]));
-    layer.append(c);
-  }
-  document.body.append(layer);
-  /* what cloning leaves out: ids (one of each in the page), scroll offsets and typed values */
-  for (const [o, c] of pairs) {
-    c.removeAttribute("id");
-    if (o.scrollTop || o.scrollLeft) {
-      c.scrollTop = o.scrollTop;
-      c.scrollLeft = o.scrollLeft;
-    }
-    if (o instanceof HTMLInputElement || o instanceof HTMLTextAreaElement || o instanceof HTMLSelectElement)
-      /** @type {HTMLInputElement} */ (c).value = o.value;
-  }
-  stand = layer;
-  return layer;
+  return leaveCopy([$("ltitle"), $("left"), $("chips")], { cls: "lcol" }); // .lcol: the parts' own rules (chips.css)
 }
-/** @type {HTMLElement | null} the stand-in on screen now */
-let stand = null;
 /** @typedef {{ l: number, t: number, w: number, h: number }} Box4 */
 /** a relation change running: since when, how long, the leaving copy and both relations with the box's rect on each
  * (the old one as it was, the new one where it lands) @type {{ t0: number, T: number, out: HTMLElement, b0: Box4,
@@ -992,7 +946,7 @@ let relation = null;
  * then the box rides it by the new one and fades in as the plate lands (layoutmath.js relationFade — Material's
  * container transform). It sat still before, on the contents' fade (gone only at the swap): the picture moved into it.
  * Placed by the column's one writer (colApply); on the switch's clock (one start)
- * @param {HTMLElement} out the stand-in (standIn) @param {{ t0: number, T: number }} sw the switch
+ * @param {import("./leave.js").Copy} out the stand-in (standIn) @param {{ t0: number, T: number }} sw the switch
  * @param {{ plate: Box4, dock: "left" | "right" | "below" }} was the plate on screen and the dock before the change */
 export function fadeCol(out, sw, was) {
   const seen = fadeValue($("lcol")); // the box as it shows now (mid fade-in, if a switch is interrupted) — its copy starts there
@@ -1003,7 +957,7 @@ export function fadeCol(out, sw, was) {
       const r = e.getBoundingClientRect();
       return { l: r.left, t: r.top, w: r.width, h: r.height };
     },
-    ol = out.querySelector(".left"),
+    ol = out.el.querySelector(".left"),
     g = glueRect(),
     f = relationFade(sw.T),
     k = (/** @type {number} */ ms) => Math.min(1, Math.max(0, ms / f.T));
@@ -1014,7 +968,7 @@ export function fadeCol(out, sw, was) {
     relation = {
       t0: sw.t0,
       T: f.T,
-      out,
+      out: out.el,
       b0,
       r0: relationOf(b0, was.plate, glueAnchors(was.dock, pos)),
       b1,
@@ -1023,13 +977,10 @@ export function fadeCol(out, sw, was) {
   }
   /* faded by their parts, never through an ancestor: glass under a fade loses its blur (fade.js — it popped back the
      frame the box reached full opacity) */
-  const gone = fade(out, 0, { duration: f.T, fill: "forwards" }, { glass: true, from: seen, span: [0, k(f.outEnd)] });
-  Promise.all(gone.map(a => a.finished)).then(
-    () => out.remove(),
-    () => out.remove(),
-  );
+  /* the copy leaves on its own (leave.js): gone when its fade is — a later switch doesn't cut it (it was removed at once) */
+  for (const a of out.release({ duration: f.T, fill: "forwards" }, { from: seen, span: [0, k(f.outEnd)] }))
+    a.startTime = sw.t0;
   colFades = [
-    ...gone,
     ...fade(
       $("lcol"),
       1,

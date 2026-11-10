@@ -11,7 +11,7 @@ import {
   liftToken,
   minRight,
   paneSize,
-  placeFor,
+  liftScale,
   setDock,
   sideBoxPass,
   sizeFrame,
@@ -353,14 +353,17 @@ export function initCardlayout() {
       e.style.width = r.w + "px";
       e.style.height = r.h + "px";
     };
-    /** the lift as it's seen: carried by dx / dy, the grabbed point kept under the hand while the box is a token (it
-     * scales about its top-left corner) @param {Lift} m */
-    const seenLift = m => ({ x: m.dx + (1 - m.s) * m.gx, y: m.dy + (1 - m.s) * m.gy });
+    /** the lift as it's seen: carried by dx / dy, the grabbed point kept under the hand at the token's scale as it is
+     * now (it scales about its top-left corner, over frames) @param {Lift} m */
+    const seenLift = m => {
+      const s = liftScale();
+      return { x: m.dx + (1 - s) * m.gx, y: m.dy + (1 - s) * m.gy };
+    };
     /** let the lift go on the driver: from where it is seen to (0, 0), the token back to the box's size — one plan
      * @param {Lift} m @param {number} x @param {number} y */
     const home = (m, x, y) => {
       rearrange("lift", { l: x, t: y, w: 0, h: 0 }, { l: 0, t: 0, w: 0, h: 0 }, b => liftCol(b.l, b.t));
-      rearrange("liftScale", { l: m.s, t: 0, w: 0, h: 0 }, { l: 1, t: 0, w: 0, h: 0 }, b => liftToken(b.l));
+      rearrange("liftScale", { l: liftScale(), t: 0, w: 0, h: 0 }, { l: 1, t: 0, w: 0, h: 0 }, b => liftToken(b.l));
     };
     /* the press is the box's grip (GROUP less NO); past DRAG_START.lift it lifts — ONE gesture (gesture.js) */
     drag(col, {
@@ -395,7 +398,7 @@ export function initCardlayout() {
             {
               paneW: paneSize("box", "side").w ?? layDef().pw, // the width it lands at beside its partner
               area: SPACE.area,
-              part: SPACE.part,
+              pane: SPACE.pane,
               cover: tok("--drop-cover", 0.25),
               roomMin: tok("--drop-room-min", 160),
               hitMin: tok("--drop-hit-min", 96),
@@ -419,8 +422,14 @@ export function initCardlayout() {
           }),
         );
         map.classList.add("show");
+        /* the box condenses to the token on the driver (a change the system makes — written at once, it jumped), the
+           grabbed point kept under the hand in each of its frames */
         m.s = tok("--drop-token", 0.35);
-        liftToken(m.s);
+        rearrange("liftScale", { l: liftScale(), t: 0, w: 0, h: 0 }, { l: m.s, t: 0, w: 0, h: 0 }, b => {
+          liftToken(b.l);
+          const v = seenLift(m);
+          liftCol(v.x, v.y);
+        });
       },
       move: (m, e, dx, dy) => {
         m.dx = dx;
@@ -444,27 +453,12 @@ export function initCardlayout() {
           home(m, v.x, v.y);
           return;
         }
-        S.pos = at.pos;
-        save();
-        if (at.dock !== now) {
-          /* another lane: the layout switch carries it — by your hand, so it travels on from where you let it go (its
-             token growing back on the way: tabs.js tabGo) */
-          card.drag = false;
-          setDock(at.dock, "hand");
-          return;
-        }
-        /* its own lane, another spot: its rest moves there at once, and the lift — from where it is seen to there —
-           lets go on the driver */
-        const land = placeFor(at.dock, at.pos),
-          x = m.r0.left + v.x - land.x,
-          y = m.r0.top + v.y - land.y,
-          fz = card.frozen;
-        card.frozen = false;
-        layoutLeft();
-        card.frozen = fz;
+        /* another place — another side or another spot on its own: ONE change of its relation, by your hand, so it
+           travels on from where you let it go, its token growing back on the way (layout.js setDock → tabs.js tabGo).
+           Its own spot was a second path: its rest glided there on the driver while the lift assumed it had landed —
+           the first frame showed the box back at its origin */
         card.drag = false;
-        liftCol(x, y);
-        home(m, x, y);
+        setDock(at.dock, "hand", at.pos);
       },
     });
     // the empty space under the text belongs to the editor: a click there puts the cursor at the end

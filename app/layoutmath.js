@@ -1,7 +1,7 @@
 // @ts-check
 /* Kiln · the layout's maths: plain numbers in, plain numbers out — nothing here reads or touches the page, so every
    rule can be unit-tested (tools/tests/unit/layoutmath.test.mjs). layout.js measures the page, asks these, applies. */
-import { SPACE, pairGap } from "./tokens.js";
+import { SPACE } from "./tokens.js";
 
 export const PWMIN = 360; // the prompt's least width
 
@@ -101,7 +101,7 @@ export function pageGeometry(m, L) {
     page = gen ? { size: null, lo: minR, hi: L.iw ? Math.max(minR, L.iw) : W } : { size: L.rw, lo: minR, hi: W },
     a = arrange({
       panes: R ? [page, box] : [box, page],
-      gap: pairGap(),
+      gap: SPACE.pane,
       start: clear,
       length: W - 2 * clear,
       margin: 0,
@@ -458,7 +458,7 @@ export function relationMotion(q, motion) {
    Where a dragged pane can go, as a MAP (an ideogram, not its footprint: the final state can't be shown before it
    happens — the picture resizes, the pair re-centres): the places are its partner's edges unfolded — a column on each
    side as tall as the partner, in thirds (top / middle / bottom), and a tile under it as wide as it. A column takes the
-   free room from the partner's edge to the window's edge gap, no wider than the pane; under `roomMin` of free room it
+   free room one pane gap from the partner to the window's edge gap, no wider than the pane; tiles a pane gap apart; under `roomMin` of free room it
    lies over the partner flush to the window's edge, covering at most `cover` of its width (never under `hitMin`, a
    target to hit). The bottom tile is a side tile's height: under the partner when the room is there, else over its
    bottom (at most `cover` of its height), between laid-over columns — or, with no width left between them, the
@@ -469,19 +469,19 @@ export function relationMotion(q, motion) {
 /**
  * @param {Rect} p the partner (the picture's plate), the window's px
  * @param {{ w: number, h: number }} win the window
- * @param {{ paneW: number, area: number, part: number, cover: number, roomMin: number, hitMin: number }} o
+ * @param {{ paneW: number, area: number, pane: number, cover: number, roomMin: number, hitMin: number }} o
  * @returns {{ lanes: DropLane[], tiles: DropTile[] }}
  */
 export function dropTiles(p, win, o) {
   /** @type {DropLane[]} */
   const lanes = [];
   for (const dock of /** @type {const} */ (["left", "right"])) {
-    const room = dock === "left" ? p.x - 2 * o.area : win.w - o.area - (p.x + p.w + o.area);
+    const room = dock === "left" ? p.x - o.pane - o.area : win.w - o.area - (p.x + p.w + o.pane);
     if (room >= o.roomMin) {
       const w = Math.min(o.paneW, room);
       lanes.push({
         dock,
-        r: { x: dock === "left" ? p.x - o.area - w : p.x + p.w + o.area, y: p.y, w, h: p.h },
+        r: { x: dock === "left" ? p.x - o.pane - w : p.x + p.w + o.pane, y: p.y, w, h: p.h },
         over: 0,
       });
     } else {
@@ -493,23 +493,23 @@ export function dropTiles(p, win, o) {
       });
     }
   }
-  const third = (p.h - 2 * o.part) / 3,
-    roomB = win.h - o.area - (p.y + p.h + o.area);
+  const third = (p.h - 2 * o.pane) / 3,
+    roomB = win.h - o.area - (p.y + p.h + o.pane);
   /** @type {DropLane} */
   let below;
-  if (roomB >= third) below = { dock: "below", r: { x: p.x, y: p.y + p.h + o.area, w: p.w, h: third }, over: 0 };
+  if (roomB >= third) below = { dock: "below", r: { x: p.x, y: p.y + p.h + o.pane, w: p.w, h: third }, over: 0 };
   else {
     const bh = Math.min(third, o.cover * p.h);
     let x0 = p.x,
       x1 = p.x + p.w;
     const [L, R] = lanes;
-    if (L.over) x0 = Math.max(x0, L.r.x + L.r.w + o.area);
-    if (R.over) x1 = Math.min(x1, R.r.x - o.area);
+    if (L.over) x0 = Math.max(x0, L.r.x + L.r.w + o.pane);
+    if (R.over) x1 = Math.min(x1, R.r.x - o.pane);
     if (x1 - x0 < o.roomMin) {
       /* no width left between the laid-over columns: the tile takes the partner's width, they stop above it */
       x0 = p.x;
       x1 = p.x + p.w;
-      for (const c of lanes) if (c.over) c.r = { ...c.r, h: p.h - bh - o.area };
+      for (const c of lanes) if (c.over) c.r = { ...c.r, h: p.h - bh - o.pane };
     }
     below = { dock: "below", r: { x: x0, y: p.y + p.h - bh, w: x1 - x0, h: bh }, over: bh };
   }
@@ -517,9 +517,9 @@ export function dropTiles(p, win, o) {
   /** @type {DropTile[]} */
   const tiles = [];
   for (const c of lanes.slice(0, 2)) {
-    const t = (c.r.h - 2 * o.part) / 3;
+    const t = (c.r.h - 2 * o.pane) / 3;
     /** @type {const} */ (["top", "mid", "bot"]).forEach((pos, i) =>
-      tiles.push({ dock: c.dock, pos, r: { x: c.r.x, y: c.r.y + i * (t + o.part), w: c.r.w, h: t } }),
+      tiles.push({ dock: c.dock, pos, r: { x: c.r.x, y: c.r.y + i * (t + o.pane), w: c.r.w, h: t } }),
     );
   }
   tiles.push({ dock: "below", pos: "mid", r: below.r });
@@ -759,7 +759,7 @@ export function layoutPrefsV4(L, o) {
  *   in Vertical its name row over it (title: from the name's top to the box) and the LoRA row under it (foot)
  * @property {{ w: number, h: number }} bar the tab bar
  * @property {number} strip the edit buttons' strip beside the picture (part of the picture's pane: DEVLOG DD-2026-11-03-5)
- * @property {{ area: number, pair: number, bar: number }} gap the window's edge, between the panes, under the tab bar
+ * @property {{ area: number, pane: number, bar: number }} gap the window's edge, between the panes, under the tab bar
  * @property {number} picLeast a picture's least height
  * @property {number} [roomH] the content's height, when the page keeps room of its own below it (the status row): it
  *   replaces the window's height less the tab bar's row and the edge gap
@@ -823,7 +823,7 @@ function sidePlace(s, T, CH) {
 /** Vertical: what lies between the pane's bottom and the box's top — the page's status row (a picture's), the pair
  * gap, the box's name row — ONE definition, for the sizes and the places alike @param {PassState} s */
 function vGap(s) {
-  return (s.page.row ?? 0) + s.gap.pair + (s.box.title ?? 0);
+  return (s.page.row ?? 0) + s.gap.pane + (s.box.title ?? 0);
 }
 /** Vertical: all the group takes besides the pane and the box — vGap above the box and its foot (the LoRA row) under it
  * @param {PassState} s */
@@ -848,7 +848,7 @@ function restSizes(s) {
     page = s.page,
     mode = s.box.mode || "",
     largest = { w: 0, h: 0 };
-  let bw = vert ? clampTo(s.box.w, s.box.wLo, RW) : clampTo(s.box.w, s.box.wLo, RW - gap.pair),
+  let bw = vert ? clampTo(s.box.w, s.box.wLo, RW) : clampTo(s.box.w, s.box.wLo, RW - gap.pane),
     /* the box's height is a spec (ux-review/16-layout-pass.md C4, rule 3): your height if you set one (Custom), else its
        text's — clamped to its least and its largest, and in Vertical to the free room under the pane (below) */
     want = s.box.h ?? s.box.text,
@@ -859,7 +859,7 @@ function restSizes(s) {
   if (page.kind === "pic") {
     if (!vert) {
       const leastW = s.picLeast * page.ratio;
-      if (RW - bw - gap.pair - stripRoom(s) < leastW) bw = Math.max(s.box.wLo, RW - gap.pair - stripRoom(s) - leastW); // the box gives last
+      if (RW - bw - gap.pane - stripRoom(s) < leastW) bw = Math.max(s.box.wLo, RW - gap.pane - stripRoom(s) - leastW); // the box gives last
     }
     /* the largest: side by side, beside the box; in Vertical, with the box at its least. No scale kept = the largest in
        both layouts — the picture first (C4 rule 2: we optimise for the biggest picture); in Vertical the box then fits
@@ -874,8 +874,8 @@ function restSizes(s) {
     ph = pw / page.ratio;
     if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - vAround(s) - ph)); // what's left
   } else {
-    if (!vert && RW - bw - gap.pair < page.lo.w) bw = Math.max(s.box.wLo, RW - gap.pair - page.lo.w);
-    pw = clampTo(page.w, page.lo.w, Math.min(page.hi.w, vert ? RW : RW - bw - gap.pair));
+    if (!vert && RW - bw - gap.pane < page.lo.w) bw = Math.max(s.box.wLo, RW - gap.pane - page.lo.w);
+    pw = clampTo(page.w, page.lo.w, Math.min(page.hi.w, vert ? RW : RW - bw - gap.pane));
     /* Vertical: the panel's height is yours, the box takes what's left (down to its least) — as for a picture */
     ph = clampTo(page.h, page.lo.h, Math.min(page.hi.h, vert ? CH - vAround(s) - s.box.least : CH));
     if (vert) bh = clampTo(want, s.box.least, Math.min(s.box.hi ?? CH, CH - vAround(s) - ph));
@@ -898,7 +898,7 @@ function largestPic(s, bw, bh) {
     w =
       s.dock === "below"
         ? Math.min(RW - 2 * s.strip, (CH - vAround(s) - bh) * r)
-        : Math.min(RW - bw - s.gap.pair - stripRoom(s), CH * r); // the strip's room both sides: the pair stays centred (B15)
+        : Math.min(RW - bw - s.gap.pane - stripRoom(s), CH * r); // the strip's room both sides: the pair stays centred (B15)
   return { w: Math.max(0, w), h: Math.max(0, w) / r };
 }
 
@@ -963,8 +963,8 @@ function dragSizes(s, z) {
       cx = L + RW / 2, // the group is centred: its middle stays (a drag of an outer edge mirrors on the far side)
       /* by its own outer edges: beside the box as it is — an outer edge takes no room from the other pane, only the
          shared edge trades (DD-2026-11-07-1) */
-      pageOwnHi = Math.min(pageHi.w, RW - gap.pair - z.bw - stripRoom(s), pic ? CH * ratio : Infinity),
-      boxWHi = RW - gap.pair - pageLo.w - stripRoom(s);
+      pageOwnHi = Math.min(pageHi.w, RW - gap.pane - z.bw - stripRoom(s), pic ? CH * ratio : Infinity),
+      boxWHi = RW - gap.pane - pageLo.w - stripRoom(s);
     if (d.edge === "shared") {
       /* the shared edge, at the pointer (mid-gap): the pane it moves away from grows, up to its own largest, and the other
          is PUSHED at its own width — the group stays centred, so the grown pane's far side mirrors (DD-6) and both sides'
@@ -983,7 +983,7 @@ function dragSizes(s, z) {
         /* where the edge sits at rest for these widths (the rectangles' own placement) */
         edgeAt = (/** @type {number} */ l, /** @type {number} */ r) => {
           const [bw, pw] = toBP(l, r);
-          return groupX(s, bw, pw) + l + gap.pair / 2;
+          return groupX(s, bw, pw) + l + gap.pane / 2;
         },
         grows = d.at >= edgeAt(lw0, rw0) ? "l" : "r",
         [gL, pL, p0] = grows === "l" ? [lL, rL, rw0] : [rL, lL, lw0],
@@ -1002,16 +1002,16 @@ function dragSizes(s, z) {
       /* (A) pushed at its own width, both sides' room used; (B) the pair fills the room: the pushed pane gives */
       let want = solve(p0),
         p = p0;
-      if (want + gap.pair + p0 > avail) {
-        const [l, r] = place(avail - gap.pair - p0, p0),
-          start = edgeAt(l, r) - l - gap.pair / 2; // the full pair's start: it depends on the total only
-        want = grows === "l" ? d.at - gap.pair / 2 - start : start + avail - (d.at + gap.pair / 2);
-        p = Math.max(pL.lo, Math.min(p0, avail - gap.pair - Math.min(want, gL.hi))); // pushed: never wider than it was
+      if (want + gap.pane + p0 > avail) {
+        const [l, r] = place(avail - gap.pane - p0, p0),
+          start = edgeAt(l, r) - l - gap.pane / 2; // the full pair's start: it depends on the total only
+        want = grows === "l" ? d.at - gap.pane / 2 - start : start + avail - (d.at + gap.pane / 2);
+        p = Math.max(pL.lo, Math.min(p0, avail - gap.pane - Math.min(want, gL.hi))); // pushed: never wider than it was
       }
-      const hi = Math.max(gL.lo, Math.min(gL.hi, avail - gap.pair - pL.lo)),
+      const hi = Math.max(gL.lo, Math.min(gL.hi, avail - gap.pane - pL.lo)),
         gK = clampTo(want, gL.lo, hi),
         gS = rubber(want, gL.lo, hi, RUBBER),
-        pK = Math.max(pL.lo, Math.min(p, avail - gap.pair - gK)),
+        pK = Math.max(pL.lo, Math.min(p, avail - gap.pane - gK)),
         [lK, rK] = place(gK, pK),
         [lS, rS] = place(gS, pK),
         [bwK, pwK] = toBP(lK, rK),
@@ -1027,16 +1027,16 @@ function dragSizes(s, z) {
     } else if (who === "box" && (side === "left" || side === "right")) {
       /* the box's outer edge: the group centred, the page's size held, the box's width with the edge at the pointer */
       const half = side === "left" ? cx - d.at : d.at - cx,
-        bwWant = 2 * half - gap.pair - z.pw, // the pair you see is centred (its strip hangs into the margin)
+        bwWant = 2 * half - gap.pane - z.pw, // the pair you see is centred (its strip hangs into the margin)
         /* an outer edge grows into the room only: past its end there is nothing left to give way (the pointer is at
            the window's edge), so the rubber band */
-        hi = Math.min(boxWHi, RW - gap.pair - z.pw - stripRoom(s));
+        hi = Math.min(boxWHi, RW - gap.pane - z.pw - stripRoom(s));
       out.keptBw = clampTo(bwWant, s.box.wLo, hi);
       out.bw = rubber(bwWant, s.box.wLo, hi, RUBBER);
     } else if (who === "page" && (side === "left" || side === "right")) {
       /* the page's outer edge (on the picture's side, not its strip): the same, for the page */
       const half = side === "left" ? cx - d.at : d.at - cx,
-        wWant = 2 * half - gap.pair - z.bw; // the pair you see is centred (its strip hangs into the margin)
+        wWant = 2 * half - gap.pane - z.bw; // the pair you see is centred (its strip hangs into the margin)
       setPageW(wWant, pageOwnHi);
     } else if (who === "page" && (side === "top" || side === "bottom")) {
       /* the page's top / bottom: centred in the room's height, the opposite side mirrors */
@@ -1113,8 +1113,8 @@ function groupX(s, bw, pw) {
   const { L, RW } = roomOf(s),
     pic = s.page.kind === "pic",
     strip = pic ? s.strip : 0;
-  if (!pic) return L + (RW - (bw + s.gap.pair + pw)) / 2;
-  const seen = bw + s.gap.pair + pw,
+  if (!pic) return L + (RW - (bw + s.gap.pane + pw)) / 2;
+  const seen = bw + s.gap.pane + pw,
     c0 = L + (RW - seen) / 2,
     short = Math.max(0, strip - (RW - seen) / 2);
   return s.dock === "right" ? c0 - strip + short : c0 - short;
@@ -1165,7 +1165,7 @@ export function layoutPass(s) {
          about that centre — the mirror (DD-6). Placed by the stretched sizes, the stretch went into the strip's room
          at a picture's widest: the grabbed edge stood still and the far side moved */
       x0 = groupX(s, z.keptBw, z.keptPw) - (z.bw + z.pw - z.keptBw - z.keptPw) / 2,
-      px = right ? x0 : x0 + z.bw + gap.pair,
+      px = right ? x0 : x0 + z.bw + gap.pane,
       py = z.pageY ?? T + (CH - z.ph) / 2;
     page = { x: px, y: py, w: pageW, h: z.ph };
     if (pic) pr = { x: right ? px + strip : px, y: py, w: z.pw, h: z.ph };
@@ -1196,7 +1196,7 @@ export function layoutPass(s) {
             prevBottom: pl.prevBottom ?? null,
             a: anchors,
           });
-    box = { x: right ? x0 + pageW + gap.pair : x0, y: pl.colTop + r.top, w: z.bw, h: r.H };
+    box = { x: right ? x0 + pageW + gap.pane : x0, y: pl.colTop + r.top, w: z.bw, h: r.H };
   } else {
     const pageW = z.pw + (pic ? 2 * strip : 0),
       px = L + (RW - pageW) / 2,
@@ -1263,7 +1263,7 @@ export function layoutPass(s) {
        toward its least — to the width the picture at that size leaves it, never wider than it is */
     squeezeW =
       pic && !vert
-        ? Math.max(s.box.wLo, Math.min(s.box.w, RW - gap.pair - stripRoom(s) - largestPic(s, s.box.wLo, 0).w))
+        ? Math.max(s.box.wLo, Math.min(s.box.w, RW - gap.pane - stripRoom(s) - largestPic(s, s.box.wLo, 0).w))
         : null;
   return { page, pic: pr, box, bar: barR, handles, kept, largest: rest.largest, pageHi, roomT: T, anchors, squeezeW };
 }

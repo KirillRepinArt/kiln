@@ -434,3 +434,24 @@ export async function boxPartsPlacedByLayout(k, t) {
   }
 }
 boxPartsPlacedByLayout.opts = { width: 1700, height: 950 };
+
+/* spacing is roles, not numbers (DEVLOG DD-2026-11-11-8): between two neighbours one gap, --gap-pane, on either axis —
+   the box ↔ the picture side by side, the picture → the box's name in Vertical, the tab bar → the picture in all three;
+   so Vertical stays even (the user, 2026-11-11: "all 20, even kept"). Measured from what's seen: the plate, the bar's
+   pill (.seg), the box, its name */
+export async function oneGapBetweenNeighbours(k, t) {
+  await viewport(k, 1700, 950);
+  await k.mouse(2, 2);
+  const G = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-pane"))`);
+  for (const d of ["left", "right", "below"]) {
+    await menu(k, d);
+    await k.sleep(1600);
+    const g =
+      await k.ev(`(()=>{const p=$("plate").getBoundingClientRect(),s=document.querySelector(".seg").getBoundingClientRect(),
+      b=$("left").getBoundingClientRect(),n=$("pname").getBoundingClientRect(),row=!document.body.classList.contains("norow")?$("prog").getBoundingClientRect():null;
+      return {bar:Math.round(p.top-s.bottom),box:Math.round("${d}"==="left"?p.left-b.right:"${d}"==="right"?b.left-p.right:n.top-(row?row.bottom:p.bottom))}})()`);
+    t.ok(Math.abs(g.bar - G) <= 1, `${d}: the tab bar is one pane gap above the picture (${G})`, g);
+    t.ok(Math.abs(g.box - G) <= 1, `${d}: the box is one pane gap from the picture`, g);
+  }
+}
+oneGapBetweenNeighbours.opts = { width: 1700, height: 950 };

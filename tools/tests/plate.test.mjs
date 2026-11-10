@@ -118,15 +118,21 @@ export async function tabBarFollowsThePlate(k, t) {
       ],
     ],
   ];
+  /* the bar is one pane gap above the plate (--gap-pane, the spacing role — DD-2026-11-11-8; it was the part gap, 12) */
+  const G = await k.ev(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-pane"))`);
   for (const [what, steps] of cases) {
     const watch = k.ev(BAR_GAP(1300));
     for (const st of steps) typeof st === "number" ? await k.sleep(st) : await k.ev(`(${st},1)`);
     const g = await watch;
-    t.motion(Math.min(...g) >= 11 && Math.max(...g) <= 13, `${what}: the bar stays 12 px above the plate`, {
-      min: Math.min(...g),
-      max: Math.max(...g),
-      end: g.at(-1),
-    });
+    t.motion(
+      Math.min(...g) >= G - 1 && Math.max(...g) <= G + 1,
+      `${what}: the bar stays one pane gap above the plate`,
+      {
+        min: Math.min(...g),
+        max: Math.max(...g),
+        end: g.at(-1),
+      },
+    );
     await k.sleep(900);
   }
 }

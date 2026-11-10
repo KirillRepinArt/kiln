@@ -38,7 +38,11 @@
   --space-16: 64px;
   /* the hierarchy: what belongs together sits closer than what's merely next to it (the scripts read these too) */
   --gap-area: var(--space-5); /* between areas: the window's edge, the prompt column ↔ the picture area */
-  --gap-part: var(--space-3); /* an area and its own parts: the tab bar ↔ the picture ↔ its status row */
+  --gap-pane: var(
+    --space-5
+  ); /* between two neighbours, either axis: the box ↔ the picture, the tab bar ↔ the page, a drop
+     tile ↔ the picture and its neighbours (the user, 2026-11-11: one gap, 20; Vertical stays even) */
+  --gap-part: var(--space-3); /* a pane and its own parts: the picture ↔ its status row */
   --gap-tight: var(--space-2); /* attached to a box: the LoRA chips under the prompt, the picture's edit buttons */
   /* text inside a box: this far from the box's outer edge to the letters, on every side */
   --inset-box: var(--space-7);

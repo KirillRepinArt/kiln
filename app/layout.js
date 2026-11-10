@@ -47,7 +47,7 @@ import { PV, onShow, picMode } from "./picstate.js";
 import { S, save } from "./state.js";
 import { forgeOk } from "./sync.js";
 import { moveThumb, tabGo } from "./tabs.js";
-import { SPACE, pairGap } from "./tokens.js";
+import { SPACE } from "./tokens.js";
 
 /* Kiln · the page layout: the panes' sizes (one owner), the layout pass's inputs and appliers, the edges' drags,
    docking, the prompt column's place, and the holds that keep things still while you work */
@@ -236,13 +236,6 @@ export const lay = {
   passV: null,
   vrow: 0,
 };
-/* Vertical: the even gap — the picture's plate starts this far under the tab buttons, and the prompt's name starts this
-   far under the plate (or under its status row) */
-function evenGap() {
-  const seg = /** @type {HTMLElement} */ (document.querySelector(".seg")),
-    tbs = /** @type {HTMLElement} */ (document.querySelector(".tabs"));
-  return SPACE.part + (tbs.getBoundingClientRect().bottom - seg.getBoundingClientRect().bottom);
-}
 /* Vertical: the box's name row, from the name's top to the box's (the column's title row less the room above the name) */
 function nameRowH() {
   return SPACE.tight + $("ltitle").getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top;
@@ -330,7 +323,7 @@ function sidePass() {
         bar: { w: tabsW(), h: barH },
         strip,
         /* Vertical: the gap between the pane and the box's name is the even gap (the one under the tab bar) */
-        gap: { area: SPACE.area, pair: vert ? evenGap() : pairGap(), bar: barGap },
+        gap: { area: SPACE.area, pane: SPACE.pane, bar: barGap },
         picLeast: picLeastH(),
         /* Vertical: the whole room under the bar (none given) — never one measured from the current layout, which
            already took the box out of it (the picture shrank as the text grew) */
@@ -596,13 +589,16 @@ export function passDouble(edge) {
   sizeFrame();
   moveThumb(true);
 }
-/** the prompt's place, by a layout switch (tabs.js tabGo); how the box moves comes from the cause — ARCHITECTURE › a
- * pane's change of relation @param {"left" | "right" | "below"} z @param {import("./layoutmath.js").RelationCause} [cause] */
-export function setDock(z, cause = "menu") {
-  if ((S.dock || "left") === z) return;
+/** the prompt's place — its side and its spot on it — changed by ONE applier, a layout switch (tabs.js tabGo): another
+ * side or another spot is one change of the box's relation (glueAnchors(dock, pos)); how it moves comes from the cause —
+ * ARCHITECTURE › a pane's change of relation @param {"left" | "right" | "below"} z
+ * @param {import("./layoutmath.js").RelationCause} [cause] @param {"top" | "mid" | "bot"} [pos] its spot (kept if not given) */
+export function setDock(z, cause = "menu", pos = /** @type {"top" | "mid" | "bot"} */ (S.pos || "mid")) {
+  if ((S.dock || "left") === z && (S.pos || "mid") === pos) return;
   tabGo(
     () => {
       S.dock = z;
+      S.pos = pos;
       save();
       lyReset();
       applyMode();
@@ -958,7 +954,7 @@ export function promptFollow(direct = false) {
       box = $("left"),
       left = app.getBoundingClientRect().left + col.offsetLeft + box.offsetLeft,
       w = lay.shown ? lay.shown.pw : box.offsetWidth; // its width from its owner (boxWWrite), as written this frame
-    if (p.width > 0 && w > 0) x = Math.round(R ? p.right + pairGap() - left : p.left - pairGap() - (left + w));
+    if (p.width > 0 && w > 0) x = Math.round(R ? p.right + SPACE.pane - left : p.left - SPACE.pane - (left + w));
     else x = hugX;
     /* a switch (the plate travelling on the driver): the box rides it on its height axis too — its anchor (top / middle
        / bottom) kept to the plate's live lines, by the relation it has where the plate lands (layoutmath.js relationOf

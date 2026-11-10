@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  margin-bottom: var(--gap-part);
+  margin-bottom: var(--gap-pane);
   height: 52px;
 } /* as wide as its buttons; no glide of its own: it follows the plate (plate.js placeBar — its one owner; G4) */
 .right .tabs {

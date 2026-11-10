@@ -81,7 +81,7 @@ function barFor(tb, pr) {
       innerWidth - SPACE.area - right,
       Math.max(SPACE.area - left, (pr.left + pr.right) / 2 - (left + right) / 2),
     );
-  return { x: Math.round(x), y: Math.round(Math.max(0, pr.top - SPACE.part - bottom)) };
+  return { x: Math.round(x), y: Math.round(Math.max(0, pr.top - SPACE.pane - bottom)) };
 }
 /** @param {HTMLElement} tb @param {number} x @param {number} y */
 function setBar(tb, x, y) {

@@ -7,7 +7,7 @@ import { layoutPass, EDIT_TOOLS, HANDLE, PWMIN, RUBBER, picLeastH } from "../../
 
 const PICHMIN = picLeastH();
 
-const GAP = { area: 20, pair: 20, bar: 12 },
+const GAP = { area: 20, pane: 20, bar: 12 },
   BAR = { w: 604, h: 52 },
   STRIP = 44,
   EPS = 0.5;
@@ -92,7 +92,7 @@ test("the pane between them keeps one gap", () => {
         : s.dock === "left"
           ? out.page.x - right(out.box)
           : out.box.x - right(out.page);
-    assert.ok(Math.abs(d - GAP.pair) <= EPS, `${name}: the gap ${d}`);
+    assert.ok(Math.abs(d - GAP.pane) <= EPS, `${name}: the gap ${d}`);
   }
 });
 
@@ -102,8 +102,8 @@ test("a picture at 100 % is its largest, and its largest touches the room on its
     if (s.dock !== "below") assert.ok(Math.abs(out.pic.w - out.largest.w) <= EPS, `${name}: by default, its largest`);
     assert.ok(Math.abs(out.pic.w / out.pic.h - s.page.ratio) < 1e-6, `${name}: its ratio`);
     const CH = s.H - GAP.area - (GAP.area + BAR.h + GAP.bar),
-      roomW = s.W - 2 * GAP.area - 2 * STRIP - (s.dock === "below" ? 0 : out.box.w + GAP.pair), // side by side too: the strip's room both sides (B15)
-      roomH = s.dock === "below" ? CH - GAP.pair - out.box.h : CH;
+      roomW = s.W - 2 * GAP.area - 2 * STRIP - (s.dock === "below" ? 0 : out.box.w + GAP.pane), // side by side too: the strip's room both sides (B15)
+      roomH = s.dock === "below" ? CH - GAP.pane - out.box.h : CH;
     const atW = Math.abs(out.pic.w - roomW) <= EPS,
       atH = Math.abs(out.pic.h - roomH) <= EPS;
     assert.ok(atW || atH, `${name}: touches the room (w ${out.pic.w} of ${roomW}, h ${out.pic.h} of ${roomH})`);
@@ -498,7 +498,7 @@ test("Vertical: between the pane and the box lie its status row, the gap and the
     o = layoutPass({ ...base, page: { ...base.page, row: 30 }, box: { ...base.box, title: 64 } }),
     bare = layoutPass(base);
   assert.ok(
-    Math.abs(o.box.y - bottom(o.page) - (30 + base.gap.pair + 64)) <= EPS,
+    Math.abs(o.box.y - bottom(o.page) - (30 + base.gap.pane + 64)) <= EPS,
     "the box's top: the pane, its row, the gap, the name row",
     { y: o.box.y, pageBottom: bottom(o.page) },
   );

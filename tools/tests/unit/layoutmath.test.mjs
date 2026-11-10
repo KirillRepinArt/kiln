@@ -1,5 +1,5 @@
 // Unit tests for the layout's maths (app/layoutmath.js): no browser, just numbers — run with `npm run test:unit`.
-import { pairGap } from "../../../app/tokens.js";
+import { SPACE } from "../../../app/tokens.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -64,7 +64,7 @@ test("a wide window: your widths as set, the pair centred with even margins", ()
   assert.equal(g.pw, 680);
   assert.equal(g.rw, 660);
   near(g.mL, g.mR, "the margins are even");
-  near(g.mL + g.pw + pairGap() + g.rw + g.mR, 1477, "everything adds up to the room");
+  near(g.mL + g.pw + SPACE.pane + g.rw + g.mR, 1477, "everything adds up to the room");
 });
 
 test("the prompt has no cap of its own: up to the room (it was 900 px)", () => {
@@ -87,7 +87,7 @@ test("very narrow: each stops at its own minimum", () => {
 test("a picture page: the area takes what the prompt leaves, up to your cap; the clearance both sides at rest", () => {
   const g = geo({ W: 1800, gen: true, clear: 36 });
   assert.equal(g.pw, 680, "the prompt keeps its width");
-  near(g.rw, 1800 - 72 - 680 - pairGap(), "the area: the rest, less the buttons' clearance each side");
+  near(g.rw, 1800 - 72 - 680 - SPACE.pane, "the area: the rest, less the buttons' clearance each side");
   near(g.mL, 36, "the clearance both sides: the plate's centre line stays put while you browse");
   near(g.mR, 36);
   const capped = geo({ W: 1800, gen: true, clear: 36 }, { ...wide, iw: 700 });
@@ -97,7 +97,7 @@ test("a picture page: the area takes what the prompt leaves, up to your cap; the
 });
 
 test("a panel keeps no clearance: centred, or to the room's ends", () => {
-  const g = geo({ W: 680 + 660 + pairGap() + 30, clear: 0 });
+  const g = geo({ W: 680 + 660 + SPACE.pane + 30, clear: 0 });
   near(g.mL, g.mR, "centred");
 });
 
@@ -295,7 +295,7 @@ const pair = (
       { size: pw, lo: PWMIN, hi: CARDMAX },
       { size: rw, lo: minR, hi: W },
     ],
-    gap: pairGap(),
+    gap: SPACE.pane,
     start: 0,
     length: W,
     margin,
@@ -337,7 +337,7 @@ test("model: a pin holds one side still; nothing else changes size", () => {
       { size: 680, lo: PWMIN, hi: CARDMAX },
       { size: 760, lo: 420, hi: 1800 },
     ],
-    gap: pairGap(),
+    gap: SPACE.pane,
     start: 0,
     length: 1800,
     margin: MMIN,
@@ -512,7 +512,7 @@ test("relation change: out early, gone ~2 frames, in over the motion's last fade
 
 /* the drop map (L1b — ux-review/18-box-placement.md sketch E, its numbers): a pane's places are its partner's edges
    unfolded; outside it first, over it only when there's no room (≤ 25 %) */
-const DROP = { paneW: 560, area: 20, part: 12, cover: 0.25, roomMin: 160, hitMin: 96 };
+const DROP = { paneW: 560, area: 20, pane: 20, cover: 0.25, roomMin: 160, hitMin: 96 };
 const close = (/** @type {number} */ a, /** @type {number} */ b) => Math.abs(a - b) < 0.01;
 test("the drop map side by side, 3:4 at 2000 px: both columns outside the picture, the bottom tile over it", () => {
   const { lanes, tiles } = dropTiles({ x: 944, y: 112, w: 692, h: 923 }, { w: 2000, h: 1055 }, DROP);
@@ -521,7 +521,7 @@ test("the drop map side by side, 3:4 at 2000 px: both columns outside the pictur
   assert.deepEqual([R.r.x, R.r.w, R.over], [1656, 324, 0]); // narrowed to the room, still outside
   assert.ok(close(B.r.h, 923 * 0.25) && close(B.r.y, 112 + 923 - 923 * 0.25) && B.r.w === 692); // no room under: ≤ 25 %
   assert.equal(tiles.length, 7);
-  assert.ok(close(tiles[1].r.y - tiles[0].r.y, (923 - 24) / 3 + 12)); // thirds, a part gap apart
+  assert.ok(close(tiles[1].r.y - tiles[0].r.y, (923 - 40) / 3 + 20)); // thirds, a pane gap apart
 });
 test("the drop map: no room on a side — the column lies over the picture, a quarter of it at most", () => {
   const { lanes } = dropTiles({ x: 600, y: 260, w: 660, h: 371 }, { w: 1280, h: 800 }, DROP);

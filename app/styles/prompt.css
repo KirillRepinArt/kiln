@@ -218,7 +218,7 @@
   bottom: var(--space-2);
   display: flex;
   gap: var(--space-1);
-  z-index: 4;
+  z-index: var(--z-box-modes);
   opacity: 0;
   transition: opacity var(--t-150);
 }
@@ -448,7 +448,7 @@
   translate: 0 -50%;
   line-height: 1;
   text-box: trim-both cap alphabetic;
-  z-index: 3;
+  z-index: var(--z-box-tools);
   font-size: var(--fs-11-5);
   font-variant-numeric: tabular-nums;
   color: var(--faint);
@@ -464,7 +464,7 @@
   display: none;
   position: absolute;
   inset: 0;
-  z-index: 5;
+  z-index: var(--z-box-cover);
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
@@ -493,7 +493,7 @@ body.private .pcount {
   top: calc(var(--inset-box) / 2 - var(--space-px));
   right: calc(var(--inset-box) - var(--space-px) - (var(--pc-btn) - var(--pc-glyph)) / 2);
   translate: 0 -50%;
-  z-index: 3;
+  z-index: var(--z-box-tools);
   width: var(--pc-btn);
   height: var(--pc-btn);
   border-radius: 50%;

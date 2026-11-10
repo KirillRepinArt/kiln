@@ -75,7 +75,7 @@
   left: 0;
   right: var(--sbw, 0px);
   height: var(--edge-fade);
-  z-index: 1;
+  z-index: var(--z-edge-fade);
   pointer-events: none;
 }
 .scroll-edge::before {

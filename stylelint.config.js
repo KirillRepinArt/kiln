@@ -39,6 +39,8 @@ export default {
       "/^font$/": ["/(^|[^\\w.-])[1-9][\\d.]*px/"],
       "/^(transition|animation)(-duration|-delay)?$/": ["/(^|[^\\w.-])(\\d*\\.)?\\d*[1-9]\\d*m?s\\b/"],
       "/^(?!--)/": ["/rgba?\\(\\s*\\d/", "/hsla?\\(/"],
+      /* paint order is a named layer (tokens.css, THE LAYERS — P2): a number is a layer nobody listed */
+      "z-index": ["/\\d/"],
     },
     "color-no-hex": true,
   },

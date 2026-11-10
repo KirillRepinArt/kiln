@@ -3,7 +3,7 @@
   position: fixed;
   inset: 0;
   background: var(--black);
-  z-index: 150;
+  z-index: var(--z-win-viewer);
   visibility: hidden;
   opacity: 0;
   transition:
@@ -42,7 +42,7 @@
   background: var(--viewer-button);
   display: grid;
   place-items: center;
-  z-index: 2;
+  z-index: var(--z-viewer-close);
 }
 .vclose svg {
   width: 16px;
@@ -85,7 +85,7 @@
   opacity: 0;
   transition: opacity var(--t-200);
   pointer-events: none;
-  z-index: 200;
+  z-index: var(--z-win-toast);
   display: flex;
   gap: var(--space-3);
   align-items: center;
@@ -99,7 +99,7 @@
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 120;
+  z-index: var(--z-win-note);
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -156,7 +156,7 @@
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 400;
+  z-index: var(--z-win-tip);
   background: var(--grey-30);
   border: 1px solid var(--grey-35);
   color: var(--grey-93);
@@ -175,7 +175,7 @@
 }
 /* no server: a note over everything, nothing else to do (live.js) */
 .offline {
-  z-index: 1000;
+  z-index: var(--z-win-offline);
 }
 .offline .mcard {
   max-width: 420px;
@@ -191,7 +191,7 @@
    footprint condenses in (never by opacity: Chromium switches the glass off inside anything partly transparent) */
 .lane {
   position: fixed;
-  z-index: 90;
+  z-index: var(--z-win-drop-lanes);
   pointer-events: none;
   border-radius: var(--r-panel);
   outline: var(--outline);
@@ -209,7 +209,7 @@
 }
 .footprint {
   position: fixed;
-  z-index: 91;
+  z-index: var(--z-win-drop-mark);
   display: none;
   pointer-events: none;
   border: 1px solid transparent;

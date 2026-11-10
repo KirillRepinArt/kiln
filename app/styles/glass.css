@@ -7,7 +7,7 @@
   opacity: 0;
   transition: opacity var(--t-1200) var(--ease);
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-win-stars);
 }
 #stars.on {
   opacity: 1;
@@ -18,7 +18,7 @@
   top: 0;
   width: 0;
   height: 0;
-  z-index: 0;
+  z-index: var(--z-app-glow);
   pointer-events: none;
   opacity: 0;
   mix-blend-mode: screen;
@@ -53,7 +53,7 @@ body.glass .play::before {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  z-index: -1;
+  z-index: var(--z-glass-under);
   pointer-events: none;
 }
 /* the ones with a ring cover their element's border box and draw the ring as their own border, the tint clipped inside
@@ -274,10 +274,10 @@ body.glass .fg input[readonly]:hover {
    box's bottom, the text scrolling under the pills' own blur */
 body.glass .left .controls {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-box-controls);
 }
 body.glass .left .controls:has(.pop.show) {
-  z-index: 6;
+  z-index: var(--z-box-controls-open);
 } /* a menu open: over the prompt's ✕ (controls.css) */
 /* the character count sits at the box's top (its own header strip), beside the ✕ */
 body.glass .left .privov {
@@ -412,17 +412,18 @@ body.glass .play.gen::before {
     background var(--t-250) var(--ease),
     box-shadow var(--t-250) var(--ease);
 }
-/* the page's layers, bottom to top: the plate (0), the panel's contents (.rpanel: 1, its own stacking context,
-   tabs.css), the rim (2), the prompt column (3), the tab bar (4). Set here, never left to the order of the page: the
+/* the page's layers, bottom to top (their numbers: tokens.css, THE LAYERS — the app's list): the plate, the panel's
+   contents (.rpanel, its own stacking context, tabs.css), the rim, the drop map's slot, the prompt column, the tab bar.
+   Set by name, never left to the order of the page: the
    contents' own z-indexes stayed above the plate only while nothing made the panel a stacking context — a switch's name
    did, and the plate's glass blurred PNG Info's text (2026-10-28). The prompt column is a layer of its own for the same
    reason: a slide's transform made it a stacking context at layer 0, and its pill menus went under the picture
    (Vertical, 2026-10-31) — it sits over the picture area, under the tab bar (and its Layout menu) */
 .plate {
-  z-index: 0;
+  z-index: var(--z-app-plate);
 }
 .app > .lcol {
-  z-index: 3;
+  z-index: var(--z-app-prompt);
 }
 .plate.panel {
   background: var(--panel);
@@ -440,7 +441,7 @@ body.glass .plate.panel {
    every plate — the empty frame, a picture (over its edge, or round it with a mat), a panel — and stays put while a
    switch cross-fades the contents (the Gallery's picture drew a line of its own that faded in with it, 2026-10-28) */
 .rim {
-  z-index: 2;
+  z-index: var(--z-app-rim);
   box-shadow: inset 0 0 0 1px var(--grey-23);
 }
 .rim.panel {

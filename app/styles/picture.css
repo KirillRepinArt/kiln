@@ -2,7 +2,7 @@
 .stage {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: var(--z-pic-stage);
 }
 .frame {
   position: absolute;
@@ -50,11 +50,11 @@
   object-fit: cover;
 }
 #cv {
-  z-index: 1;
+  z-index: var(--z-pic-picture);
   filter: var(--vf, none);
 }
 #cvx {
-  z-index: 1;
+  z-index: var(--z-pic-picture);
   pointer-events: none;
   opacity: 0;
 } /* its fade is pictures.js's (one owner, one clock: no transition here) */
@@ -87,16 +87,16 @@
   pointer-events: none;
 }
 #veil {
-  z-index: 2;
+  z-index: var(--z-pic-veil);
 }
 #embers {
-  z-index: 3;
+  z-index: var(--z-pic-embers);
 }
 /* the empty frame: what's next and how long */
 .idle {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: var(--z-pic-empty);
   display: grid;
   place-items: center;
   color: var(--grey-58);
@@ -115,7 +115,7 @@
   display: none;
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: var(--z-pic-missing);
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -161,7 +161,9 @@
   backdrop-filter: blur(6px);
   display: none;
   place-items: center;
-  z-index: 6; /* over the picture, under every edge handle (the picture's strips 7, the panes' 8: one home per strip) */
+  z-index: var(
+    --z-pic-controls
+  ); /* over the picture, under every edge handle (the picture's strips 7, the panes' 8: one home per strip) */
   /* a control takes its own press: it doesn't inherit a container's pass-through (Vertical's empty boxes let the pointer
      through, layout.css — on the floating layer these two inherited it and every click fell to the picture: the zoom,
      the user, 2026-11-10) */
@@ -235,7 +237,9 @@ body.navs:has(.frame.clearable) .bclose {
    outward. The column itself is part of the hover zone; its buttons take clicks once shown */
 .gtools {
   position: fixed; /* the floating layer, beside the picture (around.js places it) — the layering rule */
-  z-index: 6; /* over the picture, under every edge handle (the picture's strips 7, the panes' 8: one home per strip) */
+  z-index: var(
+    --z-pic-controls
+  ); /* over the picture, under every edge handle (the picture's strips 7, the panes' 8: one home per strip) */
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap; /* one column, always: the picture is never shorter than it (layoutmath.js picLeastH) */
@@ -302,7 +306,7 @@ body:has(#stage.tools) .gtools .side button {
   backdrop-filter: blur(6px);
   display: grid;
   place-items: center;
-  z-index: 6;
+  z-index: var(--z-pic-controls);
   opacity: 0;
   transition:
     opacity var(--t-150),
@@ -330,7 +334,7 @@ body:has(#stage.tools) .gtools .side button {
 .gnav {
   position: fixed;
   translate: none; /* placed exactly by browse.js: not centred by the .nav rule */
-  z-index: 20;
+  z-index: var(--z-win-arrows);
   pointer-events: none; /* unseen, they take no press (V6: at 0 they caught clicks over a menu or a handle) */
 }
 /* ONE decider for "are the arrows there": body.navs (edges.js — hover over the picture) shows them AND gives them the
@@ -356,7 +360,7 @@ body:has(.viewer.show) .gnav {
   display: none;
   flex-direction: column;
   gap: var(--space-2);
-  z-index: 1; /* no glide of its own: it follows the frame (around.js) */
+  z-index: var(--z-pic-row); /* no glide of its own: it follows the frame (around.js) */
   pointer-events: auto; /* it takes its press itself (R4: containers pass the pointer, what draws or acts takes it) */
 }
 .prog.show {
@@ -417,7 +421,7 @@ body[data-pic="still"] .prog.run .meta {
 /* the Gallery with its prompt closed: "Show prompt", centred under the picture in the status row's room (layout.js) */
 .showp {
   position: absolute;
-  z-index: 2;
+  z-index: var(--z-pic-show-prompt);
   display: none;
   translate: -50% 0; /* centred on the picture (a centring offset, not spacing) */
   padding: var(--space-2) var(--space-4);

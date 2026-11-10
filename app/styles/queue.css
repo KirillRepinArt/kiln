@@ -60,7 +60,7 @@
 .qi.lifted,
 .qi.settling {
   position: fixed;
-  z-index: 50;
+  z-index: var(--z-queue-lifted);
   margin: 0;
   pointer-events: none;
 }
@@ -259,7 +259,7 @@ body.glass .qck::before {
 .qbar {
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: var(--z-queue-bar);
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -420,7 +420,7 @@ body.glass .qck::before {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 60;
+  z-index: var(--z-queue-preview);
   border-radius: var(--r-14);
   overflow: hidden;
   pointer-events: none;

@@ -213,6 +213,65 @@
   --liw: calc(
     var(--th, 48px) + 250px
   ); /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
+  /* ---------- THE LAYERS (P2, ROADMAP v0.7c step 8 — DEVLOG DD-2026-11-11-2) ----------
+     Paint order is ONE list per stacking context, bottom to top, by NAME: a z-index anywhere else is var(--z-…) (Stylelint
+     rejects a number). A z-index only competes within its stacking context, so a context has a list of its own — a
+     global scale would read as if the prompt box's menu (40) were over the toast (200), which it never meets. 54
+     hand-picked numbers held it before; the drop map's lanes got one that put their glass over the box. */
+  /* THE WINDOW (the page's top level) */
+  --z-win-stars: 0;
+  --z-win-app: 1;
+  --z-win-leaving: 2;
+  --z-win-arrows: 20; /* the picture's arrows (body level, over the app) */
+  --z-win-drop-lanes: 90; /* the box's drop lanes — over the whole app, so their glass covers the box (the user, 2026-11-10): L1 moves the drop map INTO the app, at --z-app-drop-map */
+  --z-win-drop-mark: 91;
+  --z-win-dialog: 100;
+  --z-win-note: 120;
+  --z-win-viewer: 150;
+  --z-win-toast: 200;
+  --z-win-tip: 400;
+  --z-win-offline: 1000;
+  /* THE APP (.app — its own stacking context) */
+  --z-app-plate: 0;
+  --z-app-glow: 0;
+  --z-page-ambient: 0;
+  --z-app-panel: 1;
+  --z-app-rim: 2;
+  --z-app-drop-map: 3; /* RESERVED for L1: the drop map's tiles — over the page, under the prompt column (and the box in the hand) */
+  --z-app-prompt: 4; /* (3 before the drop map's slot — the order unchanged) */
+  --z-app-tabs: 5; /* (4 before) */
+  /* THE PICTURE'S AREA (its stage and the floating layer over it) */
+  --z-pic-stage: 1;
+  --z-pic-picture: 1;
+  --z-pic-empty: 1;
+  --z-pic-row: 1;
+  --z-pic-veil: 2;
+  --z-pic-show-prompt: 2;
+  --z-pic-embers: 3;
+  --z-pic-missing: 4;
+  --z-pic-controls: 6; /* the eye, the ✕, the edit buttons, the arrows on the picture */
+  --z-pic-handle-box: 6;
+  --z-pic-handle-picture: 7;
+  --z-pic-handle-pane: 8; /* over the controls: one home per strip (handles over controls, DD-2026-11-10-4) */
+  /* THE PROMPT BOX (#left) */
+  --z-glass-under: -1; /* a glass material's ::before, under its own content */
+  --z-box-controls: 2;
+  --z-box-tools: 3;
+  --z-box-modes: 4;
+  --z-box-cover: 5;
+  --z-box-open: 5;
+  --z-box-controls-open: 6;
+  --z-box-menu: 40;
+  /* THE QUEUE */
+  --z-queue-bar: 5;
+  --z-queue-lifted: 50;
+  --z-queue-preview: 60;
+  /* SMALL ONES (inside their own part) */
+  --z-tabs-ring: -1;
+  --z-tabs-tab: 1;
+  --z-edge-fade: 1;
+  --z-png-drop: 1;
+  --z-viewer-close: 2;
 }
 @property --p {
   syntax: "<number>";

@@ -48,7 +48,7 @@
    it sits in, so those rise while it's open — the prompt box over the expand modes beside the title; in glass, the
    controls over the ✕ too (glass.css) */
 #left:has(.controls .pop.show) {
-  z-index: 5;
+  z-index: var(--z-box-open);
 }
 .pill .val {
   font-size: var(--fs-15);
@@ -225,7 +225,7 @@
   padding: var(--space-2);
   min-width: 160px;
   box-shadow: 0 12px 40px var(--black-55);
-  z-index: 40;
+  z-index: var(--z-box-menu);
   text-align: left;
   color: var(--text);
   cursor: default;

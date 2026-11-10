@@ -8,7 +8,7 @@
    was left. */
 .app {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-win-app);
   display: grid;
   grid-template-rows: minmax(0, 1fr);
   height: 100vh;
@@ -41,7 +41,7 @@
 .standin {
   position: fixed;
   inset: 0;
-  z-index: 2;
+  z-index: var(--z-win-leaving);
   pointer-events: none;
 }
 #lcol > #left,
@@ -92,7 +92,7 @@
   top: 0;
   bottom: 0;
   width: var(--band);
-  z-index: 8;
+  z-index: var(--z-pic-handle-pane);
   cursor: ew-resize;
   touch-action: none;
 }
@@ -119,7 +119,7 @@
   top: 0;
   bottom: 0;
   width: var(--band);
-  z-index: 8;
+  z-index: var(--z-pic-handle-pane);
   cursor: ew-resize;
   touch-action: none;
 }
@@ -140,7 +140,7 @@
   top: var(--pt, 0px);
   height: calc(var(--pb, 0px) - var(--pt, 0px));
   width: var(--band);
-  z-index: 8;
+  z-index: var(--z-pic-handle-pane);
   cursor: ew-resize;
   touch-action: none;
 }
@@ -166,7 +166,7 @@
   left: 0;
   right: 0;
   height: var(--band);
-  z-index: 8;
+  z-index: var(--z-pic-handle-pane);
   cursor: ns-resize;
   touch-action: none;
 }
@@ -183,7 +183,7 @@
 .hedges {
   position: absolute;
   pointer-events: none;
-  z-index: 7;
+  z-index: var(--z-pic-handle-picture);
 }
 .rpanel.paneled .hedges {
   display: none;
@@ -233,7 +233,7 @@
   height: var(--band); /* the box's bottom band: to the LoRA row (one tight gap down — the outline's distance) */
   cursor: ns-resize;
   touch-action: none;
-  z-index: 6;
+  z-index: var(--z-pic-handle-box);
 }
 .vedge.t {
   top: calc(var(--band-out) * -1);

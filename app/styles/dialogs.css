@@ -5,7 +5,7 @@
   background: var(--black-60);
   display: grid;
   place-items: center;
-  z-index: 100;
+  z-index: var(--z-win-dialog);
   visibility: hidden;
   opacity: 0;
   transition:

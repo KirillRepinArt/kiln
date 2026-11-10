@@ -9,7 +9,11 @@ const menu = async (k, v) => {
   await k.ev(`(document.querySelector('#layMenu [data-lay="${v}"]').click(),1)`);
   await k.sleep(800);
 };
-const nearZone = k => k.ev(`(()=>{const z=document.querySelector(".dockzone.near");return z?z.dataset.z:null})()`);
+/* the dock the box would land in, if it's another one: the footprint's (L1 — it was the dock zone "near") */
+const nearZone = k =>
+  k.ev(
+    `(()=>{const f=document.querySelector(".footprint.show");if(!f)return null;const now=document.querySelector(".app.stacked")?"below":S.dock||"left";return f.dataset.dock===now?null:f.dataset.dock})()`,
+  );
 async function press(k, x, y) {
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
@@ -159,9 +163,14 @@ export async function dragToDock(k, t) {
   x = n.left + 20;
   y = n.top + n.height / 2;
   await press(k, x, y);
-  await moveTo(k, x, y, 850, 900);
+  /* to the slot under the picture: the box's centre carried to it (L1: the place nearest the box's centre — the lane shows
+     it; the old zone docked below whenever the pointer was low on the screen) */
+  const [bx, by] = await k.ev(
+    `(()=>{const b=$("left").getBoundingClientRect(),r=placeFor("below","mid");return [r.x+r.w/2-(b.left+b.width/2),r.y+r.h/2-(b.top+b.height/2)]})()`,
+  );
+  await moveTo(k, x, y, x + bx, y + by);
   const z3 = await nearZone(k);
-  await release(k, 850, 900);
+  await release(k, x + bx, y + by);
   await k.sleep(900);
   t.ok(
     z3 === "below" && (await stacked(k)) && (await k.ev(`S.dock`)) === "below",

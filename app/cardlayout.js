@@ -2,8 +2,20 @@
 /* Kiln · prompt card placement: centring, freeze while working, drag top/middle/bottom */
 import { $, q } from "./dom.js";
 import { HANDLES, outlines } from "./outlines.js";
-import { lay, minRight, paneSize, setDock, sideBoxPass, sizeFrame, vAlign, vPass } from "./layout.js";
-import { PWMIN, cardAnchorTop } from "./layoutmath.js";
+import {
+  dockNow,
+  lay,
+  liftCol,
+  minRight,
+  paneSize,
+  placeFor,
+  setDock,
+  sideBoxPass,
+  sizeFrame,
+  vAlign,
+  vPass,
+} from "./layout.js";
+import { PWMIN } from "./layoutmath.js";
 import { peekJob } from "./prompt.js";
 import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
@@ -26,8 +38,6 @@ export const card = {
   hHold: 0,
   hPin: "top",
 };
-/** the pane's lines the box lines up with — the layout pass's (C2b's rest; the grip's resting places read them) */
-const anchors = () => (lay.pass && lay.pass.anchors) || { it: null, ib: null, cy: null };
 /* the card's held layout let go: frozen while you work, its top and centre forgotten (also from other files) */
 export function lyReset() {
   card.frozen = false;
@@ -293,69 +303,63 @@ export function initCardlayout() {
   (function () {
     const L = $("left"),
       col = $("lcol");
-    /** the card being pressed / dragged: where it started, whether it moved, where it would go
-     * @type {{ x0: number, y0: number, t0: number, moved: boolean, stk: boolean, zone?: "left" | "right" | "below" | null, t?: number } | null} */
+    /* MOVING THE BOX IS ONE SYSTEM (L1 — the design agreed 2026-10-31, ux-review/13-ownership-map.md L1): one placement
+       state {dock, pos} and one drag offering its seven places (left × top / middle / bottom, right × 3, below). The box
+       itself follows the pointer (the column's one writer, layout.js liftCol); dashed LANES show where it could go,
+       one glass FOOTPRINT where it will land — both from the layout pass for each place (layout.js placeFor), so what's
+       shown is where it lands. Dropped in its own lane it moves to the spot; in another, the layout switch carries it.
+       Esc: back where it was. (It was two systems: ghost outlines for top / middle / bottom, and glass dock zones with
+       thresholds of their own — "below" needed the pointer 80 px past the lowest spot.) */
+    const PLACES = /** @type {const} */ ([
+      ["left", "top"],
+      ["left", "mid"],
+      ["left", "bot"],
+      ["right", "top"],
+      ["right", "mid"],
+      ["right", "bot"],
+      ["below", "mid"],
+    ]);
+    const HYST = 24; // a nearer place takes over only once it's this much nearer (no flicker between two)
+    /** @typedef {{ dock: "left" | "right" | "below", pos: "top" | "mid" | "bot", r: import("./layoutmath.js").Rect }} Place */
+    /** the press, then the lift: where the box was, its seven places, the one it would land on
+     * @type {{ x0: number, y0: number, dx: number, dy: number, moved: boolean, r0: DOMRect, places: Place[], at: Place | null } | null} */
     let d = null;
-    /* the grip is ONE zone (2026-11-01, L3): the group's rectangle — the grip layer behind it (.pgrip), the box, the
-       name row, the LoRA row — through one listener on the column; what keeps its pointer: text, controls, chips,
-       menus, the edges you drag. It used to be two targets (the box, the name row) with dead gaps between them and the
-       LoRA row */
+    /* the grip is ONE zone (2026-11-01, L3): the box's name row, the box, its LoRA row — through one listener on the
+       column; what keeps its pointer: text, controls, chips, menus, the edges you drag (their bands: B19) */
     const NO = "input,textarea,button,a,select,.chip,.pwrapT,.pop,.cwi," + HANDLES,
       GROUP = "#pgrip,#left,#ltitle,#chips";
-    const ghosts = ["top", "mid", "bot"].map(p => {
-      const g = document.createElement("div");
-      g.className = "ghost";
-      g.dataset.p = p;
-      col.appendChild(g);
-      return g;
-    });
-    const geo = () => {
-      const TS = parseFloat(col.style.getPropertyValue("--ts")) || 64;
-      return { TS, colH: col.clientHeight - TS, H: L.offsetHeight };
+    const lanes = /** @type {const} */ (["left", "right", "below"]).map(z => {
+        const e = document.createElement("div");
+        e.className = "lane";
+        e.dataset.dock = z;
+        document.body.appendChild(e);
+        return e;
+      }),
+      foot = document.createElement("div");
+    foot.className = "footprint";
+    document.body.appendChild(foot);
+    const put = (/** @type {HTMLElement} */ e, /** @type {import("./layoutmath.js").Rect} */ r) => {
+      e.style.left = r.x + "px";
+      e.style.top = r.y + "px";
+      e.style.width = r.w + "px";
+      e.style.height = r.h + "px";
     };
-    /** the resting place nearest to a top t @param {number} t @param {number} H @param {number} colH
-     * @returns {"top" | "mid" | "bot"} */
-    const nearest = (t, H, colH) =>
-      /** @type {const} */ (["top", "mid", "bot"])
-        .map(p => /** @type {const} */ ([p, Math.abs(cardAnchorTop(p, H, colH, anchors()) - t)]))
-        .sort((a, b) => a[1] - b[1])[0][0];
-    /* dock zones: drag the prompt far to the other side, or to the bottom, and drop it there */
-    const zones = ["left", "right", "below"].map(z => {
-      const g = document.createElement("div");
-      g.className = "dockzone dz-" + z;
-      g.dataset.z = z;
-      g.innerHTML = `<span>${{ left: "Prompt on the left", right: "Prompt on the right", below: "Prompt below the picture" }[z]}</span>`;
-      document.body.appendChild(g);
-      return g;
-    });
-    const dockOf = () => S.dock || "left";
-    /* "below" needs the pointer well past the lowest place the card can go (yMax): moving the card to its bottom position
-    never docks it by accident — the card stops, the pointer goes on, the zone lights up */
-    /** @param {number} x @param {number} y @param {number} yMax */
-    function zoneAt(x, y, yMax) {
-      const W = innerWidth,
-        Hh = innerHeight,
-        cur = document.querySelector(".app.stacked") ? "below" : dockOf();
-      /** @type {"left" | "right" | "below" | null} */
-      let z = null;
-      if (y > Math.max(Hh * 0.75, yMax + 80) && cur !== "below") z = "below";
-      else if (x < W * 0.3 && cur !== "left") z = "left";
-      else if (x > W * 0.7 && cur !== "right") z = "right";
-      return z;
-    }
     /** @param {PointerEvent} e */
     function down(e) {
       const tg = /** @type {HTMLElement} */ (e.target);
       /* the grip works in every mode (2026-11-02, the user: in Full side by side the title didn't drag while the LoRA
-         row did — two paths). A mode fixes the box's height; docking it is still yours */
+         row did — two paths). A mode fixes the box's height; moving it is still yours */
       if (e.button !== 0 || !tg.closest(GROUP) || tg.closest(NO)) return;
       e.preventDefault();
       d = {
         x0: e.clientX,
         y0: e.clientY,
-        t0: card.top || 0,
+        dx: 0,
+        dy: 0,
         moved: false,
-        stk: !!document.querySelector(".app.stacked"),
+        r0: L.getBoundingClientRect(),
+        places: [],
+        at: null,
       };
       try {
         /** @type {HTMLElement} */ (e.currentTarget).setPointerCapture(e.pointerId);
@@ -371,59 +375,94 @@ export function initCardlayout() {
         up();
         return;
       }
-      const dx = e.clientX - m.x0,
-        dy = e.clientY - m.y0;
-      if (!m.moved && Math.hypot(dx, dy) < 6) return;
-      const { TS, colH, H } = geo();
+      m.dx = e.clientX - m.x0;
+      m.dy = e.clientY - m.y0;
+      if (!m.moved && Math.hypot(m.dx, m.dy) < 6) return;
       if (!m.moved) {
         m.moved = true;
         card.drag = true;
         document.body.classList.add("cardmove");
-        zones.forEach(z => z.classList.toggle("show", z.dataset.z !== (m.stk ? "below" : dockOf())));
-        if (!m.stk)
-          ghosts.forEach(g => {
-            g.style.top = cardAnchorTop(/** @type {string} */ (g.dataset.p), H, colH, anchors()) + TS + "px";
-            g.style.height = H + "px";
-            g.classList.add("show");
+        const now = dockNow(),
+          pos = S.pos || "mid";
+        m.places = PLACES.map(([dock, p]) => ({ dock, pos: p, r: placeFor(dock, p) }));
+        m.at = m.places.find(p => p.dock === now && (now === "below" || p.pos === pos)) || m.places[0];
+        /* each lane: the span of its places */
+        for (const l of lanes) {
+          const ps = m.places.filter(p => p.dock === l.dataset.dock),
+            x = Math.min(...ps.map(p => p.r.x)),
+            y = Math.min(...ps.map(p => p.r.y));
+          put(l, {
+            x,
+            y,
+            w: Math.max(...ps.map(p => p.r.x + p.r.w)) - x,
+            h: Math.max(...ps.map(p => p.r.y + p.r.h)) - y,
           });
+          l.classList.add("show");
+        }
+        foot.classList.add("show");
       }
-      m.zone = zoneAt(e.clientX, e.clientY, m.stk ? 0 : m.y0 + (colH - H - chipsH() - m.t0));
-      zones.forEach(z => z.classList.toggle("near", z.dataset.z === m.zone));
-      if (m.stk) return;
-      const t = Math.max(0, Math.min(colH - H - chipsH(), m.t0 + dy));
-      stop("box");
-      boxWrite(col, { l: 0, t: t + TS, w: 0, h: H }); // the box's one writer, the pointer its clock
-      m.t = t;
-      const n = nearest(t, H, colH);
-      ghosts.forEach(g => g.classList.toggle("near", !m.zone && g.dataset.p === n));
+      liftCol(m.dx, m.dy); // the box follows the pointer
+      /* the place nearest the box's centre, with hysteresis */
+      const cx = m.r0.left + m.r0.width / 2 + m.dx,
+        cy = m.r0.top + m.r0.height / 2 + m.dy,
+        dist = (/** @type {Place} */ p) => Math.hypot(p.r.x + p.r.w / 2 - cx, p.r.y + p.r.h / 2 - cy),
+        best = m.places.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+      if (m.at && best !== m.at && dist(best) + HYST < dist(m.at)) m.at = best;
+      if (!m.at) return;
+      put(foot, m.at.r);
+      foot.dataset.dock = m.at.dock;
+      foot.dataset.pos = m.at.pos;
+      for (const l of lanes) l.classList.toggle("near", l.dataset.dock === m.at.dock);
     }
-    function up() {
+    /** @param {boolean} [cancel] Esc: back where it was */
+    function up(cancel = false) {
       if (!d) return;
-      const was = d;
+      const m = d;
       d = null;
       outlines("move", []);
-      if (!was.moved) return;
-      card.drag = false;
+      if (!m.moved) return;
       document.body.classList.remove("cardmove");
-      ghosts.forEach(g => g.classList.remove("show", "near"));
-      zones.forEach(z => z.classList.remove("show", "near"));
-      if (was.zone) {
-        setDock(was.zone);
+      for (const l of lanes) l.classList.remove("show", "near");
+      foot.classList.remove("show");
+      /* the lift lets go on the driver: the box comes home from where it is (one plan and clock with what else moves) */
+      const home = (/** @type {number} */ x, /** @type {number} */ y) =>
+          rearrange("lift", { l: x, t: y, w: 0, h: 0 }, { l: 0, t: 0, w: 0, h: 0 }, b => liftCol(b.l, b.t)),
+        at = m.at,
+        now = dockNow();
+      if (cancel || !at || (at.dock === now && (now === "below" || at.pos === (S.pos || "mid")))) {
+        card.drag = false;
+        home(m.dx, m.dy);
         return;
       }
-      if (was.stk) return;
-      const { colH, H } = geo();
-      S.pos = nearest(/** @type {number} */ (was.t), H, colH); // set by every move once it moved
+      S.pos = at.pos;
       save();
+      if (at.dock !== now) {
+        /* another lane: the layout switch carries it — its leaving copy is taken where the lifted box is (standIn) */
+        card.drag = false;
+        setDock(at.dock);
+        liftCol(0, 0);
+        return;
+      }
+      /* its own lane, another spot: its rest moves there at once (still held), and the lift — from where it is to
+         there — lets go on the driver */
       const fz = card.frozen;
       card.frozen = false;
       layoutLeft();
       card.frozen = fz;
+      card.drag = false;
+      const x = m.r0.left + m.dx - at.r.x,
+        y = m.r0.top + m.dy - at.r.y;
+      liftCol(x, y);
+      home(x, y);
     }
+    /* Esc while moving it: back where it was */
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && d && d.moved) up(true);
+    });
     col.addEventListener("pointerdown", down);
     col.addEventListener("pointermove", move);
-    col.addEventListener("pointerup", up);
-    col.addEventListener("pointercancel", up);
+    col.addEventListener("pointerup", () => up());
+    col.addEventListener("pointercancel", () => up(true));
     // the empty space under the text belongs to the editor: a click there puts the cursor at the end
     q(".pwrapT").addEventListener("mousedown", e => {
       if (!(/** @type {HTMLElement} */ (e.target).classList.contains("pwrapT"))) return;

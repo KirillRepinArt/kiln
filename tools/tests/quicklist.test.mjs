@@ -168,39 +168,30 @@ export async function startWhileRunning(k, t) {
 }
 startWhileRunning.opts = { step: 1 };
 
-export async function dockZonesGlass(k, t) {
+/* the box's footprint while you move it (L1 — it was the three dock zones): its glass condenses in */
+export async function footprintGlass(k, t) {
   await k.mouse(2, 2);
   await k.sleep(1000);
   const blur = () =>
-    k.ev(
-      `[...document.querySelectorAll(".dockzone")].map(z=>parseFloat(getComputedStyle(z).backdropFilter.split("blur(")[1]||"0"))`,
-    );
-  await k.ev(`(document.querySelectorAll(".dockzone").forEach(z=>z.classList.add("show")),1)`);
+    k.ev(`parseFloat(getComputedStyle(document.querySelector(".footprint")).backdropFilter.split("blur(")[1]||"0")`);
+  await k.ev(`(document.querySelector(".footprint").classList.add("show"),1)`);
   await k.sleep(40);
   const early = await blur();
   await k.sleep(600);
   const late = await blur();
+  t.ok(early < 14 && late > 15.5, "it condenses in: the glass blur grows from nothing", { early, late });
   t.ok(
-    early.every(b => b < 14) && late.every(b => b > 15.5),
-    "all three condense in: the glass blur grows from nothing",
-    { early, late },
-  );
-  t.ok(
-    await k.ev(`[...document.querySelectorAll(".dockzone")].every(z=>getComputedStyle(z).opacity==="1")`),
+    await k.ev(`getComputedStyle(document.querySelector(".footprint")).opacity==="1"`),
     "never by opacity (it would switch the glass off)",
   );
-  t.ok(
-    await k.ev(`[...document.querySelectorAll(".dockzone")].every(z=>getComputedStyle(z).paddingTop==="0px")`),
-    "none picks up the prompt box's styles through a class name",
-  );
-  await k.ev(`(document.querySelectorAll(".dockzone").forEach(z=>z.classList.remove("show")),1)`);
+  await k.ev(`(document.querySelector(".footprint").classList.remove("show"),1)`);
   await k.sleep(40);
   t.ok(
-    await k.ev(`getComputedStyle(document.querySelector(".dockzone")).display!=="none"`),
-    "letting go: they fade back out rather than vanish",
+    await k.ev(`getComputedStyle(document.querySelector(".footprint")).display!=="none"`),
+    "letting go: it fades back out rather than vanish",
   );
   await k.sleep(600);
-  t.ok(await k.ev(`getComputedStyle(document.querySelector(".dockzone")).display==="none"`), "…and are gone after");
+  t.ok(await k.ev(`getComputedStyle(document.querySelector(".footprint")).display==="none"`), "…and is gone after");
 }
 
 export async function promptEdges(k, t) {

@@ -181,124 +181,72 @@
   color: var(--faint);
   line-height: 1.5;
 }
-/* moving the prompt box: the three places it snaps to, and the dock zones */
-.ghost {
-  position: absolute;
-  left: 0;
-  width: min(100%, var(--cw, 680px));
+/* moving the prompt box (L1, cardlayout.js): the LANES where it could go (dashed: the left column, the right column, the
+   slot under the picture) and the one FOOTPRINT where it will land (glass, tinted) — placed by the layout pass for each
+   place, so what's shown is where it lands. The Queue's reorder language: the box itself follows the pointer. The
+   footprint condenses in (never by opacity: Chromium switches the glass off inside anything partly transparent) */
+.lane {
+  position: fixed;
+  z-index: 90;
+  pointer-events: none;
   border-radius: var(--r-panel);
   outline: var(--outline);
   outline-offset: var(--outline-out);
-  pointer-events: none;
   opacity: 0;
   transition:
     opacity var(--t-150),
-    border-color var(--t-150);
+    outline-color var(--t-150);
 }
-.ghost.show {
+.lane.show {
   opacity: 1;
 }
-.ghost.near {
+.lane.near {
   outline-color: var(--white-50);
 }
-/* the drop zones condense in: outline, tint and (in glass) the blur grow from nothing while the zone settles from 97 %;
-   the reverse when you let go. Never by opacity — Chromium switches the glass off inside anything partly transparent */
-.dockzone {
+.footprint {
   position: fixed;
-  z-index: 90;
+  z-index: 91;
   display: none;
-  align-items: center;
-  justify-content: center;
   pointer-events: none;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: var(--r-panel);
   background: transparent;
-  color: transparent;
-  font-size: var(--fs-14);
-  font-weight: 500;
   transform: scale(0.97);
   transition:
     background var(--t-220) var(--lay-e),
     border-color var(--t-220) var(--lay-e),
-    color var(--t-220) var(--lay-e),
     backdrop-filter var(--t-300) var(--lay-e),
-    box-shadow var(--t-300) var(--lay-e),
     transform var(--t-300) var(--lay-e),
     display var(--t-300) allow-discrete;
 }
-.dockzone.show {
-  display: flex;
-  background: var(--white-3);
-  color: var(--white-55);
+.footprint.show {
+  display: block;
+  background: color-mix(in oklab, var(--a1) 14%, transparent);
+  border-color: color-mix(in oklab, var(--a1) 70%, transparent);
   transform: none;
 }
 @starting-style {
-  .dockzone.show {
+  .footprint.show {
     background: transparent;
-    color: transparent;
+    border-color: transparent;
     transform: scale(0.97);
   }
 }
-.dockzone::after {
-  content: "";
-  position: absolute;
-  inset: var(--drop-inset);
-  border: 1px dashed currentColor;
-  border-radius: calc(var(--r-panel) - var(--drop-inset)); /* concentric */
-  opacity: 0.5;
-  pointer-events: none;
-  transition:
-    border-color var(--t-150),
-    opacity var(--t-150);
-} /* the line inset on the plate, like PNG Info's drop area */
-.dockzone.near::after {
-  border-color: color-mix(in oklab, var(--a1) 80%, transparent);
-  opacity: 1;
-}
-.dockzone.near {
-  background: color-mix(in oklab, var(--a1) 14%, transparent);
-  color: var(--white);
-}
-.dockzone.dz-left {
-  left: var(--space-3);
-  top: calc(var(--space-16) + var(--space-5));
-  bottom: 22%;
-  width: 28%;
-}
-.dockzone.dz-right {
-  right: var(--space-3);
-  top: calc(var(--space-16) + var(--space-5));
-  bottom: 22%;
-  width: 28%;
-} /* below the tab bar: navigation stays in view */
-.dockzone.dz-below {
-  left: var(--space-3);
-  right: var(--space-3);
-  bottom: var(--space-3);
-  height: 18%;
-}
-/* glass, all three alike (the left one used to pick up the prompt box's glass through a shared class name) */
-body.glass .dockzone {
+body.glass .footprint {
   -webkit-backdrop-filter: blur(0px) saturate(1) brightness(1);
   backdrop-filter: blur(0px) saturate(1) brightness(1);
 }
-body.glass .dockzone.show {
-  background: color-mix(in oklab, rgba(var(--glass-regular), var(--gta, 0.28)), var(--a1) 6%);
-  border-color: var(--white-18);
+body.glass .footprint.show {
+  background: color-mix(in oklab, rgba(var(--glass-regular), var(--gta, 0.28)), var(--a1) 22%);
   box-shadow: inset 0 1px 0 var(--white-14);
   -webkit-backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
   backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
 }
 @starting-style {
-  body.glass .dockzone.show {
+  body.glass .footprint.show {
     background: transparent;
-    border-color: transparent;
     box-shadow: none;
     -webkit-backdrop-filter: blur(0px) saturate(1) brightness(1);
     backdrop-filter: blur(0px) saturate(1) brightness(1);
   }
-}
-body.glass .dockzone.near {
-  background: color-mix(in oklab, rgba(var(--glass-regular), var(--gta, 0.28)), var(--a1) 22%);
-  border-color: color-mix(in oklab, var(--a1) 70%, transparent);
 }

@@ -1012,7 +1012,11 @@ export async function boxGluedThroughLayoutSwitch(k, t) {
   await k.sleep(1600);
   const n = await k.rect("#ltitle"),
     [x, y] = [n.left + 20, n.top + n.height / 2],
-    [X, Y] = [700, 880];
+    /* the box's centre carried to the slot under the picture (L1: the place nearest the box's centre) */
+    [bx, by] = await k.ev(
+      `(()=>{const b=$("left").getBoundingClientRect(),r=placeFor("below","mid");return [r.x+r.w/2-(b.left+b.width/2),r.y+r.h/2-(b.top+b.height/2)]})()`,
+    ),
+    [X, Y] = [x + bx, y + by];
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
   for (let i = 1; i <= 10; i++)
@@ -1024,7 +1028,7 @@ export async function boxGluedThroughLayoutSwitch(k, t) {
       buttons: 1,
     });
   t.ok(
-    (await k.ev(`(document.querySelector(".dockzone.near")||{dataset:{}}).dataset.z`)) === "below",
+    (await k.ev(`(document.querySelector(".footprint.show")||{dataset:{}}).dataset.dock`)) === "below",
     "the drag is over the bottom dock",
   );
   await k.sleep(100);

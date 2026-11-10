@@ -123,8 +123,36 @@ export function minRight() {
    Every edge writes through setPaneSize, every reader asks paneSize; null = the default. Left and Right share "side"
    (mirrors). The box's height is never kept (it hugs its text). */
 /** @typedef {import("./layoutmath.js").PageId} PageId @typedef {import("./layoutmath.js").Orient} Orient */
-/** side by side or Vertical, as laid out now @returns {Orient} */
-export const orient = () => (document.querySelector(".app.stacked") ? "vert" : "side");
+/** which layout the pass computes: as laid out now — or, inside placeFor (L1), the one asked about. The ONE place the
+ * pass's inputs ask (they read the layout's classes themselves, each its own way) @type {{ dock: "left" | "right" | "below" } | null} */
+let asked = null;
+/** side by side or Vertical, as laid out now (or as asked: placeFor) @returns {Orient} */
+export const orient = () =>
+  asked ? (asked.dock === "below" ? "vert" : "side") : document.querySelector(".app.stacked") ? "vert" : "side";
+/** where the prompt box is docked, as laid out now (or as asked: placeFor) @returns {"left" | "right" | "below"} */
+export const dockNow = () =>
+  asked
+    ? asked.dock
+    : document.querySelector(".app.stacked")
+      ? "below"
+      : /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright")
+        ? "right"
+        : "left";
+/** where the box would be at {dock, pos}: the layout pass for that place, from the same inputs (L1: the drag's lanes and
+ * footprint are where the box lands — the same maths) — nothing is laid out @param {"left" | "right" | "below"} dock
+ * @param {"top" | "mid" | "bot"} pos @returns {import("./layoutmath.js").Rect} */
+export function placeFor(dock, pos) {
+  const was = asked,
+    p = S.pos;
+  asked = { dock };
+  S.pos = pos;
+  try {
+    return sidePass().out.box;
+  } finally {
+    asked = was;
+    S.pos = p;
+  }
+}
 /** the page on show, as a pane @returns {PageId} */
 export const pageId = () =>
   S.view === "gen" ? (picMode() === "browse" ? "gallery" : "generating") : /** @type {PageId} */ (S.view);
@@ -232,7 +260,7 @@ function nameRowH() {
 }
 /* the room the status row takes under the picture while the page keeps it (the part gap + the row) */
 function rowRoom() {
-  return document.querySelector(".app.stacked") ? SPACE.part + $("prog").offsetHeight : BAR();
+  return orient() === "vert" ? SPACE.part + $("prog").offsetHeight : BAR();
 }
 /* the height the picture's block may take: the stage; Vertical — down to one even gap above the prompt's name (the
    prompt sits at the bottom, the picture takes everything above it: 2026-10-31, it used to be pulled up under the
@@ -256,8 +284,8 @@ function sideRoomTop() {
    (the box at its least under it: C4b). It was measured above the prompt's name, whose row was sized by the box's text:
    the box's growth came out of the page's room */
 function roomH() {
-  if (!document.querySelector(".app.stacked")) return sideRoom();
-  return (lay.passV ?? vPass()).pageHi;
+  if (orient() !== "vert") return sideRoom();
+  return (asked ? sidePass().out : (lay.passV ?? vPass())).pageHi;
 }
 /* the picture's largest height: the room less the status row while the page keeps it (insets) */
 export function picFull(noRow = false) {
@@ -274,27 +302,25 @@ function toolsClear() {
  * (on its outer side only, part of its pane), a panel's width and height, the box's width, where the pair sits — come
  * from it; the appliers (colsWrite, framebox, sizeFrame's panel box, plate) write them (C2b: one applier). While an
  * edge is held (lay.pdrag), from the sizes at its press and the pointer (C3). A px cap an older version left on a
- * picture page is read once as the scale it gives this picture. */
+ * picture page is read once as the scale it gives this picture.
+ * @returns {{ out: import("./layoutmath.js").PassOut, strip: number, roomTop: number }} */
 function sidePass() {
-  const vert = !!document.querySelector(".app.stacked"),
+  const vert = orient() === "vert",
     roomTop = sideRoomTop(),
     barH = /** @type {HTMLElement} */ (document.querySelector(".tabs")).offsetHeight,
     barGap = Math.max(0, roomTop - SPACE.area - barH),
     dr = lay.pdrag, // an edge held: the pass computes from the sizes at its press and the pointer (C3)
     pic = S.view === "gen",
     p = paneSize(),
-    df = vert ? { pw: 0, rw: 0 } : layDef(), // side by side's defaults (in Vertical they'd ask the pass's own room)
-    room = vert ? 0 : pic ? picFull() : sideRoom(), // side by side (Vertical's is the pass's own: roomH would ask it)
+    df = /** @type {{ pw: number, rw: number }} */ (vert ? { pw: 0, rw: 0 } : layDef()), // side by side's defaults (in Vertical they'd ask the pass's own room)
+    room = /** @type {number} */ (vert ? 0 : pic ? picFull() : sideRoom()), // side by side (Vertical's is the pass's own: roomH would ask it)
     strip = pic ? tbW() : 0, // one column, never the picture's height's (picLeastH; DD-2026-11-07-2)
-    run = (/** @type {import("./layoutmath.js").PassState["page"]} */ page) =>
+    /** @type {(page: import("./layoutmath.js").PassState["page"]) => import("./layoutmath.js").PassOut} */
+    run = page =>
       layoutPass({
         W: innerWidth,
         H: innerHeight,
-        dock: vert
-          ? "below"
-          : /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright")
-            ? "right"
-            : "left",
+        dock: dockNow(),
         /* Vertical: a picture's status row lies under it, in the group's gap (rowRoom — C4b step 1b) */
         page: vert && page.kind === "pic" && insets().row ? { ...page, row: rowRoom() } : page,
         /* side by side the box's height is placed elsewhere (cardPlacement, C2b's rest); in Vertical the pass places
@@ -338,10 +364,12 @@ function sidePass() {
     /* a panel: its width and height are yours (by default a 2:3 plate at the room's height side by side, 1:1 in
        Vertical), within its limits. Vertical's room is the pass's (pageHi: what the box at its least leaves; it
        doesn't depend on the panel) — held, the sizes at the press */
-    const R = vert ? run({ kind: "panel", w: 0, h: 0, lo: { w: 0, h: 0 }, hi: { w: 0, h: 0 } }).pageHi : room,
+    const R = /** @type {number} */ (
+        vert ? run({ kind: "panel", w: 0, h: 0, lo: { w: 0, h: 0 }, hi: { w: 0, h: 0 } }).pageHi : room
+      ),
       o = vert ? "vert" : "side",
-      lw = paneLimits(pageId(), "w", { o, roomH: R }),
-      lh = paneLimits(pageId(), "h", { roomH: R });
+      lw = /** @type {{ lo: number, hi: number }} */ (paneLimits(pageId(), "w", { o, roomH: R })),
+      lh = /** @type {{ lo: number, hi: number }} */ (paneLimits(pageId(), "h", { roomH: R }));
     return {
       out: run({
         kind: "panel",
@@ -849,6 +877,16 @@ export function vAlign() {
 let hugX = 0, // side by side: one gap from the plate, on every page (promptFollow); catching up after a hold, the driver's ("hug")
   hugY = 0, // riding its pane's plate on the height axis while it moves (Vertical; side by side in a switch — promptFollow; 0 at rest): never glided, the plate is its clock
   colRaf = 0;
+/** the box lifted by its grip (L1): it follows the pointer; let go, the driver brings it home ("lift") */
+let liftX = 0,
+  liftY = 0;
+/** the lift, as the column's one writer places it (cardlayout.js: the move gesture; the driver letting go)
+ * @param {number} x @param {number} y */
+export function liftCol(x, y) {
+  liftX = x;
+  liftY = y;
+  colApply();
+}
 /** the box's catch-up after a hold, written by the driver (rearrange.js "hug") @param {{ l: number }} b */
 const hugWrite = b => {
   hugX = b.l;
@@ -873,8 +911,8 @@ function colApply() {
       ry = g1.t - relation.b1.t;
     }
   }
-  const x = hugX + rx,
-    y = hugY + ry,
+  const x = hugX + rx + liftX,
+    y = hugY + ry + liftY,
     t = x || y ? `translate(${x}px, ${y}px)` : "",
     col = $("lcol");
   if (col.style.transform !== t) col.style.transform = t;

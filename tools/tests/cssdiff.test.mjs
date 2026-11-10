@@ -240,11 +240,11 @@ export async function cssdiff(k, t) {
   await k.sleep(300);
   await check("edge hint", { pseudo: false });
   await go(
-    `$("plate").classList.remove("hint");document.body.classList.add("cardmove");document.querySelectorAll(".dockzone").forEach((z,i)=>z.classList.add("show",...(i===1?["near"]:[])));document.querySelectorAll(".ghost").forEach((g,i)=>g.classList.add("show",...(i===1?["near"]:[])))`,
+    `$("plate").classList.remove("hint");document.body.classList.add("cardmove");document.querySelectorAll(".lane").forEach((z,i)=>z.classList.add("show",...(i===1?["near"]:[])));document.querySelector(".footprint").classList.add("show")`,
   );
   await check("dock drag", { pseudo: false });
   await go(
-    `document.body.classList.remove("cardmove");document.querySelectorAll(".dockzone,.ghost").forEach(z=>z.classList.remove("show","near"))`,
+    `document.body.classList.remove("cardmove");document.querySelectorAll(".lane,.footprint").forEach(z=>z.classList.remove("show","near"))`,
   );
   // privacy, stopping, paused
   await go(`toggleCover()`);

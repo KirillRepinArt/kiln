@@ -8,14 +8,7 @@
 import { TRACER, reversals, secondWriters, twoClocks } from "./trace.mjs";
 
 /** known second writers / reversals: "el.prop" (or "el~what" for a reversal) → the map's id and why it's there */
-const ALLOW = /** @type {Record<string, string>} */ ({
-  /* F4 (the re-read, 2026-11-10): a tab clicked a quarter of the way into a switch cuts the first — the leaving view
-       0.78 → 0 and the coming one 0 → 1 in one frame (50 % and 75 % carry on) */
-  "picture~cut": "F4",
-  "idle~cut": "F4",
-  "vGen~cut": "F4",
-  "vQueue~cut": "F4",
-});
+const ALLOW = /** @type {Record<string, string>} */ ({});
 
 const WATCH = `__trace.watch({
   plate: $("plate"), rim: $("rim"), frame: $("frame"), cv: $("cv"), cvx: $("cvx"), fglow: $("fglow"),
@@ -247,6 +240,10 @@ export async function ownershipTour(k, t) {
     await k.ev(`(${tab("gen")},1)`);
     await k.sleep(1300);
     await motion(`Generating → Queue, the Gallery at ${pc}`, [tab("queue"), at, tab("gallery")], 1700);
+    await k.ev(`(${tab("gen")},1)`);
+    await k.sleep(1300);
+    /* a third page mid-switch: the one leaving is neither leaving nor coming now — it fades out from where it is */
+    await motion(`Generating → Queue, LoRAs at ${pc}`, [tab("queue"), at, tab("loras")], 1700);
     await motion(`layout → right, → Vertical at ${pc}`, [`setDock("right")`, at, `setDock("below")`], 1900);
     await k.ev(`(setDock("left"),1)`);
     await k.sleep(1500);

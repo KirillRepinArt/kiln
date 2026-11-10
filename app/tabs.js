@@ -86,6 +86,7 @@ export function tabGo(fn, layout = false) {
     r0 = v0 ? v0.getBoundingClientRect() : null,
     f0 = frameBox(),
     fr0 = $("frame").getBoundingClientRect(),
+    shown = onScreen(), // before anything changes: a switch starts from what is shown (F4)
     me = ++tabGos;
   snapHold("tab", 10000); // the layout lands at once: the switch alone moves things (let go at its end, below)
   if (!layout) document.documentElement.classList.add("tabswitch"); // a tab switch: the tab pill still slides
@@ -125,10 +126,10 @@ export function tabGo(fn, layout = false) {
     sw =
       v0.id === "v-gen"
         ? switchGlide(from, null, true) // the picture: the frame's own crop-and-reveal, the plate riding it
-        : switchGlide(from, { old: v0, oldRect: r0, neu: v1 }, true); // a panel: its contents ride the plate
+        : switchGlide(from, { old: v0, oldRect: r0, neu: v1, shown }, true); // a panel: its contents ride the plate
   else if (v0 && v1 && r0 && v0 !== v1) {
     if (v0.id === "v-gen" && f0) frameHold(f0); // the picture stays where it was while its view leaves
-    sw = switchGlide(from, { old: v0, oldRect: r0, neu: v1 });
+    sw = switchGlide(from, { old: v0, oldRect: r0, neu: v1, shown });
   } else {
     sw = switchGlide(from, null);
     /* the same view: a box of another shape or size crops and reveals (declared above; framebox.js decides) — the
@@ -148,6 +149,19 @@ export function tabGo(fn, layout = false) {
   }, sw.T + 300);
 }
 let tabGos = 0; // tab switches started so far
+/** each page's opacity and box on screen now — read before a switch changes anything (after, the classes already say
+ * what's coming): mid-switch the leaving page is part faded and the coming one not yet in, and a switch restarted from
+ * 1 and 0 cut them (F4, the tracer: a tab 25 % into a switch, the picture 0.78 → 0 in one frame)
+ * @returns {Map<HTMLElement, { o: number, r: DOMRect }>} */
+function onScreen() {
+  const m = new Map();
+  for (const v of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".rpanel > .view"))) {
+    const s = getComputedStyle(v),
+      o = s.visibility === "hidden" ? 0 : +s.opacity;
+    if (o > 0.005) m.set(v, { o, r: v.getBoundingClientRect() });
+  }
+  return m;
+}
 /** go to a page — THE way a page switch happens (2026-11-02, the user: the Add LoRA button jumped "all over the place"):
  * a tab, the Add LoRA button and a LoRA chip, a Queue row, PNG Info's load, Reset layout, ✕ back to where you came
  * from — all on the tab switch's one motion (tabGo). `then` runs on the new page, inside the switch.

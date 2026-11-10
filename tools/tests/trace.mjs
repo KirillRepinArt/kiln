@@ -147,6 +147,9 @@ function tracer() {
   /** @param {Element} el @param {CSSStyleDeclaration} cs */
   const seenOpacity = (el, cs) => {
     if (cs.visibility === "hidden" || cs.display === "none") return 0;
+    /* a canvas with nothing drawn on it (the frame's, emptied: 1 × 1) shows nothing, whatever its opacity — read as
+       seen, an empty frame getting its first picture (which rightly fades in from 0) read as a cut (F4's probe, 2026-11-10) */
+    if (el.tagName === "CANVAS" && /** @type {any} */ (el).width < 2) return 0;
     const own = +cs.opacity,
       /* a fade started on this element or on a group it is in (the box inside the faded prompt column) — its parts inside
          it say how much of it is seen. Not a fade started below it: a container of two views crossing read their parts'

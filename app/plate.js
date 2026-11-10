@@ -7,7 +7,7 @@
    too: inset on it, it changes shape with it and fades as a switch leaves (it slid inside the contents' snapshot) */
 import { placeAround } from "./around.js";
 import { $, offsetIn } from "./dom.js";
-import { frameHold, frameTarget } from "./framebox.js";
+import { frameBox, frameHold, frameTarget } from "./framebox.js";
 import { glassFade } from "./fade.js";
 import { fades, shapeSteps } from "./layoutmath.js";
 import { bend, flush, follow, moving, progress, progressXY, travel } from "./rearrange.js";
@@ -154,9 +154,10 @@ export function plateBefore() {
 let switchAnims = [];
 // the running switch's own animations (a new switch replaces them)
 
-/** @typedef {{ old: HTMLElement, oldRect: DOMRect, neu: HTMLElement }} Views a switch between two views: the one
- * leaving (where it was on screen) and the one coming — the SAME view for a layout switch (Left / Right / Vertical,
- * T2b): it rides the plate live, nothing of it fades */
+/** @typedef {{ old: HTMLElement, oldRect: DOMRect, neu: HTMLElement, shown?: Map<HTMLElement, { o: number, r: DOMRect }> }} Views
+ * a switch between two views: the one leaving (where it was on screen) and the one coming — the SAME view for a layout
+ * switch (Left / Right / Vertical, T2b): it rides the plate live, nothing of it fades. `shown`: every page's opacity
+ * and box on screen before the switch (tabs.js onScreen) — its fades start there (F4) */
 /* where the prompt box's partner is (layout.js promptFollow glues the box one gap from it): the plate as it is on screen
    — in a tab switch too, so the box rides it (B23) — except in a layout switch, where the box doesn't travel but fades
    through (DEVLOG DD-2026-11-07-6): there its partner is the plate where it lands. ONE answer, from the switch's owner */
@@ -181,7 +182,13 @@ export function switchGlide(at, views, layout = false) {
   /* only the picture changes (Gallery ↔ Generating, one view): a switch still running carries on from where it is — its
      views' fades and its leaving view on their clock, the plate's travel bent to the new goal (F3: this cancelled them,
      the leaving list cut 0.97 → 0 and the coming view 0 → 1 in one frame) */
-  const picOnly = !views && !layout;
+  const picOnly = !views && !layout,
+    /* a page still on screen from a switch this one interrupts, neither leaving nor coming now (a third tab mid-switch):
+       it leaves too, from where it is — cancelled with its switch, it vanished (F4) */
+    stray = views?.shown
+      ? [...views.shown].filter(([v]) => v !== views.old && v !== views.neu).map(([v, s]) => ({ v, ...s }))
+      : [],
+    heldPic = frameBox(); // the picture's frame where it is — held again if its page is a stray (end() lets it go)
   if (!picOnly) {
     for (const a of switchAnims) a.cancel();
     switchAnims = [];
@@ -283,16 +290,23 @@ export function switchGlide(at, views, layout = false) {
      crossing at the swap */
   const { old, oldRect, neu } = views,
     rp = $("rpanel").getBoundingClientRect(),
-    rpanel = $("rpanel"),
-    os = old.style;
+    rpanel = $("rpanel");
   if (layout) landing = toS; // the box's partner: the plate where it lands (the box fades through, it doesn't ride)
-  if (!same) {
-    old.classList.add("leaving");
-    os.left = oldRect.left - rp.left - rpanel.clientLeft + "px";
-    os.top = oldRect.top - rp.top - rpanel.clientTop + "px";
-    os.width = oldRect.width + "px";
-    os.height = oldRect.height + "px";
-    os.right = os.bottom = "auto";
+  /** a leaving page stays where it was on screen at its size (its contents don't reflow) @param {HTMLElement} v
+   * @param {DOMRect} r */
+  const pin = (v, r) => {
+    const s = v.style;
+    v.classList.add("leaving");
+    s.left = r.left - rp.left - rpanel.clientLeft + "px";
+    s.top = r.top - rp.top - rpanel.clientTop + "px";
+    s.width = r.width + "px";
+    s.height = r.height + "px";
+    s.right = s.bottom = "auto";
+  };
+  if (!same) pin(old, oldRect);
+  for (const { v, r } of stray) {
+    pin(v, r);
+    if (v.id === "v-gen" && heldPic) frameHold(heldPic); // its picture stays where it is while it leaves
   }
   h.classList.add("switching");
   const nr = neu.getBoundingClientRect(),
@@ -326,6 +340,7 @@ export function switchGlide(at, views, layout = false) {
         : [
             [old, oldRect, centre(at)],
             [neu, nr, centre(toS)],
+            ...stray.map(s => /** @type {[HTMLElement, DOMRect, number[]]} */ ([s.v, s.r, centre(at)])),
           ]
     );
   /* every frame, after the plate's write: each view on the plate's live centre, clipped by its live box (T2c-3b: a
@@ -415,7 +430,11 @@ export function switchGlide(at, views, layout = false) {
      parts was a snapshot — rows drawn after the switch began showed at once, the user: "plates of the queue items are
      there right away"). The same view (a layout switch) stays shown, it only rides. Glass inside a page loses its
      blur under this fade: the layering rule — content holds no material — is ux-review/17-t2-motion.md T2c */
-  const out = go(old.animate(same ? [] : [{ opacity: 1 }, { opacity: 0 }], goOut));
+  /* from what is on screen (F4): a page caught mid-switch carries on from its opacity there — never restarted from 1 / 0 */
+  const shownO = (/** @type {HTMLElement} */ v, /** @type {number} */ d) =>
+      views.shown ? (views.shown.get(v)?.o ?? 0) : d, // not in it: not on screen
+    out = go(old.animate(same ? [] : [{ opacity: shownO(old, 1) }, { opacity: 0 }], goOut));
+  for (const { v, o } of stray) go(v.animate([{ opacity: o }, { opacity: 0 }], goOut));
   /* the picture's glow lives outside its view (a fixed layer): it comes and goes with the picture, on its fade (no glass
      in it, and at 0 between pictures: a plain fade — fade.js would skip what rests at 0) */
   const fg = document.getElementById("fglow");
@@ -426,15 +445,15 @@ export function switchGlide(at, views, layout = false) {
         pic(neu) ? comeIn : goOut,
       ),
     );
-  if (!same) go(neu.animate([{ opacity: 0 }, { opacity: 1 }], comeIn));
+  if (!same) go(neu.animate([{ opacity: shownO(neu, 0) }, { opacity: 1 }], comeIn));
   /* the leaving view goes when the switch ends (or a new switch begins): hidden, back in its place */
   const end = () => {
     if (leaveDone !== end) return;
     leaveDone = null;
     landing = null; // the box glued to the plate as it is again
-    if (!same) {
-      old.classList.remove("leaving");
-      for (const p of ["left", "top", "width", "height", "right", "bottom"]) os.removeProperty(p);
+    for (const v of same ? stray.map(s => s.v) : [old, ...stray.map(s => s.v)]) {
+      v.classList.remove("leaving");
+      for (const p of ["left", "top", "width", "height", "right", "bottom"]) v.style.removeProperty(p);
     }
     h.classList.remove("switching");
     unride(); // the views back in their places, unclipped

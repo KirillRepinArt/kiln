@@ -82,7 +82,9 @@ function placeSideEdges(plate) {
     for (const e of [ri, ro, .../** @type {NodeListOf<HTMLElement>} */ (rt.querySelectorAll(".phedge"))]) put(e, {});
     return;
   }
-  const outerLeft = app.classList.contains("pright"); // Right: the page's outer side is its left
+  const outerLeft = app.classList.contains("pright"), // Right: the page's outer side is its left
+    /* every pane's resize band, one rule (B19, layout.css): from 1 px inside the edge out to the outline */
+    B = SPACE.outline;
   if (rp.classList.contains("paneled")) {
     /* a panel: its box (sizeFrame's — the pass's place in the still area since C2b), the same offsets the CSS gave
        them on the area's sides; its top / bottom handles span its width */
@@ -90,20 +92,20 @@ function placeSideEdges(plate) {
       L = o.x,
       R = L + rp.offsetWidth,
       v = { top: o.y + "px", height: rp.offsetHeight + "px", right: "auto" };
-    put(ro, { ...v, left: (outerLeft ? L - SPACE.tight : R + SPACE.tight - ro.offsetWidth) + "px" });
-    put(ri, { ...v, left: (outerLeft ? R + SPACE.part - ri.offsetWidth : L - SPACE.part) + "px" });
+    put(ro, { ...v, left: (outerLeft ? L - B : R - 1) + "px", width: B + 1 + "px" });
+    put(ri, { ...v, left: (outerLeft ? R - 1 : L - B) + "px", width: B + 1 + "px" });
     for (const e of /** @type {NodeListOf<HTMLElement>} */ (rt.querySelectorAll(".phedge")))
       put(e, { left: L + "px", right: "auto", width: rp.offsetWidth + "px" });
     return;
   }
   if (!plate) return;
   const { l, t, w, h } = plate;
-  /* a picture: the plate in the area's coordinates; the outer strip 6 px past the outline,
-     the inner one reaching the outline from the gap (as before) */
+  /* a picture: the plate in the area's coordinates — the same band (it was its own: 6 px past the outline, the inner one
+     reaching in from the gap) */
   const o = offsetIn($("stage"), rt),
     L = o.x + l,
     R = L + w,
     v = { top: o.y + t + "px", height: h + "px", right: "auto" };
-  put(ro, { ...v, left: (outerLeft ? L - 6 : R + 6 - ro.offsetWidth) + "px" });
-  put(ri, { ...v, left: (outerLeft ? R + SPACE.part - ri.offsetWidth : L - SPACE.part) + "px" });
+  put(ro, { ...v, left: (outerLeft ? L - B : R - 1) + "px", width: B + 1 + "px" });
+  put(ri, { ...v, left: (outerLeft ? R - 1 : L - B) + "px", width: B + 1 + "px" });
 }

@@ -249,15 +249,16 @@ export async function edgeOnPicture(k, t) {
   await k.sleep(900);
   const f = await R(k, "#frame"),
     h = await R(k, ".pedge.ro");
-  t.near(h.left + h.width / 2, f.right, 2, "Generating: the outer handle is on the picture's outer edge", {
-    h: h.left + h.width / 2,
+  /* its band starts 1 px inside the edge and runs out to the outline (B19: every pane's band, one rule) */
+  t.near(h.left, f.right - 1, 1, "Generating: the outer handle's band starts on the picture's outer edge", {
+    h: h.left,
     f: f.right,
   });
   await k.ev(`(showView("queue"),1)`);
   await k.sleep(700);
   const r = await R(k, "#rpanel"), // the panel itself: the area is still since C2b, the panel in it
     h2 = await R(k, ".pedge.ro");
-  t.near(h2.left + h2.width / 2, r.right, 2, "other tabs: on the panel's edge");
+  t.near(h2.left, r.right - 1, 1, "other tabs: on the panel's edge");
 }
 edgeOnPicture.opts = { width: 2000, height: 1023, step: 0.05 };
 

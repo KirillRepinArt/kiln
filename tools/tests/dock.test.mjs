@@ -217,10 +217,14 @@ export async function gripIsTheWholeGroup(k, t) {
         "the name row, left of the name": (/** @type {any} */ r) => [r.L.left + 12, r.T.top + r.T.height / 2],
         /* clear of the size buttons at the row's right end (controls) */
         "the name row, right of the name": (/** @type {any} */ r) => [r.L.right - 100, r.T.top + r.T.height / 2],
-        "the gap between the name and the box": (/** @type {any} */ r) => [r.L.left + r.L.width / 2, r.L.top - 4],
-        /* at its end: side by side the middle of that gap is the box's bottom resize edge, which wins (edges keep their
-           pointer — the cursor says so) */
-        "the gap between the box and the LoRA row": (/** @type {any} */ r) => [r.L.left + 12, r.L.bottom + 4],
+        /* (B19, DEVLOG DD-2026-11-10-5: the gaps between the box and its name row and LoRA row are the box's resize bands
+           — the picture's rule for every pane; side by side above it too. In Vertical its top is the shared edge,
+           which lives above the name row, so the gap under the name still grips) */
+        ...(dock === "below"
+          ? {
+              "the gap between the name and the box": (/** @type {any} */ r) => [r.L.left + r.L.width / 2, r.L.top - 4],
+            }
+          : {}),
         "the LoRA row's empty part": (/** @type {any} */ r) => [
           Math.min(r.L.right - 12, r.add.right + 60),
           r.C.top + r.C.height / 2,
@@ -230,8 +234,14 @@ export async function gripIsTheWholeGroup(k, t) {
         "the name field": (/** @type {any} */ r) => [r.T.left + r.T.width / 2, r.T.top + r.T.height / 2],
         "a pill": (/** @type {any} */ r) => [r.pill.left + r.pill.width / 2, r.pill.top + r.pill.height / 2],
         "the LoRA add button": (/** @type {any} */ r) => [r.add.left + r.add.width / 2, r.add.top + r.add.height / 2],
+        "the box's bottom band (the gap above the LoRA row)": (/** @type {any} */ r) => [r.L.left + 12, r.L.bottom + 4],
         ...(dock !== "below"
-          ? { "the box's bottom resize edge": (/** @type {any} */ r) => [r.L.left + r.L.width / 2, r.L.bottom + 4] }
+          ? {
+              "the box's top band (the gap under its name)": (/** @type {any} */ r) => [
+                r.L.left + r.L.width / 2,
+                r.L.top - 4,
+              ],
+            }
           : {}),
       };
     for (const [what, f] of Object.entries(empty)) {

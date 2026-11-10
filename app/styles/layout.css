@@ -79,44 +79,38 @@
    .pedge: the panels' vertical edges (po = the prompt's outer edge, pi/ri = the divider, ro = the picture area's outer
    edge); .sedge: the prompt box's sides in Vertical; .hedge: the picture's own edges; .vedge / .hsplit: the prompt's
    height. No grip bars: the outline (part of its pane: .plate::before, .left::after) and the cursor are the signal. */
+/* EVERY PANE'S RESIZE BAND, ONE RULE (B19 — the user, 2026-11-10, DEVLOG DD-2026-11-10-5: the picture's rule for every
+   pane): an edge's band runs from 1 px inside it out to the pane's dashed outline (--outline-out) — "the target you're
+   shown is the target" (Fitts); never over the pane's content, never a thumb (the platforms: macOS / Windows resize from
+   an invisible band at the window's frame). The box's name row and LoRA row lie one tight gap away — the outline's
+   distance — so its bands end where they begin (they're its grip). strips.test.mjs checks it */
+.app {
+  --band-out: var(--outline-out);
+  --band: calc(var(--outline-out) + var(--space-px));
+}
 .pedge {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 12px;
+  width: var(--band);
   z-index: 8;
   cursor: ew-resize;
   touch-action: none;
 }
 .pedge.po {
-  left: calc(var(--space-2) * -1);
+  left: calc(var(--band-out) * -1);
 }
 .pedge.pi {
-  right: calc(var(--space-2) * -1);
+  right: calc(var(--band-out) * -1);
 }
-.pedge.ro {
-  right: calc(var(--space-2) * -1);
-}
-.pedge.ri {
-  left: calc(var(--space-3) * -1);
-  width: 16px;
-} /* the band reaches the picture's outline */
 .app.pright .pedge.po {
   left: auto;
-  right: calc(var(--space-2) * -1);
+  right: calc(var(--band-out) * -1);
 }
 .app.pright .pedge.pi {
   right: auto;
-  left: calc(var(--space-2) * -1);
-}
-.app.pright .pedge.ri {
-  left: auto;
-  right: calc(var(--space-3) * -1);
-}
-.app.pright .pedge.ro {
-  right: auto;
-  left: calc(var(--space-2) * -1);
-}
+  left: calc(var(--band-out) * -1);
+} /* (the plate's sides, .pedge.ro / .ri: placed on the same band by around.js placeSideEdges) */
 .app.stacked .pedge {
   display: none;
 }
@@ -125,16 +119,16 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 12px;
+  width: var(--band);
   z-index: 8;
   cursor: ew-resize;
   touch-action: none;
 }
 .sedge.l {
-  left: calc(var(--space-2) * -1);
+  left: calc(var(--band-out) * -1);
 }
 .sedge.r {
-  right: calc(var(--space-2) * -1);
+  right: calc(var(--band-out) * -1);
 }
 .app.stacked .sedge {
   display: block;
@@ -146,16 +140,16 @@
   position: absolute;
   top: var(--pt, 0px);
   height: calc(var(--pb, 0px) - var(--pt, 0px));
-  width: 16px;
+  width: var(--band);
   z-index: 8;
   cursor: ew-resize;
   touch-action: none;
 }
 .vpedge.l {
-  left: calc(var(--pl, 0px) - var(--space-3));
+  left: calc(var(--pl, 0px) - var(--band-out));
 }
 .vpedge.r {
-  left: calc(var(--pr, 0px) - var(--space-1));
+  left: calc(var(--pr, 0px) - var(--space-px));
 } /* on the panel's sides (--pl / --pr: sizeFrame's panelStyle) — the area is the whole room (C2b's rest) */
 .app.stacked .phedge {
   left: var(--pl, 0px);
@@ -172,16 +166,16 @@
   position: absolute;
   left: 0;
   right: 0;
-  height: 16px;
+  height: var(--band);
   z-index: 8;
   cursor: ns-resize;
   touch-action: none;
 }
 .phedge.t {
-  top: calc(var(--pt, 0px) - var(--space-3));
+  top: calc(var(--pt, 0px) - var(--band-out));
 }
 .phedge.b {
-  top: calc(var(--pb, 0px) - var(--space-1));
+  top: calc(var(--pb, 0px) - var(--space-px));
 }
 .right:has(.rpanel.paneled) > .phedge {
   display: block;
@@ -200,16 +194,16 @@
   position: absolute;
   left: 0;
   right: 0;
-  height: 16px;
+  height: var(--band);
   cursor: ns-resize;
   pointer-events: auto;
   touch-action: none;
 }
 .hedge.t {
-  top: calc(var(--space-3) * -1);
+  top: calc(var(--band-out) * -1);
 }
 .hedge.b {
-  bottom: calc(var(--space-2) * -1);
+  bottom: calc(var(--band-out) * -1);
 }
 .hedge.l,
 .hedge.r {
@@ -217,15 +211,15 @@
   top: 0;
   bottom: 0;
   height: auto;
-  width: 16px;
+  width: var(--band);
   cursor: ew-resize;
 }
 .hedge.l {
-  left: calc(var(--space-3) * -1);
+  left: calc(var(--band-out) * -1);
   right: auto;
 }
 .hedge.r {
-  right: calc(var(--space-3) * -1);
+  right: calc(var(--band-out) * -1);
   left: auto;
 }
 .app.stacked .hedge.l,
@@ -234,43 +228,19 @@
 } /* Vertical: side edges on the picture */
 .vedge {
   position: absolute;
-  left: var(--space-8);
-  right: var(--space-8);
-  bottom: calc(var(--space-2) * -1);
-  height: 14px;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--band-out) * -1);
+  height: var(--band); /* the box's bottom band: to the LoRA row (one tight gap down — the outline's distance) */
   cursor: ns-resize;
   touch-action: none;
   z-index: 6;
 }
-.vedge::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  width: 46px;
-  height: 4px;
-  translate: -50% 0; /* centred on the edge (a centring offset, not spacing) */
-  border-radius: var(--r-2);
-  background: var(--grey-64);
-  opacity: 0;
-  transition: opacity var(--t-150);
-}
-.vedge::after {
-  top: var(--space-1);
-}
 .vedge.t {
-  top: calc(var(--space-hair) * -1);
+  top: calc(var(--band-out) * -1);
   bottom: auto;
-  height: var(--space-2);
-} /* on the box's own top border: the gap above it (between the title and the box) is the prompt's grip zone — one
-     owner per strip of screen (2026-11-02, CI: dock › gripIsTheWholeGroup) */
-.vedge.t::after {
-  top: auto;
-  bottom: var(--space-1);
-}
-.vedge:hover::after,
-.vedge.drag::after {
-  opacity: 1;
-}
+} /* the box's top band: up to its name row (one tight gap — the outline's distance); the name row and the LoRA row are
+     its grip (B19 retired L3's "the gap between the name and the box grips") — no thumb, as on every pane */
 .left.hm .vedge {
   display: none;
 } /* Vertical: the box's top is the edge it shares with the picture (the same gesture as .hsplit, above the title) */

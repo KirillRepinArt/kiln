@@ -210,7 +210,10 @@ export async function ownershipTour(k, t) {
   await motion("Vertical: the box's side (about its centre)", [drag(".sedge.r", 80), "0"]);
   /* C4c: every Vertical edge through the layout pass */
   await motion("Vertical: the box's bottom (its height, yours)", [drag("#vedge", 0, 60), "0"]);
-  await motion("Vertical: the picture's side (about its centre)", [drag(".hedge.r", -60), "0"]);
+  /* within its limits: the box made taller above leaves the picture ~50 px over its least height — pulled 60 in, it
+     stopped at its least and the pointer ran on over the picture, whose buttons then rightly show (the limit is the edges
+     suite's; this step is the motion about the centre) */
+  await motion("Vertical: the picture's side (about its centre)", [drag(".hedge.r", -20), "0"]);
   /* up, past the anchor (the rubber band, the settle) — down, the release leaves the pointer over the picture and its
      buttons rightly show (as the outer edge's step above) */
   await motion("Vertical: the picture's top past its room (its bottom holds, the settle)", [

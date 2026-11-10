@@ -719,3 +719,17 @@ export async function dragEndsHoweverItEnds(k, t) {
   await m("mouseReleased", x2 + 40, 0);
   t.ok(v1 !== v0 && (await w()) === v0, "Esc mid-scrub puts the weight back", { v0, v1, after: await w() });
 }
+
+/* a new job's ring on Start's badge starts from empty, not by sweeping back from the last job's end: its reset was
+   aimed at a ring retired long ago (.pring, display: none), so the badge's ring kept its --p transition and swept back
+   (found by the comment trim, DD-2026-11-11-7) */
+export async function badgeRingStartsFromEmpty(k, t) {
+  for (const s of ["a", "b", "c"]) await k.job(`[fill:446688] ${s}`, { ar: "1:1", steps: 8 });
+  const r = await k.ev(`new Promise(res=>{const pl=$("play"),t0=performance.now();let pj=pl.dataset.pj,out=null,hi=0;
+    (function f(){const b=document.querySelector(".play.gen .badge.show"),v=b?+getComputedStyle(b,"::before").getPropertyValue("--p"):NaN;
+      if(pl.dataset.pj!==pj){if(pj&&!out&&b)out={was:hi,first:v,set:+pl.style.getPropertyValue("--p")};pj=pl.dataset.pj}
+      if(!isNaN(v)&&!out)hi=v;
+      if(out||performance.now()-t0>40000)res(out);else requestAnimationFrame(f)})()})`);
+  t.ok(!!r && r.was > r.set + 0.2, "the case: the ring was well past where the next job starts", r);
+  t.ok(!!r && Math.abs(r.first - r.set) < 0.05, "a new job's ring starts from empty — no sweep back", r);
+}

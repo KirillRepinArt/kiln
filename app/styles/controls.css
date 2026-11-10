@@ -201,10 +201,6 @@
 .badge.show {
   display: grid;
 }
-.play .ptrack,
-.play .pring {
-  display: none;
-} /* the old progress ring on Start (retired) */
 /* pop-ups over the pills */
 .pop {
   position: absolute;
@@ -418,6 +414,10 @@ body.glass .play.gen svg path {
   mask:
     linear-gradient(var(--black) 0 0) content-box exclude,
     linear-gradient(var(--black) 0 0);
+}
+/* a new job's ring starts from empty, not by sweeping back (effects.js: .pnew for the frame its --p is set) */
+.play.pnew .badge.show::before {
+  transition: none;
 }
 .play.gen .badge.show {
   min-width: 22px;

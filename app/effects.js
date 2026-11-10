@@ -108,14 +108,13 @@ export function status() {
         v = Math.max(0.02, Math.min(1, q.p || 0)),
         was = +(/** @type {string} */ (pl.dataset.pj)) || 0;
       if (was !== j.id) {
-        const rg = /** @type {HTMLElement} */ (pl.querySelector(".pring"));
+        /* a new job: its ring starts from empty, not by sweeping back (the badge's ring, controls.css .pnew) */
         pl.dataset.pj = /** @type {any} */ (j.id);
-        rg.style.transition = "none";
+        pl.classList.add("pnew");
         pl.style.setProperty("--p", /** @type {any} */ (v));
-        void rg.offsetWidth;
-        rg.style.transition = "";
-      } /* a new job starts from empty, not by sweeping back */
-      else pl.style.setProperty("--p", /** @type {any} */ (v));
+        void pl.offsetWidth;
+        pl.classList.remove("pnew");
+      } else pl.style.setProperty("--p", /** @type {any} */ (v));
     }
   }
   if (j) {

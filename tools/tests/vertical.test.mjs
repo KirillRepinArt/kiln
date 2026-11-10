@@ -214,10 +214,7 @@ export async function startRing(k, t) {
   );
   t.ok(await k.ev(`getComputedStyle($("play")).animationName==="flow"`), "the bar's gradient, flowing");
   t.ok(await k.until(ring, 3000, 100), "the Generating tab shows the job's progress ring");
-  t.ok(
-    await k.ev(`getComputedStyle(document.querySelector(".play .pring")).display==="none"`),
-    "Start carries no ring (the Generating tab has it)",
-  );
+  t.ok(await k.ev(`!document.querySelector(".play .pring")`), "Start carries no ring (the Generating tab has it)");
   t.ok(
     await k.ev(`getComputedStyle(document.querySelector(".controls .play .badge")).display!=="none"`),
     "but the queue count is on Start, where you add to the queue",

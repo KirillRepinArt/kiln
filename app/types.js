@@ -162,24 +162,22 @@
  * @property {boolean} overImg       the pointer is over the picture
  * @property {boolean} pressCard     a press in the prompt card (it holds its place until you let go)
  * @property {HTMLElement | null} navHold  the on-picture arrow being clicked: it stays put until the pointer leaves it
- * @property {Geometry | null} last  the geometry last applied (where the pair's columns are going)
+ * @property {Geometry | null} last  the geometry last applied
  * @property {number} vroom  Vertical: the picture's room (its height, px; 0 side by side)
  * @property {number} vrow   Vertical: the room kept under the picture for its status row (px)
  * @property {{ pw: number } | null} shown  the box's width side by side, as written this frame (layout.js boxWWrite)
- *   now (their glide, layout.js layApply: G12)
  * @property {boolean} drag          an edge is being dragged
  * @property {number} [proom]        the panel's room height (sizeFrame)
  * @property {{top: number, h: number, bottom: number, w: number} | null} target  where the picture is going (not
  *   where it is mid-glide): the prompt's vertical anchors use this
  * @property {boolean} frameDefer    inside one click: sizeFrame runs once, at the end
  * @property {boolean} framePending  …and was asked for meanwhile
- * @property {boolean} frameHold     the layout is held (the prompt box's bottom edge being dragged)
- * @property {{ pic: { x: number, y: number, w: number, h: number } | null, roomTop: number, page: { x: number, y: number, w: number, h: number }, box: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number }, kept: { boxW: number, scale?: number, w?: number, h?: number }, handles: Record<string, { x: number, y: number, w: number, h: number }>, anchors?: { it: number, ib: number, cy: number } | null, squeezeW?: number | null } | null} [pass]  side by side, a
- * @property {import("./layoutmath.js").PassOut | null} [passV] Vertical's layout pass (v0.7c C4b: its rectangles, held or not)
- *   picture page: the single layout pass's numbers (v0.7c C2a), held or not (C3)
- * @property {{ edge: string, at: number, off: number, boxW: number, bh?: number, scale: number, w?: number, h?: number } | null} [pdrag]  an edge of a picture
- *   page held side by side (C3): the pass's handle id, the pointer on its axis (+ off: where on the handle it was
- *   pressed), the sizes at the press
+ * @property {boolean} frameHold     the layout's box width is held (read by sizeFrame; nothing sets it today)
+ * @property {{ pic: { x: number, y: number, w: number, h: number } | null, roomTop: number, page: { x: number, y: number, w: number, h: number }, box: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number }, kept: { boxW: number, scale?: number, w?: number, h?: number }, handles: Record<string, { x: number, y: number, w: number, h: number }>, anchors?: { it: number, ib: number, cy: number } | null, squeezeW?: number | null } | null} [pass]  side by side: the single layout pass's numbers, held or not
+ * @property {import("./layoutmath.js").PassOut | null} [passV] Vertical's layout pass: its rectangles, held or not
+ * @property {{ edge: string, at: number, off: number, boxW: number, bh?: number, scale: number, w?: number, h?: number } | null} [pdrag]  an edge held (any
+ *   pane, both layouts): the pass's handle id, the pointer on its axis (+ off: where on the handle it was pressed), the
+ *   sizes at the press
  * @property {"bar" | "prompt" | "none" | null} row  the slot under the picture: its occupant (the status row, Show prompt) or none
  * @property {string | null} rowView the tab the row was decided for (its fade belongs to a switch between views)
  * @property {string} ins            the page's insets last laid out ("row:tools"): a change lays out again

@@ -1,7 +1,9 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $ } from "./dom.js";
-import { fadeCol, lay, sizeFrame, snapHold, standIn } from "./layout.js";
+import { dockNow, fadeCol, lay, liftCol, placeFor, promptFollow, sizeFrame, snapHold, standIn } from "./layout.js";
+import { relationMotion } from "./layoutmath.js";
+import { travel } from "./rearrange.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
 import { frameBox, frameHold, pictureChange } from "./framebox.js";
@@ -74,13 +76,19 @@ export function tabSync(force) {
    (plate.js switchGlide) */
 /** @param {() => void} fn */
 /** @param {() => void} fn the switch itself @param {boolean} [layout] a layout switch (Left / Right / Vertical, T2b):
- * the same view rides the plate to its new place, the prompt box fades through — the tab switch's system, not a View
- * Transition (docs/decisions/0014) */
-export function tabGo(fn, layout = false) {
-  const from = plateBefore(),
-    /* a layout switch: the box's stand-in, made before anything changes — it fades out as the box was, while the box
+ * the same view rides the plate to its new place, the prompt box changes its relation to it — the tab switch's system,
+ * not a View Transition (docs/decisions/0014) @param {import("./layoutmath.js").RelationCause} [cause] what changed the
+ * box's relation (a layout switch): your hand ("hand" — a drop) or the Layout menu / Reset ("menu") */
+export function tabGo(fn, layout = false, cause = "menu") {
+  /* a layout switch changes the box's relation to its partner (the plate): ONE table says how (layoutmath.js
+     relationMotion — L1a): a travel from where it is (your drop) or a fade through (the menu) */
+  const rel = layout ? relationMotion({ pane: "box", partner: "plate", cause }, 0).pattern : null,
+    from = plateBefore(),
+    /* a fade through: the box's stand-in, made before anything changes — it fades out as the box was, while the box
        itself is laid out where it lands from the first frame */
-    stand = layout ? standIn() : null,
+    stand = rel === "fade" ? standIn() : null,
+    /* a travel: the box as it is seen now (lifted under your hand) — it goes on from here */
+    seen0 = rel === "travel" ? $("left").getBoundingClientRect() : null,
     dock0 = /** @type {"left" | "right" | "below"} */ (S.dock || "left"), // the box's relation before (T2c)
     v0 = /** @type {HTMLElement | null} */ (document.querySelector(".rpanel > .view.on")),
     r0 = v0 ? v0.getBoundingClientRect() : null,
@@ -120,6 +128,14 @@ export function tabGo(fn, layout = false) {
       sizeFrame();
       if ($("lcol").style.cssText + $("frame").style.cssText + $("rpanel").style.cssText === was) break;
     }
+  /* a travel: laid out where it lands (the layout pass's resting place — placeFor), the box starts where it was seen and
+     its lift runs down to nothing on the switch's own clock (travel: a switch's move, one plan with the plate's) */
+  if (seen0) {
+    const at = placeFor(dockNow(), S.pos || "mid"),
+      o = { l: seen0.left - at.x, t: seen0.top - at.y, w: 0, h: 0 };
+    liftCol(o.l, o.t);
+    travel("lift", o, { l: 0, t: 0, w: 0, h: 0 }, b => liftCol(b.l, b.t));
+  }
   const v1 = /** @type {HTMLElement | null} */ (document.querySelector(".rpanel > .view.on"));
   let sw;
   if (layout && v0 && v1 && r0 && v0 === v1)
@@ -138,7 +154,9 @@ export function tabGo(fn, layout = false) {
   placeNavs();
   /* the box: a layout switch changes its relation to the plate (glued, fading through); a tab switch keeps it — it rides
      the travelling plate (layout.js promptFollow, in the driver's frames; it slid on a clock of its own, slideCol) */
-  if (layout) fadeCol(/** @type {import("./leave.js").Copy} */ (stand), sw, { plate: from, dock: dock0 });
+  if (stand) fadeCol(stand, sw, { plate: from, dock: dock0 });
+  /* a travel: glued to where the plate lands from the first frame (fadeCol does it for a fade) — its lift is measured
+     from there: on the old relation's glue the first frame was 700 px off */ else if (seen0) promptFollow(true);
   /* once it HAS landed — its own end (plate.js switchLanded: its animations over, the driver idle), not a timer's guess
      (T4: it let go sw.T + 300 ms in, and in between every change jumped) — the layout's glides come back, THEN one more
      layout (measured mid-switch, the prompt column's Vertical shift rested a pixel off): a correction now glides */

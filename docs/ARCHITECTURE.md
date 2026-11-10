@@ -116,6 +116,11 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     the drags' maths both). The edit buttons' strip is ONE column (`toolColumnW`), and a picture's least height is that
     column (`picLeastH`): the strip never depends on the picture's height. No side-by-side edge has maths of its
     own (`layDrag` is gone), and since C4c no Vertical edge either: every edge of both layouts is wired by `edges.js` `passEdge` to the same three calls (Vertical's shared edge pushes the box into the empty room under it first, then trades — C6; the box's bottom sets its height — Custom, kept in `paneSize("box", "vert").h` — and outer edges take no room from the other pane). Side by side the box's top and bottom edges set its height too (Custom, `paneSize("box", "side").h`, C6): their gesture holds `card.hHold`, which the pass's one placement rule (`layoutmath.js` `cardPlacement`) reads — the other side holds, or, resting in the middle, mirrors; a double-click (`passDouble`) gives it back to its text; one handle per strip; every pane's resize band is one rule — from 1 px inside its edge out to its outline (`layout.css` `--band`, B19) — and a shared edge has a band on each pane (side by side the divider's two; in Vertical the page's bottom and the box's top, B19b). The room side by side has one definition: `layout.js` `sideRoom`
+  - **a pane's change of relation: ONE table** (L1a, 2026-11-11) — `layoutmath.js` `RELATION_ROWS` / `relationMotion`:
+    keyed by (pane, partner, cause, change) → a pattern (travel / fade / ride) and its timing; `tabs.js` tabGo applies it
+    (`setDock(dock, cause)`: your hand → travel — the box goes on from where it was let go on the switch's clock,
+    `rearrange.js` travel("lift"); the menu → fade through, `fadeCol`). The box (with the plate) is its first user;
+    the mechanics (the column, the lift, the stand-in) are the box's until a second pane moves (2b)
   - **a layout switch** (Left / Right / Vertical, the Layout menu and drag-to-dock alike): `tabs.js` `tabGo(fn, true)` —
     the tab switch's owner with the SAME view. The plate: on a picture page the SAME picture scales with its pane — `tabGo`
     declares the change as a scale (`framebox.js` `pictureChange({ scale })`), `morph.js` lets the frame travel on the

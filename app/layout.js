@@ -663,21 +663,27 @@ export function passDouble(edge) {
    fade-through (Material's pattern for elements whose paths would cross): the old layout fades out, the new one fades in
    where it belongs — sliding made the panels pass through each other. */
 /** @param {"left" | "right" | "below"} z */
-export function setDock(z) {
+/** @param {"left" | "right" | "below"} z @param {import("./layoutmath.js").RelationCause} [cause] your hand (a drop) or
+ * the Layout menu — how the box changes its relation (layoutmath.js relationMotion) */
+export function setDock(z, cause = "menu") {
   if ((S.dock || "left") === z) return;
-  tabGo(() => {
-    S.dock = z;
-    save();
-    lyReset();
-    applyMode();
-    sizeFrame();
-    layoutLeft();
-    moveThumb(true);
-    sizeFrame();
-    layoutLeft();
-    if (window.layMenuUI) window.layMenuUI();
-    if (window.haloNow) window.haloNow();
-  }, true); // a layout switch: the tab switch's system (T2b; it was a View Transition)
+  tabGo(
+    () => {
+      S.dock = z;
+      save();
+      lyReset();
+      applyMode();
+      sizeFrame();
+      layoutLeft();
+      moveThumb(true);
+      sizeFrame();
+      layoutLeft();
+      if (window.layMenuUI) window.layMenuUI();
+      if (window.haloNow) window.haloNow();
+    },
+    true,
+    cause,
+  ); // a layout switch: the tab switch's system (T2b; it was a View Transition)
 }
 /* ---------- "the layout lands at once" has ONE owner (2026-10-31, ownership map T1) ----------
    While a switch moves things itself, the layout's own glides are off (body.laysnap: it lands at once). Each motion

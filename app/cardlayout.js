@@ -451,10 +451,10 @@ export function initCardlayout() {
         S.pos = at.pos;
         save();
         if (at.dock !== now) {
-          /* another lane: the layout switch carries it — its leaving copy is taken where the lifted box is (standIn) */
+          /* another lane: the layout switch carries it — by your hand, so it travels on from where you let it go
+             (layoutmath.js relationMotion, L1a: it faded out here and in there — the teleport) */
           card.drag = false;
-          setDock(at.dock);
-          liftCol(0, 0);
+          setDock(at.dock, "hand");
           return;
         }
         /* its own lane, another spot: its rest moves there at once (still held), and the lift — from where it is to

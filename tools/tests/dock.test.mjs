@@ -391,3 +391,51 @@ export async function placesIgnoreHolds(k, t) {
   );
 }
 placesIgnoreHolds.opts = { width: 1700, height: 950 };
+
+/* L1a (2026-11-11): a pane carried by your hand to another side TRAVELS on from where you let it go — one motion, no
+   copy (a pane's change of relation: one table, layoutmath.js relationMotion). It faded out at the drop and in at the
+   other side: the box jumped off-screen and flew in from the window's edge while its copy slid away (the teleport) */
+export async function dropTravels(k, t) {
+  await viewport(k, 1700, 950);
+  await k.ev(`(setDock("left"),1)`);
+  await k.sleep(1500);
+  const n = await R(k, "#ltitle"),
+    x = n.left + 20,
+    y = n.top + n.height / 2;
+  await press(k, x, y);
+  const [dx, dy] = await k.ev(
+    `(()=>{const b=$("left").getBoundingClientRect(),r=placeFor("right","mid");return [r.x+r.w/2-(b.left+b.width/2),r.y+r.h/2-(b.top+b.height/2)]})()`,
+  );
+  /* let go 150 px past its place (still nearest it): it has a way to travel */
+  await moveTo(k, x, y, x + dx + 150, y + dy);
+  const r0 = await R(k, "#left"); // where it is seen when let go
+  await k.ev(`(()=>{window.__d=[];const t0=performance.now();(function f(){const r=$("left").getBoundingClientRect();
+    window.__d.push({x:r.left,y:r.top,copies:document.querySelectorAll(".standin").length});
+    if(performance.now()-t0<1600)requestAnimationFrame(f)})();return 1})()`);
+  await release(k, x + dx + 150, y + dy);
+  await k.sleep(1800);
+  const d = await k.ev(`window.__d`),
+    end = await k.ev(`(()=>{const r=placeFor(dockNow(),S.pos||"mid");return {x:r.x,y:r.y,dock:dockNow()}})()`);
+  const total = Math.hypot(end.x - r0.left, end.y - r0.top);
+  let jump = 0,
+    back = 0;
+  for (let i = 1; i < d.length; i++) {
+    jump = Math.max(jump, Math.hypot(d[i].x - d[i - 1].x, d[i].y - d[i - 1].y));
+    const before = Math.hypot(end.x - d[i - 1].x, end.y - d[i - 1].y),
+      now = Math.hypot(end.x - d[i].x, end.y - d[i].y);
+    if (now > before + 2) back = Math.max(back, now - before);
+  }
+  const last = d[d.length - 1];
+  t.ok(end.dock === "right" && total > 100, "dropped on the other side, away from its landing", { end, total });
+  t.ok(Math.max(...d.map(f => f.copies)) === 0, "no copy of it leaves: the box itself travels", d.slice(0, 3));
+  t.ok(jump < total * 0.4 && back === 0, "from where it was let go to where it lands: no jump, no turning back", {
+    jump: Math.round(jump),
+    back: Math.round(back),
+    total: Math.round(total),
+  });
+  t.ok(Math.abs(last.x - end.x) < 2 && Math.abs(last.y - end.y) < 2, "…and it lands at its resting place", {
+    last,
+    end,
+  });
+}
+dropTravels.opts = { width: 1700, height: 950 };

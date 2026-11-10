@@ -448,6 +448,38 @@ export function relationFade(motion) {
   return { outEnd, turn: outEnd + MORPH.gone / 2, inStart, inEnd, T: Math.max(motion, inEnd) };
 }
 
+/* ---------- a pane's change of relation: ONE table (L1a, 2026-11-11 — ux-review/18-box-placement.md, "Panes are one kind")
+   What a pane does when its relation to its partner changes, by the change and its cause: a pattern and its timing —
+   data, not code per case (Material's motion system: the same element moving = a travel, unrelated contents = a fade
+   through; SwiftUI's transitions as values). The box with the picture's plate is its first user; a second pane that
+   moves (2b) plugs in by rows. The user's direction for the menu's switches (2026-11-10: out one way, in from the other —
+   a shared axis) is a change of the menu row's data in the tuning pass, no code. ---------- */
+/** @typedef {"hand" | "menu" | "switch"} RelationCause what changed it: carried by your hand, the Layout menu / Reset, a
+ * tab switch */
+/** @typedef {"travel" | "fade" | "ride"} RelationPattern travel: on from where it is to where it lands, one motion; fade:
+ * out by the old relation, in by the new (a fade through); ride: the relation kept, it rides its partner */
+/** @typedef {{ pane: string, partner: string, cause: RelationCause, change?: string, pattern: RelationPattern }} RelationRow
+ * `*` matches any pane or partner; `change` (e.g. "side>vert"), when given, narrows a row */
+export const RELATION_ROWS = /** @type {RelationRow[]} */ ([
+  { pane: "*", partner: "*", cause: "hand", pattern: "travel" }, // the drop: no teleport (it faded out and in)
+  { pane: "*", partner: "*", cause: "menu", pattern: "fade" }, // the Layout menu, Reset
+  { pane: "*", partner: "*", cause: "switch", pattern: "ride" }, // a tab switch: the relation is kept
+]);
+/** a pane's change of relation: its pattern (the first row that matches) and its timing on a motion `motion` ms long
+ * @param {{ pane: string, partner: string, cause: RelationCause, change?: string }} q @param {number} motion
+ * @returns {{ pattern: RelationPattern, T: number, outEnd?: number, turn?: number, inStart?: number, inEnd?: number }} */
+export function relationMotion(q, motion) {
+  const row = RELATION_ROWS.find(
+    r =>
+      r.cause === q.cause &&
+      (r.pane === "*" || r.pane === q.pane) &&
+      (r.partner === "*" || r.partner === q.partner) &&
+      (!r.change || r.change === q.change),
+  );
+  const pattern = row ? row.pattern : "fade";
+  return pattern === "fade" ? { pattern, ...relationFade(motion) } : { pattern, T: motion };
+}
+
 /**
  * The box at a point of a shape change: each axis moves its centre and its size by its own progress.
  * @param {{ l: number, t: number, w: number, h: number }} o @param {{ l: number, t: number, w: number, h: number }} n

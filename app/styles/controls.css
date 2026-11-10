@@ -10,10 +10,9 @@
 .pills {
   display: flex;
   gap: var(--space-1);
-  /* one row, always (C6, the user's choice 2026-11-09: "stop before the wrap"): at the box's least width (PWMIN, 360)
-     the pills' compact labels fit (349 px measured; their container query shortens them when narrow); wrapping grew the
-     box's least height a row and moved the page in Vertical (B17). Past the least, the rubber band clips the last pill
-     by a few px */
+  /* one row, always: at the box's least width (cardlayout.js boxWLeast) the pills' compact labels fit (their container
+     query shortens them when narrow); a wrap would grow the box's least height a row and move the page in Vertical
+     (B17). Past the least, the rubber band clips the last pill by a few px */
   flex-wrap: nowrap;
   justify-content: flex-start;
   flex: 0 1 auto;
@@ -44,7 +43,7 @@
   color: var(--text);
   background: var(--raised);
 }
-/* an open menu over the prompt's own buttons (2026-10-27, the user's note): its z-index only counts inside the boxes
+/* an open menu over the prompt's own buttons: its z-index only counts inside the boxes
    it sits in, so those rise while it's open — the prompt box over the expand modes beside the title; in glass, the
    controls over the ✕ too (glass.css) */
 #left:has(.controls .pop.show) {
@@ -205,7 +204,7 @@
 .play .ptrack,
 .play .pring {
   display: none;
-} /* the old progress ring on Start (retired 2026-10-19) */
+} /* the old progress ring on Start (retired) */
 /* pop-ups over the pills */
 .pop {
   position: absolute;

@@ -98,6 +98,7 @@ export function picLeastH() {
  * @param {boolean} m.gen Generating / the Gallery (a picture fitted into the area) or a panel
  * @param {number} m.minR the picture area's least width (the tab bar sits on its plate)
  * @param {number} [m.clear] the edit buttons' clearance beside the picture, on its outer side
+ * @param {number} [m.boxLo] the box's least width (its bottom row's need; PWMIN at the least)
  * @param {boolean} [m.promptRight] the prompt is on the right (the page's outer side is then the left)
  * @param {{pw: number, rw: number, iw: number | null}} L your widths: prompt, panel, the picture's cap (null = none)
  * @returns {import("./types.js").Geometry}
@@ -106,7 +107,8 @@ export function pageGeometry(m, L) {
   const { W, gen, minR } = m,
     clear = Math.max(0, m.clear || 0),
     R = !!m.promptRight,
-    box = { size: Math.max(PWMIN, L.pw), lo: Math.min(PWMIN, W), hi: W },
+    lo = Math.max(PWMIN, m.boxLo ?? 0), // the box's least width: what its bottom row needs (cardlayout.js boxWLeast)
+    box = { size: Math.max(lo, L.pw), lo: Math.min(lo, W), hi: W },
     /* a picture page takes the room the prompt leaves, up to your cap: the plate's centre line stays put */
     page = gen ? { size: null, lo: minR, hi: L.iw ? Math.max(minR, L.iw) : W } : { size: L.rw, lo: minR, hi: W },
     a = arrange({
@@ -527,6 +529,7 @@ export function paneDefault(pane, orient, room) {
  * @param {number} c.minR the tab bar's width: a page is never narrower (the bar sits on its plate)
  * @param {number} [c.least] the prompt box's least height (its controls and ~2 lines)
  * @param {number} [c.winH] the window's height (Vertical: the box's tallest is a share of it)
+ * @param {number} [c.boxWLo] the box's least width (its bottom row's need; PWMIN at the least)
  * @returns {{ lo: number, hi: number }}
  */
 export function limits(pane, axis, c) {
@@ -534,7 +537,7 @@ export function limits(pane, axis, c) {
     H = c.roomH;
   const r = (/** @type {number} */ lo, /** @type {number} */ hi) => ({ lo: Math.min(lo, hi), hi });
   if (pane === "box") {
-    if (axis === "w") return r(PWMIN, W); // no cap of its own (it was 900 px side by side): the room's ends
+    if (axis === "w") return r(Math.max(PWMIN, c.boxWLo ?? 0), W); // its bottom row's need (boxWLeast); no cap of its own (it was 900 px side by side): the room's ends
     return c.orient === "side" ? r(BOXHMIN, H) : r(c.least ?? BOXHMIN, Math.round((c.winH ?? H) * SLOTMAX));
   }
   if (axis === "h") return r(isFitPage(pane) ? picLeastH() : PANELHMIN, H);

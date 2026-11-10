@@ -10,6 +10,7 @@ import {
   applyPH,
   boxDraftH,
   card,
+  boxWLeast,
   cardNaturalH,
   chipsH,
   layoutLeft,
@@ -23,7 +24,6 @@ import { glassFade } from "./fade.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
-  PWMIN,
   glueAnchors,
   isFitPage,
   glued,
@@ -209,6 +209,7 @@ export function paneLimits(pane, axis, c = {}) {
     roomH: c.roomH ?? picFull(true),
     minR: minRight(),
     least: slotLeast(),
+    boxWLo: boxWLeast(),
     winH: innerHeight,
   });
 }
@@ -329,7 +330,7 @@ function sidePass() {
         box: vert
           ? {
               w: dr ? dr.boxW : stackW(),
-              wLo: PWMIN,
+              wLo: boxWLeast(),
               text: boxDraftH(), // your draft's: a job's prompt shown never resizes it
               least: slotLeast(),
               hi: paneLimits("box", "h", { o: "vert", roomH: 0 }).hi, // its spec's largest (limits)
@@ -339,7 +340,7 @@ function sidePass() {
             }
           : {
               w: dr ? dr.boxW : (paneSize("box", "side").w ?? df.pw),
-              wLo: PWMIN,
+              wLo: boxWLeast(),
               /* its place beside the pane (C2b's rest): the card's rule, in the pass — its text, its least, its mode,
                  its anchor, its column and the moment's state (held, frozen, last laid out) */
               text: cardNaturalH(),
@@ -478,6 +479,7 @@ export function layGeo() {
       gen,
       minR,
       clear: gen ? toolsClear() : 0,
+      boxLo: boxWLeast(),
       promptRight: /** @type {HTMLElement} */ (document.querySelector(".app")).classList.contains("pright"),
     },
     L,

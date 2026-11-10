@@ -83,6 +83,37 @@ export function textBoxH(lines) {
 /** the box's least height in Vertical: its controls and two lines */
 /** @returns {number} */
 export const slotLeast = () => textBoxH(2);
+/** the box's least width: what its bottom row needs — Start and the pills at their compact labels (the container
+ * queries' short forms: no "Seed", no "Ratio"), its insets and gaps — never under PWMIN. ONE source for every reader
+ * (the layout pass, the limits, Vertical's width): a fixed 360 let the last pill run under Start once the Steps pill
+ * showed (the user, 2026-11-10; 9 px measured) */
+export function boxWLeast() {
+  const c = /** @type {HTMLElement | null} */ (document.querySelector("#left .controls")),
+    play = $("play");
+  if (!c || !play.offsetWidth) return PWMIN;
+  /* exact widths: offsetWidth rounds each part down (2 px short over five pills) */
+  const wOf = (/** @type {Element} */ e) => e.getBoundingClientRect().width,
+    cs = getComputedStyle(c),
+    pills = /** @type {HTMLElement[]} */ ([...c.querySelectorAll(".pills > .pill")]).filter(p => p.offsetWidth),
+    pg = parseFloat(getComputedStyle(/** @type {Element} */ (c.querySelector(".pills"))).columnGap) || 0;
+  /* the box's own frame around the row (its border, any inset) + the row's insets + Start + the gap to it */
+  let need =
+    wOf($("left")) -
+    wOf(c) +
+    parseFloat(cs.paddingLeft) +
+    parseFloat(cs.paddingRight) +
+    wOf(play) +
+    (parseFloat(cs.columnGap) || 0);
+  for (const p of pills) {
+    let w = wOf(p);
+    /* the parts the narrow box drops (controls.css's container queries), shown now: not counted */
+    for (const x of /** @type {NodeListOf<HTMLElement>} */ (p.querySelectorAll(".w, .il")))
+      if (x.offsetWidth) w -= wOf(x) + (parseFloat(getComputedStyle(x).marginRight) || 0);
+    need += w;
+  }
+  need += pg * Math.max(0, pills.length - 1);
+  return Math.max(PWMIN, Math.ceil(need));
+}
 let draftH = 0; // the height your draft's text needs (kept while a job's prompt is shown: it never resizes the box)
 /** Vertical: the box's text height — your draft's: a job's prompt shown in it never resizes it (it scrolls inside), so
  * browsing prompts of different lengths never moves anything (2026-10-19). The layout pass's input (C4b) */
@@ -129,7 +160,7 @@ export function stackW() {
      the window's (less its edge gaps); side by side its height (layoutLeft) */
   const m = S.hmode,
     w = m === "full" ? max : m === "match" && pic ? pic : paneSize("box", "vert").w || 760;
-  return Math.round(Math.max(Math.min(PWMIN, max), Math.min(max, w)));
+  return Math.round(Math.max(Math.min(boxWLeast(), max), Math.min(max, w)));
 }
 export function chipsH() {
   const c = $("chips");

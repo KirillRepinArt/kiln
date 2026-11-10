@@ -327,6 +327,26 @@ export async function narrowNameLine(k, t) {
   await k.shot("narrow-name-line");
 }
 
+/* the box's least width is what its bottom row needs (the user, 2026-11-10: in a very narrow box Start overlapped the
+   pills — 9 px with the Steps pill on, the least a fixed 360) */
+export async function pillsClearStart(k, t) {
+  await stepsPillOn(k);
+  await k.mouse(2, 2);
+  await k.sleep(800);
+  for (const o of ["side", "vert"]) {
+    if (o === "vert") {
+      await k.ev(`(setDock("below"),1)`);
+      await k.sleep(1200);
+    }
+    await k.ev(`(setPaneSize("box","w",200,"${o}"),sizeFrame(),layoutLeft(),1)`); // under any least: clamped to it
+    await k.sleep(1200);
+    const r = await k.ev(`(()=>{const pl=$("play").getBoundingClientRect(),
+      last=[...document.querySelectorAll("#left .pills > .pill")].filter(x=>x.offsetWidth).pop().getBoundingClientRect();
+      return {box:Math.round($("left").getBoundingClientRect().width),space:Math.round(pl.left-last.right)}})()`);
+    t.ok(r.space >= 8, `${o}: at its least the last pill ends a gap before Start`, r);
+  }
+}
+
 export async function tabSwitchKeepsTabs(k, t) {
   await k.mouse(2, 2);
   await k.sleep(1000);

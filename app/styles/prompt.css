@@ -4,7 +4,7 @@
 /* the name row, the box and the grip zone take the box's width (--cw) and rest at the column's left edge — side by side
    the column is the whole room and the glue (layout.js promptFollow) moves them to the plate. Their top / height are
    the box's (--ltop / --lh). No transitions of their own: both are written every frame of a rearrangement (layout.js
-   boxWWrite, cardlayout.js boxWrite, rearrange.js: one clock, T2) */
+   boxWWrite, cardlayout.js boxWrite — ARCHITECTURE › a rearrangement on the same page) */
 .ltitle {
   position: absolute;
   left: 0;
@@ -268,11 +268,11 @@
 .app.stacked .ltitle {
   width: var(--sw, 760px); /* the layout pass's: within the room at rest, past it only by the rubber band */
 }
-/* the prompt's grip is ONE zone (2026-11-01, L3): the group's rectangle — from the name row to the LoRA row, the box's
+/* the prompt's grip is ONE zone (L3): the group's rectangle — from the name row to the LoRA row, the box's
    width — behind its parts, so every empty point of it grips (the gaps, the LoRA row's empty part, the name row's
-   sides); a control keeps its pointer (cardlayout.js: one listener). Side by side it moves the box (top / middle /
-   bottom), in Vertical it docks it. Its place comes from the box's own values (layoutLeft); in Vertical it starts
-   under the split line, clear of the picture's bottom edge */
+   sides); a control keeps its pointer (cardlayout.js: one listener). Pressed and carried it lifts the box over the drop
+   map (ARCHITECTURE › the prompt column's place). Its place comes from the box's own values (layoutLeft); in Vertical
+   it starts under the split line, clear of the picture's bottom edge */
 .pgrip {
   position: absolute;
   left: 0;
@@ -304,12 +304,11 @@
   overflow: hidden;
   cursor: text;
   /* what's inside a rounded surface follows its shape: the text area takes the box's inner top corners, so its scroll
-     edge's strips (a square soft blur) never show outside the curve (the user, 2026-11-09: "a visible gradient layer
-     poking out" at the box's top-left) */
+     edge's strips (a square soft blur) never show outside the curve */
   border-radius: calc(var(--r-panel) - var(--space-px)) calc(var(--r-panel) - var(--space-px)) 0 0;
 }
 /* by class, not id: ids are for code; the look must hold for a copy too (a layout switch's stand-in, layout.js
-   standIn — the copy has no ids, and showed the hidden textarea under the editor: the user, 2026-11-08) */
+   standIn — the copy has no ids) */
 .ptext {
   field-sizing: content;
   flex: 1 1 auto;

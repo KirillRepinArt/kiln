@@ -3,6 +3,7 @@
 import { esc } from "./boot.js";
 import { layoutLeft } from "./cardlayout.js";
 import { $, hit, q, qa } from "./dom.js";
+import { DRAG_START, gesture } from "./gesture.js";
 import { renderLoras } from "./loras.js";
 import { editFirst } from "./peek.js";
 import { peekJob } from "./prompt.js";
@@ -127,9 +128,6 @@ export function initChips() {
   /* chip weights: drag to scrub, wheel to nudge, click to type */
   (function () {
     const box = $("chips");
-    /** a weight being scrubbed: its chip, the LoRA, where the pointer started, the weight then, whether it moved
-     * @type {{ el: HTMLElement, l: import("./types.js").Lora, x: number, w0: number, moved: boolean } | null} */
-    let drag = null;
     /** the LoRA of a chip's part @param {HTMLElement} el */
     const lor = el =>
       /** @type {import("./types.js").Lora} */ (
@@ -153,46 +151,44 @@ export function initChips() {
       if (!editFirst()) return null;
       return /** @type {HTMLElement | null} */ (box.querySelector(`.chip[data-n="${CSS.escape(String(name))}"] .cw`));
     };
-    box.addEventListener("pointerdown", e => {
-      const hitEl = hit(e, ".cw");
-      if (!hitEl) return;
-      const el = fresh(hitEl);
-      if (!el) return;
-      e.preventDefault();
-      el.setPointerCapture(e.pointerId);
-      drag = { el, l: lor(el), x: e.clientX, w0: lor(el).w, moved: false };
-    });
-    box.addEventListener("pointermove", e => {
-      if (!drag) return;
-      const dx = e.clientX - drag.x;
-      if (Math.abs(dx) > 3) drag.moved = true;
-      if (drag.moved) setW(drag.l, drag.w0 + Math.round(dx / 4) * 0.01 * (e.shiftKey ? 1 : 5), drag.el);
-    });
-    box.addEventListener("pointerup", () => {
-      if (!drag) return;
-      const d = drag;
-      drag = null;
-      if (d.moved) return;
-      const inp = document.createElement("input");
-      inp.className = "cwi";
-      inp.autocomplete = "off"; // the browser's suggestions (and their autofill look) belong to forms, not Kiln's fields
-      inp.value = fmtW(d.l.w);
-      d.el.replaceWith(inp);
-      inp.focus();
-      inp.select();
-      const done = (/** @type {boolean} */ ok) => {
-        if (ok) {
-          const v = parseFloat(inp.value.replace(",", "."));
-          if (!isNaN(v)) setW(d.l, v);
-        }
-        renderChips();
-      };
-      inp.addEventListener("keydown", k => {
-        if (k.key === "Enter") done(true);
-        if (k.key === "Escape") done(false);
-        k.stopPropagation();
-      });
-      inp.addEventListener("blur", () => done(true));
+    /* ONE gesture (gesture.js): a press on the weight past DRAG_START.scrub scrubs it, Esc puts it back; a tap types
+       it. It heard only the button up — a lost pointer left it scrubbing */
+    gesture(box, {
+      threshold: DRAG_START.scrub,
+      prevent: true,
+      escape: true,
+      accept: e => {
+        const hitEl = hit(e, ".cw"),
+          el = hitEl && fresh(hitEl);
+        if (!el) return false;
+        const l = lor(el);
+        return { el, l, w0: l.w };
+      },
+      move: (d, e, dx) => setW(d.l, d.w0 + Math.round(dx / 4) * 0.01 * (e.shiftKey ? 1 : 5), d.el),
+      end: (d, { moved, cancelled }) => {
+        if (cancelled) setW(d.l, d.w0, d.el); // Esc, a cancel: back to where it was
+        if (moved || cancelled) return; // a tap types it
+        const inp = document.createElement("input");
+        inp.className = "cwi";
+        inp.autocomplete = "off"; // the browser's suggestions (and their autofill look) belong to forms, not Kiln's fields
+        inp.value = fmtW(d.l.w);
+        d.el.replaceWith(inp);
+        inp.focus();
+        inp.select();
+        const done = (/** @type {boolean} */ ok) => {
+          if (ok) {
+            const v = parseFloat(inp.value.replace(",", "."));
+            if (!isNaN(v)) setW(d.l, v);
+          }
+          renderChips();
+        };
+        inp.addEventListener("keydown", k => {
+          if (k.key === "Enter") done(true);
+          if (k.key === "Escape") done(false);
+          k.stopPropagation();
+        });
+        inp.addEventListener("blur", () => done(true));
+      },
     });
     box.addEventListener(
       "wheel",

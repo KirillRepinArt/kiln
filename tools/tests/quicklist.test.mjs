@@ -145,8 +145,8 @@ export async function dragsAlwaysEnd(k, t) {
   await k.sleep(100);
   t.ok(await k.ev(`document.body.classList.contains("resizing")`), "dragging an edge: the resize cursor");
   await k.ev(
-    `(document.querySelector(".pedge.ri").dispatchEvent(new PointerEvent("pointermove",{bubbles:true,clientX:${x + 60},clientY:${y},buttons:0})),1)`,
-  );
+    `(document.querySelector(".pedge.ri").dispatchEvent(new PointerEvent("pointermove",{bubbles:true,pointerId:1,isPrimary:true,pointerType:"mouse",clientX:${x + 60},clientY:${y},buttons:0})),1)`,
+  ); // the mouse's own pointer (1): a drag hears its pointer only (gesture.js, G1) — the default 0 is another pointer
   await k.sleep(150); // the release got lost: the next move has no button
   t.ok(
     await k.ev(`!document.body.classList.contains("resizing")&&!lay.drag`),
@@ -664,4 +664,48 @@ export async function switchLetsGoWhenLanded(k, t) {
     ended: Math.round(ended),
     free: Math.round(free),
   });
+}
+
+/* G1 (2026-11-10): every drag is one gesture — it ends however it ends. The LoRA weight's scrub heard only the button up:
+   with its pointer capture lost (a reload, another window) it went on scrubbing; and Esc puts a scrub back */
+export async function dragEndsHoweverItEnds(k, t) {
+  await k.until(`LORAS.length>0`, 8000);
+  await k.ev(
+    `(LORAS.forEach(l=>l.on=false),LORAS.find(l=>l.folder!=="people").on=true,LORAS.find(l=>l.folder!=="people").w=1,renderChips(),1)`,
+  );
+  await k.mouse(2, 2);
+  await k.sleep(600);
+  const w = () => k.ev(`LORAS.find(l=>l.on).w`);
+  const c = await k.rect("#chips .cw"),
+    x = c.left + c.width / 2,
+    y = c.top + c.height / 2;
+  const m = (type, X, b = 1) =>
+    k.send("Input.dispatchMouseEvent", { type, x: X, y, button: "left", buttons: b, clickCount: 1 });
+  const w0 = await w();
+  await m("mouseMoved", x, 0);
+  await m("mousePressed", x);
+  for (let i = 1; i <= 5; i++) await m("mouseMoved", x + i * 8);
+  const w1 = await w();
+  /* the capture taken away (whoever holds it) */
+  await k.ev(
+    `(()=>{for(const e of document.querySelectorAll("*"))if(e.hasPointerCapture&&e.hasPointerCapture(1))e.releasePointerCapture(1);return 1})()`,
+  );
+  for (let i = 6; i <= 12; i++) await m("mouseMoved", x + i * 8);
+  const w2 = await w();
+  await m("mouseReleased", x + 96, 0);
+  t.ok(w1 !== w0, "scrubbing changes the weight", { w0, w1 });
+  t.ok(w2 === w1, "its pointer lost, the scrub is over — moves no longer change it", { w1, w2 });
+  /* Esc puts a scrub back */
+  await k.sleep(300);
+  const c2 = await k.rect("#chips .cw"),
+    x2 = c2.left + c2.width / 2;
+  const v0 = await w();
+  await m("mouseMoved", x2, 0);
+  await m("mousePressed", x2);
+  for (let i = 1; i <= 5; i++) await m("mouseMoved", x2 + i * 8);
+  const v1 = await w();
+  await k.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+  await k.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+  await m("mouseReleased", x2 + 40, 0);
+  t.ok(v1 !== v0 && (await w()) === v0, "Esc mid-scrub puts the weight back", { v0, v1, after: await w() });
 }

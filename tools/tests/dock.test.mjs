@@ -364,3 +364,30 @@ export async function handlesOutlineTheirPanes(k, t) {
   }
 }
 handlesOutlineTheirPanes.opts = { width: 1825, height: 1080 };
+
+/* a place asked about is a RESTING place (the user, 2026-11-10: "only 1 position available"): grabbed by its body the
+   box is held where it is (you're working in it), and the pass answered every place asked about (placeFor) with that —
+   a lane's top, middle and bottom collapsed into one */
+export async function placesIgnoreHolds(k, t) {
+  await viewport(k, 1700, 950);
+  await k.ev(`(setDock("left"),1)`);
+  await k.sleep(1200);
+  const c = await R(k, "#left .controls"),
+    x = c.left + 6,
+    y = c.top + c.height / 2; // the box's own body (its inset beside the pills), not its name row
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+  await k.sleep(200);
+  await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+  for (let i = 1; i <= 3; i++)
+    await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y: y + 5 * i, button: "left", buttons: 1 });
+  const r = await k.ev(`(()=>({held:lyFrozen,tops:["top","mid","bot"].map(p=>Math.round(placeFor("left",p).y))}))()`);
+  await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y: y + 15, button: "left", clickCount: 1 });
+  await k.sleep(600);
+  t.ok(r.held, "grabbed by its body, the box is held where it is", r);
+  t.ok(
+    new Set(r.tops).size === 3,
+    "…and still the lane's three places are three places (a place asked about is a resting place)",
+    r,
+  );
+}
+placesIgnoreHolds.opts = { width: 1700, height: 950 };

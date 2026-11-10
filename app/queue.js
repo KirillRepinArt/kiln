@@ -12,6 +12,7 @@ import {
 } from "./actions.js";
 import { esc, fmt } from "./boot.js";
 import { $, hit, qa, target } from "./dom.js";
+import { DRAG_START, gesture as drag } from "./gesture.js";
 import { jEst, jobs, orderPending } from "./jobs.js";
 import { loadJob } from "./peek.js";
 import { PV, pv } from "./picstate.js";
@@ -357,10 +358,9 @@ function slideRows(change) {
 function initReorder() {
   const W = $("qwrap");
   /** the row pressed / held: the press, where on the row it was grabbed, the footprint, what it sat before, the pointer
-   * @type {{ row: HTMLElement, pid: number, x0: number, y0: number, moved: boolean, grab: number,
+   * @type {{ row: HTMLElement, x0: number, y0: number, moved: boolean, grab: number,
    *   slot: HTMLElement | null, home: Element | null, y: number, raf: number } | null} */
-  let d = null,
-    noClick = false;
+  let d = null;
   /** the footprint's place for a pointer at y: before the first row whose middle is below it @param {number} y */
   const placeSlot = y => {
     const m = /** @type {NonNullable<typeof d>} */ (d),
@@ -399,10 +399,6 @@ function initReorder() {
     m.home = row.nextElementSibling; // where it was: Esc puts the plate back before this
     Object.assign(row.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", transition: "none" });
     row.classList.add("lifted");
-    document.body.classList.add("qdragging");
-    try {
-      W.setPointerCapture(m.pid);
-    } catch (_) {}
     m.raf = requestAnimationFrame(edgeScroll);
   }
   /* let go (or Esc): the row glides into its footprint, then takes its place in the list */
@@ -423,7 +419,6 @@ function initReorder() {
     row.style.top = s.top + "px";
     row.classList.remove("lifted");
     row.classList.add("settling");
-    document.body.classList.remove("qdragging");
     let done = false;
     const land = () => {
       if (done) return;
@@ -442,72 +437,29 @@ function initReorder() {
     row.addEventListener("transitionend", e => e.propertyName === "top" && land());
     setTimeout(land, 700); // a hidden window pauses transitions: it lands anyway
   }
-  W.addEventListener("pointerdown", e => {
-    if (e.button !== 0 || d) return;
-    const row = hit(e, "#qsPend .qi");
-    if (!row || hit(e, "button,input,.seedc")) return;
-    d = {
-      row,
-      pid: e.pointerId,
-      x0: e.clientX,
-      y0: e.clientY,
-      moved: false,
-      grab: 0,
-      slot: null,
-      home: null,
-      y: e.clientY,
-      raf: 0,
-    };
-  });
-  W.addEventListener("pointermove", e => {
-    const m = d;
-    if (!m || e.pointerId !== m.pid) return;
-    if (!(e.buttons & 1)) {
-      if (m.moved) settle(true);
-      else d = null;
-      return;
-    }
-    m.y = e.clientY;
-    if (!m.moved) {
-      if (Math.hypot(e.clientX - m.x0, e.clientY - m.y0) < 6) return;
-      lift();
-    }
-    m.row.style.top = e.clientY - m.grab + "px";
-    placeSlot(e.clientY);
-  });
-  W.addEventListener("pointerup", e => {
-    const m = d;
-    if (!m || e.pointerId !== m.pid) return;
-    if (!m.moved) {
-      d = null;
-      return;
-    }
-    noClick = true; // the click that follows a drag isn't a click on the row
-    settle(true);
-  });
-  W.addEventListener("pointercancel", () => {
-    if (d && d.moved) settle(false);
-    else d = null;
-  });
-  W.addEventListener(
-    "click",
-    e => {
-      if (!noClick) return;
-      noClick = false;
-      e.stopImmediatePropagation();
-      e.preventDefault();
+  /* ONE gesture (gesture.js: press → past DRAG_START.lift it lifts → end however it ends; Esc puts it back; the click
+     that follows a drag is swallowed there) — it had its own press / move / up / Esc and its own click flag */
+  drag(W, {
+    threshold: DRAG_START.lift,
+    escape: true,
+    cls: ["qdragging"],
+    accept: e => {
+      const row = hit(e, "#qsPend .qi");
+      if (!row || hit(e, "button,input,.seedc")) return false;
+      d = { row, x0: e.clientX, y0: e.clientY, moved: false, grab: 0, slot: null, home: null, y: e.clientY, raf: 0 };
+      return d;
     },
-    true,
-  );
-  document.addEventListener(
-    "keydown",
-    e => {
-      if (e.key !== "Escape" || !d || !d.moved) return;
-      e.stopImmediatePropagation();
-      settle(false);
+    start: () => lift(),
+    move: (m, e) => {
+      m.y = e.clientY;
+      m.row.style.top = e.clientY - m.grab + "px";
+      placeSlot(e.clientY);
     },
-    true,
-  );
+    end: (m, { moved, cancelled }) => {
+      if (moved) settle(!cancelled);
+      else d = null; // a tap: the row's click is its own
+    },
+  });
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */

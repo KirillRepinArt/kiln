@@ -423,11 +423,19 @@ function boxPlace() {
     colH: col.clientHeight - TS,
     chips: chipsH(),
     below: R ? R - 1 : 0, // the status row: a box resting at the bottom lines up with it
-    held: card.hHold || 0,
-    heldPin: card.hPin || "top",
-    frozen: card.frozen,
-    prevTop: card.top,
-    prevBottom: card.bottom,
+    /* the holds of the box as it IS (an edge's height held, you working in it, where it was) — never of where it WOULD
+       be: asked about a place (placeFor, L1), the pass answers its resting place. Held, every place answered "where it
+       is now" — a lane's top, middle and bottom collapsed into one (the user, 2026-11-10: "only 1 position available";
+       grabbing the box by its body froze it — hover holds it while you work in it) */
+    ...(asked
+      ? { held: 0, heldPin: "top", frozen: false, prevTop: null, prevBottom: null }
+      : {
+          held: card.hHold || 0,
+          heldPin: card.hPin || "top",
+          frozen: card.frozen,
+          prevTop: card.top,
+          prevBottom: card.bottom,
+        }),
   };
 }
 /** side by side, the box's height limits for its top / bottom edge (C6): its least, and the room — its column less the

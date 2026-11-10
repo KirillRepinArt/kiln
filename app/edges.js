@@ -2,10 +2,11 @@
 /* Kiln · the edges you drag: the prompt box's height, Vertical's slot line and side edges, the panels' widths, the
    picture's top / bottom edges — and the edit buttons beside the picture showing on hover. The sizes they set are in
    S.lay (layout.js does the maths and applies them).
-   Every edge is ONE gesture (gesture() below, 2026-11-01): press → move → end, and it ends however the drag ends — the
+   Every edge is ONE gesture (gesture.js, through edgeDrag() below; 2026-11-01): press → move → end, and it ends however the drag ends — the
    button up, a cancel, the pointer's capture lost (a reload, another window taking it), a move without the button —
    once. Each edge used to end itself on its own subset of those; a lost capture left the resize cursor stuck. */
 import { card, layoutLeft, lyUnfreeze, updHm } from "./cardlayout.js";
+import { DRAG_START, gesture as drag } from "./gesture.js";
 import { RESIZES, outlines } from "./outlines.js";
 import { $, q, qa } from "./dom.js";
 import { passDouble, passDragEnd, passDragMove, passDragStart, setPaneSize, sideBoxH } from "./layout.js";
@@ -13,13 +14,10 @@ import { RUBBER, rubber } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 
-/** the body classes a drag holds while it lasts (the cursor, no transitions) — removed by the gesture's end, always */
-const DRAG_CLASSES = ["resizing", "vresizing", "laydrag"];
-
 /**
- * One drag gesture on a handle — the only place an edge's press, move and end are wired.
- * `down` may decline the press (return false); `end` runs exactly once per accepted press, however the drag ends.
- * While hovered or held, the handle outlines the panes it resizes (outlines.js).
+ * One edge's drag — the edge's part of the one gesture (gesture.js: press → move → end, ending once however it ends):
+ * while hovered or held the handle outlines the panes it resizes (outlines.js), and it holds its body classes.
+ * `down` may decline the press (return false); `end` runs exactly once per accepted press.
  * @param {HTMLElement} h the handle
  * @param {() => import("./outlines.js").Pane[]} panes what it resizes
  * @param {object} fn
@@ -28,42 +26,26 @@ const DRAG_CLASSES = ["resizing", "vresizing", "laydrag"];
  * @param {() => void} fn.end the drag is over
  * @param {string[]} fn.cls the body classes the drag holds
  */
-function gesture(h, panes, { down, move, end, cls }) {
-  let on = false,
-    pid = -1;
-  const stop = () => {
-    if (!on) return;
-    on = false;
-    try {
-      if (h.hasPointerCapture(pid)) h.releasePointerCapture(pid);
-    } catch (_) {}
-    document.body.classList.remove(...DRAG_CLASSES);
-    h.classList.remove("drag");
-    outlines("edge", h.matches(":hover") ? panes() : []);
-    end();
-  };
-  h.addEventListener("pointerdown", e => {
-    if (e.button !== 0 || on) return;
-    if (down(e) === false) return;
-    e.preventDefault();
-    on = true;
-    pid = e.pointerId;
-    try {
-      h.setPointerCapture(pid);
-    } catch (_) {}
-    h.classList.add("drag");
-    document.body.classList.add(...cls);
-    outlines("edge", panes());
+function edgeDrag(h, panes, { down, move, end, cls }) {
+  drag(h, {
+    accept: e => down(e) !== false,
+    threshold: DRAG_START.edge,
+    prevent: true,
+    cls, // held while it drags, let go by the gesture's end (gesture.js — their one writer)
+    start: () => {
+      h.classList.add("drag");
+      outlines("edge", panes());
+    },
+    move: (_, e) => move(e),
+    end: () => {
+      h.classList.remove("drag");
+      outlines("edge", h.matches(":hover") ? panes() : []);
+      end();
+    },
   });
-  h.addEventListener("pointermove", e => {
-    if (!on) return;
-    if (!(e.buttons & 1)) return stop(); // the button came up where we didn't hear it
-    move(e);
-  });
-  for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) h.addEventListener(t, stop);
   h.addEventListener("pointerenter", () => outlines("edge", panes()));
   h.addEventListener("pointerleave", () => {
-    if (!on) outlines("edge", []);
+    if (!h.classList.contains("drag")) outlines("edge", []);
   });
 }
 
@@ -80,7 +62,7 @@ function gesture(h, panes, { down, move, end, cls }) {
 function passEdge(h, panes, cls, idOf, axis, after) {
   let held = false;
   const at = (/** @type {PointerEvent} */ e) => (axis === "y" ? e.clientY : e.clientX);
-  gesture(h, panes, {
+  edgeDrag(h, panes, {
     cls,
     down: e => {
       const id = idOf();
@@ -135,7 +117,7 @@ export function initEdges() {
         h0 = 0,
         want = 0,
         lim = { lo: 0, hi: 0 };
-      gesture(g, () => RESIZES.vedge, {
+      edgeDrag(g, () => RESIZES.vedge, {
         cls: ["vresizing"],
         down: e => {
           if (stacked()) return false; // Vertical: its bottom through the pass (above), its top is the shared edge
@@ -207,7 +189,7 @@ export function initEdges() {
     for (const h of hs) {
       /** held: through the layout pass (every page side by side: C3, C2a's rest) */
       let held = false;
-      gesture(h, () => RESIZES[/** @type {string} */ (h.dataset.e)], {
+      edgeDrag(h, () => RESIZES[/** @type {string} */ (h.dataset.e)], {
         cls: ["resizing", "laydrag"],
         down: ev => {
           if (q(".app.stacked")) return false;

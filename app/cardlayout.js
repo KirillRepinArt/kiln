@@ -21,6 +21,7 @@ import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { SPACE } from "./tokens.js";
 import { boxSizing } from "./editor.js";
+import { DRAG_START, gesture as drag } from "./gesture.js";
 import { rearrange, stop, travelling } from "./rearrange.js";
 
 /* ======================= prompt card layout =======================
@@ -358,9 +359,8 @@ export function initCardlayout() {
     ]);
     const HYST = 24; // a nearer place takes over only once it's this much nearer (no flicker between two)
     /** @typedef {{ dock: "left" | "right" | "below", pos: "top" | "mid" | "bot", r: import("./layoutmath.js").Rect }} Place */
-    /** the press, then the lift: where the box was, its seven places, the one it would land on
-     * @type {{ x0: number, y0: number, dx: number, dy: number, moved: boolean, r0: DOMRect, places: Place[], at: Place | null } | null} */
-    let d = null;
+    /** the lift: where the box was, how far it's been carried, its seven places, the one it would land on
+     * @typedef {{ dx: number, dy: number, r0: DOMRect, places: Place[], at: Place | null }} Lift */
     /* the grip is ONE zone (2026-11-01, L3): the box's name row, the box, its LoRA row — through one listener on the
        column; what keeps its pointer: text, controls, chips, menus, the edges you drag (their bands: B19) */
     const NO = "input,textarea,button,a,select,.chip,.pwrapT,.pop,.cwi," + HANDLES,
@@ -381,44 +381,23 @@ export function initCardlayout() {
       e.style.width = r.w + "px";
       e.style.height = r.h + "px";
     };
-    /** @param {PointerEvent} e */
-    function down(e) {
-      const tg = /** @type {HTMLElement} */ (e.target);
-      /* the grip works in every mode (2026-11-02, the user: in Full side by side the title didn't drag while the LoRA
-         row did — two paths). A mode fixes the box's height; moving it is still yours */
-      if (e.button !== 0 || !tg.closest(GROUP) || tg.closest(NO)) return;
-      e.preventDefault();
-      d = {
-        x0: e.clientX,
-        y0: e.clientY,
-        dx: 0,
-        dy: 0,
-        moved: false,
-        r0: L.getBoundingClientRect(),
-        places: [],
-        at: null,
-      };
-      try {
-        /** @type {HTMLElement} */ (e.currentTarget).setPointerCapture(e.pointerId);
-      } catch (_) {}
-      outlines("move", ["box"]);
-    }
-    /* the press shows what moves: the box's own outline (outlines.js; drawn by the box: layout.css) */
-    /** @param {PointerEvent} e */
-    function move(e) {
-      const m = d;
-      if (!m) return;
-      if (!(e.buttons & 1)) {
-        up();
-        return;
-      }
-      m.dx = e.clientX - m.x0;
-      m.dy = e.clientY - m.y0;
-      if (!m.moved && Math.hypot(m.dx, m.dy) < 6) return;
-      if (!m.moved) {
-        m.moved = true;
+    /* the press is the box's grip (GROUP less NO); past DRAG_START.lift it lifts — ONE gesture (gesture.js: press → move
+       → end however it ends, Esc puts it back; it had its own press / move / up and didn't hear a lost pointer) */
+    drag(col, {
+      threshold: DRAG_START.lift,
+      prevent: true,
+      escape: true,
+      cls: ["cardmove"],
+      accept: e => {
+        const tg = /** @type {HTMLElement} */ (e.target);
+        /* the grip works in every mode (2026-11-02, the user: in Full side by side the title didn't drag while the LoRA
+           row did — two paths). A mode fixes the box's height; moving it is still yours */
+        if (!tg.closest(GROUP) || tg.closest(NO)) return false;
+        outlines("move", ["box"]); // the press shows what moves: the box's own outline (outlines.js; drawn by the box)
+        return /** @type {Lift} */ ({ dx: 0, dy: 0, r0: L.getBoundingClientRect(), places: [], at: null });
+      },
+      start: m => {
         card.drag = true;
-        document.body.classList.add("cardmove");
         const now = dockNow(),
           pos = S.pos || "mid";
         m.places = PLACES.map(([dock, p]) => ({ dock, pos: p, r: placeFor(dock, p) }));
@@ -437,69 +416,60 @@ export function initCardlayout() {
           l.classList.add("show");
         }
         foot.classList.add("show");
-      }
-      liftCol(m.dx, m.dy); // the box follows the pointer
-      /* the place nearest the box's centre, with hysteresis */
-      const cx = m.r0.left + m.r0.width / 2 + m.dx,
-        cy = m.r0.top + m.r0.height / 2 + m.dy,
-        dist = (/** @type {Place} */ p) => Math.hypot(p.r.x + p.r.w / 2 - cx, p.r.y + p.r.h / 2 - cy),
-        best = m.places.reduce((a, b) => (dist(b) < dist(a) ? b : a));
-      if (m.at && best !== m.at && dist(best) + HYST < dist(m.at)) m.at = best;
-      if (!m.at) return;
-      put(foot, m.at.r);
-      foot.dataset.dock = m.at.dock;
-      foot.dataset.pos = m.at.pos;
-      for (const l of lanes) l.classList.toggle("near", l.dataset.dock === m.at.dock);
-    }
-    /** @param {boolean} [cancel] Esc: back where it was */
-    function up(cancel = false) {
-      if (!d) return;
-      const m = d;
-      d = null;
-      outlines("move", []);
-      if (!m.moved) return;
-      document.body.classList.remove("cardmove");
-      for (const l of lanes) l.classList.remove("show", "near");
-      foot.classList.remove("show");
-      /* the lift lets go on the driver: the box comes home from where it is (one plan and clock with what else moves) */
-      const home = (/** @type {number} */ x, /** @type {number} */ y) =>
-          rearrange("lift", { l: x, t: y, w: 0, h: 0 }, { l: 0, t: 0, w: 0, h: 0 }, b => liftCol(b.l, b.t)),
-        at = m.at,
-        now = dockNow();
-      if (cancel || !at || (at.dock === now && (now === "below" || at.pos === (S.pos || "mid")))) {
+      },
+      move: (m, _e, dx, dy) => {
+        m.dx = dx;
+        m.dy = dy;
+        liftCol(dx, dy); // the box follows the pointer
+        /* the place nearest the box's centre, with hysteresis */
+        const cx = m.r0.left + m.r0.width / 2 + dx,
+          cy = m.r0.top + m.r0.height / 2 + dy,
+          dist = (/** @type {Place} */ p) => Math.hypot(p.r.x + p.r.w / 2 - cx, p.r.y + p.r.h / 2 - cy),
+          best = m.places.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+        if (m.at && best !== m.at && dist(best) + HYST < dist(m.at)) m.at = best;
+        if (!m.at) return;
+        put(foot, m.at.r);
+        foot.dataset.dock = m.at.dock;
+        foot.dataset.pos = m.at.pos;
+        for (const l of lanes) l.classList.toggle("near", l.dataset.dock === m.at.dock);
+      },
+      end: (m, { moved, cancelled }) => {
+        outlines("move", []);
+        if (!moved) return;
+        for (const l of lanes) l.classList.remove("show", "near");
+        foot.classList.remove("show");
+        /* the lift lets go on the driver: the box comes home from where it is (one plan and clock with what else moves) */
+        const home = (/** @type {number} */ x, /** @type {number} */ y) =>
+            rearrange("lift", { l: x, t: y, w: 0, h: 0 }, { l: 0, t: 0, w: 0, h: 0 }, b => liftCol(b.l, b.t)),
+          at = m.at,
+          now = dockNow();
+        if (cancelled || !at || (at.dock === now && (now === "below" || at.pos === (S.pos || "mid")))) {
+          card.drag = false;
+          home(m.dx, m.dy);
+          return;
+        }
+        S.pos = at.pos;
+        save();
+        if (at.dock !== now) {
+          /* another lane: the layout switch carries it — its leaving copy is taken where the lifted box is (standIn) */
+          card.drag = false;
+          setDock(at.dock);
+          liftCol(0, 0);
+          return;
+        }
+        /* its own lane, another spot: its rest moves there at once (still held), and the lift — from where it is to
+           there — lets go on the driver */
+        const fz = card.frozen;
+        card.frozen = false;
+        layoutLeft();
+        card.frozen = fz;
         card.drag = false;
-        home(m.dx, m.dy);
-        return;
-      }
-      S.pos = at.pos;
-      save();
-      if (at.dock !== now) {
-        /* another lane: the layout switch carries it — its leaving copy is taken where the lifted box is (standIn) */
-        card.drag = false;
-        setDock(at.dock);
-        liftCol(0, 0);
-        return;
-      }
-      /* its own lane, another spot: its rest moves there at once (still held), and the lift — from where it is to
-         there — lets go on the driver */
-      const fz = card.frozen;
-      card.frozen = false;
-      layoutLeft();
-      card.frozen = fz;
-      card.drag = false;
-      const x = m.r0.left + m.dx - at.r.x,
-        y = m.r0.top + m.dy - at.r.y;
-      liftCol(x, y);
-      home(x, y);
-    }
-    /* Esc while moving it: back where it was */
-    document.addEventListener("keydown", e => {
-      if (e.key === "Escape" && d && d.moved) up(true);
+        const x = m.r0.left + m.dx - at.r.x,
+          y = m.r0.top + m.dy - at.r.y;
+        liftCol(x, y);
+        home(x, y);
+      },
     });
-    col.addEventListener("pointerdown", down);
-    col.addEventListener("pointermove", move);
-    col.addEventListener("pointerup", () => up());
-    col.addEventListener("pointercancel", () => up(true));
     // the empty space under the text belongs to the editor: a click there puts the cursor at the end
     q(".pwrapT").addEventListener("mousedown", e => {
       if (!(/** @type {HTMLElement} */ (e.target).classList.contains("pwrapT"))) return;

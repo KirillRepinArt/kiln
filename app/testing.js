@@ -29,6 +29,7 @@ import {
 } from "./layout.js";
 import { api, st } from "./live.js";
 import { checkStyles } from "./livestyles.js";
+import { renderChips } from "./chips.js";
 import { renderLoras } from "./loras.js";
 import { HANDLES } from "./outlines.js";
 import { editFirst, endPeek, fnLayout, loadJob, peekHide, reuse, updPrompt } from "./peek.js";
@@ -119,6 +120,7 @@ export function installTestBridge() {
     qsUpdate: { get: () => qsUpdate },
     readPng: { get: () => readPng },
     removeMissing: { get: () => removeMissing },
+    renderChips: { get: () => renderChips },
     renderLoras: { get: () => renderLoras },
     renderPills: { get: () => renderPills },
     reuse: { get: () => reuse },

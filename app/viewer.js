@@ -3,6 +3,7 @@
 import { deleteJob, openInApp } from "./actions.js";
 import { updNav } from "./browse.js";
 import { $, hit, target } from "./dom.js";
+import { DRAG_START, gesture } from "./gesture.js";
 import { onShow, picMode, pv, pvSync } from "./picstate.js";
 import { paint } from "./pictures.js";
 import { SIZES } from "./presets.js";
@@ -66,9 +67,7 @@ export function closeShown() {
 export function initViewer() {
   (function () {
     const el = $("viewer");
-    let down = /** @type {{ x: number, y: number, tx: number, ty: number, img: boolean } | null} */ (null),
-      moved = false,
-      clickT = /** @type {number | undefined} */ (/** @type {unknown} */ (null));
+    let clickT = /** @type {number | undefined} */ (/** @type {unknown} */ (null));
     el.addEventListener(
       "wheel",
       e => {
@@ -77,38 +76,32 @@ export function initViewer() {
       },
       { passive: false },
     );
-    el.addEventListener("pointerdown", e => {
-      if (hit(e, ".vclose,.nav")) return;
-      down = { x: e.clientX, y: e.clientY, tx: V.tx, ty: V.ty, img: target(e).id === "vcv" };
-      moved = false;
-      el.setPointerCapture(e.pointerId);
-    });
-    el.addEventListener("pointermove", e => {
-      if (!down) return;
-      const dx = e.clientX - down.x,
-        dy = e.clientY - down.y;
-      if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
-      if (moved && V.s > V.fit + 0.001) {
+    /* ONE gesture (gesture.js): a press past DRAG_START.pan pans a zoomed picture; a tap zooms it (or closes the viewer
+       off the picture). It heard only the button up — a lost pointer left it panning */
+    gesture(el, {
+      threshold: DRAG_START.pan,
+      accept: e => {
+        if (hit(e, ".vclose,.nav")) return false;
+        return { x: e.clientX, y: e.clientY, tx: V.tx, ty: V.ty, img: target(e).id === "vcv" };
+      },
+      move: (d, _e, dx, dy) => {
+        if (V.s <= V.fit + 0.001) return;
         el.classList.add("panning");
-        vSet(V.s, down.tx + dx, down.ty + dy);
-      }
-    });
-    el.addEventListener("pointerup", e => {
-      el.classList.remove("panning");
-      const wasDown = down;
-      down = null;
-      if (!wasDown || moved) return;
-      if (!wasDown.img) {
-        closeViewer();
-        return;
-      }
-      clearTimeout(clickT);
-      const x = e.clientX,
-        y = e.clientY;
-      clickT = setTimeout(() => {
-        if (V.s > V.fit + 0.001) vFit();
-        else vZoomAt(1, x, y);
-      }, 230);
+        vSet(V.s, d.tx + dx, d.ty + dy);
+      },
+      end: (d, { moved, cancelled }) => {
+        el.classList.remove("panning");
+        if (moved || cancelled) return;
+        if (!d.img) {
+          closeViewer();
+          return;
+        }
+        clearTimeout(clickT);
+        clickT = setTimeout(() => {
+          if (V.s > V.fit + 0.001) vFit();
+          else vZoomAt(1, d.x, d.y);
+        }, 230);
+      },
     });
     el.addEventListener("dblclick", () => {
       clearTimeout(clickT);

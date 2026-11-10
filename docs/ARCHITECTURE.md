@@ -149,9 +149,14 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     (`promptFollow`) and only its height moves on the plan. A new goal for a box already moving bends
     its remaining path on the same plan and clock (`rearrange.js` `retarget`); only a box not yet moving starts a new
     plan
-  - every edge's press → move → end: `edges.js` `gesture()` (it ends however the drag ends: button up, cancel, lost
-    capture); which outlines show: `outlines.js`; the outline itself is part of its pane (`.plate::before`,
-    `.left::after` in `styles/layout.css`)
+  - **every drag: `gesture.js` `gesture(el, { accept, threshold, start, move, end, cls, escape, prevent })` — the one
+    way** (G1, 2026-11-10): press → past its threshold (`DRAG_START`: edge 0, lift 6, scrub 3, pan 4) a drag → end,
+    exactly once however it ends (button up, cancel, a lost capture, the button found up, Esc where allowed); a tap is
+    an end with `moved: false`; the pointer is heard on the window while a press is pending and captured once it's a
+    drag; the click after a drag is swallowed. Users: the edges (`edges.js` edgeDrag — its outlines), the box's move
+    (`cardlayout.js`), the Queue's reorder, the LoRA weight's scrub, the viewer's pan. `unit/onegesture.test.mjs`
+    fails on a pointer capture anywhere else. Named: the LoRA chips' reorder is the browser's native drag-and-drop.
+    Which outlines show: `outlines.js`; the outline itself is part of its pane (`.plate::before`, `.left::after`)
   - a panel's box (its height and its offset in the room: the pass's side by side) and where its edge handles go:
     `layout.js` `sizeFrame`;
     the tab bar rides on the plate, centred over it inside the window (`plate.js` `barFor`)

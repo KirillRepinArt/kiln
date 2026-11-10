@@ -607,3 +607,20 @@ export async function fieldsTakeNoAutofill(k, t) {
   );
   t.ok(bad.length === 0, "every text and number field has the browser's suggestions off", bad);
 }
+
+/* R1 (the re-read, 2026-11-10): a fade turned back halfway carries on from where it is — no frame jumps (F4 / F5: they
+   restarted from 1 or 0). One rule for every fade in the app (fade.js fade; tools/tests/unit/onefade.test.mjs keeps it
+   the one way) */
+export async function fadeTurnsBackFromScreen(k, t) {
+  /* on the animations' own clock (set, not waited: the runner slows animations to measure frames) */
+  const r =
+    await k.ev(`(()=>{const d=document.createElement("div");Object.assign(d.style,{position:"fixed",left:"10px",top:"10px",width:"50px",height:"50px",background:"#fff"});
+    document.body.appendChild(d);const o=()=>+getComputedStyle(d).opacity;
+    const [a]=fade(d,0,{duration:400,easing:"linear",fill:"both"});a.pause();a.currentTime=200;const half=o();
+    const [b]=fade(d,1,{duration:400,easing:"linear",fill:"both"});b.pause();b.currentTime=0;const start=o();b.currentTime=200;const mid=o();
+    const firstGone=a.playState;d.remove();return {half,start,mid,firstGone}})()`);
+  t.near(r.half, 0.5, 0.02, "the first fade halfway: 0.5");
+  t.near(r.start, r.half, 0.02, "turned back, it starts where the first one was — not from 0", r);
+  t.near(r.mid, 0.75, 0.02, "…and goes on from there", r);
+  t.ok(r.firstGone === "idle", "the first fade is replaced (one fade per element)", r);
+}

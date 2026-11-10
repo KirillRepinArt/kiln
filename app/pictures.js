@@ -3,6 +3,7 @@
    the cross-fade between two, the missing-file card */
 import { $ } from "./dom.js";
 import { api } from "./live.js";
+import { fade as fadeTo, setOpacity } from "./fade.js";
 import { fades, shapeSteps } from "./layoutmath.js";
 import { shownDone } from "./picstate.js";
 import { S } from "./state.js";
@@ -110,19 +111,15 @@ let idleOn = true;
 function idleFade(on, fade) {
   if (on === idleOn) return;
   idleOn = on;
-  const el = $("idle");
-  for (const a of el.getAnimations()) a.cancel();
-  const a = el.animate([{ opacity: on ? 0 : 1 }, { opacity: on ? 1 : 0 }], {
-    delay: fade.delay,
-    duration: fade.duration,
-    easing: "linear",
-    fill: "both",
-  });
+  const el = $("idle"),
+    /* from what is on screen (fade.js fade, R1): a turn-back mid-fade carries on — it was cancelled and restarted */
+    [a] = fadeTo(
+      el,
+      on ? 1 : 0,
+      { delay: fade.delay, duration: fade.duration, easing: "linear", fill: "both" },
+      { from: on ? 0 : 1, end: on ? "" : "0" }, // then it rests there (fade.js leaves it)
+    );
   if (fade.startTime != null) a.startTime = fade.startTime;
-  a.onfinish = () => {
-    el.style.opacity = on ? "" : "0";
-    a.cancel();
-  };
 }
 /** the frame has a picture now (the status loop): the text goes — with the picture's own fade if one is coming in
  * (pictureIn), else the one fade now (a render starting) */
@@ -151,13 +148,13 @@ export function frameEmptied() {
  * @param {{ delay: number, duration: number, startTime?: number }} [fade] */
 export function pictureIn(fade = SAME.in) {
   const cv = /** @type {HTMLCanvasElement} */ ($("cv"));
-  if (cvIn) cvIn.cancel();
-  const a = cv.animate([{ opacity: 0 }, { opacity: 1 }], {
-    delay: fade.delay,
-    duration: fade.duration,
-    easing: "linear",
-    fill: "backwards", // held unseen until its delay, from its clock's start
-  });
+  /* new content comes from unseen; a fade-in already running carries on from its value (fade.js fade, R1) */
+  const [a] = fadeTo(
+    cv,
+    1,
+    { delay: fade.delay, duration: fade.duration, easing: "linear", fill: "backwards" }, // held unseen until its delay
+    { from: 0 },
+  );
   if (fade.startTime != null) a.startTime = fade.startTime;
   idleFade(false, fade); // the empty frame's text goes as the picture comes (F2)
   cvIn = a;
@@ -188,7 +185,7 @@ function overlayHold(cv) {
   }
   x.style.width = cv.style.width;
   x.style.height = cv.style.height;
-  x.style.opacity = "1";
+  setOpacity(x, "1"); // shown at once over the canvas (fade.js: the one writer of its opacity)
   ov = "held";
   ovOf = cv.dataset.shown;
 }
@@ -199,12 +196,12 @@ export function overlayRelease(fade = SAME.out) {
   if (ov !== "held") return;
   clearTimeout(ovTimer);
   const x = /** @type {HTMLCanvasElement} */ ($("cvx")),
-    a = x.animate([{ opacity: 1 }, { opacity: 0 }], {
-      delay: fade.delay,
-      duration: fade.duration,
-      easing: "linear",
-      fill: "both",
-    });
+    [a] = fadeTo(
+      x,
+      0,
+      { delay: fade.delay, duration: fade.duration, easing: "linear", fill: "both" },
+      { from: 1, end: "" }, // the held copy: shown; once gone, back to its CSS (emptied below)
+    );
   if (fade.startTime != null) a.startTime = fade.startTime;
   ov = "fading";
   ovFade = a;
@@ -212,8 +209,6 @@ export function overlayRelease(fade = SAME.out) {
     if (ovFade !== a) return;
     ovFade = null;
     ov = "idle";
-    x.style.opacity = "";
-    a.cancel();
     x.width = 1;
     x.height = 1;
   };

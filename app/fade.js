@@ -71,6 +71,93 @@ export function glassFade(root, keys, timing) {
     );
     a.id = FADE_ID;
     /** @type {Animation & { fadeRoot?: Element }} */ (a).fadeRoot = root; // the group it fades (the tracer reads it)
+    /** @type {Animation & { restO?: number }} */ (a).restO = p.o; // its own opacity at rest (fade() reads its value by it)
     return a;
   });
+}
+
+/* ---------- THE way to fade (R1, the re-read 2026-11-10 — DEVLOG DD-2026-11-10-11) ----------
+   Every fade starts from what is ON SCREEN: a fade that replaces a running one carries on from that one's value now
+   (never restarted from 1 or 0 — F4: a switch interrupted 25 % in cut its pages 0.78 → 0; F5: a second fade of the
+   status row blinked it); a fresh fade starts from the caller's `from` (new content not seen yet: 0) or the element's
+   opacity now. It replaces the running fade it read (one fade per element and pseudo-element at a time). Five owners
+   used to start fades their own way from fixed keyframes (the status row, the empty frame's text, the picture coming
+   in, its copy leaving, the box through a layout switch) — they all come here. */
+/** @typedef {{ anims: Animation[], read: () => number }} Running */
+/** the fade running on each element (per pseudo-element) @type {WeakMap<Element, Map<string, Running>>} */
+const running = new WeakMap();
+/** what of `el` is seen now: its opacity (a running animation's value included), 0 when hidden
+ * @param {Element} el @param {string | null} [pseudo] */
+export function seenNow(el, pseudo = null) {
+  const c = getComputedStyle(el, pseudo);
+  return c.visibility === "hidden" || c.display === "none" ? 0 : +c.opacity;
+}
+/** a fade still in progress (waiting for its delay counts: it holds its start) @param {Animation} a */
+const live = a => a.playState === "running" || a.playState === "paused" || a.pending;
+/** set `el`'s opacity at once (a held copy shown, a reset) — replacing any fade of it: the same one writer
+ * @param {HTMLElement} el @param {string} v the inline value ("" — its CSS) */
+export function setOpacity(el, v) {
+  const r = running.get(el)?.get("");
+  if (r) for (const a of r.anims) a.cancel();
+  el.style.opacity = v;
+}
+/** the value a running fade() of `el` shows now — else its opacity now @param {Element} el */
+export function fadeValue(el) {
+  const r = running.get(el)?.get("");
+  return r && r.anims.some(live) ? r.read() : seenNow(el);
+}
+/** fade `el` to `to` over the part [a, b] of `timing`'s duration (before a: where it starts; after b: `to`)
+ * @param {Element} el @param {number} to @param {KeyframeAnimationOptions} timing
+ * @param {{ from?: number, span?: [number, number], glass?: boolean, pseudo?: "::before" | "::after", end?: string }} [o] `from`:
+ *   where a FRESH fade starts (default: its opacity now); `glass`: by its parts (glassFade — it holds glass)
+ * @returns {Animation[]} */
+export function fade(el, to, timing, o = {}) {
+  const pk = o.pseudo || "",
+    m = running.get(el) || /** @type {Map<string, Running>} */ (new Map()),
+    rec0 = m.get(pk),
+    /* in progress — not finished (over: a fresh fade), not cancelled (its cancel event comes later: one its owner
+       cancelled a moment ago is idle already) */
+    was = rec0 && rec0.anims.some(live) ? rec0 : null,
+    from = was ? was.read() : (o.from ?? seenNow(el, o.pseudo)); // read before it's replaced
+  running.set(el, m);
+  if (was) for (const a of was.anims) a.cancel();
+  const [s, e] = o.span || [0, 1],
+    keys = [{ offset: 0, opacity: from }];
+  if (s > 0) keys.push({ offset: s, opacity: from });
+  keys.push({ offset: e, opacity: to });
+  if (e < 1) keys.push({ offset: 1, opacity: to });
+  /** @type {Animation[]} */
+  let anims;
+  /** @type {() => number} */
+  let read;
+  if (o.glass) {
+    anims = glassFade(el, keys, timing);
+    read = () => {
+      const a = /** @type {Animation & { restO?: number }} */ (anims[0]);
+      if (!a || !a.effect) return to;
+      const fx = /** @type {KeyframeEffect} */ (a.effect);
+      return seenNow(/** @type {Element} */ (fx.target), fx.pseudoElement) / (a.restO || 1);
+    };
+  } else {
+    anims = [el.animate(keys, o.pseudo ? { ...timing, pseudoElement: o.pseudo } : timing)];
+    read = () => seenNow(el, o.pseudo);
+  }
+  const rec = { anims, read };
+  m.set(pk, rec);
+  /* `end`: once it has run, the value it leaves on the element itself (inline) — the fade retires (one writer: here) */
+  if (o.end != null && !o.glass && !o.pseudo) {
+    const a = anims[0],
+      end = o.end,
+      h = /** @type {HTMLElement} */ (el);
+    a.addEventListener("finish", () => {
+      if (m.get(pk) !== rec) return;
+      h.style.opacity = end;
+      a.cancel();
+    });
+  }
+  for (const a of anims)
+    a.addEventListener("cancel", () => {
+      if (m.get(pk) === rec) m.delete(pk);
+    });
+  return anims;
 }

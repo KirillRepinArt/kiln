@@ -8,7 +8,7 @@
 import { placeAround } from "./around.js";
 import { $, offsetIn } from "./dom.js";
 import { frameBox, frameHold, frameTarget } from "./framebox.js";
-import { glassFade } from "./fade.js";
+import { fade, seenNow } from "./fade.js";
 import { fades, shapeSteps } from "./layoutmath.js";
 import { bend, flush, follow, moving, progress, progressXY, travel } from "./rearrange.js";
 import { SPACE } from "./tokens.js";
@@ -260,14 +260,13 @@ export function switchGlide(at, views, layout = false) {
   /* PNG Info's drop line leaving with its panel: it fades across the crop, to the swap (its own 150 ms fade at the
      start read as vanishing, the user, 2026-10-28); coming in, its own fade is the one the user liked */
   if (dropWas && !$("plate").classList.contains("drop"))
-    go(
-      $("plate").animate([{ opacity: 1 }, { opacity: 0 }], {
-        duration: Math.max(steps.A + steps.S, 1),
-        easing: "ease-in",
-        fill: "backwards",
-        pseudoElement: "::after",
-      }),
-    );
+    for (const a of fade(
+      $("plate"),
+      0,
+      { duration: Math.max(steps.A + steps.S, 1), easing: "ease-in", fill: "backwards" },
+      { pseudo: "::after", from: 1 },
+    ))
+      go(a);
   /* the plate's look changing with it (a panel's glass and ring coming in) and the selected tab's pill: their own CSS
      transitions, put on the switch's clock (they began a frame later) */
   for (const el of [$("plate"), $("rim"), $("thumb")]) {
@@ -385,34 +384,14 @@ export function switchGlide(at, views, layout = false) {
   const leave = { duration: Math.max(1, steps.A + steps.S), easing: "ease-in", fill: /** @type {FillMode} */ ("both") };
   if (pic(old))
     for (const el of [...around(), ...navs()]) {
-      const now = getComputedStyle(el).opacity;
-      if (+now > 0.01)
-        for (const a of glassFade(
-          el,
-          [
-            { offset: 0, opacity: +now },
-            { offset: 1, opacity: 0 },
-          ],
-          leave,
-        ))
-          go(a);
+      if (seenNow(el) > 0.01) for (const a of fade(el, 0, leave, { glass: true })) go(a); // from what is on screen
     }
   /* coming in, what state shows (the status row, Show prompt) fades in as the plate lands; the edit buttons wait for
      hover */
   if (pic(neu))
     for (const el of [$("prog"), $("showP")]) {
-      const now = getComputedStyle(el).opacity;
-      if (+now > 0.01)
-        for (const a of glassFade(
-          el,
-          [
-            { offset: 0, opacity: 0 },
-            { offset: 1 - Q, opacity: 0 },
-            { offset: 1, opacity: +now },
-          ],
-          timing,
-        ))
-          go(a);
+      const now = seenNow(el);
+      if (now > 0.01) for (const a of fade(el, now, timing, { glass: true, from: 0, span: [1 - Q, 1] })) go(a);
     }
   /* ONE FADE SPEED for a view's contents, in every switch (2026-10-31, the user: "one fade speed everywhere"): they
      leave in the MORPH.fade ms that end at the swap (from the first frame, if the swap comes sooner) and come in the
@@ -433,19 +412,14 @@ export function switchGlide(at, views, layout = false) {
   /* from what is on screen (F4): a page caught mid-switch carries on from its opacity there — never restarted from 1 / 0 */
   const shownO = (/** @type {HTMLElement} */ v, /** @type {number} */ d) =>
       views.shown ? (views.shown.get(v)?.o ?? 0) : d, // not in it: not on screen
-    out = go(old.animate(same ? [] : [{ opacity: shownO(old, 1) }, { opacity: 0 }], goOut));
-  for (const { v, o } of stray) go(v.animate([{ opacity: o }, { opacity: 0 }], goOut));
+    out = go(same ? old.animate([], goOut) : fade(old, 0, goOut, { from: shownO(old, 1) })[0]);
+  for (const { v, o } of stray) for (const a of fade(v, 0, goOut, { from: o })) go(a);
   /* the picture's glow lives outside its view (a fixed layer): it comes and goes with the picture, on its fade (no glass
      in it, and at 0 between pictures: a plain fade — fade.js would skip what rests at 0) */
   const fg = document.getElementById("fglow");
   if (fg && pic(neu) !== pic(old))
-    go(
-      fg.animate(
-        pic(neu) ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }],
-        pic(neu) ? comeIn : goOut,
-      ),
-    );
-  if (!same) go(neu.animate([{ opacity: shownO(neu, 0) }, { opacity: 1 }], comeIn));
+    for (const a of fade(fg, pic(neu) ? 1 : 0, pic(neu) ? comeIn : goOut, { from: pic(neu) ? 0 : 1 })) go(a);
+  if (!same) for (const a of fade(neu, 1, comeIn, { from: shownO(neu, 0) })) go(a);
   /* the leaving view goes when the switch ends (or a new switch begins): hidden, back in its place */
   const end = () => {
     if (leaveDone !== end) return;

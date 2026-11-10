@@ -1,6 +1,7 @@
 // @ts-check
 /* Kiln · the picture's crop-and-reveal when its shape changes: each axis moves once, on its own step */
 import { $ } from "./dom.js";
+import { fade } from "./fade.js";
 import { MORPH, shapeSteps } from "./layoutmath.js";
 import { overlayRelease, overlayShows, pictureIn } from "./pictures.js";
 import { frameTravel, setPictureMorph } from "./framebox.js";
@@ -76,12 +77,8 @@ export function frameMorph(o) {
     /* the glow is its picture's: with no old picture on show it comes in with the new one — the same fade, the same
        clock (copied from the picture's opacity every frame by the effects loop, it ran a frame ahead) */
     if (fg)
-      fg.animate([{ opacity: 0 }, { opacity: 1 }], {
-        delay: A,
-        duration: F,
-        easing: "linear",
-        fill: "backwards",
-      }).startTime = t0;
+      for (const a of fade(fg, 1, { delay: A, duration: F, easing: "linear", fill: "backwards" }, { from: 0 }))
+        a.startTime = t0;
   }
   /* landed, but the old picture may still be fading off the new one (the fade outlasts a short reveal): both pictures
      keep their own sizes until then (the frame holds at its goal: the driver landed it) — let go, the old copy stretched

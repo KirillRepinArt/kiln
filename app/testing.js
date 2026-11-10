@@ -5,6 +5,7 @@
    tools/dev/make-test-bridge.mjs. */
 import { act, addJobs, deleteJob, doneNote, removeMissing, setPaused, stopJob, vary } from "./actions.js";
 import { toast } from "./boot.js";
+import { fade } from "./fade.js";
 import { browseTo, genNav, updNav } from "./browse.js";
 import { card, chipsH, layoutLeft, lyUnfreeze, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
@@ -65,6 +66,7 @@ export function installTestBridge() {
     current: { get: () => current },
     deleteJob: { get: () => deleteJob },
     doneNote: { get: () => doneNote },
+    fade: { get: () => fade },
     doneList: { get: () => doneList },
     draft: { get: () => draft, set: (/** @type {any} */ v) => setDraft(v) },
     drop: { get: () => drop },

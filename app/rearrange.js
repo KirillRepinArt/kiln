@@ -9,7 +9,7 @@
    What follows the boxes (the plate, what sits round the picture, the glued prompt box) is placed after the writes of
    each frame, in the same frame. A switch's own motion goes through here too (T2c-3b: the plate travels — travel(); what
    rides it follows — follow()): ONE driver, one clock. */
-import { glassFade } from "./fade.js";
+import { fade } from "./fade.js";
 import { MORPH, fades, shapeBox, shapePlan } from "./layoutmath.js";
 import { snaps } from "./framebox.js";
 import { plateSync } from "./plate.js";
@@ -163,15 +163,9 @@ function fadeNow(el, on, delay, ms, easing, t0) {
   const timing = { delay, duration: ms, easing, fill: /** @type {FillMode} */ ("backwards") }; // its first keyframe holds until its start
   /* by its parts (fade.js): the status row holds glass, and faded as a whole its blur was off until the fade ended
      (DEVLOG DD-2026-11-08-8); shown throughout the fade on the row itself (visibility is no backdrop root) */
-  for (const a of glassFade(
-    el,
-    [
-      { offset: 0, opacity: on ? 0 : 1 },
-      { offset: 1, opacity: on ? 1 : 0 },
-    ],
-    timing,
-  ))
-    a.startTime = t0;
+  /* from what is on screen (fade.js fade, R1): a second fade carries on from the first's value (F5: it restarted from 1
+     / 0 — a finish then a start, or pause / resume, blinked the row); fresh, it comes from hidden or leaves from shown */
+  for (const a of fade(el, on ? 1 : 0, timing, { glass: true, from: on ? 0 : 1 })) a.startTime = t0;
   el.animate([{ visibility: "visible" }, { visibility: "visible" }], timing).startTime = t0;
 }
 /** `key` stops moving (another motion takes it over: a crop-and-reveal, a switch's hold) @param {string} key */

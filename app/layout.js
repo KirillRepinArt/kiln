@@ -20,7 +20,7 @@ import {
   updHm,
 } from "./cardlayout.js";
 import { $ } from "./dom.js";
-import { glassFade } from "./fade.js";
+import { fade, fadeValue } from "./fade.js";
 import { HANDLES } from "./outlines.js";
 import { current, jobs } from "./jobs.js";
 import {
@@ -995,6 +995,7 @@ let relation = null;
  * @param {HTMLElement} out the stand-in (standIn) @param {{ t0: number, T: number }} sw the switch
  * @param {{ plate: Box4, dock: "left" | "right" | "below" }} was the plate on screen and the dock before the change */
 export function fadeCol(out, sw, was) {
+  const seen = fadeValue($("lcol")); // the box as it shows now (mid fade-in, if a switch is interrupted) — its copy starts there
   for (const a of colFades) a.cancel();
   relation = null;
   promptFollow(true); // its place where it lands: glued to where the plate lands (the layout is settled: tabs.js tabGo)
@@ -1022,30 +1023,18 @@ export function fadeCol(out, sw, was) {
   }
   /* faded by their parts, never through an ancestor: glass under a fade loses its blur (fade.js — it popped back the
      frame the box reached full opacity) */
-  const gone = glassFade(
-    out,
-    [
-      { offset: 0, opacity: 1 },
-      { offset: k(f.outEnd), opacity: 0 },
-      { offset: 1, opacity: 0 },
-    ],
-    { duration: f.T, fill: "forwards" },
-  );
+  const gone = fade(out, 0, { duration: f.T, fill: "forwards" }, { glass: true, from: seen, span: [0, k(f.outEnd)] });
   Promise.all(gone.map(a => a.finished)).then(
     () => out.remove(),
     () => out.remove(),
   );
   colFades = [
     ...gone,
-    ...glassFade(
+    ...fade(
       $("lcol"),
-      [
-        { offset: 0, opacity: 0 },
-        { offset: k(f.inStart), opacity: 0 },
-        { offset: k(f.inEnd), opacity: 1 },
-        { offset: 1, opacity: 1 },
-      ],
+      1,
       { duration: f.T, fill: "backwards" },
+      { glass: true, from: 0, span: [k(f.inStart), k(f.inEnd)] }, // the box itself: where it lands, unseen until its turn
     ),
   ];
   for (const a of colFades) a.startTime = sw.t0;

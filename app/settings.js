@@ -40,8 +40,8 @@ export function applyFont() {
   if (sel) sel.value = S.set.font;
   requestAnimationFrame(() => moveThumb(true));
 }
-/* Steps live in Settings → Model; the pill on the prompt box is a switch (2026-10-27, the user: set once with a turbo
-   LoRA and never changed — it only took room). Off by default */
+/* Steps live in Settings → Model; the pill on the prompt box is a switch (set once with a turbo LoRA and never
+   changed, it only took room). Off by default */
 export function applyStepsPill() {
   $("pST").hidden = (S.set || {}).stepsPill !== "on";
   layoutLeft();

@@ -389,7 +389,6 @@ export function initCardlayout() {
       start: m => {
         card.drag = true;
         const p = $("plate").getBoundingClientRect(),
-          a = app.getBoundingClientRect(),
           d = dropTiles(
             { x: p.left, y: p.top, w: p.width, h: p.height },
             { w: innerWidth, h: innerHeight },
@@ -415,7 +414,7 @@ export function initCardlayout() {
             e.dataset.pos = t.pos;
             if (lane && lane.over) e.classList.add("over"); // over the picture: there was no room beside it
             if (t.dock === now && (now === "below" || t.pos === pos)) e.classList.add("here"); // where it is now
-            put(e, { x: t.r.x - a.left, y: t.r.y - a.top, w: t.r.w, h: t.r.h });
+            put(e, t.r); // window px: the map is drawn in the space it's computed in (overlays.css .dropmap)
             return e;
           }),
         );

@@ -215,6 +215,10 @@ export async function dropMapUnderTheBox(k, t) {
     const e=document.elementFromPoint(cx,cy);mp.style.pointerEvents="";[...mp.children].forEach((x,i)=>x.style.cssText=keep[i]);
     return {shown:document.querySelector(".dropmap").classList.contains("show"),tiles:document.querySelectorAll(".droptile").length,
       top:!!e&&!!e.closest("#lcol"),token:+getComputedStyle($("lcol")).transform.split("(")[1]?.split(",")[0]||1,
+      place:(()=>{const P=$("plate").getBoundingClientRect(),G=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-area")),off=[];
+        for(const tl of mp.children){if(tl.classList.contains("over"))continue;const r=tl.getBoundingClientRect(),d=tl.dataset.dock;
+          const g=d==="left"?P.left-r.right:d==="right"?r.left-P.right:r.left-P.left,want=d==="below"?0:G;
+          if(Math.abs(g-want)>1)off.push(d+"/"+tl.dataset.pos+" "+Math.round(g)+" (want "+want+")")}return off})(),
       line:(()=>{const P=getComputedStyle($("plate"),"::after"),L=x=>[x.top,x.left,x.borderTopWidth];
         return [...mp.children].filter(tl=>{const a=getComputedStyle(tl,"::after");return a.content==="none"||L(a).join()!==L(P).join()}).map(tl=>tl.dataset.dock+"/"+tl.dataset.pos)})()}})()`);
   await m("mouseReleased", x + 160, y + 80, 0);
@@ -225,6 +229,13 @@ export async function dropMapUnderTheBox(k, t) {
   /* a place to drop has ONE look (tokens.css OUTLINES): the plate's drop line, one part gap inside — the tiles drew their
      own 1 px-inset outline (found by the comment trim, DD-2026-11-11-7) */
   t.ok(!r.line.length, "every tile's line is the drop place's line (the plate's, one part gap inside)", r.line);
+  /* drawn where computed (the window's px): a side column one pane gap from the picture, the bottom tile in line with it
+     — the map was drawn in its grid area's space, every tile 20 px right (the user's screenshot, 2026-11-11) */
+  t.ok(
+    !r.place.length,
+    "the tiles sit where the map puts them: one pane gap from the picture, the bottom in line",
+    r.place,
+  );
   t.ok(!(await k.ev(`document.querySelector(".dropmap").classList.contains("show")`)), "let go: the map goes");
 }
 

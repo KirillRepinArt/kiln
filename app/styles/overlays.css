@@ -189,8 +189,10 @@
    pane can go, as a map behind it, in the app's own layer under the prompt column (tokens.css --z-app-drop-map). Dashed:
    a place it could go; the hot one (under the pointer): where it will go; over the picture (no room beside it): a tint so the
    picture under it reads as under. Its fade is CSS's own (one owner: nothing else writes its opacity) */
+/* drawn in the window's px, the space its tiles are computed in (layoutmath.js dropTiles) — absolute, its containing
+   block was its grid area in .app (inside the padding across, not down): every tile 20 px right */
 .dropmap {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: var(--z-app-drop-map);
   pointer-events: none;

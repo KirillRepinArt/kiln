@@ -11,12 +11,9 @@ import { stageRect } from "./layout.js";
 /* a picture of another shape: the one choreography (layoutmath.js shapeSteps) — crop, swap, reveal; only the frame
    moves, both pictures at their own final size, centred. Nothing is ever empty: the box is inside the old picture
    until the swap and inside the new one after it */
-/* the area the picture sits in doesn't move when its shape changes (2026-10-31, G6): the old guess of where its gliding
-   grid would end (areaLeftAtEnd) is gone — the morph aims at the stage where it is */
-/* the crop and the reveal run on the SCREEN: the panel the frame sits in may be gliding (the pair re-centring), and a
-   morph written in the panel's coordinates drifted with it — lopsided. Each frame the box is placed on screen and the
-   panel's current offset taken off. The target is read from the frame's data (sizeFrame keeps it there while a morph
-   runs, so a re-layout mid-way just updates where it lands) */
+/* the area the picture sits in doesn't move when its shape changes (G6): the morph aims at the stage where it is. The
+   old box is measured on screen before the change; the target is read from the frame's data (sizeFrame keeps it
+   there, so a re-layout mid-way just updates where it lands) */
 /** @param {{ w: number, h: number, l: number, t: number, x?: number, y?: number, scale?: boolean }} o where the picture was: its old box
  * in its panel, and (x, y) its top-left on screen, measured before the switch moved anything; scale: the same picture at
  * another size (a layout switch) */
@@ -49,12 +46,10 @@ export function frameMorph(o) {
   f.style.setProperty("--nh", px(n0.h));
   f.classList.add("morph");
   const st0 = stageRect(),
-    /* the old box on screen, measured before the change: right after a tab switch the layout jumps instead of gliding,
-       and the old box placed in the NEW area showed the old picture 261 px off for the first frames (2026-10-27) */
+    /* the old box on screen, measured before the change (placed in the NEW area, it showed the old picture off) */
     from = { l: (o.x ?? st0.left + o.l) - st0.left, t: (o.y ?? st0.top + o.t) - st0.top, w: o.w, h: o.h };
-  /* the frame TRAVELS on the one driver (T2c-3b-2): each axis its centre and size on one clock (edge by edge, one side
-     rode the area's glide and the other the crop — lopsided, the user, 2026-10-27), one plan with whatever else moves; a
-     re-layout mid-way bends its path (framebox.js frameGoal → bend). Its own frame loop (frameDrive) is gone */
+  /* the frame TRAVELS on the one driver: each axis its centre and size on one clock, one plan with whatever else
+     moves; a re-layout mid-way bends its path (framebox.js frameGoal → bend) */
   frameTravel(from, n0);
   const fl = flush(),
     plan = fl ? fl.plan : shapeSteps(o, n0),
@@ -64,9 +59,8 @@ export function frameMorph(o) {
   /* the pictures change at the swap by the ONE fade's length (layoutmath.js MORPH.fade), on the driver's clock (t0), by
      their owner (pictures.js). They STACK — the old one (its copy) over the new — so it's a cross-fade: the new one is
      laid under the old at the swap and the old fades off it; nothing ever shows less picture (fading one out and the
-     other in, like two views, dipped the frame to ~36 % picture mid-change — the tracer, 2026-10-31). With no old
-     picture (an empty frame) the new one fades in itself from the swap; either way it's held unseen until then, so it
-     never shows cropped through the crop ("a zoomed picture first"). It used to swap them in its own 80 ms: a cut (F1) */
+     other in dipped the frame to ~36 % picture). With no old picture (an empty frame) the new one fades in itself from
+     the swap; either way it's held unseen until then, so it never shows cropped through the crop (F1) */
   const F = MORPH.fade,
     fg = document.getElementById("fglow");
   if (overlayShows()) {

@@ -28,12 +28,10 @@ export function esc(s) {
     c => /** @type {Record<string, string>} */ ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
   );
 }
-/** ONE placer for messages (M1): the toast and the finished note. It writes their left / top and nothing else — each
- * message centres itself on that point in its own CSS (translateX(-50%); the finished note slides in by its transform).
- * With an anchor (a tab, the Layout button): centred under it, 10 px below. Without one: centred on the prompt box, at
- * the window's top or bottom, whichever is farther from it — side by side; in Vertical the window's top-right corner
- * (centred on the box there, the top is the tab bar's and the bottom the box's own: open, 2026-11-10). (Two placers had
- * the "under a tab" rule each: toastPlace and doneNote.) @param {HTMLElement} el
+/** ONE placer for messages — ARCHITECTURE › where a message shows. It writes their left / top and nothing else (each
+ * message centres itself on that point in its own CSS). With an anchor (a tab, the Layout button): centred under it,
+ * 10 px below. Without one, side by side: centred on the prompt box, at the window's top or bottom, whichever is farther
+ * from it; in Vertical the window's top-right corner (a named exception, the user's choice) @param {HTMLElement} el
  * @param {Element | null} [anchor] */
 export function placeMessage(el, anchor) {
   const s = el.style,

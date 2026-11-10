@@ -6,9 +6,7 @@
   gap: var(--space-2);
   margin-bottom: var(--gap-part);
   height: 52px;
-} /* as wide as its buttons; no glide of its own: it follows the plate (plate.js placeBar — its one owner). Side by side
-     it was as wide as the picture area, its width set by sizeFrame and glided by CSS while the pill moved on the tab
-     script's clock: two clocks (the tracer, 2026-11-02; ownership map G4) */
+} /* as wide as its buttons; no glide of its own: it follows the plate (plate.js placeBar — its one owner; G4) */
 .right .tabs {
   pointer-events: none;
   align-self: flex-start;
@@ -21,8 +19,7 @@
 }
 .tabs > * {
   pointer-events: auto;
-} /* only what you see takes the pointer (its box used to be as wide as the picture area and took it over the prompt's
-     name row, 2026-11-01) */
+} /* only what you see takes the pointer — ARCHITECTURE › who takes the pointer */
 .seg {
   position: relative;
   display: flex;
@@ -218,9 +215,7 @@ body.jobrun .tab .trw {
   border-radius: var(--r-panel);
   pointer-events: auto; /* a panel takes its press itself (R4) */
 } /* its plate (glass or Solid) is the glass plate under it (plate.js, glass.css) */
-/* a view is shown or not — its motion is the switch's alone (plate.js switchGlide: the ride, fade.js: its fade). It had
-   a CSS fade and a 4 px drop of its own, held off only by the switch's hold (T6, the re-read 2026-11-10: a second clock
-   on the same properties, kept by the Solid look) */
+/* a view is shown or not — its motion is the switch's alone (plate.js switchGlide: the ride, fade.js: its fade; T6) */
 .view {
   position: absolute;
   inset: 0;

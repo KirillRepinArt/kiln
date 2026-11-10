@@ -13,7 +13,7 @@ export const imgs =
     /** @type {Map<string | null, { i: HTMLImageElement, p: Promise<HTMLImageElement | null> }>} the decoded pictures, by URL (null: no file — never found) */ (
       new Map()
     ),
-  IMAX = 16; /* the pictures used last (the cache used to keep every picture you'd seen, decoded) */
+  IMAX = 16; /* the pictures used last */
 /** a picture, decoding (from the cache when it's there) @param {string} url */
 export function img(url) {
   let e = imgs.get(url);
@@ -43,10 +43,8 @@ export function __imgsN() {
 export function urlFor(j) {
   return j.file ? `/files/${encodeURIComponent(j.file)}?j=${j.id}` : null;
 }
-/* what the frame's canvas shows has ONE writer (2026-10-28): what draws it says what it drew — a finished picture's id,
-   or "render:<job>" for a preview. The render's previews didn't, so the canvas kept the last finished picture's id:
-   an arrow from a running render to that picture skipped copying the screen, and the crop-and-reveal cropped a stale
-   copy instead (the "zoomed picture first", the user's note) */
+/* what draws the frame's canvas says what it drew — a finished picture's id, or "render:<job>" for a preview (an
+   untagged preview kept the last picture's id, and the crop-and-reveal cropped a stale copy) */
 /** @param {HTMLCanvasElement} cv @param {HTMLImageElement} im @param {boolean} natural at the picture's own size (the viewer)
  * @param {number | string} [what] what it is (the frame's canvas): a finished picture's id, or "render:<job>" */
 export function drawTo(cv, im, natural, what) {
@@ -82,13 +80,12 @@ export function drawTo(cv, im, natural, what) {
 /* a canvas only ever shows the image it was last asked for: while that one loads it is blank (never the previous
     picture or a cancelled job's preview stretched to the new shape), a load that lands after you moved on is dropped,
     and a file that's gone says so */
-/* ---------- the old picture leaving has ONE owner (2026-10-31, ownership map V2) ----------
+/* ---------- the old picture leaving: ONE owner (ownership map V2) ----------
    Switching pictures: the one on show is copied to an overlay (#cvx) at its own size and fades out over the next —
    never an empty frame in between (Photos / Lightroom). This module alone writes the overlay's opacity: one state —
    idle → held (a copy of what was on screen) → fading → idle — and a fade is ONE animation, the cross-fade's by
-   default or on the caller's own keyframes and clock (the crop-and-reveal, morph.js). The cross-fade (a CSS
-   transition here) and the crop-and-reveal (an animation of its own there) used to fade it each their own way, kept
-   apart by two flags (data-wait, data-morph) — the tracer's V2. The neighbours are decoded ahead (preload) */
+   default or on the caller's timing and clock (the crop-and-reveal, morph.js). The neighbours are decoded ahead
+   (preload) */
 /** @type {"idle" | "held" | "fading"} */
 let ov = "idle";
 /** what the overlay holds: the picture it copied (the canvas's data-shown) @type {string | undefined} */
@@ -102,17 +99,16 @@ const SAME = fades(shapeSteps({ w: 1, h: 1 }, { w: 1, h: 1 }));
 /** @type {Animation | null} the frame's picture coming in */
 let cvIn = null;
 let arriving = false; // the picture being drawn comes into an empty frame: nothing to cross-fade from
-/* ---------- the empty frame's text is the frame's third layer (2026-11-01, F2) ----------
+/* ---------- the empty frame's text is the frame's third layer (F2) ----------
    "Next: 3:4 · … / Estimated time" stands in for a picture: it shows while the frame is empty and fades by the same fade
-   as the pictures — out as one comes in, in as one leaves (on that picture's own timing and clock). The status loop
-   used to show and hide it at once (display), the picture fading meanwhile: Generating ↔ the Gallery cut the text */
+   as the pictures — out as one comes in, in as one leaves (on that picture's own timing and clock) */
 let idleOn = true;
 /** @param {boolean} on @param {{ delay: number, duration: number, startTime?: number | null }} fade */
 function idleFade(on, fade) {
   if (on === idleOn) return;
   idleOn = on;
   const el = $("idle"),
-    /* from what is on screen (fade.js fade, R1): a turn-back mid-fade carries on — it was cancelled and restarted */
+    /* from what is on screen (fade.js fade): a turn-back mid-fade carries on */
     [a] = fadeTo(
       el,
       on ? 1 : 0,
@@ -142,13 +138,11 @@ export function frameEmptied() {
   );
 }
 /** the frame's picture comes in — the other half of the same owner (the overlay is what leaves): one fade, the
- * cross-fade's by default, or on a motion's timing and clock (the crop-and-reveal). It used to have none of its own in
- * place — a picture came into an empty frame at once (the user: "Gallery just appears instantly") — and its own 80 ms
- * one in the crop-and-reveal (2026-10-31, F1)
+ * cross-fade's by default, or on a motion's timing and clock (the crop-and-reveal) (F1)
  * @param {{ delay: number, duration: number, startTime?: number }} [fade] */
 export function pictureIn(fade = SAME.in) {
   const cv = /** @type {HTMLCanvasElement} */ ($("cv"));
-  /* new content comes from unseen; a fade-in already running carries on from its value (fade.js fade, R1) */
+  /* new content comes from unseen; a fade-in already running carries on from its value (fade.js fade) */
   const [a] = fadeTo(
     cv,
     1,
@@ -177,7 +171,7 @@ function overlayHold(cv) {
   const c = /** @type {CanvasRenderingContext2D} */ (x.getContext("2d"));
   c.drawImage(cv, 0, 0);
   /* what was on screen, not the bare canvas: a render shows under its veil and embers — cropped without them, the
-     render's preview read as another picture, zoomed (the user, 2026-10-28) */
+     render's preview read as another picture, zoomed */
   for (const id of ["veil", "embers"]) {
     const e = /** @type {HTMLCanvasElement | null} */ (document.getElementById(id));
     if (e && e.width > 1 && +getComputedStyle(e).opacity > 0.01 && getComputedStyle(e).display !== "none")
@@ -338,12 +332,9 @@ export const shownMissing = () => {
   return d && d.missing ? d : null;
 };
 
-/* ---------- THE frame's picture (R3, the re-read 2026-11-10 — DEVLOG DD-2026-11-10-11) ----------
-   One entry for what the frame's canvas shows — a render's pictures, a finished picture, nothing — so its rules (an
-   old picture held over the new one fades off it; a picture into an empty frame fades in) hold for every picture and
-   can't be bypassed. The render's previews were drawn by progress.js itself, past those rules: the first one popped in
-   (a call was added there — G11); its tags (what the canvas shows) were written in two modules. progress.js still
-   fetches the previews (polling is its job) and hands them over here. */
+/* ---------- THE frame's picture: ARCHITECTURE › what the frame's canvas shows (DD-2026-11-10-11) ----------
+   One entry for a render's pictures, a finished picture, nothing — so its rules hold for every picture. progress.js
+   fetches the previews (polling is its job) and hands them over here */
 const frameCv = () => /** @type {HTMLCanvasElement} */ ($("cv"));
 /** the render whose pictures the frame is showing, before its first one has landed @type {number | null} */
 let renderFirst = null;

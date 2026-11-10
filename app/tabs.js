@@ -82,18 +82,14 @@ export function tabSync(force) {
   moveThumb();
 }
 /* a tab switch is navigation, not a layout edit: the new tab is laid out at once and the switch moves everything from
-   where it was, live (2026-10-28: no View Transition — its pictures of the page couldn't hold glass, changed what
-   painted over what, and took the pointer away: a run of blinks). Generating ↔ the Gallery is one view with another
-   picture: the frame crops and reveals by itself, as when browsing. Between views both stay on the page for the switch
+   where it was, live (no View Transition: decision 0014). Generating ↔ the Gallery is one view with another picture:
+   the frame crops and reveals by itself, as when browsing. Between views both stay on the page for the switch
    (plate.js switchGlide) */
-/** @param {() => void} fn */
-/** @param {() => void} fn the switch itself @param {boolean} [layout] a layout switch (Left / Right / Vertical, T2b):
- * the same view rides the plate to its new place, the prompt box changes its relation to it — the tab switch's system,
- * not a View Transition (docs/decisions/0014) @param {import("./layoutmath.js").RelationCause} [cause] what changed the
- * box's relation (a layout switch): your hand ("hand" — a drop) or the Layout menu / Reset ("menu") */
+/** @param {() => void} fn the switch itself @param {boolean} [layout] a layout switch (Left / Right / Vertical) —
+ * ARCHITECTURE › a layout switch @param {import("./layoutmath.js").RelationCause} [cause] what changed the box's
+ * relation (a layout switch): your hand ("hand" — a drop) or the Layout menu / Reset ("menu") */
 export function tabGo(fn, layout = false, cause = "menu") {
-  /* a layout switch changes the box's relation to its partner (the plate): ONE table says how (layoutmath.js
-     relationMotion — L1a): a travel from where it is (your drop) or a fade through (the menu) */
+  /* a layout switch changes the box's relation to its partner — ARCHITECTURE › a pane's change of relation */
   const rel = layout ? relationMotion({ pane: "box", partner: "plate", cause }, 0).pattern : null,
     from = plateBefore(),
     /* a fade through: the box's stand-in, made before anything changes — it fades out as the box was, while the box
@@ -101,7 +97,7 @@ export function tabGo(fn, layout = false, cause = "menu") {
     stand = rel === "fade" ? standIn() : null,
     /* a travel: the box as it is seen now (lifted under your hand) — it goes on from here */
     seen0 = rel === "travel" ? $("left").getBoundingClientRect() : null,
-    dock0 = /** @type {"left" | "right" | "below"} */ (S.dock || "left"), // the box's relation before (T2c)
+    dock0 = /** @type {"left" | "right" | "below"} */ (S.dock || "left"), // the box's relation before
     v0 = /** @type {HTMLElement | null} */ (document.querySelector(".rpanel > .view.on")),
     r0 = v0 ? v0.getBoundingClientRect() : null,
     f0 = frameBox(),
@@ -110,13 +106,9 @@ export function tabGo(fn, layout = false, cause = "menu") {
     me = ++tabGos;
   snapHold("tab", 10000); // the layout lands at once: the switch alone moves things (let go at its end, below)
   if (!layout) document.documentElement.classList.add("tabswitch"); // a tab switch: the tab pill still slides
-  /* a switch within Generating's view changes the frame's box: the frame's owner crops and reveals it (G11) — a switch
-     to another view gives it up (frameHold) */
-  /* the picture's view: a box of another shape or size crops and reveals; a layout switch keeps the SAME picture, which
-     scales with its pane — the frame travels and the picture fills it the whole way, no copy, no swap (the user,
-     2026-11-10: "we should see picture being scaled up and down at the same time as the pane does" — iOS Photos' zoom,
-     Material's container transform; DEVLOG DD-2026-11-10-2. It cropped and revealed at its own sizes, its copy crossing:
-     "the pic seems to lag, it's clearly not a part of the page") */
+  /* the picture's view: the frame's owner decides — a box of another shape or size crops and reveals; a layout switch
+     keeps the SAME picture, which scales with its pane (DD-2026-11-10-2); a switch to another view gives it up
+     (frameHold) */
   if (S.view === "gen" && f0) pictureChange({ ...f0, x: fr0.left, y: fr0.top, scale: layout });
   lay.frameDefer = true;
   try {
@@ -128,13 +120,10 @@ export function tabGo(fn, layout = false, cause = "menu") {
       sizeFrame();
     }
   }
-  /* a layout switch: the layout settled before anything is measured — the box placed (layoutLeft), then the layout
-     again: in Vertical the page's room ends above the box's name, so a room measured before the box moved was stale
-     (the switch aimed the plate at 401 px and jumped to 641 at its end; the box's offset pointed 300 px off) */
+  /* a layout switch: the layout settled before anything is measured — to its fixed point: in Vertical the box's place
+     feeds the page's room and the room the box (two rounds do it; a third only confirms) */
   if (layout)
     for (let i = 0; i < 3; i++) {
-      /* to its fixed point: in Vertical the box's place feeds the page's room and the room the box (two rounds do it;
-         a third only confirms) — one round left a 13 px nudge a frame into the switch */
       const was = $("lcol").style.cssText + $("frame").style.cssText + $("rpanel").style.cssText;
       layoutLeft();
       sizeFrame();
@@ -147,7 +136,7 @@ export function tabGo(fn, layout = false, cause = "menu") {
       o = { l: seen0.left - at.x, t: seen0.top - at.y, w: 0, h: 0 };
     liftCol(o.l, o.t);
     travel("lift", o, { l: 0, t: 0, w: 0, h: 0 }, b => liftCol(b.l, b.t));
-    /* carried as a token (the drop map, L1b): it grows back to its size on the same clock (it scales about its top-left
+    /* carried as a token (the drop map): it grows back to its size on the same clock (it scales about its top-left
        corner, so the travel measured from that corner holds) */
     const s0 = liftScale();
     if (s0 !== 1) travel("liftScale", { l: s0, t: 0, w: 0, h: 0 }, { l: 1, t: 0, w: 0, h: 0 }, b => liftToken(b.l));
@@ -168,14 +157,13 @@ export function tabGo(fn, layout = false, cause = "menu") {
        render and the Gallery keep different room (their insets). The status row's fade is the layout's (rowFade) */
   }
   placeNavs();
-  /* the box: a layout switch changes its relation to the plate (glued, fading through); a tab switch keeps it — it rides
-     the travelling plate (layout.js promptFollow, in the driver's frames; it slid on a clock of its own, slideCol) */
+  /* the box: a layout switch by the menu fades through its change of relation; a tab switch keeps it — it rides the
+     travelling plate (layout.js promptFollow, in the driver's frames) */
   if (stand) fadeCol(stand, sw, { plate: from, dock: dock0 });
   /* a travel: glued to where the plate lands from the first frame (fadeCol does it for a fade) — its lift is measured
-     from there: on the old relation's glue the first frame was 700 px off */ else if (seen0) promptFollow(true);
-  /* once it HAS landed — its own end (plate.js switchLanded: its animations over, the driver idle), not a timer's guess
-     (T4: it let go sw.T + 300 ms in, and in between every change jumped) — the layout's glides come back, THEN one more
-     layout (measured mid-switch, the prompt column's Vertical shift rested a pixel off): a correction now glides */
+     from there */ else if (seen0) promptFollow(true);
+  /* once it HAS landed — its own end (plate.js switchLanded), not a timer (T4) — the layout's glides come back, THEN
+     one more layout (measured mid-switch, a place can rest a pixel off): a correction now glides */
   switchLanded().then(() => {
     if (me !== tabGos) return; // a newer tab switch holds it now
     snapHold("tab", 0);
@@ -185,8 +173,7 @@ export function tabGo(fn, layout = false, cause = "menu") {
 }
 let tabGos = 0; // tab switches started so far
 /** each page's opacity and box on screen now — read before a switch changes anything (after, the classes already say
- * what's coming): mid-switch the leaving page is part faded and the coming one not yet in, and a switch restarted from
- * 1 and 0 cut them (F4, the tracer: a tab 25 % into a switch, the picture 0.78 → 0 in one frame)
+ * what's coming): mid-switch the leaving page is part faded, and a switch restarted from 1 and 0 cut it (F4)
  * @returns {Map<HTMLElement, { o: number, r: DOMRect }>} */
 function onScreen() {
   const m = new Map();
@@ -197,9 +184,8 @@ function onScreen() {
   }
   return m;
 }
-/** go to a page — THE way a page switch happens (2026-11-02, the user: the Add LoRA button jumped "all over the place"):
- * a tab, the Add LoRA button and a LoRA chip, a Queue row, PNG Info's load, Reset layout, ✕ back to where you came
- * from — all on the tab switch's one motion (tabGo). `then` runs on the new page, inside the switch.
+/** go to a page — THE way a page switch happens (ARCHITECTURE › going to a page). `then` runs on the new page, inside
+ * the switch.
  * @param {import("./types.js").Settings["view"]} v @param {() => void} [then] */
 export function goView(v, then) {
   tabGo(() => {

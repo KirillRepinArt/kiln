@@ -161,6 +161,10 @@
   display: none;
   place-items: center;
   z-index: 6; /* over the picture, under every edge handle (the picture's strips 7, the panes' 8: one home per strip) */
+  /* a control takes its own press: it doesn't inherit a container's pass-through (Vertical's empty boxes let the pointer
+     through, layout.css — on the floating layer these two inherited it and every click fell to the picture: the zoom,
+     the user, 2026-11-10) */
+  pointer-events: auto;
 }
 .cbtn {
   opacity: 0;
@@ -326,9 +330,13 @@ body:has(#stage.tools) .gtools .side button {
   position: fixed;
   translate: none; /* placed exactly by browse.js: not centred by the .nav rule */
   z-index: 20;
+  pointer-events: none; /* unseen, they take no press (V6: at 0 they caught clicks over a menu or a handle) */
 }
+/* ONE decider for "are the arrows there": body.navs (edges.js — hover over the picture) shows them AND gives them the
+   pointer */
 body.navs .gnav:not(.off) {
   opacity: 1;
+  pointer-events: auto;
 }
 body:not(:has(#v-gen.on, #v-gen.leaving)) .gnav,
 body:has(.frame.missing) .gnav,

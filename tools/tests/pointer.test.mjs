@@ -46,6 +46,15 @@ const sweep = (k, step = 8) =>
       if(drawn(top))continue;
       const ctl=stack.slice(1).map(e=>e.closest(C)).find(c=>c&&!c.contains(top)&&!top.contains(c)&&live(c)&&opac(c)>0.05&&st(c).visibility!=="hidden");
       if(ctl)add("invisible "+name(top)+" over "+name(ctl),x,y)}
+    /* every control you can see takes its own press at its centre (a pass-through inherited, or something drawn over it:
+       the eye and the ✕ in Vertical gave every click to the picture, 2026-11-10) */
+    for(const c of document.querySelectorAll(C)){const s=st(c);if(s.display==="none"||s.visibility==="hidden"||opac(c)<0.5)continue;
+      const r=c.getBoundingClientRect();if(r.width<4||r.height<4)continue;const x=r.left+r.width/2,y=r.top+r.height/2;
+      if(x<0||y<0||x>=innerWidth||y>=innerHeight)continue;
+      let clipped=false;for(let a=c.parentElement;a&&a!==document.body;a=a.parentElement){const q=st(a);if(q.overflow!=="visible"||q.overflowX!=="visible"||q.overflowY!=="visible"){const b=a.getBoundingClientRect();if(x<b.left||x>b.right||y<b.top||y>b.bottom){clipped=true;break}}}
+      if(clipped)continue; /* scrolled out of its list: not shown there */
+      const e=document.elementFromPoint(x,y);if(e&&e.closest(".pop.show"))continue; /* an open menu covers what's under it, on purpose */
+      if(e&&e!==c&&!c.contains(e))add("a control not taking its press: "+name(c)+" (it goes to "+name(e)+")",Math.round(x),Math.round(y))}
     return out})()`);
 
 /** one case: a layout × its states */
@@ -59,14 +68,20 @@ function caseOf(dock) {
       ["LoRAs", `showView("loras")`],
       ["PNG Info", `showView("png")`],
       ["a menu open (Ratio)", `(showView("gen"),$("pAR").click())`],
+      ["Generating, the pointer over the picture", `showView("gen")`, "#frame"],
     ];
     const all = /** @type {Record<string, { n: number, at: number[], where: string[] }>} */ ({});
     await k.ev(`(setDock(${JSON.stringify(dock)}),1)`);
     await k.sleep(1200);
-    for (const [label, act] of states) {
+    for (const [label, act, over] of states) {
       await k.ev(`(${act},1)`);
       await k.mouse(2, 2);
       await k.sleep(1400);
+      if (over) {
+        const r = await k.rect(over);
+        await k.mouse(r.left + r.width / 2, r.top + r.height / 2); // its controls shown (the eye, the ✕, the arrows)
+        await k.sleep(600);
+      }
       const f = await sweep(k);
       for (const [key, v] of Object.entries(f)) {
         const a = (all[key] ||= { n: 0, at: v.at, where: [] });
@@ -115,5 +130,34 @@ export async function pointerSelfCheck(k, t) {
     keys.some(x => /^grip without the grab hand: div\.controls/.test(x)),
     "finds the grip without its hand",
     keys,
+  );
+}
+
+/* V6 (the re-read, 2026-11-10): the picture's arrows take the pointer only while they're shown — unseen (opacity 0, over
+   everything at z 20) they caught presses meant for what lay under them */
+export async function arrowsTakeThePointerOnlyShown(k, t) {
+  for (const c of ["446688", "aa7733"]) await k.job(`[fill:${c}] p`, { ar: "3:4", steps: 1 });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=2`, 40000);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1500);
+  const at = () =>
+    k.ev(`[...document.querySelectorAll(".gnav")].filter(b=>!b.classList.contains("off")).map(b=>{const r=b.getBoundingClientRect(),e=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+      return {nav:b.dataset.nav,op:+getComputedStyle(b).opacity,takes:!!e&&(e===b||b.contains(e))}})`);
+  const hidden = await at();
+  t.ok(hidden.length > 0, "the Gallery has an arrow to check", hidden);
+  t.ok(
+    hidden.every(a => a.op < 0.05 && !a.takes),
+    "pointer away: the arrows are unseen and take no press",
+    hidden,
+  );
+  const f = await k.rect("#frame");
+  await k.mouse(f.left + f.width / 2, f.top + f.height / 2);
+  await k.sleep(500);
+  const shown = await at();
+  t.ok(
+    shown.every(a => a.op > 0.95 && a.takes),
+    "over the picture: the arrows show and take the press",
+    shown,
   );
 }

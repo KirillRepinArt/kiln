@@ -13,7 +13,7 @@ const SKINS = {
   starscape: { bg: "stars", cover: "bands" },
 };
 export const DEFAULT_SKIN = "starscape";
-/* the skins of before the cleanup (2026-10-27) → the nearest one now */
+/* old skin names → the nearest skin now */
 const RENAMED = { ice: "starscape", sunset: "embers", ember: "embers", emerald: "matrix" };
 /** a saved theme name → a skin that exists @param {string} [name] */
 export function skinName(name) {

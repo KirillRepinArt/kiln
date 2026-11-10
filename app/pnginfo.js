@@ -107,17 +107,15 @@ function piParams(line) {
   }
   return out;
 }
-/* a copy icon beside a heading copies what's under it — the prompt, not the whole stored text (2026-10-27, the user:
-   Send to prompt reproduces a picture; the full text also carries LoRA names and hashes, easy to paste somewhere by
-   accident). Settings have none: Send to prompt covers them */
+/* a copy icon beside a heading copies what's under it — the prompt, not the whole stored text (that carries LoRA names
+   and hashes, easy to paste somewhere by accident; Send to prompt reproduces a picture). Settings have none */
 /** @type {Record<string, string>} what each icon copies: prompt, neg, raw */
 let copyable = {};
 const COPY_SVG = IC.copy.replace('stroke="#fff"', 'stroke="currentColor"');
 /** a heading, with a copy icon for `copy` @param {string} t @param {string} [copy] a key of `copyable` */
 const piH = (t, copy) =>
   `<div class="pi-h"><span>${t}</span>${copy ? `<button class="pi-copy" data-copy="${copy}" title="Copy the ${t.toLowerCase()}">${COPY_SVG}</button>` : ""}</div>`;
-/* formatted when it's Forge's / A1111's layout (a "Steps:" line); anything else is shown as stored — the old "Show raw
-   text" button is gone (2026-10-27, the user: "not sure why we need it") */
+/* formatted when it's Forge's / A1111's layout (a "Steps:" line); anything else is shown as stored */
 /** @param {string} t the PNG's parameters text */
 function renderPngInfo(t) {
   const o = $("pout");
@@ -287,7 +285,7 @@ export function initPnginfo() {
       `Loaded into the prompt${parsed.name ? ` as “${parsed.name}”` : ""} — ${S.keepSeed ? "its seed" : "new random seed"}`,
       "",
       null,
-      "gen", // your draft's news: under the Generating tab (the user, 2026-10-28)
+      "gen", // your draft's news: under the Generating tab
     );
   };
 }

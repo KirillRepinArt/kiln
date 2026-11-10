@@ -3,7 +3,7 @@
    Generating shows LIVE (the render under its cover), a STILL (a finished picture: the result that just landed, or a
    reference you brought there yourself) or EMPTY; the Gallery is BROWSE(k). Rules, in order:
    1. the Gallery tab opens on the picture you're looking at; the Generating tab is the live view (the render, or the
-      clean frame when idle — revised 2026-10-24, the user's call); an arrow always changes the picture
+      clean frame when idle); an arrow always changes the picture
    2. a result gives way to the render only once the render has a picture of its own (its first preview)
    3. a reference stays until you let it go (✕, Start, an arrow) — a running render never pushes it away
    4. ✕ on a picture = the clean area: the render if a job runs, else the empty frame (← brings the picture back)
@@ -83,11 +83,10 @@ export function pvPrune() {
   pvSync();
 }
 function resetCv() {
-  frameForget(); // the picture owner's (pictures.js, R3)
+  frameForget(); // the picture owner's (pictures.js)
 }
-/* the picture fades out over what comes next (live.js: a snapshot on #cvx) */
-/* — always, by the one fade, also when nothing comes after it (✕, the Generating tab with no render): it used to just
-   go then, the one picture change that didn't fade (the user, 2026-10-31: "a fade would be more consistent") */
+/* the picture fades out over what comes next (pictures.js xfadeSnap: a copy on #cvx) — always, by the one fade, also
+   when nothing comes after it (✕, the Generating tab with no render) */
 function snapOut() {
   if (S.view === "gen" && $("frame").classList.contains("has")) xfadeSnap(!!current());
 }
@@ -100,8 +99,8 @@ function browseSet(j) {
   PV.still = null;
   PV.news = null;
   resetCv();
-  /* no layout here: pv lays out once at its end, after the picture change is declared (G11) — laid out here first,
-     the frame glided before its owner knew the picture was changing (a shape change stopped cropping and revealing) */
+  /* no layout here: pv lays out once at its end, after the picture change is declared (G11) — laid out first, the
+     frame glided before its owner knew the picture was changing */
   if (!PV.promptClosed) loadJob(j);
   else if (peekJob) peekHide();
   {
@@ -201,8 +200,7 @@ function pvApply(ev, arg, run) {
       PV.news = null;
       break;
     case "shape" /* size or ratio changed: the picture on show stays — you're often editing from it; the pill shows the
-      new shape, the empty frame previews it once the picture goes (✕, an arrow, Start). Revised 2026-10-27, the user's
-      call: a result clearing as you typed was a surprise every time */:
+      new shape, the empty frame previews it once the picture goes (✕, an arrow, Start) */:
       break;
     case "gallery" /* the Gallery tab: the picture on show, else the newest (rule 1) */:
       {

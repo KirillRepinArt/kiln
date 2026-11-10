@@ -2,11 +2,9 @@
    Where a scroll area has more to show, its text fades out at that edge and slides under a soft blur (Apple's scroll
    edge effect). It is a property of the area, defined once here; an area takes it with two classes — .scroll-edge on
    its wrapper, .scroll-edge-area on the scroller itself:
-   - it follows the scroll position IN THE SAME FRAME: a CSS scroll timeline drives the fades and the blur (it was
-     classes set by script after the scroll, eased over 200 ms: the text stood at the edge unfaded first — the user,
-     2026-11-09: "I can see the text jumping first and then a bit later the gradient applies");
-   - it is sized in LINES, not pixels (--edge-fade: three quarters of a line): a two-line box keeps its two lines (28 px
-     ate one, the user's "half of the box unused");
+   - it follows the scroll position IN THE SAME FRAME: a CSS scroll timeline drives the fades and the blur (never classes
+     set by script after the scroll: the text would stand at the edge unfaded first);
+   - it is sized in LINES, not pixels (--edge-fade: three quarters of a line): a two-line box keeps its two lines;
    - it is the text's: never over the scrollbar (--sbw, its strip at full strength), and it starts inside the surface's
      rim (--edge-top);
    - the area has no padding at a faded edge: the fade IS the edge (the editor keeps the caret a fade's length clear —

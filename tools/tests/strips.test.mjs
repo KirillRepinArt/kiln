@@ -1,7 +1,7 @@
 // One home per strip (CLAUDE.md; ROADMAP v0.7c B19 — the user's note, 2026-11-06: the prompt box's buttons sit under the
 // resize handles). A resize handle's strip of screen belongs to the handle alone: no control (a button, a field, a pill, a
 // link) lies under it, so a press never lands on a handle when it means a control — or the other way round.
-const HANDLES = ".pedge,.sedge,.vedge,.hsplit,.hedge,.vpedge,.phedge"; // outlines.js HANDLES
+const HANDLES = ".pedge,.sedge,.vedge,.hedge,.vpedge,.phedge"; // outlines.js HANDLES
 const CONTROL = "button, input, select, textarea, a, [role=button], .pill, .chip, [contenteditable=true], .cm-content";
 
 /** every visible handle, sampled along its length: what lies under it */
@@ -20,7 +20,7 @@ const underHandles = k =>
 /** every handle's band against its pane: how far it reaches in, and out (B19: 1 px in, out to the outline) */
 const bands = k =>
   k.ev(`(()=>{const out=[],O=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--outline-out"));
-    const paneOf=h=>h.matches(".pedge.po,.pedge.pi,.sedge,.vedge")?$("left"):h.matches(".hsplit")?null:$("plate");
+    const paneOf=h=>h.matches(".pedge.po,.pedge.pi,.sedge,.vedge")?$("left"):$("plate");
     for(const h of document.querySelectorAll(${JSON.stringify(HANDLES)})){const r=h.getBoundingClientRect(),c=getComputedStyle(h);
       if(r.width<1||r.height<1||c.display==="none"||c.visibility==="hidden"||c.pointerEvents==="none")continue;
       const pane=paneOf(h);if(!pane)continue;const p=pane.getBoundingClientRect(),name=(h.id?"#"+h.id:"")+"."+[...h.classList].join(".");

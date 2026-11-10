@@ -28,7 +28,7 @@ const RUBBER = 20, // layoutmath.js RUBBER: the rubber band's reach
   GIVE = RUBBER + 2, // + a frame's rounding
   STILL = 1.5,
   FAR = 1600; // past any limit in these windows (the pointer is kept inside the window)
-const HANDLES = ".pedge,.sedge,.vedge,.hsplit,.hedge,.vpedge,.phedge"; // outlines.js HANDLES
+const HANDLES = ".pedge,.sedge,.vedge,.hedge,.vpedge,.phedge"; // outlines.js HANDLES
 const PARTS = { bar: "nav.tabs", box: "#left", plate: "#plate", pic: "#frame" };
 
 const ev = (k, type, x, y, b = 1) =>
@@ -125,13 +125,14 @@ const overlap = (a, b) =>
 const round = m => JSON.parse(JSON.stringify(m, (_, v) => (typeof v === "number" ? Math.round(v * 10) / 10 : v)));
 
 /** the DD-5 size an edge's double-click keeps (DD-2026-11-03-5), as the stored sizes say it: what kind of edge a handle
- * is, by its label — the box's sides, Vertical's box bottom, the shared edge, the page's own; null: nothing to keep
- * (side by side the box's height edges: its height is its text's) */
+ * is, by its label — the box's sides, its height edges (its text's height again: C6), the shared edge (side by side the
+ * divider's two bands; in Vertical the page's bottom and the box's top — B19b), the page's own */
 const dd5 = (label, dock, axis) => {
   const vert = dock === "below";
   if (/\.pedge\.po|\.sedge\./.test(label)) return "box.w";
-  if (/#vedge|\.vedge\.t/.test(label)) return vert ? "box.h" : null;
-  if (/\.pedge\.(pi|ri)|#hsplit/.test(label)) return "shared";
+  if (/#vedge/.test(label)) return "box.h";
+  if (/\.vedge\.t/.test(label)) return vert ? "shared" : "box.h";
+  if (/\.pedge\.(pi|ri)/.test(label) || (vert && /\.hedge\.b|\.phedge\.b/.test(label))) return "shared";
   return axis === "x" ? "page.x" : "page.y";
 };
 /** double-click handle h, sampling every part's rect each frame from just before it (in one evaluation: the harness
@@ -210,7 +211,7 @@ function caseOf(dock, page, ar) {
             );
         }
       }
-      if (dock === "below" && h.label.includes("hsplit")) {
+      if (dock === "below" && h.label.includes(".vedge.t")) {
         const m0 = await measure(k);
         if (m0.box && m0.H - 20 - m0.box.bottom > 120) {
           const r = await pull(k, h, 40),
@@ -249,7 +250,12 @@ function caseOf(dock, page, ar) {
         );
         const r = await pull(k, h, dir * FAR), // past it again, from there
           S2 = r.after,
-          on = touching(S1, h.axis, r.start),
+          /* Vertical: the box's top band and the page's bottom band are the SHARED edge's (B19b) — both panes, whatever the
+             band touches (the name row lies between the box's band and the page) */
+          on =
+            dock === "below" && /\.vedge\.t|\.hedge\.b|\.phedge\.b/.test(h.label)
+              ? { box: "top", plate: "bottom", ...(S1.pic ? { pic: "bottom" } : {}) }
+              : touching(S1, h.axis, r.start),
           moving = Object.keys(on),
           /* the give: how far the grabbed edge moved — the panes' sides on it, not the handle (some handles don't ride
              their edge while held) */

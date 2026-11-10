@@ -855,19 +855,7 @@ export function vAlign() {
   const p = lay.passV ?? vPass(),
     col = $("lcol"),
     colTop = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop,
-    pn = p.box.y - nameRowH(),
-    A = evenGap(),
-    hs = $("hsplit").style;
-  hs.top = pn - A - colTop + "px";
-  hs.height = Math.max(6, A - 2) + "px";
-  /* as long as the panes it joins (B11): the pass's shared handle — the overlap of the page's width and the box's */
-  const sh = p.handles.shared,
-    colLeft = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().left + col.offsetLeft;
-  if (sh) {
-    hs.left = Math.round(sh.x - colLeft) + "px";
-    hs.width = Math.round(sh.w) + "px";
-    hs.right = "auto";
-  }
+    pn = p.box.y - nameRowH();
   col.style.setProperty("--gtop-v", pn - colTop - 2 + "px");
 }
 /* ---------- the prompt column's place has ONE owner (2026-10-28) ----------

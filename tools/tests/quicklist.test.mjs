@@ -33,8 +33,8 @@ export async function verticalTitleClicks(k, t) {
   await k.mouse(f.left + f.width / 2, f.bottom + 4);
   await k.sleep(400);
   t.ok(
-    await k.ev(`document.elementFromPoint(${f.left + f.width / 2},${f.bottom + 4}).id === "hsplit"`),
-    "the boundary under the picture takes the pointer: the divider",
+    await k.ev(`document.elementFromPoint(${f.left + f.width / 2},${f.bottom + 4}).matches(".hedge.b")`),
+    "the boundary under the picture takes the pointer: the shared edge's band (B19b)",
   );
 }
 verticalTitleClicks.opts = { width: 1872, height: 1080, step: 0.05 };

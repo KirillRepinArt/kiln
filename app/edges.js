@@ -115,7 +115,7 @@ export function initEdges() {
      reads it: the other side holds); let go, your height (Custom: the spec, ux-review/16-layout-pass.md rule 3 — C6; it
      was its text's only, DD-2026-11-02-12, so these edges only gave a little and snapped back). In
      Vertical the bottom sets the box's height — yours (Custom, decision A: C4c), through the layout pass; its top is the
-     edge it shares with the page (#hsplit), so no handle of its own there (B10) */
+     edge it shares with the page — its band is that edge's, wired below (B19b) */
   (function () {
     const L = $("left"),
       top = document.createElement("div");
@@ -170,14 +170,14 @@ export function initEdges() {
       });
     }
   })();
-  /* Vertical: the edge the page (picture or panel) and the prompt box share — ONE handle, the line in the gap above the
-     prompt's name (#hsplit; the box's own top is not a second one: B10). It trades (C4 rule 4, through the pass): down,
-     the page grows and the box gives, down to its least; up, the page shrinks and the box takes it — the group's bottom
-     holds; both sizes become yours. Past a limit the rubber band. Double-click: both back to their defaults (the picture
-     first) */
+  /* Vertical: the edge the page (picture or panel) and the prompt box share has a band on each pane — the page's bottom
+     (below) and the box's top (here) — both the ONE shared edge, as side by side's divider (B19b). It pushes into the
+     empty room first, then trades (C4 rule 4, C6, through the pass); both sizes become yours. Past a limit the rubber
+     band. Double-click: both back to their defaults (the picture first). It was one handle in the gap between them
+     (#hsplit) */
   passEdge(
-    $("hsplit"),
-    () => RESIZES.hsplit,
+    /** @type {HTMLElement} */ (q("#left > .vedge.t")),
+    () => RESIZES.shared,
     ["vresizing", "laydrag"],
     () => (stacked() ? "shared" : null),
     "y",
@@ -245,13 +245,13 @@ export function initEdges() {
   /* the picture's own edges (Generating, the Gallery): its size, a scale of its largest — through the layout pass in both
      layouts (C3; Vertical: C4c). Side by side its top and bottom (a centred axis: the other mirrors); in Vertical its top
      (the anchored side: its bottom holds while held, the release settles) and its sides (about its centre) — its bottom
-     there is the shared edge (#hsplit). Double-click: its largest */
+     there is the shared edge (B19b). Double-click: its largest */
   qa(".hedge").forEach(h => {
     const e = /** @type {string} */ (h.dataset.e),
       y = e === "t" || e === "b";
     passEdge(
       h,
-      () => RESIZES.hedge,
+      () => (h.dataset.e === "b" && stacked() ? RESIZES.shared : RESIZES.hedge), // Vertical: its bottom is the shared edge
       ["vresizing", "laydrag"],
       () =>
         S.view !== "gen"
@@ -301,7 +301,7 @@ export function initEdges() {
       rt.appendChild(h);
       passEdge(
         h,
-        () => RESIZES.phedge,
+        () => (side === "b" && stacked() ? RESIZES.shared : RESIZES.phedge), // Vertical: its bottom is the shared edge
         ["vresizing", "laydrag"],
         () => (S.view === "gen" ? null : side === "t" ? "page.top" : stacked() ? "shared" : "page.bottom"),
         "y",

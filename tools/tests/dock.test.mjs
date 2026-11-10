@@ -227,13 +227,7 @@ export async function gripIsTheWholeGroup(k, t) {
         /* clear of the size buttons at the row's right end (controls) */
         "the name row, right of the name": (/** @type {any} */ r) => [r.L.right - 100, r.T.top + r.T.height / 2],
         /* (B19, DEVLOG DD-2026-11-10-5: the gaps between the box and its name row and LoRA row are the box's resize bands
-           — the picture's rule for every pane; side by side above it too. In Vertical its top is the shared edge,
-           which lives above the name row, so the gap under the name still grips) */
-        ...(dock === "below"
-          ? {
-              "the gap between the name and the box": (/** @type {any} */ r) => [r.L.left + r.L.width / 2, r.L.top - 4],
-            }
-          : {}),
+           — the picture's rule for every pane; in Vertical too since B19b: its top band is the shared edge's) */
         "the LoRA row's empty part": (/** @type {any} */ r) => [
           Math.min(r.L.right - 12, r.add.right + 60),
           r.C.top + r.C.height / 2,
@@ -244,14 +238,10 @@ export async function gripIsTheWholeGroup(k, t) {
         "a pill": (/** @type {any} */ r) => [r.pill.left + r.pill.width / 2, r.pill.top + r.pill.height / 2],
         "the LoRA add button": (/** @type {any} */ r) => [r.add.left + r.add.width / 2, r.add.top + r.add.height / 2],
         "the box's bottom band (the gap above the LoRA row)": (/** @type {any} */ r) => [r.L.left + 12, r.L.bottom + 4],
-        ...(dock !== "below"
-          ? {
-              "the box's top band (the gap under its name)": (/** @type {any} */ r) => [
-                r.L.left + r.L.width / 2,
-                r.L.top - 4,
-              ],
-            }
-          : {}),
+        "the box's top band (the gap under its name)": (/** @type {any} */ r) => [
+          r.L.left + r.L.width / 2,
+          r.L.top - 4,
+        ],
       };
     for (const [what, f] of Object.entries(empty)) {
       const [x, y] = await at(f);
@@ -339,7 +329,7 @@ export async function handlesOutlineTheirPanes(k, t) {
       [".hedge.t", true, false],
     ],
     below: [
-      ["#hsplit", true, true],
+      ["#left > .vedge.t", true, true],
       [".sedge.l", false, true],
       [".hedge.t", true, false],
     ],

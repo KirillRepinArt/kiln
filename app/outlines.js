@@ -11,7 +11,7 @@ import { $ } from "./dom.js";
 /** what each handle resizes: its outline set (Apple HIG split view: a divider changes both panes) @type {Record<string, Pane[]>} */
 export const RESIZES = {
   dv: ["pic", "box"], // the divider side by side (pi / ri)
-  hsplit: ["pic", "box"], // the divider in Vertical
+  shared: ["pic", "box"], // Vertical's shared edge, from either pane's band (B19b)
   po: ["box"], // the prompt's outer edge
   vedge: ["box"], // the prompt box's bottom edge (side by side)
   sedge: ["box"], // the prompt box's sides (Vertical)
@@ -23,7 +23,7 @@ export const RESIZES = {
 /** every resize handle (the edges you drag): pressing one is resizing, never working IN the prompt (layout.js's
  * pressCard hold) nor gripping it (cardlayout.js) — one list (2026-11-01: the divider sits inside the prompt's column, and
  * its press held the prompt still while the picture's room changed: the prompt overlapped the picture) */
-export const HANDLES = ".pedge,.sedge,.vedge,.hsplit,.hedge,.vpedge,.phedge";
+export const HANDLES = ".pedge,.sedge,.vedge,.hedge,.vpedge,.phedge";
 /** @type {Map<string, Pane[]>} who holds which panes */
 const holds = new Map();
 /** `who` (a gesture: "edge", "move") wants these panes outlined — [] lets go @param {string} who @param {Pane[]} panes */

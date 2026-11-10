@@ -631,12 +631,13 @@ export async function verticalHeight(k, t) {
      picture's height is yours, the box's its text's — dragged up, the picture shrinks and the box rides up */
   const f0 = await R(k, "#frame"),
     b0 = await R(k, "#left"),
-    h = await R(k, "#hsplit"),
+    h = await R(k, "#left > .vedge.t"),
     x = h.left + h.width / 2,
     y = h.top + h.height / 2;
+  /* B19b: the shared edge has a band on each pane, as side by side's divider — the picture's bottom and the box's top */
   t.ok(
-    h.width > 0 && (await k.ev(`getComputedStyle(document.querySelector(".hedge.b")).display`)) === "none",
-    "Vertical: one divider under the picture (no separate bottom edge)",
+    h.width > 0 && (await k.ev(`getComputedStyle(document.querySelector(".hedge.b")).display`)) !== "none",
+    "Vertical: the shared edge has a band on each pane (the picture's bottom, the box's top)",
   );
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
@@ -656,7 +657,7 @@ export async function verticalHeight(k, t) {
   t.near(b1.height, b0.height + 150, 4, "…and the box takes the 150 (the shared edge trades)", { b0: b0.height });
   t.near(b1.bottom, b0.bottom, 3, "…its bottom holds");
   /* hovering the divider outlines both panes it resizes: the picture and the prompt box (the user, 2026-11-01) */
-  const hs = await R(k, "#hsplit"),
+  const hs = await R(k, ".hedge.b"), // the picture's side of the same edge
     hx = hs.left + hs.width / 2,
     hy = hs.top + hs.height / 2;
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: hx, y: hy });
@@ -994,7 +995,7 @@ export async function heightFirst(k, t) {
   );
   t.ok(last[2] > 60, "…the spare height under the prompt, at the window's bottom", { under: last[2] });
   /* …and dragging the divider up (the box taller, the picture's room shorter, its box unchanged): still one even gap */
-  const d = await k.rect("#hsplit"),
+  const d = await k.rect("#left > .vedge.t"),
     dx = d.left + d.width / 2,
     dy = d.top + d.height / 2;
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: dx, y: dy });

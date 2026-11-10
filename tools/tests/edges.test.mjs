@@ -53,7 +53,7 @@ export async function dragsEndVertical(k, t) {
   await k.ev(`(S.ar="16:9",setDock("below"),1)`);
   await k.mouse(2, 2);
   await k.sleep(1200);
-  await everyEdge(k, t, [".hedge.t", ".hedge.l", ".hedge.r", "#hsplit", ".sedge.l", ".sedge.r"]);
+  await everyEdge(k, t, [".hedge.t", ".hedge.l", ".hedge.r", ".hedge.b", "#left > .vedge.t", ".sedge.l", ".sedge.r"]);
 }
 dragsEndVertical.opts = { width: 1760, height: 1080, step: 0.05 };
 
@@ -338,7 +338,7 @@ export async function panelHeights(k, t) {
   await k.mouse(2, 2);
   await k.sleep(1500);
   const v0 = await R(k, "#rpanel"),
-    v = await drag("#hsplit", -150); // Vertical: the panel's bottom IS the shared edge — its one handle (B10, C4c)
+    v = await drag(".phedge.b", -150); // Vertical: the panel's bottom IS the shared edge — its band (B19b; C4c)
   t.near(v.after.height, v0.height - 150, 3, "Vertical: the panel 150 shorter", { h: v.after.height });
   t.near(v.after.top, v0.top, 3, "…resting at the top (Vertical's anchor)");
 }
@@ -535,9 +535,9 @@ export async function verticalSharedEdgeAgainAndNoTwitch(k, t) {
     return { held, f: await R(k, "#frame"), b: await R(k, "#left") };
   };
   const f0 = await R(k, "#frame");
-  await pull("#hsplit", 0, -200); // the picture smaller: the box floats under it, the spare room below
+  await pull("#left > .vedge.t", 0, -200); // the picture smaller: the box floats under it, the spare room below
   const f1 = await R(k, "#frame"),
-    again = await pull("#hsplit", 0, 260);
+    again = await pull("#left > .vedge.t", 0, 260);
   t.ok(f1.height < f0.height - 100, "made smaller first", { f0: f0.height, f1: f1.height });
   t.ok(again.held.f.height > f1.height + 200, "grabbed again: it grows the whole way in one drag", {
     f1: f1.height,
@@ -568,7 +568,7 @@ export async function squeezedBoxScrollsNoOverlap(k, t) {
   );
   await k.mouse(2, 2);
   await k.sleep(1400);
-  const h = await R(k, "#hsplit"),
+  const h = await R(k, "#left > .vedge.t"),
     x = h.left + h.width / 2,
     y = h.top + h.height / 2;
   await ev(k, "mouseMoved", x, y, 0);

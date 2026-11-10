@@ -56,24 +56,24 @@ export async function sharedEdgeTrades(k, t) {
   await k.sleep(1400);
   const f0 = await R(k, "#frame"),
     b0 = await R(k, "#left");
-  const up = await pull(k, "#hsplit", 0, -150);
+  const up = await pull(k, "#left > .vedge.t", 0, -150);
   t.near(f0.height - up.held.f.height, 150, 4, "up 150: the picture 150 shorter while held", { f0: f0.height });
   t.near(up.held.b.height - b0.height, 150, 4, "…the box 150 taller", { b0: b0.height, held: up.held.b.height });
   t.near(up.held.b.bottom, b0.bottom, 2, "…its bottom holds (the group's)");
   t.near(up.f.height, up.held.f.height, 3, "let go: the picture keeps its size (yours)");
   t.near(up.b.height, up.held.b.height, 3, "…and the box its height (yours: Custom)");
   t.ok(await k.ev(`paneSize("box","vert").h>0`), "the box's height is kept");
-  const back = await pull(k, "#hsplit", 0, 150);
+  const back = await pull(k, "#left > .vedge.t", 0, 150);
   t.near(back.f.height, f0.height, 4, "down 150 from there: the picture back", { f: back.f.height });
   t.near(back.b.height, b0.height, 4, "…the box back to its least");
-  const give = await pull(k, "#hsplit", 0, 150);
+  const give = await pull(k, "#left > .vedge.t", 0, 150);
   t.ok(give.held.f.height - f0.height <= 30, "the box at its least: down gives a little at most", {
     f0: f0.height,
     held: give.held.f.height,
   });
   t.near(give.f.height, f0.height, 3, "…and settles back");
-  await pull(k, "#hsplit", 0, -100);
-  await dbl(k, "#hsplit");
+  await pull(k, "#left > .vedge.t", 0, -100);
+  await dbl(k, "#left > .vedge.t");
   t.near((await R(k, "#frame")).height, f0.height, 3, "double-click: the picture at its largest again");
   t.ok(await k.ev(`paneSize("box","vert").h==null`), "…the box's height its text's again");
 }
@@ -139,7 +139,7 @@ export async function panelSharedEdge(k, t) {
   await k.sleep(1400);
   const p0 = await R(k, "#rpanel"),
     b0 = await R(k, "#left");
-  const up = await pull(k, "#hsplit", 0, -120);
+  const up = await pull(k, "#left > .vedge.t", 0, -120);
   t.near(p0.height - up.held.p.height, 120, 4, "up 120: the Queue 120 shorter", {
     p0: p0.height,
     held: up.held.p.height,
@@ -163,7 +163,7 @@ export async function resetPictureFirst(k, t) {
   await k.sleep(1400);
   const f0 = await R(k, "#frame"),
     b0 = await R(k, "#left");
-  await pull(k, "#hsplit", 0, -200); // the picture smaller, the box taller (both yours)
+  await pull(k, "#left > .vedge.t", 0, -200); // the picture smaller, the box taller (both yours)
   await pull(k, ".sedge.r", 100, 0); // the box wider (yours)
   const moved = { f: await R(k, "#frame"), b: await R(k, "#left") };
   t.ok(
@@ -184,7 +184,7 @@ export async function resetPictureFirst(k, t) {
   t.near(b1.width, b0.width, 2, "…at its default width", { b0: b0.width });
   t.ok(await k.ev(`paneSize("box","vert").h==null&&paneSize("box","vert").w==null`), "…nothing of yours kept");
   /* the picture's edge, double-clicked: its largest; the box (taller by your height) squeezed toward its least */
-  await pull(k, "#hsplit", 0, -200);
+  await pull(k, "#left > .vedge.t", 0, -200);
   await dbl(k, ".hedge.r");
   t.near((await R(k, "#frame")).height, f0.height, 2, "double-click a picture edge: the picture at its largest");
   t.near((await R(k, "#left")).height, b0.height, 2, "…the box squeezed to its least");
@@ -198,7 +198,7 @@ export async function panelResetGlides(k, t) {
   await k.ev(`(document.querySelector('.tab[data-v="queue"]').click(),1)`);
   await k.mouse(2, 2);
   await k.sleep(1400);
-  await pull(k, "#hsplit", 0, -200); // a shorter Queue
+  await pull(k, "#left > .vedge.t", 0, -200); // a shorter Queue
   await pull(k, ".vpedge.r", 150, 0); // a wider one
   const p0 = await R(k, "#rpanel");
   const w = k.ev(

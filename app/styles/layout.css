@@ -46,7 +46,6 @@
 }
 #lcol > #left,
 #lcol > .chips,
-#lcol > .hsplit,
 #lcol > .ltitle,
 #lcol > .pgrip {
   pointer-events: auto;
@@ -77,8 +76,8 @@
 
 /* ======================= edges (drag to resize) =======================
    .pedge: the panels' vertical edges (po = the prompt's outer edge, pi/ri = the divider, ro = the picture area's outer
-   edge); .sedge: the prompt box's sides in Vertical; .hedge: the picture's own edges; .vedge / .hsplit: the prompt's
-   height. No grip bars: the outline (part of its pane: .plate::before, .left::after) and the cursor are the signal. */
+   edge); .sedge: the prompt box's sides in Vertical; .hedge: the picture's own edges; .vedge: the prompt's
+   height (in Vertical its top is the shared edge's band on the box). No grip bars: the outline (part of its pane: .plate::before, .left::after) and the cursor are the signal. */
 /* EVERY PANE'S RESIZE BAND, ONE RULE (B19 — the user, 2026-11-10, DEVLOG DD-2026-11-10-5: the picture's rule for every
    pane): an edge's band runs from 1 px inside it out to the pane's dashed outline (--outline-out) — "the target you're
    shown is the target" (Fitts); never over the pane's content, never a thumb (the platforms: macOS / Windows resize from
@@ -243,28 +242,10 @@
      its grip (B19 retired L3's "the gap between the name and the box grips") — no thumb, as on every pane */
 .left.hm .vedge {
   display: none;
-} /* Vertical: the box's top is the edge it shares with the picture (the same gesture as .hsplit, above the title) */
-.hsplit {
-  display: none;
-}
-.app.stacked .hsplit {
-  display: block;
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(var(--space-3) * -1);
-  height: var(--space-2);
-  cursor: ns-resize;
-  z-index: 6;
-  touch-action: none;
-} /* Vertical: the one divider between the picture and the prompt — layout.js vAlign places it in the gap (L4) */
-/* no grip line (2026-11-01, the user): the outlines and the cursor are the signal, as on every other edge */
-.app.stacked .hedge.b,
-.app.stacked .phedge.b,
-.app.stacked .vedge.t {
-  display: none;
-} /* Vertical: the page's bottom and the box's top ARE the shared edge — its one handle is .hsplit, in the gap (B10: one
-     handle per strip; the box's top was a second, inert one) */
+} /* Vertical: the edge the page and the box share has a band on each pane, as side by side's divider (B19b — the user,
+   2026-11-10: "only pic edge is active, the top of the promptbox isn't available"): the page's bottom (.hedge.b /
+   .phedge.b) and the box's top (.vedge.t), both the one shared edge (edges.js). It was one handle in the gap between
+   them (#hsplit), and the box's top band hidden (B10, when it did nothing) */
 /* the resize outline is PART OF ITS PANE (v0.7c, the user 2026-11-02: "dash outline should be a part of the box
    object"): drawn by the pane itself — the plate (the picture in Generating / the Gallery, the panel elsewhere) and the
    prompt box — it moves with it in the same frame, whatever moves it. It used to be two fixed outlines, each chasing

@@ -122,7 +122,7 @@ export async function poll() {
     return u;
   };
   if (s.delta) {
-    /* only what changed since this page's revision (v0.7b: the whole list was 12 MB at 10 000 jobs): the changed and
+    /* only what changed since this page's revision (the whole list is 12 MB at 10 000 jobs): the changed and
        waiting jobs replace theirs, the removed go, the order follows when it moved, missing files are flagged; every
        other job keeps its object */
     const by = new Map(prev);

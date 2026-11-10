@@ -23,9 +23,7 @@ import {
   cardAnchorTop,
   cardHeightMode,
   cardPlacement,
-  MMIN,
   PWMIN,
-  CARDMAX,
   arrange,
   rubber,
   limits,
@@ -39,6 +37,9 @@ import {
   picLeastH,
   EDIT_TOOLS,
 } from "../../../app/layoutmath.js";
+/* the room maths' own inputs in these tests: a least margin and a box cap (the app has neither) */
+const MMIN = 24,
+  CARDMAX = 900;
 
 const near = (a, b, what) => assert.ok(Math.abs(a - b) < 1e-6, `${what}: ${a} ≠ ${b}`);
 const wide = { pw: 680, rw: 660, iw: null }; // the default sizes

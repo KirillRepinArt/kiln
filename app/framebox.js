@@ -5,7 +5,6 @@
    through it the tab bar) and what sits round the frame (around.js) */
 import { placeAround } from "./around.js";
 import { $ } from "./dom.js";
-import { bez } from "./layoutmath.js";
 import { plateSync } from "./plate.js";
 import { promptFollow, stageRect } from "./layout.js";
 import { bend, moving, rearrange, stop, travel } from "./rearrange.js";
@@ -18,7 +17,6 @@ let cur = null; // where the frame is
 /** @type {Box | null} */
 let goal = null; // where the layout wants it
 let held = false; // its view is leaving in a switch: it stays where it was (frameHold)
-export const layE = bez(0.05, 0.7, 0.1, 1); // --lay-e: the layout's curve
 
 /* ---------- a picture change: the motion is decided HERE (ownership map G11) ----------
    What's on show changing is declared by its owners (picstate.js pv; a switch, tabs.js tabGo) with where the picture
@@ -69,11 +67,6 @@ export function snaps() {
     b.contains("liveresize") ||
     matchMedia("(prefers-reduced-motion: reduce)").matches
   );
-}
-/** the layout's glide time (--lay-t), in ms */
-export function layT() {
-  const v = getComputedStyle(document.documentElement).getPropertyValue("--lay-t").trim();
-  return v.endsWith("ms") ? parseFloat(v) : (parseFloat(v) || 0.42) * 1000;
 }
 const same = (/** @type {Box} */ a, /** @type {Box} */ b) => a.l === b.l && a.t === b.t && a.w === b.w && a.h === b.h;
 

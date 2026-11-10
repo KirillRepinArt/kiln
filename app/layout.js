@@ -225,7 +225,6 @@ export const lay = {
   target: null,
   frameDefer: false,
   framePending: false,
-  frameHold: false,
   pass: null,
   pdrag: null,
   row: null,
@@ -694,7 +693,7 @@ export function sizeFrame() {
   }
   const j = onShow() || current();
   const ar = j ? j.ar : S.ar;
-  if (!stk && !lay.frameHold) layApply(layNow());
+  if (!stk) layApply(layNow());
   /* Vertical: the layout pass's rectangles — the page's pane and its room; the box's are placed by layoutLeft from the
      same run */
   const pv = stk ? vPass() : null;

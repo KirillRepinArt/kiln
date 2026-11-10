@@ -3,10 +3,7 @@
    rule can be unit-tested (tools/tests/unit/layoutmath.test.mjs). layout.js measures the page, asks these, applies. */
 import { SPACE, pairGap } from "./tokens.js";
 
-export const MMIN = 24, // unused by the app (the room rule has no least margin) — tests only
-  PWMIN = 360, // the prompt's least width
-  CARDMAX = 900, // unused by the app (the box has no cap of its own) — tests only
-  LISTMIN = 660; // unused (a panel's default is paneDefault's)
+export const PWMIN = 360; // the prompt's least width
 
 /**
  * A box of shape `ar` ("3:4") as large as fits in bw × bh.

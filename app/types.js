@@ -172,7 +172,6 @@
  *   where it is mid-glide): the prompt's vertical anchors use this
  * @property {boolean} frameDefer    inside one click: sizeFrame runs once, at the end
  * @property {boolean} framePending  …and was asked for meanwhile
- * @property {boolean} frameHold     the layout's box width is held (read by sizeFrame; nothing sets it today)
  * @property {{ pic: { x: number, y: number, w: number, h: number } | null, roomTop: number, page: { x: number, y: number, w: number, h: number }, box: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number }, kept: { boxW: number, scale?: number, w?: number, h?: number }, handles: Record<string, { x: number, y: number, w: number, h: number }>, anchors?: { it: number, ib: number, cy: number } | null, squeezeW?: number | null } | null} [pass]  side by side: the single layout pass's numbers, held or not
  * @property {import("./layoutmath.js").PassOut | null} [passV] Vertical's layout pass: its rectangles, held or not
  * @property {{ edge: string, at: number, off: number, boxW: number, bh?: number, scale: number, w?: number, h?: number } | null} [pdrag]  an edge held (any

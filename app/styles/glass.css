@@ -232,13 +232,6 @@ body.glass .li:hover {
 body.glass .li.on {
   background: var(--white-5);
 }
-/* tabs switch at once: a fading view is partly transparent, and Chromium turns off the glass inside anything partly
-   transparent, so the blur popped in only after the fade */
-body.glass .view {
-  opacity: 1;
-  transform: none;
-  transition: visibility 0s;
-}
 /* Settings: appears at once (a fading dialog would switch its glass off until the fade ends); only the dark overlay eases in */
 body.glass .modal {
   opacity: 1;

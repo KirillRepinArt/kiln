@@ -18,6 +18,13 @@ const ALLOW = /** @type {Record<string, string>} */ ({
      out to the outline, B19) — the corner goes to whichever is on top */
   "two handles: div.hedge.t + div.pedge.ro": "L5",
   "two handles: div.hedge.b + div.pedge.ro": "L5",
+  /* V8 (the re-read, 2026-11-10 — found by the Gallery state): in the Gallery's title row the file name's end part (an
+     empty box; its suffix when empty) lies over the name field and takes its press there */
+  "invisible #fnEnd over #pname": "V8",
+  "invisible #fnSuf over #pname": "V8",
+  /* V9 (the re-read, 2026-11-10 — found by the Show prompt state): in Vertical, with the prompt closed, Show prompt is
+     placed under the picture where the box's name row is — the name field takes its press; it can't be reached */
+  "a control not taking its press: #showP (it goes to #pname)": "V9",
 });
 
 /** one sweep of the window: findings by key, each with how many points and one example point */
@@ -69,6 +76,12 @@ function caseOf(dock) {
       ["PNG Info", `showView("png")`],
       ["a menu open (Ratio)", `(showView("gen"),$("pAR").click())`],
       ["Generating, the pointer over the picture", `showView("gen")`, "#frame"],
+      [
+        "the Gallery, the pointer over the picture",
+        `document.querySelector('.tab[data-v="gallery"]').click()`,
+        "#frame",
+      ],
+      ["the Gallery, its prompt closed (Show prompt), the pointer over the picture", `$("pkX").click()`, "#frame"],
     ];
     const all = /** @type {Record<string, { n: number, at: number[], where: string[] }>} */ ({});
     await k.ev(`(setDock(${JSON.stringify(dock)}),1)`);

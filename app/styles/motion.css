@@ -33,8 +33,6 @@ body.laysnap *::after {
    clip, until it has faded; the panel doesn't cut it off meanwhile (the clip is the plate's) */
 .view.leaving {
   visibility: visible;
-  opacity: 1;
-  transform: none;
 }
 html.switching .rpanel {
   overflow: visible;

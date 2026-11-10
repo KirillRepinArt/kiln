@@ -214,17 +214,15 @@ body.jobrun .tab .trw {
 .rpanel.paneled {
   overflow: hidden;
   border-radius: var(--r-panel);
+  pointer-events: auto; /* a panel takes its press itself (R4) */
 } /* its plate (glass or Solid) is the glass plate under it (plate.js, glass.css) */
+/* a view is shown or not — its motion is the switch's alone (plate.js switchGlide: the ride, fade.js: its fade). It had
+   a CSS fade and a 4 px drop of its own, held off only by the switch's hold (T6, the re-read 2026-11-10: a second clock
+   on the same properties, kept by the Solid look) */
 .view {
   position: absolute;
   inset: 0;
   visibility: hidden;
-  opacity: 0;
-  transform: translateY(4px);
-  transition:
-    opacity var(--t-220) var(--ease),
-    transform var(--t-220) var(--ease),
-    visibility 0s linear var(--t-220);
 }
 /* the picture's view (Generating, the Gallery) has no panel: the container's 1 px border is transparent and the view
    covers it, so the picture sits exactly one area gap from the prompt and one part gap under the tabs — where a panel's
@@ -234,12 +232,6 @@ body.jobrun .tab .trw {
 }
 .view.on {
   visibility: visible;
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity var(--t-220) var(--ease),
-    transform var(--t-220) var(--ease),
-    visibility 0s;
 }
 #amb {
   position: absolute;

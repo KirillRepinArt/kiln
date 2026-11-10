@@ -164,6 +164,12 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     switch (`layout.js` standIn → fadeCol), the status row leaving (`rowFade`, G11). Named exception: the picture's
     `#cvx` (it lives in the frame, clipped by the crop-and-reveal, and holds until the next picture — `pictures.js`).
     The tracer reads an element and its copies as one thing
+  - **who takes the pointer: a rule, not a list** (R4, 2026-11-10): a container that only lays things out passes the
+    pointer (Vertical's picture area, the tab bar's box, the prompt column); what draws or acts takes it by its own CSS
+    rule (`pointer-events: auto` on the frame, the status row, Show prompt, a panel, the tab bar's buttons, the
+    picture's controls) — and an unseen control takes none (V6). `tools/tests/pointer.test.mjs` checks every visible
+    control takes its own press, in every layout and state it reaches
+  - a view (a page) has no motion of its own: shown or not (`visibility`); the switch moves and fades it (T6)
   - where a message shows (the toast, the finished note): ONE placer, `boot.js` `placeMessage(el, anchor)` — it writes
     left / top only; under its anchor (a tab, the Layout button), else by the prompt box (Vertical: the top-right corner)
 - **The screen, by area:** `tabs`, `browse`, `morph`, `edges`, `pills`, `chips`, `peek`, `queue`, `loras`, `pnginfo`,

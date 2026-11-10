@@ -9,6 +9,7 @@
   border-radius: calc(var(--r-panel) - var(--mat)); /* concentric with its plate */
   overflow: hidden;
   background: transparent;
+  pointer-events: auto; /* it takes its press itself (R4: containers pass the pointer, what draws or acts takes it) */
 } /* no line of its own: the ring is the plate's rim (glass.css .rim) — drawn here it sat in the switch's fading
      contents (it popped in after a switch, 2026-10-27; it faded in with the Gallery's picture, 2026-10-28) */
 .frame.has {
@@ -356,6 +357,7 @@ body:has(.viewer.show) .gnav {
   flex-direction: column;
   gap: var(--space-2);
   z-index: 1; /* no glide of its own: it follows the frame (around.js) */
+  pointer-events: auto; /* it takes its press itself (R4: containers pass the pointer, what draws or acts takes it) */
 }
 .prog.show {
   display: flex;
@@ -425,6 +427,7 @@ body[data-pic="still"] .prog.run .meta {
   font-weight: 500;
   color: var(--grey-93);
   white-space: nowrap;
+  pointer-events: auto; /* it takes its press itself (R4: containers pass the pointer, what draws or acts takes it) */
 }
 .showp:hover {
   background: var(--raised2);

@@ -280,9 +280,6 @@
 .app.stacked .stage {
   pointer-events: none;
 }
-.app.stacked .right > .tabs,
-.app.stacked .rpanel.paneled,
-.app.stacked #v-gen > .prog,
-.app.stacked .stage > .frame {
-  pointer-events: auto;
-}
+/* …and what draws or acts takes its press by ITS OWN rule (R4, the re-read 2026-11-10: a named list here gave the
+   pointer back — the ✕ and the eye fell off it when they moved to the floating layer, and every click zoomed): the frame,
+   the status row, Show prompt, a panel, the tab bar's buttons, the picture's controls each say pointer-events: auto */

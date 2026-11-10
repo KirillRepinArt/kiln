@@ -1,14 +1,11 @@
 // @ts-check
-/* Kiln · THE drag gesture (G1, ROADMAP v0.7c step 8 — DEVLOG DD-2026-11-10-12). Every drag in the page is one gesture:
+/* Kiln · THE drag gesture (G1 — ARCHITECTURE › every drag; DD-2026-11-11-1). Every drag in the page is one gesture:
    press → (past its threshold) a drag → end, and it ends exactly once however it ends — the button up, a cancel, the
    pointer's capture lost (a reload, another window taking it), the button found up on a move, Esc where the drag allows
    it. A press that never passes the threshold is a TAP (its end says moved: false) and the click that follows it is the
-   page's as usual; the click that follows a real drag is swallowed (it isn't a click on what was under it).
-   Five drags wired their own press / move / end — the edges, the box's move, the Queue's reorder, the LoRA weight's
-   scrub, the viewer's pan — each with its own subset of the endings (the weight's scrub and the pan heard only the
-   button up: a lost pointer left them dragging) and its own threshold. The pointer is captured when the press becomes a
-   drag (not on the press: a tap stays a click on what it pressed). The native HTML drag-and-drop the LoRA chips'
-   reorder uses is a different channel (the browser's own drag image) — named in the step list. */
+   page's as usual; the click that follows a real drag is swallowed (it isn't a click on what was under it). The
+   pointer is captured when the press becomes a drag (not on the press: a tap stays a click on what it pressed). Named
+   exception: the LoRA chips' reorder is the browser's native drag-and-drop (its own drag image) */
 
 /** how far the pointer goes before a press is a drag — one table: a lift (the box, a Queue row) waits longer than a
  * scrub (a LoRA weight) or a pan (the viewer); an edge starts at once */
@@ -64,8 +61,8 @@ export function gesture(el, o) {
     if (o.start) o.start(m.c, e);
   };
   /* while a press lasts its pointer is heard on the window (filtered to it): before it's a drag the pointer isn't
-     captured — a container that lets the pointer through its empty parts (the prompt column) never heard the moves
-     that should start it (the box's drag to the bottom never began, G1's first try) */
+     captured — a container that lets the pointer through its empty parts (the prompt column) never hears the moves
+     that should start it */
   /** @param {PointerEvent} e */
   const onMove = e => {
     const m = p;

@@ -1,7 +1,6 @@
 /* ======================= Queue ======================= */
-/* the list's box is the Queue view's own — it is only ever shown as a panel. Keyed on the container's tab
-   (.rpanel.paneled) it jumped 12 px wider as the view left for Generating: the container had already changed while the
-   switch held the view as it was (2026-10-31, the user: "the queue items expand a bit and abruptly disappear") */
+/* the list's box is the Queue view's own — it is only ever shown as a panel. Not keyed on the container's tab
+   (.rpanel.paneled): the container changes while a switch still holds the leaving view as it was */
 .qwrap {
   position: absolute;
   inset: var(--space-3);
@@ -203,7 +202,7 @@ body.qdragging * {
   text-overflow: ellipsis;
 }
 /* selection: a round box at the row's start — on hover, or always while something is selected. At rest a thin ring,
-   a line like the row's ✕ (2026-10-28, the user); selected, the ring fills edge to edge with a bead — a full fill reads
+   a line like the row's ✕; selected, the ring fills edge to edge with a bead — a full fill reads
    "on", a dot inside would read as a radio button (pick one) — in glass, an accent glass bead like the other glass
    buttons (it shows whole whenever a row is selected, so the box's hover fade never crosses its glass) */
 .qck {
@@ -251,8 +250,8 @@ body.glass .qck::before {
   -webkit-backdrop-filter: blur(12px) saturate(1.7);
   backdrop-filter: blur(12px) saturate(1.7);
   box-shadow: inset 0 1px 0 var(--white-35);
-} /* selected: one glass object in the accent, like Kiln's other glass buttons — no outline, no drawn layers on top
-     (the user, 2026-10-28); the thin ring is the at-rest look only */
+} /* selected: one glass object in the accent, like Kiln's other glass buttons — no outline, no drawn layers on top;
+     the thin ring is the at-rest look only */
 .qi.sel {
   box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--a1) 75%, transparent);
 }

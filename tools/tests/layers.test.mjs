@@ -15,11 +15,12 @@ export async function tabSwitchGlassLive(k, t) {
   await k.sleep(1200);
   for (let i = 1; i < tour.length; i++) {
     const [from, to] = [tour[i - 1], tour[i]];
+    /* drawn glass only (HANDOFF's "drawn": laid out, visible, opacity > 0): a hidden one shows no blur to lose */
     const bad =
       await k.ev(`new Promise(res=>{const gl=(e,p)=>{const c=getComputedStyle(e,p);if(p&&(c.display==="none"||c.content==="none"))return false;return c.backdropFilter&&c.backdropFilter!=="none"},
         all=[...document.querySelectorAll("body *")].filter(e=>gl(e)||gl(e,"::before")),out=[],t0=performance.now();
       document.querySelector('.tab[data-v="${to}"]').click();
-      (function f(){for(const e of all){if(!e.getClientRects().length)continue;const b=gl(e,"::before");
+      (function f(){for(const e of all){if(!e.getClientRects().length||getComputedStyle(e).visibility==="hidden")continue;const b=gl(e,"::before");
           for(let a=b?e:e.parentElement;a&&a!==document.documentElement;a=a.parentElement){const o=+getComputedStyle(a).opacity;
             if(o>0&&o<1){out.push((e.id||e.className)+" under "+(a.id||a.className)+" "+o.toFixed(2));break}}}
         if(performance.now()-t0<900)requestAnimationFrame(f);else res([...new Set(out)])})()})`);

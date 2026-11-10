@@ -654,7 +654,8 @@ export async function snapHeldUntilTheLastMotion(k, t) {
     setTimeout(()=>setDock("right"),500);
     (function s(){requestAnimationFrame(()=>setTimeout(()=>{const p=$("plate").getBoundingClientRect(),
       mv=!!pr&&(Math.abs(p.left-pr.left)+Math.abs(p.top-pr.top)+Math.abs(p.width-pr.width)+Math.abs(p.height-pr.height))>0.5;pr=p;
-      o.push([Math.round(performance.now()-t0),b.classList.contains("laysnap"),performance.now()-t0>500&&mv]);
+      o.push([Math.round(performance.now()-t0),b.classList.contains("laysnap"),performance.now()-t0>500&&mv,
+        [Math.round(p.left),Math.round(p.top),Math.round(p.width),Math.round(p.height)],document.documentElement.classList.contains("switching")]);
     if(performance.now()-t0<2600)s();else res(o)},0))})()})`);
   /* the layout switch is the tab switch's system since T2b (no View Transition, decision 0014): it runs while the plate
      moves after the layout was asked for */
@@ -666,11 +667,18 @@ export async function snapHeldUntilTheLastMotion(k, t) {
     loose = s.filter(x => x[2] && !x[1]),
     free = lastMorph ? s.find(x => x[0] > lastMorph[0] && !x[1]) : null;
   t.ok(!!lastMorph, "the layout switch ran", s.slice(0, 3));
-  t.ok(
-    !loose.length,
-    "the glides stay off on every frame the plate moves",
-    loose.slice(0, 5).map(x => x[0]),
-  );
+  /* T4's open row (2026-11-11): it fails about once in four long runs and never alone — the report says what moved:
+     the plate's box in the frames round the first loose one, when the hold let go, whether a switch still ran */
+  const i = loose.length ? s.indexOf(loose[0]) : -1,
+    letGo = s.find((x, j) => j > 0 && !x[1] && s[j - 1][1]);
+  t.ok(!loose.length, "the glides stay off on every frame the plate moves", {
+    loose: loose.slice(0, 5).map(x => x[0]),
+    holdLetGo: letGo?.[0],
+    around:
+      i < 0
+        ? []
+        : s.slice(Math.max(0, i - 3), i + 4).map(x => [x[0], x[1] ? "held" : "free", x[3], x[4] ? "switching" : ""]),
+  });
   t.ok(!!free && free[0] - lastMorph[0] < 100, "…and come back as the last motion ends (no timer past it)", {
     lastMorph: lastMorph?.[0],
     free: free?.[0],

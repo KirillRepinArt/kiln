@@ -486,7 +486,7 @@ export function initEffects() {
     /* Privacy: the eye (top right of the image) and F9. On: the picture is covered outright, running or finished (no
     transparency, no hover peek, no fading with the steps, no starlight/code drawn from it, no finish, no ambient glow,
     no viewer) and the prompt, name and LoRA chips are hidden. It stays on until pressed again, across jobs and
-    restarts. Off: the cover follows Settings → Cover. The Queue tab isn't touched (decided 2026-10-18). */
+    restarts. Off: the cover follows Settings → Cover. The Queue tab isn't touched. */
     const CV = { held: false, t0: 0, pr: 0.55 };
     const HALO_CUT = "#left,.seg,#layBtn,#gear,#lcol>.chips .chip";
     const cbtn = $("cbtn");
@@ -543,7 +543,7 @@ export function initEffects() {
             nstr > 0 &&
             !$("modal").classList.contains(
               "show",
-            ); /* only round the live render: round a still picture it was just a light left on (2026-10-19) */
+            ); /* only round the live render: round a still picture it was just a light left on */
         /* it's a kiln: while a job runs the fire shows wherever you are — round the render, the picture you browse, or the
       Queue / LoRAs / PNG Info panel; after the finish it fades with the night layer as before */
         fgA += ((on ? Math.min(1, nstr / HOLD) : 0) - fgA) * Math.min(1, dt / 400);
@@ -610,7 +610,7 @@ export function initEffects() {
             fgc.fill(); // nothing behind the image itself
             /* nothing under the glass panels either (the prompt box, the tab bar, the LoRA chips): a glass panel blurs what's
         behind it and Chromium repeats its edge pixels inward, so the pulsing glow showed as a flickering band inside the
-        box (2026-10-19). Soft holes, already dark at the panel's edge: the light fades out in the gap before it. */
+        box. Soft holes, already dark at the panel's edge: the light fades out in the gap before it. */
             if (document.body.classList.contains("glass")) {
               const F = 10;
               fgc.filter = `blur(${(F * dp) / 2}px)`;

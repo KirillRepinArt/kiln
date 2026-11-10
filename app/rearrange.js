@@ -1,14 +1,10 @@
 // @ts-check
-/* Kiln · ONE applier for a rearrangement (v0.7c C2b + T2a, 2026-11-07; ux-review/17-t2-motion.md). When the layout
-   changes on the same page — a Reset, a double-click, a ratio change, the room changing — every box that moves (the
-   picture's frame, a panel's box, the prompt's column) goes from where it IS to where the layout pass puts it on ONE
-   plan (layoutmath.js shapePlan: what shrinks crops first, what grows reveals last) and ONE clock (one start time).
-   Each owner still owns its property and its write; it only hands its move here. Asked in the same task, the moves
-   share a plan; a new one mid-way starts from where everything is. Before: the frame glided on --lay-t's curve
-   (framebox), the columns on a copy of it (colsGlide), a panel's box snapped (B16) — three clocks, two curves, one snap.
-   What follows the boxes (the plate, what sits round the picture, the glued prompt box) is placed after the writes of
-   each frame, in the same frame. A switch's own motion goes through here too (T2c-3b: the plate travels — travel(); what
-   rides it follows — follow()): ONE driver, one clock. */
+/* Kiln · the ONE driver: ARCHITECTURE › a rearrangement on the same page (ux-review/17-t2-motion.md). Every box that
+   moves goes from where it IS to where the layout puts it on ONE plan (layoutmath.js shapePlan) and ONE clock; each
+   owner keeps its property and its write and only hands its move here. Asked in the same task, the moves share a plan;
+   a new goal mid-way bends the path (retarget). What follows the boxes (the plate, what sits round the picture, the
+   glued prompt box) is placed after each frame's writes, in the same frame. A switch's own motion goes through here too:
+   travel() for what travels, follow() for what rides it */
 import { fade } from "./fade.js";
 import { MORPH, fades, shapeBox, shapePlan } from "./layoutmath.js";
 import { snaps } from "./framebox.js";
@@ -53,7 +49,7 @@ export function rearrange(key, from, to, write, source) {
     queueMicrotask(start);
   }
 }
-/** a switch's own move (T2c-3b): `key` travels from `from` to `to` on the driver, while the layout itself lands at once
+/** a switch's own move: `key` travels from `from` to `to` on the driver, while the layout itself lands at once
  * (laysnap) — so not subject to snaps(), only to reduced motion. A new plan for it (a new switch starts from where the
  * box is: the caller measures `from` on screen), never a retarget @param {string} key @param {Box} from @param {Box} to
  * @param {Write} write */
@@ -111,11 +107,9 @@ export function progress(key) {
 }
 /** a new goal for a box ALREADY MOVING bends its remaining path, on the same plan and clock: from where it is at this
  * moment's progress to the new goal (the start is solved so the plan's curve passes through both — no jump). Nothing
- * else restarts. A new plan for every ask restarted everything still moving, and a box growing waits for the plan's
- * reveal: the prompt box's height follows its text, which rewraps while its width moves, so it asked a slightly new goal
- * every few frames and the picture never landed (2026-11-08; the platforms retarget the same way — UIKit's
- * beginFromCurrentState, a CSS transition given a new value). false: not moving, or an axis that has finished would
- * have to move again — the ask starts a new plan from where everything is
+ * else restarts (a new plan per ask: a box whose goal changes every few frames — the prompt's height as its text
+ * rewraps — kept the picture from ever landing; UIKit's beginFromCurrentState). false: not moving, or an axis that has
+ * finished would have to move again — the ask starts a new plan from where everything is
  * @param {string} key @param {Box} to @param {Write} write */
 function retarget(key, to, write) {
   if (!run) return false;
@@ -145,8 +139,7 @@ function retarget(key, to, write) {
   return true;
 }
 /** `el` (contents that don't travel: the status row) comes or goes in the coming rearrangement — on its plan's fades
- * (layoutmath.js fades: what leaves ends at the swap, what comes starts at it), from its start time: the row used to fade
- * on --lay-t's own curve while the picture moved on the plan (insets › finishOnOneClock) @param {HTMLElement} el
+ * (layoutmath.js fades: what leaves ends at the swap, what comes starts at it), from its start time @param {HTMLElement} el
  * @param {boolean} on @param {() => void} [done] when its fade is over or cancelled (a leaving copy: leave.js drop) */
 export function rearrangeFade(el, on, done) {
   if (snaps()) {
@@ -164,10 +157,9 @@ export function rearrangeFade(el, on, done) {
  * @param {number} t0 @param {() => void} [done] */
 function fadeNow(el, on, delay, ms, easing, t0, done) {
   const timing = { delay, duration: ms, easing, fill: /** @type {FillMode} */ ("backwards") }; // its first keyframe holds until its start
-  /* by its parts (fade.js): the status row holds glass, and faded as a whole its blur was off until the fade ended
-     (DEVLOG DD-2026-11-08-8); shown throughout the fade on the row itself (visibility is no backdrop root) */
-  /* from what is on screen (fade.js fade, R1): a second fade carries on from the first's value (F5: it restarted from 1
-     / 0 — a finish then a start, or pause / resume, blinked the row); fresh, it comes from hidden or leaves from shown */
+  /* by its parts (fade.js): the status row holds glass (DD-2026-11-08-8); shown throughout the fade on the row itself
+     (visibility is no backdrop root). From what is on screen: a second fade carries on from the first's value; fresh, it
+     comes from hidden or leaves from shown */
   const anims = fade(el, on ? 1 : 0, timing, { glass: true, from: on ? 0 : 1 });
   for (const a of anims) a.startTime = t0;
   if (done)
@@ -236,7 +228,7 @@ function tick(now) {
     m.write(b);
   });
   plateSync(); // the plate rides the frame or the panel, the tab bar the plate
-  promptFollow(true); // the prompt box, glued one gap from the plate (C2b)
+  promptFollow(true); // the prompt box, glued one gap from the plate
   if (end) run = null; // (before the followers' last call: they see the run has landed)
   for (const fn of followers) fn(); // what rides the travellers (a switch's views, the box's relation change)
   if (end) {
@@ -244,8 +236,7 @@ function tick(now) {
     landed();
   } else raf = requestAnimationFrame(tick);
 }
-/* ---------- the driver says when it has landed (T4, the re-read: a motion's end is the motion's, never a timer's
-   guess — a tab switch let go of its hold sw.T + 300 ms after it started, and in between every change jumped) ---------- */
+/* ---------- the driver says when it has landed: a motion's end is the motion's, never a timer's guess (T4) ---------- */
 /** who waits for the driver to have nothing moving @type {(() => void)[]} */
 let idlers = [];
 function landed() {

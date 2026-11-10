@@ -185,9 +185,9 @@
   color: var(--faint);
   line-height: 1.5;
 }
-/* the drop map (L1b — cardlayout.js; layoutmath.js dropTiles): where a carried pane can go, as a map behind it, in the
-   app's own layer under the prompt column (tokens.css --z-app-drop-map). Dashed: a place it could go ("dashed = could",
-   L1's language); the hot one (under the pointer): where it will go; over the picture (no room beside it): a tint so the
+/* the drop map (ARCHITECTURE › the prompt column's place — cardlayout.js; layoutmath.js dropTiles): where a carried
+   pane can go, as a map behind it, in the app's own layer under the prompt column (tokens.css --z-app-drop-map). Dashed:
+   a place it could go; the hot one (under the pointer): where it will go; over the picture (no room beside it): a tint so the
    picture under it reads as under. Its fade is CSS's own (one owner: nothing else writes its opacity) */
 .dropmap {
   position: absolute;

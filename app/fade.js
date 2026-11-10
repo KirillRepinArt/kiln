@@ -1,15 +1,13 @@
 // @ts-check
-/* Kiln · fading what holds GLASS (v0.7c T2c, DEVLOG DD-2026-11-08-8). An element whose opacity is below 1 becomes a
-   "backdrop root" (CSS Filter Effects 2): the glass inside it can only blur what is inside it — nothing — so it shows as
-   a flat tint, and its blur snaps back the frame the fade reaches 1 (the user, 2026-11-08: "a light flicker when the box
-   reappears"; measured: the box's glass 16.3 → 13.8 in its last frame). The platforms' rule: never fade glass through
-   an ancestor (UIKit's UIVisualEffectView: no alpha below 1 on the view or its superviews — animate the effect itself).
+/* Kiln · fading what holds GLASS (DD-2026-11-08-8). An element whose opacity is below 1 becomes a "backdrop root" (CSS
+   Filter Effects 2): the glass inside it can only blur what is inside it — nothing — so it shows as a flat tint, and
+   its blur snaps back the frame the fade reaches 1. The platforms' rule: never fade glass through an ancestor (UIKit's
+   UIVisualEffectView: no alpha below 1 on the view or its superviews — animate the effect itself).
    So a group is faded by its parts: a glass layer by its own opacity (on itself, or on its ::before), a part with no
    glass in it as a whole, and nothing that holds glass. Which parts are glass is read from their computed styles —
    glass.css stays the one home of the look. For a SURFACE whose material must animate itself (the prompt box, the
    status row, the edit buttons): a small group that exists for the whole fade. Never a page: a page is content and
-   fades as one layer (its list of parts was a snapshot — content drawn after the fade began escaped it, DEVLOG
-   DD-2026-11-08-12). */
+   fades as one layer (a list of parts is a snapshot — content drawn after the fade began escapes it, DD-2026-11-08-12) */
 
 /** @typedef {{ el: Element, pseudo?: "::before", o: number }} FadePart a part to fade, and its own opacity at rest */
 
@@ -46,7 +44,7 @@ export function fadeParts(root) {
     if (c.display === "none" || (!top && +c.opacity === 0)) return; // not seen: nothing to fade
     const o = top ? 1 : +c.opacity,
       /* only glass that is drawn: a pill's closed menu is glass, and counted it made the walk step inside the pill — its
-         fill (::before) was never faded, and empty capsules stood while the box faded (the user, 2026-11-09) */
+         fill (::before) was never faded */
       holds = [...e.querySelectorAll("*")].some(x => drawn(x) && (glassy(x) || glassy(x, "::before")));
     if (glassy(e) || (!holds && !glassy(e, "::before"))) {
       out.push({ el: e, o }); // glass on itself, or no glass in it: fades as a whole
@@ -76,13 +74,11 @@ export function glassFade(root, keys, timing) {
   });
 }
 
-/* ---------- THE way to fade (R1, the re-read 2026-11-10 — DEVLOG DD-2026-11-10-11) ----------
+/* ---------- THE way to fade (R1 — ARCHITECTURE › every opacity fade; DD-2026-11-10-11) ----------
    Every fade starts from what is ON SCREEN: a fade that replaces a running one carries on from that one's value now
-   (never restarted from 1 or 0 — F4: a switch interrupted 25 % in cut its pages 0.78 → 0; F5: a second fade of the
-   status row blinked it); a fresh fade starts from the caller's `from` (new content not seen yet: 0) or the element's
-   opacity now. It replaces the running fade it read (one fade per element and pseudo-element at a time). Five owners
-   used to start fades their own way from fixed keyframes (the status row, the empty frame's text, the picture coming
-   in, its copy leaving, the box through a layout switch) — they all come here. */
+   (never restarted from 1 or 0: an interrupted switch cut its pages, F4); a fresh fade starts from the caller's `from`
+   (new content not seen yet: 0) or the element's opacity now. It replaces the running fade it read (one fade per
+   element and pseudo-element at a time) */
 /** @typedef {{ anims: Animation[], read: () => number }} Running */
 /** the fade running on each element (per pseudo-element) @type {WeakMap<Element, Map<string, Running>>} */
 const running = new WeakMap();

@@ -1,10 +1,7 @@
 // @ts-check
-/* Kiln · the edges you drag: the prompt box's height, Vertical's slot line and side edges, the panels' widths, the
-   picture's top / bottom edges — and the edit buttons beside the picture showing on hover. The sizes they set are in
-   S.lay (layout.js does the maths and applies them).
-   Every edge is ONE gesture (gesture.js, through edgeDrag() below; 2026-11-01): press → move → end, and it ends however the drag ends — the
-   button up, a cancel, the pointer's capture lost (a reload, another window taking it), a move without the button —
-   once. Each edge used to end itself on its own subset of those; a lost capture left the resize cursor stuck. */
+/* Kiln · the edges you drag: every pane's edges in both layouts (the box's, the shared edge, the picture's, a
+   panel's) — and the edit buttons beside the picture showing on hover. The sizes they set are yours (layout.js
+   setPaneSize); every edge goes through the layout pass (passEdge) and is ONE gesture (gesture.js, via edgeDrag) */
 import { card, layoutLeft, lyUnfreeze, updHm } from "./cardlayout.js";
 import { DRAG_START, gesture as drag } from "./gesture.js";
 import { RESIZES, outlines } from "./outlines.js";
@@ -50,10 +47,8 @@ function edgeDrag(h, panes, { down, move, end, cls }) {
 }
 
 /**
- * A drag through the layout pass (v0.7c C3 side by side; Vertical since C4c): ONE way for every edge of the layout — the
- * press freezes the sizes, the pointer is the drag's constraint, the pass gives every number, the release keeps its
- * `kept` (layout.js passDragStart / passDragMove / passDragEnd). Vertical's edges had maths and holds of their own
- * (lay.vh / vtop / overB / ph / ptop / vw, card.slotHold / swHold) until C4c.
+ * A drag through the layout pass: ONE way for every edge of both layouts (layout.js passDragStart / passDragMove /
+ * passDragEnd — ARCHITECTURE › the single layout pass).
  * @param {HTMLElement} h the handle @param {() => import("./outlines.js").Pane[]} panes what it resizes
  * @param {string[]} cls the body classes the drag holds
  * @param {() => string | null} idOf the pass's handle id for a press now (null: not an edge of this layout or page)
@@ -92,12 +87,10 @@ function passEdge(h, panes, cls, idOf, axis, after) {
 const stacked = () => !!q(".app.stacked");
 /* start-up wiring: every edge you drag, and the edit buttons' hover (called from main.js, in order) */
 export function initEdges() {
-  /* the prompt box's height edges: ordinary edges — the size within [least, largest] (its least, the room), the rubber
-     band past either. Side by side: the bottom (#vedge) and the top, held in card.hHold (the pass's one placement rule
-     reads it: the other side holds); let go, your height (Custom: the spec, ux-review/16-layout-pass.md rule 3 — C6; it
-     was its text's only, DD-2026-11-02-12, so these edges only gave a little and snapped back). In
-     Vertical the bottom sets the box's height — yours (Custom, decision A: C4c), through the layout pass; its top is the
-     edge it shares with the page — its band is that edge's, wired below (B19b) */
+  /* the prompt box's height edges: the size within [least, largest] (its least, the room), the rubber band past
+     either. Side by side: the bottom (#vedge) and the top, held in card.hHold (the pass's one placement rule reads it:
+     the other side holds); let go, your height (Custom: 16-layout-pass.md rule 3). In Vertical the bottom sets the
+     box's height through the layout pass; its top is the edge it shares with the page, wired below */
   (function () {
     const L = $("left"),
       top = document.createElement("div");
@@ -154,9 +147,8 @@ export function initEdges() {
   })();
   /* Vertical: the edge the page (picture or panel) and the prompt box share has a band on each pane — the page's bottom
      (below) and the box's top (here) — both the ONE shared edge, as side by side's divider (B19b). It pushes into the
-     empty room first, then trades (C4 rule 4, C6, through the pass); both sizes become yours. Past a limit the rubber
-     band. Double-click: both back to their defaults (the picture first). It was one handle in the gap between them
-     (#hsplit) */
+     empty room first, then trades (through the pass); both sizes become yours. Past a limit the rubber band.
+     Double-click: both back to their defaults */
   passEdge(
     /** @type {HTMLElement} */ (q("#left > .vedge.t")),
     () => RESIZES.shared,
@@ -164,9 +156,9 @@ export function initEdges() {
     () => (stacked() ? "shared" : null),
     "y",
   );
-  /* the panel edges (Phase 2a): po = the prompt's outer edge, dv = the divider between the prompt and the image area
-   (a strip on each side of the gap, both the same boundary), ro = the image area's outer edge. Double-click: that
-   panel back to its default width (the divider: both). */
+  /* side by side: po = the prompt's outer edge, dv = the divider between the prompt and the page (a strip on each side
+   of the gap, both the same boundary), ro = the page's outer edge. Double-click: that pane back to its default width
+   (the divider: both) */
   (function () {
     /** an edge handle @param {HTMLElement} parent @param {string} e which edge @param {string} cls @param {string} tip */
     const mk = (parent, e, cls, tip) => {
@@ -187,7 +179,7 @@ export function initEdges() {
       mk($("right"), "ro", "ro", R_TIP),
     ];
     for (const h of hs) {
-      /** held: through the layout pass (every page side by side: C3, C2a's rest) */
+      /** held: through the layout pass */
       let held = false;
       edgeDrag(h, () => RESIZES[/** @type {string} */ (h.dataset.e)], {
         cls: ["resizing", "laydrag"],
@@ -220,14 +212,13 @@ export function initEdges() {
         passDouble(
           e === "dv" ? "shared" : e === "po" ? (R ? "box.right" : "box.left") : R ? "page.left" : "page.right",
         );
-      }); /* DD-5, one owner: the box's default, the shared edge both, the page's outer edge its pane's (a picture: its
-             largest, the box squeezed) */
+      }); /* one owner, layout.js passDouble (DD-2026-11-03-5) */
     }
   })();
   /* the picture's own edges (Generating, the Gallery): its size, a scale of its largest — through the layout pass in both
-     layouts (C3; Vertical: C4c). Side by side its top and bottom (a centred axis: the other mirrors); in Vertical its top
-     (the anchored side: its bottom holds while held, the release settles) and its sides (about its centre) — its bottom
-     there is the shared edge (B19b). Double-click: its largest */
+     layouts. Side by side its top and bottom (a centred axis: the other mirrors); in Vertical its top (the anchored
+     side: its bottom holds while held, the release settles) and its sides (about its centre) — its bottom there is the
+     shared edge. Double-click: its largest */
   qa(".hedge").forEach(h => {
     const e = /** @type {string} */ (h.dataset.e),
       y = e === "t" || e === "b";
@@ -252,9 +243,9 @@ export function initEdges() {
       y ? "y" : "x",
     );
   });
-  /* Vertical: a panel's side edges (Queue, LoRAs, PNG Info — v0.7c): it widens or narrows about its centre (Vertical is
-     centred, like the picture's sides), through the layout pass (C4c). Each page keeps its own width in Vertical; past a
-     limit (the tab bar, the window) the rubber band. Double-click: its default (a 1:1 plate at the room's height) */
+  /* Vertical: a panel's side edges (Queue, LoRAs, PNG Info): it widens or narrows about its centre, through the layout
+     pass. Each page keeps its own width in Vertical; past a limit (the tab bar, the window) the rubber band.
+     Double-click: its default (a 1:1 plate at the room's height) */
   {
     const rt = $("right");
     for (const side of ["l", "r"]) {
@@ -271,9 +262,9 @@ export function initEdges() {
       );
     }
   }
-  /* a panel's top and bottom edges (Queue, LoRAs, PNG Info — v0.7c): its height, through the layout pass in both layouts
-     (side by side a centred axis; Vertical: its top is the anchored side, its bottom the shared edge — C4c). Past a limit
-     the rubber band; the release settles it to its place and keeps the height. Double-click: the whole room */
+  /* a panel's top and bottom edges (Queue, LoRAs, PNG Info): its height, through the layout pass in both layouts (side
+     by side a centred axis; Vertical: its top is the anchored side, its bottom the shared edge). Past a limit the rubber
+     band; the release settles it to its place and keeps the height. Double-click: the whole room */
   {
     const rt = $("right");
     for (const side of ["t", "b"]) {
@@ -312,9 +303,8 @@ export function initEdges() {
       el.addEventListener("pointerleave", off);
     }
   })();
-  /* Vertical: the prompt box's side edges — its width, about its centre (Vertical is centred), through the layout pass
-     (C4c; it was card.swHold, written by layoutLeft). Dragging one lets go of a width mode (passDragStart).
-     Double-click: its default width */
+  /* Vertical: the prompt box's side edges — its width, about its centre, through the layout pass. Dragging one lets go
+     of a width mode (passDragStart). Double-click: its default width */
   {
     const L = $("left");
     for (const side of ["l", "r"]) {

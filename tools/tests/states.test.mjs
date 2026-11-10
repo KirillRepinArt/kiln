@@ -485,3 +485,36 @@ export async function arrowFromTheRender(k, t) {
   const tb = await k.ev(how(`document.querySelector('.tab[data-v="gallery"]').click()`));
   t.ok(tb.morph && tb.pic === "browse", "…and the Gallery tab the same way", tb);
 }
+
+/* G11 (the re-read, 2026-11-10): the status row leaves showing what it showed — as the last render finishes, its bar,
+   Stop and "Step N/N" fade out together; they never switch to the next contents while the row is still seen (they did
+   in one frame at full opacity: the caption, then it faded). The row on screen is the row or its leaving copy */
+export async function statusRowLeavesWhole(k, t) {
+  await k.mouse(2, 2);
+  await k.ev(`(P.value="[fill:884422] r",draft=P.value,S.ar="3:4",S.steps=12,1)`);
+  await k.sleep(800);
+  await k.ev(`(addJobs(),1)`);
+  await k.until(`!!current()&&!!current().preview_rev`, 20000, 50);
+  await k.ev(`(()=>{window.__g=[];const seen=e=>{if(!e)return 0;const s=getComputedStyle(e);return s.visibility==="hidden"||s.display==="none"?0:+s.opacity};
+    (function f(){const p=$("prog"),x=$("progx"),a=seen(p),b=seen(x),el=b>a?x:p,m=el.querySelector(".meta"),tr=el.querySelector(".track");
+      window.__g.push({o:Math.max(a,b),txt:m?m.textContent.trim():"",bar:!!tr&&getComputedStyle(tr).visibility==="visible"});
+      if(window.__g.length<2000&&(current()||window.__g.length<1e9))requestAnimationFrame(f)})();return 1})()`);
+  await k.until(`!current()`, 30000, 50);
+  await k.sleep(1500);
+  const g = await k.ev(`window.__g`);
+  const swaps = [];
+  for (let i = 1; i < g.length; i++)
+    if (
+      g[i - 1].o > 0.05 &&
+      g[i].o > 0.05 &&
+      /^Step/.test(g[i - 1].txt) &&
+      (!/^Step/.test(g[i].txt) || g[i - 1].bar !== g[i].bar)
+    )
+      swaps.push({ frame: i, from: g[i - 1], to: g[i] });
+  t.ok(
+    g.some(r => /^Step/.test(r.txt) && r.o > 0.9),
+    "the row showed the render (Step …)",
+    g.length,
+  );
+  t.ok(!swaps.length, "the row never switches its contents while it's seen — it fades out whole", swaps.slice(0, 3));
+}

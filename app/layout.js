@@ -59,7 +59,22 @@ export const BAR = () => SPACE.part + 10 + 7 + 36;
    room after it — the tab switch's order). ONE place (tabs.js faded it on its own for a switch) */
 /** @param {boolean} on */
 function rowFade(on) {
-  rearrangeFade($("prog"), on); // on the rearrangement's plan: it leaves before the picture grows into its room (T2a)
+  const p = $("prog");
+  if (on) {
+    rearrangeFade(p, true); // on the rearrangement's plan: it comes as the picture has made its room (T2a)
+    return;
+  }
+  /* leaving: what it showed leaves as its copy (#progx, written here only), on the plan — before the picture grows into
+     its room; the row itself is at its end state at once (hidden by body.norow, its contents free to change). Faded
+     itself, its contents changed under the fade: the bar and Stop went and "Step 59/60" became the picture's caption in
+     one frame at full opacity, then the caption faded (G11, the re-read; DD-5's whole rule — the frame's pictures do
+     the same, cv / cvx) */
+  const x = $("progx");
+  x.className = p.className + " progx";
+  x.innerHTML = p.innerHTML;
+  for (const e of x.querySelectorAll("[id]")) e.removeAttribute("id");
+  x.style.cssText = p.style.cssText;
+  rearrangeFade(x, false);
 }
 /* the page on show, for its insets (layoutmath.js PAGES) */
 function page() {

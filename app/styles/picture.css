@@ -355,6 +355,11 @@ body:has(.viewer.show) .gnav {
 body.norow .prog {
   visibility: hidden;
 }
+/* the row's leaving copy (layout.js rowFade): seen only while its fade shows it (rearrange.js: visible for the fade) */
+.prog.progx {
+  visibility: hidden;
+  pointer-events: none;
+}
 .prog .track {
   position: relative;
   height: 10px;

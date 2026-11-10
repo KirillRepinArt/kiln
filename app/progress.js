@@ -9,7 +9,7 @@ import { sizeFrame } from "./layout.js";
 import { api } from "./live.js";
 import { loadJob } from "./peek.js";
 import { PV, browsed, justDone, onShow, picMode, pv, setJustDone, shownDone } from "./picstate.js";
-import { drawTo, frameEmptied, frameFilled, missUI, paint, xfadeEnd } from "./pictures.js";
+import { drawTo, frameEmptied, frameFilled, missUI, overlayShows, paint, pictureIn, xfadeEnd } from "./pictures.js";
 import { SEC_PER_STEP, SIZES } from "./presets.js";
 import { draft, peekJob } from "./prompt.js";
 import { S } from "./state.js";
@@ -126,8 +126,12 @@ export function frame() {
         const jid = j.id;
         i.onload = () => {
           if (+(/** @type {string} */ ($("cv").dataset.j)) === jid && picMode() === "live") {
+            const first = lastPrev === 0; // the render's first picture
             drawTo(/** @type {HTMLCanvasElement} */ ($("cv")), i, false, "render:" + jid);
-            xfadeEnd();
+            /* over a held picture: that one fades off it; into an empty frame its first picture fades in, as any picture
+               does there (pictures.js xfadeGo) — it appeared at once (the tracer, once an empty canvas read as unseen) */
+            if (overlayShows()) xfadeEnd();
+            else if (first) pictureIn();
           }
           lastPrev = r;
           prevLoading = false;

@@ -15,7 +15,7 @@ const WATCH = `__trace.watch({
   vGen: $("v-gen"), vQueue: $("v-queue"), vLoras: $("v-loras"), vPng: $("v-png"), rpanel: $("rpanel"),
   right: $("right"), app: document.querySelector(".app"), tabs: document.querySelector(".tabs"), thumb: $("thumb"),
   lcol: $("lcol"), left: $("left"), ltitle: $("ltitle"), chips: $("chips"),
-  prog: $("prog"), showP: $("showP"), gtools: $("gtools"),
+  prog: $("prog"), progx: $("progx"), showP: $("showP"), gtools: $("gtools"),
   navPrev: document.querySelector(".gnav.prev"), navNext: document.querySelector(".gnav.next"), toast: $("toast"),
   idle: $("idle"),
 })`;
@@ -66,6 +66,16 @@ export async function ownershipTour(k, t) {
     ]);
     delete r.samples.cv;
     delete r.samples.cvx;
+    /* the status row and its leaving copy are ONE row on screen (G11: the copy fades what it showed, the row is at its
+       end state at once) — as the frame's two pictures */
+    const px = r.samples.progx || [];
+    if (r.samples.prog)
+      r.samples.prog = r.samples.prog.map((/** @type {number[]} */ row, /** @type {number} */ i) => [
+        ...row.slice(0, 5),
+        1 - (1 - row[5]) * (1 - (px[i] ? px[i][5] : 0)),
+        row[6],
+      ]);
+    delete r.samples.progx;
     /* the empty frame's text too is seen through its view (it snaps hidden once its view has faded out) */
     r.samples.idle = (r.samples.idle || []).map((/** @type {number[]} */ row, /** @type {number} */ i) => [
       ...row.slice(0, 5),

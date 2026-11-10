@@ -43,8 +43,8 @@ export const S = {
   lfilter: "all",
 }; /* settings of the removed demo mode */
 /* LoRA entries are merged, never replaced: a LoRA this page doesn't know right now (none at start-up, before
-   Forge's list arrives; a LoRA moved away for a while) keeps its saved name, weight and star. Replacing the list once
-   wiped every renamed LoRA (2026-10-18). */
+   Forge's list arrives; a LoRA moved away for a while) keeps its saved name, weight and star (replacing the list
+   wiped every renamed LoRA). */
 /* a test hook: one test stands in for a window closing mid-job, when nothing may be saved any more */
 let savesBlocked = false;
 export function blockSaves() {

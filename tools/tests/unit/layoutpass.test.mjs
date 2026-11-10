@@ -275,8 +275,9 @@ const release = (s, kept) => ({
 const near = (a, b, tol = EPS) => Math.abs(a - b) <= tol;
 const sameRect = (a, b, tol = EPS) =>
   near(a.x, b.x, tol) && near(a.y, b.y, tol) && near(a.w, b.w, tol) && near(a.h, b.h, tol);
-/* side by side the box's height edges have nothing to set (its height is its text's — in Vertical its bottom sets its
-   height: C4c, decision A); Vertical's picture top fights the anchor */
+/* side by side the box's height edges don't go through the pass (they hold card.hHold, edges.js, which cardPlacement
+   reads): held here they move nothing. In Vertical the box's bottom sets its height. Vertical's picture top fights the
+   anchor */
 const GIVES_ONLY = new Set(["box.top", "box.bottom"]);
 const givesOnly = (s, id) => GIVES_ONLY.has(id) && s.dock !== "below";
 const settles = (s, id) => s.dock === "below" && id === "page.top";
@@ -412,7 +413,7 @@ test("a press moves nothing: every handle, held at its own line, gives the layou
         const s = state({ dock, page: { kind: "pic", ratio, scale } }),
           out = layoutPass(s);
         for (const id of Object.keys(out.handles)) {
-          if (id === "box.top" || id === "box.bottom") continue; // the box's height edges only give (its text's)
+          if (id === "box.top" || id === "box.bottom") continue; // side by side: not the pass's (card.hHold)
           const e = edgeOf(out, id),
             held = layoutPass({ ...s, drag: { edge: id, at: e.line } }),
             tag = `${dock} ${ratio.toFixed(2)} @${scale} ${id}`;

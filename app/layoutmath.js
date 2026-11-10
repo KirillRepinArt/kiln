@@ -922,7 +922,6 @@ function dragSizes(s, z) {
       keptPh: z.ph,
       pageY: /** @type {number | null} */ (null),
       boxY: /** @type {number | null} */ (null),
-      boxGive: 0,
     },
     pageLo = pic ? { w: s.picLeast * ratio, h: s.picLeast } : s.page.kind === "panel" ? s.page.lo : { w: 0, h: 0 },
     pageHi = s.page.kind === "panel" ? s.page.hi : { w: Infinity, h: Infinity },
@@ -1046,9 +1045,7 @@ function dragSizes(s, z) {
         /* a picture's height is also bound by the width it may take beside the box as it is (an outer edge: DD-07-1) */
         hHi = Math.min(pageHi.h, CH, pic ? pageOwnHi / ratio : Infinity);
       setPageH(hWant, hHi);
-    } else if (who === "box" && (side === "top" || side === "bottom")) {
-      out.boxGive = boxGive(s, side, d.at); // through the pass it only gives (its height is held as card.hHold: edges.js)
-    }
+    } /* the box's top / bottom side by side don't come here: they hold card.hHold (edges.js), which cardPlacement reads */
   } else {
     /* Vertical (16-layout-pass.md C4 rule 4): the shared edge trades room between the page and the box inside the
        group's height at the press (the box's bottom holds); an outer edge takes no room from the other pane — it grows
@@ -1106,16 +1103,6 @@ function dragSizes(s, z) {
 }
 
 /**
- * A box height edge held through the pass: only the give (the rubber band), measured from where the edge rests. (Side
- * by side these edges hold card.hHold instead — edges.js — so the pass meets none today.) @param {PassState} s @param {string} side @param {number} at
- */
-function boxGive(s, side, at) {
-  const rest = layoutPass({ ...s, drag: null }).box,
-    edge = side === "top" ? rest.y : rest.y + rest.h;
-  return rubber(side === "top" ? edge - at : at - edge, 0, 0, RUBBER);
-}
-
-/**
  * Side by side, where the group (the box, the gap, the page's pane) starts: the pair you see — the box and the picture —
  * is centred; the buttons' strip hangs into the margin beside the picture and takes room only where there is none (a
  * picture at its widest): the group moves in by what's missing (DD-2026-11-03-7). ONE definition: the rectangles and a
@@ -1139,7 +1126,7 @@ function groupX(s, bw, pw) {
  * @returns {PassOut}
  */
 export function layoutPass(s) {
-  const { L, R, RW, T, B, CH } = roomOf(s),
+  const { L, R, RW, T, CH } = roomOf(s),
     { gap, bar, strip } = s,
     vert = s.dock === "below",
     pic = s.page.kind === "pic" ? s.page : null,
@@ -1154,7 +1141,6 @@ export function layoutPass(s) {
           keptPh: rest.ph,
           pageY: null,
           boxY: null,
-          boxGive: 0,
         },
     mode = rest.mode;
   /** @type {Rect} */ let page;
@@ -1220,14 +1206,6 @@ export function layoutPass(s) {
     const bw = mode === "fit" && pr ? pr.w : mode === "full" ? RW : z.bw;
     /* the pane, its status row, the gap, the name row, the box — held: under the page's kept bottom (dragSizes) */
     box = { x: L + (RW - bw) / 2, y: z.boxY ?? py + z.ph + vGap(s), w: bw, h: z.bh };
-  }
-  /* a box height edge held through the pass: its give (boxGive) */
-  if (z.boxGive) {
-    /* never past the gap to the next part: the tab bar's row above, the window's edge below */
-    if (s.drag?.edge === "box.top") {
-      const g = Math.min(z.boxGive, box.y - (T - gap.bar));
-      box = { ...box, y: box.y - g, h: box.h + g };
-    } else box = { ...box, h: box.h + Math.min(z.boxGive, B + gap.area - (box.y + box.h)) };
   }
 
   /* what a release keeps: the box's width; a picture's scale of its largest at that width; a panel's sizes */

@@ -8,9 +8,14 @@
 import { TRACER, reversals, secondWriters, twoClocks } from "./trace.mjs";
 
 /** known second writers / reversals: "el.prop" (or "el~what" for a reversal) → the map's id and why it's there */
-const ALLOW = /** @type {Record<string, string>} */ (
-  {/* empty since T2c's acceptance (F3 resolved: a same-view switch mid-switch lets the running one carry on) */}
-);
+const ALLOW = /** @type {Record<string, string>} */ ({
+  /* F4 (the re-read, 2026-11-10): a tab clicked a quarter of the way into a switch cuts the first — the leaving view
+       0.78 → 0 and the coming one 0 → 1 in one frame (50 % and 75 % carry on) */
+  "picture~cut": "F4",
+  "idle~cut": "F4",
+  "vGen~cut": "F4",
+  "vQueue~cut": "F4",
+});
 
 const WATCH = `__trace.watch({
   plate: $("plate"), rim: $("rim"), frame: $("frame"), cv: $("cv"), cvx: $("cvx"), fglow: $("fglow"),
@@ -229,6 +234,30 @@ export async function ownershipTour(k, t) {
   await motion("Vertical: the shared edge with a panel (the trade)", [drag("#left > .vedge.t", 0, -80), "0"]);
   await k.ev(`(setDock("left"),1)`);
   await k.sleep(1500);
+  /* interruptions (v0.7c's re-read, ux-review/14-ownership-reread.md Step 1.2): each motion again with a second input
+     a quarter, half and three quarters of the way through — a tab mid-switch, a layout mid-switch, Reset mid-switch,
+     browsing mid-layout-switch, a window resize mid-switch. Several inputs: checked for second writers and two clocks
+     (what follows your input may rightly turn back with it) */
+  const T = await k.ev(`(()=>{const v=getComputedStyle(document.documentElement).getPropertyValue("--lay-t").trim();
+    return v.endsWith("ms")?parseFloat(v):(parseFloat(v)||0.42)*1000})()`);
+  const resize = `new Promise(r=>{let i=0;(function s(){window.dispatchEvent(new Event("resize"));if(++i<6)setTimeout(s,30);else r(1)})()})`;
+  for (const f of [0.25, 0.5, 0.75]) {
+    const at = String(Math.round(T * f)),
+      pc = `${f * 100} %`;
+    await k.ev(`(${tab("gen")},1)`);
+    await k.sleep(1300);
+    await motion(`Generating → Queue, the Gallery at ${pc}`, [tab("queue"), at, tab("gallery")], 1700);
+    await motion(`layout → right, → Vertical at ${pc}`, [`setDock("right")`, at, `setDock("below")`], 1900);
+    await k.ev(`(setDock("left"),1)`);
+    await k.sleep(1500);
+    await motion(`Gallery → Queue, Reset layout at ${pc}`, [tab("queue"), at, `$("rLayout").click()`], 1900);
+    await k.ev(`(${tab("gallery")},1)`);
+    await k.sleep(1300);
+    await motion(`layout → right, browse at ${pc}`, [`setDock("right")`, at, `genNav(-1)`], 1900);
+    await motion(`Gallery → Queue, a window resize at ${pc}`, [tab("queue"), at, resize], 1700);
+    await k.ev(`(setDock("left"),${tab("gallery")},1)`);
+    await k.sleep(1500);
+  }
   const unknown = Object.keys(found).filter(key => !(key.replace(/ \[.*$/, "") in ALLOW));
   /* a second writer or two clocks fail everywhere; what is sampled frame by frame (a reversal, a hover-only thing shown)
      is judged on a real PC — CI's machines draw a few frames a second */

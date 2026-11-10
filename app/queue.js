@@ -242,8 +242,8 @@ export function qsUpdate() {
   }
   shownSig = queueSig();
 }
-/* the selection bar stays on one line (2026-10-27, the user: in a narrow panel it broke onto two, the rows below
-   jumping): words give way in order — the series name shortens (CSS), then "of N", "from list", "Select" */
+/* the selection bar stays on one line (two lines made the rows below jump): words give way in order — the series name
+   shortens (CSS), then "of N", "from list", "Select" */
 const CUTS = ["c1", "c2", "c3"];
 /** @param {HTMLElement} h */
 function fitBar(h) {
@@ -328,7 +328,7 @@ function clock(ms) {
 export function setQsAnchor(id) {
   qsAnchor = id;
 }
-/* reorder = pick up the plate (2026-10-27, agreed with the user): the real row lifts (a touch larger, a deeper shadow)
+/* reorder = pick up the plate: the real row lifts (a touch larger, a deeper shadow)
    and follows the pointer up and down — one copy, never a ghost of it; where it would land, its footprint (the dashed line
    on a row's edge) travels through the list as the other rows slide aside on the glide curve. Letting go settles it into
    the plate; Esc puts it back where it was. The same drag language as moving the prompt box. The list is never rebuilt

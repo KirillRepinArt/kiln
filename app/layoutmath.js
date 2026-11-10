@@ -480,6 +480,90 @@ export function relationMotion(q, motion) {
   return pattern === "fade" ? { pattern, ...relationFade(motion) } : { pattern, T: motion };
 }
 
+/* ---------- the drop map (L1b, 2026-11-11 — ux-review/18-box-placement.md, sketch E) ----------
+   Where a dragged pane can go, as a MAP (an ideogram, not its footprint: the final state can't be shown before it
+   happens — the picture resizes, the pair re-centres): the places are its partner's edges unfolded — a column on each
+   side as tall as the partner, in thirds (top / middle / bottom), and a tile under it as wide as it. A column takes the
+   free room from the partner's edge to the window's edge gap, no wider than the pane; under `roomMin` of free room it
+   lies over the partner flush to the window's edge, covering at most `cover` of its width (never under `hitMin`, a
+   target to hit). The bottom tile is a side tile's height: under the partner when the room is there, else over its
+   bottom (at most `cover` of its height), between laid-over columns — or, with no width left between them, the
+   partner's width with the laid-over columns stopping above it. The window's corners are never a place: a pane stays
+   glued to its partner. Pure; the numbers come from tokens.css (the drop map's). */
+/** @typedef {{ dock: "left" | "right" | "below", pos: "top" | "mid" | "bot", r: Rect }} DropTile */
+/** @typedef {{ dock: "left" | "right" | "below", r: Rect, over: number }} DropLane */
+/**
+ * @param {Rect} p the partner (the picture's plate), the window's px
+ * @param {{ w: number, h: number }} win the window
+ * @param {{ paneW: number, area: number, part: number, cover: number, roomMin: number, hitMin: number }} o
+ * @returns {{ lanes: DropLane[], tiles: DropTile[] }}
+ */
+export function dropTiles(p, win, o) {
+  /** @type {DropLane[]} */
+  const lanes = [];
+  for (const dock of /** @type {const} */ (["left", "right"])) {
+    const room = dock === "left" ? p.x - 2 * o.area : win.w - o.area - (p.x + p.w + o.area);
+    if (room >= o.roomMin) {
+      const w = Math.min(o.paneW, room);
+      lanes.push({
+        dock,
+        r: { x: dock === "left" ? p.x - o.area - w : p.x + p.w + o.area, y: p.y, w, h: p.h },
+        over: 0,
+      });
+    } else {
+      const w = Math.max(o.hitMin, Math.min(o.paneW, Math.max(room, 0) + o.cover * p.w));
+      lanes.push({
+        dock,
+        r: { x: dock === "left" ? o.area : win.w - o.area - w, y: p.y, w, h: p.h },
+        over: w - Math.max(room, 0),
+      });
+    }
+  }
+  const third = (p.h - 2 * o.part) / 3,
+    roomB = win.h - o.area - (p.y + p.h + o.area);
+  /** @type {DropLane} */
+  let below;
+  if (roomB >= third) below = { dock: "below", r: { x: p.x, y: p.y + p.h + o.area, w: p.w, h: third }, over: 0 };
+  else {
+    const bh = Math.min(third, o.cover * p.h);
+    let x0 = p.x,
+      x1 = p.x + p.w;
+    const [L, R] = lanes;
+    if (L.over) x0 = Math.max(x0, L.r.x + L.r.w + o.area);
+    if (R.over) x1 = Math.min(x1, R.r.x - o.area);
+    if (x1 - x0 < o.roomMin) {
+      /* no width left between the laid-over columns: the tile takes the partner's width, they stop above it */
+      x0 = p.x;
+      x1 = p.x + p.w;
+      for (const c of lanes) if (c.over) c.r = { ...c.r, h: p.h - bh - o.area };
+    }
+    below = { dock: "below", r: { x: x0, y: p.y + p.h - bh, w: x1 - x0, h: bh }, over: bh };
+  }
+  lanes.push(below);
+  /** @type {DropTile[]} */
+  const tiles = [];
+  for (const c of lanes.slice(0, 2)) {
+    const t = (c.r.h - 2 * o.part) / 3;
+    /** @type {const} */ (["top", "mid", "bot"]).forEach((pos, i) =>
+      tiles.push({ dock: c.dock, pos, r: { x: c.r.x, y: c.r.y + i * (t + o.part), w: c.r.w, h: t } }),
+    );
+  }
+  tiles.push({ dock: "below", pos: "mid", r: below.r });
+  return { lanes, tiles };
+}
+/** the drop map's tile under a point, or null (in a lane's gap: the lane's third under it) @param {DropTile[]} tiles
+ * @param {DropLane[]} lanes @param {number} x @param {number} y @returns {DropTile | null} */
+export function dropAt(tiles, lanes, x, y) {
+  const inR = (/** @type {Rect} */ r) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+  const lane = lanes.find(l => inR(l.r));
+  if (!lane) return null;
+  const own = tiles.filter(t => t.dock === lane.dock);
+  return (
+    own.find(t => inR(t.r)) ||
+    own.reduce((a, b) => (Math.abs(b.r.y + b.r.h / 2 - y) < Math.abs(a.r.y + a.r.h / 2 - y) ? b : a))
+  );
+}
+
 /**
  * The box at a point of a shape change: each axis moves its centre and its size by its own progress.
  * @param {{ l: number, t: number, w: number, h: number }} o @param {{ l: number, t: number, w: number, h: number }} n

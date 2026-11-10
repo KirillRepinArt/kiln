@@ -1,7 +1,19 @@
 // @ts-check
 /* Kiln · the tab bar: which view is on, the selected tab's sliding pill, switching tabs */
 import { $ } from "./dom.js";
-import { dockNow, fadeCol, lay, liftCol, placeFor, promptFollow, sizeFrame, snapHold, standIn } from "./layout.js";
+import {
+  dockNow,
+  fadeCol,
+  lay,
+  liftCol,
+  liftScale,
+  liftToken,
+  placeFor,
+  promptFollow,
+  sizeFrame,
+  snapHold,
+  standIn,
+} from "./layout.js";
 import { relationMotion } from "./layoutmath.js";
 import { travel } from "./rearrange.js";
 import { renderLoras } from "./loras.js";
@@ -135,6 +147,10 @@ export function tabGo(fn, layout = false, cause = "menu") {
       o = { l: seen0.left - at.x, t: seen0.top - at.y, w: 0, h: 0 };
     liftCol(o.l, o.t);
     travel("lift", o, { l: 0, t: 0, w: 0, h: 0 }, b => liftCol(b.l, b.t));
+    /* carried as a token (the drop map, L1b): it grows back to its size on the same clock (it scales about its top-left
+       corner, so the travel measured from that corner holds) */
+    const s0 = liftScale();
+    if (s0 !== 1) travel("liftScale", { l: s0, t: 0, w: 0, h: 0 }, { l: 1, t: 0, w: 0, h: 0 }, b => liftToken(b.l));
   }
   const v1 = /** @type {HTMLElement | null} */ (document.querySelector(".rpanel > .view.on"));
   let sw;

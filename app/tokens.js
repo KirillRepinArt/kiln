@@ -19,3 +19,12 @@ export function initTokens() {
     if (v >= 0) SPACE[k] = v;
   }
 }
+
+/** a number from tokens.css, read where it's used (the numbers' one home — v0.7d's first slice, the drop map): px or a
+ * plain number, read now (a theme or a live stylesheet reload changes it) @param {string} name its custom property
+ * @param {number} fallback its value without a page (unit tests) */
+export function tok(name, fallback) {
+  if (typeof document === "undefined") return fallback;
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  return Number.isFinite(v) ? v : fallback;
+}

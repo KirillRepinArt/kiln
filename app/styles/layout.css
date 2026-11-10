@@ -32,6 +32,16 @@
 }
 .app.stacked .lcol {
   order: 2;
+  --sx: calc(50% - var(--sw, 760px) / 2);
+}
+/* Vertical: the box's parts are centred by LAYOUT (their sides move about the centre as --sw changes), never by a
+   transform of their own — the column alone transforms the box (its motion: the glue, the lift, the token), and what
+   measures layout reads their place true (a translateX(-50%) on each put the token's scale point 380 px off, L1b) */
+.app.stacked #lcol > #left,
+.app.stacked #lcol > .ltitle,
+.app.stacked #lcol > .pgrip,
+.app.stacked #lcol > .chips {
+  left: var(--sx);
 }
 #lcol {
   pointer-events: none;

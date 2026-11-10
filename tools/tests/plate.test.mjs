@@ -1020,32 +1020,46 @@ export async function boxGluedThroughLayoutSwitch(k, t) {
   await k.mouse(4, 4);
   await k.sleep(1600);
   const n = await k.rect("#ltitle"),
-    [x, y] = [n.left + 20, n.top + n.height / 2],
-    /* the box's centre carried to the slot under the picture (L1: the place nearest the box's centre) */
-    [bx, by] = await k.ev(
-      `(()=>{const b=$("left").getBoundingClientRect(),r=placeFor("below","mid");return [r.x+r.w/2-(b.left+b.width/2),r.y+r.h/2-(b.top+b.height/2)]})()`,
-    ),
-    [X, Y] = [x + bx, y + by];
+    [x, y] = [n.left + 20, n.top + n.height / 2];
+  /* onto the drop map's tile under the picture (L1b: the tile under the pointer) */
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y: y + 12, button: "left", buttons: 1 });
+  const [X, Y] = await k.ev(
+    `(r=>[r.left+r.width/2,r.top+r.height/2])(document.querySelector('.droptile[data-dock="below"]').getBoundingClientRect())`,
+  );
   for (let i = 1; i <= 10; i++)
     await k.send("Input.dispatchMouseEvent", {
       type: "mouseMoved",
       x: x + ((X - x) * i) / 10,
-      y: y + ((Y - y) * i) / 10,
+      y: y + 12 + ((Y - y - 12) * i) / 10,
       button: "left",
       buttons: 1,
     });
   t.ok(
-    (await k.ev(`(document.querySelector(".footprint.show")||{dataset:{}}).dataset.dock`)) === "below",
-    "the drag is over the bottom dock",
+    (await k.ev(`(document.querySelector(".droptile.hot")||{dataset:{}}).dataset.dock`)) === "below",
+    "the drag is over the bottom tile",
   );
   await k.sleep(100);
   await k.ev(REC);
   await k.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: X, y: Y, button: "left", clickCount: 1 });
   await k.sleep(1700);
-  check("dragged to the bottom dock", await k.ev(`__rec`), "left", "below", await k.ev(`S.pos||"mid"`));
-  await looksAlike("dragged to the bottom dock");
+  /* a hand drop TRAVELS (layoutmath.js relationMotion, L1a): no stand-in, no fade — the box itself goes on from where you
+     let it go to its landing, seen every frame, never turning back (the menu's switch above fades through) */
+  {
+    const rows = await k.ev(`__rec`),
+      z = rows.at(-1),
+      d = r => Math.hypot(r[1] - z[1], r[2] - z[2]),
+      hidden = rows.filter(r => r[0] < 0.95),
+      back = rows.slice(1).filter((r, i) => d(r) > d(rows[i]) + 2);
+    t.ok(d(rows[0]) > 20, "dragged to the bottom dock: the box changes place (the case)", { a: rows[0], z });
+    t.ok(
+      !(await k.ev(`!!document.querySelector(".standin")||!!__seen1`)),
+      "dragged to the bottom dock: no stand-in (it travels itself)",
+    );
+    t.motion(!hidden.length, "dragged to the bottom dock: the box is seen every frame (no fade)", { first: hidden[0] });
+    t.motion(!back.length, "dragged to the bottom dock: …and goes to its landing, never back", { first: back[0], z });
+  }
   await glassLive("dragged to the bottom dock");
   await picRides("dragged to the bottom dock");
   await pillsWithBox("dragged to the bottom dock");

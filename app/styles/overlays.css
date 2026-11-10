@@ -185,72 +185,38 @@
   color: var(--faint);
   line-height: 1.5;
 }
-/* moving the prompt box (L1, cardlayout.js): the LANES where it could go (dashed: the left column, the right column, the
-   slot under the picture) and the one FOOTPRINT where it will land (glass, tinted) — placed by the layout pass for each
-   place, so what's shown is where it lands. The Queue's reorder language: the box itself follows the pointer. The
-   footprint condenses in (never by opacity: Chromium switches the glass off inside anything partly transparent) */
-.lane {
-  position: fixed;
-  z-index: var(--z-win-drop-lanes);
+/* the drop map (L1b — cardlayout.js; layoutmath.js dropTiles): where a carried pane can go, as a map behind it, in the
+   app's own layer under the prompt column (tokens.css --z-app-drop-map). Dashed: a place it could go ("dashed = could",
+   L1's language); the hot one (under the pointer): where it will go; over the picture (no room beside it): a tint so the
+   picture under it reads as under. Its fade is CSS's own (one owner: nothing else writes its opacity) */
+.dropmap {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-app-drop-map);
   pointer-events: none;
-  border-radius: var(--r-panel);
-  outline: var(--outline);
-  outline-offset: var(--outline-out);
   opacity: 0;
-  transition:
-    opacity var(--t-150),
-    outline-color var(--t-150);
+  transition: opacity var(--t-150);
 }
-.lane.show {
+.dropmap.show {
   opacity: 1;
 }
-.lane.near {
-  outline-color: var(--white-50);
-}
-.footprint {
-  position: fixed;
-  z-index: var(--z-win-drop-mark);
-  display: none;
-  pointer-events: none;
-  border: 1px solid transparent;
+.droptile {
+  position: absolute;
   border-radius: var(--r-panel);
-  background: transparent;
-  transform: scale(0.97);
+  outline: var(--outline);
+  outline-offset: calc(var(--space-px) * -1);
   transition:
-    background var(--t-220) var(--lay-e),
-    border-color var(--t-220) var(--lay-e),
-    backdrop-filter var(--t-300) var(--lay-e),
-    transform var(--t-300) var(--lay-e),
-    display var(--t-300) allow-discrete;
+    background var(--t-150),
+    outline-color var(--t-150);
 }
-.footprint.show {
-  display: block;
-  background: color-mix(in oklab, var(--a1) 14%, transparent);
-  border-color: color-mix(in oklab, var(--a1) 70%, transparent);
-  transform: none;
+.droptile.over {
+  background: color-mix(in oklab, var(--black) 35%, transparent);
 }
-@starting-style {
-  .footprint.show {
-    background: transparent;
-    border-color: transparent;
-    transform: scale(0.97);
-  }
+.droptile.here {
+  outline-style: solid;
 }
-body.glass .footprint {
-  -webkit-backdrop-filter: blur(0px) saturate(1) brightness(1);
-  backdrop-filter: blur(0px) saturate(1) brightness(1);
-}
-body.glass .footprint.show {
-  background: color-mix(in oklab, rgba(var(--glass-regular), var(--gta, 0.28)), var(--a1) 22%);
-  box-shadow: inset 0 1px 0 var(--white-14);
-  -webkit-backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
-  backdrop-filter: blur(16px) saturate(2.4) brightness(var(--gtb, 2.1));
-}
-@starting-style {
-  body.glass .footprint.show {
-    background: transparent;
-    box-shadow: none;
-    -webkit-backdrop-filter: blur(0px) saturate(1) brightness(1);
-    backdrop-filter: blur(0px) saturate(1) brightness(1);
-  }
+.droptile.hot {
+  background: color-mix(in oklab, var(--a1) 18%, transparent);
+  outline-color: color-mix(in oklab, var(--a1) 75%, transparent);
+  outline-style: solid;
 }

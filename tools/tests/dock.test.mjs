@@ -9,11 +9,28 @@ const menu = async (k, v) => {
   await k.ev(`(document.querySelector('#layMenu [data-lay="${v}"]').click(),1)`);
   await k.sleep(800);
 };
-/* the dock the box would land in, if it's another one: the footprint's (L1 — it was the dock zone "near") */
+/* the drop map's lit tile (L1b — the tile under the pointer): its place, or null; and the dock it would land in if it's
+   another one (it was the footprint, and before it the dock zone "near") */
+const hotTile = k =>
+  k.ev(
+    `(()=>{const f=document.querySelector(".droptile.hot");return f?{dock:f.dataset.dock,pos:f.dataset.pos}:null})()`,
+  );
 const nearZone = k =>
   k.ev(
-    `(()=>{const f=document.querySelector(".footprint.show");if(!f)return null;const now=document.querySelector(".app.stacked")?"below":S.dock||"left";return f.dataset.dock===now?null:f.dataset.dock})()`,
+    `(()=>{const f=document.querySelector(".droptile.hot");if(!f)return null;const now=document.querySelector(".app.stacked")?"below":S.dock||"left";return f.dataset.dock===now?null:f.dataset.dock})()`,
   );
+/** press the box's grip at (x, y), start the drag, carry the pointer onto the drop map's tile {dock, pos} (its centre,
+ * or `off` px from it) — returns where the pointer is; the caller lets go */
+async function dragToTile(k, x, y, dock, pos, off = { x: 0, y: 0 }) {
+  await press(k, x, y);
+  await moveTo(k, x, y, x, y + 12); // past the lift's threshold: the map shows
+  const r = await k.ev(
+    `(r=>r&&{x:r.left+r.width/2,y:r.top+r.height/2})(document.querySelector('.droptile[data-dock="${dock}"][data-pos="${pos}"]')?.getBoundingClientRect())`,
+  );
+  if (!r) throw new Error(`no drop tile ${dock}/${pos}`);
+  await moveTo(k, x, y + 12, r.x + off.x, r.y + off.y);
+  return { x: r.x + off.x, y: r.y + off.y };
+}
 async function press(k, x, y) {
   await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
   await k.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
@@ -125,14 +142,11 @@ export async function dragToDock(k, t) {
   await k.mouse(2, 2);
   await k.sleep(600);
   let n = await R(k, "#ltitle"),
-    x = n.left + 20,
-    y = n.top + n.height / 2;
-  await press(k, x, y);
-  await moveTo(k, x, y, 1600, 400);
+    p = await dragToTile(k, n.left + 20, n.top + n.height / 2, "right", "mid");
   const z1 = await nearZone(k);
-  await release(k, 1600, 400);
-  await k.sleep(800);
-  t.ok(z1 === "right", "dragging the name line to the right shows the right drop zone", z1);
+  await release(k, p.x, p.y);
+  await k.sleep(1000);
+  t.ok(z1 === "right", "carried onto the right column's tile: that tile is lit", z1);
   t.ok(
     (await k.ev(`S.dock`)) === "right" && (await R(k, "#left")).left > (await R(k, "#plate")).right,
     "dropping there docks the prompt on the right",
@@ -140,41 +154,26 @@ export async function dragToDock(k, t) {
   await k.mouse(2, 2);
   await k.sleep(300);
   n = await R(k, "#ltitle");
-  x = n.left + 20;
-  y = n.top + n.height / 2;
-  const yBot =
-    y +
-    (await k.ev(
-      `(()=>{const c=$("lcol"),TS=parseFloat(c.style.getPropertyValue("--ts"))||64;return c.clientHeight-TS-$("left").offsetHeight-chipsH()-(lyTop||0)})()`,
-    ));
-  await press(k, x, y);
-  await moveTo(k, x, y, x, Math.min(940, yBot + 40));
-  const z2 = await nearZone(k);
-  await release(k, x, Math.min(940, yBot + 40));
-  await k.sleep(800); // to the bottom position and a little past it
+  p = await dragToTile(k, n.left + 20, n.top + n.height / 2, "right", "bot");
+  const z2 = await nearZone(k),
+    h2 = await hotTile(k);
+  await release(k, p.x, p.y);
+  await k.sleep(900);
   t.ok(
-    z2 === null && (await k.ev(`S.dock`)) === "right" && (await k.ev(`S.pos`)) === "bot",
-    "straight down its own column: the bottom position, never a dock",
-    { z2, dock: await k.ev(`S.dock`), pos: await k.ev(`S.pos`) },
+    z2 === null && h2?.pos === "bot" && (await k.ev(`S.dock`)) === "right" && (await k.ev(`S.pos`)) === "bot",
+    "its own column's bottom tile: the bottom position, never another dock",
+    { z2, h2, dock: await k.ev(`S.dock`), pos: await k.ev(`S.pos`) },
   );
   await k.mouse(2, 2);
   await k.sleep(300);
   n = await R(k, "#ltitle");
-  x = n.left + 20;
-  y = n.top + n.height / 2;
-  await press(k, x, y);
-  /* to the slot under the picture: the box's centre carried to it (L1: the place nearest the box's centre — the lane shows
-     it; the old zone docked below whenever the pointer was low on the screen) */
-  const [bx, by] = await k.ev(
-    `(()=>{const b=$("left").getBoundingClientRect(),r=placeFor("below","mid");return [r.x+r.w/2-(b.left+b.width/2),r.y+r.h/2-(b.top+b.height/2)]})()`,
-  );
-  await moveTo(k, x, y, x + bx, y + by);
+  p = await dragToTile(k, n.left + 20, n.top + n.height / 2, "below", "mid");
   const z3 = await nearZone(k);
-  await release(k, x + bx, y + by);
-  await k.sleep(900);
+  await release(k, p.x, p.y);
+  await k.sleep(1000);
   t.ok(
     z3 === "below" && (await stacked(k)) && (await k.ev(`S.dock`)) === "below",
-    "dragged out to the bottom: docked below",
+    "the tile under the picture: docked below",
     z3,
   );
 }
@@ -271,33 +270,8 @@ export async function edgesAfterDragToDock(k, t) {
   await k.sleep(1600);
   const L = await k.rect("#left"),
     T = await k.rect("#pname"),
-    x0 = L.left + 12,
-    y0 = T.top + T.height / 2;
-  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x0, y: y0 });
-  await k.send("Input.dispatchMouseEvent", {
-    type: "mousePressed",
-    x: x0,
-    y: y0,
-    button: "left",
-    buttons: 1,
-    clickCount: 1,
-  });
-  for (let i = 1; i <= 20; i++)
-    await k.send("Input.dispatchMouseEvent", {
-      type: "mouseMoved",
-      x: x0 - 20 * i,
-      y: y0 + 45 * i,
-      button: "left",
-      buttons: 1,
-    });
-  await k.sleep(200);
-  await k.send("Input.dispatchMouseEvent", {
-    type: "mouseReleased",
-    x: x0 - 400,
-    y: y0 + 900,
-    button: "left",
-    clickCount: 1,
-  });
+    p = await dragToTile(k, L.left + 12, T.top + T.height / 2, "below", "mid");
+  await release(k, p.x, p.y);
   await k.sleep(1800);
   t.ok(await k.ev(`document.querySelector(".app").classList.contains("stacked")`), "dropped at the bottom: Vertical");
   const B = await k.rect("#left"),
@@ -402,17 +376,12 @@ export async function dropTravels(k, t) {
   const n = await R(k, "#ltitle"),
     x = n.left + 20,
     y = n.top + n.height / 2;
-  await press(k, x, y);
-  const [dx, dy] = await k.ev(
-    `(()=>{const b=$("left").getBoundingClientRect(),r=placeFor("right","mid");return [r.x+r.w/2-(b.left+b.width/2),r.y+r.h/2-(b.top+b.height/2)]})()`,
-  );
-  /* let go 150 px past its place (still nearest it): it has a way to travel */
-  await moveTo(k, x, y, x + dx + 150, y + dy);
-  const r0 = await R(k, "#left"); // where it is seen when let go
+  const p = await dragToTile(k, x, y, "right", "mid");
+  const r0 = await R(k, "#left"); // where it is seen when let go (the token, under the hand)
   await k.ev(`(()=>{window.__d=[];const t0=performance.now();(function f(){const r=$("left").getBoundingClientRect();
     window.__d.push({x:r.left,y:r.top,copies:document.querySelectorAll(".standin").length});
     if(performance.now()-t0<1600)requestAnimationFrame(f)})();return 1})()`);
-  await release(k, x + dx + 150, y + dy);
+  await release(k, p.x, p.y);
   await k.sleep(1800);
   const d = await k.ev(`window.__d`),
     end = await k.ev(`(()=>{const r=placeFor(dockNow(),S.pos||"mid");return {x:r.x,y:r.y,dock:dockNow()}})()`);
@@ -426,7 +395,7 @@ export async function dropTravels(k, t) {
     if (now > before + 2) back = Math.max(back, now - before);
   }
   const last = d[d.length - 1];
-  t.ok(end.dock === "right" && total > 100, "dropped on the other side, away from its landing", { end, total });
+  t.ok(end.dock === "right" && total > 100, "dropped on the other side's tile, away from its landing", { end, total });
   t.ok(Math.max(...d.map(f => f.copies)) === 0, "no copy of it leaves: the box itself travels", d.slice(0, 3));
   t.ok(jump < total * 0.4 && back === 0, "from where it was let go to where it lands: no jump, no turning back", {
     jump: Math.round(jump),
@@ -439,3 +408,29 @@ export async function dropTravels(k, t) {
   });
 }
 dropTravels.opts = { width: 1700, height: 950 };
+
+/* the box's parts are placed by LAYOUT in every layout — the column alone transforms the box (its motion: the glue, the
+   lift, the token; layout.css). In Vertical each part centred itself with a translateX(-50%): the token's scale point,
+   read from layout, came out 380 px off and the drop to the bottom jumped 247 px (L1b) */
+export async function boxPartsPlacedByLayout(k, t) {
+  await viewport(k, 1700, 950);
+  await k.mouse(2, 2);
+  for (const d of ["left", "right", "below"]) {
+    await menu(k, d);
+    await k.sleep(1600);
+    const own = await k.ev(
+      `[...$("lcol").children].filter(e=>e.getClientRects().length&&getComputedStyle(e).transform!=="none").map(e=>(e.id||e.className)+" "+getComputedStyle(e).transform)`,
+    );
+    t.ok(!own.length, `${d}: no part of the box carries a transform of its own`, own);
+    const off = await k.ev(`(()=>{const c=$("lcol"),s=c.style.transform;c.style.transform="none";
+      const r=$("left").getBoundingClientRect(),cr=c.getBoundingClientRect();let o=0,p=0;
+      for(let e=$("left");e&&e!==c;e=e.offsetParent){o+=e.offsetLeft;p+=e.offsetTop}c.style.transform=s;
+      return [Math.round(r.left-cr.left-o),Math.round(r.top-cr.top-p)]})()`);
+    t.ok(
+      Math.abs(off[0]) <= 1 && Math.abs(off[1]) <= 1,
+      `${d}: …so its drawn place in the column is its layout place`,
+      off,
+    );
+  }
+}
+boxPartsPlacedByLayout.opts = { width: 1700, height: 950 };

@@ -192,30 +192,35 @@ export async function startWhileRunning(k, t) {
 }
 startWhileRunning.opts = { step: 1 };
 
-/* the box's footprint while you move it (L1 — it was the three dock zones): its glass condenses in */
-export async function footprintGlass(k, t) {
+/* the drop map is BEHIND the box in the hand (L1b, the user 2026-11-10: "glass panels of the drop place are getting on
+   top of the prompt box"): carried, the box is a token over the map — the map's layer is the app's own, under the prompt
+   column (tokens.css --z-app-drop-map); let go, the map goes */
+export async function dropMapUnderTheBox(k, t) {
   await k.mouse(2, 2);
   await k.sleep(1000);
-  const blur = () =>
-    k.ev(`parseFloat(getComputedStyle(document.querySelector(".footprint")).backdropFilter.split("blur(")[1]||"0")`);
-  await k.ev(`(document.querySelector(".footprint").classList.add("show"),1)`);
-  await k.sleep(40);
-  const early = await blur();
-  await k.sleep(600);
-  const late = await blur();
-  t.ok(early < 14 && late > 15.5, "it condenses in: the glass blur grows from nothing", { early, late });
-  t.ok(
-    await k.ev(`getComputedStyle(document.querySelector(".footprint")).opacity==="1"`),
-    "never by opacity (it would switch the glass off)",
-  );
-  await k.ev(`(document.querySelector(".footprint").classList.remove("show"),1)`);
-  await k.sleep(40);
-  t.ok(
-    await k.ev(`getComputedStyle(document.querySelector(".footprint")).display!=="none"`),
-    "letting go: it fades back out rather than vanish",
-  );
-  await k.sleep(600);
-  t.ok(await k.ev(`getComputedStyle(document.querySelector(".footprint")).display==="none"`), "…and is gone after");
+  const n = await k.rect("#ltitle"),
+    x = n.left + 20,
+    y = n.top + n.height / 2,
+    m = (type, X, Y, b = 1) =>
+      k.send("Input.dispatchMouseEvent", { type, x: X, y: Y, button: "left", buttons: b, clickCount: 1 });
+  await m("mouseMoved", x, y, 0);
+  await m("mousePressed", x, y);
+  for (let i = 1; i <= 8; i++) await m("mouseMoved", x + 20 * i, y + 10 * i);
+  await k.sleep(400);
+  /* paint order, measured: the map made hit-testable for the read and its tiles spread over the whole app (they take no
+     pointer — so what's hit is what's painted on top); the token's centre must still hit the box */
+  const r =
+    await k.ev(`(()=>{const b=$("left").getBoundingClientRect(),cx=b.left+b.width/2,cy=b.top+b.height/2,mp=document.querySelector(".dropmap"),ts=[mp,...mp.children],keep=[...mp.children].map(x=>x.style.cssText);
+    ts.forEach(x=>x.style.pointerEvents="auto");for(const tl of mp.children)Object.assign(tl.style,{left:"0px",top:"0px",width:"100%",height:"100%"});
+    const e=document.elementFromPoint(cx,cy);mp.style.pointerEvents="";[...mp.children].forEach((x,i)=>x.style.cssText=keep[i]);
+    return {shown:document.querySelector(".dropmap").classList.contains("show"),tiles:document.querySelectorAll(".droptile").length,
+      top:!!e&&!!e.closest("#lcol"),token:+getComputedStyle($("lcol")).transform.split("(")[1]?.split(",")[0]||1}})()`);
+  await m("mouseReleased", x + 160, y + 80, 0);
+  await k.sleep(800);
+  t.ok(r.shown && r.tiles === 7, "carried: the drop map shows its seven places", r);
+  t.ok(r.top, "the box in the hand is on top of the map — never under its tiles", r);
+  t.ok(r.token < 0.6, "…and it's a token (shrunk): the map shows behind it", r);
+  t.ok(!(await k.ev(`document.querySelector(".dropmap").classList.contains("show")`)), "let go: the map goes");
 }
 
 export async function promptEdges(k, t) {

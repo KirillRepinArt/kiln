@@ -213,6 +213,12 @@
   --liw: calc(
     var(--th, 48px) + 250px
   ); /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
+  /* ---------- THE DROP MAP (L1b, 2026-11-11 — ux-review/18-box-placement.md; layoutmath.js dropTiles) ----------
+     the first of the numbers' one home (v0.7d): read by the code (tokens.js tok), never copied into it */
+  --drop-cover: 0.25; /* a tile over the picture covers at most this share of it */
+  --drop-room-min: 160px; /* under this much free room beside the picture, its column lies over it */
+  --drop-hit-min: 96px; /* never narrower than a comfortable target */
+  --drop-token: 0.35; /* the box in the hand: its scale (the map shows behind it) */
   /* ---------- THE LAYERS (P2, ROADMAP v0.7c step 8 — DEVLOG DD-2026-11-11-2) ----------
      Paint order is ONE list per stacking context, bottom to top, by NAME: a z-index anywhere else is var(--z-…) (Stylelint
      rejects a number). A z-index only competes within its stacking context, so a context has a list of its own — a
@@ -223,8 +229,6 @@
   --z-win-app: 1;
   --z-win-leaving: 2;
   --z-win-arrows: 20; /* the picture's arrows (body level, over the app) */
-  --z-win-drop-lanes: 90; /* the box's drop lanes — over the whole app, so their glass covers the box (the user, 2026-11-10): L1 moves the drop map INTO the app, at --z-app-drop-map */
-  --z-win-drop-mark: 91;
   --z-win-dialog: 100;
   --z-win-note: 120;
   --z-win-viewer: 150;

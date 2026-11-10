@@ -1,8 +1,9 @@
-// Moving the prompt box is ONE system (v0.7c L1 — the design agreed 2026-10-31, ux-review/13-ownership-map.md L1): one
-// placement state {dock, pos}, one drag offering its seven places (left × top / middle / bottom, right × 3, below). The box
-// follows the pointer; dashed lanes show where it could go, one glass footprint where it will land — and it lands where
-// the footprint was (both come from the layout pass: layout.js placeFor). Esc puts it back. It was two systems: ghost
-// outlines for the column's three spots and glass dock zones with thresholds of their own.
+// Moving the prompt box is ONE system (v0.7c L1 — agreed 2026-10-31; its look, the drop map, L1b 2026-11-11 —
+// ux-review/18-box-placement.md): one placement state {dock, pos}, one drag offering its seven places (left × top /
+// middle / bottom, right × 3, below). Carried, the box is a token under the hand and a MAP of its places shows behind it
+// (an ideogram: its partner's edges unfolded); the tile under the pointer is lit, and let go there the box lands at that
+// place's resting place (the layout pass's). Esc puts it back. (Before the map: lanes and a footprint each from the
+// layout pass for its own place, and "lands exactly on the footprint shown" — retired with the footprint, DD-2026-11-10-8.)
 
 const PLACES = [
   ["left", "top"],
@@ -33,27 +34,29 @@ const grip = async k => {
   return [Math.max(t.left + 8, n.left - 12), t.top + t.height / 2];
 };
 
-/** press the grip, carry the box's centre to the place's footprint centre, read what's shown, let go */
+/** press the grip, carry the pointer onto the place's tile (by a detour), read what's shown, let go */
 async function carry(k, dock, pos) {
-  const [gx, gy] = await grip(k),
-    b0 = await k.rect("#left"),
-    to = await k.ev(
-      `(r=>[r.x+r.w/2,r.y+r.h/2,Math.round(r.x),Math.round(r.y),Math.round(r.w),Math.round(r.h)])(placeFor(${JSON.stringify(dock)},${JSON.stringify(pos)}))`,
-    ),
-    [dx, dy] = [to[0] - (b0.left + b0.width / 2), to[1] - (b0.top + b0.height / 2)];
+  const [gx, gy] = await grip(k);
   await ev(k, "mouseMoved", gx, gy, 0);
   await ev(k, "mousePressed", gx, gy);
   /* by a detour (out 150 px, then to the place): even back to its own place is a real drag */
   for (let i = 1; i <= 6; i++) await ev(k, "mouseMoved", gx + 25 * i, gy);
-  for (let i = 1; i <= 16; i++) await ev(k, "mouseMoved", gx + 150 + ((dx - 150) * i) / 16, gy + (dy * i) / 16);
+  const to = await k.ev(
+    `(r=>r&&[r.left+r.width/2,r.top+r.height/2])(document.querySelector('.droptile[data-dock=${JSON.stringify(dock)}][data-pos=${JSON.stringify(pos)}]')?.getBoundingClientRect())`,
+  );
+  for (let i = 1; i <= 16; i++)
+    await ev(k, "mouseMoved", gx + 150 + ((to[0] - gx - 150) * i) / 16, gy + ((to[1] - gy) * i) / 16);
   await k.sleep(150);
   const shown = await k.ev(
-    `(f=>({dock:f.dataset.dock,pos:f.dataset.pos,r:(r=>[r.left,r.top,r.width,r.height].map(v=>Math.round(v)))(f.getBoundingClientRect()),lanes:document.querySelectorAll(".lane.show").length}))(document.querySelector(".footprint"))`,
+    `(()=>{const h=document.querySelector(".droptile.hot");return {dock:h&&h.dataset.dock,pos:h&&h.dataset.pos,tiles:document.querySelectorAll(".dropmap.show .droptile").length}})()`,
   );
-  await ev(k, "mouseReleased", gx + dx, gy + dy);
+  await ev(k, "mouseReleased", to[0], to[1]);
   await ev(k, "mouseMoved", 4, 4, 0);
   await k.sleep(1600);
-  return { shown, want: to.slice(2), after: await rectOf(k, "#left") };
+  const want = await k.ev(
+    `(r=>[r.x,r.y,r.w,r.h].map(v=>Math.round(v)))(placeFor(${JSON.stringify(dock)},${JSON.stringify(pos)}))`,
+  );
+  return { shown, want, after: await rectOf(k, "#left") };
 }
 
 /** one start: from each layout, every place */
@@ -68,16 +71,16 @@ function from(start) {
       await k.sleep(1600);
       const r = await carry(k, dock, pos),
         name = `${start} → ${dock}${dock === "below" ? "" : " " + pos}`;
-      t.ok(r.shown.lanes === 3, `${name}: held, the three lanes show`, r.shown);
+      t.ok(r.shown.tiles === 7, `${name}: held, the drop map shows its seven places`, r.shown);
       t.ok(
         r.shown.dock === dock && (dock === "below" || r.shown.pos === pos),
-        `${name}: held, the footprint is at that place`,
+        `${name}: held, the tile under the pointer is lit`,
         r.shown,
       );
       t.ok(
-        !!r.after && r.after.every((v, i) => Math.abs(v - r.shown.r[i]) <= 2),
-        `${name}: let go, the box lands exactly on the footprint shown`,
-        { footprint: r.shown.r, landed: r.after },
+        !!r.after && r.after.every((v, i) => Math.abs(v - r.want[i]) <= 2),
+        `${name}: let go, the box lands at that place's resting place`,
+        { want: r.want, landed: r.after },
       );
       t.ok(
         (await k.ev(`(S.dock||"left")`)) === dock && (dock === "below" || (await k.ev(`S.pos`)) === pos),

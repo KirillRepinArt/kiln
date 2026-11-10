@@ -8,6 +8,8 @@ import {
   pageGeometry,
   framePlacement,
   pageInsets,
+  dropTiles,
+  dropAt,
   fades,
   MORPH,
   glueAnchors,
@@ -505,4 +507,38 @@ test("relation change: out early, gone ~2 frames, in over the motion's last fade
     assert.equal(f.T, Math.max(motion, f.inEnd), `${motion}: the schedule's length`);
   }
   assert.equal(relationFade(540).inEnd, 540, "a full switch: in as the plate lands");
+});
+
+/* the drop map (L1b — ux-review/18-box-placement.md sketch E, its numbers): a pane's places are its partner's edges
+   unfolded; outside it first, over it only when there's no room (≤ 25 %) */
+const DROP = { paneW: 560, area: 20, part: 12, cover: 0.25, roomMin: 160, hitMin: 96 };
+const close = (/** @type {number} */ a, /** @type {number} */ b) => Math.abs(a - b) < 0.01;
+test("the drop map side by side, 3:4 at 2000 px: both columns outside the picture, the bottom tile over it", () => {
+  const { lanes, tiles } = dropTiles({ x: 944, y: 112, w: 692, h: 923 }, { w: 2000, h: 1055 }, DROP);
+  const [L, R, B] = lanes;
+  assert.deepEqual([L.r.x, L.r.w, L.over], [364, 560, 0]); // the free room is wider than the pane: the pane's width
+  assert.deepEqual([R.r.x, R.r.w, R.over], [1656, 324, 0]); // narrowed to the room, still outside
+  assert.ok(close(B.r.h, 923 * 0.25) && close(B.r.y, 112 + 923 - 923 * 0.25) && B.r.w === 692); // no room under: ≤ 25 %
+  assert.equal(tiles.length, 7);
+  assert.ok(close(tiles[1].r.y - tiles[0].r.y, (923 - 24) / 3 + 12)); // thirds, a part gap apart
+});
+test("the drop map: no room on a side — the column lies over the picture, a quarter of it at most", () => {
+  const { lanes } = dropTiles({ x: 600, y: 260, w: 660, h: 371 }, { w: 1280, h: 800 }, DROP);
+  const R = lanes[1];
+  assert.ok(close(R.r.w, 165) && close(R.r.x, 1280 - 20 - 165) && close(R.over, 165));
+  assert.equal(lanes[2].over, 0); // a short picture: room under it
+});
+test("the drop map: laid-over columns leave no width — the bottom tile takes the picture's, they stop above it", () => {
+  const { lanes } = dropTiles({ x: 30, y: 112, w: 300, h: 668 }, { w: 360, h: 800 }, DROP);
+  const [L, R, B] = lanes;
+  assert.ok(L.over > 0 && R.over > 0);
+  assert.equal(B.r.w, 300);
+  assert.ok(close(L.r.h, 668 - B.r.h - 20) && close(R.r.h, L.r.h));
+});
+test("the drop map's target: the tile under the pointer; in a lane's gap, its nearest third; outside, none", () => {
+  const { lanes, tiles } = dropTiles({ x: 944, y: 112, w: 692, h: 923 }, { w: 2000, h: 1055 }, DROP);
+  const top = tiles[0];
+  assert.deepEqual(dropAt(tiles, lanes, top.r.x + 5, top.r.y + 5), top);
+  assert.equal(dropAt(tiles, lanes, top.r.x + 5, top.r.y + top.r.h + 6)?.pos, "top"); // the gap below it: nearer top
+  assert.equal(dropAt(tiles, lanes, 5, 5), null);
 });

@@ -20,7 +20,7 @@ import {
   stackW,
   updHm,
 } from "./cardlayout.js";
-import { $ } from "./dom.js";
+import { $, offsetIn } from "./dom.js";
 import { fade, fadeValue } from "./fade.js";
 import { leaveCopy } from "./leave.js";
 import { HANDLES } from "./outlines.js";
@@ -908,6 +908,16 @@ export function liftCol(x, y) {
   liftY = y;
   colApply();
 }
+/* the box in the hand is a token (L1b, 2026-11-11 — the drop map shows behind it): the column scaled about the BOX's
+   top-left corner, so that corner stays exactly at its glue + lift whatever the scale (the travel measures from it) */
+let liftS = 1;
+/** the token's scale now (1: the box itself) */
+export const liftScale = () => liftS;
+/** @param {number} s the column's scale while it's carried (1 — the box at its size) */
+export function liftToken(s) {
+  liftS = s;
+  colApply();
+}
 /** the box's catch-up after a hold, written by the driver (rearrange.js "hug") @param {{ l: number }} b */
 const hugWrite = b => {
   hugX = b.l;
@@ -934,9 +944,13 @@ function colApply() {
   }
   const x = hugX + rx + liftX,
     y = hugY + ry + liftY,
-    t = x || y ? `translate(${x}px, ${y}px)` : "",
-    col = $("lcol");
+    col = $("lcol"),
+    t = (x || y ? `translate(${x}px, ${y}px)` : "") + (liftS !== 1 ? ` scale(${liftS})` : ""),
+    /* the token: about the box's top-left corner — its layout place (the column alone transforms the box: layout.css) */
+    o = liftS !== 1 ? offsetIn($("left"), col) : null,
+    org = o ? `${o.x}px ${o.y}px` : "";
   if (col.style.transform !== t) col.style.transform = t;
+  if (col.style.transformOrigin !== org) col.style.transformOrigin = org;
   /* its own frames only for what the driver doesn't move: a relation change rides the driver's frames while it runs
      (T2c-3b-2: after the plate's write, never a frame before it — its own loop could run first and read the plate a
      frame late), and its own after (the fade-in outlasting the travel) */

@@ -23,9 +23,8 @@ export function genNav(dir, dry) {
     return false; /* past the newest: out of the Gallery, or off the finished picture — to the render / the empty frame */
   if (!dry && n < L.length && (m === "live" || m === "empty")) {
     /* from the render or the empty frame into the Gallery: a change of view, like its tab — the render fades where it
-       is and the picture comes in as the plate lands. A crop-and-reveal is for stepping between finished pictures: run
-       from the render it cropped the preview (without its veil) into the new shape — "a zoomed pic first", the user's
-       note 2026-10-28. One rule: a picture travels only when it's the same picture */
+       is and the picture comes in as the plate lands. One rule: a picture crops and reveals only between finished
+       pictures (from the render it cropped the preview into the new shape) */
     if (toGallery) return true; // a repeat (a held key) before the switch has applied: it would start from the old state
     toGallery = true;
     PV.dir = dir;
@@ -62,7 +61,7 @@ export function updNav() {
   /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".nav")).forEach(b =>
     b.classList.toggle("off", !navFn(b)(+(/** @type {string} */ (b.dataset.nav)), true)),
   );
-} /* the render's prompt: click the render itself (the status line doubled it) */
+}
 /* the Gallery with the prompt closed (it stays closed as you browse): a pill under the picture brings it back */
 export function browseStatus() {
   $("showP").classList.toggle("show", showPromptOn());
@@ -80,11 +79,9 @@ export function initBrowse() {
     /* the arrow you clicked stays exactly where it is for as long as your pointer is on it (click as fast as you like);
     move off it and it slides to the picture's edge. The other one follows the picture at once. Keys don't hold anything */
     /* …until the pointer really leaves it: a switch covers the page with its layers, which Chrome reports as the pointer
-       leaving whatever it was over — the held arrow let go and ran 261 px to the new picture's edge (2026-10-28). So
-       the hold ends on a real move off the arrow, never during a switch */
+       leaving whatever it was over — so the hold ends on a real move off the arrow, never during a switch */
     /* let go: it catches up with the picture's edge on the driver (rearrange.js — one plan and clock with whatever else
-       moves; a new goal meanwhile bends it). T2c-5: it glided on a CSS transition, the other arrow on a frame loop of
-       its own that ran for the page's life */
+       moves; a new goal meanwhile bends it) */
     /** @param {HTMLElement} el */
     const letGo = el => {
       lay.navHold = null;

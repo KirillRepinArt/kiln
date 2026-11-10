@@ -135,7 +135,7 @@ export function applyMode() {
     narrow ||
     S.dock === "below"; /* Layout → Vertical stacks on any window; a horizontal dock comes back when there's room */
   a.classList.toggle("pright", S.dock === "right" && !st);
-  $("ltitle").dataset.tip = st ? "" : "Drag to move the prompt box: top · middle · bottom";
+  $("ltitle").dataset.tip = "Drag to move the prompt box: drop it on a place on the map";
   if (a.classList.contains("stacked") !== st) {
     a.classList.toggle("stacked", st);
     // switching layouts: place the image first, then the card

@@ -14,7 +14,7 @@ const KEYS = [
   ["?", "This list"],
 ];
 const MOUSE = [
-  ["Drag the name line", "Move the prompt box: top · middle · bottom"],
+  ["Drag the name line", "Move the prompt box: drop it on a place on the map"],
   ["Double-click a divider", "Reset its size"],
   ["Click a seed", "Copy it"],
   ["Drag a waiting job", "Reorder the queue"],

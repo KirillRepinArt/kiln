@@ -75,9 +75,8 @@ export function renderPills() {
     `<div class="row"><input type="number" autocomplete="off" id="seedIn" class="${v.locked ? "" : "unused"}" value="${v.seed}" style="width:140px" title="${v.locked ? "Every job uses this seed" : "Not in use — a random seed each job (lock it, type one or roll the die)"}"><button class="iconbtn" id="dice" title="A new random seed (locks it)">${IC.dice}</button><button class="iconbtn lockb${v.locked ? " on" : ""}" id="seedLock" title="${v.locked ? "Locked: every job uses this seed — click for a random one each job" : "Lock: use this seed for every job"}">${LOCK}</button><button class="iconbtn" id="seedCopy" title="Copy the seed">${IC.copy}</button></div>`;
   sizeFrame();
 }
-/* a pill's menu opens above it, starting at its left edge — and stays fully on screen (the user, 2026-10-27: in a narrow
-   prompt box the Ratio menu went off the side): shifted sideways to keep the window's margin, below the pill when there
-   isn't room above */
+/* a pill's menu opens above it, starting at its left edge — and stays fully on screen: shifted sideways to keep the
+   window's margin, below the pill when there isn't room above */
 /** @param {HTMLElement} pop */
 function fitPop(pop) {
   pop.style.removeProperty("--popx");

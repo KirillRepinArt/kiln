@@ -137,7 +137,8 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     the scrollbar's thumb shows only at rest (`editor.js`, `.settling`, while `rearrange.js` moves the box — told by
     the box's owner when the move is asked). The box's top, height and chips row: ONE writer, `cardlayout.js`
     `boxWrite` (its drag too), moved by the rearrangement on the progress of the picture it's anchored to
-    (`rearrange(…, "frame")`: a dependent moves on its source's progress). A new goal for a box already moving bends
+    (`rearrange(…, "frame")`: a dependent moves on its source's progress); in Vertical its top rides its pane's plate
+    (`promptFollow`) and only its height moves on the plan. A new goal for a box already moving bends
     its remaining path on the same plan and clock (`rearrange.js` `retarget`); only a box not yet moving starts a new
     plan
   - every edge's press → move → end: `edges.js` `gesture()` (it ends however the drag ends: button up, cancel, lost
@@ -146,6 +147,10 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
   - a panel's box (its height and its offset in the room: the pass's side by side) and where its edge handles go:
     `layout.js` `sizeFrame`;
     the tab bar rides on the plate, centred over it inside the window (`plate.js` `barFor`)
+  - the prompt box's least width: what its bottom row needs (Start, the pills at their compact labels, the insets) —
+    `cardlayout.js` `boxWLeast`, never under `PWMIN`; every limit, the pass and Vertical's width read it
+  - where a message shows (the toast, the finished note): ONE placer, `boot.js` `placeMessage(el, anchor)` — it writes
+    left / top only; under its anchor (a tab, the Layout button), else by the prompt box (Vertical: the top-right corner)
 - **The screen, by area:** `tabs`, `browse`, `morph`, `edges`, `pills`, `chips`, `peek`, `queue`, `loras`, `pnginfo`,
   `viewer`, `settings`, `keys`, `tooltips`, `editor` (CodeMirror).
 - **The server's side:** `live.js` (start), `sync.js` (polling, what changed), `actions.js` (requests), `pictures.js`

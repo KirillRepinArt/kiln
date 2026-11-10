@@ -1,10 +1,8 @@
 // @ts-check
-/* Kiln · the glass plate (v0.7.2): one glass object under the right column's contents — the panel's shape in Queue /
-   LoRAs / PNG Info, the picture frame's shape in Generating. A tab switch changes its shape — the glass stays live,
-   only the contents cross-fade. (Snapshot switches couldn't carry glass: a View Transition's snapshot is a flat picture
-   that can't blur what's behind it, so the glass went clear for every switch — the user chose the plate, 2026-10-27.)
-   The plate is empty, so changing its size costs the blur, no layout of contents. PNG Info's drop line is the plate's
-   too: inset on it, it changes shape with it and fades as a switch leaves (it slid inside the contents' snapshot) */
+/* Kiln · the glass plate: one glass object under the page area's contents — a panel's box, or the picture frame and
+   its mat. It, the tab bar and every switch's motion: ARCHITECTURE › the glass plate (decision 0014: no View
+   Transitions). The plate is empty, so a size change costs the blur only. PNG Info's drop line is the plate's too:
+   inset on it, it changes shape with it */
 import { placeAround } from "./around.js";
 import { $, offsetIn } from "./dom.js";
 import { frameBox, frameHold, frameTarget } from "./framebox.js";
@@ -24,9 +22,8 @@ function target() {
     M = panel ? 0 : SPACE.mat; // the picture sits a mat inside its plate
   return { l: r.left - o.left - M, t: r.top - o.top - M, w: r.width + 2 * M, h: r.height + 2 * M, panel };
 }
-/* where a switch goes: a picture's plate where the frame's owner is taking it (its goal, set by the layout) — not the
-   frame measured now: on a panel page the hidden frame is laid out in the panel's room, so a switch from a shortened
-   Queue cropped to a 3:4 at the Queue's height, then snapped to the real size (the user, 2026-11-03). A panel: its box */
+/* where a switch goes: a picture's plate where the frame's owner is taking it (its goal) — never the frame measured
+   now (on a panel page the hidden frame is laid out in the panel's room). A panel: its box */
 /** @returns {Box} */
 function goalBox() {
   const g = frameTarget();
@@ -55,7 +52,7 @@ function put(b) {
     s.width = b.w + "px";
     s.height = b.h + "px";
   } /* the rim: the plate's ring, on top of what the plate holds — the same line on every plate, over a picture too, and
-       never part of a switch's fading contents (the Gallery's picture drew a line of its own that faded in with it) */
+       never part of a switch's fading contents */
   p.classList.toggle("panel", b.panel);
   rim.classList.toggle("panel", b.panel);
   const d = dropLine();
@@ -64,14 +61,9 @@ function put(b) {
   placeBar();
 }
 
-/* ---------- the tab bar has ONE owner: it follows the plate (2026-10-28) ----------
-   It sits a part gap above the plate's top edge — the picture frame in Generating, the panel elsewhere — on the plate's
-   centre line, always (2026-10-31: it used to be clamped into the area, which holds the edit buttons' column too — the
-   bar sat ~24 px off the plate's centre). The layout keeps the room for it (layout.js layGeo: the area is never narrower
-   than the bar beside the buttons' column). It has no motion of its own: the plate glides on a switch and
-   rides the frame on a ratio change, and the bar is placed from where the plate is, every frame anything moves. Four
-   writers used to move it (the layout, a switch's slide, the crop-and-reveal, CSS glides); when two overlapped it
-   ended mid-way or over the picture (137 px over the panel after a switch during a ratio change) */
+/* ---------- the tab bar has ONE owner: it follows the plate ----------
+   A part gap above the plate's top edge, on its centre line, inside the window; the layout keeps room for it
+   (layout.js minRight). No motion of its own: it is placed from where the plate is, every frame anything moves */
 let barX = 0,
   barY = 0; // the offset last set
 /** the bar's offset that puts it a part gap above a plate box (screen px), centred on it
@@ -83,8 +75,8 @@ function barFor(tb, pr) {
     left = kids[0].getBoundingClientRect().left - barX,
     right = kids[kids.length - 1].getBoundingClientRect().right - barX,
     bottom = r.bottom - barY,
-    /* centred over the plate, inside the window (Q1: A — the layout pass's bar rule): over a small picture at the
-       window's side it ran off the window and the Layout button couldn't be pressed (ROADMAP v0.7c (p)) */
+    /* centred over the plate, inside the window (over a small picture at the window's side, the Layout button ran off
+       it) */
     x = Math.min(
       innerWidth - SPACE.area - right,
       Math.max(SPACE.area - left, (pr.left + pr.right) / 2 - (left + right) / 2),
@@ -103,9 +95,8 @@ export function placeBar() {
   const pr = $("plate").getBoundingClientRect();
   if (!pr.width) return;
   let { x, y } = barFor(tb, pr);
-  /* a switch: the bar starts where its buttons were on screen (its box changes width with the tab: from its box it was
-     off by up to 57 px) — that first gap closes as the plate travels, on the plate's progress (T2c-3b: it had keyframes
-     of its own, sampled in advance) */
+  /* a switch: the bar starts where its buttons were on screen (its buttons, not its box: the box changes width with the
+     tab) — that first gap closes as the plate travels, on the plate's progress */
   if (barFlip) {
     const k = progress("plate");
     if (k >= 1) barFlip = null;
@@ -122,10 +113,8 @@ let barFlip = null;
 let barBefore = null; // where the tab buttons (#seg) were on screen when a switch began
 
 /* the plate is derived from its element (the picture's frame, a panel's box): whoever writes that element tells it in
-   the same frame — framebox.js write, layout.js panelWrite, the driver's frames (rearrange.js tick) — and what sits
-   round it follows (around.js). While a switch moves it, it's the driver's (rearrange.js travel: moving("plate")).
-   T2c-4: it had a loop of its own that looked every frame for 0.7–1.5 s after a change; measured over 30 actions it
-   only ever corrected a 1 px error of its own goal (dom.js offsetIn missed the panel's border) */
+   the same frame — framebox.js write, layout.js panelWrite, the driver's frames — and what sits round it follows
+   (around.js). While a switch moves it, it's the driver's (moving("plate")) */
 const driven = () => moving("plate");
 /* right now, in step with whoever just moved the element */
 export function plateSync() {
@@ -142,32 +131,26 @@ export function plateBefore() {
   const p = $("plate").getBoundingClientRect();
   return { l: p.left, t: p.top, w: p.width, h: p.height };
 }
-/* ---------- a tab switch's motion has ONE owner (2026-10-28) ----------
-   Everything that moves in a switch is started here, from one geometry (the plate's box where it was on screen → where
-   it belongs) and on ONE clock (one start time, the plate's curve): the plate and its rim, the tab bar, the switch's own
-   layers (the View Transition's groups — the contents, a picture that travels, its glow, the picture's arrows — timed
-   from here, not from CSS), the contents' clip to the plate, and the prompt box riding the plate (layout.js promptFollow, in
-   the driver's frames). Five things used to time themselves — CSS keyframes, the browser's groups, three scripts — each from
-   its own numbers and clock: the clip ran ~20 px off the plate, the rim's line crossed the picture, the plate sat empty
-   ~200 ms waiting for the contents. The CSS keeps the look (fades, corners), not the motion */
-/** @type {Animation[]} */
+/* ---------- a switch's motion has ONE owner ----------
+   Everything that moves in a switch starts here, from one geometry (the plate's box on screen → where it belongs) and
+   on ONE clock: the plate and its rim, the tab bar, the views and their clip to the plate, the fades, and the prompt
+   box riding the plate (layout.js promptFollow, in the driver's frames). The CSS keeps the look, not the motion */
+/** the running switch's own animations (a new switch replaces them) @type {Animation[]} */
 let switchAnims = [];
 /** the switch now has landed: its own animations are over (or were cancelled by a newer switch) and the driver has
- * nothing left to move — its end, from its owners (T4: tabs.js let go of the layout's hold on a timer, sw.T + 300 ms)
- * @returns {Promise<void>} */
+ * nothing left to move — its end, from its owners, never a timer @returns {Promise<void>} */
 export async function switchLanded() {
   await Promise.all(switchAnims.map(a => a.finished.catch(() => {})));
   await whenIdle();
 }
-// the running switch's own animations (a new switch replaces them)
 
 /** @typedef {{ old: HTMLElement, oldRect: DOMRect, neu: HTMLElement, shown?: Map<HTMLElement, { o: number, r: DOMRect }> }} Views
  * a switch between two views: the one leaving (where it was on screen) and the one coming — the SAME view for a layout
- * switch (Left / Right / Vertical, T2b): it rides the plate live, nothing of it fades. `shown`: every page's opacity
- * and box on screen before the switch (tabs.js onScreen) — its fades start there (F4) */
+ * switch: it rides the plate live, nothing of it fades. `shown`: every page's opacity and box on screen before the
+ * switch (tabs.js onScreen) — its fades start there */
 /* where the prompt box's partner is (layout.js promptFollow glues the box one gap from it): the plate as it is on screen
-   — in a tab switch too, so the box rides it (B23) — except in a layout switch, where the box doesn't travel but fades
-   through (DEVLOG DD-2026-11-07-6): there its partner is the plate where it lands. ONE answer, from the switch's owner */
+   — in a tab switch too, so the box rides it — except in a layout switch, where the box changes its relation: there its
+   partner is the plate where it lands (ARCHITECTURE › a pane's change of relation). ONE answer, from the switch's owner */
 /** @type {{ l: number, t: number, w: number, h: number } | null} */
 let landing = null;
 /** @returns {{ left: number, right: number, top: number, bottom: number, width: number, height: number }} */
@@ -181,17 +164,16 @@ let leaveDone = null; // ends the running switch's leaving view (a new switch en
 /** @param {{ l: number, t: number, w: number, h: number }} at where the plate was on screen (plateBefore)
  * @param {Views | null} views the two views when the switch changes view; null: the same view (Generating ↔ the
  * Gallery — the frame moves by itself, as when browsing, and the plate follows it)
- * @param {boolean} [layout] a layout switch (T2b): the prompt box's partner is where the plate lands (glueRect)
+ * @param {boolean} [layout] a layout switch: the prompt box's partner is where the plate lands (glueRect)
  * @returns {{ t0: number, T: number, fd: ReturnType<typeof fades> }} the switch's start time (performance.now()'s
  * clock), its length, and its fades (the prompt box fades through on them in a layout switch) */
 export function switchGlide(at, views, layout = false) {
   pending = false;
   /* only the picture changes (Gallery ↔ Generating, one view): a switch still running carries on from where it is — its
-     views' fades and its leaving view on their clock, the plate's travel bent to the new goal (F3: this cancelled them,
-     the leaving list cut 0.97 → 0 and the coming view 0 → 1 in one frame) */
+     views' fades and its leaving view on their clock, the plate's travel bent to the new goal (never cut) */
   const picOnly = !views && !layout,
     /* a page still on screen from a switch this one interrupts, neither leaving nor coming now (a third tab mid-switch):
-       it leaves too, from where it is — cancelled with its switch, it vanished (F4) */
+       it leaves too, from where it is */
     stray = views?.shown
       ? [...views.shown].filter(([v]) => v !== views.old && v !== views.neu).map(([v, s]) => ({ v, ...s }))
       : [],
@@ -212,9 +194,9 @@ export function switchGlide(at, views, layout = false) {
     if (!layout) {
       return { t0: performance.now(), T: 600, fd: fades({ A: 0, S: 0, T: 0 }) };
     }
-    /* a layout switch on a picture page: the frame crops and reveals itself (morph.js — the old picture at its old size
-       crossing to the new at its own: the same picture changing size never pops), the plate rides it; this switch only
-       says where the plate lands (the box's partner) and how long, on the frame's steps */
+    /* a layout switch on a picture page: the frame travels and the same picture scales with it (framebox.js
+       pictureChange, morph.js), the plate rides it; this switch only says where the plate lands (the box's partner)
+       and how long, on the frame's steps */
     const o = $("right").getBoundingClientRect(),
       to = goalBox(),
       toS = { l: o.left + to.l, t: o.top + to.t, w: to.w, h: to.h },
@@ -240,10 +222,9 @@ export function switchGlide(at, views, layout = false) {
     same = views.old === views.neu; // a layout switch's panel: one view, riding the plate to where the layout puts it
   const dropWas = $("plate").classList.contains("drop");
   put(to); // its look for where it goes (a panel's glass, the drop line); its box is the driver's from here
-  /* the plate TRAVELS on the one driver (rearrange.js, T2c-3b): from where it was on screen to where it belongs, on the
-     plan's clock — written by its own write (put) every frame; what rides it follows its live box after (the views
-     and their clip, the tab bar). It had keyframes of its own, sampled every 8 ms in advance (and the rim, the bar and
-     the views each a set of their own) */
+  /* the plate TRAVELS on the one driver (rearrange.js): from where it was on screen to where it belongs, on the plan's
+     clock — written by its own write (put) every frame; what rides it follows its live box after (the views and their
+     clip, the tab bar) */
   /** the plate's box on screen as last written (what rides it reads it: no layout read per frame) */
   let live = { ...at };
   const writePlate = (/** @type {{ l: number, t: number, w: number, h: number }} */ b) => {
@@ -264,8 +245,7 @@ export function switchGlide(at, views, layout = false) {
       switchAnims.push(a);
       return a;
     };
-  /* PNG Info's drop line leaving with its panel: it fades across the crop, to the swap (its own 150 ms fade at the
-     start read as vanishing, the user, 2026-10-28); coming in, its own fade is the one the user liked */
+  /* PNG Info's drop line leaving with its panel: it fades across the crop, to the swap; coming in, its own CSS fade */
   if (dropWas && !$("plate").classList.contains("drop"))
     for (const a of fade(
       $("plate"),
@@ -290,14 +270,13 @@ export function switchGlide(at, views, layout = false) {
     start0 = barFor(tb, { left: at.l, right: at.l + at.w, top: at.t });
   barFlip = { dx: fx - start0.x, dy: fy - start0.y };
   placeBar();
-  /* the two views, live (no snapshots: glass, the picture's arrows and buttons stay real — a View Transition's
-     pictures of them blinked, 2026-10-28). The leaving one stays where it was on screen at its size (its contents
-     don't reflow), the coming one where it belongs; both inside the plate as it glides (1 px in, so its rim shows),
-     crossing at the swap */
+  /* the two views, live (no snapshots: glass, the picture's arrows and buttons stay real). The leaving one stays where
+     it was on screen at its size (its contents don't reflow), the coming one where it belongs; both clipped by the
+     plate, crossing at the swap */
   const { old, oldRect, neu } = views,
     rp = $("rpanel").getBoundingClientRect(),
     rpanel = $("rpanel");
-  if (layout) landing = toS; // the box's partner: the plate where it lands (the box fades through, it doesn't ride)
+  if (layout) landing = toS; // the box's partner: the plate where it lands (the box changes its relation)
   /** a leaving page stays where it was on screen at its size (its contents don't reflow) @param {HTMLElement} v
    * @param {DOMRect} r */
   const pin = (v, r) => {
@@ -316,7 +295,6 @@ export function switchGlide(at, views, layout = false) {
   }
   h.classList.add("switching");
   const nr = neu.getBoundingClientRect(),
-    /** the plate's box (on screen) as an inset of a view's box, 1 px inside */
     /** the plate's box b (on screen) as a clip of the box v */
     inset = (/** @type {DOMRect} */ v, /** @type {{ l: number, t: number, w: number, h: number }} */ b) =>
       `inset(${[b.t - v.top, v.right - (b.l + b.w), v.bottom - (b.t + b.h), b.l - v.left]
@@ -331,15 +309,13 @@ export function switchGlide(at, views, layout = false) {
        in by the switch too, they showed where they last were (the screen's edge) while hover hadn't shown them */
     navs = () => [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".gnav"))],
     Q = Math.min(150, T) / T;
-  /* the views ride the plate: each keeps its place relative to the plate's centre every keyframe — the leaving one as
-     it was at the start, the coming one as it will be at the end (the rule of the picture's crop-and-reveal). Pinned
-     on screen, the leaving list stayed behind like a still while the plate moved off it ("a snapshot", the user,
-     2026-10-28). The clip is the plate's box in the moved one */
+  /* the views ride the plate: each keeps its place relative to the plate's centre — the leaving one as it was at the
+     start, the coming one as it will be at the end (the picture's crop-and-reveal rule). The clip is the plate's box in
+     the moved one */
   const centre = (/** @type {{ l: number, t: number, w: number, h: number }} */ b) => [b.l + b.w / 2, b.t + b.h / 2],
     fr = $("frame").getBoundingClientRect(), // measured before anything rides
-    /* a layout switch's panel (one view): its contents RIDE their pane (DEVLOG DD-2026-11-08-2) — laid out at their
-       final place and size, kept on the plate's centre and clipped by it: a pure move just travels, a size change crops
-       and reveals them (the picture's rule, morph.js). Contents fade only when they are other contents (a tab switch) */
+    /* a layout switch's panel (one view): its contents RIDE their pane — ARCHITECTURE › a layout switch
+       (DD-2026-11-08-2) */
     rides = /** @type {[HTMLElement, DOMRect, number[]][]} */ (
       same
         ? [[neu, nr, centre(toS)]] // (its start: where it was on screen, oldRect — `lead` below)
@@ -349,14 +325,13 @@ export function switchGlide(at, views, layout = false) {
             ...stray.map(s => /** @type {[HTMLElement, DOMRect, number[]]} */ ([s.v, s.r, centre(at)])),
           ]
     );
-  /* every frame, after the plate's write: each view on the plate's live centre, clipped by its live box (T2c-3b: a
-     follower of the plate, on the driver's frame — it was a set of keyframes per view, sampled in advance) */
-  /* a layout switch's one view starts where it WAS on screen (its old place, oldRect) and lands where it belongs: its
-     offset is the start's, times how far the plate's centre still has to go on that axis (the plan's progress where the
-     centre doesn't move) — so it travels in step with its plate and never past. Centred on the old plate from the first
-     frame, a resized Queue jumped ~71 px (2026-11-09: the tracer saw it once the views became the driver's writes); on
-     the plan's progress number it drifted 7 px out and back (the plate's height and centre don't advance in exact
-     proportion to it). A tab switch's views ride the plate's centre (they are where they are already) */
+  /* every frame, after the plate's write: each view on the plate's live centre, clipped by its live box (a follower of
+     the plate, on the driver's frame) */
+  /* a layout switch's one view starts where it WAS on screen (oldRect) and lands where it belongs: its offset is the
+     start's, times how far the plate's centre still has to go on that axis (the plan's progress where the centre
+     doesn't move) — in step with its plate, never past (centred on the old plate, a resized Queue jumped ~71 px; on the
+     plan's progress it drifted 7 px: the plate's centre doesn't advance in proportion to it). A tab switch's views ride
+     the plate's centre (they are where they are already) */
   const start = [oldRect.left - nr.left, oldRect.top - nr.top],
     left = (/** @type {number} */ i, /** @type {number[]} */ c, /** @type {number} */ q) => {
       const a0 = centre(at)[i],
@@ -384,10 +359,8 @@ export function switchGlide(at, views, layout = false) {
       }
     };
   /* only out, from what they are now: shown by hover (the edit buttons, the arrows) or by state (the status row,
-     Show prompt), a switch never shows them — faded in by it, or out from fully shown, they blinked (the user,
-     2026-10-28: "the only reason for them to be shown is hovering the picture") */
-  /* everything that leaves fades out across the crop, easing in, gone by the swap — the edit buttons and arrows like
-     PNG Info's drop line (in 150 ms they read as disintegrating, the user, 2026-10-28) */
+     Show prompt), a switch never shows them (faded in by it, they blinked) */
+  /* everything that leaves fades out across the crop, easing in, gone by the swap */
   const leave = { duration: Math.max(1, steps.A + steps.S), easing: "ease-in", fill: /** @type {FillMode} */ ("both") };
   if (pic(old))
     for (const el of [...around(), ...navs()]) {
@@ -400,23 +373,19 @@ export function switchGlide(at, views, layout = false) {
       const now = seenNow(el);
       if (now > 0.01) for (const a of fade(el, now, timing, { glass: true, from: 0, span: [1 - Q, 1] })) go(a);
     }
-  /* ONE FADE SPEED for a view's contents, in every switch (2026-10-31, the user: "one fade speed everywhere"): they
-     leave in the MORPH.fade ms that end at the swap (from the first frame, if the swap comes sooner) and come in the
-     MORPH.fade ms that start at it, linearly — a panel, a picture and its glow alike. Where the shape doesn't change the
-     swap is at the start and the two overlap: the cross-fade (Queue ↔ PNG Info, the speed the user liked); where it
-     does, a fade-through (Material's pattern for unrelated contents). The plate's crop and reveal keep their own steps;
-     the switch runs on until the fade-in ends, on the same clock. (A picture cut in the swap's 80 ms, and a decelerating
-     fade-in of its own, read as two speeds) */
+  /* ONE FADE SPEED for a view's contents, in every switch: they leave in the MORPH.fade ms that end at the swap (from
+     the first frame, if the swap comes sooner) and come in the MORPH.fade ms that start at it, linearly — a panel, a
+     picture and its glow alike. Where the shape doesn't change the two overlap (a cross-fade); where it does, a
+     fade-through. The plate's crop and reveal keep their own steps; the switch runs on until the fade-in ends, on the
+     same clock */
   const fd = fades(steps), // the one formula (layoutmath.js) — the frame's pictures fade by it too (pictures.js)
     TT = Math.max(T, fd.T), // the switch's length, its fade-in included
     goOut = { ...fd.out, easing: "linear", fill: /** @type {FillMode} */ ("both") },
     comeIn = { ...fd.in, easing: "linear", fill: /** @type {FillMode} */ ("both") };
-  /* the view's contents: out and in, as ONE layer — one opacity on the view, one clock: a page is content, and content
-     fades as one, with whatever it draws a frame later (DEVLOG DD-2026-11-08-12: faded by its parts, a page's list of
-     parts was a snapshot — rows drawn after the switch began showed at once, the user: "plates of the queue items are
-     there right away"). The same view (a layout switch) stays shown, it only rides. Glass inside a page loses its
-     blur under this fade: the layering rule — content holds no material — is ux-review/17-t2-motion.md T2c */
-  /* from what is on screen (F4): a page caught mid-switch carries on from its opacity there — never restarted from 1 / 0 */
+  /* the view's contents: out and in, as ONE layer — one opacity on the view, one clock, with whatever it draws a frame
+     later (DD-2026-11-08-12). The same view (a layout switch) stays shown, it only rides. Glass inside a page would
+     lose its blur under this fade: ARCHITECTURE › the layering rule (content holds no material) */
+  /* from what is on screen: a page caught mid-switch carries on from its opacity there — never restarted from 1 / 0 */
   const shownO = (/** @type {HTMLElement} */ v, /** @type {number} */ d) =>
       views.shown ? (views.shown.get(v)?.o ?? 0) : d, // not in it: not on screen
     out = go(same ? old.animate([], goOut) : fade(old, 0, goOut, { from: shownO(old, 1) })[0]);

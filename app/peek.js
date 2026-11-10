@@ -1,6 +1,6 @@
 // @ts-check
-/* Kiln · the prompt peek: a job's prompt shown in the box (a finished picture's, a waiting job's). Modeless (2026-10-27,
-   the user): change anything — type, a pill, a LoRA — and the job becomes your draft (Undo brings yours back); ✕ at the
+/* Kiln · the prompt peek: a job's prompt shown in the box (a finished picture's, a waiting job's). Modeless: change
+   anything — type, a pill, a LoRA — and the job becomes your draft (Undo brings yours back); ✕ at the
    end of its file name closes it. Also saving a waiting job's name, Start as Vary while a prompt is shown */
 import { renameFile, renameJob } from "./actions.js";
 import { esc, renderAll, toast } from "./boot.js";
@@ -197,7 +197,7 @@ export function reuse(focus = true) {
       updPrompt();
     },
     "gen",
-  ); // your draft's news: under the Generating tab (the user, 2026-10-28)
+  ); // your draft's news: under the Generating tab
 }
 /** a change to a shown job's settings (a pill, a LoRA chip) makes it your draft first — like typing into it. False:
  * nothing to change (an upscale's settings aren't yours) */

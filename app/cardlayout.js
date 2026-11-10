@@ -212,21 +212,27 @@ function boxWrite(col, b) {
 }
 /** whether the layout now being placed is the user's own direct change (layoutLeft's `direct`) */
 let layDirect = false;
-/** where the layout wants the box: side by side it moves there on the rearrangement's plan and clock, on the progress of
- * the picture it's anchored to (T2: it glided on CSS's --lay-t, a clock of its own, and fell behind); in Vertical, while
- * dragged, or the first time, at once @param {HTMLElement} col @param {number} top @param {number} H */
+/** where the layout wants the box: a change the system makes (a double-click, Reset, a new limit) moves it on the
+ * rearrangement's plan and clock — side by side on the progress of the picture it's anchored to (T2: it glided on CSS's
+ * --lay-t, a clock of its own, and fell behind); in Vertical its top rides its pane's plate (layout.js promptFollow: the
+ * plate's live bottom is its clock), so only its height moves on the plan (it was written at once: a #vedge double-click
+ * moved the box's bottom 394 px in one frame — the case table). At once: the first time, under your hand, and in
+ * Vertical during a switch (the plate travelling: the box at its end shape from the first frame, DD-4's whole rule — as
+ * its width, swAt) @param {HTMLElement} col @param {number} top @param {number} H */
 function boxAt(col, top, H) {
-  const to = { l: 0, t: top, w: 0, h: H };
+  const to = { l: 0, t: top, w: 0, h: H },
+    vert = !!document.querySelector(".app.stacked");
   /* at once: the first time, under a drag or typing (the hand is the clock — composers grow with the text; animated, the
-     box lagged its text and the text overflowed mid-growth, DEVLOG DD-2026-11-09-2), and in Vertical (C4's) */
-  if (!boxNow || card.drag || layDirect || document.querySelector(".app.stacked")) {
+     box lagged its text and the text overflowed mid-growth, DEVLOG DD-2026-11-09-2) */
+  if (!boxNow || card.drag || layDirect || (vert && travelling())) {
     stop("box");
     boxWrite(col, to);
   } else {
     /* the box is changing from the moment it's asked to (its move may wait for the plan's reveal): the editor's thumb
        waits from now — told at the first write, it showed for the frames before it (B21) */
     if (to.t !== boxNow.t || to.h !== boxNow.h) boxSizing();
-    rearrange("box", boxNow, to, b => boxWrite(col, b), "frame");
+    /* Vertical: the top is the plate's to carry — it starts at its goal, the plan moves the height */
+    rearrange("box", vert ? { ...boxNow, t: to.t } : boxNow, to, b => boxWrite(col, b), vert ? undefined : "frame");
   }
 }
 function freeze() {

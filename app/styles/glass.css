@@ -451,7 +451,10 @@ body.glass .rim.panel {
     inset 0 1px 0 var(--white-12),
     inset 0 0 0 1px var(--white-12);
 }
-.plate::after {
+/* a place to drop — ONE look (tokens.css OUTLINES): a dashed line one part gap inside the plate, its corners
+   concentric. A plate shows it while it takes a drop (PNG Info); the drop map's tiles always (overlays.css) */
+.plate::after,
+.droptile::after {
   content: "";
   position: absolute;
   inset: var(--drop-inset);
@@ -462,7 +465,8 @@ body.glass .rim.panel {
     opacity var(--t-150) var(--ease),
     border-color var(--t-150);
 }
-.plate.drop::after {
+.plate.drop::after,
+.droptile::after {
   opacity: 1;
 }
 .plate.over::after {

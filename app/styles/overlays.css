@@ -203,20 +203,18 @@
 .droptile {
   position: absolute;
   border-radius: var(--r-panel);
-  outline: var(--outline);
-  outline-offset: calc(var(--space-px) * -1);
-  transition:
-    background var(--t-150),
-    outline-color var(--t-150);
-}
+  transition: background var(--t-150);
+} /* its line is the drop place's (glass.css .droptile::after) */
 .droptile.over {
   background: color-mix(in oklab, var(--black) 35%, transparent);
 }
-.droptile.here {
-  outline-style: solid;
+.droptile.here::after {
+  border-style: solid;
 }
 .droptile.hot {
   background: color-mix(in oklab, var(--a1) 18%, transparent);
-  outline-color: color-mix(in oklab, var(--a1) 75%, transparent);
-  outline-style: solid;
+}
+.droptile.hot::after {
+  border-color: color-mix(in oklab, var(--a1) 75%, transparent);
+  border-style: solid;
 }

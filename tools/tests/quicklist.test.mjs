@@ -214,12 +214,17 @@ export async function dropMapUnderTheBox(k, t) {
     ts.forEach(x=>x.style.pointerEvents="auto");for(const tl of mp.children)Object.assign(tl.style,{left:"0px",top:"0px",width:"100%",height:"100%"});
     const e=document.elementFromPoint(cx,cy);mp.style.pointerEvents="";[...mp.children].forEach((x,i)=>x.style.cssText=keep[i]);
     return {shown:document.querySelector(".dropmap").classList.contains("show"),tiles:document.querySelectorAll(".droptile").length,
-      top:!!e&&!!e.closest("#lcol"),token:+getComputedStyle($("lcol")).transform.split("(")[1]?.split(",")[0]||1}})()`);
+      top:!!e&&!!e.closest("#lcol"),token:+getComputedStyle($("lcol")).transform.split("(")[1]?.split(",")[0]||1,
+      line:(()=>{const P=getComputedStyle($("plate"),"::after"),L=x=>[x.top,x.left,x.borderTopWidth];
+        return [...mp.children].filter(tl=>{const a=getComputedStyle(tl,"::after");return a.content==="none"||L(a).join()!==L(P).join()}).map(tl=>tl.dataset.dock+"/"+tl.dataset.pos)})()}})()`);
   await m("mouseReleased", x + 160, y + 80, 0);
   await k.sleep(800);
   t.ok(r.shown && r.tiles === 7, "carried: the drop map shows its seven places", r);
   t.ok(r.top, "the box in the hand is on top of the map — never under its tiles", r);
   t.ok(r.token < 0.6, "…and it's a token (shrunk): the map shows behind it", r);
+  /* a place to drop has ONE look (tokens.css OUTLINES): the plate's drop line, one part gap inside — the tiles drew their
+     own 1 px-inset outline (found by the comment trim, DD-2026-11-11-7) */
+  t.ok(!r.line.length, "every tile's line is the drop place's line (the plate's, one part gap inside)", r.line);
   t.ok(!(await k.ev(`document.querySelector(".dropmap").classList.contains("show")`)), "let go: the map goes");
 }
 

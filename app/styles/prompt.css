@@ -144,6 +144,7 @@
   display: none;
   align-items: center;
   white-space: nowrap;
+  pointer-events: none; /* a box that lays out (the suffix, ✕): it passes the pointer to the name under it (V8, R4's rule) */
 }
 .plbl.peekname .fnpre {
   display: inline;
@@ -178,6 +179,7 @@
 } /* a narrow box: ".png" goes first (every file is one) */
 /* ✕: small and plain, like the ✕ that clears your own draft's name — the same job, the same look */
 .pkx {
+  pointer-events: auto; /* it takes its press itself (R4) */
   width: 22px;
   height: 22px;
   border-radius: 50%;

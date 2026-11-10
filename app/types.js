@@ -180,7 +180,7 @@
  * @property {{ edge: string, at: number, off: number, boxW: number, bh?: number, scale: number, w?: number, h?: number } | null} [pdrag]  an edge of a picture
  *   page held side by side (C3): the pass's handle id, the pointer on its axis (+ off: where on the handle it was
  *   pressed), the sizes at the press
- * @property {"bar" | "none" | null} row  the row under the picture: the progress bar, or nothing
+ * @property {"bar" | "prompt" | "none" | null} row  the slot under the picture: its occupant (the status row, Show prompt) or none
  * @property {string | null} rowView the tab the row was decided for (its fade belongs to a switch between views)
  * @property {string} ins            the page's insets last laid out ("row:tools"): a change lays out again
  */

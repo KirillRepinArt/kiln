@@ -5,6 +5,7 @@ import { placeAround } from "./around.js";
 import { driving, follow, moving, movingTo, rearrange, rearrangeFade, stop, travelling } from "./rearrange.js";
 import { frameGoal } from "./framebox.js";
 import { syncH } from "./boot.js";
+import { showPromptOn } from "./browse.js";
 import {
   applyMode,
   applyPH,
@@ -88,12 +89,13 @@ export function insets() {
     ready: forgeOk,
     news: m === "still" && PV.news != null,
     shown: !!onShow(),
+    prompt: showPromptOn(),
   });
 }
 /* what the row under the picture is: "bar" (the queue's progress, a paused queue, a result behind your reference) or
    "none" — the picture's caption went into the title, the job's progress onto the Generating tab */
 export function rowMode() {
-  return insets().row ? "bar" : "none";
+  return insets().row || "none";
 }
 /** the insets as a key: the layout runs again when it changes (sync.js after a poll, picstate.js after an event) */
 export const insetsKey = () => {
@@ -271,8 +273,10 @@ function evenGap() {
 function nameRowH() {
   return SPACE.tight + $("ltitle").getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top;
 }
-/* the room the status row takes under the picture while the page keeps it (the part gap + the row) */
+/* the room the slot under the picture takes while the page keeps it (the part gap + its occupant: the status row, or
+   Show prompt — A1: it had none, and lay under Vertical's box) */
 function rowRoom() {
+  if (insets().row === "prompt") return SPACE.part + $("showP").offsetHeight;
   return orient() === "vert" ? SPACE.part + $("prog").offsetHeight : BAR();
 }
 /* the height the picture's block may take: the stage; Vertical — down to one even gap above the prompt's name (the
@@ -742,14 +746,15 @@ export function sizeFrame() {
        keeps them; the same decider shows them (2026-10-31: the row's room used to be kept always, used or not) */
     const was = lay.row,
       wasView = lay.rowView;
-    lay.row = ins.row ? "bar" : "none";
+    lay.row = ins.row || "none";
     lay.rowView = S.view;
     lay.ins = `${ins.row}:${ins.tools}`;
-    document.body.classList.toggle("norow", !ins.row);
+    document.body.classList.toggle("norow", ins.row !== "bar"); // the status row shows only as the slot's occupant
     document.body.classList.toggle("notools", !ins.tools);
     /* the row comes and goes on the layout's clock, as the box makes or gives back its room — inside the picture's view
        only: a switch between views fades it with everything else (plate.js switchGlide) */
-    if (was && was !== lay.row && wasView === "gen" && S.view === "gen") rowFade(ins.row);
+    if (was && was !== lay.row && (was === "bar" || lay.row === "bar") && wasView === "gen" && S.view === "gen")
+      rowFade(lay.row === "bar");
   }
   const j = onShow() || current();
   const ar = j ? j.ar : S.ar;

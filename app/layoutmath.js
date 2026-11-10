@@ -50,16 +50,20 @@ export const PAGES = /** @type {const} */ ({
  * @param {boolean} s.ready the image generator is up (waiting jobs are about to start)
  * @param {boolean} s.news a result landed behind the reference you hold ("#N finished")
  * @param {boolean} s.shown a finished picture is on show
- * @returns {{ row: boolean, tools: boolean }}
+ * @param {boolean} [s.prompt] Show prompt is on (the Gallery, the prompt closed — browse.js showPromptOn)
+ * @returns {{ row: "bar" | "prompt" | false, tools: boolean }} row: the slot under the picture's occupant — the status
+ *   row ("bar") or Show prompt ("prompt") — or none
  */
 export function pageInsets(page, s) {
   if (page === "panel") return { row: false, tools: false };
-  if (page === "gallery") return { row: false, tools: true };
+  /* the slot under the picture has ONE occupant and the pass keeps its room (A1, 2026-11-11): the Gallery's is Show
+     prompt while the prompt is closed — it had no room, and in Vertical it lay under the box's name row (V9) */
+  if (page === "gallery") return { row: s.prompt ? "prompt" : false, tools: true };
   /* Generating: the row while the queue works — between two of its jobs too (a box changing between every job read as a
      twitch; "if there's a queue, nothing changes", the user). The buttons only when the row is gone: a result shown
      between two renders has none (the Gallery has them) */
-  const row = s.running || (s.waiting && (s.paused || s.ready)) || s.news;
-  return { row, tools: !row && s.shown };
+  const row = !!(s.running || (s.waiting && (s.paused || s.ready)) || s.news);
+  return { row: row ? "bar" : false, tools: !row && s.shown };
 }
 
 /** the edit buttons beside the picture (state.js sideButtons builds them; a unit test keeps the two counts the same) */

@@ -65,9 +65,11 @@ export function updNav() {
 } /* the render's prompt: click the render itself (the status line doubled it) */
 /* the Gallery with the prompt closed (it stays closed as you browse): a pill under the picture brings it back */
 export function browseStatus() {
-  const on = S.view === "gen" && !!browsed() && PV.promptClosed;
-  $("showP").classList.toggle("show", on);
+  $("showP").classList.toggle("show", showPromptOn());
 }
+/** Show prompt is on: the Gallery with the prompt closed — ONE predicate for its being shown and for its room under the
+ * picture (layout.js insets: the slot's occupant, A1) */
+export const showPromptOn = () => S.view === "gen" && !!browsed() && PV.promptClosed;
 
 /* start-up wiring: the on-picture arrows (held under the pointer while you click them), ← / → (called from main.js, in order) */
 export function initBrowse() {

@@ -229,6 +229,8 @@ test("panels keep no room: Queue, LoRAs and PNG Info fill their plate", () => {
 test("the Gallery keeps the buttons' column and never the status row, rendering or not", () => {
   assert.deepEqual(pageInsets("gallery", idle), { row: false, tools: true });
   assert.deepEqual(pageInsets("gallery", { ...idle, running: true, waiting: true }), { row: false, tools: true });
+  /* the slot under the picture names its occupant: the Gallery's is Show prompt while the prompt is closed (A1) */
+  assert.deepEqual(pageInsets("gallery", { ...idle, prompt: true }), { row: "prompt", tools: true });
 });
 
 test("Generating, empty and idle: the whole plate", () => {
@@ -236,7 +238,7 @@ test("Generating, empty and idle: the whole plate", () => {
 });
 
 test("Generating while rendering: the row, no buttons' column", () => {
-  assert.deepEqual(pageInsets("generating", { ...idle, running: true }), { row: true, tools: false });
+  assert.deepEqual(pageInsets("generating", { ...idle, running: true }), { row: "bar", tools: false });
 });
 
 test("Generating between two queued jobs: nothing changes — the row stays, no column for the result between them", () => {
@@ -245,7 +247,7 @@ test("Generating between two queued jobs: nothing changes — the row stays, no 
     pageInsets("generating", between),
     pageInsets("generating", { ...idle, running: true, shown: true }),
   );
-  assert.deepEqual(pageInsets("generating", between), { row: true, tools: false });
+  assert.deepEqual(pageInsets("generating", between), { row: "bar", tools: false });
 });
 
 test("Generating after the last job: the row goes, the result gets its buttons' column", () => {
@@ -253,12 +255,12 @@ test("Generating after the last job: the row goes, the result gets its buttons' 
 });
 
 test("a paused queue keeps its row (it says so); waiting jobs with the generator down don't", () => {
-  assert.equal(pageInsets("generating", { ...idle, waiting: true, paused: true }).row, true);
+  assert.equal(pageInsets("generating", { ...idle, waiting: true, paused: true }).row, "bar");
   assert.equal(pageInsets("generating", { ...idle, waiting: true, ready: false }).row, false);
 });
 
 test('a result behind your reference keeps the row ("#N finished")', () => {
-  assert.deepEqual(pageInsets("generating", { ...idle, news: true, shown: true }), { row: true, tools: false });
+  assert.deepEqual(pageInsets("generating", { ...idle, news: true, shown: true }), { row: "bar", tools: false });
 });
 
 test("one fade for contents everywhere: out ends at the swap, in starts there, both MORPH.fade long", () => {

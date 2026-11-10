@@ -422,7 +422,7 @@ body[data-pic="still"] .prog.run .meta {
 .showp {
   position: absolute;
   z-index: var(--z-pic-show-prompt);
-  display: none;
+  visibility: hidden; /* laid out when unseen: its room under the picture is its height (layout.js rowRoom, A1) */
   translate: -50% 0; /* centred on the picture (a centring offset, not spacing) */
   padding: var(--space-2) var(--space-4);
   border-radius: var(--r-pill);
@@ -437,7 +437,7 @@ body[data-pic="still"] .prog.run .meta {
   background: var(--raised2);
 }
 .showp.show {
-  display: block;
+  visibility: visible;
 }
 .prog .meta .eta {
   margin-left: auto;

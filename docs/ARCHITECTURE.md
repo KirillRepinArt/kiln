@@ -86,7 +86,8 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     every picture. `tools/tests/unit/onepicture.test.mjs` fails on a write to `#cv` anywhere else
   - the frame's two pictures' opacity (the old one's copy leaving, the new one coming): `pictures.js`; a shape change's
     crop-and-reveal drives the frame through `framebox.js` and hands its timing over (`morph.js`)
-  - paint order: one list in `styles/glass.css` ("the page's layers")
+  - paint order: **one named list per stacking context** in `styles/tokens.css` (THE LAYERS, P2 2026-11-11) — every
+    z-index is `var(--z-…)`, Stylelint rejects a number; the app's list holds the drop map's slot (`--z-app-drop-map`)
   - **the layout model** (v0.7c, `docs/decisions/0013-layout-tree.md`): your **sizes** — one per pane × page ×
     orientation, kept in `S.lay` v4 — are written only through `layout.js` `setPaneSize` and read through `paneSize`;
     the **group** and its **placement** come from `layoutmath.js` `arrange` (panes glued with one gap, a resting anchor,

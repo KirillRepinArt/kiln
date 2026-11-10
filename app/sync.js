@@ -155,7 +155,7 @@ export async function poll() {
     }
     if (j.status === "error" && !seen.has("e" + jk)) {
       seen.add("e" + jk);
-      if (!firstPoll) toast(`Job #${j.id} failed: ${j.error || "error"}`);
+      if (!firstPoll) toast(`Job #${j.id} failed: ${j.error || "error"}`, "", null, "queue");
     }
   }
   if (firstPoll) {
@@ -164,7 +164,11 @@ export async function poll() {
     if (d && S.clearedId !== d.id) PV.still = { id: d.id, kind: "result" }; // the last result, unless you had closed it
     if (S.seenDone != null) {
       const n = jobs.filter(x => x.status === "done" && x.id > /** @type {number} */ (S.seenDone)).length;
-      if (n) setTimeout(() => toast(`${n} image${n > 1 ? "s" : ""} finished while Kiln was closed`), 1200);
+      if (n)
+        setTimeout(
+          () => toast(`${n} image${n > 1 ? "s" : ""} finished while Kiln was closed`, "", null, "gallery"),
+          1200,
+        );
     }
   }
   {

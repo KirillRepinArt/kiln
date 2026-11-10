@@ -50,7 +50,7 @@ export async function startLive() {
     const d = shownMissing();
     if (!d) return;
     const r = await api(`/api/jobs/${d.id}/restore`, {});
-    toast(r.error || "Restored from the Recycle Bin");
+    toast(r.error || "Restored from the Recycle Bin", "", null, "gallery");
     delete inBin[d.id];
     poll();
   };
@@ -58,13 +58,13 @@ export async function startLive() {
     const d = shownMissing();
     if (!d) return;
     const e = imgs.get(urlFor(d));
-    if (!e || !e.i.naturalWidth) return toast("Kiln no longer has a copy");
+    if (!e || !e.i.naturalWidth) return toast("Kiln no longer has a copy", "", null, "gallery");
     const c = document.createElement("canvas");
     c.width = e.i.naturalWidth;
     c.height = e.i.naturalHeight;
     /** @type {CanvasRenderingContext2D} */ (c.getContext("2d")).drawImage(e.i, 0, 0);
     const r = await api(`/api/jobs/${d.id}/saveback`, { data: c.toDataURL("image/png") });
-    toast(r.error || `Saved back as ${d.file}`);
+    toast(r.error || `Saved back as ${d.file}`, "", null, "gallery");
     imgs.delete(urlFor(d));
     poll();
   };
@@ -74,7 +74,7 @@ export async function startLive() {
     const sp = Object.assign({}, d.spec, { seed: d.seed, as_file: d.file });
     await api("/api/jobs", { jobs: [sp] });
     await api(`/api/jobs/${d.id}/remove`, {});
-    toast(`Rendering it again — same seed, saved as ${d.file}`);
+    toast(`Rendering it again — same seed, saved as ${d.file}`, "", null, "gallery");
     poll();
   };
   $("mRemove").onclick = () => {
@@ -177,7 +177,7 @@ export async function startLive() {
   $("gear").addEventListener("click", libStat);
   $("libClear").onclick = () =>
     api("/api/library/clear", {}).then(() => {
-      toast("Picture index cleared — rebuilding from your pictures");
+      toast("Picture index cleared — rebuilding from your pictures", "", null, "gallery");
       setTimeout(libStat, 400);
     });
   $("updBtn").onclick = async () => {

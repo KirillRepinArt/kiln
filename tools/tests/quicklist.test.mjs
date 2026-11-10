@@ -119,11 +119,18 @@ export async function toastsByThePrompt(k, t) {
   await under("#donenote", '.tab[data-v="gen"]', "the finished note: under the Generating tab, by the same placer");
   await k.ev(`(setDock("below"),1)`);
   await k.sleep(1000);
-  await k.ev(`(toast("again"),1)`);
+  await k.ev(`(toast("Forge isn't running — Kiln picks it up as soon as it starts"),1)`);
   await k.sleep(300);
   const t2 = await k.rect("#toast"),
     W = await k.ev(`innerWidth`);
-  t.ok(t2.top < 40 && W - t2.right < 40, "Vertical: top right", t2);
+  t.ok(t2.top < 40 && W - t2.right < 40, "Vertical: a message with no page — top right", t2);
+  t.ok(t2.height < 50, "…on one line (its size is its text's, wherever it's placed)", t2);
+  /* a message about a page goes under its tab, in either layout (the user, 2026-11-10): the queue paused */
+  await k.ev(`(setPaused(true),1)`);
+  await k.until(`/paused/.test($("toastMsg").textContent)`, 3000);
+  await k.sleep(300);
+  await under("#toast", '.tab[data-v="queue"]', "Vertical: the queue's news under the Queue tab");
+  await k.ev(`(setPaused(false),1)`);
 }
 
 export async function dragsAlwaysEnd(k, t) {

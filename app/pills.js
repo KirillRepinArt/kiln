@@ -133,8 +133,8 @@ const PILLS = [
 export function copySeed(s) {
   if (s == null || s === "") return;
   navigator.clipboard.writeText(String(s)).then(
-    () => toast(`Seed ${s} copied`),
-    () => toast("Couldn't copy the seed"),
+    () => toast(`Seed ${s} copied`, "", null, "gen"),
+    () => toast("Couldn't copy the seed", "", null, "gen"),
   );
 }
 /** v rounded, kept within a … b (a when it isn't a number) @param {number} v @param {number} a @param {number} b */

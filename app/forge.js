@@ -18,7 +18,7 @@ export async function setThumbs(j) {
     j.loras.map(x => LORAS.find(l => l.name === x.name)).filter(l => l && l.folder === "people")
   );
   if (!faces.length) {
-    toast("This image used no face LoRA");
+    toast("This image used no face LoRA", "", null, "loras");
     return;
   }
   const im = await img(/** @type {string} */ (urlFor(j))).p; // a finished picture: it has a file
@@ -44,7 +44,7 @@ export async function setThumbs(j) {
   }
   save();
   renderLoras();
-  toast(`Thumbnail set for ${faces.map(l => l.display).join(", ")}`);
+  toast(`Thumbnail set for ${faces.map(l => l.display).join(", ")}`, "", null, "loras");
 }
 
 /* ---------- models, LoRAs and settings from Forge ---------- */
@@ -163,12 +163,17 @@ export async function rescanLoras(manual) {
     ok = await loadModels(true);
   b.classList.remove("spin");
   if (!ok) {
-    if (manual) toast("Forge isn't reachable — LoRAs not rescanned");
+    if (manual) toast("Forge isn't reachable — LoRAs not rescanned", "", null, "loras");
     return;
   }
   const added = LORAS.filter(l => !before.has(l.name)).length,
     gone = [...before].filter(n => !LORAS.some(l => l.name === n)).length;
   if (added || gone)
-    toast([added && `${added} new LoRA${added > 1 ? "s" : ""}`, gone && `${gone} gone`].filter(Boolean).join(" · "));
-  else if (manual) toast("LoRAs are up to date");
+    toast(
+      [added && `${added} new LoRA${added > 1 ? "s" : ""}`, gone && `${gone} gone`].filter(Boolean).join(" · "),
+      "",
+      null,
+      "loras",
+    );
+  else if (manual) toast("LoRAs are up to date", "", null, "loras");
 }

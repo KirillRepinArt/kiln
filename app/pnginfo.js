@@ -220,8 +220,8 @@ export function initPnginfo() {
     const k = /** @type {string} */ (b.dataset.copy),
       what = { prompt: "Prompt", neg: "Negative prompt", raw: "Parameters" }[k] || "Text";
     navigator.clipboard.writeText(copyable[k] || "").then(
-      () => toast(`${what} copied`),
-      () => toast(`Couldn't copy the ${what.toLowerCase()}`),
+      () => toast(`${what} copied`, "", null, "png"),
+      () => toast(`Couldn't copy the ${what.toLowerCase()}`, "", null, "png"),
     );
   });
   $("pKeep").onclick = e => {

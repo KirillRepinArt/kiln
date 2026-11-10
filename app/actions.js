@@ -35,7 +35,8 @@ export async function vary(j) {
     () => api(`/api/jobs/${id}/cancel`, {}).then(poll),
     "queue",
   );
-  if (!forgeOk) setTimeout(() => toast("Queued — Forge isn't running yet, jobs start when it is"), 2300);
+  if (!forgeOk)
+    setTimeout(() => toast("Queued — Forge isn't running yet, jobs start when it is", "", null, "queue"), 2300);
   poll();
 }
 export async function addJobs() {
@@ -45,7 +46,7 @@ export async function addJobs() {
   } /* the box shows a job's prompt: ▶ makes another like it */
   const text = P.value.trim();
   if (!text) {
-    toast("Write a prompt first");
+    toast("Write a prompt first", "", null, "gen");
     return;
   }
   const on = LORAS.filter(l => l.on);
@@ -84,7 +85,8 @@ export async function addJobs() {
   pv("start");
   /* a picture you held gives way to the render once it has a picture */
   toast(S.n > 1 ? `Added ${S.n} jobs to the queue` : "Added to queue", "", null, "queue");
-  if (!forgeOk) setTimeout(() => toast("Queued — Forge isn't running yet, jobs start when it is"), 2300);
+  if (!forgeOk)
+    setTimeout(() => toast("Queued — Forge isn't running yet, jobs start when it is", "", null, "queue"), 2300);
   poll();
 }
 /** @param {import("./types.js").Job | null | undefined} j */
@@ -169,10 +171,15 @@ export async function deleteMany(ids) {
   const msg = [del.length && `${del.length} moved to the Recycle Bin`, rm.length && `${rm.length} taken off the list`]
     .filter(Boolean)
     .join(" · ");
-  toast(msg, del.length ? "Undo" : "", async () => {
-    await Promise.all(del.map(j => api(`/api/jobs/${j.id}/undelete`, {})));
-    poll();
-  });
+  toast(
+    msg,
+    del.length ? "Undo" : "",
+    async () => {
+      await Promise.all(del.map(j => api(`/api/jobs/${j.id}/undelete`, {})));
+      poll();
+    },
+    "gallery",
+  );
   poll();
 }
 /** @param {Iterable<number>} ids */
@@ -238,7 +245,7 @@ export async function setPaused(p) {
   window.qPaused = p;
   fullNextPoll();
   poll();
-  toast(p ? "Queue paused — the current image finishes, nothing new starts" : "Queue resumed");
+  toast(p ? "Queue paused — the current image finishes, nothing new starts" : "Queue resumed", "", null, "queue");
 }
 /** @param {import("./types.js").Job} j @param {string} n the series name */
 export async function renameFile(j, n) {
@@ -249,17 +256,22 @@ export async function renameFile(j, n) {
     r = { error: "Kiln server not reachable" };
   }
   if (r.error) {
-    toast(`Couldn't rename: ${r.error}`);
+    toast(`Couldn't rename: ${r.error}`, "", null, "gallery");
     return false;
   }
   if (r.file === r.old) {
     return true;
   }
   const back = { name: j.name || "", as_file: r.old };
-  toast(`Renamed to ${r.file}`, "Undo", async () => {
-    await api(`/api/jobs/${j.id}/rename`, back);
-    poll();
-  });
+  toast(
+    `Renamed to ${r.file}`,
+    "Undo",
+    async () => {
+      await api(`/api/jobs/${j.id}/rename`, back);
+      poll();
+    },
+    "gallery",
+  );
   poll();
   return true;
 }
@@ -268,6 +280,9 @@ export async function renameJob(j, n) {
   await api(`/api/jobs/${j.id}/name`, { name: n });
   toast(
     n ? `Name saved — it will be saved as ${slugify(n)}-NNN.png` : "Name cleared — it will be named by date and seed",
+    "",
+    null,
+    "gen",
   );
   poll();
 }
@@ -293,14 +308,19 @@ export async function deleteJob(j) {
   if (peekJob && peekJob.id === j.id) peekHide();
   const r = await api(`/api/jobs/${j.id}/delete`, {});
   if (r.error) {
-    toast(r.error);
+    toast(r.error, "", null, "gallery");
     poll(); // it stays: the list brings it back
     return;
   }
-  toast("Moved to the Recycle Bin", "Undo", async () => {
-    await api(`/api/jobs/${j.id}/undelete`, {});
-    poll();
-  });
+  toast(
+    "Moved to the Recycle Bin",
+    "Undo",
+    async () => {
+      await api(`/api/jobs/${j.id}/undelete`, {});
+      poll();
+    },
+    "gallery",
+  );
   poll();
 } /* the running job's chip: back to the render */
 /* browsing: the status row is the picture's caption — its number, file, shape and size (click: its prompt) */

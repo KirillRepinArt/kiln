@@ -72,6 +72,10 @@
   position: fixed;
   left: 50%;
   top: 0; /* its place: boot.js placeMessage (left / top only) */
+  /* its size is its text's, wherever it's placed (placed near the right edge it shrank to the room left of its point
+     and wrapped: 80 × 194 px) */
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--space-6));
   transform: translateX(-50%);
   background: var(--grey-27);
   border: 1px solid var(--grey-35);

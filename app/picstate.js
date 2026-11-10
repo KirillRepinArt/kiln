@@ -210,7 +210,7 @@ function pvApply(ev, arg, run) {
       {
         const k = onShow() || lastDone();
         if (!k) {
-          toast("No finished pictures yet");
+          toast("No finished pictures yet", "", null, "gallery");
           break;
         }
         browseSet(k);

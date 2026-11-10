@@ -3,10 +3,10 @@
    rule can be unit-tested (tools/tests/unit/layoutmath.test.mjs). layout.js measures the page, asks these, applies. */
 import { SPACE, pairGap } from "./tokens.js";
 
-export const MMIN = 24, // the least margin each side of the pair
+export const MMIN = 24, // unused by the app (the room rule has no least margin) — tests only
   PWMIN = 360, // the prompt's least width
-  CARDMAX = 900, // wide window: the prompt card never gets wider than this (text stops at ~76ch anyway)
-  LISTMIN = 660; // the default width of the Queue / LoRAs / PNG Info panel
+  CARDMAX = 900, // unused by the app (the box has no cap of its own) — tests only
+  LISTMIN = 660; // unused (a panel's default is paneDefault's)
 
 /**
  * A box of shape `ar` ("3:4") as large as fits in bw × bh.
@@ -25,13 +25,11 @@ export function fitInBox(ar, bw, bh) {
   return { w, h };
 }
 
-/* ---------- every page's plate: the content area minus insets (2026-10-31, the user's design) ----------
-   One table decides what each page keeps room for, and what may show round its plate. The status row is an inset: room
-   only while something is being made (or the queue is paused / a result waits behind your reference). The edit
-   buttons are NOT room: they hang outside the plate, anchored to it, into a clearance the layout always keeps in the
-   margin — so a page looks the same with them or without (the user: "the edit button area should be ignored for the
-   layout"); `tools` only says whether they may show. Never hover. Everything else is the plate: full height by default.
-   (Industry: iOS safe-area insets, Android WindowInsets for the row; anchored, out-of-flow controls for the buttons.) */
+/* ---------- every page's plate: the content area minus insets ----------
+   One table decides what each page keeps room for (the slot under the picture — ARCHITECTURE › the slot under the
+   picture) and whether its edit buttons may show. The buttons are NOT room: they hang outside the plate into a
+   clearance the layout always keeps, so a page looks the same with them or without. (iOS safe-area insets, Android
+   WindowInsets.) */
 
 /** @typedef {"generating" | "gallery" | "panel"} Page */
 /** what each page's plate holds: a picture fitted inside it, or a panel filling it */
@@ -56,12 +54,10 @@ export const PAGES = /** @type {const} */ ({
  */
 export function pageInsets(page, s) {
   if (page === "panel") return { row: false, tools: false };
-  /* the slot under the picture has ONE occupant and the pass keeps its room (A1, 2026-11-11): the Gallery's is Show
-     prompt while the prompt is closed — it had no room, and in Vertical it lay under the box's name row (V9) */
+  /* the slot's one occupant (A1): the Gallery's is Show prompt while the prompt is closed */
   if (page === "gallery") return { row: s.prompt ? "prompt" : false, tools: true };
-  /* Generating: the row while the queue works — between two of its jobs too (a box changing between every job read as a
-     twitch; "if there's a queue, nothing changes", the user). The buttons only when the row is gone: a result shown
-     between two renders has none (the Gallery has them) */
+  /* Generating: the row while the queue works — between two of its jobs too (a box changing between every job reads
+     as a twitch). The buttons only when the row is gone: a result shown between two renders has none */
   const row = !!(s.running || (s.waiting && (s.paused || s.ready)) || s.news);
   return { row: row ? "bar" : false, tools: !row && s.shown };
 }
@@ -70,10 +66,8 @@ export function pageInsets(page, s) {
 export const EDIT_TOOLS = 6;
 /**
  * The edit buttons' column beside the picture: 40 px buttons, `tight` apart and from the picture — ONE column, always.
- * A picture is never shorter than the column (picLeastH), so the strip's width never depends on the picture's height:
- * when it wrapped into a second column on a short picture, the strip's room grew as the picture shrank, and a drag and
- * the rest disagreed by 48–76 px (DEVLOG DD-2026-11-07-2: a size may not depend on what depends on it — CSS's
- * min-content, Auto Layout's compression resistance).
+ * A picture is never shorter than the column (picLeastH), so the strip's width never depends on the picture's height
+ * (DD-2026-11-07-2: a size may not depend on what depends on it).
  */
 export function toolColumnW() {
   return SPACE.tight + 40 + SPACE.tight;
@@ -85,18 +79,11 @@ export function picLeastH() {
 }
 
 /**
- * The prompt and the picture area as one centred pair: their widths and the margins round them, the same on both
- * sides. A picture page keeps the plate on a FIXED centre line (2026-10-31, the user: "expand or contract
- * symmetrically"): the prompt keeps its width and the picture's area takes at most what is left with even margins —
- * a wide picture is fitted to that (the textbook image stage: the panels keep their widths, the picture fits the rest,
- * centred; it never pushes them). Only a window too narrow even for that makes both give way, in proportion, each down
- * to its minimum.
- * One rule for the room (v0.7c, 2026-11-02, the user: "there's clearly some space in the app … a waste"): the group
- * may reach the room's ends (the window less its area gap each side); the prompt has no cap of its own (it was 900 px)
- * and no least margin (24 px). A picture page keeps the edit buttons' clearance on BOTH sides at rest: the plate's
- * centre line stays fixed while you browse shapes (the user, 2026-10-31); a drag may take the prompt's side of it
- * (layout.js layDrag). Placed by layoutmath.js arrange — the same group maths every layout uses. (Until the fit-page
- * rule, E: the picture page is an AREA the prompt hugs the picture inside; then the plate itself is the pane.)
+ * The prompt and the picture area as one centred pair: their widths and the margins round them (arrange — the group
+ * maths every layout uses). A picture page takes what the prompt leaves, up to your cap, with the edit buttons'
+ * clearance kept on both sides so the plate's centre line stays put; only a window too narrow for that makes both give
+ * way, in proportion, each down to its least. The group may reach the room's ends. (Side by side the layout pass places
+ * the panes: layout.js layGeo asks this in Vertical only.)
  * @param {object} m what was measured
  * @param {number} m.W the room the pair has (the window less its area gap each side)
  * @param {boolean} m.gen Generating / the Gallery (a picture fitted into the area) or a panel
@@ -143,8 +130,7 @@ export function pageGeometry(m, L) {
  * @param {boolean} a.toolsLeft the button column on the left (prompt on the right)
  */
 export function framePlacement({ areaW, areaH, w, h, tb, row, heldTop, stacked, toolsLeft }) {
-  /* Vertical: at the top of its room — the prompt follows it up, the spare height goes to the window's bottom (the user,
-     2026-11-01: no hole between the picture and the prompt) */
+  /* Vertical: at the top of its room — the spare height goes to the window's bottom, never between picture and prompt */
   const top = heldTop != null ? heldTop : stacked ? 0 : Math.max(0, (areaH - h - row) / 2);
   const g0 = Math.max(0, Math.floor((areaW - w - tb) / 2));
   const left = stacked ? Math.floor((areaW - w) / 2) : toolsLeft ? g0 + tb : g0;
@@ -212,11 +198,10 @@ export function cardHeightMode(mode, colH, CH, minH, a) {
 }
 
 /**
- * The card in the usual mode: its text's height, within the room — never a height of its own (2026-11-02, DEVLOG
- * DD-2026-11-02-12: an edge sets a pane's size within [least, largest]; the box's least = largest = its text, so its
- * height edges give a little and snap back). While one is held, `held` is the height shown (the rubber band) and
- * `heldPin` the side that holds. Frozen (you're working in it): the top stays put and only the bottom grows — a card
- * resting at the bottom grows upward instead.
+ * The card in the usual mode: its spec's height (naturalH: yours if you set one — Custom — else its text's), within the
+ * room. While a height edge is held, `held` is the height shown (the rubber band) and `heldPin` the side that holds.
+ * Frozen (you're working in it): the top stays put and only the bottom grows — a card resting at the bottom grows
+ * upward instead.
  * @param {object} c
  * @param {number} c.colH the column's height
  * @param {number} c.CH the chip row (with its gap)
@@ -235,10 +220,9 @@ export function cardPlacement({ colH, CH, held = 0, heldPin = "top", naturalH, p
   let top,
     bottom = prevBottom;
   if (held && prevTop != null && prevBottom != null) {
-    /* a height edge held (C6): the other side holds — until the grabbed side reaches the column's end; then it gives
-       way, the box growing into the far side's empty room (the give-way order, DEVLOG DD-2026-11-03-1: from the middle a
-       pull stopped at the column's end, the release re-centred it, and it took four pulls to reach the room); past the
-       whole room the grabbed side shows the rubber band (`held` past it) */
+    /* a height edge held: the other side holds — until the grabbed side reaches the column's end; then it gives way,
+       the box growing into the far side's empty room (the give-way order, DD-2026-11-03-1); past the whole room the
+       grabbed side shows the rubber band (`held` past it) */
     if (pos === "mid") {
       /* resting in the middle (a centred axis): it grows about its centre — the far side mirrors the grabbed one (DD-6,
          as every centred edge), each side giving way where the column ends; past the room, the give on both */
@@ -287,20 +271,18 @@ export function bez(x1, y1, x2, y2) {
   };
 }
 
-/* ---------- a box changing shape: the ONE choreography (2026-10-28) ----------
-   CROP, then REVEAL (the user's design, 2026-10-19; per axis since 2026-10-27). An axis that shrinks moves first (the
-   old contents cropped, never squeezed), the new contents take over at the overlap (a short cross-fade), an axis that
-   grows moves last (more of the new revealed). An axis that keeps its size doesn't move; a step with nothing to do takes
-   no time; each axis moves its centre with its size, so both sides go in or out alike. Browsing pictures (morph.js) and
-   a tab switch (plate.js switchGlide) both move by it: with a rule of their own, a switch from an empty 1:1 frame to a
-   16:9 picture showed a band of bare glass above and below the picture as it came in ("washed edges", the user) */
+/* ---------- a box changing shape: the ONE choreography — CROP, then REVEAL, per axis ----------
+   An axis that shrinks moves first (the old contents cropped, never squeezed), the new contents take over at the
+   overlap (a short cross-fade), an axis that grows moves last (more of the new revealed). An axis that keeps its size
+   doesn't move; a step with nothing to do takes no time; each axis moves its centre with its size. Browsing pictures
+   (morph.js) and a tab switch (plate.js switchGlide) both move by it */
 export const MORPH = {
   a: 180, // the crop (accelerating into the swap)
   s: 80, // the cross-fade at the overlap (a crop or a reveal around it carries the change)
-  alone: 200, // the cross-fade when nothing changes shape: on its own, 80 ms read as a cut (Queue ↔ PNG Info, the user)
+  alone: 200, // the cross-fade when nothing changes shape: on its own, 80 ms read as a cut
   b: 280, // the reveal (decelerating out of it)
   one: 320, // only a crop, or only a reveal: one move, eased at both ends
-  fade: 200, // a view's contents fading out or in, in EVERY switch: one speed (the user, 2026-10-31 — the Queue ↔ PNG Info one)
+  fade: 200, // a view's contents fading out or in, in EVERY switch: one speed
   out: 150, // a glued element leaving its old relation: gone early in the motion (Material fade-through's outgoing share)
   gone: 34, // ~2 frames fully gone while its relation changes: never seen jumping
 };
@@ -311,12 +293,12 @@ const eIn = bez(0.3, 0, 0.8, 0.15),
   eBoth = bez(0.2, 0, 0, 1);
 /** @typedef {{ w: number, h: number, l?: number, t?: number }} ShapeBox a box's size, and its place when it has one */
 /**
- * ONE plan for boxes changing together — a rearrangement (v0.7c T2, ux-review/17-t2-motion.md): the crop (0 → A) if
+ * ONE plan for boxes changing together — ARCHITECTURE › a rearrangement on the same page: the crop (0 → A) if
  * ANY box shrinks on any axis, the swap (A → A + S), the reveal (→ T) if any grows — so what shrinks finishes before
  * anything grows, across the boxes (the box narrows, then the picture widens), on one clock. Per box and axis: a shrinking
  * axis moves in the crop, a growing one in the reveal, one that only moves its place over the whole plan. Nothing
  * changing size but something moving (a pure move): the switch's full length, eased at both ends — a fixed time per kind
- * of motion, not per pixel (iOS's springs, Material's emphasized ~500 ms; the user's pick, DEVLOG DD-2026-11-07-6).
+ * of motion, not per pixel (DD-2026-11-07-6).
  * @param {{ o: ShapeBox, n: ShapeBox }[]} pairs
  */
 export function shapePlan(pairs) {
@@ -359,7 +341,7 @@ export function shapeSteps(o, n) {
   return { A: p.A, S: p.S, B: p.B, T: p.T, q: (/** @type {number} */ e) => p.q(0, e) };
 }
 /**
- * ONE fade for contents, everywhere (2026-10-31, the user: "one fade speed everywhere") — a view's contents in a tab
+ * ONE fade for contents, everywhere — a view's contents in a tab
  * switch (plate.js), the frame's pictures when they change (pictures.js, the crop-and-reveal's in morph.js): what
  * leaves fades in the MORPH.fade ms that end at the swap (from the first frame if the swap comes sooner), what comes in
  * the MORPH.fade ms that start at it, linearly. Nothing changes shape: the swap is at the start — a cross-fade.
@@ -370,7 +352,7 @@ export function shapeSteps(o, n) {
 export function fades(st) {
   const F = MORPH.fade;
   /* a pure move has no swap: what leaves fades as the move starts, what comes as it lands (a fade-through over the
-     travel — the box in a layout switch, T2b) */
+     travel) */
   if (st.T > 0 && !st.A && !st.S)
     return { out: { delay: 0, duration: F }, in: { delay: Math.max(0, st.T - F), duration: F }, T: st.T };
   return {
@@ -380,11 +362,9 @@ export function fades(st) {
   };
 }
 
-/* ---------- the glue (v0.7c T2c, DEVLOG DD-2026-11-08-7) ----------
-   The prompt box is ALWAYS glued to its partner pane's live plate, by a RELATION: which of the plate's edges it keeps
-   its distance to, on each axis. A tab switch or a Reset keeps the relation (the box rides); a layout switch changes
-   it, and the box fades through the change — out on the old relation, in on the new, glued all the while
-   (ux-review/17-t2-motion.md, T2c). Plain numbers: nothing here reads the page. */
+/* ---------- the glue (DD-2026-11-08-7) ----------
+   The prompt box is glued to its partner pane's live plate by a RELATION: which of the plate's edges it keeps its
+   distance to, on each axis — ARCHITECTURE › a layout switch; how it changes: the relation table below. */
 /** an axis's anchor: the plate's edge (or centre) the box keeps its distance to — "before" / "after": the box's far
  * edge to the plate's near one (beside it); "below": the box's top to the plate's bottom (under it)
  * @typedef {{ x: "before" | "after" | "centre", y: "top" | "centre" | "bottom" | "below" }} GlueAnchors */
@@ -448,12 +428,9 @@ export function relationFade(motion) {
   return { outEnd, turn: outEnd + MORPH.gone / 2, inStart, inEnd, T: Math.max(motion, inEnd) };
 }
 
-/* ---------- a pane's change of relation: ONE table (L1a, 2026-11-11 — ux-review/18-box-placement.md, "Panes are one kind")
-   What a pane does when its relation to its partner changes, by the change and its cause: a pattern and its timing —
-   data, not code per case (Material's motion system: the same element moving = a travel, unrelated contents = a fade
-   through; SwiftUI's transitions as values). The box with the picture's plate is its first user; a second pane that
-   moves (2b) plugs in by rows. The user's direction for the menu's switches (2026-11-10: out one way, in from the other —
-   a shared axis) is a change of the menu row's data in the tuning pass, no code. ---------- */
+/* ---------- a pane's change of relation: ONE table — ARCHITECTURE › a pane's change of relation ----------
+   Data, not code per case (Material's motion system; SwiftUI's transitions as values): a second pane that moves (2b)
+   plugs in by rows; the menu rows' direction (a shared axis) is a change of their data in the tuning pass. */
 /** @typedef {"hand" | "menu" | "switch"} RelationCause what changed it: carried by your hand, the Layout menu / Reset, a
  * tab switch */
 /** @typedef {"travel" | "fade" | "ride"} RelationPattern travel: on from where it is to where it lands, one motion; fade:
@@ -461,7 +438,7 @@ export function relationFade(motion) {
 /** @typedef {{ pane: string, partner: string, cause: RelationCause, change?: string, pattern: RelationPattern }} RelationRow
  * `*` matches any pane or partner; `change` (e.g. "side>vert"), when given, narrows a row */
 export const RELATION_ROWS = /** @type {RelationRow[]} */ ([
-  { pane: "*", partner: "*", cause: "hand", pattern: "travel" }, // the drop: no teleport (it faded out and in)
+  { pane: "*", partner: "*", cause: "hand", pattern: "travel" }, // the drop: on from where it was let go
   { pane: "*", partner: "*", cause: "menu", pattern: "fade" }, // the Layout menu, Reset
   { pane: "*", partner: "*", cause: "switch", pattern: "ride" }, // a tab switch: the relation is kept
 ]);
@@ -480,7 +457,7 @@ export function relationMotion(q, motion) {
   return pattern === "fade" ? { pattern, ...relationFade(motion) } : { pattern, T: motion };
 }
 
-/* ---------- the drop map (L1b, 2026-11-11 — ux-review/18-box-placement.md, sketch E) ----------
+/* ---------- the drop map (ux-review/18-box-placement.md, sketch E) ----------
    Where a dragged pane can go, as a MAP (an ideogram, not its footprint: the final state can't be shown before it
    happens — the picture resizes, the pair re-centres): the places are its partner's edges unfolded — a column on each
    side as tall as the partner, in thirds (top / middle / bottom), and a tile under it as wide as it. A column takes the
@@ -586,16 +563,13 @@ export function shapeBox(o, n, q) {
   return { l, t, w, h };
 }
 
-/* ---------- v0.7c · the layout model (docs/decisions/0013-layout-tree.md) ----------
-   Three owners: SIZES (yours, per pane × page × orientation, set by edges), the GROUP (panes stick together with one
-   gap) and PLACEMENT (one resting anchor per layout). A drag adds a PIN (the grabbed pane's opposite side holds
-   still); a release drops it and the group settles. Past a limit a size moves on with resistance (rubber). Plain
-   numbers in, plain numbers out: nothing here reads the page. */
+/* ---------- the layout model — ARCHITECTURE › the layout model (decision 0013) ----------
+   SIZES (yours), the GROUP (one gap), PLACEMENT (one resting anchor); a drag adds a PIN; past a limit, rubber. */
 
 /** the panes a layout holds besides the prompt box @typedef {"generating" | "gallery" | "queue" | "loras" | "png"} PageId */
 /** @typedef {"side" | "vert"} Orient side by side (Left and Right are mirrors and share one) or Vertical */
-/** a size; null = the default (for a picture page: no cap). s: a picture page's scale of its largest (v0.7c C2a; null =
- * the default) @typedef {{ w: number | null, h: number | null, s?: number | null }} PaneSize */
+/** a size; null = the default (for a picture page: no cap). s: a picture page's scale of its largest (null = the
+ * default) @typedef {{ w: number | null, h: number | null, s?: number | null }} PaneSize */
 /** @typedef {{ v: 4, side: { box: PaneSize, pages: Record<PageId, PaneSize>, scaled?: 1 | 2 }, vert: { box: PaneSize, pages: Record<PageId, PaneSize> } }} LayoutV4 */
 
 export const PAGE_IDS = /** @type {const} */ (["generating", "gallery", "queue", "loras", "png"]);
@@ -607,7 +581,7 @@ export const BOXHMIN = 240, // the prompt box's least height side by side (you s
   SLOTMAX = 0.7; // Vertical: the prompt box's tallest, a share of the window
 
 /** how far a size may stretch past its limit (the rubber band's d): one area gap, the same for every edge — enough to
- * feel the limit answer back (2026-11-02, the user: 160 px "way too big": it ran under the tab bar and off the window) */
+ * feel the limit answer back, never under the tab bar or off the window */
 export const RUBBER = 20;
 /** how far a picture may grow past its room while held: one part gap — never more than the gap between it and the tab
  * bar, the prompt's name or the window's edge, so the overshoot never covers another part */
@@ -639,7 +613,7 @@ export function paneDefault(pane, orient, room) {
 }
 
 /**
- * Every pane's least and largest size, in ONE place (they were literals scattered over five edge gestures).
+ * Every pane's least and largest size, in ONE place.
  * @param {"box" | PageId} pane
  * @param {"w" | "h"} axis
  * @param {object} c
@@ -657,7 +631,7 @@ export function limits(pane, axis, c) {
     H = c.roomH;
   const r = (/** @type {number} */ lo, /** @type {number} */ hi) => ({ lo: Math.min(lo, hi), hi });
   if (pane === "box") {
-    if (axis === "w") return r(Math.max(PWMIN, c.boxWLo ?? 0), W); // its bottom row's need (boxWLeast); no cap of its own (it was 900 px side by side): the room's ends
+    if (axis === "w") return r(Math.max(PWMIN, c.boxWLo ?? 0), W); // its bottom row's need (boxWLeast); no cap of its own: the room's ends
     return c.orient === "side" ? r(BOXHMIN, H) : r(c.least ?? BOXHMIN, Math.round((c.winH ?? H) * SLOTMAX));
   }
   if (axis === "h") return r(isFitPage(pane) ? picLeastH() : PANELHMIN, H);
@@ -741,8 +715,7 @@ export function trade(d, a, b, la, lb) {
  * Saved layouts of v3 (one width per role, heights elsewhere) → v4 (a size per pane × page × orientation). Once, at
  * start-up. v3's picture height caps were shares of the room; v4 keeps px (a size you set means that size).
  * @param {any} L the saved layout (S.lay, v3) @param {object} o
- * The prompt box's height is never kept (2026-11-01, the user: it hugs its text unless an expand button is on), so the
- * old pph / sch don't carry over: box.h stays null.
+ * v3's kept prompt heights (pph / sch) don't carry over: box.h starts null (its text's).
  * @param {number} o.roomH the picture's room height now (side by side) @param {number} o.vroomH the same in Vertical
  * @returns {LayoutV4}
  */
@@ -767,13 +740,11 @@ export function layoutPrefsV4(L, o) {
   };
 }
 
-/* ======================= the single layout pass (v0.7c C, ux-review/16-layout-pass.md) =======================
-   One pure function: the state in, every rectangle out (the page's pane, the picture, the prompt box, the tab bar,
-   each edge's handle). The appliers only write what it returns; nothing measures the screen to place things.
-   Three steps: the sizes at rest (rule 2), a drag's change to them (rule 3), the rectangles from the sizes (4–7).
-   A drag is a constraint (DEVLOG DD-2026-11-03-6): the grabbed edge at the pointer, the rest by the layout's rules —
-   on a centred axis the opposite side mirrors it; where the drag fights the anchor (Vertical: the picture's top) the
-   opposite side holds and the release settles. */
+/* ======================= the single layout pass (ux-review/16-layout-pass.md) =======================
+   ARCHITECTURE › the single layout pass. One pure function: the state in, every rectangle out. Three steps: the sizes
+   at rest (rule 2), a drag's change to them (rule 3), the rectangles from the sizes (4–7). A drag is a constraint
+   (DD-2026-11-03-6): the grabbed edge at the pointer, the rest by the layout's rules — on a centred axis the opposite
+   side mirrors it; where the drag fights the anchor (Vertical: the picture's top) the opposite side holds. */
 
 /** @typedef {{ x: number, y: number, w: number, h: number }} Rect */
 /**
@@ -787,7 +758,7 @@ export function layoutPrefsV4(L, o) {
  * @property {{ w: number, wLo: number, text: number, least: number, hi?: number, h?: number | null, title?: number, foot?: number, place?: BoxPlace,
  *   mode?: "" | "full" | "match" | "fit", anchor?: "top" | "mid" | "bot" }} box the prompt box: your width (and its
  *   least), its text's height (its least: ~2 lines; its largest in Vertical: hi), your height (h — Custom: a height you
- *   set by its edge, decision A, DEVLOG DD-2026-11-09-2; null: its mode decides), its mode, its anchor by the picture;
+ *   set by its edge, DD-2026-11-09-2; null: its mode decides), its mode, its anchor by the picture;
  *   in Vertical its name row over it (title: from the name's top to the box) and the LoRA row under it (foot)
  * @property {{ w: number, h: number }} bar the tab bar
  * @property {number} strip the edit buttons' strip beside the picture (part of the picture's pane: DEVLOG DD-2026-11-03-5)
@@ -852,10 +823,8 @@ function sidePlace(s, T, CH) {
     ...s.box.place,
   };
 }
-/** the room: the window less its edge gap, under the tab bar's row @param {PassState} s */
 /** Vertical: what lies between the pane's bottom and the box's top — the page's status row (a picture's), the pair
- * gap, the box's name row — ONE definition, for the sizes and the places alike (C4b step 1b: the box sat one bare gap
- * under the picture, the name row on it) @param {PassState} s */
+ * gap, the box's name row — ONE definition, for the sizes and the places alike @param {PassState} s */
 function vGap(s) {
   return (s.page.row ?? 0) + s.gap.pair + (s.box.title ?? 0);
 }
@@ -895,10 +864,9 @@ function restSizes(s) {
       const leastW = s.picLeast * page.ratio;
       if (RW - bw - gap.pair - stripRoom(s) < leastW) bw = Math.max(s.box.wLo, RW - gap.pair - stripRoom(s) - leastW); // the box gives last
     }
-    /* the largest: side by side, beside the box; in Vertical, with the box at its least. No scale kept = the default:
-       the largest in both layouts — the picture first (C4 rule 2; the user, 2026-11-09: "in vertical, reset grows the
-       prompt box and not the pic — we optimise for the biggest pic"); in Vertical the box then fits its text in what's
-       left (it used to size the picture so the box kept its whole text: Reset grew the box) */
+    /* the largest: side by side, beside the box; in Vertical, with the box at its least. No scale kept = the largest in
+       both layouts — the picture first (C4 rule 2: we optimise for the biggest picture); in Vertical the box then fits
+       its text in what's left */
     const L = largestPic(s, bw, vert ? s.box.least : bh);
     largest.w = L.w;
     largest.h = L.h;
@@ -919,14 +887,12 @@ function restSizes(s) {
 }
 
 /** side by side, the room a picture's buttons' strip reserves: its width on BOTH sides of the centred pair, so the pair
- * never moves in for it (B15, the user's (a), 2026-11-03). ONE definition — the largest, the drags' limits, the box's
- * give — they had one strip each, in six copies @param {PassState} s */
+ * never moves in for it (B15). ONE definition: the largest, the drags' limits, the box's give @param {PassState} s */
 const stripRoom = s => (s.page.kind === "pic" ? 2 * s.strip : 0);
 /**
  * A picture's largest: its ratio fitted into the room the box leaves (side by side: beside the box; Vertical: above
  * the box at the height given). Side by side it keeps the strip's room on both sides of the centred pair, so the pair
- * never has to move in for it: browsing, a picture's centre stays put (the user, 2026-10-31; B15, (a) the user's pick
- * 2026-11-03 — the widest picture a strip narrower rather than its centre shifting).
+ * never has to move in for it: browsing, a picture's centre stays put (B15).
  * @param {PassState} s @param {number} bw the box's width @param {number} bh the box's height (Vertical)
  */
 function largestPic(s, bw, bh) {
@@ -1000,16 +966,15 @@ function dragSizes(s, z) {
     const right = s.dock === "right",
       cx = L + RW / 2, // the group is centred: its middle stays (a drag of an outer edge mirrors on the far side)
       /* by its own outer edges: beside the box as it is — an outer edge takes no room from the other pane, only the
-         shared edge trades (the user, DEVLOG DD-2026-11-07-1) */
+         shared edge trades (DD-2026-11-07-1) */
       pageOwnHi = Math.min(pageHi.w, RW - gap.pair - z.bw - stripRoom(s), pic ? CH * ratio : Infinity),
       boxWHi = RW - gap.pair - pageLo.w - stripRoom(s);
     if (d.edge === "shared") {
       /* the shared edge, at the pointer (mid-gap): the pane it moves away from grows, up to its own largest, and the other
          is PUSHED at its own width — the group stays centred, so the grown pane's far side mirrors (DD-6) and both sides'
          empty room is used; once the pair fills the room, the pushed pane gives, down to its least; then the rubber band
-         (one rule for every edge, the user, DEVLOG DD-2026-11-10-2: the dragged pane gets what it asks for — it traded
-         inside the group's width at once, and the room beside the box was unreachable). Held, the layout is the rest
-         layout of the sizes it keeps: letting go moves nothing */
+         (one rule for every edge, DD-2026-11-10-2). Held, the layout is the rest layout of the sizes it keeps: letting go
+         moves nothing */
       const sw = pic ? strip : 0,
         [lw0, rw0] = right ? [z.pw + sw, z.bw] : [z.bw, z.pw + sw],
         boxLim = { lo: s.box.wLo, hi: boxWHi },
@@ -1085,13 +1050,13 @@ function dragSizes(s, z) {
         hHi = Math.min(pageHi.h, CH, pic ? pageOwnHi / ratio : Infinity);
       setPageH(hWant, hHi);
     } else if (who === "box" && (side === "top" || side === "bottom")) {
-      out.boxGive = boxGive(s, side, d.at); // the box's height is its text's: nothing to set, the edge only gives
+      out.boxGive = boxGive(s, side, d.at); // through the pass it only gives (its height is held as card.hHold: edges.js)
     }
   } else {
-    /* Vertical (C4c, ux-review/16-layout-pass.md C4 rule 4): the shared edge trades room between the page and the box
-       inside the group's height at the press (the box's bottom holds); an outer edge takes no room from the other pane —
-       it grows into the free room only, then the rubber band (DD-2026-11-07-1); the box's bottom sets its height (yours:
-       Custom, decision A). The box sits under the page's KEPT bottom: a stretch is the grabbed edge's feedback only */
+    /* Vertical (16-layout-pass.md C4 rule 4): the shared edge trades room between the page and the box inside the
+       group's height at the press (the box's bottom holds); an outer edge takes no room from the other pane — it grows
+       into the free room only, then the rubber band (DD-2026-11-07-1); the box's bottom sets its height (Custom). The
+       box sits under the page's KEPT bottom: a stretch is the grabbed edge's feedback only */
     const cx = L + RW / 2,
       g = vGap(s),
       foot = s.box.foot ?? 0,
@@ -1103,9 +1068,8 @@ function dragSizes(s, z) {
     if (d.edge === "shared") {
       /* the edge at the pointer (mid-gap): the page's bottom. The box's bottom holds where it was at the press — except
          that the box at its own size pushes it down into the empty room under it; only past the room's bottom does it
-         give, down to its least (the give-way order on every edge: the empty room is no one's, it goes first — the
-         user, DEVLOG DD-2026-11-09-19; it traded at once, and a short page left the room unreachable). Up, the box takes
-         the room (the trade) */
+         give, down to its least (the give-way order on every edge: the empty room is no one's, it goes first —
+         DD-2026-11-09-19). Up, the box takes the room (the trade) */
       const roomB = T + CH - foot, // the lowest the box's bottom goes
         hi = Math.min(pageHi.h, roomB - T - g - s.box.least, widest),
         lo = Math.max(pageLo.h, groupB - T - g - boxHi);
@@ -1145,8 +1109,8 @@ function dragSizes(s, z) {
 }
 
 /**
- * The box's height edges: its height is its text's, so they only give (the rubber band), measured from where the edge
- * rests. @param {PassState} s @param {string} side @param {number} at
+ * A box height edge held through the pass: only the give (the rubber band), measured from where the edge rests. (Side
+ * by side these edges hold card.hHold instead — edges.js — so the pass meets none today.) @param {PassState} s @param {string} side @param {number} at
  */
 function boxGive(s, side, at) {
   const rest = layoutPass({ ...s, drag: null }).box,
@@ -1224,8 +1188,7 @@ export function layoutPass(s) {
     if (pic) pr = { x: right ? px + strip : px, y: py, w: z.pw, h: z.ph };
     /* the box's place beside its pane: ONE rule, the card's (cardPlacement; its modes: cardHeightMode) — anchored to
        the pane's lines (its top, its centre, its bottom with the status row under it), the box with its LoRA row as one
-       group, held still while you work in it or hold its height edge (C2b's rest: the pass had a copy of its own, which
-       knew none of that) */
+       group, held still while you work in it or hold its height edge */
     const pl = sidePlace(s, T, CH),
       over = pr || page;
     anchors = {
@@ -1241,7 +1204,7 @@ export function layoutPass(s) {
             CH: pl.chips,
             held: pl.held,
             heldPin: pl.heldPin,
-            /* its spec's height: yours if you set one (Custom: its top or bottom edge, C6), else its text's — never below
+            /* its spec's height: yours if you set one (Custom: its top or bottom edge), else its text's — never below
                its least (the card's text measure included it) */
             naturalH: Math.max(s.box.h ?? s.box.text, s.box.least),
             pos: s.box.anchor || "mid",
@@ -1261,7 +1224,7 @@ export function layoutPass(s) {
     /* the pane, its status row, the gap, the name row, the box — held: under the page's kept bottom (dragSizes) */
     box = { x: L + (RW - bw) / 2, y: z.boxY ?? py + z.ph + vGap(s), w: bw, h: z.bh };
   }
-  /* the box's height edges give (its height is its text's) */
+  /* a box height edge held through the pass: its give (boxGive) */
   if (z.boxGive) {
     /* never past the gap to the next part: the tab bar's row above, the window's edge below */
     if (s.drag?.edge === "box.top") {
@@ -1279,7 +1242,7 @@ export function layoutPass(s) {
       : { boxW: keptBw, w: z.keptPw, h: z.keptPh };
   if (vert) kept.boxH = z.keptBh; // Vertical: the box's height a release keeps (Custom: the shared edge, its bottom)
 
-  /* the tab bar: its own row at the top, centred over the picture (or the panel), inside the window (Q1: A) */
+  /* the tab bar: its own row at the top, centred over the picture (or the panel), inside the window */
   const over = pr || page,
     barR = { x: clampTo(over.x + over.w / 2 - bar.w / 2, L, R - bar.w), y: gap.area, w: bar.w, h: bar.h };
 

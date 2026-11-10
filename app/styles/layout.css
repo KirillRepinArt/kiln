@@ -1,11 +1,7 @@
 /* ======================= app layout =======================
-   ONE coordinate space (v0.7c, DEVLOG DD-2026-11-08-1; the platforms' rule — UIKit's transition container, Flutter's
-   Overlay: what moves in a transition lives in one still space, never in a parent that moves too). Side by side the page
-   area (#right) is the whole room and never moves; the prompt column (#lcol) is a layer over the same room — the box in
-   it has its own width (--cw) and is glued one gap from the page's plate (layout.js promptFollow); the column takes the
-   pointer only on its parts. Vertical (.stacked) the same (C4b): the page's pane on top, the box placed under it by the
-   layout pass (cardlayout.js) — it used to be a grid row of its own sized by the box's text, and the page took what
-   was left. */
+   ONE coordinate space (ARCHITECTURE › the single layout pass; DD-2026-11-08-1): the page area (#right) is the whole
+   room and never moves; the prompt column (#lcol) is a layer over the same room, taking the pointer only on its parts.
+   Vertical (.stacked) the same: the page's pane on top, the box placed under it by the layout pass. */
 .app {
   position: relative;
   z-index: var(--z-win-app);
@@ -36,7 +32,7 @@
 }
 /* Vertical: the box's parts are centred by LAYOUT (their sides move about the centre as --sw changes), never by a
    transform of their own — the column alone transforms the box (its motion: the glue, the lift, the token), and what
-   measures layout reads their place true (a translateX(-50%) on each put the token's scale point 380 px off, L1b) */
+   measures layout reads their place true (DD-2026-11-11-6) */
 .app.stacked #lcol > #left,
 .app.stacked #lcol > .ltitle,
 .app.stacked #lcol > .pgrip,
@@ -60,9 +56,8 @@
 #lcol > .pgrip {
   pointer-events: auto;
 } /* its empty parts let the pointer through to the page under it (side by side the column is the whole room; in
-     Vertical the picture's edges); only these parts take it — NAMED, not "every child": the drag's snap ghosts
-     (invisible once it ends, keeping their size) sat over the box's right edge after a drag to the bottom dock and took
-     its pointer (2026-11-01) */
+     Vertical the picture's edges); only these parts take it — NAMED, not "every child": an invisible child keeping its
+     size would take the pointer */
 .app.stacked #lcol > .ltitle {
   pointer-events: none;
 }
@@ -88,11 +83,10 @@
    .pedge: the panels' vertical edges (po = the prompt's outer edge, pi/ri = the divider, ro = the picture area's outer
    edge); .sedge: the prompt box's sides in Vertical; .hedge: the picture's own edges; .vedge: the prompt's
    height (in Vertical its top is the shared edge's band on the box). No grip bars: the outline (part of its pane: .plate::before, .left::after) and the cursor are the signal. */
-/* EVERY PANE'S RESIZE BAND, ONE RULE (B19 — the user, 2026-11-10, DEVLOG DD-2026-11-10-5: the picture's rule for every
-   pane): an edge's band runs from 1 px inside it out to the pane's dashed outline (--outline-out) — "the target you're
-   shown is the target" (Fitts); never over the pane's content, never a thumb (the platforms: macOS / Windows resize from
-   an invisible band at the window's frame). The box's name row and LoRA row lie one tight gap away — the outline's
-   distance — so its bands end where they begin (they're its grip). strips.test.mjs checks it */
+/* EVERY PANE'S RESIZE BAND, ONE RULE (B19, DD-2026-11-10-5): an edge's band runs from 1 px inside it out to the pane's
+   dashed outline (--outline-out) — the target you're shown is the target (Fitts); never over the pane's content, never
+   a thumb. The box's name row and LoRA row lie one tight gap away — the outline's distance — so its bands end where they
+   begin (they're its grip). strips.test.mjs checks it */
 .app {
   --band-out: var(--outline-out);
   --band: calc(var(--outline-out) + var(--space-px));
@@ -142,8 +136,8 @@
 .app.stacked .sedge {
   display: block;
 }
-/* Vertical: a panel's side edges (Queue, LoRAs, PNG Info — v0.7c): it widens or narrows about its centre, like the
-   picture's in Vertical — as long as the panel's sides (B11; the column is the whole room's height since C4b) */
+/* Vertical: a panel's side edges (Queue, LoRAs, PNG Info): it widens or narrows about its centre, like the picture's —
+   as long as the panel's sides (B11) */
 .vpedge {
   display: none;
   position: absolute;
@@ -159,7 +153,7 @@
 }
 .vpedge.r {
   left: calc(var(--pr, 0px) - var(--space-px));
-} /* on the panel's sides (--pl / --pr: sizeFrame's panelStyle) — the area is the whole room (C2b's rest) */
+} /* on the panel's sides (--pl / --pr: sizeFrame's panelStyle) — the area is the whole room */
 .app.stacked .phedge {
   left: var(--pl, 0px);
   right: auto;
@@ -169,7 +163,7 @@
   display: block;
   pointer-events: auto;
 }
-/* a panel's top and bottom edges (Queue, LoRAs, PNG Info — v0.7c): where the panel is (sizeFrame sets --pt / --pb) */
+/* a panel's top and bottom edges (Queue, LoRAs, PNG Info): where the panel is (sizeFrame sets --pt / --pb) */
 .phedge {
   display: none;
   position: absolute;
@@ -249,19 +243,15 @@
   top: calc(var(--band-out) * -1);
   bottom: auto;
 } /* the box's top band: up to its name row (one tight gap — the outline's distance); the name row and the LoRA row are
-     its grip (B19 retired L3's "the gap between the name and the box grips") — no thumb, as on every pane */
+     its grip — no thumb, as on every pane */
 .left.hm .vedge {
   display: none;
-} /* Vertical: the edge the page and the box share has a band on each pane, as side by side's divider (B19b — the user,
-   2026-11-10: "only pic edge is active, the top of the promptbox isn't available"): the page's bottom (.hedge.b /
-   .phedge.b) and the box's top (.vedge.t), both the one shared edge (edges.js). It was one handle in the gap between
-   them (#hsplit), and the box's top band hidden (B10, when it did nothing) */
-/* the resize outline is PART OF ITS PANE (v0.7c, the user 2026-11-02: "dash outline should be a part of the box
-   object"): drawn by the pane itself — the plate (the picture in Generating / the Gallery, the panel elsewhere) and the
-   prompt box — it moves with it in the same frame, whatever moves it. It used to be two fixed outlines, each chasing
-   its pane with its own frame loop: a frame late (it lagged behind the box while resizing). One outline gap out,
-   concentric. On the plate it keeps the plate's layer (the page's bottom one, under the panels). Hover intent: in
-   quickly, out late and slowly, so sweeping across an edge never makes it blink. outlines.js decides which show. */
+} /* Vertical: the edge the page and the box share has a band on each pane, as side by side's divider (B19b): the page's
+   bottom (.hedge.b / .phedge.b) and the box's top (.vedge.t), both the one shared edge (edges.js) */
+/* the resize outline is PART OF ITS PANE: drawn by the pane itself — the plate (the picture in Generating / the
+   Gallery, the panel elsewhere) and the prompt box — so it moves with it in the same frame, whatever moves it. One
+   outline gap out, concentric; on the plate it keeps the plate's layer. Hover intent: in quickly, out late and slowly,
+   so sweeping across an edge never makes it blink. outlines.js decides which show. */
 .plate::before,
 .left::after {
   content: "";
@@ -290,6 +280,5 @@
 .app.stacked .stage {
   pointer-events: none;
 }
-/* …and what draws or acts takes its press by ITS OWN rule (R4, the re-read 2026-11-10: a named list here gave the
-   pointer back — the ✕ and the eye fell off it when they moved to the floating layer, and every click zoomed): the frame,
-   the status row, Show prompt, a panel, the tab bar's buttons, the picture's controls each say pointer-events: auto */
+/* …and what draws or acts takes its press by ITS OWN rule — ARCHITECTURE › who takes the pointer: the frame, the
+   status row, Show prompt, a panel, the tab bar's buttons, the picture's controls each say pointer-events: auto */

@@ -10,13 +10,13 @@
   overflow: hidden;
   background: transparent;
   pointer-events: auto; /* it takes its press itself (R4: containers pass the pointer, what draws or acts takes it) */
-} /* no line of its own: the ring is the plate's rim (glass.css .rim) — drawn here it sat in the switch's fading
-     contents (it popped in after a switch, 2026-10-27; it faded in with the Gallery's picture, 2026-10-28) */
+} /* no line of its own: the ring is the plate's rim (glass.css .rim) — drawn here it would sit in a switch's fading
+     contents */
 .frame.has {
   background: var(--grey-13);
 }
-/* its place and size are moved by one owner (framebox.js: glides on --lay-t / --lay-e, a crop-and-reveal frame by
-   frame) — no CSS transition. The canvas is drawn at the box's final size, so it never stretches */
+/* its place and size are moved by one owner (framebox.js, on the driver: rearrange.js) — no CSS transition. The canvas
+   is drawn at the box's final size, so it never stretches */
 .frame.reveal {
   animation: develop var(--t-1100) var(--ease);
 }
@@ -39,7 +39,7 @@
   display: block;
 }
 /* the picture's canvas fills the box (cover): while the box glides to another shape, no corner is ever empty. #cvx is
-   the picture on show, copied, fading out over the next one (live.js) */
+   the picture on show, copied, fading out over the next one (pictures.js) */
 #cv,
 #cvx {
   position: absolute;
@@ -104,8 +104,8 @@
   text-align: center;
   pointer-events: none;
 }
-/* text in an empty plate — Generating's next picture, PNG Info's drop: one style (the user, 2026-10-28: "sure one is
-   usable, other is info, but it's the plate that's usable, the text is just info") */
+/* text in an empty plate — Generating's next picture, PNG Info's drop: one style (the plate is what's usable, the text
+   is just information) */
 .platehint {
   font-size: var(--fs-15);
   color: var(--grey-74);
@@ -164,9 +164,8 @@
   z-index: var(
     --z-pic-controls
   ); /* over the picture, under every edge handle (the picture's strips 7, the panes' 8: one home per strip) */
-  /* a control takes its own press: it doesn't inherit a container's pass-through (Vertical's empty boxes let the pointer
-     through, layout.css — on the floating layer these two inherited it and every click fell to the picture: the zoom,
-     the user, 2026-11-10) */
+  /* a control takes its own press: it doesn't inherit a container's pass-through — ARCHITECTURE › who takes the
+     pointer */
   pointer-events: auto;
 }
 .cbtn {
@@ -293,8 +292,8 @@ body:has(#stage.tools) .gtools .side button {
   width: 19px;
   height: 19px;
 }
-/* the arrows: on the picture (a fixed layer stage.js places every frame; the one you click holds while you're on it),
-   and in the full-size viewer */
+/* the arrows: on the picture (a fixed layer browse.js placeNavs places every frame; the one you click holds while
+   you're on it), and in the full-size viewer */
 .nav {
   position: absolute;
   top: 50%;

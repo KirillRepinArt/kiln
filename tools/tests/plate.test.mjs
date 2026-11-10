@@ -652,14 +652,23 @@ export async function snapHeldUntilTheLastMotion(k, t) {
     if(performance.now()-t0<2600)s();else res(o)},0))})()})`);
   /* the layout switch is the tab switch's system since T2b (no View Transition, decision 0014): it runs while the plate
      moves after the layout was asked for */
+  /* the rule (T4, the re-read 2026-11-10): the glides are off on EVERY frame the plate moves, and come back as the last
+     motion ends — not on a timer. (Its wording was "no gap from the tab switch until the layout switch has landed, + 250
+     ms": the old timer's sw.T + 300 bridged the still moment between the two switches and outlasted the landing — the
+     margin and the bridge encoded the guess, not the rule) */
   const lastMorph = s.filter(x => x[2]).at(-1),
-    gap = lastMorph ? s.filter(x => x[0] <= lastMorph[0] + 250 && x[0] >= 20 && !x[1]) : [];
+    loose = s.filter(x => x[2] && !x[1]),
+    free = lastMorph ? s.find(x => x[0] > lastMorph[0] && !x[1]) : null;
   t.ok(!!lastMorph, "the layout switch ran", s.slice(0, 3));
   t.ok(
-    gap.length === 0,
-    "the glides stay off from the tab switch until the layout switch has landed (no gap)",
-    gap.slice(0, 5).map(x => x[0]),
+    !loose.length,
+    "the glides stay off on every frame the plate moves",
+    loose.slice(0, 5).map(x => x[0]),
   );
+  t.ok(!!free && free[0] - lastMorph[0] < 100, "…and come back as the last motion ends (no timer past it)", {
+    lastMorph: lastMorph?.[0],
+    free: free?.[0],
+  });
 }
 snapHeldUntilTheLastMotion.opts = { step: 0.05 };
 

@@ -190,7 +190,13 @@ export function frame() {
           f.classList.remove("reveal");
           void f.offsetWidth;
           f.classList.add("reveal");
-          setTimeout(() => f.classList.remove("reveal"), 1200);
+          /* its own end (T4's rule: a motion's end is the motion's) — a timer of 1200 ms ran past its 1100 ms animation */
+          const done = (/** @type {AnimationEvent} */ e) => {
+            if (e.target !== f) return; // its own animation (one inside the frame bubbles here too)
+            f.classList.remove("reveal");
+            f.removeEventListener("animationend", done);
+          };
+          f.addEventListener("animationend", done);
           setJustDone(null);
         }
       });

@@ -5,7 +5,7 @@ import { fadeCol, lay, sizeFrame, snapHold, standIn } from "./layout.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
 import { frameBox, frameHold, pictureChange } from "./framebox.js";
-import { plateBefore, switchGlide } from "./plate.js";
+import { plateBefore, switchGlide, switchLanded } from "./plate.js";
 import { placeNavs } from "./browse.js";
 import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
 import { S } from "./state.js";
@@ -139,14 +139,15 @@ export function tabGo(fn, layout = false) {
   /* the box: a layout switch changes its relation to the plate (glued, fading through); a tab switch keeps it — it rides
      the travelling plate (layout.js promptFollow, in the driver's frames; it slid on a clock of its own, slideCol) */
   if (layout) fadeCol(/** @type {import("./leave.js").Copy} */ (stand), sw, { plate: from, dock: dock0 });
-  /* once it has landed: one more layout, still without glides (measured mid-switch, the prompt column's Vertical shift
-     rested a pixel off), then the layout's glides come back */
-  setTimeout(() => {
+  /* once it HAS landed — its own end (plate.js switchLanded: its animations over, the driver idle), not a timer's guess
+     (T4: it let go sw.T + 300 ms in, and in between every change jumped) — the layout's glides come back, THEN one more
+     layout (measured mid-switch, the prompt column's Vertical shift rested a pixel off): a correction now glides */
+  switchLanded().then(() => {
     if (me !== tabGos) return; // a newer tab switch holds it now
-    sizeFrame();
     snapHold("tab", 0);
     document.documentElement.classList.remove("tabswitch");
-  }, sw.T + 300);
+    sizeFrame();
+  });
 }
 let tabGos = 0; // tab switches started so far
 /** each page's opacity and box on screen now — read before a switch changes anything (after, the classes already say

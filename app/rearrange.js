@@ -215,6 +215,7 @@ function start() {
     run = null;
     for (const fn of followers) fn();
     followers.clear();
+    landed();
     return;
   }
   run = /** @type {any} */ ({ t0, T: plan.T, q: plan.q, moves, plan });
@@ -238,6 +239,22 @@ function tick(now) {
   promptFollow(true); // the prompt box, glued one gap from the plate (C2b)
   if (end) run = null; // (before the followers' last call: they see the run has landed)
   for (const fn of followers) fn(); // what rides the travellers (a switch's views, the box's relation change)
-  if (end) followers.clear();
-  else raf = requestAnimationFrame(tick);
+  if (end) {
+    followers.clear();
+    landed();
+  } else raf = requestAnimationFrame(tick);
+}
+/* ---------- the driver says when it has landed (T4, the re-read: a motion's end is the motion's, never a timer's
+   guess — a tab switch let go of its hold sw.T + 300 ms after it started, and in between every change jumped) ---------- */
+/** who waits for the driver to have nothing moving @type {(() => void)[]} */
+let idlers = [];
+function landed() {
+  if (run || queued) return;
+  const w = idlers;
+  idlers = [];
+  for (const fn of w) fn();
+}
+/** resolves once nothing is moving on the driver (at once if nothing is, or is asked to) @returns {Promise<void>} */
+export function whenIdle() {
+  return run || queued ? new Promise(r => idlers.push(r)) : Promise.resolve();
 }

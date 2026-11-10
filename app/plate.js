@@ -10,7 +10,7 @@ import { $, offsetIn } from "./dom.js";
 import { frameBox, frameHold, frameTarget } from "./framebox.js";
 import { fade, seenNow } from "./fade.js";
 import { fades, shapeSteps } from "./layoutmath.js";
-import { bend, flush, follow, moving, progress, progressXY, travel } from "./rearrange.js";
+import { bend, flush, follow, moving, progress, progressXY, travel, whenIdle } from "./rearrange.js";
 import { SPACE } from "./tokens.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number, panel: boolean }} Box in #right's coordinates */
@@ -152,6 +152,13 @@ export function plateBefore() {
    ~200 ms waiting for the contents. The CSS keeps the look (fades, corners), not the motion */
 /** @type {Animation[]} */
 let switchAnims = [];
+/** the switch now has landed: its own animations are over (or were cancelled by a newer switch) and the driver has
+ * nothing left to move — its end, from its owners (T4: tabs.js let go of the layout's hold on a timer, sw.T + 300 ms)
+ * @returns {Promise<void>} */
+export async function switchLanded() {
+  await Promise.all(switchAnims.map(a => a.finished.catch(() => {})));
+  await whenIdle();
+}
 // the running switch's own animations (a new switch replaces them)
 
 /** @typedef {{ old: HTMLElement, oldRect: DOMRect, neu: HTMLElement, shown?: Map<HTMLElement, { o: number, r: DOMRect }> }} Views

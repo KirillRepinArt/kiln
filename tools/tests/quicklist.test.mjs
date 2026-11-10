@@ -643,3 +643,25 @@ export async function leavingCopiesGo(k, t) {
   t.ok(after === 0, "once the switches are over: no copy left", after);
   await k.ev(`(setDock("left"),1)`);
 }
+
+/* T4 (the re-read, 2026-11-10): a switch lets go of the layout's hold at its own end — when its motion and its contents'
+   fade are over (plate.js end: html.switching goes) — not on a timer (sw.T + 300 ms: in those ~300 ms after it had
+   ended, a change jumped instead of gliding) */
+export async function switchLetsGoWhenLanded(k, t) {
+  await k.job("[fill:446688] a", { ar: "3:4", steps: 1 });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.ev(`(document.querySelector('.tab[data-v="queue"]').click(),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1500);
+  const r = await k.ev(`new Promise(res=>{const t0=performance.now(),rows=[];
+    document.querySelector('.tab[data-v="gallery"]').click();
+    (function f(){rows.push({t:performance.now()-t0,sw:document.documentElement.classList.contains("switching"),snap:document.body.classList.contains("laysnap")});
+      if(performance.now()-t0<2500)requestAnimationFrame(f);else res(rows)})()})`);
+  const ended = r.find((x, i) => i > 0 && r[i - 1].sw && !x.sw)?.t ?? NaN,
+    free = r.find(x => x.t >= ended && !x.snap)?.t ?? Infinity;
+  t.ok(ended > 50, "the switch ran, then ended", { ended: Math.round(ended) });
+  t.ok(free - ended < 60, "the layout's hold lets go as the switch ends (a frame or so — not ~300 ms later)", {
+    ended: Math.round(ended),
+    free: Math.round(free),
+  });
+}

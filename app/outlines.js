@@ -1,10 +1,9 @@
 // @ts-check
-/* Kiln · which panes show their outline has ONE owner (2026-11-01). The outline round a pane shows what a gesture
-   changes: the picture's or the panel's (its plate: #plate.hint) and the prompt box's (#left.hint). The outline is part
-   of the pane (CSS draws it: layout.css), so it moves with the pane in the same frame (2026-11-02). Each handle declares the panes it resizes (RESIZES); a gesture holds its panes
-   here, and an outline shows while ANY holder wants it. Before, each handle toggled the outlines itself — side by side
-   the divider outlined only the picture while Vertical's outlined both, and moving the box and the divider each
-   turned the box's outline off under the other */
+/* Kiln · which panes show their outline: ONE owner. The outline round a pane shows what a gesture changes: the
+   picture's or the panel's (its plate: #plate.hint) and the prompt box's (#left.hint). The outline is part of the pane
+   (CSS draws it: layout.css), so it moves with the pane in the same frame. Each handle declares the panes it resizes
+   (RESIZES); a gesture holds its panes here, and an outline shows while ANY holder wants it (one gesture letting go
+   never turns off another's) */
 import { $ } from "./dom.js";
 
 /** @typedef {"pic" | "box"} Pane */
@@ -21,8 +20,7 @@ export const RESIZES = {
   phedge: ["pic"], // a panel's top / bottom edges
 };
 /** every resize handle (the edges you drag): pressing one is resizing, never working IN the prompt (layout.js's
- * pressCard hold) nor gripping it (cardlayout.js) — one list (2026-11-01: the divider sits inside the prompt's column, and
- * its press held the prompt still while the picture's room changed: the prompt overlapped the picture) */
+ * pressCard hold) nor gripping it (cardlayout.js) — one list (the divider sits inside the prompt's column) */
 export const HANDLES = ".pedge,.sedge,.vedge,.hedge,.vpedge,.phedge";
 /** @type {Map<string, Pane[]>} who holds which panes */
 const holds = new Map();

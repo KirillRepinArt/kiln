@@ -137,9 +137,8 @@ export async function startEditor() {
     /* the scrollbar's room is kept only while the text overflows: a prompt that fits has no gutter strip at all (on glass
     it flickered as the backdrop repainted). Sticky until clearly short again, so the edge of fitting doesn't toggle it */
     const ovf = () => {
-      /* decided at rest, like the thumb (B21): while the box's size moves the text overflows the area mid-way; switching
-         overflow on then added the scrollbar's gutter, the text rewrapped narrower and the box twitched (the user,
-         2026-11-09: "the prompt's top edge starts jumping when overflow is triggered") — decided once it settles */
+      /* decided at rest, like the thumb (B21): mid-move the text overflows for a moment, and the gutter it added
+         rewrapped the text and twitched the box */
       if (wrap.classList.contains("settling")) return;
       const sc = view.scrollDOM,
         on = wrap.classList.contains("ovf"),
@@ -158,7 +157,7 @@ export async function startEditor() {
           history(),
           EditorView.lineWrapping,
           /* the line being edited is never under a fade: scrolling to the caret keeps it a fade's length clear of both
-             edges (the user, 2026-11-09: "this is the active line where I have the cursor — it should be clean") */
+             edges */
           EditorView.scrollMargins.of(() => {
             const f = parseFloat(getComputedStyle(wrap).getPropertyValue("--edge-fade")) || 0;
             return { top: f, bottom: f };
@@ -266,11 +265,8 @@ export async function startEditor() {
         t = setTimeout(() => view.requestMeasure(), 120);
       }).observe(wrap);
       $("left").addEventListener("transitionend", () => view.requestMeasure());
-      /* the scrollbar's thumb is decided at rest only (B21, the user 2026-11-06: switching to a long prompt, the thumb
-         flickered while the box grew — the text overflowed the box mid-way, not at the end). ONE decider: the box's
-         height / top moving (their transitions running) hides it; the overflow at rest shows it */
-      /* the box's size and place move on the rearrangement (cardlayout.js boxAt → rearrange.js): settled once it
-         stops moving there */
+      /* the scrollbar's thumb is decided at rest only (B21: mid-grow the text overflows for a moment). ONE decider: the
+         box moving on the rearrangement (cardlayout.js boxAt → rearrange.js) hides it; the overflow at rest shows it */
       const settled = () => {
         if (moving("box")) requestAnimationFrame(settled);
         else {
@@ -278,8 +274,7 @@ export async function startEditor() {
           ovf(); // the overflow at rest decides the gutter
         }
       };
-      /* told at the change (the same task: no frame shows the thumb); cleared when its transitions end — or at once
-         when there were none (a snap) */
+      /* told at the change (the same task: no frame shows the thumb); cleared once the box stops moving */
       onBoxSizing = () => {
         wrap.classList.add("settling");
         requestAnimationFrame(() => requestAnimationFrame(settled));

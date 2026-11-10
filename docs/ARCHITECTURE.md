@@ -80,6 +80,10 @@ file only declares (each has an `init<File>()` that `main.js` calls). The parts:
     way, `tabs.js` `goView(page, then)` → `tabGo` (the switch's one motion); nothing calls `showView` on its own
   - the prompt column's place (its glue to the plate; its catch-up after a hold on the driver, `"hug"`; its lift while you move it, L1 `liftCol`): `layout.js` (`promptFollow` → `colApply`); moving the box is one drag over seven places, `cardlayout.js` (lanes and a footprint from `layout.js` `placeFor` — the layout pass for that place, which asks `orient()` / `dockNow()`, the one place that says which layout is computed);
     "the layout lands at once" during a motion: `layout.js` `snapHold`
+  - **what the frame's canvas shows: `pictures.js` alone** (R3, 2026-11-10) — `frameRender` / `frameRenderPicture`
+    (a render and its previews; progress.js only fetches them), `frameDone` (a finished picture), `frameEmpty`,
+    `frameForget`; so its rules (a held picture fades off the new one, into an empty frame a picture fades in) hold for
+    every picture. `tools/tests/unit/onepicture.test.mjs` fails on a write to `#cv` anywhere else
   - the frame's two pictures' opacity (the old one's copy leaving, the new one coming): `pictures.js`; a shape change's
     crop-and-reveal drives the frame through `framebox.js` and hands its timing over (`morph.js`)
   - paint order: one list in `styles/glass.css` ("the page's layers")

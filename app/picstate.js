@@ -18,7 +18,7 @@ import { current, doneById, doneList, lastDone } from "./jobs.js";
 import { lay, sizeFrame } from "./layout.js";
 import { frameBox, pictureChange } from "./framebox.js";
 import { loadJob, peekHide } from "./peek.js";
-import { preload, xfadeSnap } from "./pictures.js";
+import { frameForget, preload, xfadeSnap } from "./pictures.js";
 import { peekJob } from "./prompt.js";
 import { S } from "./state.js";
 import { goView, tabSync } from "./tabs.js";
@@ -83,9 +83,7 @@ export function pvPrune() {
   pvSync();
 }
 function resetCv() {
-  const c = $("cv");
-  c.dataset.d = "";
-  c.dataset.j = "";
+  frameForget(); // the picture owner's (pictures.js, R3)
 }
 /* the picture fades out over what comes next (live.js: a snapshot on #cvx) */
 /* — always, by the one fade, also when nothing comes after it (✕, the Generating tab with no render): it used to just

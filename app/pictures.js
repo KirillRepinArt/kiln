@@ -337,3 +337,67 @@ export const shownMissing = () => {
   const d = shownDone();
   return d && d.missing ? d : null;
 };
+
+/* ---------- THE frame's picture (R3, the re-read 2026-11-10 — DEVLOG DD-2026-11-10-11) ----------
+   One entry for what the frame's canvas shows — a render's pictures, a finished picture, nothing — so its rules (an
+   old picture held over the new one fades off it; a picture into an empty frame fades in) hold for every picture and
+   can't be bypassed. The render's previews were drawn by progress.js itself, past those rules: the first one popped in
+   (a call was added there — G11); its tags (what the canvas shows) were written in two modules. progress.js still
+   fetches the previews (polling is its job) and hands them over here. */
+const frameCv = () => /** @type {HTMLCanvasElement} */ ($("cv"));
+/** the render whose pictures the frame is showing, before its first one has landed @type {number | null} */
+let renderFirst = null;
+/** a render takes the frame (its job id): the canvas is emptied and tagged for it — false if it already has it
+ * @param {number} jobId */
+export function frameRender(jobId) {
+  const c = frameCv();
+  if (+(/** @type {string} */ (c.dataset.j)) === jobId) return false;
+  c.dataset.j = String(jobId);
+  c.dataset.d = "";
+  c.dataset.want = "";
+  c.width = 1;
+  c.height = 1;
+  renderFirst = jobId;
+  return true;
+}
+/** a render's picture (a preview) on the frame — only while that render still has it; over a held picture that one
+ * fades off it, into an empty frame its first picture fades in (as any picture there: xfadeGo)
+ * @param {number} jobId @param {HTMLImageElement} im */
+export function frameRenderPicture(jobId, im) {
+  const c = frameCv();
+  if (+(/** @type {string} */ (c.dataset.j)) !== jobId) return;
+  const first = renderFirst === jobId;
+  renderFirst = null;
+  drawTo(c, im, false, "render:" + jobId);
+  if (overlayShows()) xfadeEnd();
+  else if (first) pictureIn();
+}
+/** a finished picture on the frame — if it isn't on it already (its id and whether its file is gone); `before` runs
+ * once it's claimed and before it's painted (the frame laid out for it first) — false if it was there
+ * @param {import("./types.js").Job} j @param {() => void} [before] */
+export function frameDone(j, before) {
+  const c = frameCv();
+  if (c.dataset.d == String(j.id) && c.dataset.m === String(!!j.missing)) return false;
+  c.dataset.d = String(j.id);
+  c.dataset.m = String(!!j.missing);
+  c.dataset.j = "";
+  if (before) before();
+  paint(c, j);
+  return true;
+}
+/** nothing on the frame: the canvas emptied and untagged */
+export function frameEmpty() {
+  const c = frameCv();
+  if (c.width > 1) {
+    c.width = 1;
+    c.height = 1;
+  }
+  c.dataset.d = "";
+  c.dataset.j = "";
+}
+/** forget what the frame shows (its next picture is drawn again, whatever it is) */
+export function frameForget() {
+  const c = frameCv();
+  c.dataset.d = "";
+  c.dataset.j = "";
+}

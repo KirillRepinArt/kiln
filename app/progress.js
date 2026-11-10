@@ -9,7 +9,15 @@ import { sizeFrame } from "./layout.js";
 import { api } from "./live.js";
 import { loadJob } from "./peek.js";
 import { PV, browsed, justDone, onShow, picMode, pv, setJustDone, shownDone } from "./picstate.js";
-import { drawTo, frameEmptied, frameFilled, missUI, overlayShows, paint, pictureIn, xfadeEnd } from "./pictures.js";
+import {
+  frameDone,
+  frameEmptied,
+  frameEmpty,
+  frameFilled,
+  frameRender,
+  frameRenderPicture,
+  missUI,
+} from "./pictures.js";
 import { SEC_PER_STEP, SIZES } from "./presets.js";
 import { draft, peekJob } from "./prompt.js";
 import { S } from "./state.js";
@@ -109,14 +117,8 @@ export function frame() {
       const f = $("frame");
       f.classList.add("has");
       frameFilled(); // the empty frame's text fades (pictures.js owns it, F2)
-      if (+(/** @type {string} */ ($("cv").dataset.j)) !== j.id) {
-        $("cv").dataset.j = /** @type {any} */ (j.id);
-        $("cv").dataset.d = "";
-        $("cv").dataset.want = "";
+      if (frameRender(j.id)) {
         lastPrev = 0;
-        const c = /** @type {HTMLCanvasElement} */ ($("cv"));
-        c.width = 1;
-        c.height = 1;
         sizeFrame();
       }
       if (j.preview_rev && j.preview_rev !== lastPrev && !prevLoading) {
@@ -125,14 +127,7 @@ export function frame() {
         const i = new Image();
         const jid = j.id;
         i.onload = () => {
-          if (+(/** @type {string} */ ($("cv").dataset.j)) === jid && picMode() === "live") {
-            const first = lastPrev === 0; // the render's first picture
-            drawTo(/** @type {HTMLCanvasElement} */ ($("cv")), i, false, "render:" + jid);
-            /* over a held picture: that one fades off it; into an empty frame its first picture fades in, as any picture
-               does there (pictures.js xfadeGo) — it appeared at once (the tracer, once an empty canvas read as unseen) */
-            if (overlayShows()) xfadeEnd();
-            else if (first) pictureIn();
-          }
+          if (picMode() === "live") frameRenderPicture(jid, i); // the picture owner draws it, by its rules (R3)
           lastPrev = r;
           prevLoading = false;
         };
@@ -188,10 +183,7 @@ export function frame() {
   if (picMode() !== "live") {
     const d = onShow();
     if (d && S.view === "gen") {
-      if (/** @type {any} */ ($("cv").dataset.d) != d.id || $("cv").dataset.m !== String(!!d.missing)) {
-        $("cv").dataset.d = /** @type {any} */ (d.id);
-        $("cv").dataset.m = String(!!d.missing);
-        $("cv").dataset.j = "";
+      frameDone(d, () => {
         sizeFrame();
         if (justDone === d.id) {
           const f = $("frame");
@@ -201,20 +193,13 @@ export function frame() {
           setTimeout(() => f.classList.remove("reveal"), 1200);
           setJustDone(null);
         }
-        paint(/** @type {HTMLCanvasElement} */ ($("cv")), d);
-      }
+      });
       $("frame").classList.add("has");
       frameFilled();
     } else if (!d) {
       $("frame").classList.remove("has");
       frameEmptied();
-      const c = /** @type {HTMLCanvasElement} */ ($("cv"));
-      if (c.width > 1) {
-        c.width = 1;
-        c.height = 1;
-        c.dataset.d = "";
-        c.dataset.j = "";
-      }
+      frameEmpty();
     }
   }
   missUI(onShow());

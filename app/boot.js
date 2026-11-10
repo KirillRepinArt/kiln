@@ -28,41 +28,43 @@ export function esc(s) {
     c => /** @type {Record<string, string>} */ ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
   );
 }
-/** @param {string} [at] a tab (data-v): the message goes under it */
-function toastPlace(at) {
-  const el = $("toast").style;
-  if (at) {
-    const r = /** @type {Element} */ (document.querySelector(`.tab[data-v="${at}"]`)).getBoundingClientRect();
-    Object.assign(el, {
-      left: Math.round(r.left + r.width / 2) + "px",
-      right: "auto",
-      top: Math.round(r.bottom + 10) + "px",
-      bottom: "auto",
-      transform: "translateX(-50%)",
-    });
+/** ONE placer for messages (M1): the toast and the finished note. It writes their left / top and nothing else — each
+ * message centres itself on that point in its own CSS (translateX(-50%); the finished note slides in by its transform).
+ * With an anchor (a tab, the Layout button): centred under it, 10 px below. Without one: centred on the prompt box, at
+ * the window's top or bottom, whichever is farther from it — side by side; in Vertical the window's top-right corner
+ * (centred on the box there, the top is the tab bar's and the bottom the box's own: open, 2026-11-10). (Two placers had
+ * the "under a tab" rule each: toastPlace and doneNote.) @param {HTMLElement} el
+ * @param {Element | null} [anchor] */
+export function placeMessage(el, anchor) {
+  const s = el.style,
+    EDGE = 24;
+  if (anchor) {
+    const r = anchor.getBoundingClientRect();
+    s.left = Math.round(r.left + r.width / 2) + "px";
+    s.top = Math.round(r.bottom + 10) + "px";
     return;
   }
   if (document.querySelector(".app.stacked")) {
-    Object.assign(el, { left: "auto", right: "24px", top: "24px", bottom: "auto", transform: "none" });
+    s.left = Math.round(innerWidth - EDGE - el.offsetWidth / 2) + "px";
+    s.top = EDGE + "px";
     return;
   }
   const L = $("left").getBoundingClientRect(),
     T = $("ltitle").getBoundingClientRect(),
     C = $("chips").getBoundingClientRect(),
     low = Math.max(L.bottom, C.height ? C.bottom : 0);
-  Object.assign(el, { left: Math.round(L.left + L.width / 2) + "px", right: "auto", transform: "translateX(-50%)" });
-  if (T.top - 18 >= innerHeight - low - 18) Object.assign(el, { top: "24px", bottom: "auto" });
-  else Object.assign(el, { top: "auto", bottom: "24px" });
+  s.left = Math.round(L.left + L.width / 2) + "px";
+  s.top = (T.top >= innerHeight - low ? EDGE : Math.round(innerHeight - EDGE - el.offsetHeight)) + "px";
 }
 /** @type {number | undefined} */
 let tt;
-/** a message; with btn + fn, a button (Undo …); at = under that tab
- * @param {string} m @param {string} [btn] @param {(() => void) | null} [fn] @param {string} [at] */
+/** a message; with btn + fn, a button (Undo …); at = under that tab (its data-v) or that element
+ * @param {string} m @param {string} [btn] @param {(() => void) | null} [fn] @param {string | Element} [at] */
 export function toast(m, btn, fn, at) {
-  $("toastMsg").textContent = m;
-  toastPlace(at);
   const b = $("toastBtn");
-  b.textContent = btn || "";
+  $("toastMsg").textContent = m;
+  b.textContent = btn || ""; // before it's placed: its width counts
+  placeMessage($("toast"), typeof at === "string" ? document.querySelector(`.tab[data-v="${at}"]`) : at);
   b.onclick = () => {
     fn && fn();
     $("toast").classList.remove("show");

@@ -100,6 +100,23 @@ export async function toastsByThePrompt(k, t) {
     "your draft's news: under the Generating tab",
     { dr, gt },
   );
+  /* M1: one placer — a reset's message under the Layout button; the finished note under the Generating tab */
+  const under = async (sel, of, name) => {
+    const [m, a] = [await k.rect(sel), await k.rect(of)];
+    t.ok(
+      Math.abs(m.left + m.width / 2 - (a.left + a.width / 2)) <= 2 && m.top > a.bottom && m.top - a.bottom < 30,
+      name,
+      { m, a },
+    );
+  };
+  await k.ev(`($("layBtn").click(),1)`);
+  await k.sleep(300);
+  await k.ev(`(document.querySelector('#layMenu [data-lay="reset"]').click(),1)`);
+  await k.sleep(400);
+  await under("#toast", "#layBtn", "a reset's message: under the Layout button");
+  await k.ev(`(doneNote({ id: 7, status: "done" }),1)`);
+  await k.sleep(500);
+  await under("#donenote", '.tab[data-v="gen"]', "the finished note: under the Generating tab, by the same placer");
   await k.ev(`(setDock("below"),1)`);
   await k.sleep(1000);
   await k.ev(`(toast("again"),1)`);

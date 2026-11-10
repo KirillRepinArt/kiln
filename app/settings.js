@@ -77,7 +77,7 @@ export function initSettings() {
     resetLayout();
     goView("gen");
     $("modal").classList.remove("show");
-    toast("Layout reset");
+    toast("Layout reset", "", null, $("layBtn")); // under the Layout button (M1)
   };
   /* the Layout button by the gear: a small menu (docking joins it in Phase 2a step 2) */
   (function () {
@@ -96,7 +96,7 @@ export function initSettings() {
       m.classList.remove("show");
       if (a.dataset.lay === "reset") {
         resetLayout();
-        toast("Sizes reset — the default widths, centred");
+        toast("Sizes reset — the default widths, centred", "", null, $("layBtn"));
       } else setDock(/** @type {"left" | "right" | "below"} */ (a.dataset.lay)); // index.html's data-lay
     });
     window.layMenuUI = () =>

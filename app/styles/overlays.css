@@ -71,7 +71,7 @@
 .toast {
   position: fixed;
   left: 50%;
-  bottom: var(--space-6);
+  top: 0; /* its place: boot.js placeMessage (left / top only) */
   transform: translateX(-50%);
   background: var(--grey-27);
   border: 1px solid var(--grey-35);

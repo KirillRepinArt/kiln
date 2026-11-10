@@ -1,6 +1,6 @@
 // @ts-check
 /* Kiln · queue actions sent to the server: add, Vary, stop, remove, delete (with Undo), rename, pause, reorder */
-import { renderAll, toast } from "./boot.js";
+import { placeMessage, renderAll, toast } from "./boot.js";
 import { $ } from "./dom.js";
 import { models } from "./forge.js";
 import { doneList, dropJobs, jobs } from "./jobs.js";
@@ -209,9 +209,7 @@ export function doneNote(j) {
   if (S.privacy) im.removeAttribute("src");
   else im.src = /** @type {string} */ (urlFor(j));
   dn.classList.toggle("priv", !!S.privacy);
-  const r = /** @type {Element} */ (document.querySelector('.tab[data-v="gen"]')).getBoundingClientRect();
-  dn.style.left = Math.round(r.left + r.width / 2) + "px";
-  dn.style.top = Math.round(r.bottom + 10) + "px";
+  placeMessage(dn, document.querySelector('.tab[data-v="gen"]')); // under the Generating tab (M1: the one placer)
   dn.classList.add("show");
   dnHideIn(6000);
 }

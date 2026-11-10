@@ -1,9 +1,7 @@
 // @ts-check
-/* Kiln · what sits around the picture frame follows the frame — one owner (2026-10-28). The status row (#prog), "Show
-   prompt" (#showP), the edit buttons (#gtools) and the edge strips (#hedges) have no motion of their own: they are placed
-   from where the frame IS, every frame anything moves (the plate's follow loop, a crop-and-reveal's steps, sizeFrame).
-   They used to be placed at the frame's TARGET with CSS glides of their own (or none): on a crop-and-reveal the frame
-   moved frame by frame and they jumped to the end or slid on another clock */
+/* Kiln · what sits around the picture frame follows the frame — one owner (ARCHITECTURE › the picture frame's box).
+   The status row (#prog), "Show prompt" (#showP), the edit buttons (#gtools) and the edge strips (#hedges) have no
+   motion of their own: they are placed from where the frame IS, in the frame the frame is written (never at its target) */
 import { $, offsetIn } from "./dom.js";
 import { frameBox } from "./framebox.js";
 import { placeNavs } from "./browse.js";
@@ -62,9 +60,8 @@ export function placeAround() {
 }
 
 /* the page's side handles side by side (.pedge.ri by the prompt, .pedge.ro on the outer side): each a strip on its
-   pane's side, as long as that side (B11; they ran the column's height, 64–406 px past the picture or a shortened panel).
-   ONE writer of their rect: a picture's from the plate as it is this frame (they glide with it — they used to jump to
-   the target); a panel's from its box, laid out by sizeFrame (its one owner, as for its top / bottom handles) */
+   pane's side, as long as that side (B11). ONE writer of their rect: a picture's from the plate as it is this frame; a
+   panel's from its box, laid out by sizeFrame (its one owner, as for its top / bottom handles) */
 /** @param {{ l: number, t: number, w: number, h: number } | null} plate the plate, the stage's coordinates */
 function placeSideEdges(plate) {
   const app = /** @type {HTMLElement} */ (document.querySelector(".app")),
@@ -86,8 +83,8 @@ function placeSideEdges(plate) {
     /* every pane's resize band, one rule (B19, layout.css): from 1 px inside the edge out to the outline */
     B = SPACE.outline;
   if (rp.classList.contains("paneled")) {
-    /* a panel: its box (sizeFrame's — the pass's place in the still area since C2b), the same offsets the CSS gave
-       them on the area's sides; its top / bottom handles span its width */
+    /* a panel: its box (sizeFrame's — the pass's place), the same offsets the CSS gives them on the area's sides; its
+       top / bottom handles span its width */
     const o = offsetIn(rp, rt),
       L = o.x,
       R = L + rp.offsetWidth,
@@ -100,8 +97,7 @@ function placeSideEdges(plate) {
   }
   if (!plate) return;
   const { l, t, w, h } = plate;
-  /* a picture: the plate in the area's coordinates — the same band (it was its own: 6 px past the outline, the inner one
-     reaching in from the gap) */
+  /* a picture: the plate in the area's coordinates — the same band */
   const o = offsetIn($("stage"), rt),
     L = o.x + l,
     R = L + w,

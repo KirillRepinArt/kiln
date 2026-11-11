@@ -655,7 +655,8 @@ export async function snapHeldUntilTheLastMotion(k, t) {
     (function s(){requestAnimationFrame(()=>setTimeout(()=>{const p=$("plate").getBoundingClientRect(),
       mv=!!pr&&(Math.abs(p.left-pr.left)+Math.abs(p.top-pr.top)+Math.abs(p.width-pr.width)+Math.abs(p.height-pr.height))>0.5;pr=p;
       o.push([Math.round(performance.now()-t0),b.classList.contains("laysnap"),performance.now()-t0>500&&mv,
-        [Math.round(p.left),Math.round(p.top),Math.round(p.width),Math.round(p.height)],document.documentElement.classList.contains("switching")]);
+        [Math.round(p.left),Math.round(p.top),Math.round(p.width),Math.round(p.height)],document.documentElement.classList.contains("switching"),
+        [$("rpanel").style.width,minRight(),(c=>Math.round((c[c.length-1].getBoundingClientRect().right-c[0].getBoundingClientRect().left)*100)/100)(document.querySelector(".tabs").children)]]);
     if(performance.now()-t0<2600)s();else res(o)},0))})()})`);
   /* the layout switch is the tab switch's system since T2b (no View Transition, decision 0014): it runs while the plate
      moves after the layout was asked for */
@@ -668,7 +669,8 @@ export async function snapHeldUntilTheLastMotion(k, t) {
     free = lastMorph ? s.find(x => x[0] > lastMorph[0] && !x[1]) : null;
   t.ok(!!lastMorph, "the layout switch ran", s.slice(0, 3));
   /* T4's open row (2026-11-11): it fails about once in four long runs and never alone — the report says what moved:
-     the plate's box in the frames round the first loose one, when the hold let go, whether a switch still ran */
+     the plate's box in the frames round the first loose one, when the hold let go, whether a switch still ran, and the
+     panel's written width, its floor (minRight) and the tab bar's width (CI on 2ba446f: it landed 606 wide, rest 607) */
   const i = loose.length ? s.indexOf(loose[0]) : -1,
     letGo = s.find((x, j) => j > 0 && !x[1] && s[j - 1][1]);
   t.ok(!loose.length, "the glides stay off on every frame the plate moves", {
@@ -677,7 +679,9 @@ export async function snapHeldUntilTheLastMotion(k, t) {
     around:
       i < 0
         ? []
-        : s.slice(Math.max(0, i - 3), i + 4).map(x => [x[0], x[1] ? "held" : "free", x[3], x[4] ? "switching" : ""]),
+        : s
+            .slice(Math.max(0, i - 3), i + 4)
+            .map(x => [x[0], x[1] ? "held" : "free", x[3], x[4] ? "switching" : "", x[5]]),
   });
   t.ok(!!free && free[0] - lastMorph[0] < 100, "…and come back as the last motion ends (no timer past it)", {
     lastMorph: lastMorph?.[0],

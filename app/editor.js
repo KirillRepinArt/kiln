@@ -162,7 +162,12 @@ export async function startEditor() {
             const f = parseFloat(getComputedStyle(wrap).getPropertyValue("--edge-fade")) || 0;
             return { top: f, bottom: f };
           }),
-          EditorView.contentAttributes.of({ spellcheck: "true", autocorrect: "off", autocapitalize: "off" }),
+          EditorView.contentAttributes.of({
+            "spellcheck": "true",
+            "autocorrect": "off",
+            "autocapitalize": "off",
+            "aria-label": "Prompt",
+          }),
           placeholder("Describe what you want to see…"),
           deco,
           ro.of(EditorState.readOnly.of(false)),

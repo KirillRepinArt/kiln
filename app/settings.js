@@ -2,7 +2,7 @@
 /* Kiln · settings, themes */
 import { toast } from "./boot.js";
 import { layoutLeft } from "./cardlayout.js";
-import { $, hit, target, targetField } from "./dom.js";
+import { $, hit, qa, target, targetField } from "./dom.js";
 import { current } from "./jobs.js";
 import { resetLayout, setDock, sizeFrame } from "./layout.js";
 import { renderPills } from "./pills.js";
@@ -51,7 +51,22 @@ export function applyGlass() {
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
+/** a Settings row is a <label> and then its control (or a box holding it): the label names that control — for the rows in
+ *  index.html and those added later (live.js: the upscaler's) */
+export function labelRows() {
+  let n = 0;
+  for (const lb of qa(".fg > label")) {
+    const next = lb.nextElementSibling,
+      c = /** @type {HTMLElement | null} */ (
+        next && (next.matches("input,select,textarea") ? next : next.querySelector("input,select,textarea"))
+      );
+    if (!c) continue;
+    c.id ||= "set-" + (c.dataset.set || ++n);
+    /** @type {HTMLLabelElement} */ (lb).htmlFor = c.id;
+  }
+}
 export function initSettings() {
+  labelRows();
   S.theme = skinName(S.theme); // a saved skin from before the cleanup → the nearest one
   /** @type {HTMLSelectElement} */ ($("sTheme")).value = S.theme;
   $("sTheme").onchange = e => {

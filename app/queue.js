@@ -67,10 +67,10 @@ export function renderQueueInner() {
   for (const id of [...QS]) if (!done.some(j => j.id === id)) QS.delete(id);
   $("qwrap").classList.toggle("selecting", QS.size > 0);
   /** one row's markup @param {Job} j @param {"run" | "pend" | "done"} k its section */
-  const item = (j, k) => `<div class="qi${j.missing ? " missing" : ""}" data-id="${j.id}">
-   ${k === "pend" ? '<span class="handle" title="Drag to reorder">⋮⋮</span>' : ""}${k === "done" ? `<span class="qck" data-ck="${j.id}" data-tip="Select (Ctrl-click · Shift-click a range)"></span>` : ""}
+  const item = (j, k) => `<div class="qi${j.missing ? " missing" : ""}" data-id="${j.id}" data-click-for=".p">
+   ${k === "pend" ? '<span class="handle" title="Drag to reorder">⋮⋮</span>' : ""}${k === "done" ? `<button class="qck" data-ck="${j.id}" role="checkbox" aria-checked="${QS.has(j.id) ? "true" : "false"}" data-tip="Select (Ctrl-click · Shift-click a range)"></button>` : ""}
    <div class="th">${j.missing ? "gone" : j.status === "done" ? `<span data-tth="${j.id}"></span>` : j.status === "cancelled" ? "stopped" : j.status === "error" ? '<span class="failed">failed</span>' : k === "run" ? `<svg class="hg" viewBox="0 0 24 24" fill="none"><g class="hgg"><path d="M7 3.5h10M7 20.5h10" stroke="currentColor" stroke-width="1.6"/><path d="M8 3.5c0 4 1.6 6 4 8.5-2.4 2.5-4 4.5-4 8.5M16 3.5c0 4-1.6 6-4 8.5 2.4 2.5 4 4.5 4 8.5" stroke="currentColor" stroke-width="1.4"/><path class="st" d="M9.2 6.5h5.6c-.4 2-1.3 3.4-2.8 4.9-1.5-1.5-2.4-2.9-2.8-4.9z" fill="currentColor"/><path class="sb" d="M12 14.2c1.8 1.9 2.7 3.6 3 6H9c.3-2.4 1.2-4.1 3-6z" fill="currentColor"/></g></svg><img class="lp" data-lp="${j.id}" alt="">` : "#" + j.id}</div>
-   <div class="body"><div class="p">${j.file ? `<b style="font-weight:600">${esc(j.file)}</b> · ` : ""}${esc((j.prompt || "").slice(0, 240))}</div>
+   <div class="body"><button class="p">${j.file ? `<b style="font-weight:600">${esc(j.file)}</b> · ` : ""}${esc((j.prompt || "").slice(0, 240))}</button>
    <div class="meta">${j.picks && j.picks.length ? `<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · ` : ""}${j.mp} MP · ${j.ar} · ${j.steps} ${j.steps === 1 ? "step" : "steps"} · <span class="seedc" data-seed="${j.seed}" data-tip="Click to copy the seed">seed ${j.seed}</span>${k === "pend" ? ` · ~${fmt(jEst(j))}` : ""}${j.missing ? ' · <span class="gone">file deleted</span>' : ""}</div>
    ${j.status === "error" ? `<div class="meta times fail">${j.finished ? `failed ${clock(j.finished)} · ` : ""}<span class="why">${esc(failWords(j))}</span></div>` : j.created || j.finished ? `<div class="meta times">${j.created ? `added ${clock(j.created)}` : ""}${j.finished && j.status === "done" ? ` · done ${clock(j.finished)}` : ""}${j.finished && j.started ? ` · took ${fmt((j.finished - j.started) / 1000)}` : ""}</div>` : ""}
    ${k === "run" ? '<div class="mini"><i></i></div>' : ""}</div>
@@ -242,7 +242,13 @@ export function qsUpdate() {
     W = $("qwrap");
   for (const id of [...QS]) if (!done.some(j => j.id === id)) QS.delete(id);
   W.classList.toggle("selecting", QS.size > 0);
-  qa(".qi", W).forEach(q => q.classList.toggle("sel", QS.has(Number(q.dataset.id))));
+  qa(".qi", W).forEach(q => {
+    const on = QS.has(Number(q.dataset.id));
+    q.classList.toggle("sel", on);
+    const ck = q.querySelector(".qck"),
+      v = on ? "true" : "false";
+    if (ck && ck.getAttribute("aria-checked") !== v) ck.setAttribute("aria-checked", v); // unchanged: untouched
+  });
   const h = $("qfin");
   if (h) {
     h.classList.toggle("qbar", QS.size > 0);

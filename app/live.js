@@ -11,6 +11,7 @@ import { PV, pv, shownDone } from "./picstate.js";
 import { imgs, inBin, shownMissing, urlFor } from "./pictures.js";
 import { frame } from "./progress.js";
 import { S, save } from "./state.js";
+import { labelRows } from "./settings.js";
 import { poll } from "./sync.js";
 import { goView, showView, tabGo } from "./tabs.js";
 
@@ -153,6 +154,7 @@ export async function startLive() {
   us.innerHTML = '<option value="2">×2</option><option value="1.5">×1.5</option><option value="4">×4</option>';
   usl.textContent = "Upscale by";
   for (const el of [upl, up, usl, us]) fg.insertBefore(el, fx); /* at the end of Output, above Appearance */
+  labelRows();
   for (const el of [up, us]) {
     el.addEventListener("change", () => {
       /** @type {Record<string, any>} */ (S.set)[/** @type {string} */ (el.dataset.set)] = el.value;

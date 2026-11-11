@@ -224,6 +224,7 @@ body.qdragging * {
    "on", a dot inside would read as a radio button (pick one) — in glass, an accent glass bead like the other glass
    buttons (it shows whole whenever a row is selected, so the box's hover fade never crosses its glass) */
 .qck {
+  padding: 0;
   position: relative;
   width: 20px;
   height: 20px;
@@ -370,6 +371,10 @@ body.glass .qck::before {
   min-width: 0;
 }
 .qi .p {
+  display: block;
+  width: 100%;
+  padding: 0;
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

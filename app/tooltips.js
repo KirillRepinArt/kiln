@@ -1,6 +1,6 @@
 // @ts-check
 /* Kiln · tooltips */
-import { $, hit } from "./dom.js";
+import { hit, qa } from "./dom.js";
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initTooltips() {
@@ -27,14 +27,10 @@ export function initTooltips() {
       { passive: true },
     );
     document.addEventListener("mouseover", e => {
-      const el = hit(e, "[title],[data-tip]");
+      const el = hit(e, "[data-tip]");
       if (el === cur) return;
       hide();
       if (!el) return;
-      if (el.hasAttribute("title")) {
-        el.dataset.tip = /** @type {string} */ (el.getAttribute("title"));
-        el.removeAttribute("title");
-      }
       const text = el.dataset.tip;
       if (!text) return;
       cur = el;
@@ -58,52 +54,76 @@ export function initTooltips() {
     });
     document.addEventListener("mousedown", hide);
     document.addEventListener("wheel", hide, { passive: true });
-    const TIPS = /** @type {Record<string, string>} */ ({
-      pMP: "Image size (megapixels)",
-      pAR: "Aspect ratio",
-      pST: "Sampling steps — scroll to nudge",
-      pSD: "Seed — random each job, or fixed",
-      pN: "How many images to queue — scroll to nudge",
-      play: "Add to queue (Ctrl+Enter)",
-      prog: "Click to see this image's prompt · the preview shows the last finished step",
-      stopBtn: "Stop this job",
-      csize: "Thumbnail size",
-      lsearch: "Search LoRAs by name",
-      gear: "Settings",
-      vclose: "Close (Esc)",
-    });
-    for (const id in TIPS) {
-      const el = $(id);
-      if (el && !el.title) el.dataset.tip = TIPS[id];
+    /* every tip set by rule, as its element appears (not on hover: an icon-only control's tip is its name, and a name
+       has to be there before anyone points at it). A tip the code sets on the element itself wins. */
+    const TIP_RULES = /** @type {[string, string][]} */ ([
+      ["#pMP", "Image size (megapixels)"],
+      ["#pAR", "Aspect ratio"],
+      ["#pST", "Sampling steps — scroll to nudge"],
+      ["#pSD", "Seed — random each job, or fixed"],
+      ["#pN", "How many images to queue — scroll to nudge"],
+      ["#play", "Add to queue (Ctrl+Enter)"],
+      ["#prog", "Click to see this image's prompt · the preview shows the last finished step"],
+      ["#stopBtn", "Stop this job"],
+      ["#csize", "Thumbnail size"],
+      ["#lsearch", "Search LoRAs by name"],
+      ["#gear", "Settings"],
+      ["#vclose", "Close (Esc)"],
+      ['.tab[data-v="gen"]', "The image being made, and the last result"],
+      ['.tab[data-v="gallery"]', "Your finished pictures — ← → to browse"],
+      ['.tab[data-v="queue"]', "Running, waiting and finished jobs"],
+      ['.tab[data-v="loras"]', "Your LoRA library"],
+      ['.tab[data-v="png"]', "Read settings from any Forge PNG"],
+      [".chip .cn", "Open in the LoRA library · drag to reorder"],
+      [".chip .cx", "Remove"],
+      [".star", "Favourite"],
+      ["[data-tg]", "On / off"],
+      [".card .img", "Click to switch on/off"],
+      [".fchips button", "Filter"],
+      [".qi .handle", "Drag to reorder"],
+      [".qi .body", "Peek at this prompt — change anything in it to make it yours"],
+    ]);
+    const CONTROL = "button,a[href],input,select,textarea,[role]";
+    /** one element's tip and name: a title becomes its tip (one attribute, one tooltip style); an icon-only control is
+     *  named by its tip — it follows when the tip changes; a symbol (★, ⋮⋮) isn't a name (ARCHITECTURE › a control's name)
+     *  @param {HTMLElement} el */
+    function named(el) {
+      const ti = el.getAttribute("title");
+      if (ti != null) {
+        if (!el.dataset.tip) el.dataset.tip = ti;
+        el.removeAttribute("title");
+      }
+      const tip = el.dataset.tip;
+      if (!tip || !el.matches(CONTROL)) return;
+      const words = /[\p{L}\p{N}]/u.test(el.textContent || ""),
+        label = el.getAttribute("aria-label");
+      if (!words && label !== tip) el.setAttribute("aria-label", tip);
+      else if (words && label === tip) el.removeAttribute("aria-label"); // its words are its name now
     }
-    const TABT = /** @type {Record<string, string>} */ ({
-      gen: "The image being made, and the last result",
-      gallery: "Your finished pictures — ← → to browse",
-      queue: "Running, waiting and finished jobs",
-      loras: "Your LoRA library",
-      png: "Read settings from any Forge PNG",
+    /** @param {Element} root */
+    function apply(root) {
+      if (!(root instanceof HTMLElement)) return;
+      for (const [sel, tip] of TIP_RULES) {
+        if (root.matches(sel) && !root.dataset.tip) root.dataset.tip = tip;
+        for (const el of qa(sel, root)) if (!el.dataset.tip) el.dataset.tip = tip;
+      }
+      named(root);
+      for (const el of qa("[data-tip],[title]", root)) named(el);
+    }
+    apply(document.body);
+    new MutationObserver(ms => {
+      for (const m of ms)
+        if (m.type === "attributes") named(/** @type {HTMLElement} */ (m.target));
+        else {
+          for (const n of m.addedNodes) if (n instanceof Element) apply(n);
+          const c = m.target instanceof HTMLElement && m.target.closest("[data-tip]");
+          if (c) named(/** @type {HTMLElement} */ (c)); // its content changed: words may have come or gone
+        }
+    }).observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["title", "data-tip"],
     });
-    /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".tab")).forEach(
-      t => (t.dataset.tip = TABT[/** @type {string} */ (t.dataset.v)]),
-    );
-    const CHIPT = (/** @type {Event} */ e) => {
-      const c = hit(e, ".chip .cn");
-      if (c && !c.dataset.tip) c.dataset.tip = "Open in the LoRA library · drag to reorder";
-      const x = hit(e, ".chip .cx");
-      if (x && !x.dataset.tip) x.dataset.tip = "Remove";
-      const s = hit(e, ".star");
-      if (s && !s.dataset.tip) s.dataset.tip = "Favourite";
-      const tg = hit(e, "[data-tg]");
-      if (tg && !tg.dataset.tip) tg.dataset.tip = "On / off";
-      const cd = hit(e, ".card .img");
-      if (cd && !cd.dataset.tip) cd.dataset.tip = "Click to switch on/off";
-      const fc = hit(e, ".fchips button");
-      if (fc && !fc.dataset.tip) fc.dataset.tip = "Filter";
-      const h = hit(e, ".qi .handle");
-      if (h && !h.dataset.tip) h.dataset.tip = "Drag to reorder";
-      const qi = hit(e, ".qi .body");
-      if (qi && !qi.dataset.tip) qi.dataset.tip = "Peek at this prompt — change anything in it to make it yours";
-    };
-    document.addEventListener("mouseover", CHIPT, true);
   })();
 }

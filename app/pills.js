@@ -57,7 +57,7 @@ export function renderPills() {
   $("popMP").innerHTML = ["0.5", "1.0", "1.5", "2.0"]
     .map(
       m =>
-        `<div class="opt ${m === v.mp ? "on" : ""}" data-v="${m}">${m} MP <small>~${SEC_PER_STEP[m]}s/step</small></div>`,
+        `<button class="opt ${m === v.mp ? "on" : ""}" data-v="${m}">${m} MP <small>~${SEC_PER_STEP[m]}s/step</small></button>`,
     )
     .join("");
   $("popAR").innerHTML = `<div class="rgrid">${RATIOS.map(r => {

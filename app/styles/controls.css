@@ -18,11 +18,12 @@
   flex: 0 1 auto;
   min-width: 0;
 }
+/* a pill is a box holding its face (a button filling it: the value) and its menu — a menu of controls can't sit inside a
+   button */
 .pill {
   position: relative;
   flex: 0 0 auto;
   height: 38px;
-  padding: 0 var(--space-3);
   border-radius: var(--r-pill);
   background: transparent;
   display: flex;
@@ -50,6 +51,13 @@
   z-index: var(--z-box-open);
 }
 .pill .val {
+  align-self: stretch;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  border-radius: inherit;
   font-size: var(--fs-15);
   line-height: 1.1;
   white-space: nowrap;

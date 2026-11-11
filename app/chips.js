@@ -21,7 +21,7 @@ export function renderChips() {
       (pk.loras || [])
         .map(x => {
           const l = LORAS.find(l => l.name === x.name);
-          return `<span class="chip ${l && l.folder === "people" ? "face" : ""}" data-n="${x.name}"><span class="cn">${esc(l ? l.display : x.name)}</span><span class="cw">${fmtW(x.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`;
+          return `<span class="chip ${l && l.folder === "people" ? "face" : ""}" data-n="${x.name}"><button class="cn">${esc(l ? l.display : x.name)}</button><span class="cw">${fmtW(x.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`;
         })
         .join("") + '<button class="chip chipadd" data-tip="Add a LoRA — opens the library">+</button>';
     $("chips").insertAdjacentHTML(
@@ -35,7 +35,7 @@ export function renderChips() {
     .sort((a, b) => (a.onAt || 0) - (b.onAt || 0))
     .map(
       l =>
-        `<span class="chip ${l.folder === "people" ? "face" : ""}" data-n="${l.name}" draggable="true"><span class="cn">${esc(l.display)}</span><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`,
+        `<span class="chip ${l.folder === "people" ? "face" : ""}" data-n="${l.name}" draggable="true"><button class="cn">${esc(l.display)}</button><span class="cw" data-tip="Drag or scroll to change · click to type">${fmtW(l.w)}</span><button class="cx" title="Remove">${IC.x}</button></span>`,
     )
     .join("");
   $("chips").insertAdjacentHTML(

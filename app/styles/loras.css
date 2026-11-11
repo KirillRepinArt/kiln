@@ -48,6 +48,7 @@
   white-space: nowrap;
 }
 .sw {
+  padding: 0;
   width: 34px;
   height: 20px;
   border-radius: var(--r-10);

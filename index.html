@@ -133,22 +133,25 @@
               <span class="badge" id="badge">0</span>
             </button>
             <div class="pills">
-              <button class="pill" id="pMP"
-                ><span class="val" id="vMP"></span><div class="pop" id="popMP"></div
-              ></button>
-              <button class="pill" id="pAR"
-                ><span class="val" id="vAR"></span><div class="pop" id="popAR"></div
-              ></button>
-              <button class="pill" id="pST"
-                ><span class="val" id="vST"></span><div class="pop" id="popST" style="min-width: 260px"></div
-              ></button>
-              <button class="pill" id="pSD"
-                ><span class="val"><span class="il">Seed</span><span id="vSD"></span></span
+              <div class="pill" id="pMP"
+                ><button class="val"><span id="vMP"></span></button><div class="pop" id="popMP"></div
+              ></div>
+              <div class="pill" id="pAR"
+                ><button class="val"><span id="vAR"></span></button><div class="pop" id="popAR"></div
+              ></div>
+              <div class="pill" id="pST"
+                ><button class="val"><span id="vST"></span></button
+                ><div class="pop" id="popST" style="min-width: 260px"></div
+              ></div>
+              <div class="pill" id="pSD"
+                ><button class="val"
+                  ><span><span class="il">Seed</span><span id="vSD"></span></span></button
                 ><div class="pop" id="popSD" style="min-width: 240px"></div
-              ></button>
-              <button class="pill pn" id="pN"
-                ><span class="val" id="vN"></span><div class="pop" id="popN" style="min-width: 260px"></div
-              ></button>
+              ></div>
+              <div class="pill pn" id="pN"
+                ><button class="val"><span id="vN"></span></button
+                ><div class="pop" id="popN" style="min-width: 260px"></div
+              ></div>
             </div>
           </div>
         </section>
@@ -183,15 +186,15 @@
             ></button>
             <div class="pop laymenu" id="layMenu"
               ><div class="lrow"
-                ><div class="opt" data-lay="left" data-tip="Prompt on the left of the picture"
+                ><button class="opt" data-lay="left" data-tip="Prompt on the left of the picture"
                   ><svg class="lic" viewBox="0 0 28 20" fill="none" stroke="currentColor" stroke-width="1.4">
                     <rect x="2" y="6" width="8" height="8" rx="1.6" fill="currentColor" stroke="none" />
-                    <rect x="12.7" y="2.7" width="13" height="14.6" rx="2" /></svg></div
-                ><div class="opt" data-lay="right" data-tip="Prompt on the right of the picture"
+                    <rect x="12.7" y="2.7" width="13" height="14.6" rx="2" /></svg></button
+                ><button class="opt" data-lay="right" data-tip="Prompt on the right of the picture"
                   ><svg class="lic" viewBox="0 0 28 20" fill="none" stroke="currentColor" stroke-width="1.4">
                     <rect x="18" y="6" width="8" height="8" rx="1.6" fill="currentColor" stroke="none" />
-                    <rect x="2.3" y="2.7" width="13" height="14.6" rx="2" /></svg></div
-                ><div class="opt" data-lay="below" data-tip="Prompt below the picture"
+                    <rect x="2.3" y="2.7" width="13" height="14.6" rx="2" /></svg></button
+                ><button class="opt" data-lay="below" data-tip="Prompt below the picture"
                   ><svg class="lic" viewBox="0 0 28 20" fill="none" stroke="currentColor" stroke-width="1.4">
                     <rect x="6.7" y="1.7" width="14.6" height="10.6" rx="2" />
                     <rect
@@ -202,12 +205,12 @@
                       rx="1.4"
                       fill="currentColor"
                       stroke="none"
-                    /></svg></div
+                    /></svg></button
                 ><div class="lsep"></div
-                ><div class="opt" data-lay="reset" data-tip="Reset sizes — the default widths, centred"
+                ><button class="opt" data-lay="reset" data-tip="Reset sizes — the default widths, centred"
                   ><svg class="lic" viewBox="0 0 28 18" fill="none" stroke="currentColor" stroke-width="1.4">
                     <path d="M18.5 9a4.5 4.5 0 1 1-1.5-3.4" />
-                    <path d="M18.5 3.5v3h-3" /></svg></div></div></div
+                    <path d="M18.5 3.5v3h-3" /></svg></button></div></div
           ></span>
           <button class="gear" id="gear" title="Settings"
             ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -247,7 +250,7 @@
             </div>
             <div class="prog" id="prog">
               <div class="track" id="track"><div class="fill" id="fill"></div></div>
-              <div class="meta onsky"
+              <div class="meta onsky" data-click-for="#showP"
                 ><span id="ptxt"></span><span class="eta" id="peta"></span>
                 <button class="resume" id="resumeBtn" title="Resume the queue">Resume</button
                 ><button class="stop" id="stopBtn" title="Stop this job"
@@ -305,10 +308,9 @@
 
           <div class="view panelview" id="v-png">
             <div class="pwrap">
-              <div class="drop" id="drop" data-tip="Reads the generation settings Forge stores inside the file"
-                ><span class="platehint">Drop a PNG here, or click to choose</span
-                ><input type="file" id="file" accept="image/png" hidden
-              /></div>
+              <button class="drop" id="drop" data-tip="Reads the generation settings Forge stores inside the file"
+                ><span class="platehint">Drop a PNG here, or click to choose</span></button
+              ><input type="file" id="file" accept="image/png" hidden />
               <button class="pclear" id="pClear" title="Close this PNG" style="display: none"
                 ><svg viewBox="4.8 4.8 14.4 14.4" stroke="currentColor" stroke-width="2.4" fill="none">
                   <path d="M6 6l12 12M18 6L6 18" /></svg
@@ -542,9 +544,9 @@
     ><button class="nav gnav next off" data-nav="1" title="Next (→)"
       ><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 5l7 7-7 7" /></svg
     ></button>
-    <div class="donenote" id="donenote"
+    <button class="donenote" id="donenote"
       ><span class="dnth"><img id="dnImg" alt="" /></span><span id="dnTxt"></span
-    ></div>
+    ></button>
     <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastBtn"></button></div>
 
     <script type="module" src="app/main.js"></script>

@@ -46,10 +46,10 @@ export function renderLoras() {
   const row = (l, act) => {
     const [a, b] = l.folder === "people" ? [0, 2] : [-3, 3];
     return `<div class="li ${l.on ? "on" : ""}" data-ln="${l.name}"${act ? " data-act" : ""}>
-   <div class="lth" data-tg data-tip="Click to switch on/off" style="background:${l.thumb ? "#000" : `linear-gradient(135deg,hsl(${hue(l.name)},35%,30%),hsl(${(hue(l.name) + 50) % 360},35%,18%))`}">${l.thumb ? `<img src="${l.thumb}" alt="">` : initials(l.display)}</div>
+   <div class="lth" data-tg data-click-for=".sw" aria-hidden="true" data-tip="Click to switch on/off" style="background:${l.thumb ? "#000" : `linear-gradient(135deg,hsl(${hue(l.name)},35%,30%),hsl(${(hue(l.name) + 50) % 360},35%,18%))`}">${l.thumb ? `<img src="${l.thumb}" alt="">` : initials(l.display)}</div>
    <div class="lbody"><div class="l1"><div class="nm"><span data-rename title="Double-click to rename">${esc(l.display)}</span>${l.recipe ? '<span class="tag">recipe</span>' : ""}<small>${esc(l.tags || l.note || l.folder)}</small></div>
-    <span class="sw ${l.on ? "on" : ""}" data-tg title="On/off"></span></div>
-   <div class="l2"><input type="range" min="${a}" max="${b}" step="0.05" value="${l.w}"><input type="number" autocomplete="off" min="${a}" max="${b}" step="0.05" value="${l.w}">
+    <button class="sw ${l.on ? "on" : ""}" data-tg role="switch" aria-checked="${l.on ? "true" : "false"}"></button></div>
+   <div class="l2"><input type="range" aria-label="Weight" min="${a}" max="${b}" step="0.05" value="${l.w}"><input type="number" aria-label="Weight" autocomplete="off" min="${a}" max="${b}" step="0.05" value="${l.w}">
     <button class="star ${l.fav ? "on" : ""}" data-star title="Favorite">★</button></div></div></div>`;
   };
   /** favourites first, then A–Z (Recent keeps its own order) @param {import("./types.js").Lora[]} g */

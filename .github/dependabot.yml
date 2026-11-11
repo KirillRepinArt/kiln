@@ -22,3 +22,8 @@ updates:
     schedule: { interval: monthly }
     groups:
       dev-tools: { patterns: ["*"] }
+    # Kiln runs on Python 3.10 (README; CI's python-version): no version that drops it. Pillow 13 needs 3.11 —
+    # its bump failed CI's install (2026-11-11). Lift this with the Python floor.
+    ignore:
+      - dependency-name: pillow
+        versions: [">=13"]

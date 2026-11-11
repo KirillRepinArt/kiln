@@ -112,5 +112,5 @@
    partly transparent chip switches its glass off */
 .chips.peek .chip,
 .chips.peek .chip .cw {
-  color: var(--grey-64);
+  color: var(--shown);
 }

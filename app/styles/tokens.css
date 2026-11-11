@@ -8,8 +8,8 @@
 :root {
   --bg: #000000;
   --text: #ededed;
-  --muted: #9a9a9f;
-  --faint: #5e5e64;
+  --muted: #aaaaaf;
+  --faint: #97979d; /* the quietest text that still reads 4.5:1 on a panel or a row (legibility.test.mjs) */
   --sel: #ffffff;
   /* the greys lean a few percent toward the theme, so a skin feels whole (--tw = strength) */
   --tw: 6%;
@@ -17,6 +17,10 @@
   --raised: color-mix(in oklab, #2a2a2d, var(--a1) var(--tw));
   --raised2: color-mix(in oklab, #343438, var(--a1) var(--tw));
   --line: color-mix(in oklab, #333338, var(--a1) var(--tw));
+  --row: color-mix(in oklab, #232326, var(--a1) var(--tw)); /* a row on a panel (the Queue): dark enough for --faint */
+  /* a shown job's settings and LoRAs: dimmer than your draft's, still 4.5:1 (legibility.test.mjs) */
+  --shown: var(--grey-79);
+  --shown-label: var(--grey-74);
   /* the theme's colours --a1 --a2 --a3 --ink: in its skin file (themes/) */
   --grad: linear-gradient(135deg in oklch, var(--a1), var(--a2) 55%, var(--a3));
   --flow: linear-gradient(90deg in oklch, var(--a1), var(--a2), var(--a3), var(--a2), var(--a1));
@@ -194,7 +198,12 @@
   --glass-row: 12, 14, 14; /* a Queue / LoRAs row in glass */
   --glass-row-hover: 40, 44, 44; /* a Queue row under the pointer */
   --glass-bar: rgba(26, 28, 32, 0.42); /* the Queue's selection bar in glass */
-  --glass-control: rgba(20, 22, 24, 0.38); /* the privacy eye in glass */
+  --glass-control: rgba(
+    20,
+    22,
+    24,
+    0.58
+  ); /* the buttons on the picture in glass: dark enough that a white icon reads over a white picture */
   --on-picture: rgba(12, 12, 14, 0.72); /* a button over a picture: ✕, the arrows */
   --on-picture-hover: rgba(40, 40, 44, 0.9); /* …under the pointer */
   --viewer-button: rgba(40, 40, 44, 0.8); /* the full-size viewer's buttons */

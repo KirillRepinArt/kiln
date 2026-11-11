@@ -7,7 +7,7 @@
 // The backgrounds stand still under Reduce Motion (Kiln reads it at start: set, then reload).
 
 const NEED = { text: 4.5, large: 3, icon: 3 };
-const THEMES = ["starscape", "aurora", "embers", "matrix"];
+const THEMES = process.env.LEG_THEMES ? process.env.LEG_THEMES.split(",") : ["starscape", "aurora", "embers", "matrix"];
 
 /* the page side: what's shown as text or as an icon, and the contrast of each from the two captures */
 const PAGE = `(() => {
@@ -95,6 +95,7 @@ async function measure(k, label) {
   await k.mouse(2, 2);
   await k.sleep(900);
   const items = await k.ev(`__leg.items()`);
+  if (process.env.LEG_SHOTS) await k.shot(label.replace(/[^\w]+/g, "-"));
   const a = (await k.send("Page.captureScreenshot", { format: "png" })).result.data;
   await k.ev(HIDE);
   await k.ev(`new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>r(1))))`);
@@ -149,9 +150,13 @@ export async function textIsLegibleOverAnything(k, t) {
     if (!w || g.contrast / g.need < w.contrast / w.need) worst.set(key, g);
   }
   const fails = [...worst.entries()].filter(([, g]) => g.contrast < g.need);
-  for (const [key, g] of fails.sort((p, q) => p[1].contrast / p[1].need - q[1].contrast / q[1].need))
-    t.note(`${g.contrast}:1 (needs ${g.need}) ${key} — ${g.state}`);
-  t.note(`${fails.length} of ${worst.size} texts and icons below their need`);
+  t.ok(
+    !fails.length,
+    `every text and icon reads (${worst.size} of them, each in its worst state)`,
+    fails
+      .sort((p, q) => p[1].contrast / p[1].need - q[1].contrast / q[1].need)
+      .map(([key, g]) => `${g.contrast}:1 (needs ${g.need}) ${key} — ${g.state}`),
+  );
   if (process.env.LEG_ALL) for (const [key, g] of worst) t.note(`all: ${g.contrast}:1 (${g.kind}) ${key} — ${g.state}`);
 }
 textIsLegibleOverAnything.opts = { step: 0.2 };

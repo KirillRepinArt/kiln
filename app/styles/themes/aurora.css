@@ -7,7 +7,8 @@
   --a3: #c46bff;
   --ink: #03140e;
   /* its sky is bright, so its glass is thicker and gathers less light than the other skins' */
-  --gta: 0.48;
-  --gtk: 0.52;
-  --gtb: 1.35;
+  --gta: 0.6;
+  --gtk: 0.64;
+  --gtb: 1.1;
+  --tw: 3%; /* its green is bright: the greys lean less toward it, or the panels lift under the text */
 }

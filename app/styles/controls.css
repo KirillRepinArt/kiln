@@ -77,10 +77,10 @@
   pointer-events: none;
 }
 .left.peeking .pill {
-  color: var(--grey-64);
+  color: var(--shown);
 }
 .left.peeking .pill .il {
-  color: var(--grey-53);
+  color: var(--shown-label);
 }
 .left.peeking .pn {
   display: none;

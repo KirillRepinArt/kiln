@@ -669,7 +669,10 @@ export async function snapHeldUntilTheLastMotion(k, t) {
      ms": the old timer's sw.T + 300 bridged the still moment between the two switches and outlasted the landing — the
      margin and the bridge encoded the guess, not the rule) */
   const lastMorph = s.filter(x => x[2]).at(-1),
-    loose = s.filter(x => x[2] && !x[1]),
+    /* a move counts against the hold only when it happened while free: the sample before it free too. Across the
+       release it can't be told (a long frame — 324 ms seen — holds the switch's last steps and the release together:
+       every failure of T4's open row was one, 2026-11-11) */
+    loose = s.filter((x, j) => x[2] && !x[1] && j > 0 && !s[j - 1][1]),
     free = lastMorph ? s.find(x => x[0] > lastMorph[0] && !x[1]) : null;
   t.ok(!!lastMorph, "the layout switch ran", s.slice(0, 3));
   /* T4's open row (2026-11-11): it fails about once in four long runs and never alone — the report says what moved:

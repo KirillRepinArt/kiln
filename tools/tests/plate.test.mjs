@@ -656,7 +656,11 @@ export async function snapHeldUntilTheLastMotion(k, t) {
       mv=!!pr&&(Math.abs(p.left-pr.left)+Math.abs(p.top-pr.top)+Math.abs(p.width-pr.width)+Math.abs(p.height-pr.height))>0.5;pr=p;
       o.push([Math.round(performance.now()-t0),b.classList.contains("laysnap"),performance.now()-t0>500&&mv,
         [Math.round(p.left),Math.round(p.top),Math.round(p.width),Math.round(p.height)],document.documentElement.classList.contains("switching"),
-        [$("rpanel").style.width,minRight(),(c=>Math.round((c[c.length-1].getBoundingClientRect().right-c[0].getBoundingClientRect().left)*100)/100)(document.querySelector(".tabs").children)]]);
+        [$("rpanel").style.width,minRight(),(c=>Math.round((c[c.length-1].getBoundingClientRect().right-c[0].getBoundingClientRect().left)*100)/100)(document.querySelector(".tabs").children),
+          /* the panel's place: the pass's x unrounded, the margin written (CI on 3c2ae95: it landed at x 92, rest 91) */
+          lay.pass&&lay.pass.page?Math.round(lay.pass.page.x*100)/100:null,$("rpanel").style.marginLeft,
+          /* the area on screen: the switch's goal is converted through it once, at the start ("it never moves") */
+          Math.round($("right").getBoundingClientRect().left*100)/100]]);
     if(performance.now()-t0<2600)s();else res(o)},0))})()})`);
   /* the layout switch is the tab switch's system since T2b (no View Transition, decision 0014): it runs while the plate
      moves after the layout was asked for */

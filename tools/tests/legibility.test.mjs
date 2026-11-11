@@ -45,6 +45,12 @@ const PAGE = `(() => {
         const large = fs >= 24 || (fs >= 18.66 && +cs.fontWeight >= 700);
         add(el, r, large ? "large" : "text", t.slice(0, 40));
       }
+      /* a placeholder isn't a text node: an empty field's box, its glyphs found by the two captures like any text */
+      for (const f of document.querySelectorAll("input[placeholder], textarea[placeholder]")) {
+        if (f.value || !f.placeholder || !seen(f)) continue;
+        const cs = getComputedStyle(f), fs = parseFloat(cs.fontSize);
+        add(f, f.getBoundingClientRect(), fs >= 24 || (fs >= 18.66 && +cs.fontWeight >= 700) ? "large" : "text", f.placeholder.slice(0, 40));
+      }
       for (const svg of document.querySelectorAll("button svg, .tab svg, [data-tip] > svg")) {
         const b = svg.closest("button, [data-tip]");
         if (!b || b.textContent.trim() || !seen(svg)) continue; // a label in words is checked as text
@@ -137,6 +143,12 @@ export async function textIsLegibleOverAnything(k, t) {
           ...over.map(g => ({ ...g, state: `${st}: hovering the ${pic.toLowerCase()} picture`, need: NEED[g.kind] })),
         );
       }
+      // your empty draft: the name's and the prompt's placeholders
+      await k.ev(
+        `(endPeek(),showView("gen"),["pname","prompt"].forEach(i=>{$(i).value="";$(i).dispatchEvent(new Event("input"))}),1)`,
+      );
+      await k.sleep(1200);
+      all.push(...(await measure(k, `${st}: your empty draft`)));
       await k.ev(`(showView("queue"),1)`);
       await k.sleep(1200);
       all.push(...(await measure(k, `${st}: the Queue`)));
@@ -160,3 +172,57 @@ export async function textIsLegibleOverAnything(k, t) {
   if (process.env.LEG_ALL) for (const [key, g] of worst) t.note(`all: ${g.contrast}:1 (${g.kind}) ${key} — ${g.state}`);
 }
 textIsLegibleOverAnything.opts = { step: 0.2 };
+
+/* Text on the bare sky reads wherever the sky is brightest (effects.js clearSkyText): each skin's sky is read from its
+   canvas, a piece of sky text is moved over the brightest spot, and the sky under it must leave the quietest grey that
+   sits on the sky (--faint, the LoRA label) at 4.5:1, and be at most a tenth of the spot's light (the headless sky is
+   dimmer than a real GPU's, ~1/5, so the contrast alone could pass with nothing cleared). The sky moves, as you see it: under Reduce Motion the aurora's
+   exposure is off and its brightest spot is a tenth as bright; it drifts slowly enough to be where it was 3 frames on. */
+export async function skyIsClearUnderItsText(k, t) {
+  await k.send("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-reduced-motion", value: "no-preference" }],
+  });
+  await k.reload();
+  const fails = [];
+  for (const theme of THEMES) {
+    await k.ev(`(S.theme="${theme}",$("sTheme").value="${theme}",applyTheme(),save(),1)`);
+    await k.ev(`(showView("gen"),1)`);
+    await k.sleep(4000); // the aurora's exposure settles
+    if (process.env.LEG_SHOTS) await k.shot(`sky-${theme}`);
+    const got = await k.ev(`(async()=>{
+      const cv=$("stars"),g=cv.getContext("2d"),d=devicePixelRatio||1,cb=cv.getBoundingClientRect();
+      const lum=(r,gg,b)=>{const f=c=>((c/=255)<=0.04045?c/12.92:((c+0.055)/1.055)**2.4);return 0.2126*f(r)+0.7152*f(gg)+0.0722*f(b)};
+      const at=(D,i)=>lum(D[i]*D[i+3]/255,D[i+1]*D[i+3]/255,D[i+2]*D[i+3]/255); // over the page's black
+      /* the brightest 60 px square of the sky, away from the edges */
+      const A=g.getImageData(0,0,cv.width,cv.height).data,S=Math.round(60*d);let best=-1,bx=0,by=0;
+      for(let y=S;y<cv.height-2*S;y+=S/2)for(let x=S;x<cv.width-2*S;x+=S/2){let s=0;
+        for(let j=0;j<S;j+=4)for(let i=0;i<S;i+=4)s+=at(A,((y+j)*cv.width+x+i)*4);
+        if(s>best){best=s;bx=x;by=y}}
+      const lbl=document.querySelector("#chips .chiplbl");if(!lbl)return{err:"no LoRA label"};
+      const keep=lbl.style.cssText;
+      const want={x:cb.left+bx/d,y:cb.top+by/d};
+      /* fixed inside a transformed box is placed against that box: placed, measured, moved by the miss */
+      lbl.style.cssText+=";position:fixed;z-index:99;left:"+want.x+"px;top:"+want.y+"px";
+      const r0=lbl.getBoundingClientRect();
+      lbl.style.left=(2*want.x-r0.left)+"px";lbl.style.top=(2*want.y-r0.top)+"px";
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,120)))));
+      const r=lbl.getBoundingClientRect(),x0=Math.round((r.left-cb.left)*d),y0=Math.round((r.top-cb.top)*d);
+      const w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));
+      const B=g.getImageData(x0,y0,w,h).data,L=[];for(let i=0;i<B.length;i+=4)L.push(at(B,i));
+      const avg=L.reduce((p,q)=>p+q,0)/L.length;L.sort((p,q)=>q-p);const sky=L[Math.floor(L.length*0.05)];
+      const c=getComputedStyle(lbl).color.match(/[0-9.]+/g).map(Number),fg=lum(c[0],c[1],c[2]);
+      lbl.style.cssText=keep;
+      if(Math.abs(r.left-want.x)>2||Math.abs(r.top-want.y)>2)return{err:"the label landed at "+[r.left,r.top].map(Math.round)+", not at the spot "+[want.x,want.y].map(Math.round)};
+      return{peak:+(best/((S/4)**2)).toFixed(3),avg:+avg.toFixed(4),sky:+sky.toFixed(3),contrast:+((Math.max(fg,sky)+0.05)/(Math.min(fg,sky)+0.05)).toFixed(2)};
+    })()`);
+    t.note(
+      `${theme}: the sky's brightest spot ${got.peak} → under the text ${got.avg} (its brightest 5 %: ${got.sky}), ${got.contrast}:1`,
+    );
+    if (got.err) fails.push(`${theme}: ${got.err}`);
+    else if (got.contrast < 4.5) fails.push(`${theme}: ${got.contrast}:1 (needs 4.5)`);
+    else if (got.peak > 0.005 && got.avg > got.peak / 10)
+      fails.push(`${theme}: ${got.avg} under the text, ${got.peak} at the spot (averages)`);
+  }
+  t.ok(!fails.length, "the sky is clear under its text, wherever it's brightest", fails);
+}
+skyIsClearUnderItsText.opts = { step: 0.2 };

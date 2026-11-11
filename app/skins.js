@@ -1651,17 +1651,7 @@ export function makeCodeBg() {
           }
         }
       }
-      // where app text sits on the bare background (the name, the status line), the code fades out softly, like depth of field
-      ctx.globalCompositeOperation = "destination-out";
-      for (const h of st.holes || [])
-        for (let k = 0; k < 6; k++) {
-          const e = (6 - k) * 7 * d;
-          ctx.globalAlpha = k === 5 ? 0.9 : 0.16;
-          ctx.beginPath();
-          ctx.roundRect(h.x - e, h.y - e, h.w + 2 * e, h.h + 2 * e, 14 * d + e);
-          ctx.fill();
-        }
-      ctx.restore();
+      ctx.restore(); // the sky stays clear under text on it: effects.js clearSkyText, for every skin
     },
   };
 }

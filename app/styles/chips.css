@@ -91,7 +91,7 @@
 .chiplbl {
   font-size: var(--fs-12);
   letter-spacing: 0.02em;
-  color: var(--grey-66);
+  color: var(--faint);
   margin: 0 var(--space-2) 0 var(--space-3);
   user-select: none;
 } /* LoRA / LoRAs, spelled as written */

@@ -192,6 +192,22 @@ export function onJobDone(j) {
   } catch (e) {}
 }
 
+/** Clears a canvas softly around boxes: each box grown by `grow` px, its edge blurred by `soft` px, so the light fades
+ *  out before it reaches the box (the sky under its text, the halo under the glass panels). Canvas px; `r` = corner.
+ *  @param {CanvasRenderingContext2D} ctx @param {{ x: number, y: number, w: number, h: number, r: number }[]} boxes
+ *  @param {number} grow @param {number} soft */
+function softCut(ctx, boxes, grow, soft) {
+  if (!boxes.length) return;
+  ctx.save();
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.filter = `blur(${soft / 2}px)`;
+  ctx.fillStyle = "#000"; // destination-out takes the fill's alpha: opaque, whatever the last draw left set
+  ctx.beginPath();
+  for (const b of boxes) ctx.roundRect(b.x - grow, b.y - grow, b.w + 2 * grow, b.h + 2 * grow, b.r + grow);
+  ctx.fill();
+  ctx.restore();
+}
+
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initEffects() {
   /* app background, set by the skin: starfield (three parallax layers, gentle twinkle, a rare shooting star),
@@ -211,10 +227,9 @@ export function initEffects() {
     const night = makeNightSky(),
       code = makeCodeBg();
     let lastIn = performance.now(),
-      dimV = 1,
-      holes = /** @type {{ x: number, y: number, w: number, h: number }[]} what the code rain flows round */ ([]),
-      holeT = 0;
-    const HOLES = "#ltitle .phead,#prog .meta,#idle>div,#showP.show";
+      dimV = 1;
+    /* every text that sits on the bare sky (no panel behind it): the sky is cleared under it, in every skin (clearSkyText) */
+    const SKY_TEXT = "#ltitle .phead,#prog .meta,#idle>div,#showP.show,#chips .chiplbl";
     ["pointermove", "keydown", "wheel"].forEach(ev =>
       addEventListener(ev, () => (lastIn = performance.now()), { passive: true }),
     );
@@ -238,6 +253,17 @@ export function initEffects() {
           s: 0.6 + R() * 1.6,
         });
       }
+    }
+    /** The sky stays clear under text that sits on it, whatever the skin draws there: black at the text, the light
+     *  back ~50 px out, like depth of field. Read every drawn frame, so the clearing moves with the text (DD-2026-11-12-8).
+     *  @param {number} d */
+    function clearSkyText(d) {
+      const cb = cv.getBoundingClientRect();
+      const boxes = [...document.querySelectorAll(SKY_TEXT)]
+        .map(el => el.getBoundingClientRect())
+        .filter(r => r.width && r.height)
+        .map(r => ({ x: (r.left - cb.left) * d, y: (r.top - cb.top) * d, w: r.width * d, h: r.height * d, r: 8 * d }));
+      softCut(c, boxes, 28 * d, 24 * d); // the blur's σ is half of `soft`: grown by 2σ, it's black at the text
     }
     /** @param {number} t */
     function draw(t) {
@@ -268,21 +294,14 @@ export function initEffects() {
             f = $("frame").getBoundingClientRect(),
             cb = cv.getBoundingClientRect();
           dimV += ((!run && t - lastIn > 120000 ? 0.45 : 1) - dimV) * Math.min(1, dt / 1500); // idle for 2 min: dims
-          if (t - holeT > 500) {
-            holeT = t;
-            holes = [...document.querySelectorAll(HOLES)]
-              .map(el => el.getBoundingClientRect())
-              .filter(r => r.width && r.height)
-              .map(r => ({ x: (r.left - cb.left) * d, y: (r.top - cb.top) * d, w: r.width * d, h: r.height * d }));
-          }
           code.draw(c, W, H, t, dt, d, bcols, {
             run,
             fx: (f.left + f.width / 2 - cb.left) * d,
             dim: dimV,
             wave: window._bgWave || 0,
             reduce,
-            holes,
           });
+          clearSkyText(d);
           requestAnimationFrame(draw);
           return;
         }
@@ -343,6 +362,7 @@ export function initEffects() {
           }
         }
         c.globalAlpha = 1;
+        clearSkyText(d);
       } else if (W && !cv.classList.contains("on") && /** @type {any} */ (getComputedStyle(cv).opacity) < 0.02)
         c.clearRect(0, 0, W, H);
       requestAnimationFrame(draw);
@@ -627,7 +647,7 @@ export function initEffects() {
         box. Soft holes, already dark at the panel's edge: the light fades out in the gap before it. */
             if (document.body.classList.contains("glass")) {
               const F = 10;
-              fgc.filter = `blur(${(F * dp) / 2}px)`;
+              const boxes = [];
               for (const el of document.querySelectorAll(HALO_CUT)) {
                 const r = el.getBoundingClientRect();
                 if (
@@ -638,18 +658,15 @@ export function initEffects() {
                   r.top > a.bottom + R
                 )
                   continue;
-                const er = (parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0) + F;
-                fgc.beginPath();
-                fgc.roundRect(
-                  (r.left - a.left + R - F) * dp,
-                  (r.top - a.top + R - F) * dp,
-                  (r.width + 2 * F) * dp,
-                  (r.height + 2 * F) * dp,
-                  er * dp,
-                );
-                fgc.fill();
+                boxes.push({
+                  x: (r.left - a.left + R) * dp,
+                  y: (r.top - a.top + R) * dp,
+                  w: r.width * dp,
+                  h: r.height * dp,
+                  r: (parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0) * dp,
+                });
               }
-              fgc.filter = "none";
+              softCut(fgc, boxes, F * dp, F * dp);
             }
             fgc.globalCompositeOperation = "source-over";
             fr.classList.add("halo");

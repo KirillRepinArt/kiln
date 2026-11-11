@@ -65,7 +65,7 @@
   border-radius: var(--r-6);
 }
 .pname::placeholder {
-  color: var(--grey-45);
+  color: var(--faint);
   font-weight: 500;
 }
 .pname:hover {
@@ -95,8 +95,8 @@
   color: var(--grey-69);
 }
 .ltitle .plbl.peekname .pname {
-  color: var(--grey-57);
-} /* an old picture's name: greyed */
+  color: var(--shown-name);
+}
 .ltitle .plbl.peekname .pname:not([readonly]):focus {
   color: var(--grey-96);
 }
@@ -157,14 +157,14 @@
   display: none;
 }
 .fnpre {
-  color: var(--grey-57);
+  color: var(--shown-name);
   font-size: var(--fs-24);
   font-weight: 500;
   letter-spacing: 0.02em;
   font-family: var(--font-title, inherit);
 }
 .fnsuf {
-  color: var(--grey-57);
+  color: var(--shown-name);
   font-size: var(--fs-24);
   font-weight: 500;
   letter-spacing: -0.01em;

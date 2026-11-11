@@ -39,6 +39,14 @@ export function img(url) {
 export function __imgsN() {
   return imgs.size;
 }
+/** how many times each canvas has been drawn: what's derived from a picture (the ambient glow) redraws only when it
+ * changed @type {WeakMap<HTMLCanvasElement, number>} */
+export const drawn = new WeakMap();
+/** a canvas's pixels changed (drawn, cleared): every change to a picture canvas goes through here or drawTo
+ * @param {HTMLCanvasElement} cv */
+export function drew(cv) {
+  drawn.set(cv, (drawn.get(cv) || 0) + 1);
+}
 /** @param {import("./types.js").Job} j @returns {string | null} */
 export function urlFor(j) {
   return j.file ? `/files/${encodeURIComponent(j.file)}?j=${j.id}` : null;
@@ -48,6 +56,7 @@ export function urlFor(j) {
 /** @param {HTMLCanvasElement} cv @param {HTMLImageElement} im @param {boolean} natural at the picture's own size (the viewer)
  * @param {number | string} [what] what it is (the frame's canvas): a finished picture's id, or "render:<job>" */
 export function drawTo(cv, im, natural, what) {
+  drew(cv);
   const dpr = devicePixelRatio || 1,
     iw = im.naturalWidth,
     ih = im.naturalHeight;
@@ -271,6 +280,7 @@ export function paint(cv, j) {
   if (cv.id === "cv") {
     cv.width = 1;
     cv.height = 1;
+    drew(cv);
   }
   e.p.then(im => {
     if (cv.dataset.want != String(j.id)) return;
@@ -296,6 +306,7 @@ export function missing(cv, id) {
     ); /* the box's target size (it may be mid-glide) */
   cv.width = W;
   cv.height = H;
+  drew(cv);
   const c = /** @type {CanvasRenderingContext2D} */ (cv.getContext("2d"));
   c.fillStyle = "#0b0b0e";
   c.fillRect(0, 0, W, H);
@@ -348,6 +359,7 @@ export function frameRender(jobId) {
   c.dataset.want = "";
   c.width = 1;
   c.height = 1;
+  drew(c);
   renderFirst = jobId;
   return true;
 }
@@ -382,6 +394,7 @@ export function frameEmpty() {
   if (c.width > 1) {
     c.width = 1;
     c.height = 1;
+    drew(c);
   }
   c.dataset.d = "";
   c.dataset.j = "";

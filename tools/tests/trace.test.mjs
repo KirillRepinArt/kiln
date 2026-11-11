@@ -37,6 +37,22 @@ export async function ownershipTour(k, t) {
   const found = /** @type {Record<string, Set<string>>} */ ({});
   const note = (/** @type {string} */ key, /** @type {string} */ where) => (found[key] ||= new Set()).add(where);
   let writes = 0;
+  /* responsiveness (ux-review/20-quality-bar.md §2): per motion, the response (its first step to the next painted
+     frame; real input: the browser's event timing) and the long frames after it while the motion runs */
+  const RESPONSE_GATE = 200,
+    RESPONSE_AIM = 100,
+    LONG_WORK = 50, // ms of Kiln's own work in one frame: a long task
+    FRAME_BUDGET = 16.7; // 60 fps (a frame the browser flags as long, with more work than this, is noted)
+  /* known long frames, by the function the time went to → the item that fixes them (the baseline only shrinks) */
+  const SLOW_KNOWN = /** @type {Record<string, string>} */ ({
+    "gesture.js:onMove":
+      "Q1 (v0.7d step 3): a resize drag lays out the whole page on each pointer move — 20–30 ms of forced layout",
+  });
+  const known = /** @type {Record<string, string[]>} */ ({});
+  const slow = /** @type {string[]} */ ([]),
+    aim = /** @type {string[]} */ ([]),
+    long = /** @type {string[]} */ ([]),
+    budget = /** @type {string[]} */ ([]);
   /** one motion: record, act, wait (ms, or until a page condition), read. Several inputs in one motion (a click
    * mid-switch) are checked for second writers only: what follows your input may rightly turn back with it
    * @param {string} label @param {(string | (() => Promise<void>))[] | string} steps (a function: a real input, e.g. a drag)
@@ -44,13 +60,36 @@ export async function ownershipTour(k, t) {
   const motion = async (label, steps, until = 1300) => {
     const many = Array.isArray(steps) && steps.length > 1;
     await k.ev(`(__trace.start(),1)`);
+    /** each input's response: from the step to the next painted frame @type {{ t0: number, d: number }[]} */
+    const resp = [];
     for (const st of Array.isArray(steps) ? steps : [steps])
       if (typeof st === "function") await st();
       else if (/^\d+$/.test(st)) await k.sleep(+st);
-      else await k.ev(`(${st},1)`);
+      else resp.push(await k.ev(`__trace.timed(()=>{${st}})`));
     if (typeof until === "number") await k.sleep(until);
     else await k.until(until, 20000, 50);
     const r = await k.ev(`__trace.take()`);
+    const answered = [
+      ...resp.map((x, i) => ({ name: resp.length > 1 ? `input ${i + 1}` : "its input", d: Math.round(x.d) })),
+      ...r.perf.events.map((/** @type {any} */ e) => ({ name: e.name, d: e.d })),
+    ];
+    for (const a of answered)
+      if (a.d > RESPONSE_GATE) slow.push(`${label}: ${a.name} ${a.d} ms`);
+      else if (a.d > RESPONSE_AIM) aim.push(`${label}: ${a.name} ${a.d} ms`);
+    /* a frame that overlaps an input's response is that response (judged above), not a stutter in the motion */
+    const answering = (/** @type {{ t: number, d: number }} */ f) =>
+      resp.some(x => f.t < x.t0 + x.d && f.t + f.d > x.t0);
+    /* a long frame is judged by Kiln's own work in it — its scripts and the frame's style, layout and paint: in the
+       headless test the rest of its wall time is the browser waiting between the simulated pointer events */
+    for (const f of r.perf.loaf) {
+      if (f.t < r.t0 || answering(f)) continue;
+      const work = f.script + f.render,
+        what = `${label}: ${work} ms of work in a ${f.d} ms frame — script ${f.script} (forced layout ${f.forced}), render ${f.render}${f.fns.length ? ": " + f.fns.join(", ") : ""}`;
+      const k2 = Object.keys(SLOW_KNOWN).find(f2 => f.fns.some((/** @type {string} */ x) => x.startsWith(f2 + " ")));
+      if (work >= LONG_WORK && k2) (known[k2] ||= []).push(what);
+      else if (work >= LONG_WORK) long.push(what);
+      else if (work > FRAME_BUDGET) budget.push(what);
+    }
     writes += r.writes.length;
     for (const [key, mods] of Object.entries(secondWriters(r.writes))) note(`${key} [${mods.join(" + ")}]`, label);
     for (const [key, what] of Object.entries(twoClocks(r.writes, r.up))) note(`${key} [${what.join(" + ")}]`, label);
@@ -271,5 +310,11 @@ export async function ownershipTour(k, t) {
   for (const key of Object.keys(ALLOW))
     if (!Object.keys(found).some(f => f.replace(/ \[.*$/, "") === key)) t.note(`fixed — remove from ALLOW: ${key}`);
   t.ok(writes > 200, "the tracer saw the motions' writes", { writes });
+  t.motion(!slow.length, `every response within ${RESPONSE_GATE} ms`, slow);
+  t.motion(!long.length, `no frame with ${LONG_WORK} ms of work while anything moves`, long);
+  for (const a of aim) t.note(`over the ${RESPONSE_AIM} ms aim: ${a}`);
+  for (const b of budget) t.note(`over the ${FRAME_BUDGET} ms frame budget: ${b}`);
+  for (const [k2, list] of Object.entries(known))
+    for (const w of list) t.note(`known long frame (${SLOW_KNOWN[k2].split(":")[0]}): ${w}`);
 }
 ownershipTour.opts = { step: 0.05, inject: TRACER, limitMin: 6 };

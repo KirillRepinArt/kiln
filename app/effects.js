@@ -4,6 +4,7 @@ import { fmt } from "./boot.js";
 import { $ } from "./dom.js";
 import { current, jobs, lastDone } from "./jobs.js";
 import { PV, picMode, shownClean, shownDone } from "./picstate.js";
+import { drawn } from "./pictures.js";
 import { jobProgress } from "./progress.js";
 import { makeCRT, makeCamera, makeCodeBg, makeHalo, makeNightSky, mixHex, skin, themeCols, toHex } from "./skins.js";
 import { S, save } from "./state.js";
@@ -55,6 +56,8 @@ function ringKnockout() {
   g.fillText(/** @type {string} */ (/** @type {Element} */ (tl).textContent), x, y);
   w.style.setProperty("--ko", `url(${c.toDataURL()})`);
 }
+let ambKey = "", // what the ambient glow and the favicon were last drawn from
+  favKey = "";
 export function status() {
   const j = current();
   ringKnockout();
@@ -78,10 +81,17 @@ export function status() {
       ? /** @type {HTMLCanvasElement} */ ($("cv"))
       : null; /* Aurora has its frame glow instead */
   if (src && src.width) {
-    ambC.imageSmoothingQuality = "high";
-    ambC.drawImage(src, 0, 0, 12, 12);
+    const k = `${drawn.get(src) || 0}:${src.width}x${src.height}`;
+    if (k !== ambKey) {
+      ambKey = k; // a full-size picture scaled to 12 px: only when the picture changed (it took ~40 ms every 400)
+      ambC.imageSmoothingQuality = "high";
+      ambC.drawImage(src, 0, 0, 12, 12);
+    }
     amb.classList.add("on");
-  } else amb.classList.remove("on");
+  } else {
+    amb.classList.remove("on");
+    ambKey = "";
+  }
   let p = null;
   {
     const gt = /** @type {HTMLElement | null} */ (document.querySelector('.tab[data-v="gen"]'));
@@ -122,12 +132,17 @@ export function status() {
     p = q.p;
     document.title = `${Math.min(j.step + 1, j.steps)}/${j.steps}${q.left != null ? ` · ~${fmt(q.left)}` : ""}${pend ? ` · +${pend}` : ""} — Kiln`;
   } else document.title = pend ? `${window.qPaused ? "Paused · " : ""}${pend} queued — Kiln` : "Kiln";
+  const cs = getComputedStyle(document.documentElement),
+    a1 = cs.getPropertyValue("--a1").trim() || "#FF8A00",
+    a3 = cs.getPropertyValue("--a3").trim() || "#3FE0F0",
+    fk = `${p == null ? "idle" : Math.round(Math.max(0.02, p) * 200)}|${a1}|${a3}`;
+  if (fk === favKey) return; // the icon is drawn and encoded only when what it shows changed
+  favKey = fk;
   const c = /** @type {CanvasRenderingContext2D} */ (favC.getContext("2d"));
   c.clearRect(0, 0, 64, 64);
-  const cs = getComputedStyle(document.documentElement);
   const g = c.createLinearGradient(0, 0, 64, 64);
-  g.addColorStop(0, cs.getPropertyValue("--a1").trim() || "#FF8A00");
-  g.addColorStop(1, cs.getPropertyValue("--a3").trim() || "#3FE0F0");
+  g.addColorStop(0, a1);
+  g.addColorStop(1, a3);
   c.lineWidth = 9;
   c.lineCap = "round";
   c.strokeStyle = "#2f2f34";

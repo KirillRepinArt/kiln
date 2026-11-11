@@ -207,10 +207,57 @@ function tracer() {
   };
   requestAnimationFrame(() => setTimeout(sample, 0));
   /** start recording a motion */
+  /* responsiveness (ux-review/20-quality-bar.md §2): the browser's long animation frames (≥ 50 ms, with the app
+     modules whose scripts ran in them) and slow input events (real input only: the drags), while a motion records */
+  T.perf = { loaf: [], events: [] };
+  const mod = (/** @type {string} */ u) => (u.match(/\/app\/([\w.-]+\.js)/) || [])[1];
+  try {
+    new PerformanceObserver(l => {
+      if (T.on)
+        for (const e of /** @type {any[]} */ (l.getEntries()))
+          T.perf.loaf.push({
+            t: e.startTime,
+            d: Math.round(e.duration),
+            by: [...new Set((e.scripts || []).map((/** @type {any} */ s) => mod(s.sourceURL || "")).filter(Boolean))],
+            /* where the time went: scripts (and the layout they forced), then the frame's own style + layout + paint */
+            script: Math.round(
+              (e.scripts || []).reduce((/** @type {number} */ a, /** @type {any} */ s) => a + s.duration, 0),
+            ),
+            forced: Math.round(
+              (e.scripts || []).reduce(
+                (/** @type {number} */ a, /** @type {any} */ s) => a + (s.forcedStyleAndLayoutDuration || 0),
+                0,
+              ),
+            ),
+            render: Math.round(e.startTime + e.duration - (e.renderStart || e.startTime + e.duration)),
+            fns: (e.scripts || [])
+              .filter((/** @type {any} */ s) => s.duration > 8)
+              .map(
+                (/** @type {any} */ s) =>
+                  `${mod(s.sourceURL || "") || "?"}:${s.sourceFunctionName || s.invoker} ${Math.round(s.duration)}`,
+              ),
+          });
+    }).observe({ type: "long-animation-frame" });
+  } catch (e) {} // a browser without it: nothing recorded, nothing judged
+  try {
+    new PerformanceObserver(l => {
+      if (T.on)
+        for (const e of /** @type {any[]} */ (l.getEntries()))
+          if (e.interactionId) T.perf.events.push({ name: e.name, t: e.startTime, d: Math.round(e.duration) });
+    }).observe(/** @type {any} */ ({ type: "event", durationThreshold: 16 }));
+  } catch (e) {}
+  /** run a step and time it to the next painted frame (its handler's work + the first render): what INP measures
+   * for real input, measured here for steps the tour runs from code @param {() => void} fn */
+  T.timed = fn => {
+    const t0 = performance.now();
+    fn();
+    return new Promise(r => requestAnimationFrame(() => setTimeout(() => r({ t0, d: performance.now() - t0 }))));
+  };
   T.start = () => {
     T.t0 = performance.now();
     T.writes = [];
     T.samples = {};
+    T.perf = { loaf: [], events: [] };
     T.on = true;
   };
   /** stop, and hand over what was recorded */
@@ -219,7 +266,7 @@ function tracer() {
     /** each watched element's watched ancestors, by name (what moves it besides its own writers) */
     const up = /** @type {Record<string, string[]>} */ ({});
     for (const [el, n] of T.names) up[n] = [...T.names].filter(([a]) => a !== el && a.contains(el)).map(([, m]) => m);
-    return { writes: T.writes, samples: T.samples, up };
+    return { writes: T.writes, samples: T.samples, up, perf: T.perf, t0: T.t0 };
   };
 }
 

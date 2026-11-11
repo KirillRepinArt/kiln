@@ -6,8 +6,10 @@
    So a group is faded by its parts: a glass layer by its own opacity (on itself, or on its ::before), a part with no
    glass in it as a whole, and nothing that holds glass. Which parts are glass is read from their computed styles —
    glass.css stays the one home of the look. For a SURFACE whose material must animate itself (the prompt box, the
-   status row, the edit buttons): a small group that exists for the whole fade. Never a page: a page is content and
-   fades as one layer (a list of parts is a snapshot — content drawn after the fade began escapes it, DD-2026-11-08-12) */
+   status row, the edit buttons). Never a page: a page is content and fades as one layer. A group's parts are read
+   when the fade starts, and what is added to the group while it runs joins it at the same progress (glassFade): a
+   part drawn a frame later — the LoRA row's "+N" chip, rebuilt as the box's width changes in a switch — showed at full
+   while the rest faded in (DD-2026-11-08-12's class, for the box) */
 
 /** @typedef {{ el: Element, pseudo?: "::before", o: number }} FadePart a part to fade, and its own opacity at rest */
 
@@ -34,8 +36,9 @@ const drawn = x => {
 /** the parts of `root` to fade one by one (none of them holds glass under a fade). The root is the caller's: never
  * skipped, its keyframes as given (o 1) — it may be at 0 or hidden right now because it is about to fade in. Its
  * descendants carry their own resting opacity (a hidden one at 0, or not displayed, is skipped: nothing to fade)
- * @param {Element} root @returns {FadePart[]} */
-export function fadeParts(root) {
+ * @param {Element} root @param {boolean} [isRoot] false: an element joining a running fade — it carries its own
+ * resting opacity like any descendant @returns {FadePart[]} */
+export function fadeParts(root, isRoot = true) {
   /** @type {FadePart[]} */
   const out = [];
   /** @param {Element} e @param {boolean} top */
@@ -53,7 +56,7 @@ export function fadeParts(root) {
     if (glassy(e, "::before")) out.push({ el: e, pseudo: "::before", o: +getComputedStyle(e, "::before").opacity });
     for (const k of e.children) walk(k, false);
   };
-  walk(root, true);
+  walk(root, isRoot);
   return out;
 }
 
@@ -62,7 +65,8 @@ export function fadeParts(root) {
  * @param {Element} root @param {{ offset: number, opacity: number }[]} keys @param {KeyframeAnimationOptions} timing
  * @returns {Animation[]} */
 export function glassFade(root, keys, timing) {
-  return fadeParts(root).map(p => {
+  /** @param {FadePart} p */
+  const make = p => {
     const a = p.el.animate(
       keys.map(k => ({ offset: k.offset, opacity: k.opacity * p.o })),
       p.pseudo ? { ...timing, pseudoElement: p.pseudo } : timing,
@@ -71,7 +75,40 @@ export function glassFade(root, keys, timing) {
     /** @type {Animation & { fadeRoot?: Element }} */ (a).fadeRoot = root; // the group it fades (the tracer reads it)
     /** @type {Animation & { restO?: number }} */ (a).restO = p.o; // its own opacity at rest (fade() reads its value by it)
     return a;
+  };
+  const parts = fadeParts(root),
+    anims = parts.map(make);
+  if (!anims.length || typeof MutationObserver === "undefined") return anims;
+  /* what joins the group while the fade runs joins the fade, on its clock — before the frame it would show in (a
+     mutation's callback runs before the next paint). Not inside a part faded as a whole: that one carries it already */
+  const ref = anims[0],
+    wholes = new Set(parts.filter(p => !p.pseudo).map(p => p.el)),
+    inWhole = (/** @type {Element} */ n) => {
+      for (let e = n.parentElement; e && e !== root; e = e.parentElement) if (wholes.has(e)) return true;
+      return false;
+    },
+    /** @type {Animation[]} */
+    joined = [],
+    mo = new MutationObserver(recs => {
+      if (!live(ref)) return mo.disconnect();
+      for (const r of recs)
+        for (const n of r.addedNodes) {
+          if (!(n instanceof Element) || inWhole(n)) continue;
+          for (const p of fadeParts(n, false)) {
+            const a = make(p);
+            if (ref.startTime != null) a.startTime = ref.startTime;
+            else a.currentTime = ref.currentTime;
+            joined.push(a);
+          }
+        }
+    });
+  mo.observe(root, { childList: true, subtree: true });
+  ref.addEventListener("finish", () => mo.disconnect());
+  ref.addEventListener("cancel", () => {
+    mo.disconnect();
+    for (const a of joined) a.cancel(); // replaced or cancelled: the parts that joined go with it
   });
+  return anims;
 }
 
 /* ---------- THE way to fade (R1 — ARCHITECTURE › every opacity fade; DD-2026-11-10-11) ----------

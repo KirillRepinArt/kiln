@@ -1244,3 +1244,47 @@ export async function samePictureScalesWithItsPane(k, t) {
   }
 }
 samePictureScalesWithItsPane.opts = { width: 1400, height: 900 };
+
+/* a fade by parts takes in what joins its group while it runs (fade.js glassFade — DEVLOG DD-2026-11-11-10): in a
+   layout switch the LoRA row's "+N" chip is rebuilt as the box's width changes (chips.js capChips), a frame after the
+   box's fade-in took its parts — it showed at full while the chips beside it faded in (the user, 2026-11-11: "appears
+   very first during the layout switches"). Per frame: the "+N" chip as seen as a chip beside it */
+export async function addedPartsJoinTheFade(k, t) {
+  await k.ev(`(LORAS.forEach((l,i)=>{if(i<14){l.on=true;l.onAt=i}}),renderChips(),1)`);
+  await k.ev(`(setDock("below"),1)`);
+  await k.mouse(2, 2);
+  await k.sleep(1800);
+  t.ok(await k.ev(`!!document.querySelector("#chips .chipmore")`), 'the case: the LoRA row has its "+N" chip');
+  await k.ev(`($("layBtn").click(),1)`);
+  await k.sleep(200);
+  const o = await k.rect('#layMenu [data-lay="left"]');
+  const watch =
+    k.ev(`new Promise(res=>{const out=[],t0=performance.now(),eff=e=>{if(!e)return null;let o=1;for(let a=e;a;a=a.parentElement)o*=+getComputedStyle(a).opacity;return o};
+    (function f(){requestAnimationFrame(()=>setTimeout(()=>{out.push([Math.round(performance.now()-t0),eff(document.querySelector("#chips .chipmore")),eff(document.querySelector("#chips .chip[data-n]"))]);
+      if(performance.now()-t0<1500)f();else res(out)},0))})()})`);
+  await k.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: o.left + 5, y: o.top + 5 });
+  await k.send("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    x: o.left + 5,
+    y: o.top + 5,
+    button: "left",
+    buttons: 1,
+    clickCount: 1,
+  });
+  await k.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    x: o.left + 5,
+    y: o.top + 5,
+    button: "left",
+    clickCount: 1,
+  });
+  const rows = /** @type {[number, number | null, number | null][]} */ (await watch),
+    fading = rows.filter(r => r[2] != null && r[2] < 0.99),
+    ahead = fading.filter(r => r[1] != null && Math.abs(r[1] - /** @type {number} */ (r[2])) > 0.1);
+  t.ok(fading.length > 0, "the case: the chips fade in", { frames: rows.length });
+  t.motion(!ahead.length, 'the "+N" chip fades with the chips beside it — never ahead', {
+    first: ahead[0] && ahead[0].map(v => (typeof v === "number" ? Math.round(v * 100) / 100 : v)),
+    frames: ahead.length,
+  });
+}
+addedPartsJoinTheFade.opts = { width: 1600, height: 950, step: 0.05 };

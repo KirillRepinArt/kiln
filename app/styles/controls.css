@@ -71,9 +71,6 @@
   .pill .w {
     display: none;
   }
-  .pill {
-    padding: 0 var(--space-3);
-  }
 }
 @container (max-width:470px) {
   .pill .il {

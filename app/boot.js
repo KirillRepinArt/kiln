@@ -3,7 +3,7 @@
 import { applyMode, applyPH } from "./cardlayout.js";
 import { renderChips } from "./chips.js";
 import { $, targetField } from "./dom.js";
-import { jobs } from "./jobs.js";
+import { jobs, unseenFails } from "./jobs.js";
 import { renderLoras } from "./loras.js";
 import { saveJobName, updPrompt } from "./peek.js";
 import { renderPills } from "./pills.js";
@@ -71,11 +71,23 @@ export function toast(m, btn, fn, at) {
   clearTimeout(tt);
   tt = setTimeout(() => $("toast").classList.remove("show"), btn ? 5000 : 2200);
 }
-export function renderAll() {
+/** Start's badge and the Queue tab's numbers — their one writer: the jobs waiting, and the failures you haven't seen
+ * yet (on the Queue page you see them: the count clears) */
+export function renderCounts() {
   const n = jobs.filter(j => j.status === "pending" || j.status === "running").length;
+  let f = unseenFails(S.failSeenAt || 0);
+  if (f && S.view === "queue") {
+    S.failSeenAt = Date.now();
+    save();
+    f = 0;
+  }
   $("badge").textContent = /** @type {any} */ (n); // the number, as text
   $("badge").classList.toggle("show", n > 0);
   $("tabN").textContent = /** @type {any} */ (n || "");
+  $("tabF").textContent = f ? `${f} failed` : "";
+}
+export function renderAll() {
+  renderCounts();
   requestAnimationFrame(() => moveThumb(true));
   renderPills();
   renderChips();

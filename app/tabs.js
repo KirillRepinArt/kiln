@@ -23,6 +23,7 @@ import { plateBefore, switchGlide, switchLanded } from "./plate.js";
 import { placeNavs } from "./browse.js";
 import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./queue.js";
 import { S } from "./state.js";
+import { renderCounts } from "./boot.js";
 import { layoutLeft } from "./cardlayout.js";
 
 /* ======================= tabs ======================= */
@@ -64,6 +65,7 @@ export function showView(v) {
   if (v === "queue") {
     if (was === "queue") renderQueue();
     else if (queueChanged()) renderQueueInner();
+    renderCounts(); // the failures counted on its tab are seen now
   }
   /* opening it: no slide to measure for, nothing to rebuild if nothing changed */
   if (v === "loras") renderLoras();

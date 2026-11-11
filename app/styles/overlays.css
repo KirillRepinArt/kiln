@@ -125,6 +125,9 @@
   pointer-events: auto;
   transform: translate(-50%, 0);
 }
+.donenote.nopic .dnth {
+  display: none;
+}
 .dnth {
   width: 34px;
   height: 34px;

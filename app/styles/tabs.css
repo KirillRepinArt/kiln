@@ -76,6 +76,11 @@
 .tab .n:empty {
   display: none;
 }
+/* failures you haven't seen in the Queue yet (boot.js renderCounts) */
+.tab .nf {
+  color: var(--a1);
+  margin-left: var(--space-1);
+}
 /* the running job's progress as a ring round the G of Generating, behind the letters (the word is its stacking layer):
    a hairline circle shows at once that a job runs (the App Store / Safari download pattern), the solid arc grows over
    it. One element: the mask is hairline ∪ (thick ring ∩ the progress slice) */

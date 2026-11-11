@@ -12,7 +12,7 @@ import { imgs, inBin, shownMissing, urlFor } from "./pictures.js";
 import { frame } from "./progress.js";
 import { S, save } from "./state.js";
 import { poll } from "./sync.js";
-import { showView, tabGo } from "./tabs.js";
+import { goView, showView, tabGo } from "./tabs.js";
 
 /** @type {any} the server's first answer (server/web.py get_state) */
 export let st;
@@ -27,21 +27,27 @@ export const api = (p, b) =>
 
 /* the connection starts: the first answer from the server (or the note that it isn't there), then the wiring and
    the first poll — called from main.js */
+let reconnect = 0;
+/** Kiln's server isn't answering — at start or mid-session, the one look for it: the card over everything, and the
+ * page reloads as soon as the server answers again (your draft is saved as you type) */
+export function serverGone() {
+  $("offline").classList.add("show");
+  if (reconnect || !location.protocol.startsWith("http")) return;
+  reconnect = setInterval(
+    () =>
+      fetch("/api/state").then(
+        () => location.reload(),
+        () => {},
+      ),
+    3000,
+  );
+}
 export async function startLive() {
   try {
     if (!location.protocol.startsWith("http")) throw 0;
     st = await (await fetch("/api/state")).json();
   } catch (e) {
-    $("offline").classList.add("show");
-    if (location.protocol.startsWith("http"))
-      setInterval(
-        () =>
-          fetch("/api/state").then(
-            () => location.reload(),
-            () => {},
-          ),
-        3000,
-      );
+    serverGone();
     return;
   }
   window.LIVE = true;
@@ -109,7 +115,10 @@ export async function startLive() {
   dn.onclick = () => {
     const j = doneById(dnId);
     dnHide();
-    if (!j) return;
+    if (!j) {
+      goView("queue"); // only failures on the card: they're in the Queue
+      return;
+    }
     tabGo(() => {
       PV.from = S.view !== "gen" ? S.view : null;
       showView("gen");

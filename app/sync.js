@@ -1,11 +1,11 @@
 // @ts-check
 /* Kiln · the server's job list → the page's: polling, what changed, a finished job's moment */
 import { doneNote, makeQThumb } from "./actions.js";
-import { renderAll, toast } from "./boot.js";
-import { $ } from "./dom.js";
+import { renderAll, renderCounts, toast } from "./boot.js";
 import { onJobDone } from "./effects.js";
-import { forgeMsg, loadModels, models, refreshUp } from "./forge.js";
-import { current, failWords, jobs, lastDone, replaceJobs } from "./jobs.js";
+import { loadModels, models, refreshUp } from "./forge.js";
+import { current, jobs, lastDone, replaceJobs } from "./jobs.js";
+import { serverGone } from "./live.js";
 import { checkStyles } from "./livestyles.js";
 import { insetsKey, lay, sizeFrame } from "./layout.js";
 import { PV, pv, pvPrune } from "./picstate.js";
@@ -48,6 +48,7 @@ function toUI(s) {
     created: s.created && s.created * 1000,
   });
 }
+let misses = 0; // polls in a row the server didn't answer
 export let sig = "",
   forgeOk = true,
   forgeStarting = false,
@@ -65,9 +66,12 @@ export async function poll() {
   try {
     s = await (await fetch("/api/state" + (since ? "?since=" + since : ""))).json();
   } catch (e) {
-    forgeMsg("Kiln server not reachable");
+    if (++misses < 2)
+      setTimeout(poll, 1500); // one miss can be a blip: ask again before calling it gone
+    else serverGone();
     return;
   }
+  misses = 0;
   checkStyles(s.styles); // a style file was saved: take it in place
   forgeOk = s.forge.ok;
   forgeStarting = !!s.forge.starting;
@@ -104,10 +108,7 @@ export async function poll() {
       setTimeout(poll, 0);
       return;
     } /* out of step: the full list next */
-    const n = jobs.filter(j => j.status === "pending" || j.status === "running").length;
-    $("badge").textContent = /** @type {any} */ (n); // the number, as text
-    $("badge").classList.toggle("show", n > 0);
-    $("tabN").textContent = /** @type {any} */ (n || "");
+    renderCounts();
     if (lay.ins && insetsKey() !== lay.ins) sizeFrame(); // a pause / Forge coming up changes them too
     setTimeout(poll, current() ? 700 : 1800);
     return;
@@ -156,9 +157,9 @@ export async function poll() {
         setTimeout(() => makeQThumb(j), 1500);
       }
     }
-    if (j.status === "error" && !seen.has("e" + jk)) {
-      seen.add("e" + jk);
-      if (!firstPoll) toast(`Job #${j.id} failed: ${failWords(j)}`, "", null, "queue");
+    if (j.status === "error" && !seen.has("e" + jk + ":" + j.finished)) {
+      seen.add("e" + jk + ":" + j.finished); // a retried job that fails again is news again
+      if (!firstPoll) doneNote(j); // wherever you are: a failure shows nowhere else on Generating
     }
   }
   if (firstPoll) {
@@ -174,6 +175,7 @@ export async function poll() {
         );
     }
   }
+  if (S.failSeenAt == null) S.failSeenAt = Date.now(); // the first run with failure counts: older failures aren't news
   {
     const m = Math.max(0, ...jobs.filter(x => x.status === "done").map(x => x.id));
     if (m !== S.seenDone) {
@@ -191,11 +193,6 @@ export async function poll() {
   if (ns !== sig) {
     sig = ns;
     renderAll();
-  } else {
-    const n = jobs.filter(j => j.status === "pending" || j.status === "running").length;
-    $("badge").textContent = /** @type {any} */ (n); // the number, as text
-    $("badge").classList.toggle("show", n > 0);
-    $("tabN").textContent = /** @type {any} */ (n || "");
-  }
+  } else renderCounts();
   setTimeout(poll, current() ? 700 : 1800);
 }

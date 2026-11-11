@@ -27,6 +27,10 @@ export function orderPending(order) {
 export function isFinished(j) {
   return j.status === "done" || j.status === "cancelled" || j.status === "error";
 }
+/** failed jobs that failed after `since` (ms) @param {number} since */
+export function unseenFails(since) {
+  return jobs.filter(j => j.status === "error" && (j.finished || 0) > since).length;
+}
 /** why a job failed, in words — the one table (ux-review/21-failure-states.md, rule 2)
  * @param {{ fail?: import("./types.js").FailKind | null, mp?: string, missing_names?: string[] | null, error?: string }} j */
 export function failWords(j) {

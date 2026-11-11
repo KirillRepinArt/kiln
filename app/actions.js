@@ -3,7 +3,7 @@
 import { placeMessage, renderAll, toast } from "./boot.js";
 import { $ } from "./dom.js";
 import { models } from "./forge.js";
-import { doneList, dropJobs, jobs } from "./jobs.js";
+import { doneList, dropJobs, failWords, jobs } from "./jobs.js";
 import { api } from "./live.js";
 import { peekHide } from "./peek.js";
 import { PV, pv, pvPrune } from "./picstate.js";
@@ -190,10 +190,13 @@ export async function removeMany(ids) {
   renderAll();
   poll();
 }
-/* a picture finished while you weren't watching Generating: a small card slides out under the Generating tab (where
-    its ring was); click = the picture in the Gallery. ~6 s, held while you're on it; several in a row = one card */
+/* a job ended — a picture finished while you weren't watching Generating, or a job failed, wherever you are: a small
+    card slides out under the Generating tab (where its ring was); click = the last picture in the Gallery, or the
+    Queue when only failures are on it. ~6 s, held while you're on it; several in a row = one card ("3 finished · 1
+    failed") */
 export let dnT = /** @type {number | undefined} */ (/** @type {unknown} */ (null)),
   dnN = 0,
+  dnF = 0,
   dnId = /** @type {number | null} */ (null);
 /* the finished note goes away after ms (restarted by each call) */
 /** @param {number} ms */
@@ -206,16 +209,32 @@ export function dnHide() {
   clearTimeout(dnT);
   dn.classList.remove("show");
   dnN = 0;
+  dnF = 0;
+  dnId = null;
 }
 /** @param {import("./types.js").Job} j */
 export function doneNote(j) {
-  dnN = dn.classList.contains("show") ? dnN + 1 : 1;
-  dnId = j.id;
-  $("dnTxt").textContent = dnN > 1 ? `${dnN} finished · the last #${j.id}` : `#${j.id} finished`;
-  const im = /** @type {HTMLImageElement} */ ($("dnImg"));
-  if (S.privacy) im.removeAttribute("src");
-  else im.src = /** @type {string} */ (urlFor(j));
+  if (!dn.classList.contains("show")) {
+    dnN = 0;
+    dnF = 0;
+    dnId = null;
+  }
+  if (j.status === "error") dnF++;
+  else {
+    dnN++;
+    dnId = j.id;
+    const im = /** @type {HTMLImageElement} */ ($("dnImg"));
+    if (S.privacy) im.removeAttribute("src");
+    else im.src = /** @type {string} */ (urlFor(j));
+  }
+  $("dnTxt").textContent =
+    dnF === 1 && !dnN
+      ? `#${j.id} failed — ${failWords(j)}`
+      : [dnN === 1 ? `#${dnId} finished` : dnN ? `${dnN} finished · the last #${dnId}` : "", dnF ? `${dnF} failed` : ""]
+          .filter(Boolean)
+          .join(" · ");
   dn.classList.toggle("priv", !!S.privacy);
+  dn.classList.toggle("nopic", !dnN);
   placeMessage(dn, document.querySelector('.tab[data-v="gen"]')); // under the Generating tab (M1: the one placer)
   dn.classList.add("show");
   dnHideIn(6000);

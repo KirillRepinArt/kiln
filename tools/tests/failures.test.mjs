@@ -8,7 +8,11 @@ const row = `document.querySelector('#qflist .qi:has(.failed)')`;
 export async function failedJobIsARowWithWhyAndRetry(k, t) {
   await k.job("[fail:vram] a cup", { steps: 2 });
   t.ok(await k.until(`jobs.some(j=>j.status==="error")`, 20000), "the job fails");
+  t.ok(await k.until(`$("tabF").textContent==="1 failed"`, 3000), "the Queue tab counts it while you're elsewhere");
+  const note = await k.ev(`$("donenote").classList.contains("show")?$("dnTxt").textContent:""`);
+  t.ok(/failed — Out of video memory/.test(note), "the finished note says it, on Generating too", note);
   await k.ev(`(showView("queue"),1)`);
+  t.ok(await k.until(`$("tabF").textContent===""`, 3000), "opening the Queue: seen, the count clears");
   t.ok(await k.until(`!!${row}`, 5000), "it is a row in the Queue's Finished list");
   const why = await k.ev(`${row}?.querySelector(".why")?.textContent||""`);
   t.ok(/Out of video memory at .* MP/.test(why), "the row says why, in words", why);
@@ -50,3 +54,17 @@ export async function forgeGoingAwayPutsTheJobBack(k, t) {
   t.ok(!s.paused, "the queue didn't pause");
 }
 forgeGoingAwayPutsTheJobBack.opts = { step: 0.2 };
+
+export async function serverGoneMidSessionHasTheStartLook(k, t) {
+  t.ok(!(await k.ev(`$("offline").classList.contains("show")`)), "with the server: no card");
+  // the page's own requests fail as if the server had stopped; then they get through again
+  await k.ev(
+    `(window._kept=window.fetch,window.fetch=(u,...a)=>String(u).startsWith("/api/")?Promise.reject(new TypeError("Failed to fetch")):window._kept(u,...a),window._before=1,1)`,
+  );
+  t.ok(await k.until(`$("offline").classList.contains("show")`, 10000), "mid-session: the same card as at start");
+  await k.ev(`(window.fetch=window._kept,1)`);
+  t.ok(
+    await k.until(`!window._before&&!!window._jobsReady&&!$("offline").classList.contains("show")`, 15000),
+    "the server answers again: the page reloads by itself, the card gone",
+  );
+}

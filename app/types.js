@@ -102,6 +102,7 @@
  * @property {boolean} [keepSeed]    PNG Info's Send to prompt keeps the image's seed
  * @property {boolean} [privacy]     the privacy cover is on (sticky)
  * @property {number | null} [seenDone]  the newest finished job you've seen (for "finished while you were away")
+ * @property {number} [failSeenAt]  when the Queue last showed you its failures (ms): later ones are counted on its tab
  * @property {number | null} [clearedId] the finished picture you closed with ✕
  * @property {LayoutPrefs | import("./layoutmath.js").LayoutV4 | null} [lay]  your layout sizes (v4 once laid out;
  *   older versions are brought up on first use; null: the defaults — Reset layout)

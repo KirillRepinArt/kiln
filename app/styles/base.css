@@ -87,3 +87,14 @@ button,
 .pop .hint {
   font-variant-numeric: tabular-nums;
 }
+/* text on the bare sky (no material behind it): its letters carry their own halo, in every skin (DD-2026-11-12-9). The one
+   writer of its text-shadow: a skin adds a glow to the title through --title-glow, drawn over the halo */
+.onsky {
+  text-shadow: var(--sky-shadow);
+}
+.onsky .pname {
+  text-shadow: var(--title-glow, 0 0 0 transparent), var(--sky-shadow);
+}
+.onsky svg {
+  filter: var(--sky-shadow-icon);
+}

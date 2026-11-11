@@ -21,6 +21,10 @@
   /* a shown job's settings and LoRAs: dimmer than your draft's, still 4.5:1 (legibility.test.mjs) */
   --shown: #c3c8cc;
   --shown-label: #b4babe;
+  /* text on the bare sky (.onsky, no material behind it): a halo shaped like its letters, as on a wallpaper's labels */
+  --sky-shadow: 0 0 1px var(--black-70), 0 0 4px var(--black-60), 0 0 14px rgba(0, 0, 0, 0.45);
+  --sky-shadow-icon: drop-shadow(0 0 1px var(--black-70)) drop-shadow(0 0 4px var(--black-60))
+    drop-shadow(0 0 14px rgba(0, 0, 0, 0.45));
   /* a shown picture's title line (the #, the name, the number and .png): greyed against your draft's white */
   --shown-name: var(--grey-69);
   /* the theme's colours --a1 --a2 --a3 --ink: in its skin file (themes/) */

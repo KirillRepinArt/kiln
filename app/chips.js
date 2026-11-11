@@ -26,7 +26,7 @@ export function renderChips() {
         .join("") + '<button class="chip chipadd" data-tip="Add a LoRA — opens the library">+</button>';
     $("chips").insertAdjacentHTML(
       "afterbegin",
-      `<span class="chiplbl">${(pk.loras || []).length === 1 ? "LoRA" : "LoRAs"}</span>`,
+      `<span class="chiplbl onsky">${(pk.loras || []).length === 1 ? "LoRA" : "LoRAs"}</span>`,
     );
     capChips();
     return;
@@ -40,7 +40,7 @@ export function renderChips() {
     .join("");
   $("chips").insertAdjacentHTML(
     "afterbegin",
-    `<span class="chiplbl" data-tip="LoRAs used for the next image · drag to reorder">${LORAS.filter(l => l.on).length === 1 ? "LoRA" : "LoRAs"}</span>`,
+    `<span class="chiplbl onsky" data-tip="LoRAs used for the next image · drag to reorder">${LORAS.filter(l => l.on).length === 1 ? "LoRA" : "LoRAs"}</span>`,
   );
   $("chips").insertAdjacentHTML(
     "beforeend",

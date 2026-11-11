@@ -1651,7 +1651,7 @@ export function makeCodeBg() {
           }
         }
       }
-      ctx.restore(); // the sky stays clear under text on it: effects.js clearSkyText, for every skin
+      ctx.restore(); // the code fades out round the app's text: effects.js clearCodeRound
     },
   };
 }

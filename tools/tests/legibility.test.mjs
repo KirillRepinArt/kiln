@@ -3,6 +3,7 @@
 // How: each state is captured twice, as it is and with every text and icon transparent. The pixels that change are the
 // glyphs; the second capture is exactly what's behind them. A glyph's colour is its core (its strongest pixels against
 // their own background); its contrast is against the worst 5 % of the background behind it.
+// A text's own shadow stays in the second capture: a halo is part of what its letters sit on (WCAG counts it).
 // Needs (WCAG 2.2 AA): text 4.5:1, large text (≥ 24 px, or ≥ 18.66 px bold) 3:1, an icon (a control's only label) 3:1.
 // The backgrounds stand still under Reduce Motion (Kiln reads it at start: set, then reload).
 
@@ -33,7 +34,7 @@ const PAGE = `(() => {
       const add = (el, r, kind, what) => {
         const x = Math.max(0, Math.floor(r.left)), y = Math.max(0, Math.floor(r.top));
         const w = Math.min(W, Math.ceil(r.right)) - x, h = Math.min(H, Math.ceil(r.bottom)) - y;
-        if (w >= 3 && h >= 3) out.push({ name: name(el), what, kind, x, y, w, h });
+        if (w >= 3 && h >= 3) out.push({ name: name(el), what, kind, x, y, w, h, sky: !!el.closest(".onsky") });
       };
       const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       for (let n; (n = tw.nextNode()); ) {
@@ -45,11 +46,12 @@ const PAGE = `(() => {
         const large = fs >= 24 || (fs >= 18.66 && +cs.fontWeight >= 700);
         add(el, r, large ? "large" : "text", t.slice(0, 40));
       }
-      /* a placeholder isn't a text node: an empty field's box, its glyphs found by the two captures like any text */
-      for (const f of document.querySelectorAll("input[placeholder], textarea[placeholder]")) {
-        if (f.value || !f.placeholder || !seen(f)) continue;
+      /* a field's value or placeholder isn't a text node: the field's box, its glyphs found by the two captures */
+      for (const f of document.querySelectorAll("input:not([type=hidden],[type=checkbox],[type=radio],[type=range]), textarea")) {
+        if (!(f.value || f.placeholder) || !seen(f)) continue;
         const cs = getComputedStyle(f), fs = parseFloat(cs.fontSize);
-        add(f, f.getBoundingClientRect(), fs >= 24 || (fs >= 18.66 && +cs.fontWeight >= 700) ? "large" : "text", f.placeholder.slice(0, 40));
+        const what = (f.value || f.placeholder).slice(0, 40);
+        add(f, f.getBoundingClientRect(), fs >= 24 || (fs >= 18.66 && +cs.fontWeight >= 700) ? "large" : "text", what);
       }
       for (const svg of document.querySelectorAll("button svg, .tab svg, [data-tip] > svg")) {
         const b = svg.closest("button, [data-tip]");
@@ -93,7 +95,7 @@ const PAGE = `(() => {
   return 1;
 })()`;
 
-const HIDE = `(()=>{const s=document.createElement("style");s.id="__legHide";s.textContent="*,*::before,*::after,*::placeholder{color:transparent!important;-webkit-text-fill-color:transparent!important;text-shadow:none!important;caret-color:transparent!important;transition:none!important}svg,svg *{color:transparent!important;stroke:transparent!important;fill:transparent!important}";document.head.appendChild(s);return 1})()`;
+const HIDE = `(()=>{const s=document.createElement("style");s.id="__legHide";s.textContent="*,*::before,*::after,*::placeholder{color:transparent!important;-webkit-text-fill-color:transparent!important;caret-color:transparent!important;transition:none!important}svg,svg *{color:transparent!important;stroke:transparent!important;fill:transparent!important}";document.head.appendChild(s);return 1})()`;
 const SHOW = `($("__legHide")?.remove(),1)`;
 
 /** one state: both captures, then each text and icon's contrast against its need */
@@ -173,56 +175,37 @@ export async function textIsLegibleOverAnything(k, t) {
 }
 textIsLegibleOverAnything.opts = { step: 0.2 };
 
-/* Text on the bare sky reads wherever the sky is brightest (effects.js clearSkyText): each skin's sky is read from its
-   canvas, a piece of sky text is moved over the brightest spot, and the sky under it must leave the quietest grey that
-   sits on the sky (--faint, the LoRA label) at 4.5:1, and be at most a tenth of the spot's light (the headless sky is
-   dimmer than a real GPU's, ~1/5, so the contrast alone could pass with nothing cleared). The sky moves, as you see it: under Reduce Motion the aurora's
-   exposure is off and its brightest spot is a tenth as bright; it drifts slowly enough to be where it was 3 frames on. */
-export async function skyIsClearUnderItsText(k, t) {
-  await k.send("Emulation.setEmulatedMedia", {
-    features: [{ name: "prefers-reduced-motion", value: "no-preference" }],
-  });
+/* Text on the bare sky reads by its own halo (.onsky, --sky-shadow): over a test sky in place of the skin's, at
+   luminance 0.058 — Aurora's band, a third as bright as its core (DD-2026-11-12-9). Without the halo the title is 3.47:1
+   there (needs 3), the LoRA label 3.74 (needs 4.5). The skin's own sky is too dim headless (~1/5 of a real GPU's). */
+const TEST_SKY = `(()=>{const s=document.createElement("style");s.id="__legSky";s.textContent="#stars,#amb{opacity:0!important}html,body{background:rgb(50,73,67)!important}";document.head.appendChild(s);return 1})()`;
+export async function skyTextReadsByItsHalo(k, t) {
+  await k.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
   await k.reload();
-  const fails = [];
+  await k.job("[fill:ffffff] a white page", { steps: 1, name: "White" });
+  await k.until(`!current()&&jobs.filter(j=>j.status==="done").length>=1`, 30000);
+  await k.ev(PAGE);
+  await k.ev(TEST_SKY);
+  const all = [];
   for (const theme of THEMES) {
     await k.ev(`(S.theme="${theme}",$("sTheme").value="${theme}",applyTheme(),save(),1)`);
-    await k.ev(`(showView("gen"),1)`);
-    await k.sleep(4000); // the aurora's exposure settles
-    if (process.env.LEG_SHOTS) await k.shot(`sky-${theme}`);
-    const got = await k.ev(`(async()=>{
-      const cv=$("stars"),g=cv.getContext("2d"),d=devicePixelRatio||1,cb=cv.getBoundingClientRect();
-      const lum=(r,gg,b)=>{const f=c=>((c/=255)<=0.04045?c/12.92:((c+0.055)/1.055)**2.4);return 0.2126*f(r)+0.7152*f(gg)+0.0722*f(b)};
-      const at=(D,i)=>lum(D[i]*D[i+3]/255,D[i+1]*D[i+3]/255,D[i+2]*D[i+3]/255); // over the page's black
-      /* the brightest 60 px square of the sky, away from the edges */
-      const A=g.getImageData(0,0,cv.width,cv.height).data,S=Math.round(60*d);let best=-1,bx=0,by=0;
-      for(let y=S;y<cv.height-2*S;y+=S/2)for(let x=S;x<cv.width-2*S;x+=S/2){let s=0;
-        for(let j=0;j<S;j+=4)for(let i=0;i<S;i+=4)s+=at(A,((y+j)*cv.width+x+i)*4);
-        if(s>best){best=s;bx=x;by=y}}
-      const lbl=document.querySelector("#chips .chiplbl");if(!lbl)return{err:"no LoRA label"};
-      const keep=lbl.style.cssText;
-      const want={x:cb.left+bx/d,y:cb.top+by/d};
-      /* fixed inside a transformed box is placed against that box: placed, measured, moved by the miss */
-      lbl.style.cssText+=";position:fixed;z-index:99;left:"+want.x+"px;top:"+want.y+"px";
-      const r0=lbl.getBoundingClientRect();
-      lbl.style.left=(2*want.x-r0.left)+"px";lbl.style.top=(2*want.y-r0.top)+"px";
-      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,120)))));
-      const r=lbl.getBoundingClientRect(),x0=Math.round((r.left-cb.left)*d),y0=Math.round((r.top-cb.top)*d);
-      const w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));
-      const B=g.getImageData(x0,y0,w,h).data,L=[];for(let i=0;i<B.length;i+=4)L.push(at(B,i));
-      const avg=L.reduce((p,q)=>p+q,0)/L.length;L.sort((p,q)=>q-p);const sky=L[Math.floor(L.length*0.05)];
-      const c=getComputedStyle(lbl).color.match(/[0-9.]+/g).map(Number),fg=lum(c[0],c[1],c[2]);
-      lbl.style.cssText=keep;
-      if(Math.abs(r.left-want.x)>2||Math.abs(r.top-want.y)>2)return{err:"the label landed at "+[r.left,r.top].map(Math.round)+", not at the spot "+[want.x,want.y].map(Math.round)};
-      return{peak:+(best/((S/4)**2)).toFixed(3),avg:+avg.toFixed(4),sky:+sky.toFixed(3),contrast:+((Math.max(fg,sky)+0.05)/(Math.min(fg,sky)+0.05)).toFixed(2)};
-    })()`);
-    t.note(
-      `${theme}: the sky's brightest spot ${got.peak} → under the text ${got.avg} (its brightest 5 %: ${got.sky}), ${got.contrast}:1`,
+    await k.ev(`(showView("gen"),browseTo(jobs.find(j=>j.name==="White")),1)`);
+    await k.sleep(1200);
+    all.push(...(await measure(k, `${theme}: a shown picture`)));
+    await k.ev(
+      `(endPeek(),showView("gen"),["pname","prompt"].forEach(i=>{$(i).value="";$(i).dispatchEvent(new Event("input"))}),1)`,
     );
-    if (got.err) fails.push(`${theme}: ${got.err}`);
-    else if (got.contrast < 4.5) fails.push(`${theme}: ${got.contrast}:1 (needs 4.5)`);
-    else if (got.peak > 0.005 && got.avg > got.peak / 10)
-      fails.push(`${theme}: ${got.avg} under the text, ${got.peak} at the spot (averages)`);
+    await k.sleep(1200);
+    all.push(...(await measure(k, `${theme}: your empty draft`)));
   }
-  t.ok(!fails.length, "the sky is clear under its text, wherever it's brightest", fails);
+  const sky = all.filter(g => g.sky);
+  t.ok(sky.length >= 8, "it found the text on the sky", { measured: sky.length });
+  const fails = sky.filter(g => g.contrast < g.need);
+  t.ok(
+    !fails.length,
+    "every text on the sky reads by its halo",
+    fails.map(g => `${g.contrast}:1 (needs ${g.need}) ${g.name} “${g.what}” — ${g.state}`),
+  );
+  for (const g of sky) t.note(`${g.contrast}:1 (${g.kind}) ${g.name} “${g.what}” — ${g.state}`);
 }
-skyIsClearUnderItsText.opts = { step: 0.2 };
+skyTextReadsByItsHalo.opts = { step: 0.2 };

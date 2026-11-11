@@ -9,11 +9,11 @@
   --skin-font: IBM Plex Mono;
   --skin-title: Courier Prime;
 }
-/* the title glowing faintly, spaced like a title card */
+/* the title glowing faintly (over its halo: base.css .onsky), spaced like a title card */
 [data-skin="matrix"] .ltitle .pname {
   font-weight: 700;
   letter-spacing: 0.06em;
-  text-shadow: 0 0 14px color-mix(in oklab, var(--a1) 45%, transparent);
+  --title-glow: 0 0 14px color-mix(in oklab, var(--a1) 45%, transparent);
 }
 /* the Generating ring as twelve 30° segments lighting up one by one — a terminal readout that ticks, not sweeps */
 [data-skin="matrix"] .tab .tring {

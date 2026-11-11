@@ -228,8 +228,9 @@ export function initEffects() {
       code = makeCodeBg();
     let lastIn = performance.now(),
       dimV = 1;
-    /* every text that sits on the bare sky (no panel behind it): the sky is cleared under it, in every skin (clearSkyText) */
-    const SKY_TEXT = "#ltitle .phead,#prog .meta,#idle>div,#showP.show,#chips .chiplbl";
+    /* Matrix's look: the code rain fades softly round the app's text, like depth of field (clearCodeRound). Legibility
+       on the sky is the text's own halo (.onsky, --sky-shadow), in every skin. */
+    const CODE_CLEAR = "#ltitle .phead,#prog .meta,#idle>div,#showP.show,#chips .chiplbl";
     ["pointermove", "keydown", "wheel"].forEach(ev =>
       addEventListener(ev, () => (lastIn = performance.now()), { passive: true }),
     );
@@ -254,12 +255,11 @@ export function initEffects() {
         });
       }
     }
-    /** The sky stays clear under text that sits on it, whatever the skin draws there: black at the text, the light
-     *  back ~50 px out, like depth of field. Read every drawn frame, so the clearing moves with the text (DD-2026-11-12-8).
-     *  @param {number} d */
-    function clearSkyText(d) {
+    /** Matrix's code fades out round the app's text: black at the text, back ~50 px out. Read every drawn frame, so
+     *  it moves with the text. @param {number} d */
+    function clearCodeRound(d) {
       const cb = cv.getBoundingClientRect();
-      const boxes = [...document.querySelectorAll(SKY_TEXT)]
+      const boxes = [...document.querySelectorAll(CODE_CLEAR)]
         .map(el => el.getBoundingClientRect())
         .filter(r => r.width && r.height)
         .map(r => ({ x: (r.left - cb.left) * d, y: (r.top - cb.top) * d, w: r.width * d, h: r.height * d, r: 8 * d }));
@@ -301,7 +301,7 @@ export function initEffects() {
             wave: window._bgWave || 0,
             reduce,
           });
-          clearSkyText(d);
+          clearCodeRound(d);
           requestAnimationFrame(draw);
           return;
         }
@@ -362,7 +362,6 @@ export function initEffects() {
           }
         }
         c.globalAlpha = 1;
-        clearSkyText(d);
       } else if (W && !cv.classList.contains("on") && /** @type {any} */ (getComputedStyle(cv).opacity) < 0.02)
         c.clearRect(0, 0, W, H);
       requestAnimationFrame(draw);

@@ -1,3 +1,4 @@
+/* GENERATED from app/tokens/base.tokens.json by tools/tokens.mjs: edit the JSON, then npm run tokens (CI fails if the two differ) */
 /* Kiln · the styles. index.html loads these files in this order (the order matters where rules meet):
    tokens · base · layout · scrolledge · prompt · controls · chips · tabs · picture · queue · loras · pnginfo · dialogs ·
    overlays · glass · themes/* · motion. One rule per thing, grouped by part of the screen.
@@ -30,30 +31,6 @@
   /* the theme's colours --a1 --a2 --a3 --ink: in its skin file (themes/) */
   --grad: linear-gradient(135deg in oklch, var(--a1), var(--a2) 55%, var(--a3));
   --flow: linear-gradient(90deg in oklch, var(--a1), var(--a2), var(--a3), var(--a2), var(--a1));
-  /* SPACING — one scale for every gap, inset and offset: the 4-pt grid. Every step is a whole
-     number of screen pixels at 100 / 125 / 150 / 200 % Windows scaling, and neighbouring steps look clearly different.
-     1 and 2 px are for hairlines and optical nudges only. */
-  --space-px: 1px;
-  --space-hair: 2px;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-7: 28px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
-  --space-16: 64px;
-  /* the hierarchy: what belongs together sits closer than what's merely next to it (the scripts read these too) */
-  --gap-area: var(--space-5); /* between areas: the window's edge, the prompt column ↔ the picture area */
-  --gap-pane: var(
-    --space-5
-  ); /* between two neighbours, either axis: the box ↔ the picture, the tab bar ↔ the page, a drop
-     tile ↔ the picture and its neighbours (the user, 2026-11-11: one gap, 20; Vertical stays even) */
-  --gap-part: var(--space-3); /* a pane and its own parts: the picture ↔ its status row */
-  --gap-tight: var(--space-2); /* attached to a box: the LoRA chips under the prompt, the picture's edit buttons */
   /* text inside a box: this far from the box's outer edge to the letters, on every side */
   --inset-box: var(--space-7);
   /* OUTLINES — one rule: something you move or resize = a dashed line one part gap OUTSIDE its plate, the corners
@@ -67,10 +44,52 @@
   /* the picture's mat: how far it sits inside its glass plate (the plate's ring shows round it). 0 = edge to edge,
      the ring drawn over the picture (the rim, plate.js). The picture's corners stay concentric with the plate's */
   --mat: 0px;
-  --drop-inset: var(--gap-part);
   --outline: 1px dashed var(--white-28);
   --scrollbar: 15px; /* the scrollbars' width (base.css): the prompt keeps its text column when one appears */
-  --r-panel: 24px;
+  /* COLOURS — white and black at the opacities in use: glass highlights, lines, shadows (the number = opacity %) */
+  --white: #ffffff;
+  --black: #000000;
+  --on-picture: rgba(12, 12, 14, 0.72); /* a button over a picture: ✕, the arrows */
+  --on-picture-hover: rgba(40, 40, 44, 0.9); /* …under the pointer */
+  --viewer-button: rgba(40, 40, 44, 0.8); /* the full-size viewer's buttons */
+  --cool: #99aabb; /* the calm tone of the controls (until the theme's harmonics replace it) */
+  --an: #7890ff; /* the prompt's text selection (until the theme's harmonics replace it) */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur: 0.2s;
+  --liw: calc(
+    var(--th, 48px) + 250px
+  ); /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  /* SPACING — one scale for every gap, inset and offset: the 4-pt grid. Every step is a whole
+     number of screen pixels at 100 / 125 / 150 / 200 % Windows scaling, and neighbouring steps look clearly different.
+     1 and 2 px are for hairlines and optical nudges only. */
+  --space-px: 1px;
+  --space-hair: 2px;
+  /* the hierarchy: what belongs together sits closer than what's merely next to it (the scripts read these too) */
+  --gap-area: var(--space-5); /* between areas: the window's edge, the prompt column ↔ the picture area */
+  --gap-pane: var(
+    --space-5
+  ); /* between two neighbours, either axis: the box ↔ the picture, the tab bar ↔ the page, a drop
+     tile ↔ the picture and its neighbours (the user, 2026-11-11: one gap, 20; Vertical stays even) */
+  --gap-part: var(--space-3); /* a pane and its own parts: the picture ↔ its status row */
+  --gap-tight: var(--space-2); /* attached to a box: the LoRA chips under the prompt, the picture's edit buttons */
+  --drop-inset: var(--gap-part);
+  /* ---------- THE DROP MAP (layoutmath.js dropTiles; ux-review/18-box-placement.md) ----------
+     read by the code (tokens.js tok), never copied into it */
+  --drop-cover: 0.25; /* a tile over the picture covers at most this share of it */
+  --drop-room-min: 160px; /* under this much free room beside the picture, its column lies over it */
+  --drop-hit-min: 96px; /* never narrower than a comfortable target */
+  --drop-token: 0.35; /* the box in the hand: its scale (the map shows behind it) */
   /* CORNERS — beside --r-panel (24, the panels) and --r-pill (fully round): today's values, named by size */
   --r-2: 2px;
   --r-4: 4px;
@@ -83,21 +102,23 @@
   --r-14: 14px;
   --r-15: 15px;
   --r-16: 16px;
+  --r-panel: 24px;
+  --r-pill: 999px;
   /* TYPE SIZES — today's values, named by size (a type scale is a later design step) */
   --fs-10: 10px;
-  --fs-10-5: 10.5px;
   --fs-11: 11px;
-  --fs-11-5: 11.5px;
   --fs-12: 12px;
-  --fs-12-5: 12.5px;
   --fs-13: 13px;
-  --fs-13-5: 13.5px;
   --fs-14: 14px;
   --fs-15: 15px;
   --fs-16: 16px;
   --fs-18: 18px;
   --fs-24: 24px;
   --fs-48: 48px;
+  --fs-10-5: 10.5px;
+  --fs-11-5: 11.5px;
+  --fs-12-5: 12.5px;
+  --fs-13-5: 13.5px;
   /* MOTION — durations (beside --dur, --lay-t, --sw-t) and the curves, by what they're for */
   --t-100: 100ms;
   --t-120: 120ms;
@@ -127,12 +148,8 @@
   --e-emph: cubic-bezier(0.2, 0, 0, 1); /* Material 3's emphasized: big, important moves */
   --e-quick: cubic-bezier(0.2, 0.7, 0.2, 1); /* a quick start and a long soft settle */
   --e-swing: cubic-bezier(0.6, 0, 0.3, 1); /* slow out, slow in: a deliberate swing */
-  /* COLOURS — white and black at the opacities in use: glass highlights, lines, shadows (the number = opacity %) */
-  --white: #fff;
-  --black: #000;
   --white-3: rgba(255, 255, 255, 0.03);
   --white-4: rgba(255, 255, 255, 0.04);
-  --white-4-5: rgba(255, 255, 255, 0.045);
   --white-5: rgba(255, 255, 255, 0.05);
   --white-6: rgba(255, 255, 255, 0.06);
   --white-7: rgba(255, 255, 255, 0.07);
@@ -157,6 +174,7 @@
   --white-70: rgba(255, 255, 255, 0.7);
   --white-75: rgba(255, 255, 255, 0.75);
   --white-85: rgba(255, 255, 255, 0.85);
+  --white-4-5: rgba(255, 255, 255, 0.045);
   --black-12: rgba(0, 0, 0, 0.12);
   --black-20: rgba(0, 0, 0, 0.2);
   --black-22: rgba(0, 0, 0, 0.22);
@@ -196,6 +214,12 @@
   --grey-93: #e6e6ea;
   --grey-96: #f2f2f2;
   --c-caution-bg: #2e2618; /* behind a caution note (warm) */
+  /* the few real colours, by role */
+  --c-danger: #e0605a; /* a destructive action (the Queue's Delete) */
+  --c-warn: #e0a060; /* a missing file */
+  --c-caution: #ffcf8a; /* a caution note (LoRAs) */
+  --c-star: #ffd166; /* a starred LoRA */
+  --c-switch: #0a84ff; /* a switch that's on (Apple's system blue) */
   --glass-option: #1d2120; /* a dropdown's list in glass */
   /* GLASS — the material's tints (channels: the opacity comes from the theme's --gta / --gtk or the rule) */
   --glass-regular: 18, 20, 22; /* regular glass: the empty frame, the gear, the dock zones */
@@ -210,20 +234,6 @@
     24,
     0.58
   ); /* the buttons on the picture in glass: dark enough that a white icon reads over a white picture */
-  --on-picture: rgba(12, 12, 14, 0.72); /* a button over a picture: ✕, the arrows */
-  --on-picture-hover: rgba(40, 40, 44, 0.9); /* …under the pointer */
-  --viewer-button: rgba(40, 40, 44, 0.8); /* the full-size viewer's buttons */
-  /* the few real colours, by role */
-  --c-danger: #e0605a; /* a destructive action (the Queue's Delete) */
-  --c-warn: #e0a060; /* a missing file */
-  --c-caution: #ffcf8a; /* a caution note (LoRAs) */
-  --c-star: #ffd166; /* a starred LoRA */
-  --c-switch: #0a84ff; /* a switch that's on (Apple's system blue) */
-  --cool: #9ab; /* the calm tone of the controls (until the theme's harmonics replace it) */
-  --an: #7890ff; /* the prompt's text selection (until the theme's harmonics replace it) */
-  --r-pill: 999px;
-  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --dur: 0.2s;
   /* every layout glide: Material 3's emphasized decelerate — most of the way in the first third, then a long soft
      settle. One curve for all the pieces that move together, or they'd drift apart mid-move */
   --lay-t: 0.42s;
@@ -231,20 +241,11 @@
   /* the layout switch (Left / Right / Vertical): the picture morphs on this */
   --sw-t: 440ms;
   --sw-e: cubic-bezier(0.3, 0, 0, 1);
-  --liw: calc(
-    var(--th, 48px) + 250px
-  ); /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
-  /* ---------- THE DROP MAP (layoutmath.js dropTiles; ux-review/18-box-placement.md) ----------
-     read by the code (tokens.js tok), never copied into it */
-  --drop-cover: 0.25; /* a tile over the picture covers at most this share of it */
-  --drop-room-min: 160px; /* under this much free room beside the picture, its column lies over it */
-  --drop-hit-min: 96px; /* never narrower than a comfortable target */
-  --drop-token: 0.35; /* the box in the hand: its scale (the map shows behind it) */
   /* ---------- THE LAYERS (ARCHITECTURE › paint order; DD-2026-11-11-2) ----------
      Paint order is ONE list per stacking context, bottom to top, by NAME: a z-index anywhere else is var(--z-…) (Stylelint
      rejects a number). A z-index only competes within its stacking context, so each context has a list of its own — one
-     global scale would order things that never meet. */
-  /* THE WINDOW (the page's top level) */
+     global scale would order things that never meet.
+THE WINDOW (the page's top level) */
   --z-win-stars: 0;
   --z-win-app: 1;
   --z-win-leaving: 2;
@@ -296,11 +297,6 @@
   --z-edge-fade: 1;
   --z-png-drop: 1;
   --z-viewer-close: 2;
-}
-@property --p {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
 }
 /* the outline's offset is a length the scripts read (tokens.js): registered, its min() resolves to px */
 @property --outline-out {

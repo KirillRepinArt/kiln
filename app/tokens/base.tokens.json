@@ -1,0 +1,1893 @@
+{
+  "$description": "Kiln · the styles. index.html loads these files in this order (the order matters where rules meet):\n   tokens · base · layout · scrolledge · prompt · controls · chips · tabs · picture · queue · loras · pnginfo · dialogs ·\n   overlays · glass · themes/* · motion. One rule per thing, grouped by part of the screen.\n   States are classes JS sets (body.glass / .private / .jobrun…, .app.stacked / .pright, .frame.has / .held…).\n   !important is kept only where a rule must beat an inline style or every other rule (cursor and transition\n   switches while you drag, the morph); each one says why. */\n/* ======================= tokens =======================",
+  "$extensions": {
+    "dev.kiln": {
+      "format": "DTCG 2025.10; CSS expressions the format can't type are marked dev.kiln.css"
+    }
+  },
+  "role": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": ""
+      }
+    },
+    "bg": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000"
+      }
+    },
+    "text": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.929412, 0.929412, 0.929412],
+        "hex": "#ededed"
+      }
+    },
+    "muted": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.721569, 0.721569, 0.741176],
+        "hex": "#b8b8bd"
+      }
+    },
+    "faint": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.647059, 0.647059, 0.670588],
+        "hex": "#a5a5ab"
+      },
+      "$description": "the quietest text that still reads 4.5:1 on a panel or a row (legibility.test.mjs)"
+    },
+    "sel": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff"
+      }
+    },
+    "tw": {
+      "$value": "6%",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true,
+          "above": "the greys lean a few percent toward the theme, so a skin feels whole (--tw = strength)"
+        }
+      }
+    },
+    "panel": {
+      "$value": "color-mix(in oklab, #1c1c1e, var(--a1) {role.tw})",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      }
+    },
+    "raised": {
+      "$value": "color-mix(in oklab, #2a2a2d, var(--a1) {role.tw})",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      }
+    },
+    "raised2": {
+      "$value": "color-mix(in oklab, #343438, var(--a1) {role.tw})",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      }
+    },
+    "line": {
+      "$value": "color-mix(in oklab, #333338, var(--a1) {role.tw})",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      }
+    },
+    "row": {
+      "$value": "color-mix(in oklab, #232326, var(--a1) {role.tw})",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      },
+      "$description": "a row on a panel (the Queue): dark enough for --faint"
+    },
+    "shown": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.764706, 0.784314, 0.8],
+        "hex": "#c3c8cc"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "a shown job's settings and LoRAs: dimmer than your draft's, still 4.5:1 (legibility.test.mjs)"
+        }
+      }
+    },
+    "shown-label": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.705882, 0.729412, 0.745098],
+        "hex": "#b4babe"
+      }
+    },
+    "sky-shadow": {
+      "$value": "0 0 1px {black.70}, 0 0 4px {black.60}, 0 0 14px rgba(0, 0, 0, 0.45)",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true,
+          "above": "text on the bare sky (.onsky, no material behind it): a halo shaped like its letters, as on a wallpaper's labels"
+        }
+      }
+    },
+    "sky-shadow-icon": {
+      "$value": "drop-shadow(0 0 1px {black.70}) drop-shadow(0 0 4px {black.60}) drop-shadow(0 0 14px rgba(0, 0, 0, 0.45))",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      }
+    },
+    "shown-name": {
+      "$value": "{grey.69}",
+      "$extensions": {
+        "dev.kiln": {
+          "above": "a shown picture's title line (the #, the name, the number and .png): greyed against your draft's white"
+        }
+      }
+    },
+    "grad": {
+      "$value": "linear-gradient(135deg in oklch, var(--a1), var(--a2) 55%, var(--a3))",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true,
+          "above": "the theme's colours --a1 --a2 --a3 --ink: in its skin file (themes/)"
+        }
+      }
+    },
+    "flow": {
+      "$value": "linear-gradient(90deg in oklch, var(--a1), var(--a2), var(--a3), var(--a2), var(--a1))",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      }
+    },
+    "inset-box": {
+      "$value": "{space.7}",
+      "$extensions": {
+        "dev.kiln": {
+          "above": "text inside a box: this far from the box's outer edge to the letters, on every side"
+        }
+      }
+    },
+    "outline-out": {
+      "$value": "min({gap.part}, calc(({gap.area} - {space.1}) / 2))",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true,
+          "above": "OUTLINES — one rule: something you move or resize = a dashed line one part gap OUTSIDE its plate, the corners\n     concentric; a place to drop = a plate with the line one part gap INSIDE (the scripts read --outline-out too).\n     A divider outlines both panes it resizes: the two lines run as a pair one scale step apart down its middle, never\n     crossing — so never more than half of (the gap less one step)",
+          "property": {
+            "syntax": "<length>",
+            "inherits": true,
+            "initial": "12px"
+          },
+          "propertyNote": "the outline's offset is a length the scripts read (tokens.js): registered, its min() resolves to px"
+        }
+      }
+    },
+    "band-in": {
+      "$value": "{space.px}",
+      "$extensions": {
+        "dev.kiln": {
+          "above": "a resize band reaches this far inside its pane's edge (B19). A corner has ONE owner: the top / bottom band takes\n     it, a side band runs between them (L5: both claimed the corner's square — the pointer went to whichever was on top)"
+        }
+      }
+    },
+    "mat": {
+      "$type": "dimension",
+      "$value": {
+        "value": 0,
+        "unit": "px"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "the picture's mat: how far it sits inside its glass plate (the plate's ring shows round it). 0 = edge to edge,\n     the ring drawn over the picture (the rim, plate.js). The picture's corners stay concentric with the plate's"
+        }
+      }
+    },
+    "outline": {
+      "$value": "1px dashed {white.28}",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      }
+    },
+    "scrollbar": {
+      "$type": "dimension",
+      "$value": {
+        "value": 15,
+        "unit": "px"
+      },
+      "$description": "the scrollbars' width (base.css): the prompt keeps its text column when one appears"
+    },
+    "white": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "COLOURS — white and black at the opacities in use: glass highlights, lines, shadows (the number = opacity %)"
+        }
+      }
+    },
+    "black": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000"
+      }
+    },
+    "on-picture": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.047059, 0.047059, 0.054902],
+        "hex": "#0c0c0e",
+        "alpha": 0.72
+      },
+      "$description": "a button over a picture: ✕, the arrows"
+    },
+    "on-picture-hover": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.156863, 0.156863, 0.172549],
+        "hex": "#28282c",
+        "alpha": 0.9
+      },
+      "$description": "…under the pointer"
+    },
+    "viewer-button": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.156863, 0.156863, 0.172549],
+        "hex": "#28282c",
+        "alpha": 0.8
+      },
+      "$description": "the full-size viewer's buttons"
+    },
+    "cool": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.6, 0.666667, 0.733333],
+        "hex": "#99aabb"
+      },
+      "$description": "the calm tone of the controls (until the theme's harmonics replace it)"
+    },
+    "an": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.470588, 0.564706, 1.0],
+        "hex": "#7890ff"
+      },
+      "$description": "the prompt's text selection (until the theme's harmonics replace it)"
+    },
+    "ease": {
+      "$type": "cubicBezier",
+      "$value": [0.2, 0.8, 0.2, 1]
+    },
+    "dur": {
+      "$type": "duration",
+      "$value": {
+        "value": 0.2,
+        "unit": "s"
+      }
+    },
+    "liw": {
+      "$value": "calc(var(--th, 48px) + 250px)",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      },
+      "$description": "one LoRA item; the thumbnail slider sizes it, so it also sets the column count"
+    }
+  },
+  "space": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "space"
+      }
+    },
+    "px": {
+      "$type": "dimension",
+      "$value": {
+        "value": 1,
+        "unit": "px"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "SPACING — one scale for every gap, inset and offset: the 4-pt grid. Every step is a whole\n     number of screen pixels at 100 / 125 / 150 / 200 % Windows scaling, and neighbouring steps look clearly different.\n     1 and 2 px are for hairlines and optical nudges only."
+        }
+      }
+    },
+    "hair": {
+      "$type": "dimension",
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      }
+    },
+    "1": {
+      "$type": "dimension",
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      }
+    },
+    "2": {
+      "$type": "dimension",
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "3": {
+      "$type": "dimension",
+      "$value": {
+        "value": 12,
+        "unit": "px"
+      }
+    },
+    "4": {
+      "$type": "dimension",
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "5": {
+      "$type": "dimension",
+      "$value": {
+        "value": 20,
+        "unit": "px"
+      }
+    },
+    "6": {
+      "$type": "dimension",
+      "$value": {
+        "value": 24,
+        "unit": "px"
+      }
+    },
+    "7": {
+      "$type": "dimension",
+      "$value": {
+        "value": 28,
+        "unit": "px"
+      }
+    },
+    "8": {
+      "$type": "dimension",
+      "$value": {
+        "value": 32,
+        "unit": "px"
+      }
+    },
+    "10": {
+      "$type": "dimension",
+      "$value": {
+        "value": 40,
+        "unit": "px"
+      }
+    },
+    "12": {
+      "$type": "dimension",
+      "$value": {
+        "value": 48,
+        "unit": "px"
+      }
+    },
+    "16": {
+      "$type": "dimension",
+      "$value": {
+        "value": 64,
+        "unit": "px"
+      }
+    }
+  },
+  "gap": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "gap"
+      }
+    },
+    "area": {
+      "$value": "{space.5}",
+      "$extensions": {
+        "dev.kiln": {
+          "above": "the hierarchy: what belongs together sits closer than what's merely next to it (the scripts read these too)"
+        }
+      },
+      "$description": "between areas: the window's edge, the prompt column ↔ the picture area"
+    },
+    "pane": {
+      "$value": "{space.5}",
+      "$description": "between two neighbours, either axis: the box ↔ the picture, the tab bar ↔ the page, a drop\n     tile ↔ the picture and its neighbours (the user, 2026-11-11: one gap, 20; Vertical stays even)"
+    },
+    "part": {
+      "$value": "{space.3}",
+      "$description": "a pane and its own parts: the picture ↔ its status row"
+    },
+    "tight": {
+      "$value": "{space.2}",
+      "$description": "attached to a box: the LoRA chips under the prompt, the picture's edit buttons"
+    }
+  },
+  "drop": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "drop"
+      }
+    },
+    "inset": {
+      "$value": "{gap.part}"
+    },
+    "cover": {
+      "$type": "number",
+      "$value": 0.25,
+      "$extensions": {
+        "dev.kiln": {
+          "above": "---------- THE DROP MAP (layoutmath.js dropTiles; ux-review/18-box-placement.md) ----------\n     read by the code (tokens.js tok), never copied into it"
+        }
+      },
+      "$description": "a tile over the picture covers at most this share of it"
+    },
+    "room-min": {
+      "$type": "dimension",
+      "$value": {
+        "value": 160,
+        "unit": "px"
+      },
+      "$description": "under this much free room beside the picture, its column lies over it"
+    },
+    "hit-min": {
+      "$type": "dimension",
+      "$value": {
+        "value": 96,
+        "unit": "px"
+      },
+      "$description": "never narrower than a comfortable target"
+    },
+    "token": {
+      "$type": "number",
+      "$value": 0.35,
+      "$description": "the box in the hand: its scale (the map shows behind it)"
+    }
+  },
+  "r": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "r"
+      }
+    },
+    "panel": {
+      "$type": "dimension",
+      "$value": {
+        "value": 24,
+        "unit": "px"
+      }
+    },
+    "2": {
+      "$type": "dimension",
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "CORNERS — beside --r-panel (24, the panels) and --r-pill (fully round): today's values, named by size"
+        }
+      }
+    },
+    "4": {
+      "$type": "dimension",
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      }
+    },
+    "5": {
+      "$type": "dimension",
+      "$value": {
+        "value": 5,
+        "unit": "px"
+      }
+    },
+    "6": {
+      "$type": "dimension",
+      "$value": {
+        "value": 6,
+        "unit": "px"
+      }
+    },
+    "7": {
+      "$type": "dimension",
+      "$value": {
+        "value": 7,
+        "unit": "px"
+      }
+    },
+    "8": {
+      "$type": "dimension",
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "10": {
+      "$type": "dimension",
+      "$value": {
+        "value": 10,
+        "unit": "px"
+      }
+    },
+    "12": {
+      "$type": "dimension",
+      "$value": {
+        "value": 12,
+        "unit": "px"
+      }
+    },
+    "14": {
+      "$type": "dimension",
+      "$value": {
+        "value": 14,
+        "unit": "px"
+      }
+    },
+    "15": {
+      "$type": "dimension",
+      "$value": {
+        "value": 15,
+        "unit": "px"
+      }
+    },
+    "16": {
+      "$type": "dimension",
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "pill": {
+      "$type": "dimension",
+      "$value": {
+        "value": 999,
+        "unit": "px"
+      }
+    }
+  },
+  "fs": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "fs"
+      }
+    },
+    "10": {
+      "$type": "dimension",
+      "$value": {
+        "value": 10,
+        "unit": "px"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "TYPE SIZES — today's values, named by size (a type scale is a later design step)"
+        }
+      }
+    },
+    "10-5": {
+      "$type": "dimension",
+      "$value": {
+        "value": 10.5,
+        "unit": "px"
+      }
+    },
+    "11": {
+      "$type": "dimension",
+      "$value": {
+        "value": 11,
+        "unit": "px"
+      }
+    },
+    "11-5": {
+      "$type": "dimension",
+      "$value": {
+        "value": 11.5,
+        "unit": "px"
+      }
+    },
+    "12": {
+      "$type": "dimension",
+      "$value": {
+        "value": 12,
+        "unit": "px"
+      }
+    },
+    "12-5": {
+      "$type": "dimension",
+      "$value": {
+        "value": 12.5,
+        "unit": "px"
+      }
+    },
+    "13": {
+      "$type": "dimension",
+      "$value": {
+        "value": 13,
+        "unit": "px"
+      }
+    },
+    "13-5": {
+      "$type": "dimension",
+      "$value": {
+        "value": 13.5,
+        "unit": "px"
+      }
+    },
+    "14": {
+      "$type": "dimension",
+      "$value": {
+        "value": 14,
+        "unit": "px"
+      }
+    },
+    "15": {
+      "$type": "dimension",
+      "$value": {
+        "value": 15,
+        "unit": "px"
+      }
+    },
+    "16": {
+      "$type": "dimension",
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "18": {
+      "$type": "dimension",
+      "$value": {
+        "value": 18,
+        "unit": "px"
+      }
+    },
+    "24": {
+      "$type": "dimension",
+      "$value": {
+        "value": 24,
+        "unit": "px"
+      }
+    },
+    "48": {
+      "$type": "dimension",
+      "$value": {
+        "value": 48,
+        "unit": "px"
+      }
+    }
+  },
+  "t": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "t"
+      }
+    },
+    "100": {
+      "$type": "duration",
+      "$value": {
+        "value": 100,
+        "unit": "ms"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "MOTION — durations (beside --dur, --lay-t, --sw-t) and the curves, by what they're for"
+        }
+      }
+    },
+    "120": {
+      "$type": "duration",
+      "$value": {
+        "value": 120,
+        "unit": "ms"
+      }
+    },
+    "150": {
+      "$type": "duration",
+      "$value": {
+        "value": 150,
+        "unit": "ms"
+      }
+    },
+    "170": {
+      "$type": "duration",
+      "$value": {
+        "value": 170,
+        "unit": "ms"
+      }
+    },
+    "180": {
+      "$type": "duration",
+      "$value": {
+        "value": 180,
+        "unit": "ms"
+      }
+    },
+    "200": {
+      "$type": "duration",
+      "$value": {
+        "value": 200,
+        "unit": "ms"
+      }
+    },
+    "220": {
+      "$type": "duration",
+      "$value": {
+        "value": 220,
+        "unit": "ms"
+      }
+    },
+    "250": {
+      "$type": "duration",
+      "$value": {
+        "value": 250,
+        "unit": "ms"
+      }
+    },
+    "260": {
+      "$type": "duration",
+      "$value": {
+        "value": 260,
+        "unit": "ms"
+      }
+    },
+    "280": {
+      "$type": "duration",
+      "$value": {
+        "value": 280,
+        "unit": "ms"
+      }
+    },
+    "300": {
+      "$type": "duration",
+      "$value": {
+        "value": 300,
+        "unit": "ms"
+      }
+    },
+    "320": {
+      "$type": "duration",
+      "$value": {
+        "value": 320,
+        "unit": "ms"
+      }
+    },
+    "350": {
+      "$type": "duration",
+      "$value": {
+        "value": 350,
+        "unit": "ms"
+      }
+    },
+    "400": {
+      "$type": "duration",
+      "$value": {
+        "value": 400,
+        "unit": "ms"
+      }
+    },
+    "450": {
+      "$type": "duration",
+      "$value": {
+        "value": 450,
+        "unit": "ms"
+      }
+    },
+    "550": {
+      "$type": "duration",
+      "$value": {
+        "value": 550,
+        "unit": "ms"
+      }
+    },
+    "650": {
+      "$type": "duration",
+      "$value": {
+        "value": 650,
+        "unit": "ms"
+      }
+    },
+    "1000": {
+      "$type": "duration",
+      "$value": {
+        "value": 1000,
+        "unit": "ms"
+      }
+    },
+    "1100": {
+      "$type": "duration",
+      "$value": {
+        "value": 1100,
+        "unit": "ms"
+      }
+    },
+    "1200": {
+      "$type": "duration",
+      "$value": {
+        "value": 1200,
+        "unit": "ms"
+      }
+    },
+    "2600": {
+      "$type": "duration",
+      "$value": {
+        "value": 2600,
+        "unit": "ms"
+      }
+    },
+    "6000": {
+      "$type": "duration",
+      "$value": {
+        "value": 6000,
+        "unit": "ms"
+      }
+    }
+  },
+  "e": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "e"
+      }
+    },
+    "standard": {
+      "$type": "cubicBezier",
+      "$value": [0.4, 0, 0.2, 1],
+      "$description": "Material's standard: moves that start and end on screen"
+    },
+    "decel": {
+      "$type": "cubicBezier",
+      "$value": [0, 0, 0.2, 1],
+      "$description": "Material's decelerate: arriving (things coming in)"
+    },
+    "accel": {
+      "$type": "cubicBezier",
+      "$value": [0.4, 0, 1, 1],
+      "$description": "Material's accelerate: leaving (things going out)"
+    },
+    "emph": {
+      "$type": "cubicBezier",
+      "$value": [0.2, 0, 0, 1],
+      "$description": "Material 3's emphasized: big, important moves"
+    },
+    "quick": {
+      "$type": "cubicBezier",
+      "$value": [0.2, 0.7, 0.2, 1],
+      "$description": "a quick start and a long soft settle"
+    },
+    "swing": {
+      "$type": "cubicBezier",
+      "$value": [0.6, 0, 0.3, 1],
+      "$description": "slow out, slow in: a deliberate swing"
+    }
+  },
+  "white": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "white"
+      }
+    },
+    "3": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.03
+      }
+    },
+    "4": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.04
+      }
+    },
+    "4-5": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.045
+      }
+    },
+    "5": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.05
+      }
+    },
+    "6": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.06
+      }
+    },
+    "7": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.07
+      }
+    },
+    "8": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.08
+      }
+    },
+    "9": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.09
+      }
+    },
+    "10": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.1
+      }
+    },
+    "11": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.11
+      }
+    },
+    "12": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.12
+      }
+    },
+    "14": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.14
+      }
+    },
+    "15": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.15
+      }
+    },
+    "16": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.16
+      }
+    },
+    "17": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.17
+      }
+    },
+    "18": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.18
+      }
+    },
+    "20": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.2
+      }
+    },
+    "22": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.22
+      }
+    },
+    "28": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.28
+      }
+    },
+    "35": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.35
+      }
+    },
+    "38": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.38
+      }
+    },
+    "50": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.5
+      }
+    },
+    "55": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.55
+      }
+    },
+    "60": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.6
+      }
+    },
+    "70": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.7
+      }
+    },
+    "75": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.75
+      }
+    },
+    "85": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff",
+        "alpha": 0.85
+      }
+    }
+  },
+  "black": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "black"
+      }
+    },
+    "12": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000",
+        "alpha": 0.12
+      }
+    },
+    "20": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000",
+        "alpha": 0.2
+      }
+    },
+    "22": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000",
+        "alpha": 0.22
+      }
+    },
+    "25": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000",
+        "alpha": 0.25
+      }
+    },
+    "35": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000",
+        "alpha": 0.35
+      }
+    },
+    "40": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000",
+        "alpha": 0.4
+      }
+    },
+    "50": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000",
+        "alpha": 0.5
+      }
+    },
+    "55": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000",
+        "alpha": 0.55
+      }
+    },
+    "60": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000",
+        "alpha": 0.6
+      }
+    },
+    "70": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000",
+        "alpha": 0.7
+      }
+    },
+    "90": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000",
+        "alpha": 0.9
+      }
+    }
+  },
+  "grey": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "grey"
+      }
+    },
+    "13": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.027451, 0.027451, 0.039216],
+        "hex": "#07070a"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "GREYS — one ramp, named by perceived lightness (OKLab L × 100: 0 = black, 100 = white); shades closer than the eye\n     can tell apart are one"
+        }
+      }
+    },
+    "15": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.043137, 0.043137, 0.054902],
+        "hex": "#0b0b0e"
+      }
+    },
+    "18": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.066667, 0.066667, 0.066667],
+        "hex": "#111111"
+      }
+    },
+    "20": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.082353, 0.090196, 0.101961],
+        "hex": "#15171a"
+      }
+    },
+    "23": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.109804, 0.109804, 0.117647],
+        "hex": "#1c1c1e"
+      }
+    },
+    "27": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.14902, 0.14902, 0.164706],
+        "hex": "#26262a"
+      }
+    },
+    "30": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.172549, 0.172549, 0.192157],
+        "hex": "#2c2c31"
+      }
+    },
+    "33": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.203922, 0.203922, 0.227451],
+        "hex": "#34343a"
+      }
+    },
+    "35": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.227451, 0.227451, 0.25098],
+        "hex": "#3a3a40"
+      }
+    },
+    "39": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.270588, 0.270588, 0.290196],
+        "hex": "#45454a"
+      }
+    },
+    "41": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.290196, 0.290196, 0.321569],
+        "hex": "#4a4a52"
+      }
+    },
+    "45": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.333333, 0.333333, 0.360784],
+        "hex": "#55555c"
+      }
+    },
+    "53": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.423529, 0.423529, 0.454902],
+        "hex": "#6c6c74"
+      }
+    },
+    "57": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.466667, 0.466667, 0.494118],
+        "hex": "#77777e"
+      }
+    },
+    "58": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.478431, 0.478431, 0.509804],
+        "hex": "#7a7a82"
+      }
+    },
+    "64": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.541176, 0.541176, 0.572549],
+        "hex": "#8a8a92"
+      }
+    },
+    "66": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.556863, 0.580392, 0.6],
+        "hex": "#8e9499"
+      }
+    },
+    "69": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.603922, 0.603922, 0.635294],
+        "hex": "#9a9aa2"
+      }
+    },
+    "74": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.654902, 0.678431, 0.698039],
+        "hex": "#a7adb2"
+      }
+    },
+    "79": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.713725, 0.737255, 0.752941],
+        "hex": "#b6bcc0"
+      }
+    },
+    "85": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.803922, 0.803922, 0.803922],
+        "hex": "#cdcdcd"
+      }
+    },
+    "88": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.839216, 0.839216, 0.854902],
+        "hex": "#d6d6da"
+      }
+    },
+    "90": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.866667, 0.866667, 0.866667],
+        "hex": "#dddddd"
+      }
+    },
+    "93": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.901961, 0.901961, 0.917647],
+        "hex": "#e6e6ea"
+      }
+    },
+    "96": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.94902, 0.94902, 0.94902],
+        "hex": "#f2f2f2"
+      }
+    }
+  },
+  "c": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "c"
+      }
+    },
+    "caution-bg": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.180392, 0.14902, 0.094118],
+        "hex": "#2e2618"
+      },
+      "$description": "behind a caution note (warm)"
+    },
+    "danger": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.878431, 0.376471, 0.352941],
+        "hex": "#e0605a"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "the few real colours, by role"
+        }
+      },
+      "$description": "a destructive action (the Queue's Delete)"
+    },
+    "warn": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.878431, 0.627451, 0.376471],
+        "hex": "#e0a060"
+      },
+      "$description": "a missing file"
+    },
+    "caution": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 0.811765, 0.541176],
+        "hex": "#ffcf8a"
+      },
+      "$description": "a caution note (LoRAs)"
+    },
+    "star": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 0.819608, 0.4],
+        "hex": "#ffd166"
+      },
+      "$description": "a starred LoRA"
+    },
+    "switch": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.039216, 0.517647, 1.0],
+        "hex": "#0a84ff"
+      },
+      "$description": "a switch that's on (Apple's system blue)"
+    }
+  },
+  "glass": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "glass"
+      }
+    },
+    "option": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.113725, 0.129412, 0.12549],
+        "hex": "#1d2120"
+      },
+      "$description": "a dropdown's list in glass"
+    },
+    "regular": {
+      "$value": "18, 20, 22",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true,
+          "above": "GLASS — the material's tints (channels: the opacity comes from the theme's --gta / --gtk or the rule)"
+        }
+      },
+      "$description": "regular glass: the empty frame, the gear, the dock zones"
+    },
+    "regular-hover": {
+      "$value": "44, 48, 50",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      },
+      "$description": "regular glass under the pointer"
+    },
+    "thick": {
+      "$value": "16, 18, 20",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      },
+      "$description": "thick glass: dialogs"
+    },
+    "row": {
+      "$value": "12, 14, 14",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      },
+      "$description": "a Queue / LoRAs row in glass"
+    },
+    "row-hover": {
+      "$value": "40, 44, 44",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      },
+      "$description": "a Queue row under the pointer"
+    },
+    "bar": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.101961, 0.109804, 0.12549],
+        "hex": "#1a1c20",
+        "alpha": 0.42
+      },
+      "$description": "the Queue's selection bar in glass"
+    },
+    "control": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.078431, 0.086275, 0.094118],
+        "hex": "#141618",
+        "alpha": 0.58
+      },
+      "$description": "the buttons on the picture in glass: dark enough that a white icon reads over a white picture"
+    }
+  },
+  "lay": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "lay"
+      }
+    },
+    "t": {
+      "$type": "duration",
+      "$value": {
+        "value": 0.42,
+        "unit": "s"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "every layout glide: Material 3's emphasized decelerate — most of the way in the first third, then a long soft\n     settle. One curve for all the pieces that move together, or they'd drift apart mid-move"
+        }
+      }
+    },
+    "e": {
+      "$type": "cubicBezier",
+      "$value": [0.05, 0.7, 0.1, 1]
+    }
+  },
+  "sw": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "sw"
+      }
+    },
+    "t": {
+      "$type": "duration",
+      "$value": {
+        "value": 440,
+        "unit": "ms"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "the layout switch (Left / Right / Vertical): the picture morphs on this"
+        }
+      }
+    },
+    "e": {
+      "$type": "cubicBezier",
+      "$value": [0.3, 0, 0, 1]
+    }
+  },
+  "z": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "z"
+      }
+    },
+    "win-stars": {
+      "$type": "number",
+      "$value": 0,
+      "$extensions": {
+        "dev.kiln": {
+          "above": "---------- THE LAYERS (ARCHITECTURE › paint order; DD-2026-11-11-2) ----------\n     Paint order is ONE list per stacking context, bottom to top, by NAME: a z-index anywhere else is var(--z-…) (Stylelint\n     rejects a number). A z-index only competes within its stacking context, so each context has a list of its own — one\n     global scale would order things that never meet.\nTHE WINDOW (the page's top level)"
+        }
+      }
+    },
+    "win-app": {
+      "$type": "number",
+      "$value": 1
+    },
+    "win-leaving": {
+      "$type": "number",
+      "$value": 2
+    },
+    "win-arrows": {
+      "$type": "number",
+      "$value": 20,
+      "$description": "the picture's arrows (body level, over the app)"
+    },
+    "win-dialog": {
+      "$type": "number",
+      "$value": 100
+    },
+    "win-note": {
+      "$type": "number",
+      "$value": 120
+    },
+    "win-viewer": {
+      "$type": "number",
+      "$value": 150
+    },
+    "win-toast": {
+      "$type": "number",
+      "$value": 200
+    },
+    "win-tip": {
+      "$type": "number",
+      "$value": 400
+    },
+    "win-offline": {
+      "$type": "number",
+      "$value": 1000
+    },
+    "app-plate": {
+      "$type": "number",
+      "$value": 0,
+      "$extensions": {
+        "dev.kiln": {
+          "above": "THE APP (.app — its own stacking context)"
+        }
+      }
+    },
+    "app-glow": {
+      "$type": "number",
+      "$value": 0
+    },
+    "page-ambient": {
+      "$type": "number",
+      "$value": 0
+    },
+    "app-panel": {
+      "$type": "number",
+      "$value": 1
+    },
+    "app-rim": {
+      "$type": "number",
+      "$value": 2
+    },
+    "app-drop-map": {
+      "$type": "number",
+      "$value": 3,
+      "$description": "the drop map's tiles — over the page, under the prompt column (and the box in the hand)"
+    },
+    "app-prompt": {
+      "$type": "number",
+      "$value": 4
+    },
+    "app-tabs": {
+      "$type": "number",
+      "$value": 5
+    },
+    "pic-stage": {
+      "$type": "number",
+      "$value": 1,
+      "$extensions": {
+        "dev.kiln": {
+          "above": "THE PICTURE'S AREA (its stage and the floating layer over it)"
+        }
+      }
+    },
+    "pic-picture": {
+      "$type": "number",
+      "$value": 1
+    },
+    "pic-empty": {
+      "$type": "number",
+      "$value": 1
+    },
+    "pic-row": {
+      "$type": "number",
+      "$value": 1
+    },
+    "pic-veil": {
+      "$type": "number",
+      "$value": 2
+    },
+    "pic-show-prompt": {
+      "$type": "number",
+      "$value": 2
+    },
+    "pic-embers": {
+      "$type": "number",
+      "$value": 3
+    },
+    "pic-missing": {
+      "$type": "number",
+      "$value": 4
+    },
+    "pic-controls": {
+      "$type": "number",
+      "$value": 6,
+      "$description": "the eye, the ✕, the edit buttons, the arrows on the picture"
+    },
+    "pic-handle-box": {
+      "$type": "number",
+      "$value": 6
+    },
+    "pic-handle-picture": {
+      "$type": "number",
+      "$value": 7
+    },
+    "pic-handle-pane": {
+      "$type": "number",
+      "$value": 8,
+      "$description": "over the controls: one home per strip (handles over controls, DD-2026-11-10-4)"
+    },
+    "glass-under": {
+      "$type": "number",
+      "$value": -1,
+      "$extensions": {
+        "dev.kiln": {
+          "above": "THE PROMPT BOX (#left)"
+        }
+      },
+      "$description": "a glass material's ::before, under its own content"
+    },
+    "box-controls": {
+      "$type": "number",
+      "$value": 2
+    },
+    "box-tools": {
+      "$type": "number",
+      "$value": 3
+    },
+    "box-modes": {
+      "$type": "number",
+      "$value": 4
+    },
+    "box-cover": {
+      "$type": "number",
+      "$value": 5
+    },
+    "box-open": {
+      "$type": "number",
+      "$value": 5
+    },
+    "box-controls-open": {
+      "$type": "number",
+      "$value": 6
+    },
+    "box-menu": {
+      "$type": "number",
+      "$value": 40
+    },
+    "queue-bar": {
+      "$type": "number",
+      "$value": 5,
+      "$extensions": {
+        "dev.kiln": {
+          "above": "THE QUEUE"
+        }
+      }
+    },
+    "queue-lifted": {
+      "$type": "number",
+      "$value": 50
+    },
+    "queue-preview": {
+      "$type": "number",
+      "$value": 60
+    },
+    "tabs-ring": {
+      "$type": "number",
+      "$value": -1,
+      "$extensions": {
+        "dev.kiln": {
+          "above": "SMALL ONES (inside their own part)"
+        }
+      }
+    },
+    "tabs-tab": {
+      "$type": "number",
+      "$value": 1
+    },
+    "edge-fade": {
+      "$type": "number",
+      "$value": 1
+    },
+    "png-drop": {
+      "$type": "number",
+      "$value": 1
+    },
+    "viewer-close": {
+      "$type": "number",
+      "$value": 2
+    }
+  }
+}

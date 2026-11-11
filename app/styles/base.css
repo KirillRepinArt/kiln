@@ -1,4 +1,10 @@
 /* ======================= base ======================= */
+/* the running job's progress, 0–1 (effects.js): registered so its rings animate as a number */
+@property --p {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
 * {
   box-sizing: border-box;
 }

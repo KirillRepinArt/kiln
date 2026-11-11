@@ -12,7 +12,11 @@ from typing import Any, Protocol
 
 
 class BackendError(Exception):
-    """The generator couldn't be reached or refused a request (the message says how, in the generator's words)."""
+    """The generator refused a request (the message says how, in the generator's words)."""
+
+
+class BackendGone(BackendError):
+    """The generator couldn't be reached, or went away mid-request (stopped, crashed, restarting)."""
 
 
 @dataclass
@@ -76,6 +80,11 @@ class Backend(Protocol):
         ...
 
     def upscale(self, image: bytes, upscaler: Any, scale: Any) -> bytes: ...
+
+    def missing(self, spec: Mapping[str, Any], offered: Mapping[str, Any]) -> tuple[str, list[str]] | None:
+        """What this spec asks for that the generator doesn't offer (`offered`: models()'s answer):
+        ("model", [names]) or ("lora", [names]); None when it has everything."""
+        ...
 
     def interrupt(self) -> None:
         """Stop the render in progress (at the generator's next chance)."""

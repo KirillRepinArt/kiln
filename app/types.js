@@ -6,6 +6,10 @@
  * What a job is doing: waiting, being made, finished, stopped, failed, or deleted (kept during its Undo window).
  * @typedef {"pending" | "running" | "done" | "cancelled" | "error" | "deleted"} JobStatus
  */
+/**
+ * Why a job failed (server/worker.py failure): the words and the way back are jobs.js failWords.
+ * @typedef {"forge-gone" | "vram" | "model" | "lora" | "disk" | "other"} FailKind
+ */
 
 /**
  * One LoRA as a job uses it: its name in Forge and its weight.
@@ -47,7 +51,7 @@
  *   file: string | null,
  *   est?: number, est_first?: number, t_first?: number, eta?: number,
  *   step: number, progress: number, preview_rev: number,
- *   error?: string,
+ *   error?: string, fail?: FailKind | null, missing_names?: string[] | null,
  *   started?: number, finished?: number, created?: number,
  *   spec: JobSpec,
  *   warm: boolean, stopping: boolean, missing: boolean,

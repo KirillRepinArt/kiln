@@ -23,6 +23,10 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 7861
 STEP_SECONDS = float(sys.argv[2]) if len(sys.argv) > 2 else 0.6
 
 FILL = re.compile(r"\[fill:([0-9a-fA-F]{6})\]")  # test hook: a prompt with [fill:ff0000] gives a solid image
+# test hook: a prompt with [fail:vram] is refused as Forge refuses a render out of video memory; [fail:die] drops the
+# connection mid-render, as a Forge that crashed or was closed (once per prompt: the retry renders)
+FAIL = re.compile(r"\[fail:(vram|die)\]")
+died: set[str] = set()
 state = {"job_count": 0, "sampling_step": 0, "sampling_steps": 0, "interrupted": False, "preview": None, "t0": 0.0}
 options = {
     "sd_model_checkpoint": "krea2_turbo_fp8_scaled.safetensors",
@@ -161,6 +165,15 @@ class H(BaseHTTPRequestHandler):
         if p == "/sdapi/v1/extra-single-image":
             return self.send({"image": b.get("image", ""), "html_info": "upscaled (fake)"})
         if p == "/sdapi/v1/txt2img":
+            f = FAIL.search(b.get("prompt", ""))
+            if f and f.group(1) == "vram":
+                err = "CUDA out of memory. Tried to allocate 2.00 GiB"
+                return self.send({"error": "OutOfMemoryError", "detail": "", "body": "", "errors": err}, 500)
+            if f and f.group(1) == "die" and b["prompt"] not in died:
+                died.add(b["prompt"])
+                time.sleep(STEP_SECONDS)
+                self.close_connection = True
+                return None
             w, h, steps, seed = b.get("width", 1024), b.get("height", 1024), b.get("steps", 4), b.get("seed", -1)
             m = FILL.search(b.get("prompt", ""))
             fill = m.group(1) if m else None

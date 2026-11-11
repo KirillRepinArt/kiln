@@ -201,6 +201,7 @@ class Handler(BaseHTTPRequestHandler):
                         "forge": k.backend.status,
                         "stats": k.timings.stats,
                         "paused": q.flags["paused"],
+                        "pause_why": q.flags.get("why"),
                         "styles": styles_signature(k.paths.root),
                     },
                 )
@@ -226,6 +227,7 @@ class Handler(BaseHTTPRequestHandler):
                         "out_dir": str(k.paths.out),
                         "version": VERSION,
                         "paused": q.flags["paused"],
+                        "pause_why": q.flags.get("why"),
                         "styles": styles_signature(k.paths.root),
                     },
                 )
@@ -239,6 +241,7 @@ class Handler(BaseHTTPRequestHandler):
                     "out_dir": str(k.paths.out),
                     "version": VERSION,
                     "paused": q.flags["paused"],
+                    "pause_why": q.flags.get("why"),
                     "styles": styles_signature(k.paths.root),
                 },
             )
@@ -313,6 +316,19 @@ class Handler(BaseHTTPRequestHandler):
                 j["stopping"] = True
                 self.k.backend.interrupt()
             q.save()
+        return {"ok": True}
+
+    def post_retry(self, jid: str, b: dict[str, Any]) -> dict[str, Any]:
+        """A failed job: saved again if its render is kept, else back in line first (worker.retry)."""
+        q = self.k.queue
+        with q.lock:
+            j = q.find(int(jid))
+            if not j or j["status"] != "error":
+                raise ApiError(404, "no failed job with that id")
+        try:
+            self.k.worker.retry(j)
+        except OSError as e:
+            raise ApiError(507, f"Still couldn't save: {e}") from None
         return {"ok": True}
 
     def post_pause(self, b: dict[str, Any]) -> dict[str, Any]:
@@ -415,6 +431,7 @@ POST_ROUTES = _routes(
     ("/api/bye", "post_bye"),
     ("/api/jobs", "post_jobs"),
     (r"/api/jobs/(\d+)/cancel", "post_cancel"),
+    (r"/api/jobs/(\d+)/retry", "post_retry"),
     ("/api/pause", "post_pause"),
     (r"/api/jobs/(\d+)/(remove|delete|undelete|name)", "post_job_action"),
     (r"/api/jobs/(\d+)/rename", "post_rename"),

@@ -24,7 +24,7 @@ Why it's built this way is in `docs/decisions/`. How to change the look is in `d
 | `pictures`, `recyclebin` | finished pictures on disk: delete with Undo (then the Recycle Bin), rename, put back, thumbnails |
 | `backends/` | the image generator behind one interface (`base.py`: `Backend`); `forge.py` is the only file that knows Forge's API |
 | `catalog` | what the generator offers (checkpoints, LoRAs, upscalers), with Kiln's own additions, cached |
-| `worker` | one job at a time: take the next, have the backend render it, save the picture |
+| `worker` | one job at a time: take the next, check what it needs (room on the disk, its model and LoRAs), have the backend render it, save the picture. A failure is the job's state: `fail` (its kind, `failure()`), `error` (the generator's words); one that would repeat pauses the queue with its reason (`flags.why`); the generator going away mid-job puts the job back first in line (`BackendGone`, twice = failed); a render whose save failed is kept for Retry |
 | `lifecycle` | is a Kiln window still open? stop when it closed and the queue is done |
 | `instance` | one Kiln per data folder (an OS lock), a port of its own (`data/instance.json`), `/api/hello` |
 | `page`, `web` | the page as served, and the HTTP API: a table of routes, one method each |
@@ -42,7 +42,7 @@ The page polls `GET /api/state`. With `?since=<signature>` the answer is light w
 
 Plain ES modules, loaded by the browser as they are. `app/main.js` starts everything, in a fixed order; every other file only declares (each has an `init<File>()` that `main.js` calls). The parts:
 
-- **Models: one place for each kind of state, changed only through it.** `jobs.js` (the job list), `prompt.js` (your draft and the job shown instead), `picstate.js` (what the picture area shows, a state machine: `ux-review/11-picture-states.md`), `layout.js` + `layoutmath.js` (the layout: pure maths, unit-tested), `cardlayout.js` (the prompt card). The rest of the page reads them and draws.
+- **Models: one place for each kind of state, changed only through it.** `jobs.js` (the job list, and the questions about a job: `isFinished`, `failWords` — the one table of a failure's words), `prompt.js` (your draft and the job shown instead), `picstate.js` (what the picture area shows, a state machine: `ux-review/11-picture-states.md`), `layout.js` + `layoutmath.js` (the layout: pure maths, unit-tested), `cardlayout.js` (the prompt card). The rest of the page reads them and draws.
 - **One owner for everything that moves or shows** (`docs/decisions/0012-one-owner-baseline.md`) — each property has one module that writes it; what depends on it is derived from it:
   - what a page keeps room for, its geometry and every fade's timing: `layoutmath.js` (`pageInsets`, `pageGeometry`, `fades`, `shapeSteps`; the prompt box's glue as a relation to its plate and its change of relation, `glueAnchors` / `relationOf` / `glued` / `relationFade` — pure, unit-tested)
   - the layering rule (`glass.css`, its last rule; DEVLOG DD-2026-11-08-14): materials float (the plate, the prompt box, the tab bar, pop-ups, cards); what sits on one is content — no backdrop blur of its own, a translucent fill — so a page or the box's contents fade as one layer. A scroll area ends where the controls on it begin, its scroll edge at its own edge, never over its scrollbar (`prompt.css`)

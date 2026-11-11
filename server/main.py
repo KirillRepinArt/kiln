@@ -51,6 +51,7 @@ def create(cfg: Mapping[str, Any]) -> Kiln:
     library = Library(paths, queue.store)
     pictures = Pictures(paths, queue, library)
     backend = make_backend(cfg)
+    catalog = Catalog(cfg, paths, backend)
     return Kiln(
         cfg=cfg,
         paths=paths,
@@ -59,8 +60,8 @@ def create(cfg: Mapping[str, Any]) -> Kiln:
         pictures=pictures,
         library=library,
         backend=backend,
-        catalog=Catalog(cfg, paths, backend),
-        worker=Worker(paths, queue, backend, timings, pictures),
+        catalog=catalog,
+        worker=Worker(paths, queue, backend, timings, pictures, catalog),
     )
 
 

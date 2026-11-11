@@ -39,7 +39,9 @@ class JobQueue:
         self.lock = threading.RLock()
         self.wake = threading.Event()  # set when there's new work: the worker stops waiting
         self.jobs: list[Job] = []
-        self.flags: dict[str, Any] = {"paused": False}  # Pause queue: the running job finishes, nothing new starts
+        # Pause queue: the running job finishes, nothing new starts. "why": the failure that paused it ({kind, job}),
+        # None when you paused it yourself
+        self.flags: dict[str, Any] = {"paused": False, "why": None}
         self.rev = 0  # bumped on every change to the list
         # what each recent revision changed: (rev, ids written, ids gone, order moved) — the page's poll gets just that
         self._changes: list[tuple[int, set[int], set[int], bool]] = []
@@ -65,9 +67,11 @@ class JobQueue:
         self._changes.append((self.rev, changed, gone, moved))
         del self._changes[:-CHANGES_KEPT]
 
-    def set_paused(self, paused: bool) -> None:
+    def set_paused(self, paused: bool, why: dict[str, Any] | None = None) -> None:
+        """Pause / Resume. `why`: the failure that paused it (21-failure-states.md, rule 3); Resume clears it."""
         with self.lock:
             self.flags["paused"] = paused
+            self.flags["why"] = why if paused else None
             self.store.put("flags", self.flags)
         self.wake.set()
 
@@ -207,6 +211,15 @@ class JobQueue:
             self.save()
         self.wake.set()
         return int(j["id"])
+
+    def requeue(self, job: Job) -> None:
+        """A failed or interrupted job waits again, first in line: its place in the list moves to just before the
+        first waiting job. Hold the lock."""
+        job.update(status="pending", step=0, progress=0, eta=None, error=None, fail=None, missing_names=None)
+        job.pop("finished", None)
+        self.jobs.remove(job)
+        first = next((i for i, x in enumerate(self.jobs) if x["status"] == "pending"), len(self.jobs))
+        self.jobs.insert(first, job)
 
     def reorder(self, order: list[Any]) -> None:
         """Waiting jobs in the page's order (ids it didn't mention keep theirs, after it); the rest stay in front."""

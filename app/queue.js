@@ -6,6 +6,7 @@ import {
   removeJob,
   removeMany,
   removeMissing,
+  retryJob,
   saveOrder,
   setPaused,
   stopJob,
@@ -13,7 +14,7 @@ import {
 import { esc, fmt } from "./boot.js";
 import { $, hit, qa, target } from "./dom.js";
 import { DRAG_START, gesture as drag } from "./gesture.js";
-import { jEst, jobs, orderPending } from "./jobs.js";
+import { failWords, isFinished, jEst, jobs, orderPending } from "./jobs.js";
 import { loadJob } from "./peek.js";
 import { PV, pv } from "./picstate.js";
 import { urlFor } from "./pictures.js";
@@ -61,19 +62,19 @@ export let qsAnchor = null;
 export function renderQueueInner() {
   const run = jobs.filter(j => j.status === "running"),
     pend = jobs.filter(j => j.status === "pending"),
-    done = jobs.filter(j => j.status === "done" || j.status === "cancelled").reverse();
+    done = jobs.filter(isFinished).reverse();
   const left = pend.reduce((a, j) => a + jEst(j), 0);
   for (const id of [...QS]) if (!done.some(j => j.id === id)) QS.delete(id);
   $("qwrap").classList.toggle("selecting", QS.size > 0);
   /** one row's markup @param {Job} j @param {"run" | "pend" | "done"} k its section */
   const item = (j, k) => `<div class="qi${j.missing ? " missing" : ""}" data-id="${j.id}">
    ${k === "pend" ? '<span class="handle" title="Drag to reorder">⋮⋮</span>' : ""}${k === "done" ? `<span class="qck" data-ck="${j.id}" data-tip="Select (Ctrl-click · Shift-click a range)"></span>` : ""}
-   <div class="th">${j.missing ? "gone" : j.status === "done" ? `<span data-tth="${j.id}"></span>` : j.status === "cancelled" ? "stopped" : k === "run" ? `<svg class="hg" viewBox="0 0 24 24" fill="none"><g class="hgg"><path d="M7 3.5h10M7 20.5h10" stroke="currentColor" stroke-width="1.6"/><path d="M8 3.5c0 4 1.6 6 4 8.5-2.4 2.5-4 4.5-4 8.5M16 3.5c0 4-1.6 6-4 8.5 2.4 2.5 4 4.5 4 8.5" stroke="currentColor" stroke-width="1.4"/><path class="st" d="M9.2 6.5h5.6c-.4 2-1.3 3.4-2.8 4.9-1.5-1.5-2.4-2.9-2.8-4.9z" fill="currentColor"/><path class="sb" d="M12 14.2c1.8 1.9 2.7 3.6 3 6H9c.3-2.4 1.2-4.1 3-6z" fill="currentColor"/></g></svg><img class="lp" data-lp="${j.id}" alt="">` : "#" + j.id}</div>
+   <div class="th">${j.missing ? "gone" : j.status === "done" ? `<span data-tth="${j.id}"></span>` : j.status === "cancelled" ? "stopped" : j.status === "error" ? '<span class="failed">failed</span>' : k === "run" ? `<svg class="hg" viewBox="0 0 24 24" fill="none"><g class="hgg"><path d="M7 3.5h10M7 20.5h10" stroke="currentColor" stroke-width="1.6"/><path d="M8 3.5c0 4 1.6 6 4 8.5-2.4 2.5-4 4.5-4 8.5M16 3.5c0 4-1.6 6-4 8.5 2.4 2.5 4 4.5 4 8.5" stroke="currentColor" stroke-width="1.4"/><path class="st" d="M9.2 6.5h5.6c-.4 2-1.3 3.4-2.8 4.9-1.5-1.5-2.4-2.9-2.8-4.9z" fill="currentColor"/><path class="sb" d="M12 14.2c1.8 1.9 2.7 3.6 3 6H9c.3-2.4 1.2-4.1 3-6z" fill="currentColor"/></g></svg><img class="lp" data-lp="${j.id}" alt="">` : "#" + j.id}</div>
    <div class="body"><div class="p">${j.file ? `<b style="font-weight:600">${esc(j.file)}</b> · ` : ""}${esc((j.prompt || "").slice(0, 240))}</div>
    <div class="meta">${j.picks && j.picks.length ? `<span style="color:#e6e6ea">${esc(j.picks.join(" · "))}</span> · ` : ""}${j.mp} MP · ${j.ar} · ${j.steps} ${j.steps === 1 ? "step" : "steps"} · <span class="seedc" data-seed="${j.seed}" data-tip="Click to copy the seed">seed ${j.seed}</span>${k === "pend" ? ` · ~${fmt(jEst(j))}` : ""}${j.missing ? ' · <span class="gone">file deleted</span>' : ""}</div>
-   ${j.created || j.finished ? `<div class="meta times">${j.created ? `added ${clock(j.created)}` : ""}${j.finished && j.status === "done" ? ` · done ${clock(j.finished)}` : ""}${j.finished && j.started ? ` · took ${fmt((j.finished - j.started) / 1000)}` : ""}</div>` : ""}
+   ${j.status === "error" ? `<div class="meta times fail">${j.finished ? `failed ${clock(j.finished)} · ` : ""}<span class="why">${esc(failWords(j))}</span></div>` : j.created || j.finished ? `<div class="meta times">${j.created ? `added ${clock(j.created)}` : ""}${j.finished && j.status === "done" ? ` · done ${clock(j.finished)}` : ""}${j.finished && j.started ? ` · took ${fmt((j.finished - j.started) / 1000)}` : ""}</div>` : ""}
    ${k === "run" ? '<div class="mini"><i></i></div>' : ""}</div>
-   ${k !== "done" ? `<button class="x" data-x="${j.id}" title="${k === "run" ? "Stop" : "Remove"}">${IC.x}</button>` : `<button class="x" data-rm="${j.id}" title="${j.status === "done" && !j.missing ? "Remove from the list — the file stays" : "Remove from the list"}">${IC.x}</button>`}</div>`;
+   ${j.status === "error" ? `<button class="rt" data-retry="${j.id}" data-tip="${j.fail === "disk" ? "Save it again — the picture is kept" : "Run it again, first in line"}">Retry</button>` : ""}${k !== "done" ? `<button class="x" data-x="${j.id}" title="${k === "run" ? "Stop" : "Remove"}">${IC.x}</button>` : `<button class="x" data-rm="${j.id}" title="${j.status === "done" && !j.missing ? "Remove from the list — the file stays" : "Remove from the list"}">${IC.x}</button>`}</div>`;
   const W = $("qwrap");
   if (!$("qsRun")) W.innerHTML = '<div id="qsRun"></div><div id="qsPend"></div><div id="qsFin"></div>';
   /** a section's markup, set only when it changed @param {string} id @param {string} html */
@@ -87,7 +88,7 @@ export function renderQueueInner() {
   put("qsRun", run.length ? `<div class="qsec">Generating now</div>${run.map(j => item(j, "run")).join("")}` : "");
   put(
     "qsPend",
-    `<div class="qsec"><span>Up next ${pend.length ? `· ${pend.length} · ~${fmt(left)}` : ""}${window.qPaused ? ' · <b class="paused">paused</b>' : ""}</span><button id="pauseQ" data-tip="${window.qPaused ? "Start the waiting jobs again" : "The current image finishes; nothing new starts until you resume"}">${window.qPaused ? "Resume" : "Pause after this"}</button></div>` +
+    `<div class="qsec"><span>Up next ${pend.length ? `· ${pend.length} · ~${fmt(left)}` : ""}${window.qPaused ? ` · <b class="paused">paused${pauseWhy()}</b>` : ""}</span><button id="pauseQ" data-tip="${window.qPaused ? "Start the waiting jobs again" : "The current image finishes; nothing new starts until you resume"}">${window.qPaused ? "Resume" : "Pause after this"}</button></div>` +
       (pend.length ? pend.map(j => item(j, "pend")).join("") : '<div class="empty">Nothing queued</div>'),
   );
   put("qsFin", done.length ? `<div class="qsec qfin" id="qfin"></div><div class="qflist" id="qflist"></div>` : "");
@@ -219,8 +220,16 @@ export function queueSig() {
     "|" +
     [...QS].join(",") +
     "|" +
-    !!window.qPaused
+    !!window.qPaused +
+    pauseWhy()
   );
+}
+/** the failure that paused the queue, in words (empty when you paused it yourself) */
+function pauseWhy() {
+  const w = window.qPauseWhy;
+  if (!w) return "";
+  const j = jobs.find(x => x.id === w.job);
+  return ` — ${esc(failWords(j || { fail: w.kind }))}`;
 }
 /** @param {Job[]} done */
 function finHead(done) {
@@ -276,7 +285,7 @@ function qsBar(done) {
   <button id="qsRemove" data-tip="Take them off the list — the files stay">Remove<span class="qcut2"> from list</span></button><button id="qsDel" class="qdel" data-tip="To the Recycle Bin, with Undo (Del)">Delete</button><button id="qsX" class="qx" data-tip="Clear the selection (Esc)">${IC.x}</button>`;
 }
 function qsFinished() {
-  return jobs.filter(j => j.status === "done" || j.status === "cancelled").reverse();
+  return jobs.filter(isFinished).reverse();
 }
 /** @param {Job} j @param {boolean} range Shift: everything from the last one clicked */
 function qsClick(j, range) {
@@ -499,13 +508,9 @@ export function initQueue() {
         return;
       }
       const row = hit(e, ".qi");
-      if (!row || hit(e, "[data-rm],[data-x],.seedc")) return;
+      if (!row || hit(e, "[data-rm],[data-x],[data-retry],.seedc")) return;
       const j = jobs.find(x => x.id == Number(row.dataset.id));
-      if (
-        j &&
-        (j.status === "done" || j.status === "cancelled") &&
-        (hit(e, "[data-ck]") || e.ctrlKey || e.metaKey || e.shiftKey || QS.size)
-      ) {
+      if (j && isFinished(j) && (hit(e, "[data-ck]") || e.ctrlKey || e.metaKey || e.shiftKey || QS.size)) {
         e.stopImmediatePropagation();
         qsClick(j, e.shiftKey);
         return;
@@ -562,6 +567,11 @@ export function initQueue() {
     }
     if (target(e).id === "rmMissing") {
       removeMissing();
+      return;
+    }
+    const rt = hit(e, "[data-retry]");
+    if (rt) {
+      retryJob(jobs.find(j => j.id == Number(rt.dataset.retry)));
       return;
     }
     const rm = hit(e, "[data-rm]");

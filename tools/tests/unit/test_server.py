@@ -1,17 +1,23 @@
 """Unit tests of the server's own logic (no Forge, no browser): `python -m unittest discover -s tools/tests/unit`."""
 
+import errno
+import io
 import json
 import os
 import struct
 import tempfile
 import time
 import unittest
+import unittest.mock
+import urllib.error
 import zlib
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from server import images, library, naming, timings
-from server.backends.forge import bare, lora_folders, same_paths
+from server.backends import BackendError, BackendGone, Render
+from server.backends.forge import ForgeBackend, bare, forge_words, lora_folders, same_paths
+from server.catalog import Catalog
 from server.config import Paths, load_config
 from server.errors import ApiError
 from server.instance import InstanceLock, bind_first, read_instance, write_instance
@@ -21,7 +27,9 @@ from server.lifecycle import window_gone
 from server.page import build_page, styles_signature
 from server.pictures import Pictures
 from server.store import Store
+from server.timings import Timings as JobTimings
 from server.updates import version_key
+from server.worker import Missing, Worker, failure
 
 
 def tiny_png() -> bytes:
@@ -369,6 +377,143 @@ class Forge(unittest.TestCase):
     def test_checkpoint_names(self) -> None:
         self.assertEqual(bare("krea.safetensors [abc123]"), "krea.safetensors")
         self.assertEqual(same_paths(["a/b", "a/./c"]), same_paths(["a/c", "a/b"]))
+
+
+class FakeBackend:
+    """A generator for the worker's tests: each txt2img takes the next outcome (an exception to raise, or a Render)."""
+
+    label = "Forge"
+
+    def __init__(self, outcomes: list[Any], loras: tuple[str, ...] = ("Cup",)) -> None:
+        self.outcomes = outcomes
+        self.offered = {
+            "checkpoints": ["krea.safetensors [abc123]"],
+            "loras": [{"name": n, "folder": "", "internal": ""} for n in loras],
+        }
+        self.renders = 0
+
+    def models(self, refresh: bool) -> dict[str, Any]:
+        return self.offered
+
+    def missing(self, spec: Any, offered: Any) -> Any:
+        return ForgeBackend.missing(self, spec, offered)  # type: ignore[arg-type]
+
+    def txt2img(self, spec: Any, on_progress: Any, cancelled: Any) -> Render:
+        self.renders += 1
+        out = self.outcomes.pop(0)
+        if isinstance(out, Exception):
+            raise out
+        return out
+
+
+class Failures(TempDirs):
+    """A failed job is a state with a kind, a repeating failure pauses the queue, a vanished generator re-queues the
+    job, and nothing renders without what it names (ux-review/21-failure-states.md)."""
+
+    def make(self, *outcomes: Any, loras: tuple[str, ...] = ("Cup",)) -> None:
+        self.q = JobQueue(self.paths)
+        self.backend = FakeBackend(list(outcomes), loras)
+        catalog = Catalog({"people_folders": [], "style_folders": []}, self.paths, self.backend)  # type: ignore[arg-type]
+        self.w = Worker(self.paths, self.q, self.backend, JobTimings(self.paths), Pictures(self.paths, self.q), catalog)  # type: ignore[arg-type]
+
+    def job(self, **spec: Any) -> dict[str, Any]:
+        self.q.add([{"prompt": "a cup", "w": 8, "h": 8, "steps": 1, "name": "Cup", **spec}])
+        return self.q.jobs[-1]
+
+    def ok(self) -> Render:
+        return Render(tiny_png(), 7, "a cup")
+
+    def test_kinds(self) -> None:
+        self.assertEqual(failure(BackendGone("refused")), "forge-gone")
+        self.assertEqual(failure(BackendError("OutOfMemoryError: CUDA out of memory. Tried to allocate")), "vram")
+        self.assertEqual(failure(OSError(errno.ENOSPC, "No space left on device")), "disk")
+        self.assertEqual(failure(Missing("lora", ["Cup"])), "lora")
+        self.assertEqual(failure(BackendError("something else")), "other")
+
+    def test_a_failed_job_says_why_and_a_repeating_failure_pauses_the_queue(self) -> None:
+        self.make(BackendError("OutOfMemoryError: CUDA out of memory"))
+        j = self.job()
+        self.w.run_one(j)
+        self.assertEqual((j["status"], j["fail"]), ("error", "vram"))
+        self.assertIn("out of memory", j["error"])
+        self.assertTrue(self.q.flags["paused"])
+        self.assertEqual(self.q.flags["why"], {"kind": "vram", "job": j["id"]})
+        self.assertIn(j["id"], {x["id"] for x in self.q.public_list(lambda s: (None, None))}, "the page gets it")
+
+    def test_one_odd_failure_goes_on_two_in_a_row_pause(self) -> None:
+        self.make(BackendError("odd"), self.ok(), BackendError("odd"), BackendError("odd again"))
+        a, b, c, d = self.job(), self.job(), self.job(), self.job()
+        self.w.run_one(a)
+        self.assertFalse(self.q.flags["paused"], "one odd failure: the queue goes on")
+        self.w.run_one(b)
+        self.w.run_one(c)
+        self.assertFalse(self.q.flags["paused"], "a success in between resets the count")
+        self.w.run_one(d)
+        self.assertEqual(self.q.flags["why"], {"kind": "other", "job": d["id"]})
+
+    def test_the_generator_going_away_puts_the_job_back_first_then_fails_it(self) -> None:
+        self.make(BackendGone("connection reset"), BackendGone("connection reset"))
+        j, later = self.job(), self.job()
+        self.w.run_one(j)
+        self.assertEqual(j["status"], "pending")
+        self.assertIs(self.q.next_pending(), j, "first in line again")
+        self.w.run_one(j)
+        self.assertEqual((j["status"], j["fail"]), ("error", "forge-gone"))
+        self.assertEqual(later["status"], "pending")
+
+    def test_a_missing_lora_or_model_fails_before_rendering(self) -> None:
+        self.make(self.ok(), self.ok())
+        j = self.job(loras=[{"name": "Cup", "w": 1}, {"name": "Saucer", "w": 0.5}])
+        self.w.run_one(j)
+        self.assertEqual((j["status"], j["fail"], j["missing_names"]), ("error", "lora", ["Saucer"]))
+        k = self.job(checkpoint="gone.safetensors")
+        self.w.run_one(k)
+        self.assertEqual((k["fail"], k["missing_names"]), ("model", ["gone.safetensors"]))
+        self.assertEqual(self.backend.renders, 0, "nothing rendered without what it names")
+        m = self.job(checkpoint="krea.safetensors", loras=[{"name": "Cup", "w": 1}])
+        self.w.run_one(m)
+        self.assertEqual(m["status"], "done", "a checkpoint matches without Forge's hash")
+
+    def test_too_little_room_fails_before_rendering(self) -> None:
+        self.make(self.ok())
+        j = self.job()
+        with unittest.mock.patch("server.worker.DISK_FREE_LEAST", 1 << 62):
+            self.w.run_one(j)
+        self.assertEqual((j["fail"], self.backend.renders), ("disk", 0))
+        self.assertTrue(self.q.flags["paused"])
+
+    def test_a_render_that_couldnt_be_saved_is_kept_and_retry_saves_it(self) -> None:
+        self.make(self.ok())
+        j = self.job()
+        full = OSError(errno.ENOSPC, "No space left on device")
+        with unittest.mock.patch("server.durable.write_bytes", side_effect=full):
+            self.w.run_one(j)
+        self.assertEqual((j["status"], j["fail"]), ("error", "disk"))
+        self.w.retry(j)
+        self.assertEqual((j["status"], j["fail"], self.backend.renders), ("done", None, 1), "saved, not rendered again")
+        self.assertTrue((self.paths.out / j["file"]).exists())
+
+    def test_retry_puts_it_first_in_line_and_resumes_only_a_failures_pause(self) -> None:
+        self.make(BackendError("OutOfMemoryError"), BackendError("x"))
+        j, other = self.job(), self.job()
+        self.w.run_one(j)
+        self.assertTrue(self.q.flags["paused"])
+        self.w.retry(j)
+        self.assertEqual((j["status"], j["fail"], j["error"]), ("pending", None, None))
+        self.assertFalse(self.q.flags["paused"], "Retry goes on after a failure's pause")
+        self.assertIs(self.q.next_pending(), j)
+        self.assertEqual(other["status"], "pending")
+        self.w.run_one(j)
+        self.q.set_paused(True)  # you paused it yourself
+        self.w.retry(j)
+        self.assertTrue(self.q.flags["paused"], "your own pause stays")
+
+    def test_forges_own_words_when_it_says_no(self) -> None:
+        body = json.dumps({"error": "OutOfMemoryError", "detail": "", "errors": "CUDA out of memory."}).encode()
+        e = urllib.error.HTTPError("http://x", 500, "Internal Server Error", {}, io.BytesIO(body))  # type: ignore[arg-type]
+        self.assertEqual(forge_words(e), "OutOfMemoryError: CUDA out of memory.")
+        e = urllib.error.HTTPError("http://x", 502, "Bad Gateway", {}, io.BytesIO(b"<html>"))  # type: ignore[arg-type]
+        self.assertEqual(forge_words(e), "HTTP 502 Bad Gateway")
 
 
 class Misc(unittest.TestCase):

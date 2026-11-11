@@ -8,6 +8,8 @@ interface Window {
   _jobsReady?: boolean;
   /** the queue is paused (the server's flag, mirrored) */
   qPaused?: boolean;
+  /** the failure that paused the queue (server/jobqueue.py flags.why); null when you paused it yourself */
+  qPauseWhy?: { kind: import("./types.js").FailKind; job: number } | null;
   /** Settings: the Layout menu's selected entry */
   layMenuUI?: () => void;
   /** Aurora: redraw the halo round the picture now */

@@ -5,7 +5,7 @@ import { renderAll, toast } from "./boot.js";
 import { $ } from "./dom.js";
 import { onJobDone } from "./effects.js";
 import { forgeMsg, loadModels, models, refreshUp } from "./forge.js";
-import { current, jobs, lastDone, replaceJobs } from "./jobs.js";
+import { current, failWords, jobs, lastDone, replaceJobs } from "./jobs.js";
 import { checkStyles } from "./livestyles.js";
 import { insetsKey, lay, sizeFrame } from "./layout.js";
 import { PV, pv, pvPrune } from "./picstate.js";
@@ -34,6 +34,8 @@ function toUI(s) {
     eta: s.eta,
     preview_rev: s.preview_rev || 0,
     error: s.error,
+    fail: s.fail || null,
+    missing_names: s.missing_names || null,
     started: s.started && s.started * 1000,
     finished: s.finished && s.finished * 1000,
     loras: sp.loras || [],
@@ -73,6 +75,7 @@ export async function poll() {
     window.qPaused = !!s.paused;
     sig = "";
   }
+  window.qPauseWhy = s.pause_why || null;
   if (forgeOk && !models && !loadingM) {
     loadingM = true;
     loadModels(false).then(ok => {
@@ -155,7 +158,7 @@ export async function poll() {
     }
     if (j.status === "error" && !seen.has("e" + jk)) {
       seen.add("e" + jk);
-      if (!firstPoll) toast(`Job #${j.id} failed: ${j.error || "error"}`, "", null, "queue");
+      if (!firstPoll) toast(`Job #${j.id} failed: ${failWords(j)}`, "", null, "queue");
     }
   }
   if (firstPoll) {

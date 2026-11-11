@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import http.client
 import json
 import logging
 import os
@@ -18,7 +19,7 @@ from typing import Any
 
 from .. import images
 from ..net import OPENER
-from .base import BackendError, Progress, Render
+from .base import BackendError, BackendGone, Progress, Render
 
 log = logging.getLogger("kiln")
 
@@ -55,6 +56,18 @@ def bare(title: str | None) -> str:
     return re.sub(r"\s*\[[0-9a-f]+\]$", "", title or "")
 
 
+def forge_words(e: urllib.error.HTTPError) -> str:
+    """Forge's own words for a refused request: its API answers an exception with JSON {error, detail, errors}
+    (errors carries the message, e.g. "CUDA out of memory …"); the status line when there's no JSON."""
+    try:
+        body = json.loads(e.read() or b"{}")
+    except (ValueError, OSError):
+        body = {}
+    parts = [str(body.get(k) or "").strip() for k in ("error", "detail", "errors")] if isinstance(body, dict) else []
+    words = ": ".join(dict.fromkeys(p for p in parts if p))
+    return words or f"HTTP {e.code} {e.reason}"
+
+
 def same_paths(ps: list[str] | None) -> list[str]:
     return sorted(os.path.normcase(os.path.normpath(x)) for x in (ps or []))
 
@@ -79,8 +92,10 @@ class ForgeBackend:
         try:
             with OPENER.open(req, timeout=timeout) as r:
                 raw = r.read()
-        except urllib.error.URLError as e:
-            raise BackendError(str(e)) from e
+        except urllib.error.HTTPError as e:  # it answered, and said no
+            raise BackendError(forge_words(e)) from e
+        except (urllib.error.URLError, OSError, http.client.HTTPException) as e:  # no answer: down, or died mid-request
+            raise BackendGone(str(getattr(e, "reason", None) or e)) from e
         return json.loads(raw) if raw else None
 
     # ------------------------------------------------------------ running Forge
@@ -264,6 +279,14 @@ class ForgeBackend:
         body = {"image": base64.b64encode(image).decode(), "upscaling_resize": scale, "upscaler_1": upscaler}
         r = self.call("POST", "/sdapi/v1/extra-single-image", body, timeout=None)
         return base64.b64decode(r["image"])
+
+    def missing(self, spec: Mapping[str, Any], offered: Mapping[str, Any]) -> tuple[str, list[str]] | None:
+        ck = spec.get("checkpoint")
+        if ck and bare(ck) not in {bare(c) for c in offered.get("checkpoints", [])}:
+            return "model", [bare(ck)]
+        have = {lora["name"] for lora in offered.get("loras", [])}
+        gone = [lora["name"] for lora in spec.get("loras", []) if lora["name"] not in have]
+        return ("lora", gone) if gone else None
 
     def interrupt(self) -> None:
         try:

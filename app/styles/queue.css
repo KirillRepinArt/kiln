@@ -41,6 +41,24 @@
   color: var(--a1);
   font-weight: 600;
 }
+/* a failed job (ux-review/21-failure-states.md): "failed" where the thumbnail goes, why in the times line, Retry */
+.qi .th .failed {
+  color: var(--a1);
+}
+.qi .meta.fail .why {
+  color: var(--text);
+}
+.qi .rt {
+  flex: none;
+  font-size: var(--fs-11-5);
+  color: var(--text);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--r-pill);
+  background: var(--raised);
+}
+.qi .rt:hover {
+  background: var(--white-12);
+}
 .qi {
   display: flex;
   align-items: center;

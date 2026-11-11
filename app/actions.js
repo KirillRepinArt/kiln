@@ -235,6 +235,21 @@ export async function removeJob(j) {
   await api(`/api/jobs/${j.id}/remove`, {});
   poll();
 }
+/** a failed job again: saved again if its render was kept, else first in line (server worker.retry)
+ * @param {import("./types.js").Job | undefined} j */
+export async function retryJob(j) {
+  if (!j) return;
+  /** @type {any} the server's answer */
+  let r;
+  try {
+    r = await api(`/api/jobs/${j.id}/retry`, {});
+  } catch (e) {
+    r = { error: "Kiln server not reachable" };
+  }
+  if (r.error) toast(r.error, "", null, "queue");
+  fullNextPoll();
+  poll();
+}
 export async function removeMissing() {
   await api("/api/remove-missing", {});
   poll();

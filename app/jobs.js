@@ -23,6 +23,29 @@ export function orderPending(order) {
   let k = 0;
   jobs = jobs.map(j => (j.status === "pending" && order.includes(j) ? order[k++] : j));
 }
+/** is it over — made, stopped or failed? (the Queue's Finished list, its selection) @param {Job} j */
+export function isFinished(j) {
+  return j.status === "done" || j.status === "cancelled" || j.status === "error";
+}
+/** why a job failed, in words — the one table (ux-review/21-failure-states.md, rule 2)
+ * @param {{ fail?: import("./types.js").FailKind | null, mp?: string, missing_names?: string[] | null, error?: string }} j */
+export function failWords(j) {
+  const names = (j.missing_names || []).join(", ");
+  switch (j.fail) {
+    case "forge-gone":
+      return "Forge stopped while making this";
+    case "vram":
+      return `Out of video memory${j.mp ? ` at ${j.mp} MP` : ""} — try a smaller size`;
+    case "model":
+      return `Model not found${names ? `: ${names}` : ""}`;
+    case "lora":
+      return `${(j.missing_names || []).length > 1 ? "LoRAs" : "LoRA"} not found${names ? `: ${names}` : ""}`;
+    case "disk":
+      return "Couldn't save — the disk is full";
+    default:
+      return j.error || "Something went wrong";
+  }
+}
 /* ======================= queue ======================= */
 export function current() {
   return jobs.find(j => j.status === "running");

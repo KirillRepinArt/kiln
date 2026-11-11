@@ -10,7 +10,7 @@ from typing import Any
 
 from .net import OPENER
 
-VERSION = "0.7b"  # bumped when a roadmap phase is tagged (see CHANGELOG.md)
+VERSION = "0.7c"  # bumped when a roadmap phase is tagged (see CHANGELOG.md)
 REPO = "KirillRepinArt/kiln"
 
 

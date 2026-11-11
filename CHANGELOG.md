@@ -2,7 +2,7 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
-## v0.7c — not tagged yet (layout: one model for every pane, edge and motion)
+## v0.7c — 2026-11-12 (layout: one model for every pane, edge and motion)
 
 - **Every pane has its own size, per page and per layout.** The prompt box, the picture and each panel (Queue, LoRAs, PNG Info) keep the width and height you give them, separately side by side and in Vertical; a picture page keeps a scale of its largest, so every picture opens at its biggest and keeps your size as you browse.
 - **Every edge of every pane resizes it**, in both layouts: the prompt box's sides, top and bottom (a height of your own, or back to its text's with a double-click), the picture's four sides, the panels' sides, top and bottom, and the edge the two panes share. Dragging past a limit gives a little (a rubber band) and springs back; double-click any edge for its default; Reset layout returns them all.

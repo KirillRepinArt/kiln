@@ -159,7 +159,6 @@
 /**
  * The layout's moment-to-moment state (not saved): what you're doing right now, and what was last applied.
  * @typedef {object} LayoutState
- * @property {boolean} overImg       the pointer is over the picture
  * @property {boolean} pressCard     a press in the prompt card (it holds its place until you let go)
  * @property {HTMLElement | null} navHold  the on-picture arrow being clicked: it stays put until the pointer leaves it
  * @property {Geometry | null} last  the geometry last applied

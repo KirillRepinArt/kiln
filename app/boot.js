@@ -71,9 +71,6 @@ export function toast(m, btn, fn, at) {
   clearTimeout(tt);
   tt = setTimeout(() => $("toast").classList.remove("show"), btn ? 5000 : 2200);
 }
-export function syncH() {
-  document.documentElement.style.setProperty("--rightH", $("right").getBoundingClientRect().height + "px");
-}
 export function renderAll() {
   const n = jobs.filter(j => j.status === "pending" || j.status === "running").length;
   $("badge").textContent = /** @type {any} */ (n); // the number, as text
@@ -126,5 +123,4 @@ export function initBoot() {
   S.view = "gen";
   showView("gen");
   renderAll();
-  syncH();
 }

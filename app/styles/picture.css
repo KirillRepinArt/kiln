@@ -159,7 +159,6 @@
   border-radius: var(--r-14);
   background: var(--on-picture);
   backdrop-filter: blur(6px);
-  display: none;
   place-items: center;
   z-index: var(
     --z-pic-controls
@@ -168,13 +167,16 @@
      pointer */
   pointer-events: auto;
 }
+/* the privacy eye on the empty frame too: it also hides the prompt, the name and the LoRAs */
 .cbtn {
+  display: grid;
   opacity: 0;
   transition:
     opacity var(--t-150),
     background var(--t-150);
 }
 .bclose {
+  display: none;
   transition: background var(--t-150);
 }
 /* only with the picture's view (as the arrows) */
@@ -499,10 +501,6 @@ body[data-pic="still"] .prog.run .meta {
 .prog.stopping .stop {
   opacity: 0.45;
   pointer-events: none;
-}
-/* the privacy eye on the empty frame too: it also hides the prompt, the name and the LoRAs */
-.cbtn {
-  display: grid;
 }
 body.navs .cbtn {
   opacity: 1;

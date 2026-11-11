@@ -4,7 +4,6 @@ import { glueRect, plateSync } from "./plate.js";
 import { placeAround } from "./around.js";
 import { driving, follow, moving, movingTo, rearrange, rearrangeFade, stop, travelling } from "./rearrange.js";
 import { frameGoal } from "./framebox.js";
-import { syncH } from "./boot.js";
 import { showPromptOn } from "./browse.js";
 import {
   applyMode,
@@ -217,7 +216,6 @@ export const layDef = () => ({
 });
 /** @type {import("./types.js").LayoutState} */
 export const lay = {
-  overImg: false,
   pressCard: false,
   navHold: null,
   last: null,
@@ -993,26 +991,7 @@ let lrT;
 
 /* start-up wiring: the holds (pointer over the picture, a press in the prompt), the edges' outline, window resize (called from main.js, in order) */
 export function initLayout() {
-  /* the holds: over the picture, over the prompt (card, its name row, its LoRA chips) */
-  {
-    /** @type {number | undefined} */
-    let t;
-    const on = () => {
-        clearTimeout(t);
-        lay.overImg = true;
-      },
-      off = () => {
-        clearTimeout(t);
-        t = setTimeout(() => {
-          lay.overImg = false;
-          sizeFrame();
-        }, 120);
-      };
-    for (const el of [$("frame"), ...document.querySelectorAll(".gnav")]) {
-      el.addEventListener("pointerenter", on);
-      el.addEventListener("pointerleave", off);
-    }
-  }
+  /* the hold while you work in the prompt (a press in the column) */
   $("lcol").addEventListener("pointerdown", e => {
     if (!(e.target instanceof Element && e.target.closest(HANDLES))) lay.pressCard = true; // a handle is resizing
   });
@@ -1035,7 +1014,6 @@ export function initLayout() {
     applyMode();
     applyPH();
     sizeFrame();
-    syncH();
     moveThumb(true);
   });
 }

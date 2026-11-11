@@ -89,12 +89,12 @@
    begin (they're its grip). strips.test.mjs checks it */
 .app {
   --band-out: var(--outline-out);
-  --band: calc(var(--outline-out) + var(--space-px));
+  --band: calc(var(--outline-out) + var(--band-in));
 }
 .pedge {
   position: absolute;
-  top: 0;
-  bottom: 0;
+  top: var(--band-in);
+  bottom: var(--band-in);
   width: var(--band);
   z-index: var(--z-pic-handle-pane);
   cursor: ew-resize;
@@ -120,8 +120,8 @@
 .sedge {
   display: none;
   position: absolute;
-  top: 0;
-  bottom: 0;
+  top: var(--band-in);
+  bottom: var(--band-in);
   width: var(--band);
   z-index: var(--z-pic-handle-pane);
   cursor: ew-resize;
@@ -141,8 +141,8 @@
 .vpedge {
   display: none;
   position: absolute;
-  top: var(--pt, 0px);
-  height: calc(var(--pb, 0px) - var(--pt, 0px));
+  top: calc(var(--pt, 0px) + var(--band-in));
+  height: calc(var(--pb, 0px) - var(--pt, 0px) - 2 * var(--band-in));
   width: var(--band);
   z-index: var(--z-pic-handle-pane);
   cursor: ew-resize;
@@ -152,7 +152,7 @@
   left: calc(var(--pl, 0px) - var(--band-out));
 }
 .vpedge.r {
-  left: calc(var(--pr, 0px) - var(--space-px));
+  left: calc(var(--pr, 0px) - var(--band-in));
 } /* on the panel's sides (--pl / --pr: sizeFrame's panelStyle) — the area is the whole room */
 .app.stacked .phedge {
   left: var(--pl, 0px);
@@ -211,8 +211,8 @@
 .hedge.l,
 .hedge.r {
   display: none;
-  top: 0;
-  bottom: 0;
+  top: var(--band-in);
+  bottom: var(--band-in);
   height: auto;
   width: var(--band);
   cursor: ew-resize;

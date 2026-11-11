@@ -5,13 +5,14 @@
 
 /** The spacing hierarchy, in px: between areas, an area and its parts, things attached to a box; how far a
  * moving / resizing outline sits outside its plate; the picture's mat inside its plate. */
-export const SPACE = { area: 20, pane: 20, part: 12, tight: 8, outline: 12, mat: 0 };
+export const SPACE = { area: 20, pane: 20, part: 12, tight: 8, outline: 12, bandIn: 1, mat: 0 };
 const NAMES = {
   area: "--gap-area",
   pane: "--gap-pane",
   part: "--gap-part",
   tight: "--gap-tight",
   outline: "--outline-out",
+  bandIn: "--band-in",
   mat: "--mat",
 };
 

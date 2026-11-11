@@ -51,6 +51,9 @@
      A divider outlines both panes it resizes: the two lines run as a pair one scale step apart down its middle, never
      crossing — so never more than half of (the gap less one step) */
   --outline-out: min(var(--gap-part), calc((var(--gap-area) - var(--space-1)) / 2));
+  /* a resize band reaches this far inside its pane's edge (B19). A corner has ONE owner: the top / bottom band takes
+     it, a side band runs between them (L5: both claimed the corner's square — the pointer went to whichever was on top) */
+  --band-in: var(--space-px);
   /* the picture's mat: how far it sits inside its glass plate (the plate's ring shows round it). 0 = edge to edge,
      the ring drawn over the picture (the rim, plate.js). The picture's corners stay concentric with the plate's */
   --mat: 0px;

@@ -80,17 +80,19 @@ function placeSideEdges(plate) {
     return;
   }
   const outerLeft = app.classList.contains("pright"), // Right: the page's outer side is its left
-    /* every pane's resize band, one rule (B19, layout.css): from 1 px inside the edge out to the outline */
-    B = SPACE.outline;
+    /* every pane's resize band, one rule (B19, layout.css): from --band-in inside the edge out to the outline; a side
+       band runs between its pane's top and bottom bands (the corner is theirs — tokens.css --band-in) */
+    B = SPACE.outline,
+    IN = SPACE.bandIn;
   if (rp.classList.contains("paneled")) {
     /* a panel: its box (sizeFrame's — the pass's place), the same offsets the CSS gives them on the area's sides; its
        top / bottom handles span its width */
     const o = offsetIn(rp, rt),
       L = o.x,
       R = L + rp.offsetWidth,
-      v = { top: o.y + "px", height: rp.offsetHeight + "px", right: "auto" };
-    put(ro, { ...v, left: (outerLeft ? L - B : R - 1) + "px", width: B + 1 + "px" });
-    put(ri, { ...v, left: (outerLeft ? R - 1 : L - B) + "px", width: B + 1 + "px" });
+      v = { top: o.y + IN + "px", height: rp.offsetHeight - 2 * IN + "px", right: "auto" };
+    put(ro, { ...v, left: (outerLeft ? L - B : R - IN) + "px", width: B + IN + "px" });
+    put(ri, { ...v, left: (outerLeft ? R - IN : L - B) + "px", width: B + IN + "px" });
     for (const e of /** @type {NodeListOf<HTMLElement>} */ (rt.querySelectorAll(".phedge")))
       put(e, { left: L + "px", right: "auto", width: rp.offsetWidth + "px" });
     return;
@@ -101,7 +103,7 @@ function placeSideEdges(plate) {
   const o = offsetIn($("stage"), rt),
     L = o.x + l,
     R = L + w,
-    v = { top: o.y + t + "px", height: h + "px", right: "auto" };
-  put(ro, { ...v, left: (outerLeft ? L - B : R - 1) + "px", width: B + 1 + "px" });
-  put(ri, { ...v, left: (outerLeft ? R - 1 : L - B) + "px", width: B + 1 + "px" });
+    v = { top: o.y + t + IN + "px", height: h - 2 * IN + "px", right: "auto" };
+  put(ro, { ...v, left: (outerLeft ? L - B : R - IN) + "px", width: B + IN + "px" });
+  put(ri, { ...v, left: (outerLeft ? R - IN : L - B) + "px", width: B + IN + "px" });
 }

@@ -13,12 +13,19 @@ const GROUP = "#pgrip,#left,#ltitle,#chips";
 const NO = "input,textarea,button,a,select,.chip,.pwrapT,.pop,.cwi," + HANDLES;
 
 /** known findings: their key → the map's id and why it's there */
-const ALLOW = /** @type {Record<string, string>} */ ({
-  /* L5 (the re-read, 2026-11-10): at the picture's outer corners its top / bottom band and its outer band overlap (each runs
-     out to the outline, B19) — the corner goes to whichever is on top */
-  "two handles: div.hedge.t + div.pedge.ro": "L5",
-  "two handles: div.hedge.b + div.pedge.ro": "L5",
-});
+const ALLOW = /** @type {Record<string, string>} */ ({});
+
+/* every pair of live resize bands whose rectangles meet — measured, not sampled: the 8 px sweep found a corner's 1–2 px
+   square only when its grid happened to land on it (L5 — a pane's top / bottom band and its side band both claimed the
+   corner, until a 7 px shift of the layout put the grid there, 2026-11-11). A corner has one owner (tokens.css --band-in) */
+const overlaps = k =>
+  k.ev(`(()=>{const H=${JSON.stringify(HANDLES)},out={};
+    const name=e=>e.id?"#"+e.id:e.tagName.toLowerCase()+([...e.classList].length?"."+[...e.classList].join("."):"");
+    const bs=[...document.querySelectorAll(H)].filter(e=>{const s=getComputedStyle(e);return s.pointerEvents!=="none"&&s.visibility!=="hidden"&&e.getClientRects().length})
+      .map(e=>({e,r:e.getBoundingClientRect()})).filter(b=>b.r.width>0&&b.r.height>0);
+    for(let i=0;i<bs.length;i++)for(let j=i+1;j<bs.length;j++){const a=bs[i].r,b=bs[j].r,w=Math.min(a.right,b.right)-Math.max(a.left,b.left),h=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);
+      if(w>0.25&&h>0.25){const key="bands overlap: "+[name(bs[i].e),name(bs[j].e)].sort().join(" + ");out[key]||(out[key]={n:1,at:[Math.round(Math.max(a.left,b.left)),Math.round(Math.max(a.top,b.top))]})}}
+    return out})()`);
 
 /** one sweep of the window: findings by key, each with how many points and one example point */
 const sweep = (k, step = 8) =>
@@ -36,9 +43,11 @@ const sweep = (k, step = 8) =>
     const out={},add=(key,x,y)=>{const o=out[key]||(out[key]={n:0,at:[x,y]});o.n++};
     for(let y=4;y<innerHeight;y+=${step})for(let x=4;x<innerWidth;x+=${step}){
       const stack=document.elementsFromPoint(x,y),top=stack[0];if(!top||top===document.documentElement||top===document.body)continue;
-      /* two handles at one point */
-      const hs=stack.filter(e=>e.matches(H)&&live(e));
-      if(hs.length>1)add("two handles: "+hs.map(name).sort().join(" + "),x,y);
+      /* two handles at one point — that truly share it: two bands that only touch on a fractional seam both come back from
+         a pixel's hit test (it rounds each box outward), while a real pointer there goes to one */
+      const hs=stack.filter(e=>e.matches(H)&&live(e)),meet=(a,b)=>{const p=a.getBoundingClientRect(),q=b.getBoundingClientRect();
+        return Math.min(p.right,q.right)-Math.max(p.left,q.left)>0.25&&Math.min(p.bottom,q.bottom)-Math.max(p.top,q.top)>0.25};
+      if(hs.length>1&&hs.some((a,i)=>hs.slice(i+1).some(b=>meet(a,b))))add("two handles: "+hs.map(name).sort().join(" + "),x,y);
       /* the grip's cursor */
       if(top.closest(G)&&!top.closest(N)&&!/grab/.test(st(top).cursor))add("grip without the grab hand: "+name(top)+" ("+st(top).cursor+")",x,y);
       /* an invisible box over a visible control */
@@ -88,7 +97,7 @@ function caseOf(dock) {
         await k.mouse(r.left + r.width / 2, r.top + r.height / 2); // its controls shown (the eye, the ✕, the arrows)
         await k.sleep(600);
       }
-      const f = await sweep(k);
+      const f = { ...(await sweep(k)), ...(await overlaps(k)) };
       for (const [key, v] of Object.entries(f)) {
         const a = (all[key] ||= { n: 0, at: v.at, where: [] });
         a.n += v.n;

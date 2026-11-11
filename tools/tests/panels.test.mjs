@@ -562,8 +562,13 @@ export async function heightLimit(k, t) {
   t.ok(Math.abs((await R(k, "#frame")).height - f0.height) <= 2, "double-click: no limit again");
   await k.ev(`(showView("queue"),1)`);
   await k.sleep(500);
+  /* the full height: the column less the tab bar's row — the bar and one pane gap (--gap-pane, the spacing role:
+     DD-2026-11-11-8; it was a fixed 64, the bar and the part gap) */
+  const barRow = await k.ev(
+    `document.querySelector(".tabs").offsetHeight+parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap-pane"))`,
+  );
   t.ok(
-    Math.abs((await R(k, "#rpanel")).height - (await R(k, "#right")).height + 64) <= 2,
+    Math.abs((await R(k, "#rpanel")).height - (await R(k, "#right")).height + barRow) <= 2,
     "Queue keeps the full height",
   );
 }

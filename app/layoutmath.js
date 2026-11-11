@@ -461,7 +461,7 @@ export function relationMotion(q, motion) {
    free room one pane gap from the partner to the window's edge gap, no wider than the pane; tiles a pane gap apart; under `roomMin` of free room it
    lies over the partner flush to the window's edge, covering at most `cover` of its width (never under `hitMin`, a
    target to hit). The bottom tile is a side tile's height: under the partner when the room is there, else over its
-   bottom (at most `cover` of its height), between laid-over columns — or, with no width left between them, the
+   bottom at the same height, between laid-over columns — or, with no width left between them, the
    partner's width with the laid-over columns stopping above it. The window's corners are never a place: a pane stays
    glued to its partner. Pure; the numbers come from tokens.css (the drop map's). */
 /** @typedef {{ dock: "left" | "right" | "below", pos: "top" | "mid" | "bot", r: Rect }} DropTile */
@@ -499,7 +499,7 @@ export function dropTiles(p, win, o) {
   let below;
   if (roomB >= third) below = { dock: "below", r: { x: p.x, y: p.y + p.h + o.pane, w: p.w, h: third }, over: 0 };
   else {
-    const bh = Math.min(third, o.cover * p.h);
+    const bh = third; // a tile like the others, over the picture too (the user: one exception less)
     let x0 = p.x,
       x1 = p.x + p.w;
     const [L, R] = lanes;

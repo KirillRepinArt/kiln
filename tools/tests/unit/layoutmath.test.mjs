@@ -519,7 +519,8 @@ test("the drop map side by side, 3:4 at 2000 px: both columns outside the pictur
   const [L, R, B] = lanes;
   assert.deepEqual([L.r.x, L.r.w, L.over], [364, 560, 0]); // the free room is wider than the pane: the pane's width
   assert.deepEqual([R.r.x, R.r.w, R.over], [1656, 324, 0]); // narrowed to the room, still outside
-  assert.ok(close(B.r.h, 923 * 0.25) && close(B.r.y, 112 + 923 - 923 * 0.25) && B.r.w === 692); // no room under: ≤ 25 %
+  const third = (923 - 40) / 3; // a side tile's height, the pane gap between them
+  assert.ok(close(B.r.h, third) && close(B.r.y, 112 + 923 - third) && B.r.w === 692); // no room under: over it, a tile like the rest
   assert.equal(tiles.length, 7);
   assert.ok(close(tiles[1].r.y - tiles[0].r.y, (923 - 40) / 3 + 20)); // thirds, a pane gap apart
 });

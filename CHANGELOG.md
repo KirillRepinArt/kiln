@@ -2,6 +2,20 @@
 
 Versions are tagged at the end of each roadmap phase (`v0.N`). Dates are when the version was tagged.
 
+## v0.7c — not tagged yet (layout: one model for every pane, edge and motion)
+
+- **Every pane has its own size, per page and per layout.** The prompt box, the picture and each panel (Queue, LoRAs, PNG Info) keep the width and height you give them, separately side by side and in Vertical; a picture page keeps a scale of its largest, so every picture opens at its biggest and keeps your size as you browse.
+- **Every edge of every pane resizes it**, in both layouts: the prompt box's sides, top and bottom (a height of your own, or back to its text's with a double-click), the picture's four sides, the panels' sides, top and bottom, and the edge the two panes share. Dragging past a limit gives a little (a rubber band) and springs back; double-click any edge for its default; Reset layout returns them all.
+- **Free room is used first:** dragging an edge grows the pane you hold into empty room before it takes anything from its neighbour, and a neighbour only gives down to its least.
+- **Every change moves as one.** Switching tabs or layouts, resizing, a new picture, a Reset: everything on screen moves on one clock — the glass plate, the picture, the tab bar and the prompt box together. The picture scales with its pane through a layout switch (it used to lag behind it), page contents ride their plate, and a switch interrupted mid-way carries on from what's on screen.
+- **Moving the prompt box: the drop map.** Grab the box by its name or LoRA row: it condenses to a small token under your hand and a map of its places appears around the picture — three spots on each side and one under it. Drop it on a tile and it travels from where you let go into its place; drop it nowhere, or press Esc, and it goes home.
+- **One spacing for neighbours:** 20 px between any two panes, and between the tab bar and the page, in every layout — Vertical stays even, as far under the picture as the picture is under the tab bar.
+- **Vertical, from one layout pass:** the page's pane on top and the box under it, with its own height and width; the edge between them pushes the box into free room before trading. Show prompt is reachable again.
+- **Messages in one place:** "Layout reset" and similar notes appear under the Layout button, the finished note under the Generating tab.
+- **Every drag ends however it ends** — the button let go, the pointer lost to another window, Esc — and a click after a drag no longer lands on what was under it. The LoRA weight's scrub and the viewer's pan used to keep dragging after a lost pointer.
+- **Start's queue badge:** a new job's progress ring starts from empty (it swept back from the last job's end). The grip's tooltip and the shortcut list describe the drop map.
+- Under the hood: one layout model (decision record 0013) and one layout pass for every page and layout, one motion driver, one fade, one way to leave as a copy, one drag gesture, a named paint order, and spacing as roles over one scale; code comments state the current rule (the history moved to the design log).
+
 ## v0.7b — 2026-11-01 (data, and one owner for everything that moves)
 
 - **Every page's plate is the page minus what it needs right now.** Pages take the full height; the status row gets its

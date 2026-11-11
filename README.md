@@ -2,13 +2,11 @@
 
 **English** · [Русский](README.ru.md)
 
-**A calm, queue-first front end for [Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo), built around Krea 2.**
+**A calm, comfortable front end for local image generation, on whatever hardware you have.**
 
-Load the queue, close the door, come back to finished images. Kiln is a single-window app for people who want
-Krea 2's quality without Gradio's wall of controls or a node graph. Whether one image takes minutes on a modest GPU
-or a long queue runs on a fast one, there's something worth watching while it works — and every finished picture
-comes back with its prompt and settings beside it, so looking through your results means reading what made them,
-not hunting through files.
+Kiln is one window for people who want good pictures without Gradio's wall of controls or a node graph. Nothing jumps and nothing surprises: every change moves as one, every pane is yours to size, and every finished picture comes back with the prompt and settings that made it.
+
+Today it drives a local [Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo), built around Krea 2.
 
 ![Kiln — the Gallery: a finished picture on its glass plate, its prompt beside it](docs/screenshot.jpg)
 

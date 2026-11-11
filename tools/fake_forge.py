@@ -22,7 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 7861
 STEP_SECONDS = float(sys.argv[2]) if len(sys.argv) > 2 else 0.6
 
-FILL = re.compile(r"\[fill:([0-9a-fA-F]{6})\]")  # test hook: a prompt with [fill:ff0000] gives a solid image
+FILL = re.compile(r"\[fill:([0-9a-fA-F]{6}|busy)\]")  # test hook: a prompt with [fill:ff0000] gives a solid image
 # test hook: a prompt with [fail:vram] is refused as Forge refuses a render out of video memory; [fail:die] drops the
 # connection mid-render, as a Forge that crashed or was closed (once per prompt: the retry renders)
 FAIL = re.compile(r"\[fail:(vram|die)\]")
@@ -57,22 +57,34 @@ LORAS = [  # neutral demo names; folder comes from the path, as with real Forge
 
 
 def png(w, h, seed, blur=0.0, fill=None):
-    """Small RGB gradient PNG; `blur` 0..1 flattens it (fake 'early step' look); `fill` "rrggbb" makes it solid."""
+    """Small RGB gradient PNG; `blur` 0..1 flattens it (fake 'early step' look); `fill` "rrggbb" makes it solid,
+    "busy" a bright, high-detail picture (light noise in small blocks: the hardest background for text over it)."""
     r = random.Random(seed)
-    c1 = [r.randint(30, 200) for _ in range(3)]
-    c2 = [r.randint(30, 200) for _ in range(3)]
-    if fill:
-        c1 = c2 = [int(fill[i : i + 2], 16) for i in (0, 2, 4)]
-    if blur:
-        mid = [(a + b) // 2 for a, b in zip(c1, c2, strict=True)]
-        c1 = [int(a * (1 - blur) + m * blur) for a, m in zip(c1, mid, strict=True)]
-        c2 = [int(b * (1 - blur) + m * blur) for b, m in zip(c2, mid, strict=True)]
     rows = bytearray()
-    for y in range(h):
-        rows.append(0)
-        for x in range(w):
-            t = (x / max(1, w - 1) + y / max(1, h - 1)) / 2
-            rows += bytes(int(a + (b - a) * t) for a, b in zip(c1, c2, strict=True))
+    if fill == "busy":
+        cells: dict[tuple[int, int], bytes] = {}
+        for y in range(h):
+            rows.append(0)
+            for x in range(w):
+                k = (x // 3, y // 3)
+                if k not in cells:
+                    v = r.randint(150, 255)
+                    cells[k] = bytes((v, max(0, min(255, v + r.randint(-40, 40))), r.randint(120, 255)))
+                rows += cells[k]
+    else:
+        c1 = [r.randint(30, 200) for _ in range(3)]
+        c2 = [r.randint(30, 200) for _ in range(3)]
+        if fill:
+            c1 = c2 = [int(fill[i : i + 2], 16) for i in (0, 2, 4)]
+        if blur:
+            mid = [(a + b) // 2 for a, b in zip(c1, c2, strict=True)]
+            c1 = [int(a * (1 - blur) + m * blur) for a, m in zip(c1, mid, strict=True)]
+            c2 = [int(b * (1 - blur) + m * blur) for b, m in zip(c2, mid, strict=True)]
+        for y in range(h):
+            rows.append(0)
+            for x in range(w):
+                t = (x / max(1, w - 1) + y / max(1, h - 1)) / 2
+                rows += bytes(int(a + (b - a) * t) for a, b in zip(c1, c2, strict=True))
 
     def chunk(tag, data):
         return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)

@@ -24,6 +24,7 @@ import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { ms, SPACE, tok } from "./tokens.js";
 import { boxSizing } from "./editor.js";
+import { capChips } from "./chips.js";
 import { DRAG_START, gesture as drag } from "./gesture.js";
 import { rearrange, stop, travelling } from "./rearrange.js";
 
@@ -166,17 +167,37 @@ export function chipsH() {
   const c = $("chips");
   return c.childElementCount ? c.offsetHeight + SPACE.tight : 0;
 } // the chip row under the box, and its gap (the row always shows: "LoRA +")
+/** the layout pass's law (ARCHITECTURE › the layout pass's law): its heights are read at the width it gives the box —
+ * that width applied, the chips capped at it, the pass run, the width the box has now put back (its glide, if any,
+ * runs from it). In one task: nothing is painted between. @template T @param {HTMLElement} el the width's element
+ * @param {string} prop its property (--sw in Vertical, --cw side by side) @param {number} w @param {() => T} pass
+ * @returns {{ p: T, CH: number, chh: number, ctrlh: number }} the pass's answer, and the chips' and controls' heights there */
+function atWidth(el, prop, w, pass) {
+  const was = el.style.getPropertyValue(prop);
+  el.style.setProperty(prop, w + "px");
+  try {
+    capChips();
+    return { p: pass(), CH: chipsH(), chh: $("chips").offsetHeight, ctrlh: q(".controls", $("left")).offsetHeight };
+  } finally {
+    if (was) el.style.setProperty(prop, was);
+    else el.style.removeProperty(prop);
+  }
+}
 /** @param {boolean} [direct] the user's hand is the clock (typing): the box follows at once, as under a drag — a change
  * the system makes (a layout switch, a Reset) moves on the rearrangement's plan */
 export function layoutLeft(direct = false) {
   if (card.drag) return;
   layDirect = direct;
   const L = $("left"),
-    col = $("lcol"),
-    CH = chipsH();
+    col = $("lcol");
   const TS = 64; // the name row over the box (one height whatever it shows: the title never moves)
   col.style.setProperty("--ts", TS + "px");
-  col.style.setProperty("--chh", $("chips").offsetHeight + "px"); // the LoRA row: the grip zone's bottom (.pgrip)
+  /* the measured heights written with the place: the LoRA row (the grip zone's bottom, .pgrip), the controls row (glass
+     floats it over the prompt: the text scrolls clear of it) */
+  const heights = (/** @type {{ chh: number, ctrlh: number }} */ m) => {
+    col.style.setProperty("--chh", m.chh + "px");
+    L.style.setProperty("--ctrlh", m.ctrlh + "px");
+  };
   const stk = !!document.querySelector(".app.stacked"),
     hm = !stk && (S.hmode === "full" || S.hmode === "match") ? S.hmode : "";
   /* Vertical has no height modes: they took the picture's room */
@@ -188,8 +209,10 @@ export function layoutLeft(direct = false) {
        first, the box its text's height in the free room under it, then it scrolls. Its top is the pass's, in the
        column's px (its layout box, without a transform); its width and height too — held, an edge's */
     const was = lay.passV,
-      p = vPass(),
+      m = atWidth(col, "--sw", Math.round(vPass().box.w), vPass), // the widths, then the heights at them
+      p = m.p,
       colTop = layoutRect(col).top;
+    heights(m);
     swAt(col, Math.round(p.box.w));
     requestAnimationFrame(vAlign);
     boxAt(col, Math.round(p.box.y - colTop), Math.round(p.box.h));
@@ -201,10 +224,13 @@ export function layoutLeft(direct = false) {
   if (col.clientHeight - TS <= 0) return;
   /* side by side the box's place beside its pane is the layout pass's — ONE rule (cardPlacement, its modes
      cardHeightMode), called by the pass with the column and the moment's state */
-  const p = sideBoxPass(),
+  const app = /** @type {HTMLElement} */ (document.querySelector(".app")),
+    m = atWidth(app, "--cw", Math.round(sideBoxPass().box.w), sideBoxPass), // the widths, then the heights at them
+    p = m.p,
     c0 = layoutRect(col).top;
+  heights(m);
   card.top = p.box.y - c0 - TS;
-  card.bottom = card.top + p.box.h + CH;
+  card.bottom = card.top + p.box.h + m.CH;
   boxAt(col, p.box.y - c0, p.box.h);
 }
 /** Vertical: the box's width (--sw) — ONE writer, this. A change the system makes (a double-click, Reset, a new limit)
@@ -317,11 +343,8 @@ export function initCardlayout() {
   $("left").addEventListener("focusout", () => {
     if (!card.hover) thaw();
   });
-  /* the box's place reads these sizes: when one changes, whoever changed it (a rewrap at a new width, the chips capped
-     to two rows, a LoRA on or off), the place is laid out again — the chips row was read but not watched (Q2) */
-  const placeInputs = new ResizeObserver(() => layoutLeft());
-  placeInputs.observe($("lcol"));
-  placeInputs.observe($("chips"));
+  /* the room (the window): an input of the pass */
+  new ResizeObserver(() => layoutLeft()).observe($("lcol"));
   $("hmodes").addEventListener("click", e => {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-hm]"));
     if (!b) return;
@@ -476,11 +499,8 @@ export function initCardlayout() {
       }
     });
   })();
-  // glass mode floats the controls row over the prompt: the text needs that much room to scroll clear of it
-  new ResizeObserver(() => {
-    $("left").style.setProperty("--ctrlh", q(".controls", $("left")).offsetHeight + "px");
-    layoutLeft();
-  }).observe(q("#left .controls"));
+  /* the fonts arriving resize the controls row and the text: an input of the pass, as the window is */
+  document.fonts?.ready.then(() => layoutLeft());
 }
 
 /* ======================= prompt + chips ======================= */

@@ -138,3 +138,47 @@ export const layoutMenu = (k, t) => writtenWhereItStays(k, t, "menu");
 export const loraOnOrOff = (k, t) => writtenWhereItStays(k, t, "lora");
 export const windowResized = (k, t) => writtenWhereItStays(k, t, "window");
 for (const f of [dropIntoALane, layoutMenu, loraOnOrOff, windowResized]) f.opts = { width: 1785, height: 1080 };
+
+/* Rule 2 — nothing resizes or re-places the box after the pass. Every ResizeObserver is wrapped before Kiln loads: a
+   callback that changes the box's place or size (#lcol's and #left's styles) or which chips show is a re-run after the
+   fact (today: the controls row's observer, the chips' capChips, the patch on the chips row). */
+const RO_WATCH = `(()=>{const O=window.ResizeObserver;window.__ro=[];window.__roOn=false;
+  const snap=()=>{const c=document.getElementById("lcol"),l=document.getElementById("left"),ch=document.getElementById("chips");
+    return [c?c.getAttribute("style"):"",l?l.getAttribute("style"):"",ch?[...ch.children].map(e=>e.hidden?0:1).join("")+"/"+ch.childElementCount:""]};
+  window.ResizeObserver=class extends O{constructor(cb){super((es,o)=>{const a=snap();cb(es,o);const b=snap();
+    if(window.__roOn&&(a[0]!==b[0]||a[1]!==b[1]||a[2]!==b[2]))window.__ro.push({on:es.map(e=>e.target.id||e.target.className).join(","),
+      changed:["#lcol","#left","chips shown"].filter((_,i)=>a[i]!==b[i]).join(",")})})}}})()`;
+export async function nothingResizesAfterThePass(k, t) {
+  await k.until(`typeof LORAS!=="undefined"&&LORAS.length>=6`, 15000);
+  await viewport(k, 1785, 1080);
+  await k.ev(`(${NAMES_JS},document.querySelector('.tab[data-v="png"]').click(),1)`);
+  await k.ev(`(LORAS.forEach((l,i)=>{l.on=i<5;l.display=NAMES[i]||l.display}),renderChips(),P.value=${JSON.stringify(LONG)},P.dispatchEvent(new Event("input")),
+    setPaneSize("box","w",520,"vert"),setPaneSize("box","w",560,"side"),setDock("left"),1)`);
+  await k.mouse(4, 4);
+  await k.sleep(1200);
+  await k.ev(`(window.__roOn=true,1)`);
+  /* the changes: the user's drop into Vertical, the Layout menu back, a LoRA off and on, the window, typing */
+  const n = await k.rect("#ltitle");
+  await press(k, n.left + 20, n.top + n.height / 2);
+  await moveTo(k, n.left + 20, n.top + n.height / 2, n.left + 20, n.top + n.height / 2 + 12);
+  const r = await k.ev(
+    `(r=>r&&{x:r.left+r.width/2,y:r.top+r.height/2})(document.querySelector('.droptile[data-dock="below"][data-pos="mid"]')?.getBoundingClientRect())`,
+  );
+  await moveTo(k, n.left + 20, n.top + n.height / 2 + 12, r.x, r.y);
+  await release(k, r.x, r.y);
+  await k.sleep(1200);
+  await k.ev(`(setDock("left"),1)`);
+  await k.sleep(1200);
+  await k.ev(`(LORAS[4].on=false,renderChips(),1)`);
+  await k.sleep(600);
+  await k.ev(`(LORAS[4].on=true,renderChips(),1)`);
+  await k.sleep(600);
+  await viewport(k, 1600, 1000);
+  await k.sleep(900);
+  await k.ev(`(P.value=${JSON.stringify(LONG + " " + LONG)},P.dispatchEvent(new Event("input")),1)`);
+  await k.sleep(900);
+  const ro = await k.ev(`(window.__roOn=false,window.__ro)`);
+  const kinds = [...new Set(ro.map(x => `${x.on} → ${x.changed}`))];
+  t.ok(ro.length === 0, `no observer re-places or resizes the box after the pass (${ro.length} did)`, kinds);
+}
+nothingResizesAfterThePass.opts = { width: 1785, height: 1080, inject: RO_WATCH };

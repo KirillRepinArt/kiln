@@ -48,8 +48,9 @@ export function renderChips() {
   );
   capChips();
 }
-/* more than two rows of chips: hide the rest behind a "+N" chip that expands (and collapses again) */
-function capChips() {
+/* more than two rows of chips: hide the rest behind a "+N" chip that expands (and collapses again) — the chips' answer at
+   the width they have now: the layout pass asks it at the width it gives the box (ARCHITECTURE › the layout pass's law) */
+export function capChips() {
   const box = $("chips");
   box.querySelector(".chipmore")?.remove();
   const cs = qa(".chip[data-n]", box);
@@ -83,16 +84,6 @@ export function fmtW(w) {
 }
 /* start-up wiring: the chips — wrap, click, weight, reorder (called from main.js, in order) */
 export function initChips() {
-  (function () {
-    let w = 0;
-    new ResizeObserver(() => {
-      const n = $("chips").clientWidth;
-      if (n !== w) {
-        w = n;
-        capChips();
-      }
-    }).observe($("chips"));
-  })();
   $("chips").onclick = e => {
     const c = hit(e, ".chip");
     if (!c) return;

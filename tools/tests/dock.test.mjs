@@ -455,3 +455,37 @@ export async function oneGapBetweenNeighbours(k, t) {
   }
 }
 oneGapBetweenNeighbours.opts = { width: 1700, height: 950 };
+
+/* Picking the box up and dropping it back on its own place changes nothing in the layout (the user, 2026-11-12, in
+   Vertical: "it resets the pic … rubber bands a bit"): the picture stays put in every frame — the name row was measured
+   through the carry's scale (layout.js colPx, DD-2026-11-12-17) — and the box's least width reads the same mid-carry. */
+export async function dropInPlaceLeavesThePicture(k, t) {
+  await k.job("[fill:busy] a busy bright one", { steps: 1, name: "Busy" });
+  await k.until(`!current()&&jobs.some(j=>j.status==="done")`, 30000);
+  await k.ev(`(document.querySelector('.tab[data-v="gallery"]').click(),1)`);
+  await k.sleep(1200);
+  for (const dock of ["below", "left"]) {
+    await k.ev(`(setDock("${dock}"),1)`);
+    await k.sleep(1800);
+    const n = await R(k, "#ltitle"),
+      x = n.left + 20,
+      y = n.top + n.height / 2,
+      least0 = await k.ev(`boxWLeast()`);
+    await k.ev(
+      `(window.__f=new Set(),window.__on=true,(function f(){if(!window.__on)return;const r=$("frame").getBoundingClientRect();window.__f.add(Math.round(r.width*2)/2+"x"+Math.round(r.height*2)/2);requestAnimationFrame(f)})(),1)`,
+    );
+    await press(k, x, y);
+    await moveTo(k, x, y, x, y - 40); // past the threshold: lifted, the token in the hand
+    await k.sleep(400);
+    const leastMid = await k.ev(`boxWLeast()`);
+    await moveTo(k, x, y - 40, x, y);
+    await release(k, x, y); // back on its own tile
+    await k.sleep(1800);
+    const seen = await k.ev(`(window.__on=false,[...window.__f])`);
+    t.ok(seen.length === 1, `${dock}: the picture stays put through the lift and the drop`, seen);
+    t.ok(Math.abs(leastMid - least0) <= 1, `${dock}: the box's least width reads the same mid-carry`, {
+      least0,
+      leastMid,
+    });
+  }
+}

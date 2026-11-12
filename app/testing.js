@@ -7,7 +7,7 @@ import { act, addJobs, deleteJob, doneNote, removeMissing, setPaused, stopJob, v
 import { toast } from "./boot.js";
 import { fade } from "./fade.js";
 import { browseTo, genNav, updNav } from "./browse.js";
-import { card, chipsH, layoutLeft, lyUnfreeze, updHm } from "./cardlayout.js";
+import { boxWLeast, card, chipsH, layoutLeft, lyUnfreeze, updHm } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { status } from "./effects.js";
 import { up } from "./forge.js";
@@ -133,6 +133,7 @@ export function installTestBridge() {
     setJustDone: { get: () => setJustDone },
     setPaneSize: { get: () => setPaneSize },
     skin: { get: () => skin },
+    boxWLeast: { get: () => boxWLeast },
     placeFor: { get: () => placeFor },
     dockNow: { get: () => dockNow },
     setPaused: { get: () => setPaused },

@@ -7,6 +7,7 @@ import {
   dockNow,
   lay,
   layDef,
+  colPx,
   liftCol,
   liftToken,
   minRight,
@@ -93,7 +94,7 @@ export function boxWLeast() {
     play = $("play");
   if (!c || !play.offsetWidth) return PWMIN;
   /* exact widths: offsetWidth rounds each part down (2 px short over five pills) */
-  const wOf = (/** @type {Element} */ e) => e.getBoundingClientRect().width,
+  const wOf = (/** @type {Element} */ e) => colPx(e.getBoundingClientRect().width), // layout px, not the carry's
     cs = getComputedStyle(c),
     pills = /** @type {HTMLElement[]} */ ([...c.querySelectorAll(".pills > .pill")]).filter(p => p.offsetWidth),
     pg = parseFloat(getComputedStyle(/** @type {Element} */ (c.querySelector(".pills"))).columnGap) || 0;

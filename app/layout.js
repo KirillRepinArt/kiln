@@ -236,7 +236,7 @@ export const lay = {
 };
 /* Vertical: the box's name row, from the name's top to the box's (the column's title row less the room above the name) */
 function nameRowH() {
-  return SPACE.tight + $("ltitle").getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top;
+  return SPACE.tight + colPx($("ltitle").getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top);
 }
 /* the room the slot under the picture takes while the page keeps it: the part gap + its occupant (the status row, or
    Show prompt — A1) */
@@ -821,6 +821,9 @@ export function liftCol(x, y) {
 let liftS = 1;
 /** the token's scale now (1: the box itself) */
 export const liftScale = () => liftS;
+/** a size measured as seen inside the prompt column, in layout px: the token's scale divided out — a layout input is
+ *  never read through the carry (ARCHITECTURE › layout inputs; DD-2026-11-12-17) @param {number} px */
+export const colPx = px => px / liftS;
 /** @param {number} s the column's scale while it's carried (1 — the box at its size) */
 export function liftToken(s) {
   liftS = s;

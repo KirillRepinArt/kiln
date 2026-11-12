@@ -14,6 +14,7 @@ import { expandVariants, stripComments } from "./prompttext.js";
 import { LORAS, P, S, save } from "./state.js";
 import { forgeOk, fullNextPoll, poll } from "./sync.js";
 import { V, closeViewer, openViewer } from "./viewer.js";
+import { ms } from "./tokens.js";
 
 /* ---------- queue actions -> server ---------- */
 /* Start in the Gallery = Vary: the picture on show again — its prompt, settings, LoRAs and series — with a new seed.
@@ -35,9 +36,16 @@ export async function vary(j) {
     () => api(`/api/jobs/${id}/cancel`, {}).then(poll),
     "queue",
   );
-  if (!forgeOk)
-    setTimeout(() => toast("Queued — Forge isn't running yet, jobs start when it is", "", null, "queue"), 2300);
+  queuedOffline();
   poll();
+}
+/** jobs were queued while Forge is down: say so once the "queued" toast has gone (its life, then a gap) */
+function queuedOffline() {
+  if (forgeOk) return;
+  setTimeout(
+    () => toast("Queued — Forge isn't running yet, jobs start when it is", "", null, "queue"),
+    ms("--life-toast") + ms("--delay-toast-gap"),
+  );
 }
 export async function addJobs() {
   if (peekJob) {
@@ -85,8 +93,7 @@ export async function addJobs() {
   pv("start");
   /* a picture you held gives way to the render once it has a picture */
   toast(S.n > 1 ? `Added ${S.n} jobs to the queue` : "Added to queue", "", null, "queue");
-  if (!forgeOk)
-    setTimeout(() => toast("Queued — Forge isn't running yet, jobs start when it is", "", null, "queue"), 2300);
+  queuedOffline();
   poll();
 }
 /** @param {import("./types.js").Job | null | undefined} j */
@@ -198,11 +205,11 @@ export let dnT = /** @type {number | undefined} */ (/** @type {unknown} */ (null
   dnN = 0,
   dnF = 0,
   dnId = /** @type {number | null} */ (null);
-/* the finished note goes away after ms (restarted by each call) */
-/** @param {number} ms */
-export function dnHideIn(ms) {
+/* the finished note goes away after `wait` ms (restarted by each call) */
+/** @param {number} wait */
+export function dnHideIn(wait) {
   clearTimeout(dnT);
-  dnT = setTimeout(dnHide, ms);
+  dnT = setTimeout(dnHide, wait);
 }
 export const dn = $("donenote");
 export function dnHide() {
@@ -237,7 +244,7 @@ export function doneNote(j) {
   dn.classList.toggle("nopic", !dnN);
   placeMessage(dn, document.querySelector('.tab[data-v="gen"]')); // under the Generating tab (M1: the one placer)
   dn.classList.add("show");
-  dnHideIn(6000);
+  dnHideIn(ms("--life-note"));
 }
 /** the waiting jobs in a new order (the Queue's reorder): the poll keeps the page's order until the server has it
  * @param {number[]} ids */

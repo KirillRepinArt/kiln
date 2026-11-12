@@ -22,7 +22,7 @@ import { PWMIN, dropAt, dropTiles } from "./layoutmath.js";
 import { peekJob } from "./prompt.js";
 import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
-import { SPACE, tok } from "./tokens.js";
+import { ms, SPACE, tok } from "./tokens.js";
 import { boxSizing } from "./editor.js";
 import { DRAG_START, gesture as drag } from "./gesture.js";
 import { rearrange, stop, travelling } from "./rearrange.js";
@@ -268,7 +268,7 @@ function thaw() {
     if (card.hover || ed) return;
     card.frozen = false;
     layoutLeft();
-  }, 500);
+  }, ms("--delay-card-thaw"));
 }
 /* the size buttons by the name: side by side, Match = the picture's height; in Vertical, Fit = the picture's width */
 const HM_H =

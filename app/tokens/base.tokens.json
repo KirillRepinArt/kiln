@@ -2259,6 +2259,226 @@
       "$type": "duration",
       "$value": "{t.300}",
       "$description": "the outline hint stays a moment after the pointer leaves"
+    },
+    "click": {
+      "$type": "duration",
+      "$value": {
+        "value": 230,
+        "unit": "ms"
+      },
+      "$description": "a click waits this long for a second one before acting as a single click (LoRA rows, the viewer)"
+    },
+    "tip": {
+      "$type": "duration",
+      "$value": "{t.450}",
+      "$description": "the pointer rests this long before a tooltip shows"
+    },
+    "preview": {
+      "$type": "duration",
+      "$value": {
+        "value": 350,
+        "unit": "ms"
+      },
+      "$description": "the pointer rests this long on a Queue row before its bigger preview shows"
+    },
+    "measure": {
+      "$type": "duration",
+      "$value": {
+        "value": 120,
+        "unit": "ms"
+      },
+      "$description": "the prompt editor measures again this long after its size stops changing"
+    },
+    "name": {
+      "$type": "duration",
+      "$value": {
+        "value": 250,
+        "unit": "ms"
+      },
+      "$description": "the prompt's file name is fetched this long after typing stops"
+    },
+    "tools-hide": {
+      "$type": "duration",
+      "$value": "{t.300}",
+      "$description": "the picture's edit buttons stay this long after the pointer leaves"
+    },
+    "card-thaw": {
+      "$type": "duration",
+      "$value": {
+        "value": 500,
+        "unit": "ms"
+      },
+      "$description": "the prompt box's frozen size is let go this long after the last change"
+    },
+    "overlay-hold": {
+      "$type": "duration",
+      "$value": "{t.260}",
+      "$description": "a leaving picture's copy holds this long for the next one to arrive"
+    },
+    "resize-end": {
+      "$type": "duration",
+      "$value": "{t.150}",
+      "$description": "a window resize counts as over this long after its last move"
+    },
+    "lib-stats": {
+      "$type": "duration",
+      "$value": {
+        "value": 400,
+        "unit": "ms"
+      },
+      "$description": "the Library's counts are fetched this long after a change"
+    },
+    "queue-thumb": {
+      "$type": "duration",
+      "$value": {
+        "value": 1500,
+        "unit": "ms"
+      },
+      "$description": "a finished job's Queue thumbnail is made this long after it lands"
+    },
+    "finished-note": {
+      "$type": "duration",
+      "$value": {
+        "value": 1200,
+        "unit": "ms"
+      },
+      "$description": "the note for jobs finished while Kiln was closed waits this long after start"
+    },
+    "drop-land": {
+      "$type": "duration",
+      "$value": {
+        "value": 280,
+        "unit": "ms"
+      },
+      "$description": "a dropped Queue row lands anyway this long after its glide (--lay-t) should have ended: a hidden window pauses it"
+    },
+    "toast-gap": {
+      "$type": "duration",
+      "$value": {
+        "value": 100,
+        "unit": "ms"
+      },
+      "$description": "a toast that follows another waits for its life plus this gap"
+    },
+    "switch-safety": {
+      "$type": "duration",
+      "$value": {
+        "value": 10000,
+        "unit": "ms"
+      },
+      "$description": "a switch's hold on the layout is let go after this long, whatever happens (its own end lets go first)"
+    }
+  },
+  "life": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "life",
+        "above": "HOW LONG A MESSAGE STAYS — timers, not motion: each its own value"
+      }
+    },
+    "toast": {
+      "$type": "duration",
+      "$value": {
+        "value": 2200,
+        "unit": "ms"
+      },
+      "$description": "a toast"
+    },
+    "toast-action": {
+      "$type": "duration",
+      "$value": {
+        "value": 5000,
+        "unit": "ms"
+      },
+      "$description": "a toast with a button (Undo): long enough to reach it"
+    },
+    "note": {
+      "$type": "duration",
+      "$value": {
+        "value": 6000,
+        "unit": "ms"
+      },
+      "$description": "the finished note"
+    },
+    "note-left": {
+      "$type": "duration",
+      "$value": {
+        "value": 2500,
+        "unit": "ms"
+      },
+      "$description": "the finished note after the pointer leaves it"
+    },
+    "theme-preview": {
+      "$type": "duration",
+      "$value": {
+        "value": 6000,
+        "unit": "ms"
+      },
+      "$description": "a theme tried from Settings, before it goes back"
+    },
+    "preview-bar": {
+      "$type": "duration",
+      "$value": {
+        "value": 2500,
+        "unit": "ms"
+      },
+      "$description": "the theme preview's bar"
+    }
+  },
+  "tick": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "tick",
+        "above": "HOW OFTEN SOMETHING REPEATS — timers, not motion"
+      }
+    },
+    "poll-run": {
+      "$type": "duration",
+      "$value": {
+        "value": 700,
+        "unit": "ms"
+      },
+      "$description": "asking the server for news while a job runs"
+    },
+    "poll-idle": {
+      "$type": "duration",
+      "$value": {
+        "value": 1800,
+        "unit": "ms"
+      },
+      "$description": "asking the server for news while nothing runs"
+    },
+    "poll-retry": {
+      "$type": "duration",
+      "$value": {
+        "value": 1500,
+        "unit": "ms"
+      },
+      "$description": "asking again after one missed answer (a blip), before calling the server gone"
+    },
+    "reconnect": {
+      "$type": "duration",
+      "$value": {
+        "value": 3000,
+        "unit": "ms"
+      },
+      "$description": "trying the server again while it's gone"
+    },
+    "ui-sync": {
+      "$type": "duration",
+      "$value": {
+        "value": 300,
+        "unit": "ms"
+      },
+      "$description": "the page re-checking its tabs, picture state and arrows against the state (a fallback loop: measure what it corrects before removing it)"
+    },
+    "lora-rescan": {
+      "$type": "duration",
+      "$value": {
+        "value": 60000,
+        "unit": "ms"
+      },
+      "$description": "the LoRA folder rescanned at most this often on its own"
     }
   },
   "play": {

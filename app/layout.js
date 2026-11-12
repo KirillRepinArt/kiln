@@ -46,7 +46,7 @@ import { PV, onShow, picMode } from "./picstate.js";
 import { S, save } from "./state.js";
 import { forgeOk } from "./sync.js";
 import { moveThumb, tabGo } from "./tabs.js";
-import { SPACE } from "./tokens.js";
+import { ms, SPACE } from "./tokens.js";
 
 /* Kiln · the page layout: the panes' sizes (one owner), the layout pass's inputs and appliers, the edges' drags,
    docking, the prompt column's place, and the holds that keep things still while you work */
@@ -1006,7 +1006,7 @@ export function initLayout() {
   window.addEventListener("resize", () => {
     document.body.classList.add("liveresize");
     clearTimeout(lrT);
-    lrT = setTimeout(() => document.body.classList.remove("liveresize"), 150);
+    lrT = setTimeout(() => document.body.classList.remove("liveresize"), ms("--delay-resize-end"));
     applyMode();
     applyPH();
     sizeFrame();

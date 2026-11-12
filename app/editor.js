@@ -5,6 +5,7 @@ import { addJobs } from "./actions.js";
 import { layoutLeft } from "./cardlayout.js";
 import { $ } from "./dom.js";
 import { moving } from "./rearrange.js";
+import { ms } from "./tokens.js";
 
 /* called from main.js, last */
 /** @type {() => void} */
@@ -267,7 +268,7 @@ export async function startEditor() {
       let t = /** @type {number | undefined} */ (/** @type {unknown} */ (null));
       new ResizeObserver(() => {
         clearTimeout(t);
-        t = setTimeout(() => view.requestMeasure(), 120);
+        t = setTimeout(() => view.requestMeasure(), ms("--delay-measure"));
       }).observe(wrap);
       $("left").addEventListener("transitionend", () => view.requestMeasure());
       /* the scrollbar's thumb is decided at rest only (B21: mid-grow the text overflows for a moment). ONE decider: the

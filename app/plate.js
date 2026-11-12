@@ -192,7 +192,8 @@ export function switchGlide(at, views, layout = false) {
       bend("plate", { l: o.left + to.l, t: o.top + to.t, w: to.w, h: to.h });
     } else put(target()); // the plate rides the frame from here (framebox.js → plateSync)
     if (!layout) {
-      return { t0: performance.now(), T: 600, fd: fades({ A: 0, S: 0, T: 0 }) };
+      const fl = flush(); // only the picture changes: the frame's own crop-and-reveal is the switch's length
+      return { t0: fl ? fl.t0 : performance.now(), T: fl ? fl.plan.T : 0, fd: fades({ A: 0, S: 0, T: 0 }) };
     }
     /* a layout switch on a picture page: the frame travels and the same picture scales with it (framebox.js
        pictureChange, morph.js), the plate rides it; this switch only says where the plate lands (the box's partner)

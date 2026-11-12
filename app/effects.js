@@ -9,6 +9,7 @@ import { jobProgress } from "./progress.js";
 import { makeCRT, makeCamera, makeCodeBg, makeHalo, makeNightSky, mixHex, skin, themeCols, toHex } from "./skins.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
+import { ms } from "./tokens.js";
 
 /* ambient glow + window title + favicon progress ring (throttled) */
 const amb = /** @type {HTMLCanvasElement} */ ($("amb")),
@@ -837,7 +838,7 @@ export function initEffects() {
           const age =
             (j && j.started) || held
               ? (Date.now() - CV.t0) / 1000
-              : Math.max(0, (Date.now() - (window._cpv || Date.now()) + 6000) / 1000);
+              : Math.max(0, (Date.now() - (window._cpv || Date.now()) + ms("--life-theme-preview")) / 1000);
           cam.draw(v, W, H, t, d, cols.map(toHex), {
             str: nstr,
             age,

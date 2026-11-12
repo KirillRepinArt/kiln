@@ -1,6 +1,7 @@
 // @ts-check
 /* Kiln · tooltips */
 import { hit, qa } from "./dom.js";
+import { ms } from "./tokens.js";
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initTooltips() {
@@ -50,7 +51,7 @@ export function initTooltips() {
         } // taller than the window: follow the pointer instead
         x = Math.max(6, Math.min(innerWidth - w - 6, x));
         tip.style.transform = `translate(${x}px,${y}px)`;
-      }, 450);
+      }, ms("--delay-tip"));
     });
     document.addEventListener("mousedown", hide);
     document.addEventListener("wheel", hide, { passive: true });

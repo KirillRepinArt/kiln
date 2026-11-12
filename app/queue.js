@@ -21,6 +21,7 @@ import { urlFor } from "./pictures.js";
 import { copySeed } from "./pills.js";
 import { IC, S } from "./state.js";
 import { goView } from "./tabs.js";
+import { ms } from "./tokens.js";
 
 /* Kiln · Queue tab, peek / reuse */
 export function renderQueue() {
@@ -450,7 +451,7 @@ function initReorder() {
       renderQueue();
     };
     row.addEventListener("transitionend", e => e.propertyName === "top" && land());
-    setTimeout(land, 700); // a hidden window pauses transitions: it lands anyway
+    setTimeout(land, ms("--lay-t") + ms("--delay-drop-land")); // a hidden window pauses transitions: it lands anyway
   }
   /* ONE gesture (gesture.js: press → past DRAG_START.lift it lifts → end however it ends; Esc puts it back; the click
      that follows a drag is swallowed there) — it had its own press / move / up / Esc and its own click flag */
@@ -646,7 +647,7 @@ export function initQueue() {
         if (y + h > innerHeight - 8) y = Math.max(8, row.top - 8 - h);
         pop.style.transform = `translate(${x}px,${y}px)`;
         pop.classList.add("show");
-      }, 350);
+      }, ms("--delay-preview"));
     });
     $("qwrap").addEventListener("mouseleave", hide);
     $("qwrap").addEventListener("scroll", hide, { passive: true });

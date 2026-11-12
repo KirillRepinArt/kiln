@@ -365,6 +365,33 @@
   --dur-hint-in: var(--t-200); /* the outline hint showing */
   --dur-hint-out: var(--t-400); /* the outline hint going */
   --delay-hint-out: var(--t-300); /* the outline hint stays a moment after the pointer leaves */
+  --delay-click: 230ms; /* a click waits this long for a second one before acting as a single click (LoRA rows, the viewer) */
+  --delay-tip: var(--t-450); /* the pointer rests this long before a tooltip shows */
+  --delay-preview: 350ms; /* the pointer rests this long on a Queue row before its bigger preview shows */
+  --delay-measure: 120ms; /* the prompt editor measures again this long after its size stops changing */
+  --delay-name: 250ms; /* the prompt's file name is fetched this long after typing stops */
+  --delay-tools-hide: var(--t-300); /* the picture's edit buttons stay this long after the pointer leaves */
+  --delay-card-thaw: 500ms; /* the prompt box's frozen size is let go this long after the last change */
+  --delay-overlay-hold: var(--t-260); /* a leaving picture's copy holds this long for the next one to arrive */
+  --delay-resize-end: var(--t-150); /* a window resize counts as over this long after its last move */
+  --delay-lib-stats: 400ms; /* the Library's counts are fetched this long after a change */
+  --delay-queue-thumb: 1500ms; /* a finished job's Queue thumbnail is made this long after it lands */
+  --delay-finished-note: 1200ms; /* the note for jobs finished while Kiln was closed waits this long after start */
+  --delay-drop-land: 280ms; /* a dropped Queue row lands anyway this long after its glide (--lay-t) should have ended: a hidden window pauses it */
+  --delay-toast-gap: 100ms; /* a toast that follows another waits for its life plus this gap */
+  --delay-switch-safety: 10000ms; /* a switch's hold on the layout is let go after this long, whatever happens (its own end lets go first) */
+  --life-toast: 2200ms; /* a toast */
+  --life-toast-action: 5000ms; /* a toast with a button (Undo): long enough to reach it */
+  --life-note: 6000ms; /* the finished note */
+  --life-note-left: 2500ms; /* the finished note after the pointer leaves it */
+  --life-theme-preview: 6000ms; /* a theme tried from Settings, before it goes back */
+  --life-preview-bar: 2500ms; /* the theme preview's bar */
+  --tick-poll-run: 700ms; /* asking the server for news while a job runs */
+  --tick-poll-idle: 1800ms; /* asking the server for news while nothing runs */
+  --tick-poll-retry: 1500ms; /* asking again after one missed answer (a blip), before calling the server gone */
+  --tick-reconnect: 3000ms; /* trying the server again while it's gone */
+  --tick-ui-sync: 300ms; /* the page re-checking its tabs, picture state and arrows against the state (a fallback loop: measure what it corrects before removing it) */
+  --tick-lora-rescan: 60000ms; /* the LoRA folder rescanned at most this often on its own */
   --play-fade: var(--t-200); /* an icon part fading */
   --play-move: var(--t-250); /* an icon part moving */
   --play-dice: var(--t-300); /* the dice moving in */

@@ -4,6 +4,7 @@ import { esc } from "./boot.js";
 import { fmtW, renderChips } from "./chips.js";
 import { $, hit, target, targetField } from "./dom.js";
 import { LORAS, S, save } from "./state.js";
+import { ms } from "./tokens.js";
 
 /* ======================= LoRA library ======================= */
 const FTIP = /** @type {Record<string, string>} */ ({
@@ -162,7 +163,7 @@ export function initLoras() {
     if (hit(e, "input")) return;
     if (hit(e, "[data-rename]")) {
       clearTimeout(clickT);
-      clickT = setTimeout(() => toggleL(l), 230);
+      clickT = setTimeout(() => toggleL(l), ms("--delay-click"));
       return;
     } // wait: may be a double-click rename
     if (el.classList.contains("card") || hit(e, "[data-tg]")) toggleL(l);

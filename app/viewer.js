@@ -9,6 +9,7 @@ import { paint } from "./pictures.js";
 import { SIZES } from "./presets.js";
 import { S } from "./state.js";
 import { tabSync } from "./tabs.js";
+import { ms } from "./tokens.js";
 
 /* ======================= full-size viewer ======================= */
 /** the full-size viewer: the picture on show, its zoom and pan, its fitted size
@@ -100,7 +101,7 @@ export function initViewer() {
         clickT = setTimeout(() => {
           if (V.s > V.fit + 0.001) vFit();
           else vZoomAt(1, d.x, d.y);
-        }, 230);
+        }, ms("--delay-click"));
       },
     });
     el.addEventListener("dblclick", () => {
@@ -124,7 +125,7 @@ export function initViewer() {
         const j = getJob();
         if (!j || j.status !== "done" || j.missing) return;
         clearTimeout(t);
-        t = setTimeout(() => openViewer(j), 230);
+        t = setTimeout(() => openViewer(j), ms("--delay-click"));
       });
       el.addEventListener("dblclick", (/** @type {Event} */ e) => {
         if (hit(e, ".side,.nav,.bclose,.cbtn,.miss") || el.classList.contains("held")) return;
@@ -140,7 +141,7 @@ export function initViewer() {
     tabSync();
     pvSync();
     updNav();
-  }, 300);
+  }, ms("--tick-ui-sync"));
   $("bclose").onclick = e => {
     e.stopPropagation();
     closeShown();

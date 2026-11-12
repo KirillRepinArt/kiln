@@ -1,7 +1,7 @@
 // Timing is read, never copied (ARCHITECTURE › every design token's one source; v0.7d 6c): a motion's length or curve
 // lives once, in app/tokens/base.tokens.json, and the scripts name its role — through tokens.js (ms, easing, bezier,
 // layoutmath.js curve) or as var() in a style string. A literal here is a second copy that drifts.
-// Named exceptions: the effects' recipes (effects.js, skins.js — their FX objects, 6c-3); timers (6c-2).
+// Named exception: the effects' recipes (effects.js, skins.js — their FX objects, 6c-3).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
@@ -66,5 +66,33 @@ test("every stylesheet names a timing role", () => {
     found.sort(),
     [...MERGES].sort(),
     "a timing primitive or keyword in a stylesheet — name its role (tokens)",
+  );
+});
+
+/* Timers read their role too (6c-2): a delay passed as a number to a timer (0 — "after this task" — is not a timing)
+   is a copy. The effects' recipes are their own (effects.js, skins.js: their FX objects, 6c-3). */
+test("no timer waits a literal number of ms", () => {
+  const found = [];
+  for (const [f, src] of files()) {
+    for (const m of src.matchAll(/\b(setTimeout|setInterval|dnHideIn|snapHold)\(/g)) {
+      let depth = 0,
+        i = m.index + m[0].length - 1,
+        lastComma = -1;
+      for (; i < src.length; i++) {
+        const c = src[i];
+        if (c === "(" || c === "[" || c === "{") depth++;
+        else if (c === ")" || c === "]" || c === "}") {
+          if (--depth === 0) break;
+        } else if (c === "," && depth === 1) lastComma = i;
+      }
+      const last = src.slice(lastComma + 1, i).trim(),
+        args = lastComma < 0 && m[1] === "dnHideIn" ? src.slice(m.index + m[0].length, i).trim() : last;
+      if (/^\d+$/.test(args) && +args > 1) found.push(`${f}: ${m[1]}(… ${args})`);
+    }
+  }
+  assert.deepEqual(
+    found,
+    [],
+    'a timer with a literal delay — read its role: ms("--delay-…" / "--life-…" / "--tick-…")',
   );
 });

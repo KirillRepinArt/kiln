@@ -13,6 +13,7 @@ import { PV, pv } from "./picstate.js";
 import { closePops } from "./pills.js";
 import { P, S, save } from "./state.js";
 import { closeViewer } from "./viewer.js";
+import { ms } from "./tokens.js";
 
 /* start-up wiring: Start, Ctrl+Enter, Esc (called from main.js, in order) */
 export function initStartKeys() {
@@ -118,7 +119,7 @@ function nextHint() {
         .then(r => r.json())
         .then(d => nameTip(d.file))
         .catch(() => {}),
-    250,
+    ms("--delay-name"),
   );
 }
 export function nameUI() {

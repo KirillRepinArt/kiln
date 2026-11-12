@@ -10,6 +10,7 @@ import { passDouble, passDragEnd, passDragMove, passDragStart, setPaneSize, side
 import { RUBBER, rubber } from "./layoutmath.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
+import { ms } from "./tokens.js";
 
 /**
  * One edge's drag — the edge's part of the one gesture (gesture.js: press → move → end, ending once however it ends):
@@ -296,7 +297,7 @@ export function initEdges() {
         t = setTimeout(() => {
           $("stage").classList.remove("tools");
           document.body.classList.remove("navs");
-        }, 300);
+        }, ms("--delay-tools-hide"));
       };
     for (const el of [$("frame"), $("gtools"), ...qa(".gnav"), $("cbtn"), $("bclose")]) {
       el.addEventListener("pointerenter", on);

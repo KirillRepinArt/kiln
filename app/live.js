@@ -14,6 +14,7 @@ import { S, save } from "./state.js";
 import { labelRows } from "./settings.js";
 import { poll } from "./sync.js";
 import { goView, showView, tabGo } from "./tabs.js";
+import { ms } from "./tokens.js";
 
 /** @type {any} the server's first answer (server/web.py get_state) */
 export let st;
@@ -40,7 +41,7 @@ export function serverGone() {
         () => location.reload(),
         () => {},
       ),
-    3000,
+    ms("--tick-reconnect"),
   );
 }
 export async function startLive() {
@@ -111,7 +112,7 @@ export async function startLive() {
   );
   dn.addEventListener("mouseenter", () => clearTimeout(dnT));
   dn.addEventListener("mouseleave", () => {
-    dnHideIn(2500);
+    dnHideIn(ms("--life-note-left"));
   });
   dn.onclick = () => {
     const j = doneById(dnId);
@@ -189,7 +190,7 @@ export async function startLive() {
   $("libClear").onclick = () =>
     api("/api/library/clear", {}).then(() => {
       toast("Picture index cleared — rebuilding from your pictures", "", null, "gallery");
-      setTimeout(libStat, 400);
+      setTimeout(libStat, ms("--delay-lib-stats"));
     });
   $("updBtn").onclick = async () => {
     const b = /** @type {HTMLButtonElement} */ ($("updBtn")),

@@ -9,6 +9,7 @@ import { renderLoras } from "./loras.js";
 import { img, urlFor } from "./pictures.js";
 import { LORAS, S, parseName, save } from "./state.js";
 import { forgeOk } from "./sync.js";
+import { ms } from "./tokens.js";
 
 /* ---------- LoRA thumbnails stored by the server ---------- */
 /** a picture's face LoRAs get it as their thumbnail @param {import("./types.js").Job | null | undefined} j */
@@ -155,7 +156,7 @@ export const rb = document.createElement("button");
 let lscanT = 0;
 /** @param {boolean} manual you pressed the button (else: the tab opened) */
 export async function rescanLoras(manual) {
-  if (!manual && (current() || Date.now() - lscanT < 60000 || !forgeOk)) return;
+  if (!manual && (current() || Date.now() - lscanT < ms("--tick-lora-rescan") || !forgeOk)) return;
   lscanT = Date.now();
   const b = $("lRefresh");
   b.classList.add("spin");

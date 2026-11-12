@@ -14,6 +14,7 @@ import { forgetNextEstimate } from "./progress.js";
 import { peekJob, setPeekJob } from "./prompt.js";
 import { dragId } from "./queue.js";
 import { S, save } from "./state.js";
+import { ms } from "./tokens.js";
 
 /* ---------- server job -> UI job ---------- */
 /** @param {any} s a job as the server sends it (server/jobqueue.py) @returns {import("./types.js").Job} */
@@ -67,7 +68,7 @@ export async function poll() {
     s = await (await fetch("/api/state" + (since ? "?since=" + since : ""))).json();
   } catch (e) {
     if (++misses < 2)
-      setTimeout(poll, 1500); // one miss can be a blip: ask again before calling it gone
+      setTimeout(poll, ms("--tick-poll-retry")); // one miss can be a blip: ask again before calling it gone
     else serverGone();
     return;
   }
@@ -92,7 +93,7 @@ export async function poll() {
   }
   for (const b in s.stats.sec_per_step || {}) SEC_PER_STEP[b] = Math.max(1, s.stats.sec_per_step[b]);
   if ((typeof dragId !== "undefined" && dragId != null) || window._rp) {
-    setTimeout(poll, 700);
+    setTimeout(poll, ms("--tick-poll-run"));
     return;
   } // dragging, or the new order not saved yet: keep the local order
   if (s.same) {
@@ -110,7 +111,7 @@ export async function poll() {
     } /* out of step: the full list next */
     renderCounts();
     if (lay.ins && insetsKey() !== lay.ins) sizeFrame(); // a pause / Forge coming up changes them too
-    setTimeout(poll, current() ? 700 : 1800);
+    setTimeout(poll, ms(current() ? "--tick-poll-run" : "--tick-poll-idle"));
     return;
   }
   since = s.sig || "";
@@ -154,7 +155,7 @@ export async function poll() {
         pv("done", j);
         onJobDone(j);
         if (S.view !== "gen" || PV.browse != null) doneNote(j);
-        setTimeout(() => makeQThumb(j), 1500);
+        setTimeout(() => makeQThumb(j), ms("--delay-queue-thumb"));
       }
     }
     if (j.status === "error" && !seen.has("e" + jk + ":" + j.finished)) {
@@ -171,7 +172,7 @@ export async function poll() {
       if (n)
         setTimeout(
           () => toast(`${n} image${n > 1 ? "s" : ""} finished while Kiln was closed`, "", null, "gallery"),
-          1200,
+          ms("--delay-finished-note"),
         );
     }
   }
@@ -194,5 +195,5 @@ export async function poll() {
     sig = ns;
     renderAll();
   } else renderCounts();
-  setTimeout(poll, current() ? 700 : 1800);
+  setTimeout(poll, ms(current() ? "--tick-poll-run" : "--tick-poll-idle"));
 }

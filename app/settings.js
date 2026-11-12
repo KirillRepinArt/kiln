@@ -10,7 +10,7 @@ import { plateSync } from "./plate.js";
 import { extraKey, harmonics, skinExtra, skinName } from "./skins.js";
 import { S, save } from "./state.js";
 import { goView, moveThumb } from "./tabs.js";
-import { initTokens } from "./tokens.js";
+import { initTokens, ms } from "./tokens.js";
 
 /* ======================= settings / themes ======================= */
 /* a skin's colours live in its token file (app/styles/themes/): switching sets data-skin on <html>, then the harmonic
@@ -92,7 +92,7 @@ export function initSettings() {
     S.theme = targetField(e).value;
     applyTheme();
     save();
-    window._cpv = Date.now() + 6000;
+    window._cpv = Date.now() + ms("--life-theme-preview");
     if (!current()) {
       const p = $("prog");
       window._dp = 1;
@@ -104,7 +104,7 @@ export function initSettings() {
       clearTimeout(window._dpt);
       window._dpt = setTimeout(() => {
         window._dp = 0;
-      }, 2500);
+      }, ms("--life-preview-bar"));
     }
   };
   $("rLayout").onclick = () => {

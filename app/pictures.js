@@ -7,7 +7,7 @@ import { fade as fadeTo, setOpacity } from "./fade.js";
 import { fades, shapeSteps } from "./layoutmath.js";
 import { shownDone } from "./picstate.js";
 import { S } from "./state.js";
-import { easing } from "./tokens.js";
+import { easing, ms } from "./tokens.js";
 
 /* ---------- images: real files and live previews, cached ---------- */
 export const imgs =
@@ -246,7 +246,7 @@ function xfadeGo(cv) {
 export function xfadeSnap(coming) {
   overlayHold(/** @type {HTMLCanvasElement} */ ($("cv")));
   clearTimeout(ovTimer);
-  ovTimer = setTimeout(() => overlayRelease(), coming ? 260 : 0);
+  ovTimer = setTimeout(() => overlayRelease(), coming ? ms("--delay-overlay-hold") : 0);
 }
 /* a render's preview landed over it: the held picture goes now */
 export function xfadeEnd() {

@@ -25,6 +25,7 @@ import { QS, queueChanged, renderQueue, renderQueueInner, setQsAnchor } from "./
 import { S } from "./state.js";
 import { renderCounts } from "./boot.js";
 import { layoutLeft } from "./cardlayout.js";
+import { ms } from "./tokens.js";
 
 /* ======================= tabs ======================= */
 /** @param {boolean} [instant] no glide (start-up, a font change) */
@@ -107,7 +108,7 @@ export function tabGo(fn, layout = false, cause = "menu") {
     fr0 = $("frame").getBoundingClientRect(),
     shown = onScreen(), // before anything changes: a switch starts from what is shown (F4)
     me = ++tabGos;
-  snapHold("tab", 10000); // the layout lands at once: the switch alone moves things (let go at its end, below)
+  snapHold("tab", ms("--delay-switch-safety")); // the layout lands at once: the switch alone moves things (let go at its end, below)
   if (!layout) document.documentElement.classList.add("tabswitch"); // a tab switch: the tab pill still slides
   /* the picture's view: the frame's owner decides — a box of another shape or size crops and reveals; a layout switch
      keeps the SAME picture, which scales with its pane (DD-2026-11-10-2); a switch to another view gives it up

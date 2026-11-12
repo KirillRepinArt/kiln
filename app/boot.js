@@ -12,6 +12,7 @@ import { renderQueue } from "./queue.js";
 import { applyFont, applyGlass, applyTheme } from "./settings.js";
 import { P, S, save } from "./state.js";
 import { moveThumb, showView } from "./tabs.js";
+import { ms } from "./tokens.js";
 
 /* ======================= misc ======================= */
 /** seconds → "m:ss" ("1h 5m" past an hour) @param {number} s */
@@ -69,7 +70,7 @@ export function toast(m, btn, fn, at) {
   };
   $("toast").classList.add("show");
   clearTimeout(tt);
-  tt = setTimeout(() => $("toast").classList.remove("show"), btn ? 5000 : 2200);
+  tt = setTimeout(() => $("toast").classList.remove("show"), ms(btn ? "--life-toast-action" : "--life-toast"));
 }
 /** Start's badge and the Queue tab's numbers — their one writer: the jobs waiting, and the failures you haven't seen
  * yet (on the Queue page you see them: the count clears) */

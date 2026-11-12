@@ -49,20 +49,7 @@ test("every token a script reads exists in tokens.css", () => {
    the token files. Named exception: scroll-driven animations (scrolledge.css), which must be linear — they follow the
    scroll. MERGES: the sites below disagree with their role in value or curve; the merge commit (6c) moves them onto
    it and empties this list. */
-const MERGES = [
-  "controls.css: color var(--dur)", // .pill hover tint: 200 vs state 150
-  "controls.css: background var(--dur)", // .pill
-  "glass.css: opacity var(--t-150) var(--ease)", // .droptile::after: --ease vs appear's ease (×2)
-  "glass.css: opacity var(--t-150) var(--ease)",
-  "loras.css: background var(--dur)", // .li hover tint: 200 vs state 150
-  "overlays.css: opacity var(--t-200)", // .toast: ease vs pop's --ease; .donenote likewise
-  "overlays.css: opacity var(--t-200)",
-  "overlays.css: transform var(--t-350) var(--lay-e)", // .donenote: --lay-e vs arrive's --ease
-  "overlays.css: opacity var(--t-120)", // #tip: 120 vs appear 150
-  "prompt.css: opacity var(--t-200)", // .pcount: 200 vs appear 150
-  "queue.css: transform var(--t-150) var(--e-standard)", // .qck tick: standard vs toggle's ease
-  "tabs.css: color var(--dur) var(--ease)", // .tab hover tint: 200 vs state 150
-];
+const MERGES = [];
 test("every stylesheet names a timing role", () => {
   const STYLES = join(APP, "styles");
   const found = [];

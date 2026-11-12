@@ -180,9 +180,6 @@
   --t-1200: 1200ms;
   --t-2600: 2600ms;
   --t-6000: 6000ms;
-  --e-standard: cubic-bezier(0.4, 0, 0.2, 1); /* Material's standard: moves that start and end on screen */
-  --e-decel: cubic-bezier(0, 0, 0.2, 1); /* Material's decelerate: arriving (things coming in) */
-  --e-accel: cubic-bezier(0.4, 0, 1, 1); /* Material's accelerate: leaving (things going out) */
   --e-emph: cubic-bezier(0.2, 0, 0, 1); /* Material 3's emphasized: big, important moves */
   --e-emph-accel: cubic-bezier(0.3, 0, 0.8, 0.15); /* Material 3's emphasized accelerate: into a change */
   --e-emph-decel: cubic-bezier(

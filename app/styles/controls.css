@@ -33,8 +33,8 @@
   color: var(--grey-85);
   font-weight: 500;
   transition:
-    color var(--dur),
-    background var(--dur);
+    color var(--dur-state) var(--ease-state),
+    background var(--dur-state) var(--ease-state);
 }
 .pill[hidden] {
   display: none;

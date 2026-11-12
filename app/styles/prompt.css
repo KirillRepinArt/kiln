@@ -450,7 +450,7 @@
   font-variant-numeric: tabular-nums;
   color: var(--faint);
   opacity: 0;
-  transition: opacity var(--t-200);
+  transition: opacity var(--dur-appear) var(--ease-appear);
   pointer-events: none;
 }
 .pwrapT:focus-within .pcount {

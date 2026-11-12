@@ -252,7 +252,7 @@ body.qdragging * {
   border-radius: 50%;
   background: var(--a1);
   transform: scale(0);
-  transition: transform var(--t-150) var(--e-standard);
+  transition: transform var(--dur-toggle) var(--ease-toggle);
 } /* the bead grows from the centre */
 .qi:hover .qck,
 .qwrap.selecting .qck {

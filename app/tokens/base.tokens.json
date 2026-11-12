@@ -1048,21 +1048,6 @@
         "prefix": "e"
       }
     },
-    "standard": {
-      "$type": "cubicBezier",
-      "$value": [0.4, 0, 0.2, 1],
-      "$description": "Material's standard: moves that start and end on screen"
-    },
-    "decel": {
-      "$type": "cubicBezier",
-      "$value": [0, 0, 0.2, 1],
-      "$description": "Material's decelerate: arriving (things coming in)"
-    },
-    "accel": {
-      "$type": "cubicBezier",
-      "$value": [0.4, 0, 1, 1],
-      "$description": "Material's accelerate: leaving (things going out)"
-    },
     "emph": {
       "$type": "cubicBezier",
       "$value": [0.2, 0, 0, 1],

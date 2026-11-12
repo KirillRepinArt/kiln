@@ -59,7 +59,7 @@
   font-weight: 500;
   letter-spacing: -0.01em;
   color: var(--grey-85);
-  transition: color var(--dur) var(--ease);
+  transition: color var(--dur-state) var(--ease-state);
 }
 .tab:hover,
 .tab.on {

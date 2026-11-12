@@ -463,7 +463,7 @@ body.glass .rim.panel {
   border-radius: calc(var(--r-panel) - var(--drop-inset));
   opacity: 0;
   transition:
-    opacity var(--t-150) var(--ease),
+    opacity var(--dur-appear) var(--ease-appear),
     border-color var(--dur-state) var(--ease-state);
 }
 .plate.drop::after,
@@ -481,7 +481,7 @@ body.laysnap .rim {
 }
 body.laysnap .plate::after {
   transition:
-    opacity var(--t-150) var(--ease),
+    opacity var(--dur-appear) var(--ease-appear),
     border-color var(--dur-state) var(--ease-state) !important;
 } /* a switch turns transitions off (the new layout lands at once): the plate's own fades — its look, its drop line —
      run through it, or they popped (motion.css body.laysnap) */

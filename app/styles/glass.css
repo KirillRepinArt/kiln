@@ -419,7 +419,8 @@ body.glass .play.gen::before {
 .app > .lcol {
   z-index: var(--z-app-prompt);
 }
-.plate.panel {
+/* every pane is a material, in Solid as in Glass: the picture's plate too, empty or not (DD-2026-11-12-15) */
+.plate {
   background: var(--panel);
 }
 body.glass .plate {

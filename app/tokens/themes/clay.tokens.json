@@ -81,9 +81,10 @@
       "$type": "color",
       "$value": {
         "colorSpace": "srgb",
-        "components": [0.121569, 0.121569, 0.121569],
-        "hex": "#1f1f1f"
-      }
+        "components": [0.141176, 0.141176, 0.141176],
+        "hex": "#242424"
+      },
+      "$description": "a quiet step above the background, so a pane reads as one (the user, 2026-11-12: Clay stays low-contrast — Graphite is the contrasty one)"
     },
     "raised": {
       "$type": "color",
@@ -113,9 +114,10 @@
       "$type": "color",
       "$value": {
         "colorSpace": "srgb",
-        "components": [0.14902, 0.14902, 0.14902],
-        "hex": "#262626"
-      }
+        "components": [0.168627, 0.168627, 0.168627],
+        "hex": "#2b2b2b"
+      },
+      "$description": "a row on a panel: one step above it"
     }
   },
   "ui": {

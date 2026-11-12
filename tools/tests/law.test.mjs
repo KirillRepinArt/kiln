@@ -37,11 +37,11 @@ const LONG =
   "epic cinematic shot of a castle tower at night, fog, mist, a dark lake, a giant squid's tentacles, aurora in the sky, a pumpkin patch, moonlight on the stone";
 
 /** one case: its state, then the change; the box's written place and chips in the change's first frame vs at rest */
-async function lawCase(k, { from, vw, sw, loras, text, change }) {
+async function lawCase(k, { from, vw, sw, loras, text, change, mode = "", page = "png" }) {
   await viewport(k, 1785, 1080);
-  await k.ev(`(document.querySelector('.tab[data-v="png"]').click(),1)`);
+  await k.ev(`(document.querySelector('.tab[data-v="${page}"]').click(),1)`);
   await k.ev(`(LORAS.forEach((l,i)=>{l.on=i<${loras};l.display=NAMES[i]||l.display}),renderChips(),P.value=${JSON.stringify(text)},P.dispatchEvent(new Event("input")),
-    setPaneSize("box","w",${vw},"vert"),setPaneSize("box","w",${sw},"side"),setDock(${JSON.stringify(from)}),1)`);
+    setPaneSize("box","w",${vw},"vert"),setPaneSize("box","w",${sw},"side"),S.hmode=${JSON.stringify(mode)},updHm(),setDock(${JSON.stringify(from)}),1)`);
   await k.mouse(4, 4);
   await k.sleep(1100);
   await k.ev(`(window.__law={},1)`);
@@ -97,6 +97,10 @@ const casesOf = change => {
           text: LONG,
           change,
         });
+  /* Fit (Vertical: the box as wide as the picture — a loop the pass solves): a picture page, long text */
+  if (change !== "lora")
+    for (const loras of [2, 5])
+      out.push({ from: "left", vw: 760, sw: 560, loras, text: LONG + " " + LONG, change, mode: "match", page: "gen" });
   return out;
 };
 
@@ -109,7 +113,7 @@ async function writtenWhereItStays(k, t, change) {
     log = [];
   for (const c of cases) {
     const r = await lawCase(k, c);
-    const tag = `${c.change} ${c.from}→ sw ${c.sw} vw ${c.vw} loras ${c.loras} ${c.text === LONG ? "long" : "short"}`;
+    const tag = `${c.change}${c.mode ? " (Fit)" : ""} ${c.from}→ sw ${c.sw} vw ${c.vw} loras ${c.loras} ${c.text.length > 80 ? "long" : "short"}`;
     log.push(`${tag}: ${JSON.stringify(r)}`);
     if (!r.first || !r.rest || !r.again) {
       bad.push(`${tag}: not read ${JSON.stringify(r)}`);

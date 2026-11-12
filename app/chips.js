@@ -11,6 +11,8 @@ import { IC, LORAS, S, save } from "./state.js";
 import { goView } from "./tabs.js";
 
 let chipsOpen = false;
+/** the chips shown in full ("Show less"), not capped at two rows */
+export const chipsExpanded = () => chipsOpen;
 export function renderChips() {
   requestAnimationFrame(() => layoutLeft());
   const pk = typeof peekJob !== "undefined" && peekJob;

@@ -176,3 +176,28 @@ export async function arrowsTakeThePointerOnlyShown(k, t) {
     shown,
   );
 }
+
+/* the cursor says what a press does: wherever the prompt's grip takes a press (its gesture's own rule: in the group,
+   not on a control — cardlayout.js GROUP / NO), the cursor is the grab hand — in every height mode and both layouts
+   (a rule from before the drop map showed the default cursor in a height mode while the grip still worked) */
+export async function gripCursorIsTheGrip(k, t) {
+  const bad = [];
+  for (const dock of ["left", "below"])
+    for (const mode of ["", "match", "full"]) {
+      await k.ev(`(setDock("${dock}"),S.hmode=${JSON.stringify(mode)},updHm(),layoutLeft(),1)`);
+      await k.sleep(700);
+      const r =
+        await k.ev(`(()=>{const NO="input,textarea,button,a,select,.chip,.pwrapT,.pop,.cwi",GROUP="#pgrip,#left,#ltitle,#chips",out=[];
+        const t=$("ltitle").getBoundingClientRect(),c=$("chips").getBoundingClientRect(),L=$("left").getBoundingClientRect();
+        for(const [x,y] of [[t.left+4,t.top+t.height/2],[t.right-4,t.top+t.height/2],[c.right-6,c.top+c.height/2],[L.left+L.width/2,L.bottom-3]]){
+          const e=document.elementFromPoint(x,y);if(!e||!e.closest(GROUP)||e.closest(NO))continue;
+          const cur=getComputedStyle(e).cursor;if(cur!=="grab")out.push({x:Math.round(x),y:Math.round(y),on:e.id||e.className,cur})}
+        return out})()`);
+      for (const b of r) bad.push({ dock, mode: mode || "none", ...b });
+    }
+  t.ok(
+    bad.length === 0,
+    "wherever the grip takes a press, the cursor is the grab hand (every mode, both layouts)",
+    bad,
+  );
+}

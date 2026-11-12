@@ -24,7 +24,6 @@ import { P, S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
 import { ms, SPACE, tok } from "./tokens.js";
 import { boxSizing } from "./editor.js";
-import { capChips } from "./chips.js";
 import { DRAG_START, gesture as drag } from "./gesture.js";
 import { rearrange, stop, travelling } from "./rearrange.js";
 
@@ -155,34 +154,18 @@ export function applyMode() {
    or a mode's (Match: the picture's, Full: the window's), never narrower than the box's least or wider than the window.
    The layout pass asks it; its one writer is swAt (--sw), from the pass */
 export function stackW() {
-  const max = innerWidth - 2 * SPACE.area,
-    pic = typeof lay !== "undefined" && lay.target && lay.target.w;
-  /* the modes act on the box's CROSS axis (DEVLOG DD-2026-11-02-16): in Vertical its width — Match: the picture's, Full:
-     the window's (less its edge gaps); side by side its height (layoutLeft) */
+  const max = innerWidth - 2 * SPACE.area;
+  /* the modes act on the box's CROSS axis (DEVLOG DD-2026-11-02-16): in Vertical its width — Full: the window's (less
+     its edge gaps); Match (Fit): the picture's, decided by the layout pass from its own picture (mode "fit"); side by
+     side its height (layoutLeft) */
   const m = S.hmode,
-    w = m === "full" ? max : m === "match" && pic ? pic : paneSize("box", "vert").w || 760;
+    w = m === "full" ? max : paneSize("box", "vert").w || 760;
   return Math.round(Math.max(Math.min(boxWLeast(), max), Math.min(max, w)));
 }
 export function chipsH() {
   const c = $("chips");
   return c.childElementCount ? c.offsetHeight + SPACE.tight : 0;
 } // the chip row under the box, and its gap (the row always shows: "LoRA +")
-/** the layout pass's law (ARCHITECTURE › the layout pass's law): its heights are read at the width it gives the box —
- * that width applied, the chips capped at it, the pass run, the width the box has now put back (its glide, if any,
- * runs from it). In one task: nothing is painted between. @template T @param {HTMLElement} el the width's element
- * @param {string} prop its property (--sw in Vertical, --cw side by side) @param {number} w @param {() => T} pass
- * @returns {{ p: T, CH: number, chh: number, ctrlh: number }} the pass's answer, and the chips' and controls' heights there */
-function atWidth(el, prop, w, pass) {
-  const was = el.style.getPropertyValue(prop);
-  el.style.setProperty(prop, w + "px");
-  try {
-    capChips();
-    return { p: pass(), CH: chipsH(), chh: $("chips").offsetHeight, ctrlh: q(".controls", $("left")).offsetHeight };
-  } finally {
-    if (was) el.style.setProperty(prop, was);
-    else el.style.removeProperty(prop);
-  }
-}
 /** @param {boolean} [direct] the user's hand is the clock (typing): the box follows at once, as under a drag — a change
  * the system makes (a layout switch, a Reset) moves on the rearrangement's plan */
 export function layoutLeft(direct = false) {
@@ -194,9 +177,12 @@ export function layoutLeft(direct = false) {
   col.style.setProperty("--ts", TS + "px");
   /* the measured heights written with the place: the LoRA row (the grip zone's bottom, .pgrip), the controls row (glass
      floats it over the prompt: the text scrolls clear of it) */
-  const heights = (/** @type {{ chh: number, ctrlh: number }} */ m) => {
+  /* the heights the pass measured at the width it gave (ARCHITECTURE › the layout pass's law), written with the place */
+  const heights = () => {
+    const m = /** @type {{ CH: number, chh: number, ctrlh: number }} */ (lay.measured);
     col.style.setProperty("--chh", m.chh + "px");
     L.style.setProperty("--ctrlh", m.ctrlh + "px");
+    return m;
   };
   const stk = !!document.querySelector(".app.stacked"),
     hm = !stk && (S.hmode === "full" || S.hmode === "match") ? S.hmode : "";
@@ -209,26 +195,23 @@ export function layoutLeft(direct = false) {
        first, the box its text's height in the free room under it, then it scrolls. Its top is the pass's, in the
        column's px (its layout box, without a transform); its width and height too — held, an edge's */
     const was = lay.passV,
-      m = atWidth(col, "--sw", Math.round(vPass().box.w), vPass), // the widths, then the heights at them
-      p = m.p,
+      p = vPass(), // measured at the width it gives (layout.js sidePass)
       colTop = layoutRect(col).top;
-    heights(m);
+    heights();
     swAt(col, Math.round(p.box.w));
     requestAnimationFrame(vAlign);
     boxAt(col, Math.round(p.box.y - colTop), Math.round(p.box.h));
     /* the pane changed under it (a size of yours, Reset, a new limit): its owner lays the page out in this task — on the
        rearrangement's plan, one motion with the box riding its plate (B16) */
-    if (!was || Math.abs(was.page.h - p.page.h) > 0.5 || Math.abs(was.page.w - p.page.w) > 0.5) sizeFrame();
+    if (!was || Math.abs(was.page.h - p.page.h) > 0.5 || Math.abs(was.page.w - p.page.w) > 0.5) sizeFrame(p);
     return;
   }
   if (col.clientHeight - TS <= 0) return;
   /* side by side the box's place beside its pane is the layout pass's — ONE rule (cardPlacement, its modes
      cardHeightMode), called by the pass with the column and the moment's state */
-  const app = /** @type {HTMLElement} */ (document.querySelector(".app")),
-    m = atWidth(app, "--cw", Math.round(sideBoxPass().box.w), sideBoxPass), // the widths, then the heights at them
-    p = m.p,
-    c0 = layoutRect(col).top;
-  heights(m);
+  const p = sideBoxPass(), // measured at the width it gives (layout.js sidePass)
+    c0 = layoutRect(col).top,
+    m = heights();
   card.top = p.box.y - c0 - TS;
   card.bottom = card.top + p.box.h + m.CH;
   boxAt(col, p.box.y - c0, p.box.h);

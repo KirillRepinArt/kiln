@@ -20,6 +20,7 @@ import {
   updHm,
 } from "./cardlayout.js";
 import { $, layoutRect, offsetIn } from "./dom.js";
+import { capChips, chipsExpanded } from "./chips.js";
 import { fade, fadeValue } from "./fade.js";
 import { leaveCopy } from "./leave.js";
 import { HANDLES } from "./outlines.js";
@@ -43,7 +44,7 @@ import {
   upgradeLayoutPrefs,
 } from "./layoutmath.js";
 import { PV, onShow, picMode } from "./picstate.js";
-import { S, save } from "./state.js";
+import { P, S, save } from "./state.js";
 import { forgeOk } from "./sync.js";
 import { moveThumb, tabGo } from "./tabs.js";
 import { ms, SPACE } from "./tokens.js";
@@ -235,6 +236,8 @@ export const lay = {
   /** @type {import("./layoutmath.js").PassOut | null} Vertical's pass, as last run (vPass) */
   passV: null,
   vrow: 0,
+  /** @type {{ CH: number, chh: number, ctrlh: number } | null} the heights the last pass measured, at the width it gave (sidePass) */
+  measured: null,
 };
 /* Vertical: the box's name row, from the name's top to the box's (the column's title row less the room above the name) */
 function nameRowH() {
@@ -279,6 +282,106 @@ function toolsClear() {
  * its press and the pointer. A px cap an older version left on a picture page is read once as the scale it gives.
  * @returns {{ out: import("./layoutmath.js").PassOut, strip: number, roomTop: number }} */
 function sidePass() {
+  /* ARCHITECTURE › the layout pass's law: the heights the pass reads are read at the width it gives the box — run,
+     measure at that width, run again, until the width read at is the width given (a text's height is a step of its
+     width: two rounds; three at most). A question (placeFor, pageHi: \`asked\`) leaves the page as it was */
+  const vert = orient() === "vert",
+    el = vert ? $("lcol") : /** @type {HTMLElement} */ (document.querySelector(".app")),
+    prop = vert ? "--sw" : "--cw",
+    question = !!asked;
+  let r = passAtWidthNow(boxSizes()),
+    w = Math.round(r.out.box.w);
+  /* the box already has the width the pass gives: what it read is read at that width — no measuring round */
+  if (Math.abs(w - (parseFloat(el.style.getPropertyValue(prop)) || 0)) < 0.5) {
+    if (!question) lay.measured = heightsNow();
+    return r;
+  }
+  for (let i = 0; i < 3; i++) {
+    const m = sizesAt(el, prop, w, question);
+    r = passAtWidthNow(m.sizes);
+    if (!question) lay.measured = m.heights;
+    const w2 = Math.round(r.out.box.w);
+    if (Math.abs(w2 - w) < 0.5) break;
+    w = w2;
+  }
+  return r;
+}
+/** the box's sizes that depend on its width, read now: its text's height (Vertical: your draft's; side by side: what
+ * it shows), its least, its name row, its chips row @returns {BoxSizes} */
+function boxSizes() {
+  return { draft: boxDraftH(), natural: cardNaturalH(), least: slotLeast(), title: nameRowH(), chips: chipsH() };
+}
+/** @typedef {{ draft: number, natural: number, least: number, title: number, chips: number }} BoxSizes */
+/** the heights the box's applier writes with its place (the chips row, the controls row), read now */
+function heightsNow() {
+  return {
+    CH: chipsH(),
+    chh: $("chips").offsetHeight,
+    ctrlh: /** @type {HTMLElement} */ ($("left").querySelector(".controls")).offsetHeight,
+  };
+}
+/* a part's height at a width is the same until the part changes (Flutter's intrinsic sizes, cached per constraint):
+   the box's sizes by the width and by what the box shows — its text, its chips (not their "+N": that is the cap's
+   answer), the pills' labels, its name, the mode, the fonts' state, the skin and the material — so no owner has to
+   remember to clear it */
+/** @type {Map<string, { sizes: BoxSizes, heights: { CH: number, chh: number, ctrlh: number } }>} */
+const measured = new Map();
+function showsKey() {
+  const text = window.__cm ? window.__cm.state.doc.toString() : P.value,
+    chips = [...document.querySelectorAll("#chips .chip[data-n]")].map(c => c.textContent).join("\u0001");
+  return [
+    text,
+    chips,
+    chipsExpanded(),
+    /** @type {HTMLElement} */ ($("left").querySelector(".controls")).textContent,
+    /** @type {HTMLInputElement} */ ($("pname")).value,
+    $("ltitle").textContent,
+    S.hmode,
+    orient(),
+    document.fonts ? document.fonts.status : "",
+    document.documentElement.dataset.skin,
+    document.body.className,
+    devicePixelRatio,
+  ].join("\u0002");
+}
+/** the measuring step, on a miss: the width applied, the chips capped at it (the chips' answer), the sizes read, the
+ * box's current width put back (its glide runs from it) — one task, nothing painted between; a question also puts the
+ * chips' cap back and keeps nothing @param {HTMLElement} el the width's element @param {string} prop --sw / --cw
+ * @param {number} w @param {boolean} question */
+function sizesAt(el, prop, w, question) {
+  const key = w + "\u0003" + showsKey(),
+    had = measured.get(key);
+  if (had) {
+    if (!question) capAt(el, prop, w); // the chips the box will show at that width
+    return had;
+  }
+  const was = el.style.getPropertyValue(prop);
+  el.style.setProperty(prop, w + "px");
+  try {
+    capChips();
+    const m = { sizes: boxSizes(), heights: heightsNow() };
+    if (!question) {
+      if (measured.size > 32) measured.clear();
+      measured.set(key, m);
+    }
+    return m;
+  } finally {
+    if (was) el.style.setProperty(prop, was);
+    else el.style.removeProperty(prop);
+    if (question) capChips();
+  }
+}
+/** the chips capped as at width w (a cached size: the cap still has to be the one the box will show) */
+function capAt(/** @type {HTMLElement} */ el, /** @type {string} */ prop, /** @type {number} */ w) {
+  const was = el.style.getPropertyValue(prop);
+  el.style.setProperty(prop, w + "px");
+  capChips();
+  if (was) el.style.setProperty(prop, was);
+  else el.style.removeProperty(prop);
+}
+/** the pass with the box's sizes given (read at the width it gives: sidePass) @param {BoxSizes} bs
+ * @returns {{ out: import("./layoutmath.js").PassOut, strip: number, roomTop: number }} */
+function passAtWidthNow(bs) {
   const vert = orient() === "vert",
     roomTop = sideRoomTop(),
     barH = /** @type {HTMLElement} */ (document.querySelector(".tabs")).offsetHeight,
@@ -301,23 +404,26 @@ function sidePass() {
         box: vert
           ? {
               w: dr ? dr.boxW : stackW(),
+              /* Fit: the box as wide as the picture — the pass's own picture (a loop it solves: the picture's height is
+                 the room less the box's, the box's height its text's at the picture's width — sidePass) */
+              mode: S.hmode === "match" ? "fit" : "",
               wLo: boxWLeast(),
-              text: boxDraftH(), // your draft's: a job's prompt shown never resizes it
-              least: slotLeast(),
+              text: bs.draft, // your draft's: a job's prompt shown never resizes it
+              least: bs.least,
               hi: paneLimits("box", "h", { o: "vert", roomH: 0 }).hi, // its spec's largest (limits)
               h: dr ? (dr.bh ?? null) : (paneSize("box", "vert").h ?? null),
-              title: nameRowH(), // the name row over the box, from the name's top
-              foot: chipsH() + 2, // the LoRA row under it (and the column's 2 px, as --lch)
+              title: bs.title, // the name row over the box, from the name's top
+              foot: bs.chips + 2, // the LoRA row under it (and the column's 2 px, as --lch)
             }
           : {
               w: dr ? dr.boxW : (paneSize("box", "side").w ?? df.pw),
               wLo: boxWLeast(),
-              text: cardNaturalH(),
-              least: slotLeast(),
+              text: bs.natural,
+              least: bs.least,
               h: paneSize("box", "side").h ?? null, // yours (Custom): its top or bottom edge
               mode: S.hmode === "full" || S.hmode === "match" ? S.hmode : "",
               anchor: /** @type {"top" | "mid" | "bot"} */ (S.pos || "mid"),
-              place: boxPlace(),
+              place: boxPlace(bs.chips),
             },
         /* the bar's row as it is on screen (the room's top): the pass's numbers are the window's, on both axes */
         bar: { w: tabsW(), h: barH },
@@ -370,15 +476,16 @@ function sidePass() {
 }
 /** side by side, the box's column and the moment's state its place rule reads: the column's layout box
  * (without a transform) under its name row, the LoRA row, the status row under the pane, the card's holds
+ * @param {number} chips the chips row (measured at the width the pass gives)
  * @returns {import("./layoutmath.js").BoxPlace} */
-function boxPlace() {
+function boxPlace(chips) {
   const col = $("lcol"),
     TS = parseFloat(col.style.getPropertyValue("--ts")) || 64,
     R = insets().row ? rowRoom() : 0;
   return {
     colTop: layoutRect(col).top + TS,
     colH: col.clientHeight - TS,
-    chips: chipsH(),
+    chips,
     below: R ? R - 1 : 0, // the status row: a box resting at the bottom lines up with it
     /* the holds of the box as it IS (an edge's height held, you working in it, where it was) — never of where it WOULD
        be: asked about a place (placeFor), the pass answers its resting place (held, a lane's three places answered
@@ -397,7 +504,7 @@ function boxPlace() {
 /** side by side, the box's height limits for its top / bottom edge: its least, and the room — its column less the
  * LoRA row @returns {{ lo: number, hi: number }} */
 export function sideBoxH() {
-  const p = boxPlace();
+  const p = boxPlace(chipsH()); // the chips row as it is: the limits of the box's edges now
   return { lo: slotLeast(), hi: Math.max(slotLeast(), p.colH - p.chips) };
 }
 /** side by side, the layout pass's rectangles now — the box's place (layoutLeft) @returns {import("./layoutmath.js").PassOut} */
@@ -659,7 +766,9 @@ function panelWrite(b, roomTop) {
   panelStyle(r(b.h), b.t - roomTop ? r(b.t - roomTop) : "", r(b.w), r(b.l - areaX()));
   plateSync(); // the plate rides the panel, in the frame it's written (as framebox.js write does for the frame)
 }
-export function sizeFrame() {
+/** @param {import("./layoutmath.js").PassOut} [given] Vertical: the pass the box's applier just ran (layoutLeft) — one
+ * result for both appliers, not a second pass */
+export function sizeFrame(given) {
   if (lay.frameDefer) {
     lay.framePending = true;
     return;
@@ -687,7 +796,7 @@ export function sizeFrame() {
   if (!stk) layApply(layNow());
   /* Vertical: the layout pass's rectangles — the page's pane and its room; the box's are placed by layoutLeft from the
      same run */
-  const pv = stk ? vPass() : null;
+  const pv = stk ? (given ?? vPass()) : null;
   /* the page area (#right) is the whole room in both layouts (one coordinate space, DD-2026-11-08-1): the page's pane
      is placed in it by the pass */
   {

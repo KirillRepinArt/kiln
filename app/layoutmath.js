@@ -1226,7 +1226,7 @@ export function layoutPass(s) {
       py = z.pageY ?? T;
     page = { x: px, y: py, w: pageW, h: z.ph };
     if (pic) pr = { x: px + strip, y: py, w: z.pw, h: z.ph };
-    const bw = mode === "fit" && pr ? pr.w : mode === "full" ? RW : z.bw;
+    const bw = mode === "fit" && pr ? clampTo(pr.w, s.box.wLo, RW) : mode === "full" ? RW : z.bw;
     /* the pane, its status row, the gap, the name row, the box — held: under the page's kept bottom (dragSizes) */
     box = { x: L + (RW - bw) / 2, y: z.boxY ?? py + z.ph + vGap(s), w: bw, h: z.bh };
   }

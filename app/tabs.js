@@ -124,15 +124,12 @@ export function tabGo(fn, layout = false, cause = "menu") {
       sizeFrame();
     }
   }
-  /* a layout switch: the layout settled before anything is measured — to its fixed point: in Vertical the box's place
-     feeds the page's room and the room the box (two rounds do it; a third only confirms) */
-  if (layout)
-    for (let i = 0; i < 3; i++) {
-      const was = $("lcol").style.cssText + $("frame").style.cssText + $("rpanel").style.cssText;
-      layoutLeft();
-      sizeFrame();
-      if ($("lcol").style.cssText + $("frame").style.cssText + $("rpanel").style.cssText === was) break;
-    }
+  /* a layout switch: laid out before anything is measured — once: the box and the page apply one pass, measured at the
+     width it gives (ARCHITECTURE › the layout pass's law; its loops are solved inside it) */
+  if (layout) {
+    layoutLeft();
+    sizeFrame();
+  }
   /* a travel: laid out where it lands (the layout pass's resting place — placeFor), the box starts where it was seen and
      its lift runs down to nothing on the switch's own clock (travel: a switch's move, one plan with the plate's) */
   if (seen0) {

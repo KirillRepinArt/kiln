@@ -613,3 +613,20 @@ test("side by side, a picture edge's double-click: the picture at its largest, t
   assert.equal(tall.squeezeW, 680, "a picture bound by its height: the box keeps its width");
   assert.equal(layoutPass(state({ dock: "below" })).squeezeW, null, "Vertical: none (its box is under the picture)");
 });
+
+test("Fit in Vertical: the box as wide as the pass's own picture, within its least and the room (6L-2)", () => {
+  let narrow = 0;
+  for (const ratio of RATIOS) {
+    /* a short window: a tall picture comes out narrower than the box's least */
+    const s = state({ H: 560, dock: "below", page: { kind: "pic", ratio }, box: { ...state({}).box, mode: "fit" } }),
+      o = layoutPass(s),
+      lo = s.box.wLo;
+    assert.ok(
+      o.box.w >= lo - EPS,
+      `ratio ${ratio.toFixed(2)}: never narrower than the box's least (${o.box.w} < ${lo})`,
+    );
+    if (o.pic && o.pic.w >= lo) assert.ok(near(o.box.w, o.pic.w), `ratio ${ratio.toFixed(2)}: the picture's width`);
+    else narrow++;
+  }
+  assert.ok(narrow > 0, "some picture came out narrower than the box's least (else the clamp isn't tested)");
+});

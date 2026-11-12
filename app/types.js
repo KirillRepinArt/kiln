@@ -178,6 +178,7 @@
  * @property {boolean} framePending  …and was asked for meanwhile
  * @property {{ pic: { x: number, y: number, w: number, h: number } | null, roomTop: number, page: { x: number, y: number, w: number, h: number }, box: { x: number, y: number, w: number, h: number }, strip: number, largest: { w: number, h: number }, kept: { boxW: number, scale?: number, w?: number, h?: number }, handles: Record<string, { x: number, y: number, w: number, h: number }>, anchors?: { it: number, ib: number, cy: number } | null, squeezeW?: number | null } | null} [pass]  side by side: the single layout pass's numbers, held or not
  * @property {import("./layoutmath.js").PassOut | null} [passV] Vertical's layout pass: its rectangles, held or not
+ * @property {{ CH: number, chh: number, ctrlh: number } | null} [measured] the heights the last pass measured, at the width it gave (layout.js sidePass)
  * @property {{ edge: string, at: number, off: number, boxW: number, bh?: number, scale: number, w?: number, h?: number } | null} [pdrag]  an edge held (any
  *   pane, both layouts): the pass's handle id, the pointer on its axis (+ off: where on the handle it was pressed), the
  *   sizes at the press

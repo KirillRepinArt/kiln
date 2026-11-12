@@ -288,12 +288,7 @@
 }
 .app .left,
 .app .ltitle {
-  cursor: grab;
-}
-.app:not(.stacked) .left.hm,
-.app:not(.stacked) .ltitle.hm,
-.app:not(.stacked) #lcol:has(.left.hm) > .pgrip {
-  cursor: default;
+  cursor: grab; /* the grip works in every mode: a mode fixes the box's height, moving it is still yours (cardlayout.js) */
 }
 .pwrapT {
   position: relative;

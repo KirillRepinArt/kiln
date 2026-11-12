@@ -7,8 +7,8 @@
   visibility: hidden;
   opacity: 0;
   transition:
-    opacity var(--t-200) var(--ease),
-    visibility 0s linear var(--t-200);
+    opacity var(--dur-pop) var(--ease-pop),
+    visibility 0s linear var(--dur-pop);
   overflow: hidden;
   cursor: zoom-in;
 }
@@ -16,7 +16,7 @@
   visibility: visible;
   opacity: 1;
   transition:
-    opacity var(--t-200) var(--ease),
+    opacity var(--dur-pop) var(--ease-pop),
     visibility 0s;
 }
 .viewer.zoomed {
@@ -200,7 +200,7 @@
   z-index: var(--z-app-drop-map);
   pointer-events: none;
   opacity: 0;
-  transition: opacity var(--t-150);
+  transition: opacity var(--dur-appear) var(--ease-appear);
 }
 .dropmap.show {
   opacity: 1;
@@ -208,7 +208,7 @@
 .droptile {
   position: absolute;
   border-radius: var(--r-panel);
-  transition: background var(--t-150);
+  transition: background var(--dur-state) var(--ease-state);
 } /* its line is the drop place's (glass.css .droptile::after) */
 .droptile.over {
   background: color-mix(in oklab, var(--black) 35%, transparent);

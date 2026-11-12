@@ -1968,6 +1968,116 @@
       "$type": "cubicBezier",
       "$value": "{role.ease}",
       "$description": "a LoRA chip moving to its new place"
+    },
+    "state": {
+      "$type": "cubicBezier",
+      "$value": "ease",
+      "$description": "a control or surface changing state (hover, focus, selection): its tint, border, shadow",
+      "$extensions": {
+        "dev.kiln": {
+          "css": "ease"
+        }
+      }
+    },
+    "appear": {
+      "$type": "cubicBezier",
+      "$value": "ease",
+      "$description": "a control appearing near the pointer, or going",
+      "$extensions": {
+        "dev.kiln": {
+          "css": "ease"
+        }
+      }
+    },
+    "press": {
+      "$type": "cubicBezier",
+      "$value": "ease",
+      "$description": "a press's give",
+      "$extensions": {
+        "dev.kiln": {
+          "css": "ease"
+        }
+      }
+    },
+    "pop": {
+      "$type": "cubicBezier",
+      "$value": "{role.ease}",
+      "$description": "a pop-up, menu or the viewer showing and hiding"
+    },
+    "slide": {
+      "$type": "cubicBezier",
+      "$value": "{role.ease}",
+      "$description": "the tab bar's indicator sliding to its tab"
+    },
+    "toggle": {
+      "$type": "cubicBezier",
+      "$value": "ease",
+      "$description": "a switch's knob, a checkbox's tick",
+      "$extensions": {
+        "dev.kiln": {
+          "css": "ease"
+        }
+      }
+    },
+    "surface": {
+      "$type": "cubicBezier",
+      "$value": "{role.ease}",
+      "$description": "a material's look changing: its tint, rim, shadow"
+    },
+    "ring": {
+      "$type": "cubicBezier",
+      "$value": "linear",
+      "$description": "a progress ring sweeping to its value: even, it follows the number",
+      "$extensions": {
+        "dev.kiln": {
+          "css": "linear"
+        }
+      }
+    },
+    "arrive": {
+      "$type": "cubicBezier",
+      "$value": "{role.ease}",
+      "$description": "a new row arriving in a list"
+    },
+    "develop": {
+      "$type": "cubicBezier",
+      "$value": "{role.ease}",
+      "$description": "a finished picture developing in"
+    },
+    "ambient": {
+      "$type": "cubicBezier",
+      "$value": "{role.ease}",
+      "$description": "a background layer fading in or out"
+    },
+    "hint": {
+      "$type": "cubicBezier",
+      "$value": "ease",
+      "$description": "the outline hint (where a pane can be resized) showing and going",
+      "$extensions": {
+        "dev.kiln": {
+          "css": "ease"
+        }
+      }
+    },
+    "loop": {
+      "$type": "cubicBezier",
+      "$value": "linear",
+      "$description": "an endless animation: even, so it never visibly restarts",
+      "$extensions": {
+        "dev.kiln": {
+          "css": "linear"
+        }
+      }
+    },
+    "flash": {
+      "$type": "cubicBezier",
+      "$value": "ease",
+      "$description": "a row flashing to say: here",
+      "$extensions": {
+        "dev.kiln": {
+          "css": "ease"
+        }
+      }
     }
   },
   "dur": {
@@ -1991,6 +2101,165 @@
       "$type": "duration",
       "$value": "{t.150}",
       "$description": "the layout jumping on purpose (no plan): a short fade"
+    },
+    "state": {
+      "$type": "duration",
+      "$value": "{t.150}",
+      "$description": "a control or surface changing state (hover, focus, selection): its tint, border, shadow"
+    },
+    "appear": {
+      "$type": "duration",
+      "$value": "{t.150}",
+      "$description": "a control appearing near the pointer, or going"
+    },
+    "press": {
+      "$type": "duration",
+      "$value": "{t.120}",
+      "$description": "a press's give"
+    },
+    "pop": {
+      "$type": "duration",
+      "$value": "{role.dur}",
+      "$description": "a pop-up, menu or the viewer showing and hiding"
+    },
+    "slide": {
+      "$type": "duration",
+      "$value": "{t.280}",
+      "$description": "the tab bar's indicator sliding to its tab"
+    },
+    "toggle": {
+      "$type": "duration",
+      "$value": "{t.150}",
+      "$description": "a switch's knob, a checkbox's tick"
+    },
+    "surface": {
+      "$type": "duration",
+      "$value": "{t.250}",
+      "$description": "a material's look changing: its tint, rim, shadow"
+    },
+    "ring": {
+      "$type": "duration",
+      "$value": "{t.450}",
+      "$description": "a progress ring sweeping to its value"
+    },
+    "arrive": {
+      "$type": "duration",
+      "$value": "{t.350}",
+      "$description": "a new row arriving in a list"
+    },
+    "develop": {
+      "$type": "duration",
+      "$value": "{t.1100}",
+      "$description": "a finished picture developing in"
+    },
+    "ambient": {
+      "$type": "duration",
+      "$value": "{t.1200}",
+      "$description": "a background layer fading in or out"
+    },
+    "flash": {
+      "$type": "duration",
+      "$value": "{t.1000}",
+      "$description": "a row flashing to say: here (a LoRA just added)"
+    },
+    "hint-in": {
+      "$type": "duration",
+      "$value": "{t.200}",
+      "$description": "the outline hint showing"
+    },
+    "hint-out": {
+      "$type": "duration",
+      "$value": "{t.400}",
+      "$description": "the outline hint going"
+    }
+  },
+  "delay": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "delay",
+        "above": "DELAYS BY ROLE — a wait before a motion or an action starts"
+      }
+    },
+    "hint-out": {
+      "$type": "duration",
+      "$value": "{t.300}",
+      "$description": "the outline hint stays a moment after the pointer leaves"
+    }
+  },
+  "play": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "play",
+        "above": "THE START BUTTON'S OWN CHOREOGRAPHY — its icon changing between states"
+      }
+    },
+    "fade": {
+      "$type": "duration",
+      "$value": "{t.200}",
+      "$description": "an icon part fading"
+    },
+    "move": {
+      "$type": "duration",
+      "$value": "{t.250}",
+      "$description": "an icon part moving"
+    },
+    "dice": {
+      "$type": "duration",
+      "$value": "{t.300}",
+      "$description": "the dice moving in"
+    },
+    "turn": {
+      "$type": "duration",
+      "$value": "{t.450}",
+      "$description": "the icon turning"
+    },
+    "ease-move": {
+      "$type": "cubicBezier",
+      "$value": "{lay.e}",
+      "$description": "an icon part moving: the layout's settle"
+    },
+    "ease-turn": {
+      "$type": "cubicBezier",
+      "$value": "{e.quick}",
+      "$description": "the icon turning: a quick start, a long settle"
+    },
+    "ease-fade": {
+      "$type": "cubicBezier",
+      "$value": "ease",
+      "$description": "an icon part fading",
+      "$extensions": {
+        "dev.kiln": {
+          "css": "ease"
+        }
+      }
+    }
+  },
+  "loop": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "loop",
+        "above": "ENDLESS ANIMATIONS — one cycle's length"
+      }
+    },
+    "spin": {
+      "$type": "duration",
+      "$value": "{t.1000}",
+      "$description": "a spinner's turn"
+    },
+    "flow": {
+      "$type": "duration",
+      "$value": "{t.6000}",
+      "$description": "the generating gradient's flow"
+    },
+    "hourglass": {
+      "$type": "duration",
+      "$value": "{t.2600}",
+      "$description": "the Queue's hourglass: one flip and its sand"
+    },
+    "ease-hourglass": {
+      "$type": "cubicBezier",
+      "$value": "{e.swing}",
+      "$description": "the hourglass's flip: a deliberate swing"
     }
   },
   "z": {

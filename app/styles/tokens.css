@@ -306,9 +306,51 @@
   --ease-leave: ease-in; /* a view leaving a switch */
   --ease-reorder-row: var(--e-standard); /* a Queue row moving to its new place */
   --ease-reorder-chip: var(--ease); /* a LoRA chip moving to its new place */
+  --ease-state: ease; /* a control or surface changing state (hover, focus, selection): its tint, border, shadow */
+  --ease-appear: ease; /* a control appearing near the pointer, or going */
+  --ease-press: ease; /* a press's give */
+  --ease-pop: var(--ease); /* a pop-up, menu or the viewer showing and hiding */
+  --ease-slide: var(--ease); /* the tab bar's indicator sliding to its tab */
+  --ease-toggle: ease; /* a switch's knob, a checkbox's tick */
+  --ease-surface: var(--ease); /* a material's look changing: its tint, rim, shadow */
+  --ease-ring: linear; /* a progress ring sweeping to its value: even, it follows the number */
+  --ease-arrive: var(--ease); /* a new row arriving in a list */
+  --ease-develop: var(--ease); /* a finished picture developing in */
+  --ease-ambient: var(--ease); /* a background layer fading in or out */
+  --ease-hint: ease; /* the outline hint (where a pane can be resized) showing and going */
+  --ease-loop: linear; /* an endless animation: even, so it never visibly restarts */
+  --ease-flash: ease; /* a row flashing to say: here */
   --dur-reorder-row: var(--t-380); /* a Queue row moving to its new place */
   --dur-reorder-chip: var(--t-200); /* a LoRA chip moving to its new place */
   --dur-jump: var(--t-150); /* the layout jumping on purpose (no plan): a short fade */
+  --dur-state: var(
+    --t-150
+  ); /* a control or surface changing state (hover, focus, selection): its tint, border, shadow */
+  --dur-appear: var(--t-150); /* a control appearing near the pointer, or going */
+  --dur-press: var(--t-120); /* a press's give */
+  --dur-pop: var(--dur); /* a pop-up, menu or the viewer showing and hiding */
+  --dur-slide: var(--t-280); /* the tab bar's indicator sliding to its tab */
+  --dur-toggle: var(--t-150); /* a switch's knob, a checkbox's tick */
+  --dur-surface: var(--t-250); /* a material's look changing: its tint, rim, shadow */
+  --dur-ring: var(--t-450); /* a progress ring sweeping to its value */
+  --dur-arrive: var(--t-350); /* a new row arriving in a list */
+  --dur-develop: var(--t-1100); /* a finished picture developing in */
+  --dur-ambient: var(--t-1200); /* a background layer fading in or out */
+  --dur-flash: var(--t-1000); /* a row flashing to say: here (a LoRA just added) */
+  --dur-hint-in: var(--t-200); /* the outline hint showing */
+  --dur-hint-out: var(--t-400); /* the outline hint going */
+  --delay-hint-out: var(--t-300); /* the outline hint stays a moment after the pointer leaves */
+  --play-fade: var(--t-200); /* an icon part fading */
+  --play-move: var(--t-250); /* an icon part moving */
+  --play-dice: var(--t-300); /* the dice moving in */
+  --play-turn: var(--t-450); /* the icon turning */
+  --play-ease-move: var(--lay-e); /* an icon part moving: the layout's settle */
+  --play-ease-turn: var(--e-quick); /* the icon turning: a quick start, a long settle */
+  --play-ease-fade: ease; /* an icon part fading */
+  --loop-spin: var(--t-1000); /* a spinner's turn */
+  --loop-flow: var(--t-6000); /* the generating gradient's flow */
+  --loop-hourglass: var(--t-2600); /* the Queue's hourglass: one flip and its sand */
+  --loop-ease-hourglass: var(--e-swing); /* the hourglass's flip: a deliberate swing */
   /* ---------- THE LAYERS (ARCHITECTURE › paint order; DD-2026-11-11-2) ----------
      Paint order is ONE list per stacking context, bottom to top, by NAME: a z-index anywhere else is var(--z-…) (Stylelint
      rejects a number). A z-index only competes within its stacking context, so each context has a list of its own — one

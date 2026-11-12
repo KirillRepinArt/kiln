@@ -187,8 +187,8 @@
   border-radius: 50%;
   color: var(--muted);
   transition:
-    color var(--t-150),
-    background var(--t-150);
+    color var(--dur-state) var(--ease-state),
+    background var(--dur-state) var(--ease-state);
 }
 .pi-copy svg {
   width: 14px;

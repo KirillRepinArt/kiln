@@ -44,3 +44,47 @@ test("every token a script reads exists in tokens.css", () => {
       if (!sheet?.[m[1]]) missing.push(`${f}: ${m[1]}`);
   assert.deepEqual(missing, [], "a token name with no token");
 });
+
+/* The stylesheets name a role too: no duration or curve from the scale (--t-*, --e-*, --dur, a bare keyword) outside
+   the token files. Named exception: scroll-driven animations (scrolledge.css), which must be linear — they follow the
+   scroll. MERGES: the sites below disagree with their role in value or curve; the merge commit (6c) moves them onto
+   it and empties this list. */
+const MERGES = [
+  "controls.css: color var(--dur)", // .pill hover tint: 200 vs state 150
+  "controls.css: background var(--dur)", // .pill
+  "dialogs.css: opacity var(--t-220) var(--ease)", // .modal: 220 vs pop 200 (×2)
+  "dialogs.css: opacity var(--t-220) var(--ease)",
+  "dialogs.css: transform var(--t-220) var(--ease)", // .modal .mcard
+  "dialogs.css: linear var(--t-220)", // .modal's visibility delay follows its fade
+  "glass.css: linear var(--t-220)",
+  "glass.css: background-color var(--t-220) var(--ease)", // body.glass .modal (×2)
+  "glass.css: background-color var(--t-220) var(--ease)",
+  "glass.css: opacity var(--t-150) var(--ease)", // .droptile::after: --ease vs appear's ease (×2)
+  "glass.css: opacity var(--t-150) var(--ease)",
+  "loras.css: background var(--dur)", // .li hover tint: 200 vs state 150
+  "overlays.css: opacity var(--t-200)", // .toast: ease vs pop's --ease; .donenote likewise
+  "overlays.css: opacity var(--t-200)",
+  "overlays.css: transform var(--t-350) var(--lay-e)", // .donenote: --lay-e vs arrive's --ease
+  "overlays.css: opacity var(--t-120)", // #tip: 120 vs appear 150
+  "prompt.css: opacity var(--t-200)", // .pcount: 200 vs appear 150
+  "queue.css: transform var(--t-150) var(--e-standard)", // .qck tick: standard vs toggle's ease
+  "tabs.css: color var(--dur) var(--ease)", // .tab hover tint: 200 vs state 150
+];
+test("every stylesheet names a timing role", () => {
+  const STYLES = join(APP, "styles");
+  const found = [];
+  for (const f of readdirSync(STYLES).filter(f => f.endsWith(".css") && !["tokens.css", "themes.css"].includes(f))) {
+    const css = readFileSync(join(STYLES, f), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    for (const m of css.matchAll(/[\w-]+\s+var\(--(?:t-\d+|dur|e-[\w-]+)\)[^,;]*/g)) found.push(`${f}: ${m[0].trim()}`);
+    for (const m of css.matchAll(/(?:transition|animation)(?:-timing-function)?\s*:[^;]*/g))
+      for (const k of m[0]
+        .replace(/visibility 0s linear|var\([^)]*\)|[\w-]*linear-gradient\([^)]*\)/g, "")
+        .matchAll(/\b(ease(?:-in|-out|-in-out)?|linear|cubic-bezier)\b/g))
+        if (f !== "scrolledge.css") found.push(`${f}: ${k[1]} in "${m[0].trim().slice(0, 60)}"`);
+  }
+  assert.deepEqual(
+    found.sort(),
+    [...MERGES].sort(),
+    "a timing primitive or keyword in a stylesheet — name its role (tokens)",
+  );
+});

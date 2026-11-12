@@ -260,7 +260,7 @@
   border: var(--outline);
   border-radius: calc(var(--r-panel) + var(--outline-out));
   opacity: 0;
-  transition: opacity var(--t-400) ease var(--t-300) !important;
+  transition: opacity var(--dur-hint-out) var(--ease-hint) var(--delay-hint-out) !important;
 }
 .plate::before {
   inset: calc(var(--outline-out) * -1);
@@ -271,7 +271,7 @@
 .plate.hint::before,
 .left.hint::after {
   opacity: 1;
-  transition: opacity var(--t-200) ease 0s !important;
+  transition: opacity var(--dur-hint-in) var(--ease-hint) 0s !important;
 }
 /* Vertical: the picture area's empty boxes let the pointer through to the prompt column under its edges */
 .app.stacked > .right,

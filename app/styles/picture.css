@@ -18,7 +18,7 @@
 /* its place and size are moved by one owner (framebox.js, on the driver: rearrange.js) — no CSS transition. The canvas
    is drawn at the box's final size, so it never stretches */
 .frame.reveal {
-  animation: develop var(--t-1100) var(--ease);
+  animation: develop var(--dur-develop) var(--ease-develop);
 }
 @keyframes develop {
   0% {
@@ -172,12 +172,12 @@
   display: grid;
   opacity: 0;
   transition:
-    opacity var(--t-150),
-    background var(--t-150);
+    opacity var(--dur-appear) var(--ease-appear),
+    background var(--dur-state) var(--ease-state);
 }
 .bclose {
   display: none;
-  transition: background var(--t-150);
+  transition: background var(--dur-state) var(--ease-state);
 }
 /* only with the picture's view (as the arrows) */
 body:not(:has(#v-gen.on, #v-gen.leaving)) .cbtn,
@@ -248,7 +248,7 @@ body.navs:has(.frame.clearable) .bclose {
   padding-left: var(--space-2);
   opacity: 0;
   pointer-events: auto;
-  transition: opacity var(--t-150); /* no glide of its own: it follows the frame (around.js) */
+  transition: opacity var(--dur-appear) var(--ease-appear); /* no glide of its own: it follows the frame (around.js) */
 }
 .gtools.lefty {
   padding-left: 0;
@@ -280,8 +280,8 @@ body:has(.viewer.show) .gtools {
   opacity: 0.85;
   pointer-events: none;
   transition:
-    opacity var(--t-150),
-    background var(--t-150);
+    opacity var(--dur-appear) var(--ease-appear),
+    background var(--dur-state) var(--ease-state);
 }
 .side button:hover {
   background: var(--on-picture-hover);
@@ -310,8 +310,8 @@ body:has(#stage.tools) .gtools .side button {
   z-index: var(--z-pic-controls);
   opacity: 0;
   transition:
-    opacity var(--t-150),
-    background var(--t-150);
+    opacity var(--dur-appear) var(--ease-appear),
+    background var(--dur-state) var(--ease-state);
 }
 .nav.prev {
   left: var(--space-3);
@@ -395,7 +395,7 @@ body.norow .prog {
   width: var(--tw, 600px);
   background: var(--flow);
   background-size: 200% 100%;
-  animation: flow var(--t-6000) linear infinite;
+  animation: flow var(--loop-flow) var(--ease-loop) infinite;
 }
 @keyframes flow {
   from {
@@ -467,7 +467,7 @@ body[data-pic="still"] .prog.run .meta {
   align-items: center;
   gap: var(--space-2);
   padding: 0 var(--space-4) 0 var(--space-3);
-  transition: background var(--t-150);
+  transition: background var(--dur-state) var(--ease-state);
 }
 .prog .stop svg {
   width: 11px;

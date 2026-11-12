@@ -5,7 +5,7 @@
   width: 100%;
   height: 100%;
   opacity: 0;
-  transition: opacity var(--t-1200) var(--ease);
+  transition: opacity var(--dur-ambient) var(--ease-ambient);
   pointer-events: none;
   z-index: var(--z-win-stars);
 }
@@ -406,8 +406,8 @@ body.glass .play.gen::before {
   border-radius: var(--r-panel);
   pointer-events: none;
   transition:
-    background var(--t-250) var(--ease),
-    box-shadow var(--t-250) var(--ease);
+    background var(--dur-surface) var(--ease-surface),
+    box-shadow var(--dur-surface) var(--ease-surface);
 }
 /* the page's layers, bottom to top (tokens.css, THE LAYERS — the app's list): the plate, the panel's contents (.rpanel,
    its own stacking context, tabs.css), the rim, the drop map, the prompt column, the tab bar. Set by name, never left to
@@ -464,7 +464,7 @@ body.glass .rim.panel {
   opacity: 0;
   transition:
     opacity var(--t-150) var(--ease),
-    border-color var(--t-150);
+    border-color var(--dur-state) var(--ease-state);
 }
 .plate.drop::after,
 .droptile::after {
@@ -476,13 +476,13 @@ body.glass .rim.panel {
 body.laysnap .plate,
 body.laysnap .rim {
   transition:
-    background var(--t-250) var(--ease),
-    box-shadow var(--t-250) var(--ease) !important;
+    background var(--dur-surface) var(--ease-surface),
+    box-shadow var(--dur-surface) var(--ease-surface) !important;
 }
 body.laysnap .plate::after {
   transition:
     opacity var(--t-150) var(--ease),
-    border-color var(--t-150) !important;
+    border-color var(--dur-state) var(--ease-state) !important;
 } /* a switch turns transitions off (the new layout lands at once): the plate's own fades — its look, its drop line —
      run through it, or they popped (motion.css body.laysnap) */
 

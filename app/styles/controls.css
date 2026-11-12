@@ -104,8 +104,8 @@
   background: var(--raised);
   --play-fill: url(#playGrad);
   transition:
-    transform var(--t-120),
-    filter var(--t-120);
+    transform var(--dur-press) var(--ease-press),
+    filter var(--dur-press) var(--ease-press);
 }
 .play:not(.off) {
   background: var(--grad);
@@ -124,9 +124,9 @@
 .play svg path {
   fill: var(--play-fill);
   transition:
-    fill var(--t-200),
-    opacity var(--t-200),
-    transform var(--t-250) var(--lay-e);
+    fill var(--play-fade) var(--play-ease-fade),
+    opacity var(--play-fade) var(--play-ease-fade),
+    transform var(--play-move) var(--play-ease-move);
 }
 /* in the Gallery Start is Vary (a new seed): the triangle turns into the die from the Seed pop-up */
 .play svg .tri {
@@ -137,8 +137,8 @@
   transform: scale(0.6) rotate(-30deg);
   transform-origin: 12px 12px;
   transition:
-    opacity var(--t-200),
-    transform var(--t-300) var(--lay-e);
+    opacity var(--play-fade) var(--play-ease-fade),
+    transform var(--play-dice) var(--play-ease-move);
 }
 .play .dice rect {
   fill: none;
@@ -164,8 +164,8 @@
 }
 .play svg {
   transition:
-    margin var(--t-250) var(--lay-e),
-    transform var(--t-450) var(--e-quick);
+    margin var(--play-move) var(--play-ease-move),
+    transform var(--play-turn) var(--play-ease-turn);
 }
 .play:not(.off):hover svg {
   transform: scale(1.2);
@@ -216,9 +216,9 @@
   opacity: 0;
   transform: translateY(6px) scale(0.97);
   transition:
-    opacity var(--dur) var(--ease),
-    transform var(--dur) var(--ease),
-    visibility 0s linear var(--dur);
+    opacity var(--dur-pop) var(--ease-pop),
+    transform var(--dur-pop) var(--ease-pop),
+    visibility 0s linear var(--dur-pop);
   background: var(--float);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-16);
@@ -240,8 +240,8 @@
   opacity: 1;
   transform: none;
   transition:
-    opacity var(--dur) var(--ease),
-    transform var(--dur) var(--ease),
+    opacity var(--dur-pop) var(--ease-pop),
+    transform var(--dur-pop) var(--ease-pop),
     visibility 0s;
 }
 .pop .opt {
@@ -369,7 +369,7 @@
   height: 18px;
 }
 .iconbtn.spin svg {
-  animation: spin var(--t-1000) linear infinite;
+  animation: spin var(--loop-spin) var(--ease-loop) infinite;
 }
 @keyframes spin {
   to {
@@ -389,7 +389,7 @@
 .play.gen:not(.off):hover {
   background: var(--flow);
   background-size: 200% 100%;
-  animation: flow var(--t-6000) linear infinite;
+  animation: flow var(--loop-flow) var(--ease-loop) infinite;
   filter: none;
 }
 .play.gen.off {
@@ -411,7 +411,7 @@ body.glass .play.gen svg path {
   border-radius: inherit;
   pointer-events: none;
   background: conic-gradient(var(--white) calc(var(--p) * 360deg), var(--white-18) 0);
-  transition: --p var(--t-450) linear;
+  transition: --p var(--dur-ring) var(--ease-ring);
   -webkit-mask:
     linear-gradient(var(--black) 0 0) content-box,
     linear-gradient(var(--black) 0 0);

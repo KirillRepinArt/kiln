@@ -87,8 +87,8 @@
   width: 100%;
   color: var(--grey-96);
   transition:
-    background var(--t-150),
-    border-color var(--t-150);
+    background var(--dur-state) var(--ease-state),
+    border-color var(--dur-state) var(--ease-state);
 }
 .fg select {
   appearance: none;

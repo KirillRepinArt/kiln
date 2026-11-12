@@ -54,7 +54,7 @@
   border-radius: var(--r-10);
   background: var(--switch-off);
   position: relative;
-  transition: background var(--t-150);
+  transition: background var(--dur-state) var(--ease-state);
   flex: none;
   cursor: pointer;
 }
@@ -67,7 +67,7 @@
   height: 14px;
   border-radius: 50%;
   background: var(--knob);
-  transition: left var(--t-150);
+  transition: left var(--dur-toggle) var(--ease-toggle);
 }
 .sw.on {
   background: var(--c-switch);
@@ -255,7 +255,7 @@
   font-size: var(--fs-13);
 }
 .flash {
-  animation: flash var(--t-1000);
+  animation: flash var(--dur-flash) var(--ease-flash);
 }
 @keyframes flash {
   0% {

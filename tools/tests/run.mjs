@@ -14,6 +14,7 @@ import { createServer } from "node:net";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { tmpdir, availableParallelism } from "node:os";
+import "./tokens-sheet.mjs"; // app modules a test imports read their tokens without a page (tokens.js)
 
 const HERE = dirname(fileURLToPath(import.meta.url)),
   ROOT = join(HERE, "..", ".."),

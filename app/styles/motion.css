@@ -39,11 +39,11 @@ html.switching .rpanel {
 }
 html.tabswitch .seg .thumb {
   transition:
-    left var(--t-280) var(--ease),
-    width var(--t-280) var(--ease) !important;
+    left var(--dur-slide) var(--ease-slide),
+    width var(--dur-slide) var(--ease-slide) !important;
 } /* the selected tab's pill slides in a switch (!important: over the switch's glide stop) */
 html.tabswitch .gnav {
-  transition: opacity var(--t-150) !important;
+  transition: opacity var(--dur-appear) var(--ease-appear) !important;
 } /* the picture's arrows keep their own fade in a switch: shown by hover, they popped in */
 @keyframes kfadeout {
   to {

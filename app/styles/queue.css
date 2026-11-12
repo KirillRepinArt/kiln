@@ -99,7 +99,7 @@ body.qdragging * {
   user-select: none;
 }
 .qi.new {
-  animation: qin var(--t-350) var(--ease);
+  animation: qin var(--dur-arrive) var(--ease-arrive);
 }
 @keyframes qin {
   from {
@@ -158,15 +158,15 @@ body.qdragging * {
 }
 .hg .hgg {
   transform-origin: 12px 12px;
-  animation: hgflip var(--t-2600) infinite;
+  animation: hgflip var(--loop-hourglass) infinite;
 }
 .hg .st {
   transform-origin: 12px 11.4px;
-  animation: hgtop var(--t-2600) infinite linear;
+  animation: hgtop var(--loop-hourglass) infinite var(--ease-loop);
 }
 .hg .sb {
   transform-origin: 12px 20.2px;
-  animation: hgbot var(--t-2600) infinite linear;
+  animation: hgbot var(--loop-hourglass) infinite var(--ease-loop);
 }
 @keyframes hgflip {
   0%,
@@ -175,7 +175,7 @@ body.qdragging * {
   }
   100% {
     transform: rotate(180deg);
-    animation-timing-function: var(--e-swing);
+    animation-timing-function: var(--loop-ease-hourglass);
   }
 }
 @keyframes hgtop {
@@ -233,8 +233,8 @@ body.qdragging * {
   border: 1.5px solid var(--white-38);
   opacity: 0;
   transition:
-    opacity var(--t-150),
-    border-color var(--t-150);
+    opacity var(--dur-appear) var(--ease-appear),
+    border-color var(--dur-state) var(--ease-state);
   cursor: pointer;
 }
 .qck::after {
@@ -292,8 +292,8 @@ body.glass .qck::before {
   padding: 0 var(--space-2) 0 var(--space-2);
   border-radius: var(--r-14);
   transition:
-    background var(--t-150),
-    padding var(--t-150);
+    background var(--dur-state) var(--ease-state),
+    padding var(--dur-state) var(--ease-state);
 } /* the same height selecting or not: the rows never move */
 .qsec.qbar {
   letter-spacing: 0;
@@ -447,7 +447,7 @@ body.glass .qck::before {
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
-  transition: opacity var(--t-150);
+  transition: opacity var(--dur-appear) var(--ease-appear);
   box-shadow:
     0 18px 50px var(--black-55),
     0 0 0 1px var(--white-10);

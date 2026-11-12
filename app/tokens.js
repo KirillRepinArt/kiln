@@ -2,7 +2,7 @@
 /* Kiln · the scripts' reader of the design tokens. Every value lives once, in app/tokens/base.tokens.json (generated
    into styles/tokens.css); scripts read it here and never copy it — no defaults, no fallbacks (ARCHITECTURE › every
    design token's one source). With a page the values are the stylesheet's; without one (the unit tests) they are the
-   map tools/tests/unit/tokens-sheet.mjs makes from tokens.css. Read on first use, cached; initTokens() drops the
+   map tools/tests/tokens-sheet.mjs makes from tokens.css. Read on first use, cached; initTokens() drops the
    cache (start-up, a theme change, a stylesheet reload). */
 
 /** @type {Map<string, string>} */

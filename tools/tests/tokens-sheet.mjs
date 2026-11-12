@@ -1,10 +1,10 @@
-// The unit tests' tokens: app/styles/tokens.css's :root, parsed in Node — the same file the page reads, no second copy.
-// Loaded with `node --import` before any app module (tokens.js reads globalThis.KILN_TOKENS when there is no page).
+// The tokens for app code run in Node (the unit tests, the e2e runner): app/styles/tokens.css's :root, parsed — the same file the page reads, no second copy.
+// Loaded before any app module: by `node --import` (npm run test:unit) and by run.mjs (tokens.js reads globalThis.KILN_TOKENS when there is no page).
 // var() chains are resolved; px arithmetic (calc / min / max) is evaluated, as the browser computes it.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const CSS = join(import.meta.dirname, "..", "..", "..", "app", "styles", "tokens.css");
+const CSS = join(import.meta.dirname, "..", "..", "app", "styles", "tokens.css");
 
 /** the :root block's declarations, comments stripped @param {string} css */
 export function rootDecls(css) {

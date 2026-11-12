@@ -317,7 +317,11 @@ export function initCardlayout() {
   $("left").addEventListener("focusout", () => {
     if (!card.hover) thaw();
   });
-  new ResizeObserver(() => layoutLeft()).observe($("lcol"));
+  /* the box's place reads these sizes: when one changes, whoever changed it (a rewrap at a new width, the chips capped
+     to two rows, a LoRA on or off), the place is laid out again — the chips row was read but not watched (Q2) */
+  const placeInputs = new ResizeObserver(() => layoutLeft());
+  placeInputs.observe($("lcol"));
+  placeInputs.observe($("chips"));
   $("hmodes").addEventListener("click", e => {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-hm]"));
     if (!b) return;

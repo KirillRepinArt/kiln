@@ -40,15 +40,11 @@ export async function offline(k, t) {
   t.ok(await k.ev(`document.fonts.check('15px "Geist"')`), "Geist is available");
 }
 
-// The skins: five in the menu, A–Z (Embers hidden, DD-2026-11-12-10); a skin saved before comes back as the nearest one
-// now, an unknown one as the first-run default (Graphite).
+// The skins: four offered, A–Z (Embers gone, Starscape hidden — still valid: its stars are Graphite's extra,
+// DD-2026-11-12-16); a skin saved before comes back as the nearest one now, an unknown one as the first-run default.
 export async function oldSkinsMigrate(k, t) {
-  const skins = await k.ev(`[...$("sTheme").options].map(o=>o.value).join(",")`);
-  t.ok(
-    skins === "aurora,clay,graphite,matrix,starscape",
-    "five skins, A–Z: Aurora, Clay, Graphite, Matrix, Starscape",
-    skins,
-  );
+  const skins = await k.ev(`[...$("sTheme").options].filter(o=>!o.hidden).map(o=>o.value).join(",")`);
+  t.ok(skins === "aurora,clay,graphite,matrix", "four skins offered, A–Z: Aurora, Clay, Graphite, Matrix", skins);
   for (const [old, now] of [
     ["sunset", "starscape"],
     ["ember", "starscape"],
@@ -84,4 +80,25 @@ export async function pictureIndexInSettings(k, t) {
     await k.until(`/^1 picture indexed/.test($("libStat").textContent)`, 5000),
     "…and it does, from the picture itself",
   );
+}
+
+// A plain theme's signature effect (Graphite's starfield): off until switched on, its switch named after it and shown only
+// for a theme that has one, its value that theme's own (DD-2026-11-12-16).
+export async function graphiteStarfield(k, t) {
+  await k.theme("graphite");
+  const sw = () => k.ev(`[$("lExtra").hidden,$("lExtra").textContent,$("sExtra").value,skin().bg].join(",")`);
+  t.ok(
+    (await sw()) === "false,Starfield,off,none",
+    "Graphite: the Starfield switch shows, off, no background",
+    await sw(),
+  );
+  await k.ev(`(()=>{const s=$("sExtra");s.value="on";s.dispatchEvent(new Event("change"));return 1})()`);
+  t.ok((await sw()) === "false,Starfield,on,stars", "switched on: the starfield is Graphite's background", await sw());
+  await k.theme("clay");
+  t.ok(
+    await k.ev(`$("lExtra").hidden&&$("sExtra").hidden&&skin().bg==="none"`),
+    "Clay has no extra: no switch, no background",
+  );
+  await k.theme("graphite");
+  t.ok((await sw()).endsWith("on,stars"), "back on Graphite: its switch kept its own value", await sw());
 }

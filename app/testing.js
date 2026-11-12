@@ -41,7 +41,7 @@ import { frame } from "./progress.js";
 import { draft, nameUI, peekJob, setDraft, setPeekJob } from "./prompt.js";
 import { QS, qsAnchor, qsClear, qsDelete, qsUpdate, setQsAnchor } from "./queue.js";
 import { applyTheme } from "./settings.js";
-import { rgba } from "./skins.js";
+import { rgba, skin } from "./skins.js";
 import { LORAS, P, S, blockSaves, save } from "./state.js";
 import { poll, seen } from "./sync.js";
 import { showView } from "./tabs.js";
@@ -132,6 +132,7 @@ export function installTestBridge() {
     setDraft: { get: () => setDraft },
     setJustDone: { get: () => setJustDone },
     setPaneSize: { get: () => setPaneSize },
+    skin: { get: () => skin },
     placeFor: { get: () => placeFor },
     dockNow: { get: () => dockNow },
     setPaused: { get: () => setPaused },

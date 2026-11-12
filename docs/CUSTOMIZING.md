@@ -95,6 +95,9 @@ worked out from `--a1` by the scripts.
 Its effects, in `SKINS` (`app/skins.js`): a background (`stars`, `aurora`, `code` or `none`), a cover over a young
 picture (`bands`, `camera`, `crt` or `none` — `none` covers only in private mode, with a flat fill), the ambient glow and
 the finish (`glow`, `finish`: true or false). An effect runs only if the skin has it and the matching setting is on.
+A plain skin may have one signature effect of its own, off until you switch it on (`extra`: Graphite's Starfield — its
+switch shows in Settings → Effects, named after it). `hidden: true` keeps a skin valid (a saved choice, the tests) while
+leaving it out of the menu (Starscape).
 
 **Adding a skin:**
 1. Copy a file in `app/tokens/themes/` to `<name>.tokens.json`, set its values, run `npm run tokens`.

@@ -7,7 +7,7 @@ import { current } from "./jobs.js";
 import { resetLayout, setDock, sizeFrame } from "./layout.js";
 import { renderPills } from "./pills.js";
 import { plateSync } from "./plate.js";
-import { harmonics, skinName } from "./skins.js";
+import { extraKey, harmonics, skinExtra, skinName } from "./skins.js";
 import { S, save } from "./state.js";
 import { goView, moveThumb } from "./tabs.js";
 
@@ -22,6 +22,18 @@ export function applyTheme() {
   for (const k in hm) root.style.setProperty("--" + k, /** @type {Record<string, string>} */ (hm)[k]);
   window._themeV = (window._themeV || 0) + 1;
   applyFont();
+  showExtra();
+}
+/* the theme's signature effect, if it has one: its switch in Settings (named after it, its value this theme's own) */
+function showExtra() {
+  const x = skinExtra(),
+    sel = /** @type {HTMLSelectElement | null} */ (document.getElementById("sExtra")),
+    lb = document.getElementById("lExtra");
+  if (!sel || !lb) return;
+  sel.hidden = lb.hidden = !x;
+  if (!x) return;
+  lb.textContent = x.name;
+  sel.value = /** @type {Record<string, any>} */ (S.set || {})[extraKey(skinName(S.theme))] === "on" ? "on" : "off";
 }
 /* "Theme font" (the default until you pick one) follows the skin: Emerald = IBM Plex Mono, its name in Courier Prime */
 export function applyFont() {
@@ -67,6 +79,11 @@ export function labelRows() {
 }
 export function initSettings() {
   labelRows();
+  $("sExtra").onchange = e => {
+    S.set = S.set || {};
+    /** @type {Record<string, any>} */ (S.set)[extraKey(skinName(S.theme))] = targetField(e).value;
+    save();
+  };
   S.theme = skinName(S.theme); // a saved skin from before the cleanup → the nearest one
   /** @type {HTMLSelectElement} */ ($("sTheme")).value = S.theme;
   $("sTheme").onchange = e => {

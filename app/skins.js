@@ -9,13 +9,18 @@ import { S } from "./state.js";
    the background (stars / aurora / code / none), the cover over a young picture (bands / camera / crt / none — none:
    no cover, except private mode's, a flat fill in the surface colour), the ambient glow, the finish (embers when done).
    How a skin looks is its value set: app/tokens/themes/<name>.tokens.json. A plain preset has every feature and none
-   of the effects (DD-2026-11-12-13). */
+   of the effects (DD-2026-11-12-13) — and may have one signature effect of its own, off until you switch it on
+   (`extra`: its name in Settings, the effects it adds; DD-2026-11-12-16). `hidden`: a skin that stays valid (saved
+   settings, the tests) but isn't offered in the menu. */
+/** @typedef {{ bg: string, cover: string, glow: boolean, finish: boolean,
+ *   extra?: { name: string, bg?: string }, hidden?: boolean }} Skin */
+/** @type {Record<string, Skin>} */
 const SKINS = {
   aurora: { bg: "aurora", cover: "camera", glow: true, finish: true },
   clay: { bg: "none", cover: "none", glow: false, finish: false },
-  graphite: { bg: "none", cover: "none", glow: false, finish: false },
+  graphite: { bg: "none", cover: "none", glow: false, finish: false, extra: { name: "Starfield", bg: "stars" } },
   matrix: { bg: "code", cover: "crt", glow: true, finish: true },
-  starscape: { bg: "stars", cover: "bands", glow: true, finish: true },
+  starscape: { bg: "stars", cover: "bands", glow: true, finish: true, hidden: true }, // its stars live on in Graphite
 };
 export const DEFAULT_SKIN = "graphite";
 /* old and hidden skin names → the nearest skin now (Embers: hidden until it has an effect of its own, DD-2026-11-12-10) */
@@ -24,8 +29,19 @@ const RENAMED = { ice: "starscape", sunset: "starscape", ember: "starscape", emb
 export function skinName(name) {
   return name && name in SKINS ? name : (name && RENAMED[/** @type {keyof typeof RENAMED} */ (name)]) || DEFAULT_SKIN;
 }
+/** the setting that switches a skin's extra on (one per skin) @param {string} name a skin */
+export const extraKey = name => "extra-" + name;
+/** what the current skin does: its row, with its extra applied when it's switched on — the one answer every effect reads
+ *  @returns {Skin} */
 export function skin() {
-  return SKINS[/** @type {keyof typeof SKINS} */ (skinName(S.theme))];
+  const name = skinName(S.theme),
+    s = SKINS[name];
+  if (!s.extra || /** @type {Record<string, any>} */ (S.set || {})[extraKey(name)] !== "on") return s;
+  return { ...s, bg: s.extra.bg ?? s.bg };
+}
+/** the current skin's extra, if it has one (Settings shows its switch) */
+export function skinExtra() {
+  return SKINS[skinName(S.theme)].extra || null;
 }
 /** @param {string} c any CSS colour */
 export function toHex(c) {

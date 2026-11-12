@@ -1,6 +1,6 @@
 // Hygiene (ux-review/20-quality-bar.md §4): axe-core over every page and state, baseline empty — every control named,
 // real buttons, valid ARIA. Contrast is legibility.test.mjs's (axe can't see what's behind glass; that test reads pixels).
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const AXE = readFileSync(new URL("../../node_modules/axe-core/axe.min.js", import.meta.url), "utf8");
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -85,6 +85,7 @@ export async function everyStateIsCleanForAxe(k, t) {
   const lines = [...seen.entries()].map(
     ([key, v]) => `${key} — ${v.html} — ${v.states.length} state(s), first: ${v.states[0]}`,
   );
+  mkdirSync(new URL("./out/", import.meta.url), { recursive: true }); // a fresh checkout (CI) has no out/ yet
   writeFileSync(new URL("./out/a11y.txt", import.meta.url), lines.join("\n") + "\n"); // the full list, for fixing
   t.ok(
     !seen.size,

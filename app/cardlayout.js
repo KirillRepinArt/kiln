@@ -1,13 +1,12 @@
 // @ts-check
 /* Kiln · the prompt box's layout: its least height and width, its place from the layout pass (one writer of its top,
    height and Vertical width), the hold while you work in it, and moving it (the drop map) */
-import { $, q } from "./dom.js";
+import { $, layoutRect, q } from "./dom.js";
 import { HANDLES, outlines } from "./outlines.js";
 import {
   dockNow,
   lay,
   layDef,
-  colPx,
   liftCol,
   liftToken,
   minRight,
@@ -94,7 +93,7 @@ export function boxWLeast() {
     play = $("play");
   if (!c || !play.offsetWidth) return PWMIN;
   /* exact widths: offsetWidth rounds each part down (2 px short over five pills) */
-  const wOf = (/** @type {Element} */ e) => colPx(e.getBoundingClientRect().width), // layout px, not the carry's
+  const wOf = (/** @type {HTMLElement} */ e) => layoutRect(e).width, // laid out, not as carried
     cs = getComputedStyle(c),
     pills = /** @type {HTMLElement[]} */ ([...c.querySelectorAll(".pills > .pill")]).filter(p => p.offsetWidth),
     pg = parseFloat(getComputedStyle(/** @type {Element} */ (c.querySelector(".pills"))).columnGap) || 0;
@@ -190,7 +189,7 @@ export function layoutLeft(direct = false) {
        column's px (its layout box, without a transform); its width and height too — held, an edge's */
     const was = lay.passV,
       p = vPass(),
-      colTop = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop;
+      colTop = layoutRect(col).top;
     swAt(col, Math.round(p.box.w));
     requestAnimationFrame(vAlign);
     boxAt(col, Math.round(p.box.y - colTop), Math.round(p.box.h));
@@ -203,7 +202,7 @@ export function layoutLeft(direct = false) {
   /* side by side the box's place beside its pane is the layout pass's — ONE rule (cardPlacement, its modes
      cardHeightMode), called by the pass with the column and the moment's state */
   const p = sideBoxPass(),
-    c0 = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop;
+    c0 = layoutRect(col).top;
   card.top = p.box.y - c0 - TS;
   card.bottom = card.top + p.box.h + CH;
   boxAt(col, p.box.y - c0, p.box.h);
@@ -377,7 +376,7 @@ export function initCardlayout() {
         /* the grip works in every mode: a mode fixes the box's height; moving it is still yours */
         if (!tg.closest(GROUP) || tg.closest(NO)) return false;
         outlines("move", ["box"]); // the press shows what moves: the box's own outline (outlines.js; drawn by the box)
-        const r0 = L.getBoundingClientRect();
+        const r0 = L.getBoundingClientRect(); // as seen: the box under your hand
         return /** @type {Lift} */ ({
           dx: 0,
           dy: 0,
@@ -392,7 +391,7 @@ export function initCardlayout() {
       },
       start: m => {
         card.drag = true;
-        const p = $("plate").getBoundingClientRect(),
+        const p = $("plate").getBoundingClientRect(), // as seen: the map is drawn over what you see
           d = dropTiles(
             { x: p.left, y: p.top, w: p.width, h: p.height },
             { w: innerWidth, h: innerHeight },

@@ -19,7 +19,7 @@ import {
   stackW,
   updHm,
 } from "./cardlayout.js";
-import { $, offsetIn } from "./dom.js";
+import { $, layoutRect, offsetIn } from "./dom.js";
 import { fade, fadeValue } from "./fade.js";
 import { leaveCopy } from "./leave.js";
 import { HANDLES } from "./outlines.js";
@@ -102,8 +102,10 @@ export function tbW() {
 const layW = () => innerWidth - 2 * SPACE.area; /* the window less its edge on each side */
 /* the tab bar's width, as laid out now */
 export function tabsW() {
-  const k = /** @type {HTMLElement} */ (document.querySelector(".tabs")).children;
-  return k.length ? Math.ceil(k[k.length - 1].getBoundingClientRect().right - k[0].getBoundingClientRect().left) : 0;
+  const k = /** @type {HTMLCollectionOf<HTMLElement>} */ (
+    /** @type {HTMLElement} */ (document.querySelector(".tabs")).children
+  );
+  return k.length ? Math.ceil(layoutRect(k[k.length - 1]).right - layoutRect(k[0]).left) : 0;
 }
 /* the picture area never gets narrower than the tab bar */
 export function minRight() {
@@ -236,7 +238,7 @@ export const lay = {
 };
 /* Vertical: the box's name row, from the name's top to the box's (the column's title row less the room above the name) */
 function nameRowH() {
-  return SPACE.tight + colPx($("ltitle").getBoundingClientRect().bottom - $("pname").getBoundingClientRect().top);
+  return SPACE.tight + layoutRect($("ltitle")).bottom - layoutRect($("pname")).top;
 }
 /* the room the slot under the picture takes while the page keeps it: the part gap + its occupant (the status row, or
    Show prompt — A1) */
@@ -255,7 +257,7 @@ function sideRoom() {
 function sideRoomTop() {
   const rt = $("right"),
     rp = $("rpanel");
-  return rt.getBoundingClientRect().top + rt.clientTop + (rp.offsetTop - (parseFloat(rp.style.marginTop) || 0));
+  return layoutRect(rt).top + rt.clientTop + (rp.offsetTop - (parseFloat(rp.style.marginTop) || 0));
 }
 /* the page's room: side by side the column's; Vertical, the most height the page's pane can take — the layout pass's
    (the box at its least under it; measured above the box, the box's growth came out of the page's room) */
@@ -374,7 +376,7 @@ function boxPlace() {
     TS = parseFloat(col.style.getPropertyValue("--ts")) || 64,
     R = insets().row ? rowRoom() : 0;
   return {
-    colTop: /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop + TS,
+    colTop: layoutRect(col).top + TS,
     colH: col.clientHeight - TS,
     chips: chipsH(),
     below: R ? R - 1 : 0, // the status row: a box resting at the bottom lines up with it
@@ -630,13 +632,8 @@ function snapCheck() {
 }
 /* the stage where the layout puts it, without a tab switch's ride (its view's transform: plate.js switchGlide) */
 export function stageRect() {
-  const st = $("stage"),
-    r = st.getBoundingClientRect(),
-    v = st.closest(".view"),
-    t = v ? getComputedStyle(v).transform : "none";
-  if (t === "none") return r;
-  const m = new DOMMatrix(t);
-  return new DOMRect(r.left - m.e, r.top - m.f, r.width, r.height);
+  const r = layoutRect($("stage"));
+  return new DOMRect(r.left, r.top, r.width, r.height);
 }
 /** a panel's box side by side, where it is now (the window's px); null: not a panel side by side
  * @type {{ l: number, t: number, w: number, h: number } | null} */
@@ -797,7 +794,7 @@ export function vAlign() {
   if (!document.querySelector(".app.stacked")) return;
   const p = lay.passV ?? vPass(),
     col = $("lcol"),
-    colTop = /** @type {HTMLElement} */ (col.offsetParent).getBoundingClientRect().top + col.offsetTop,
+    colTop = layoutRect(col).top,
     pn = p.box.y - nameRowH();
   col.style.setProperty("--gtop-v", pn - colTop - 2 + "px");
 }
@@ -821,9 +818,6 @@ export function liftCol(x, y) {
 let liftS = 1;
 /** the token's scale now (1: the box itself) */
 export const liftScale = () => liftS;
-/** a size measured as seen inside the prompt column, in layout px: the token's scale divided out — a layout input is
- *  never read through the carry (ARCHITECTURE › layout inputs; DD-2026-11-12-17) @param {number} px */
-export const colPx = px => px / liftS;
 /** @param {number} s the column's scale while it's carried (1 — the box at its size) */
 export function liftToken(s) {
   liftS = s;
@@ -843,7 +837,7 @@ function colApply() {
   if (relation) {
     if (now - relation.t0 >= relation.T) relation = null;
     else {
-      const p = $("plate").getBoundingClientRect(),
+      const p = $("plate").getBoundingClientRect(), // as seen: the box rides the plate where it is this frame
         live = { l: p.left, t: p.top, w: p.width, h: p.height },
         g0 = glued(live, relation.r0, relation.b0),
         g1 = glued(live, relation.r1, relation.b1),
@@ -888,7 +882,7 @@ export function fadeCol(out, sw, was) {
   relation = null;
   promptFollow(true); // its place where it lands: glued to where the plate lands (the layout is settled: tabs.js tabGo)
   const rect = (/** @type {Element} */ e) => {
-      const r = e.getBoundingClientRect();
+      const r = e.getBoundingClientRect(); // as seen: a leaving copy starts where its original is on screen
       return { l: r.left, t: r.top, w: r.width, h: r.height };
     },
     ol = out.el.querySelector(".left"),
@@ -949,11 +943,10 @@ export function promptFollow(direct = false) {
   }
   if (!stk && lay.last) {
     /* side by side: one pair gap from the plate as it is this frame. The box's place in the column is its layout box,
-       without ANY transform (getBoundingClientRect counted a running switch's offset, and the glue cancelled it) */
+       without ANY transform (ARCHITECTURE › layout inputs: the glue would cancel itself) */
     const p = glueRect(), // the plate as it is — or, in a layout switch, where it lands (plate.js)
-      col = $("lcol"),
       box = $("left"),
-      left = app.getBoundingClientRect().left + col.offsetLeft + box.offsetLeft,
+      left = layoutRect(box).left,
       w = lay.shown ? lay.shown.pw : box.offsetWidth; // its width from its owner (boxWWrite), as written this frame
     if (p.width > 0 && w > 0) x = Math.round(R ? p.right + SPACE.pane - left : p.left - SPACE.pane - (left + w));
     else x = hugX;
@@ -962,7 +955,7 @@ export function promptFollow(direct = false) {
        / glued) */
     const goal = movingTo("plate");
     if (goal && p.height > 0 && w > 0) {
-      const top = app.getBoundingClientRect().top + col.offsetTop + box.offsetTop,
+      const top = layoutRect(box).top,
         b = { l: left, t: top, w, h: box.offsetHeight },
         r = relationOf(b, goal, glueAnchors(R ? "right" : "left", S.pos || "mid"));
       y = glued({ l: p.left, t: p.top, w: p.width, h: p.height }, r, b).t - b.t;

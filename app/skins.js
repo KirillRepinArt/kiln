@@ -308,13 +308,12 @@ export function makeAurora() {
   };
 }
 
-/* Aurora's background as a night landscape, the classic aurora photograph: stars wheeling slowly around the pole star
-   (the earth turning, as in a timelapse — about one turn in 10 minutes), the aurora over a dark mountain ridge, and a
-   still lake below that mirrors the sky, softened. */
+/* Aurora's background, the classic aurora photograph's sky: stars wheeling slowly around the pole star (the earth
+   turning, as in a timelapse — about one turn in 10 minutes) under the aurora. (Its landscape — a ridge, mist and a lake
+   — was removed 2026-11-12: never used, not Kiln's style; DD-2026-11-12-18.) */
 export function makeNightSky() {
   const aur = makeAurora();
   let stars = /** @type {any[]} */ ([]),
-    ridge = /** @type {number[]} */ ([]),
     key = "";
   return {
     /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} t @param {number} d @param {string[]} cols @param {Record<string, any>} op */
@@ -340,13 +339,8 @@ export function makeNightSky() {
             tw: 0.4 + Math.random() * 1.4,
           });
         }
-        ridge = Array.from(
-          { length: 97 },
-          (_, i) => 0.55 * fbm(i * 0.09, 3.7) + 0.45 * Math.pow(fbm(i * 0.23, 8.1), 1.6),
-        );
       }
-      const land = !!op.landscape,
-        HY = land ? H * 0.76 : H,
+      const HY = H,
         px = W * 0.86,
         py = -H * 0.06,
         ang = op.reduce ? 0 : (t / 1000) * 0.0104,
@@ -369,77 +363,6 @@ export function makeNightSky() {
       }
       ctx.restore();
       aur.draw(ctx, W, H, op.reduce ? 0 : T, cols, op.aur);
-      if (!land) return;
-      // the lake: the sky mirrored about the horizon, squashed a little, dimmer
-      const soft = aur.canvas(),
-        kq = 0.85;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, HY, W, H - HY);
-      ctx.clip();
-      ctx.globalCompositeOperation = "lighter";
-      ctx.translate(0, HY * (1 + kq));
-      ctx.scale(1, -kq);
-      ctx.imageSmoothingEnabled = true;
-      ctx.globalAlpha = op.aur.alpha * 0.34;
-      ctx.drawImage(soft, 0, 0, W, H);
-      ctx.globalAlpha = op.aur.alpha * 0.12;
-      ctx.drawImage(soft, 2 * d, 0, W, H); // a faint shimmer
-      ctx.restore();
-      // a faint glow over the horizon (airglow, far twilight): it is what makes the ridge read against the sky; mirrored in the lake
-      const tint = mixHex(mixHex(cols[0], "#2a6a8a", 0.55), "#000000", 0.15),
-        ga = 0.16 * (0.8 + 0.4 * op.aur.alpha);
-      let g = ctx.createLinearGradient(0, HY - H * 0.34, 0, HY);
-      g.addColorStop(0, rgba(tint, 0));
-      g.addColorStop(1, rgba(tint, ga));
-      ctx.fillStyle = g;
-      ctx.fillRect(0, HY - H * 0.34, W, H * 0.34);
-      g = ctx.createLinearGradient(0, HY, 0, H);
-      g.addColorStop(0, rgba(tint, ga * 0.7));
-      g.addColorStop(1, rgba(tint, 0));
-      ctx.fillStyle = g;
-      ctx.fillRect(0, HY, W, H - HY);
-      // mist drifting over the horizon
-      for (let m = 0; m < 7; m++) {
-        const mx = (((m * 0.19 + T * 0.004 * (1 + (m % 3))) % 1.3) - 0.15) * W,
-          my = HY - H * (0.015 + 0.03 * Math.sin(m * 1.7)),
-          r = W * (0.18 + 0.06 * (m % 3));
-        const mg = ctx.createRadialGradient(mx, my, 0, mx, my, r);
-        mg.addColorStop(0, rgba(mixHex(tint, "#9fb8c0", 0.3), 0.2));
-        mg.addColorStop(1, rgba(tint, 0));
-        ctx.save();
-        ctx.translate(mx, my);
-        ctx.scale(1, 0.18);
-        ctx.translate(-mx, -my);
-        ctx.fillStyle = mg;
-        ctx.fillRect(mx - r, my - r, 2 * r, 2 * r);
-        ctx.restore();
-      }
-      // the near ridge, and its reflection
-      /** @param {number} i */
-      const peak = i => HY - H * (0.015 + ridge[i] * 0.13);
-      ctx.save();
-      ctx.fillStyle = "#010203";
-      ctx.beginPath();
-      ctx.moveTo(0, HY);
-      for (let i = 0; i < ridge.length; i++) ctx.lineTo((W * i) / (ridge.length - 1), peak(i));
-      ctx.lineTo(W, HY);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = "#020406";
-      ctx.beginPath();
-      ctx.moveTo(0, HY);
-      for (let i = 0; i < ridge.length; i++) ctx.lineTo((W * i) / (ridge.length - 1), HY + (HY - peak(i)) * kq);
-      ctx.lineTo(W, HY);
-      ctx.closePath();
-      ctx.fill();
-      const hl = ctx.createLinearGradient(0, HY - 2 * d, 0, HY + 2 * d);
-      hl.addColorStop(0, "rgba(120,200,170,0)");
-      hl.addColorStop(0.5, `rgba(120,200,170,${0.08 * op.aur.alpha})`);
-      hl.addColorStop(1, "rgba(120,200,170,0)");
-      ctx.fillStyle = hl;
-      ctx.fillRect(0, HY - 2 * d, W, 4 * d); // the waterline catches a little light
-      ctx.restore();
     },
   };
 }

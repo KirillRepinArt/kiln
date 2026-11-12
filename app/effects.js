@@ -336,7 +336,6 @@ export function initEffects() {
                 : 0; /* an image landed: the sky swells, slowly */
           night.draw(c, W, H, t, d, bcols, {
             reduce,
-            landscape: (S.set || {}).landscape === "on",
             aur: {
               scale: 6,
               layout: "sky",

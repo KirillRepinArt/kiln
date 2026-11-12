@@ -5,16 +5,21 @@
    generating): pre-drawn glyphs and patterns, low resolution where softness is the look, ~30 fps. */
 import { S } from "./state.js";
 
-/* what each skin DOES (its effects); how it looks is its token file, app/styles/themes/<name>.css */
+/* what each skin DOES — its effects, each one an effect runs only if the skin has it AND the user's setting allows it:
+   the background (stars / aurora / code / none), the cover over a young picture (bands / camera / crt / none — none:
+   no cover, except private mode's, a flat fill in the surface colour), the ambient glow, the finish (embers when done).
+   How a skin looks is its value set: app/tokens/themes/<name>.tokens.json. A plain preset has every feature and none
+   of the effects (DD-2026-11-12-13). */
 const SKINS = {
-  aurora: { bg: "aurora", cover: "camera" },
-  embers: { bg: "stars", cover: "bands" },
-  matrix: { bg: "code", cover: "crt" },
-  starscape: { bg: "stars", cover: "bands" },
+  aurora: { bg: "aurora", cover: "camera", glow: true, finish: true },
+  clay: { bg: "none", cover: "none", glow: false, finish: false },
+  graphite: { bg: "none", cover: "none", glow: false, finish: false },
+  matrix: { bg: "code", cover: "crt", glow: true, finish: true },
+  starscape: { bg: "stars", cover: "bands", glow: true, finish: true },
 };
-export const DEFAULT_SKIN = "starscape";
-/* old skin names → the nearest skin now */
-const RENAMED = { ice: "starscape", sunset: "embers", ember: "embers", emerald: "matrix" };
+export const DEFAULT_SKIN = "graphite";
+/* old and hidden skin names → the nearest skin now (Embers: hidden until it has an effect of its own, DD-2026-11-12-10) */
+const RENAMED = { ice: "starscape", sunset: "starscape", ember: "starscape", embers: "starscape", emerald: "matrix" };
 /** a saved theme name → a skin that exists @param {string} [name] */
 export function skinName(name) {
   return name && name in SKINS ? name : (name && RENAMED[/** @type {keyof typeof RENAMED} */ (name)]) || DEFAULT_SKIN;

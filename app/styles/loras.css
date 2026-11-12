@@ -18,7 +18,7 @@
 .search {
   flex: 1;
   background: var(--raised);
-  border: 1px solid var(--grey-35);
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-pill);
   padding: var(--space-2) var(--space-4);
   outline: 0;
@@ -52,7 +52,7 @@
   width: 34px;
   height: 20px;
   border-radius: var(--r-10);
-  background: var(--grey-39);
+  background: var(--switch-off);
   position: relative;
   transition: background var(--t-150);
   flex: none;
@@ -66,7 +66,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--grey-90);
+  background: var(--knob);
   transition: left var(--t-150);
 }
 .sw.on {
@@ -90,7 +90,7 @@
   color: var(--muted);
 }
 .fchips button.on {
-  background: var(--grey-33);
+  background: var(--selected);
   color: var(--white);
 }
 .warn {
@@ -146,13 +146,13 @@
   transition: background var(--dur);
 }
 .li:hover {
-  background: var(--grey-27);
+  background: var(--row-hover);
 }
 .li.on {
-  background: var(--grey-27);
+  background: var(--row-hover);
 }
 .li.on:hover {
-  background: var(--grey-30);
+  background: var(--row-on-hover);
 }
 .li .nm {
   overflow: hidden;
@@ -171,14 +171,14 @@
   color: var(--muted);
   margin-left: var(--space-2);
   padding: var(--space-px) var(--space-2);
-  border: 1px solid var(--grey-39);
+  border: 1px solid var(--tag-line);
   border-radius: var(--r-pill);
   vertical-align: 1px;
 }
 .li input[type="number"] {
   width: 56px;
   background: var(--raised);
-  border: 1px solid var(--grey-35);
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-8);
   padding: var(--space-1) var(--space-2);
   font-size: var(--fs-13);
@@ -248,7 +248,7 @@
 }
 .nmedit {
   width: 100%;
-  background: var(--grey-23);
+  background: var(--field);
   border: 1px solid var(--white-60);
   border-radius: var(--r-6);
   padding: var(--space-px) var(--space-1);

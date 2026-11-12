@@ -1,14 +1,5 @@
-/* Kiln · skin: Matrix. A skin = these tokens (the theme's colours and anything only it changes) + its effects in
-   skins.js (the background, the cover over a young picture, the finish). index.html sets data-skin on <html>. */
-/* code rain: phosphor greens; the text in IBM Plex Mono, the title in Courier Prime ("Theme font" in Settings) */
-:root[data-skin="matrix"] {
-  --a1: #00e676;
-  --a2: #76ff03;
-  --a3: #b9f6ca;
-  --ink: #00140a;
-  --skin-font: IBM Plex Mono;
-  --skin-title: Courier Prime;
-}
+/* Kiln · skin: Matrix — the rules only it has. Its values (colours, fonts): app/tokens/themes/matrix.tokens.json
+   (generated into themes.css); its effects: skins.js. */
 /* the title glowing faintly (over its halo: base.css .onsky), spaced like a title card */
 [data-skin="matrix"] .ltitle .pname {
   font-weight: 700;

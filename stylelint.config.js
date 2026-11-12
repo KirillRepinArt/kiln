@@ -47,7 +47,7 @@ export default {
   overrides: [
     {
       // where the raw values live: the tokens, and each skin's own
-      files: ["app/styles/tokens.css", "app/styles/themes/*.css"],
+      files: ["app/styles/tokens.css", "app/styles/themes.css", "app/styles/themes/*.css"], // the tokens (generated) and the skins' own rules
       rules: { "color-no-hex": null, "declaration-property-value-disallowed-list": null },
     },
   ],

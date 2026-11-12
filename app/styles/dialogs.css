@@ -100,16 +100,16 @@
 }
 .fg select:hover,
 .fg input:hover {
-  background-color: var(--grey-27);
+  background-color: var(--field-hover);
 }
 .fg select:focus,
 .fg input:focus {
   outline: 0;
-  border-color: var(--grey-35);
-  background-color: var(--grey-23);
+  border-color: var(--line-strong);
+  background-color: var(--field);
 }
 .fg select option {
-  background: var(--grey-27);
+  background: var(--float);
   color: var(--grey-96);
 }
 .fg input[readonly] {
@@ -121,7 +121,7 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--grey-64);
-  border-top: 1px solid var(--grey-30);
+  border-top: 1px solid var(--rule);
   padding-top: var(--space-4);
   margin-top: var(--space-2);
 }

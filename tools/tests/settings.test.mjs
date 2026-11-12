@@ -40,16 +40,22 @@ export async function offline(k, t) {
   t.ok(await k.ev(`document.fonts.check('15px "Geist"')`), "Geist is available");
 }
 
-// The skins cleanup (2026-10-27): four skins; a skin saved before it comes back as the nearest one now.
+// The skins: five in the menu, A–Z (Embers hidden, DD-2026-11-12-10); a skin saved before comes back as the nearest one
+// now, an unknown one as the first-run default (Graphite).
 export async function oldSkinsMigrate(k, t) {
   const skins = await k.ev(`[...$("sTheme").options].map(o=>o.value).join(",")`);
-  t.ok(skins === "aurora,embers,matrix,starscape", "four skins: Aurora, Embers, Matrix, Starscape", skins);
+  t.ok(
+    skins === "aurora,clay,graphite,matrix,starscape",
+    "five skins, A–Z: Aurora, Clay, Graphite, Matrix, Starscape",
+    skins,
+  );
   for (const [old, now] of [
-    ["sunset", "embers"],
-    ["ember", "embers"],
+    ["sunset", "starscape"],
+    ["ember", "starscape"],
+    ["embers", "starscape"],
     ["ice", "starscape"],
     ["emerald", "matrix"],
-    ["no-such-skin", "starscape"],
+    ["no-such-skin", "graphite"],
   ]) {
     await k.ev(
       `(()=>{const s=JSON.parse(localStorage.getItem("kiln_state")||"{}");s.S=Object.assign(s.S||{},{theme:${JSON.stringify(old)}});localStorage.setItem("kiln_state",JSON.stringify(s));return 1})()`,

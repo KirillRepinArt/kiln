@@ -36,7 +36,7 @@
   background: var(--raised2);
 }
 .chip.face {
-  background: var(--grey-33);
+  background: var(--selected);
 }
 .chip[draggable="true"] {
   cursor: grab;
@@ -60,12 +60,12 @@
   font-variant-numeric: tabular-nums;
 }
 .chip .cw:hover {
-  background: var(--grey-35);
+  background: var(--hover);
 }
 .chip .cwi {
   width: 46px;
-  background: var(--grey-23);
-  border: 1px solid var(--grey-41);
+  background: var(--field);
+  border: 1px solid var(--field-line-strong);
   border-radius: var(--r-5);
   color: var(--white);
   font: inherit;
@@ -82,7 +82,7 @@
   color: var(--muted);
 }
 .chip .cx:hover {
-  background: var(--grey-39);
+  background: var(--hover-strong);
   color: var(--white);
 }
 .chip .cx svg {

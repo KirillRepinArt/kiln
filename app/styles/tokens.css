@@ -7,6 +7,11 @@
    switches while you drag, the morph); each one says why. */
 /* ======================= tokens ======================= */
 :root {
+  /* THE THEME — its colours (every theme sets them: themes/*.tokens.json; these are the fallback, Starscape's) */
+  --a1: #ff8a00;
+  --a2: #ff5e8a;
+  --a3: #3fe0f0;
+  --ink: #140b00; /* text on the theme colour */
   --bg: #000000;
   --text: #ededed;
   --muted: #b8b8bd;
@@ -59,6 +64,42 @@
   --liw: calc(
     var(--th, 48px) + 250px
   ); /* one LoRA item; the thumbnail slider sizes it, so it also sets the column count */
+  /* SURFACES AND LINES BY ROLE — what each is for; a theme sets them (themes/*.tokens.json), the CSS uses only these */
+  --stage: var(--grey-13); /* the picture's stage: behind a picture inside its frame */
+  --preview-bg: var(--grey-15); /* the Queue's hover preview */
+  --well: var(--grey-20); /* a recessed spot: the Queue row's mini bar, the finished note's thumbnail */
+  --track: var(--grey-23); /* the progress bar's track */
+  --field: var(--grey-23); /* an input's surface while you type in it */
+  --field-hover: var(--grey-27); /* an input under the pointer; the name field's plate */
+  --float: var(--grey-27); /* floating surfaces: menus, the toast, the finished note, a dropdown's options */
+  --tip-bg: var(--grey-30); /* the tooltip */
+  --row-hover: var(--grey-27); /* a LoRA row under the pointer, or on */
+  --row-on-hover: var(--grey-30); /* an on LoRA row under the pointer */
+  --placeholder: var(--grey-27); /* where a Queue thumbnail will be */
+  --syntax-bg: var(--grey-30); /* the prompt's variant and LoRA marks */
+  --selected: var(--grey-33); /* a chosen chip or filter */
+  --hover: var(--grey-35); /* a small button under the pointer (✕ on a name, the weight) */
+  --seg-thumb: var(--grey-35); /* the tab bar's moving thumb (solid) */
+  --hover-strong: var(--grey-39); /* a small button under the pointer on a row or the status (✕, Stop) */
+  --switch-off: var(--grey-39); /* a switch that's off */
+  --knob: var(--grey-90); /* a switch's knob */
+  --inverse: var(--grey-96); /* an inverted, chosen button (the box's height modes) */
+  --on-inverse: var(--grey-18); /* text on an inverted button */
+  --scroll-thumb: var(--grey-35); /* the scrollbar */
+  --scroll-thumb-hover: var(--grey-45); /* …under the pointer */
+  --scroll-thumb-active: var(--grey-57); /* …held */
+  --ring-idle: var(--grey-66); /* a tab's progress ring */
+  --ring-on: var(--grey-74); /* …on the chosen tab */
+  --check: var(--grey-93); /* a checkbox's tick */
+  --line-strong: var(--grey-35); /* the edge of a floating surface or a field */
+  --box-line: var(--grey-33); /* the prompt box's edge (solid) */
+  --seg-line: var(--grey-27); /* the tab bar's edge (solid) */
+  --rule: var(--grey-30); /* a line between Settings groups */
+  --tag-line: var(--grey-39); /* a tag's edge (recipe) */
+  --field-line-strong: var(--grey-41); /* the weight field's edge */
+  --shape-line: var(--grey-64); /* a ratio's shape in its menu */
+  --rim: var(--grey-23); /* a glass plate's inner ring */
+  --rim-panel: var(--grey-27); /* …on a panel */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -234,6 +275,10 @@
     24,
     0.58
   ); /* the buttons on the picture in glass: dark enough that a white icon reads over a white picture */
+  /* GLASS TINT — how much the glass gathers (a theme with a bright sky raises them: Aurora) */
+  --gta: 0.28; /* regular glass's opacity */
+  --gtk: 0.3; /* thick glass's opacity */
+  --gtb: 2.1; /* how much the glass brightens what's behind it */
   /* every layout glide: Material 3's emphasized decelerate — most of the way in the first third, then a long soft
      settle. One curve for all the pieces that move together, or they'd drift apart mid-move */
   --lay-t: 0.42s;

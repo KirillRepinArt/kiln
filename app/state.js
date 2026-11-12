@@ -38,7 +38,7 @@ export const S = {
   seed: 123456789,
   n: 1,
   view: "gen",
-  theme: "starscape",
+  theme: "graphite", // the first-run default (skins.js DEFAULT_SKIN)
   oneFace: true,
   lfilter: "all",
 }; /* settings of the removed demo mode */

@@ -69,11 +69,11 @@
   font-weight: 500;
 }
 .pname:hover {
-  background: var(--grey-27);
+  background: var(--field-hover);
 }
 .pname:focus {
-  background: var(--grey-27);
-  box-shadow: inset 0 0 0 1px var(--grey-35);
+  background: var(--field-hover);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
 }
 .plbl.hasname .pname:hover,
 .plbl.hasname .pname:focus {
@@ -120,7 +120,7 @@
   transition: opacity var(--t-150);
 }
 .pnx:hover {
-  background: var(--grey-35);
+  background: var(--hover);
   color: var(--white);
 }
 .pnx svg {
@@ -192,7 +192,7 @@
     color var(--t-150);
 }
 .pkx:hover {
-  background: var(--grey-35);
+  background: var(--hover);
   color: var(--white);
 }
 .pkx svg {
@@ -241,8 +241,8 @@
   color: var(--white);
 }
 .hmodes button.on {
-  background: var(--grey-96);
-  color: var(--grey-18);
+  background: var(--inverse);
+  color: var(--on-inverse);
 }
 .hmodes svg {
   width: 16px;
@@ -260,7 +260,7 @@
   flex-direction: column;
   padding-top: 0;
   background: var(--panel);
-  border: 1px solid var(--grey-33);
+  border: 1px solid var(--box-line);
   border-radius: var(--r-panel);
   container-type: inline-size;
 }
@@ -414,20 +414,20 @@
   padding-top: var(--space-2) !important;
 } /* !important: over .cm-line's size and padding */
 .cm-variant {
-  background: var(--grey-30);
+  background: var(--syntax-bg);
   border-radius: var(--r-6);
-  box-shadow: 0 0 0 1px var(--grey-35);
+  box-shadow: 0 0 0 1px var(--line-strong);
   padding: 0 var(--space-hair);
 }
 .cm-vbar {
   color: var(--grey-53);
 }
 .cm-lora {
-  background: var(--grey-30);
+  background: var(--syntax-bg);
   border-radius: var(--r-6);
   color: var(--grey-79);
   padding: 0 var(--space-1);
-  box-shadow: 0 0 0 1px var(--grey-35);
+  box-shadow: 0 0 0 1px var(--line-strong);
 }
 /* the character count, while you type */
 /* the prompt's top margin holds the character count and the ✕ (Clear): both centred in that margin — half the inset

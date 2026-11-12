@@ -1,0 +1,48 @@
+{
+  "$description": "Matrix: code rain, phosphor greens; the text in IBM Plex Mono, the title in Courier Prime (\"Theme font\" in Settings)",
+  "theme": {
+    "a1": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.901961, 0.462745],
+        "hex": "#00e676"
+      }
+    },
+    "a2": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.462745, 1.0, 0.011765],
+        "hex": "#76ff03"
+      }
+    },
+    "a3": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.72549, 0.964706, 0.792157],
+        "hex": "#b9f6ca"
+      }
+    },
+    "ink": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.078431, 0.039216],
+        "hex": "#00140a"
+      },
+      "$description": "text on the theme colour"
+    }
+  },
+  "skin": {
+    "font": {
+      "$type": "fontFamily",
+      "$value": "IBM Plex Mono"
+    },
+    "title": {
+      "$type": "fontFamily",
+      "$value": "Courier Prime"
+    }
+  }
+}

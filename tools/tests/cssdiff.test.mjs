@@ -295,7 +295,7 @@ export async function cssdiff(k, t) {
   await go(`endPeek();setPaneSize("box","w",null,"side");sizeFrame();layoutLeft()`);
   await k.sleep(800);
   // themes × materials
-  for (const th of ["aurora", "embers", "matrix", "starscape"])
+  for (const th of ["aurora", "clay", "graphite", "matrix", "starscape"])
     for (const g of ["on", "off"]) {
       await k.theme(th);
       await k.setting("glass", g);

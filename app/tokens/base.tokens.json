@@ -5,6 +5,51 @@
       "format": "DTCG 2025.10; CSS expressions the format can't type are marked dev.kiln.css"
     }
   },
+  "theme": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": ""
+      }
+    },
+    "a1": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 0.541176, 0.0],
+        "hex": "#ff8a00"
+      },
+      "$extensions": {
+        "dev.kiln": {
+          "above": "THE THEME — its colours (every theme sets them: themes/*.tokens.json; these are the fallback, Starscape's)"
+        }
+      }
+    },
+    "a2": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 0.368627, 0.541176],
+        "hex": "#ff5e8a"
+      }
+    },
+    "a3": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.247059, 0.878431, 0.941176],
+        "hex": "#3fe0f0"
+      }
+    },
+    "ink": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.078431, 0.043137, 0.0],
+        "hex": "#140b00"
+      },
+      "$description": "text on the theme colour"
+    }
+  },
   "role": {
     "$extensions": {
       "dev.kiln": {
@@ -312,6 +357,159 @@
         }
       },
       "$description": "one LoRA item; the thumbnail slider sizes it, so it also sets the column count"
+    }
+  },
+  "ui": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": ""
+      }
+    },
+    "$description": "surfaces and lines by what they're for (6b): every theme sets these; the greys they point at are today's",
+    "stage": {
+      "$value": "{grey.13}",
+      "$description": "the picture's stage: behind a picture inside its frame",
+      "$extensions": {
+        "dev.kiln": {
+          "above": "SURFACES AND LINES BY ROLE — what each is for; a theme sets them (themes/*.tokens.json), the CSS uses only these"
+        }
+      }
+    },
+    "preview-bg": {
+      "$value": "{grey.15}",
+      "$description": "the Queue's hover preview"
+    },
+    "well": {
+      "$value": "{grey.20}",
+      "$description": "a recessed spot: the Queue row's mini bar, the finished note's thumbnail"
+    },
+    "track": {
+      "$value": "{grey.23}",
+      "$description": "the progress bar's track"
+    },
+    "field": {
+      "$value": "{grey.23}",
+      "$description": "an input's surface while you type in it"
+    },
+    "field-hover": {
+      "$value": "{grey.27}",
+      "$description": "an input under the pointer; the name field's plate"
+    },
+    "float": {
+      "$value": "{grey.27}",
+      "$description": "floating surfaces: menus, the toast, the finished note, a dropdown's options"
+    },
+    "tip-bg": {
+      "$value": "{grey.30}",
+      "$description": "the tooltip"
+    },
+    "row-hover": {
+      "$value": "{grey.27}",
+      "$description": "a LoRA row under the pointer, or on"
+    },
+    "row-on-hover": {
+      "$value": "{grey.30}",
+      "$description": "an on LoRA row under the pointer"
+    },
+    "placeholder": {
+      "$value": "{grey.27}",
+      "$description": "where a Queue thumbnail will be"
+    },
+    "syntax-bg": {
+      "$value": "{grey.30}",
+      "$description": "the prompt's variant and LoRA marks"
+    },
+    "selected": {
+      "$value": "{grey.33}",
+      "$description": "a chosen chip or filter"
+    },
+    "hover": {
+      "$value": "{grey.35}",
+      "$description": "a small button under the pointer (✕ on a name, the weight)"
+    },
+    "seg-thumb": {
+      "$value": "{grey.35}",
+      "$description": "the tab bar's moving thumb (solid)"
+    },
+    "hover-strong": {
+      "$value": "{grey.39}",
+      "$description": "a small button under the pointer on a row or the status (✕, Stop)"
+    },
+    "switch-off": {
+      "$value": "{grey.39}",
+      "$description": "a switch that's off"
+    },
+    "knob": {
+      "$value": "{grey.90}",
+      "$description": "a switch's knob"
+    },
+    "inverse": {
+      "$value": "{grey.96}",
+      "$description": "an inverted, chosen button (the box's height modes)"
+    },
+    "on-inverse": {
+      "$value": "{grey.18}",
+      "$description": "text on an inverted button"
+    },
+    "scroll-thumb": {
+      "$value": "{grey.35}",
+      "$description": "the scrollbar"
+    },
+    "scroll-thumb-hover": {
+      "$value": "{grey.45}",
+      "$description": "…under the pointer"
+    },
+    "scroll-thumb-active": {
+      "$value": "{grey.57}",
+      "$description": "…held"
+    },
+    "ring-idle": {
+      "$value": "{grey.66}",
+      "$description": "a tab's progress ring"
+    },
+    "ring-on": {
+      "$value": "{grey.74}",
+      "$description": "…on the chosen tab"
+    },
+    "check": {
+      "$value": "{grey.93}",
+      "$description": "a checkbox's tick"
+    },
+    "line-strong": {
+      "$value": "{grey.35}",
+      "$description": "the edge of a floating surface or a field"
+    },
+    "box-line": {
+      "$value": "{grey.33}",
+      "$description": "the prompt box's edge (solid)"
+    },
+    "seg-line": {
+      "$value": "{grey.27}",
+      "$description": "the tab bar's edge (solid)"
+    },
+    "rule": {
+      "$value": "{grey.30}",
+      "$description": "a line between Settings groups"
+    },
+    "tag-line": {
+      "$value": "{grey.39}",
+      "$description": "a tag's edge (recipe)"
+    },
+    "field-line-strong": {
+      "$value": "{grey.41}",
+      "$description": "the weight field's edge"
+    },
+    "shape-line": {
+      "$value": "{grey.64}",
+      "$description": "a ratio's shape in its menu"
+    },
+    "rim": {
+      "$value": "{grey.23}",
+      "$description": "a glass plate's inner ring"
+    },
+    "rim-panel": {
+      "$value": "{grey.27}",
+      "$description": "…on a panel"
     }
   },
   "space": {
@@ -1616,6 +1814,33 @@
         "alpha": 0.58
       },
       "$description": "the buttons on the picture in glass: dark enough that a white icon reads over a white picture"
+    }
+  },
+  "tint": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": ""
+      }
+    },
+    "gta": {
+      "$type": "number",
+      "$value": 0.28,
+      "$extensions": {
+        "dev.kiln": {
+          "above": "GLASS TINT — how much the glass gathers (a theme with a bright sky raises them: Aurora)"
+        }
+      },
+      "$description": "regular glass's opacity"
+    },
+    "gtk": {
+      "$type": "number",
+      "$value": 0.3,
+      "$description": "thick glass's opacity"
+    },
+    "gtb": {
+      "$type": "number",
+      "$value": 2.1,
+      "$description": "how much the glass brightens what's behind it"
     }
   },
   "lay": {

@@ -3,15 +3,22 @@
 Every value that sets Kiln's look (colours, spacing, corners, type sizes, timings) has a name and lives in one place.
 Change it there and it changes everywhere, including in the scripts that do layout maths.
 
-**Kiln picks up a saved change by itself.** Save a file in `app/styles/` while Kiln is running and the page takes it
-within a second or two: nothing reloads, and your prompt, picture and scroll position stay where they are.
+**The values live in JSON, in the W3C design-token format** (DTCG): `app/tokens/base.tokens.json` for every value,
+`app/tokens/themes/<skin>.tokens.json` for what each skin changes. Edit one, then run `npm run tokens`: it writes
+`app/styles/tokens.css` and `app/styles/themes.css` (don't edit those two: they're generated, and `npm run lint` fails
+when they differ from the JSON).
+
+**Kiln picks up a saved change by itself.** Save a file in `app/styles/` while Kiln is running (or run `npm run tokens`)
+and the page takes it within a second or two: nothing reloads, and your prompt, picture and scroll position stay where
+they are.
 
 ## Where things live
 
 | File | What's in it |
 |---|---|
-| `app/styles/tokens.css` | every value, named and commented: the design tokens |
-| `app/styles/themes/<skin>.css` | one file per skin: its colours, and anything only that skin changes |
+| `app/tokens/base.tokens.json` | every value, named and commented: the design tokens (generates `app/styles/tokens.css`) |
+| `app/tokens/themes/<skin>.tokens.json` | one file per skin: the values it changes (all of them generate `app/styles/themes.css`) |
+| `app/styles/themes/<skin>.css` | rules only one skin has (Matrix's title glow) |
 | `app/styles/*.css` (the rest) | the parts of the screen (`prompt.css`, `queue.css`, `glass.css`…): they only *use* tokens |
 
 `index.html` loads the files in a fixed order (tokens first). Where two rules disagree, the later file wins.
@@ -52,6 +59,10 @@ curves by what they're for: `--e-standard`, `--e-decel` (arriving), `--e-accel` 
 - The glass material: `--glass-regular`, `--glass-thick`, `--glass-row`… (its opacity comes from the skin's `--gta`
   / `--gtk`), and `--on-picture` for the buttons over a picture.
 - Neutrals tinted toward the skin: `--panel`, `--raised`, `--line` (`--tw` sets how much).
+- **Surfaces and lines by what they're for** (a skin sets these to restyle the whole app): `--stage` (behind a picture),
+  `--float` (menus, the toast, notes), `--field` / `--field-hover`, `--hover` / `--hover-strong` (small buttons under the
+  pointer), `--track`, `--well`, `--selected`, `--inverse` / `--on-inverse`, the lines `--line-strong`, `--box-line`,
+  `--rule`… — the full list, each with what it's for, in `base.tokens.json`'s `ui` group.
 
 ## The rule the linter enforces
 
@@ -62,29 +73,34 @@ commit.
 
 ## The skins
 
-A skin is two things: how it **looks**, which is its file in `app/styles/themes/`, and what it **does**, which is its
+A skin is two things: how it **looks**, which is its value set in `app/tokens/themes/`, and what it **does**, which is its
 effects in `app/skins.js`.
 
-```css
-/* app/styles/themes/starscape.css */
-:root[data-skin="starscape"] {
-  --a1: #ff8a00; /* the theme colour: Start, the progress bar, focus rings */
-  --a2: #ff5e8a; /* the gradient's middle */
-  --a3: #3fe0f0; /* its end */
-  --ink: #140b00; /* text on the theme colour */
+```json
+// app/tokens/themes/starscape.tokens.json (shortened)
+{
+  "theme": {
+    "a1": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 0.541176, 0], "hex": "#ff8a00" } },
+    "ink": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.078431, 0.043137, 0], "hex": "#140b00" } }
+  }
 }
 ```
 
-A skin file can also set any other token (Aurora thickens its glass with `--gta` / `--gtk` / `--gtb`; Matrix sets its
-fonts with `--skin-font` / `--skin-title`) and hold rules that only apply to it (`[data-skin="matrix"] .ltitle …`).
-The harmonic colours (`--an`, `--cool`, `--comp`, `--tri1`, `--tri2`) are worked out from `--a1` by the scripts.
+`--a1` is the theme colour (Start, the progress bar, focus rings), `--a2` the gradient's middle, `--a3` its end, `--ink`
+the text on it. A skin can set any other token by its path: Aurora thickens its glass (`tint.gta` / `gtk` / `gtb`),
+Matrix sets its fonts (`skin.font` / `skin.title`), and the plain skins Graphite and Clay set the whole surface ladder
+(`role.bg`, `role.panel`, the `ui` group). The harmonic colours (`--an`, `--cool`, `--comp`, `--tri1`, `--tri2`) are
+worked out from `--a1` by the scripts.
+
+Its effects, in `SKINS` (`app/skins.js`): a background (`stars`, `aurora`, `code` or `none`), a cover over a young
+picture (`bands`, `camera`, `crt` or `none` — `none` covers only in private mode, with a flat fill), the ambient glow and
+the finish (`glow`, `finish`: true or false). An effect runs only if the skin has it and the matching setting is on.
 
 **Adding a skin:**
-1. Copy a file in `app/styles/themes/` to `<name>.css` and set its colours.
-2. Link it in `index.html`, beside the other skin files.
-3. Add it to the Theme menu in `index.html` (`<select id="sTheme">`, kept A–Z).
-4. Give it effects in `app/skins.js` (`SKINS`): a background (`stars`, `aurora` or `code`) and a cover over a young
-   picture (`bands`, `camera` or `crt`).
+1. Copy a file in `app/tokens/themes/` to `<name>.tokens.json`, set its values, run `npm run tokens`.
+2. Add it to the Theme menu in `index.html` (`<select id="sTheme">`, kept A–Z).
+3. Give it effects in `app/skins.js` (`SKINS`).
+4. Rules only it has: `app/styles/themes/<name>.css`, linked in `index.html` after `themes.css`.
 
 Renaming or retiring a skin: add the old name to `RENAMED` in `app/skins.js`, so a saved choice moves to the nearest
 skin.

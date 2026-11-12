@@ -40,7 +40,7 @@ export async function pageTour(k, t) {
   await k.ev(`(openViewer(lastDone()),1)`);
   await k.sleep(800);
   await k.ev(`(closeViewer(),1)`);
-  for (const s of ["aurora", "embers", "matrix", "starscape"]) {
+  for (const s of ["aurora", "clay", "graphite", "matrix", "starscape"]) {
     await k.theme(s);
     await k.sleep(900);
   }

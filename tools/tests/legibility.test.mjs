@@ -8,7 +8,9 @@
 // The backgrounds stand still under Reduce Motion (Kiln reads it at start: set, then reload).
 
 const NEED = { text: 4.5, large: 3, icon: 3 };
-const THEMES = process.env.LEG_THEMES ? process.env.LEG_THEMES.split(",") : ["starscape", "aurora", "embers", "matrix"];
+const THEMES = process.env.LEG_THEMES
+  ? process.env.LEG_THEMES.split(",")
+  : ["starscape", "aurora", "matrix", "graphite", "clay"];
 
 /* the page side: what's shown as text or as an icon, and the contrast of each from the two captures */
 const PAGE = `(() => {

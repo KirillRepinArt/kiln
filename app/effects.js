@@ -75,6 +75,7 @@ export function status() {
   const src =
     S.view === "gen" &&
     gm !== "off" &&
+    skin().glow &&
     !(j && skin().cover === "camera") &&
     !$("frame").classList.contains("held") &&
     (j || (gm === "always" && shownDone()))
@@ -208,6 +209,13 @@ function softCut(ctx, boxes, grow, soft) {
   ctx.restore();
 }
 
+/** private mode's cover on a plain preset: the theme's --stage colour at the cover's strength @param {number} k 0–1 */
+function coverFlat(k) {
+  const c = getComputedStyle(document.documentElement).getPropertyValue("--stage").trim() || "#000";
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c);
+  return m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},${k})` : c;
+}
+
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initEffects() {
   /* app background, set by the skin: starfield (three parallax layers, gentle twinkle, a rare shooting star),
@@ -306,7 +314,7 @@ export function initEffects() {
           return;
         }
         const dim = bg === "aurora" ? 0.55 : 1;
-        if (bg !== "aurora")
+        if (bg === "stars")
           for (const st of stars) {
             const v = [0.002, 0.0045, 0.009][st.l] * (reduce ? 0 : 1);
             st.x += v * dt;
@@ -471,7 +479,8 @@ export function initEffects() {
     }
     sprites();
     window.emberBurst = function () {
-      if (reduce || ((S.set || {}).embers || "on") === "off" || $("frame").classList.contains("held")) return;
+      if (!skin().finish || reduce || ((S.set || {}).embers || "on") === "off" || $("frame").classList.contains("held"))
+        return;
       if (skin().cover === "crt") {
         sweepT = performance.now();
         window._bgWave = sweepT;
@@ -731,7 +740,7 @@ export function initEffects() {
       } // a new job: the screen powers on / a new exposure starts
       let target = 0,
         tN = null;
-      if (j && picMode() === "live" && S.view === "gen" && mode !== "off" && !reduce && !fast) {
+      if (j && picMode() === "live" && S.view === "gen" && mode !== "off" && cover0 !== "none" && !reduce && !fast) {
         const pr = Math.max(0, Math.min(1, jobProgress(j).p || 0));
         // full while step 1 renders, most of it gone during step 2, a little left on step 3, clear for the last step
         const K =
@@ -768,6 +777,7 @@ export function initEffects() {
         Date.now() < (window._cpv || 0) &&
         S.view === "gen" &&
         mode !== "off" &&
+        cover0 !== "none" &&
         !reduce &&
         $("frame").classList.contains("has")
       )
@@ -810,7 +820,9 @@ export function initEffects() {
             ? `rgba(0,9,4,${0.88 * str})`
             : cover === "camera"
               ? `rgba(2,5,9,${0.8 * nstr})`
-              : `rgba(8,8,12,${0.3 * str})`;
+              : cover === "none"
+                ? coverFlat(str) // private mode on a plain preset: a flat fill in the surface colour
+                : `rgba(8,8,12,${0.3 * str})`;
         v.fillRect(0, 0, W, H);
         if (cover === "crt") {
           const pr = j ? Math.max(0, Math.min(1, jobProgress(j).p || 0)) : 0.55;
@@ -853,8 +865,7 @@ export function initEffects() {
             v.fillStyle = g;
             v.fillRect(0, 0, W, H);
           }
-        const want =
-          cover === "crt" || cover === "camera" ? 0 : Math.round((230 * str * (W * H)) / (700 * 900 * d * d));
+        const want = cover === "bands" ? Math.round((230 * str * (W * H)) / (700 * 900 * d * d)) : 0;
         while (sparks.length < want)
           sparks.push({
             x: Math.random() * (W + 40 * d) - 20 * d,

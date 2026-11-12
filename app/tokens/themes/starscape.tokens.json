@@ -1,0 +1,38 @@
+{
+  "$description": "Starscape: a slow starfield and drifting light bands; warm orange through pink to a cold cyan",
+  "theme": {
+    "a1": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 0.541176, 0.0],
+        "hex": "#ff8a00"
+      }
+    },
+    "a2": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 0.368627, 0.541176],
+        "hex": "#ff5e8a"
+      }
+    },
+    "a3": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.247059, 0.878431, 0.941176],
+        "hex": "#3fe0f0"
+      }
+    },
+    "ink": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.078431, 0.043137, 0.0],
+        "hex": "#140b00"
+      },
+      "$description": "text on the theme colour"
+    }
+  }
+}

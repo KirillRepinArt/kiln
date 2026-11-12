@@ -1,0 +1,362 @@
+{
+  "$description": "Graphite: contrasty black, calm — every feature, none of the effects (the colours sampled from a chat app's dark mode, DD-2026-11-12-10). The first-run default, with Solid",
+  "theme": {
+    "a1": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.172549, 0.403922, 0.772549],
+        "hex": "#2c67c5"
+      }
+    },
+    "a2": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.172549, 0.403922, 0.772549],
+        "hex": "#2c67c5"
+      }
+    },
+    "a3": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.172549, 0.403922, 0.772549],
+        "hex": "#2c67c5"
+      }
+    },
+    "ink": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 1.0, 1.0],
+        "hex": "#ffffff"
+      },
+      "$description": "text on the accent"
+    }
+  },
+  "role": {
+    "tw": {
+      "$value": "0%",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      }
+    },
+    "bg": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0, 0.0, 0.0],
+        "hex": "#000000"
+      }
+    },
+    "text": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.929412, 0.929412, 0.929412],
+        "hex": "#ededed"
+      }
+    },
+    "muted": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.686275, 0.686275, 0.686275],
+        "hex": "#afafaf"
+      }
+    },
+    "panel": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.078431, 0.078431, 0.078431],
+        "hex": "#141414"
+      }
+    },
+    "raised": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.168627, 0.168627, 0.168627],
+        "hex": "#2b2b2b"
+      }
+    },
+    "raised2": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.188235, 0.188235, 0.188235],
+        "hex": "#303030"
+      }
+    },
+    "line": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.168627, 0.168627, 0.168627],
+        "hex": "#2b2b2b"
+      }
+    },
+    "row": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.105882, 0.105882, 0.105882],
+        "hex": "#1b1b1b"
+      }
+    }
+  },
+  "ui": {
+    "stage": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.039216, 0.039216, 0.039216],
+        "hex": "#0a0a0a"
+      }
+    },
+    "preview-bg": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.05098, 0.05098, 0.05098],
+        "hex": "#0d0d0d"
+      }
+    },
+    "well": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.078431, 0.078431, 0.078431],
+        "hex": "#141414"
+      }
+    },
+    "track": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.129412, 0.129412, 0.129412],
+        "hex": "#212121"
+      }
+    },
+    "field": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.105882, 0.105882, 0.105882],
+        "hex": "#1b1b1b"
+      }
+    },
+    "field-hover": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.129412, 0.129412, 0.129412],
+        "hex": "#212121"
+      }
+    },
+    "float": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.168627, 0.168627, 0.168627],
+        "hex": "#2b2b2b"
+      }
+    },
+    "tip-bg": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.188235, 0.188235, 0.188235],
+        "hex": "#303030"
+      }
+    },
+    "row-hover": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.129412, 0.129412, 0.129412],
+        "hex": "#212121"
+      }
+    },
+    "row-on-hover": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.168627, 0.168627, 0.168627],
+        "hex": "#2b2b2b"
+      }
+    },
+    "placeholder": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.105882, 0.105882, 0.105882],
+        "hex": "#1b1b1b"
+      }
+    },
+    "syntax-bg": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.168627, 0.168627, 0.168627],
+        "hex": "#2b2b2b"
+      }
+    },
+    "selected": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.188235, 0.188235, 0.188235],
+        "hex": "#303030"
+      }
+    },
+    "hover": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.254902, 0.254902, 0.254902],
+        "hex": "#414141"
+      }
+    },
+    "seg-thumb": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.188235, 0.188235, 0.188235],
+        "hex": "#303030"
+      }
+    },
+    "hover-strong": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.254902, 0.254902, 0.254902],
+        "hex": "#414141"
+      }
+    },
+    "switch-off": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.254902, 0.254902, 0.254902],
+        "hex": "#414141"
+      }
+    },
+    "knob": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.929412, 0.929412, 0.929412],
+        "hex": "#ededed"
+      }
+    },
+    "inverse": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.929412, 0.929412, 0.929412],
+        "hex": "#ededed"
+      }
+    },
+    "on-inverse": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.05098, 0.05098, 0.05098],
+        "hex": "#0d0d0d"
+      }
+    },
+    "scroll-thumb": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.188235, 0.188235, 0.188235],
+        "hex": "#303030"
+      }
+    },
+    "scroll-thumb-hover": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.254902, 0.254902, 0.254902],
+        "hex": "#414141"
+      }
+    },
+    "scroll-thumb-active": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.294118, 0.294118, 0.294118],
+        "hex": "#4b4b4b"
+      }
+    },
+    "line-strong": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.227451, 0.227451, 0.227451],
+        "hex": "#3a3a3a"
+      }
+    },
+    "box-line": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.168627, 0.168627, 0.168627],
+        "hex": "#2b2b2b"
+      }
+    },
+    "seg-line": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.168627, 0.168627, 0.168627],
+        "hex": "#2b2b2b"
+      }
+    },
+    "rule": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.168627, 0.168627, 0.168627],
+        "hex": "#2b2b2b"
+      }
+    },
+    "tag-line": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.254902, 0.254902, 0.254902],
+        "hex": "#414141"
+      }
+    },
+    "field-line-strong": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.294118, 0.294118, 0.294118],
+        "hex": "#4b4b4b"
+      }
+    },
+    "rim": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.105882, 0.105882, 0.105882],
+        "hex": "#1b1b1b"
+      }
+    },
+    "rim-panel": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.168627, 0.168627, 0.168627],
+        "hex": "#2b2b2b"
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "$description": "Embers (hidden: a near-duplicate of Starscape until it gets its own effect — sparks rising from a kiln's glow): fire, red through orange to a pale gold",
+  "theme": {
+    "a1": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.909804, 0.211765, 0.109804],
+        "hex": "#e8361c"
+      }
+    },
+    "a2": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 0.541176, 0.0],
+        "hex": "#ff8a00"
+      }
+    },
+    "a3": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [1.0, 0.819608, 0.4],
+        "hex": "#ffd166"
+      }
+    },
+    "ink": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.101961, 0.019608, 0.0],
+        "hex": "#1a0500"
+      },
+      "$description": "text on the theme colour"
+    }
+  }
+}

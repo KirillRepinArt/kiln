@@ -1,0 +1,64 @@
+{
+  "$description": "Aurora: northern lights — green, a pale turquoise, violet",
+  "theme": {
+    "a1": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.235294, 0.94902, 0.623529],
+        "hex": "#3cf29f"
+      }
+    },
+    "a2": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.52549, 0.941176, 0.866667],
+        "hex": "#86f0dd"
+      }
+    },
+    "a3": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.768627, 0.419608, 1.0],
+        "hex": "#c46bff"
+      }
+    },
+    "ink": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.011765, 0.078431, 0.054902],
+        "hex": "#03140e"
+      },
+      "$description": "text on the theme colour"
+    }
+  },
+  "role": {
+    "tw": {
+      "$value": "3%",
+      "$extensions": {
+        "dev.kiln": {
+          "css": true
+        }
+      },
+      "$description": "its green is bright: the greys lean less toward it, or the panels lift under the text"
+    }
+  },
+  "tint": {
+    "$description": "its sky is bright, so its glass is thicker and gathers less light than the other skins'",
+    "gta": {
+      "$type": "number",
+      "$value": 0.6
+    },
+    "gtk": {
+      "$type": "number",
+      "$value": 0.64
+    },
+    "gtb": {
+      "$type": "number",
+      "$value": 1.1
+    }
+  }
+}

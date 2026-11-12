@@ -219,8 +219,8 @@
     opacity var(--dur) var(--ease),
     transform var(--dur) var(--ease),
     visibility 0s linear var(--dur);
-  background: var(--grey-27);
-  border: 1px solid var(--grey-35);
+  background: var(--float);
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-16);
   padding: var(--space-2);
   min-width: 160px;
@@ -291,7 +291,7 @@
 .pop input[type="number"] {
   width: 64px;
   background: var(--raised);
-  border: 1px solid var(--grey-35);
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-10);
   padding: var(--space-2) var(--space-2);
 }
@@ -311,7 +311,7 @@
 }
 .qb.on {
   background: var(--white);
-  color: var(--grey-18);
+  color: var(--on-inverse);
   font-weight: 600;
 }
 .rgrid {
@@ -338,7 +338,7 @@
   border-color: var(--white-85);
 }
 .rt .shape {
-  border: 2px solid var(--grey-64);
+  border: 2px solid var(--shape-line);
   border-radius: var(--r-4);
 }
 .rt.on .shape {

@@ -13,7 +13,7 @@
 } /* no line of its own: the ring is the plate's rim (glass.css .rim) — drawn here it would sit in a switch's fading
      contents */
 .frame.has {
-  background: var(--grey-13);
+  background: var(--stage);
 }
 /* its place and size are moved by one owner (framebox.js, on the driver: rearrange.js) — no CSS transition. The canvas
    is drawn at the box's final size, so it never stretches */
@@ -374,7 +374,7 @@ body.norow .prog {
   position: relative;
   height: 10px;
   border-radius: var(--r-pill);
-  background: var(--grey-23);
+  background: var(--track);
   overflow: hidden;
 }
 .prog:not(.run) .track,
@@ -474,7 +474,7 @@ body[data-pic="still"] .prog.run .meta {
   height: 11px;
 }
 .prog .stop:hover {
-  background: var(--grey-39);
+  background: var(--hover-strong);
 }
 .prog.run .stop {
   display: inline-flex;

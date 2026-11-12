@@ -196,6 +196,11 @@ async function launch(
       features: [{ name: "prefers-reduced-motion", value: "no-preference" }],
     });
     await send("Emulation.setLocaleOverride", { locale: "en-GB" });
+    // the suite's first run: Starscape with glass, as it was written under (the app's own first run is Graphite, Solid —
+    // DD-2026-11-12-13); a test that saves its own state keeps it
+    await send("Page.addScriptToEvaluateOnNewDocument", {
+      source: `try{if(!localStorage.getItem("kiln_state"))localStorage.setItem("kiln_state",JSON.stringify({S:{theme:"starscape",set:{glass:"on"}}}))}catch(e){}`,
+    });
     // a test's own page-side script, run before Kiln's (the ownership tracer: tools/tests/trace.mjs)
     if (inject) await send("Page.addScriptToEvaluateOnNewDocument", { source: inject });
     await send("Page.navigate", { url });

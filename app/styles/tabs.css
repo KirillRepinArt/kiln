@@ -27,7 +27,7 @@
   padding: var(--space-1);
   border-radius: var(--r-pill);
   background: var(--panel);
-  border: 1px solid var(--grey-27);
+  border: 1px solid var(--seg-line);
 }
 .seg .thumb {
   position: absolute;
@@ -36,7 +36,7 @@
   left: 0;
   width: 0;
   border-radius: var(--r-pill);
-  background: var(--grey-35);
+  background: var(--seg-thumb);
   box-shadow:
     inset 0 1px 0 var(--white-8),
     0 1px 3px var(--black-40);
@@ -126,10 +126,10 @@ body.jobrun .tab .trw {
   mask-composite: add, intersect;
 }
 .tab:not(.on) .tring {
-  background: var(--grey-66);
+  background: var(--ring-idle);
 }
 .tab.on .tring {
-  background: var(--grey-74);
+  background: var(--ring-on);
 } /* a step darker than the label, a touch brighter on the selected pill */
 .gear {
   margin-left: var(--space-1);
@@ -254,8 +254,8 @@ body.jobrun .tab .trw {
 } /* the panel's wash of the picture's colours */
 /* the Generating ring: clearly darker than the letters in front of it */
 .tab:not(.on) .tring {
-  background: var(--grey-66);
+  background: var(--ring-idle);
 }
 .tab.on .tring {
-  background: var(--grey-74);
+  background: var(--ring-on);
 } /* the lighter greys: the knockout keeps them off the letters */

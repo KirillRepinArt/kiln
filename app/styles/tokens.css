@@ -167,14 +167,12 @@
   --t-150: 150ms;
   --t-180: 180ms;
   --t-200: 200ms;
-  --t-220: 220ms;
   --t-250: 250ms;
   --t-260: 260ms;
   --t-280: 280ms;
   --t-300: 300ms;
   --t-320: 320ms;
   --t-350: 350ms;
-  --t-380: 380ms;
   --t-400: 400ms;
   --t-450: 450ms;
   --t-1000: 1000ms;
@@ -338,8 +336,6 @@
   --ease-both: var(--e-emph); /* a lone crop or reveal, a pure move: eased at both ends */
   --ease-content: linear; /* contents fading (a picture, a view's contents): even, so two fades cross without a dip */
   --ease-leave: ease-in; /* a view leaving a switch */
-  --ease-reorder-row: var(--e-standard); /* a Queue row moving to its new place */
-  --ease-reorder-chip: var(--ease); /* a LoRA chip moving to its new place */
   --ease-state: ease; /* a control or surface changing state (hover, focus, selection): its tint, border, shadow */
   --ease-appear: ease; /* a control appearing near the pointer, or going */
   --ease-press: ease; /* a press's give */
@@ -351,11 +347,9 @@
   --ease-arrive: var(--ease); /* a new row arriving in a list */
   --ease-develop: var(--ease); /* a finished picture developing in */
   --ease-ambient: var(--ease); /* a background layer fading in or out */
-  --ease-hint: ease; /* the outline hint (where a pane can be resized) showing and going */
+  --ease-hint: var(--ease); /* the outline hint (where a pane can be resized) showing and going */
   --ease-loop: linear; /* an endless animation: even, so it never visibly restarts */
   --ease-flash: ease; /* a row flashing to say: here */
-  --dur-reorder-row: var(--t-380); /* a Queue row moving to its new place */
-  --dur-reorder-chip: var(--t-200); /* a LoRA chip moving to its new place */
   --dur-jump: var(--t-150); /* the layout jumping on purpose (no plan): a short fade */
   --dur-state: var(
     --t-150

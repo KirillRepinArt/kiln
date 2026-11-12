@@ -9,14 +9,14 @@
   visibility: hidden;
   opacity: 0;
   transition:
-    opacity var(--t-220) var(--ease),
-    visibility 0s linear var(--t-220);
+    opacity var(--dur-pop) var(--ease-pop),
+    visibility 0s linear var(--dur-pop);
 }
 .modal.show {
   visibility: visible;
   opacity: 1;
   transition:
-    opacity var(--t-220) var(--ease),
+    opacity var(--dur-pop) var(--ease-pop),
     visibility 0s;
 }
 /* a fixed header (✕ where it sits elsewhere in Kiln, the title, icon actions); only the content scrolls */
@@ -33,7 +33,7 @@
 }
 .modal .mcard {
   transform: scale(0.97);
-  transition: transform var(--t-220) var(--ease);
+  transition: transform var(--dur-pop) var(--ease-pop);
 }
 .modal.show .mcard {
   transform: none;

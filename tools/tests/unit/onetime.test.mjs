@@ -52,13 +52,6 @@ test("every token a script reads exists in tokens.css", () => {
 const MERGES = [
   "controls.css: color var(--dur)", // .pill hover tint: 200 vs state 150
   "controls.css: background var(--dur)", // .pill
-  "dialogs.css: opacity var(--t-220) var(--ease)", // .modal: 220 vs pop 200 (×2)
-  "dialogs.css: opacity var(--t-220) var(--ease)",
-  "dialogs.css: transform var(--t-220) var(--ease)", // .modal .mcard
-  "dialogs.css: linear var(--t-220)", // .modal's visibility delay follows its fade
-  "glass.css: linear var(--t-220)",
-  "glass.css: background-color var(--t-220) var(--ease)", // body.glass .modal (×2)
-  "glass.css: background-color var(--t-220) var(--ease)",
   "glass.css: opacity var(--t-150) var(--ease)", // .droptile::after: --ease vs appear's ease (×2)
   "glass.css: opacity var(--t-150) var(--ease)",
   "loras.css: background var(--dur)", // .li hover tint: 200 vs state 150

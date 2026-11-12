@@ -235,13 +235,13 @@ body.glass .modal {
   opacity: 1;
   background: transparent;
   transition:
-    background-color var(--t-220) var(--ease),
-    visibility 0s linear var(--t-220);
+    background-color var(--dur-pop) var(--ease-pop),
+    visibility 0s linear var(--dur-pop);
 }
 body.glass .modal.show {
   background: var(--black-55);
   transition:
-    background-color var(--t-220) var(--ease),
+    background-color var(--dur-pop) var(--ease-pop),
     visibility 0s;
 }
 body.glass .modal:not(.show) {

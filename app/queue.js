@@ -48,7 +48,7 @@ export function renderQueue() {
     q.style.transition = "none";
     q.style.transform = `translateY(${d}px)`;
     requestAnimationFrame(() => {
-      q.style.transition = "transform var(--dur-reorder-row) var(--ease-reorder-row)";
+      q.style.transition = "transform var(--lay-t) var(--lay-e)";
       q.style.transform = "";
     });
   });

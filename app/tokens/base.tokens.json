@@ -950,13 +950,6 @@
         "unit": "ms"
       }
     },
-    "220": {
-      "$type": "duration",
-      "$value": {
-        "value": 220,
-        "unit": "ms"
-      }
-    },
     "250": {
       "$type": "duration",
       "$value": {
@@ -996,13 +989,6 @@
       "$type": "duration",
       "$value": {
         "value": 350,
-        "unit": "ms"
-      }
-    },
-    "380": {
-      "$type": "duration",
-      "$value": {
-        "value": 380,
         "unit": "ms"
       }
     },
@@ -2088,16 +2074,6 @@
         }
       }
     },
-    "reorder-row": {
-      "$type": "cubicBezier",
-      "$value": "{e.standard}",
-      "$description": "a Queue row moving to its new place"
-    },
-    "reorder-chip": {
-      "$type": "cubicBezier",
-      "$value": "{role.ease}",
-      "$description": "a LoRA chip moving to its new place"
-    },
     "state": {
       "$type": "cubicBezier",
       "$value": "ease",
@@ -2180,13 +2156,8 @@
     },
     "hint": {
       "$type": "cubicBezier",
-      "$value": "ease",
-      "$description": "the outline hint (where a pane can be resized) showing and going",
-      "$extensions": {
-        "dev.kiln": {
-          "css": "ease"
-        }
-      }
+      "$value": "{role.ease}",
+      "$description": "the outline hint (where a pane can be resized) showing and going"
     },
     "loop": {
       "$type": "cubicBezier",
@@ -2215,16 +2186,6 @@
         "prefix": "dur",
         "above": "DURATIONS BY ROLE (--dur is the fade's)"
       }
-    },
-    "reorder-row": {
-      "$type": "duration",
-      "$value": "{t.380}",
-      "$description": "a Queue row moving to its new place"
-    },
-    "reorder-chip": {
-      "$type": "duration",
-      "$value": "{t.200}",
-      "$description": "a LoRA chip moving to its new place"
     },
     "jump": {
       "$type": "duration",

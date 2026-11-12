@@ -903,16 +903,23 @@
         "prefix": "t"
       }
     },
-    "100": {
+    "34": {
       "$type": "duration",
       "$value": {
-        "value": 100,
+        "value": 34,
         "unit": "ms"
       },
       "$extensions": {
         "dev.kiln": {
-          "above": "MOTION — durations (beside --dur, --lay-t, --sw-t) and the curves, by what they're for"
+          "above": "MOTION — the duration scale (code names the roles below: --morph-*, --ease-*, --dur-*, --lay-*) and the curves"
         }
+      }
+    },
+    "80": {
+      "$type": "duration",
+      "$value": {
+        "value": 80,
+        "unit": "ms"
       }
     },
     "120": {
@@ -926,13 +933,6 @@
       "$type": "duration",
       "$value": {
         "value": 150,
-        "unit": "ms"
-      }
-    },
-    "170": {
-      "$type": "duration",
-      "$value": {
-        "value": 170,
         "unit": "ms"
       }
     },
@@ -999,6 +999,13 @@
         "unit": "ms"
       }
     },
+    "380": {
+      "$type": "duration",
+      "$value": {
+        "value": 380,
+        "unit": "ms"
+      }
+    },
     "400": {
       "$type": "duration",
       "$value": {
@@ -1010,20 +1017,6 @@
       "$type": "duration",
       "$value": {
         "value": 450,
-        "unit": "ms"
-      }
-    },
-    "550": {
-      "$type": "duration",
-      "$value": {
-        "value": 550,
-        "unit": "ms"
-      }
-    },
-    "650": {
-      "$type": "duration",
-      "$value": {
-        "value": 650,
         "unit": "ms"
       }
     },
@@ -1088,6 +1081,16 @@
       "$type": "cubicBezier",
       "$value": [0.2, 0, 0, 1],
       "$description": "Material 3's emphasized: big, important moves"
+    },
+    "emph-accel": {
+      "$type": "cubicBezier",
+      "$value": [0.3, 0, 0.8, 0.15],
+      "$description": "Material 3's emphasized accelerate: into a change"
+    },
+    "emph-decel": {
+      "$type": "cubicBezier",
+      "$value": [0.05, 0.7, 0.1, 1],
+      "$description": "Material 3's emphasized decelerate: out of a change, a long soft settle"
     },
     "quick": {
       "$type": "cubicBezier",
@@ -1863,30 +1866,131 @@
     },
     "e": {
       "$type": "cubicBezier",
-      "$value": [0.05, 0.7, 0.1, 1]
+      "$value": "{e.emph-decel}"
     }
   },
-  "sw": {
+  "morph": {
     "$extensions": {
       "dev.kiln": {
-        "prefix": "sw"
+        "prefix": "morph",
+        "above": "THE CROP-AND-REVEAL — its steps (layoutmath.js MORPH reads them): what shrinks crops, the contents swap, what grows reveals"
       }
     },
-    "t": {
+    "crop": {
       "$type": "duration",
-      "$value": {
-        "value": 440,
-        "unit": "ms"
-      },
+      "$value": "{t.180}",
+      "$description": "the crop, accelerating into the swap"
+    },
+    "swap": {
+      "$type": "duration",
+      "$value": "{t.80}",
+      "$description": "the cross-fade at the overlap (a crop or a reveal around it carries the change)"
+    },
+    "alone": {
+      "$type": "duration",
+      "$value": "{t.200}",
+      "$description": "the cross-fade when nothing changes shape: on its own, 80 ms read as a cut"
+    },
+    "reveal": {
+      "$type": "duration",
+      "$value": "{t.280}",
+      "$description": "the reveal, decelerating out of the swap"
+    },
+    "one": {
+      "$type": "duration",
+      "$value": "{t.320}",
+      "$description": "only a crop, or only a reveal: one move, eased at both ends"
+    },
+    "fade": {
+      "$type": "duration",
+      "$value": "{t.200}",
+      "$description": "a view's contents fading out or in, in every switch: one speed"
+    },
+    "out": {
+      "$type": "duration",
+      "$value": "{t.150}",
+      "$description": "a glued element leaving its old relation: gone early (Material fade-through's outgoing share)"
+    },
+    "gone": {
+      "$type": "duration",
+      "$value": "{t.34}",
+      "$description": "~2 frames fully gone while a relation changes: never seen jumping"
+    }
+  },
+  "ease": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "ease",
+        "above": "CURVES BY ROLE — what a motion is doing, not its numbers"
+      }
+    },
+    "crop": {
+      "$type": "cubicBezier",
+      "$value": "{e.emph-accel}",
+      "$description": "into the swap"
+    },
+    "reveal": {
+      "$type": "cubicBezier",
+      "$value": "{e.emph-decel}",
+      "$description": "out of the swap"
+    },
+    "both": {
+      "$type": "cubicBezier",
+      "$value": "{e.emph}",
+      "$description": "a lone crop or reveal, a pure move: eased at both ends"
+    },
+    "content": {
+      "$type": "cubicBezier",
+      "$value": "linear",
+      "$description": "contents fading (a picture, a view's contents): even, so two fades cross without a dip",
       "$extensions": {
         "dev.kiln": {
-          "above": "the layout switch (Left / Right / Vertical): the picture morphs on this"
+          "css": "linear"
         }
       }
     },
-    "e": {
+    "leave": {
       "$type": "cubicBezier",
-      "$value": [0.3, 0, 0, 1]
+      "$value": "ease-in",
+      "$description": "a view leaving a switch",
+      "$extensions": {
+        "dev.kiln": {
+          "css": "ease-in"
+        }
+      }
+    },
+    "reorder-row": {
+      "$type": "cubicBezier",
+      "$value": "{e.standard}",
+      "$description": "a Queue row moving to its new place"
+    },
+    "reorder-chip": {
+      "$type": "cubicBezier",
+      "$value": "{role.ease}",
+      "$description": "a LoRA chip moving to its new place"
+    }
+  },
+  "dur": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "dur",
+        "above": "DURATIONS BY ROLE (--dur is the fade's)"
+      }
+    },
+    "reorder-row": {
+      "$type": "duration",
+      "$value": "{t.380}",
+      "$description": "a Queue row moving to its new place"
+    },
+    "reorder-chip": {
+      "$type": "duration",
+      "$value": "{t.200}",
+      "$description": "a LoRA chip moving to its new place"
+    },
+    "jump": {
+      "$type": "duration",
+      "$value": "{t.150}",
+      "$description": "the layout jumping on purpose (no plan): a short fade"
     }
   },
   "z": {

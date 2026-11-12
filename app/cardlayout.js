@@ -399,9 +399,9 @@ export function initCardlayout() {
               paneW: paneSize("box", "side").w ?? layDef().pw, // the width it lands at beside its partner
               area: SPACE.area,
               pane: SPACE.pane,
-              cover: tok("--drop-cover", 0.25),
-              roomMin: tok("--drop-room-min", 160),
-              hitMin: tok("--drop-hit-min", 96),
+              cover: tok("--drop-cover"),
+              roomMin: tok("--drop-room-min"),
+              hitMin: tok("--drop-hit-min"),
             },
           );
         m.tiles = d.tiles;
@@ -424,7 +424,7 @@ export function initCardlayout() {
         map.classList.add("show");
         /* the box condenses to the token on the driver (a change the system makes — written at once, it jumped), the
            grabbed point kept under the hand in each of its frames */
-        m.s = tok("--drop-token", 0.35);
+        m.s = tok("--drop-token");
         rearrange("liftScale", { l: liftScale(), t: 0, w: 0, h: 0 }, { l: m.s, t: 0, w: 0, h: 0 }, b => {
           liftToken(b.l);
           const v = seenLift(m);

@@ -30,7 +30,7 @@ import { initTooltips } from "./tooltips.js";
 import { initViewer } from "./viewer.js";
 
 if (new URLSearchParams(location.search).has("test")) installTestBridge(); // the e2e tests' way in
-initTokens(); // the spacing the layout maths uses, from the stylesheet
+initTokens(); // the scripts' token values, from the stylesheet (tokens.js)
 initState();
 migrateLayoutPrefs(); // saved layouts of older versions → today's
 initPills();

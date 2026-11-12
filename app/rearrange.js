@@ -10,6 +10,7 @@ import { MORPH, fades, shapeBox, shapePlan } from "./layoutmath.js";
 import { snaps } from "./framebox.js";
 import { plateSync } from "./plate.js";
 import { promptFollow } from "./layout.js";
+import { easing, ms } from "./tokens.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number }} Box */
 /** @typedef {(b: Box) => void} Write */
@@ -143,7 +144,7 @@ function retarget(key, to, write) {
  * @param {boolean} on @param {() => void} [done] when its fade is over or cancelled (a leaving copy: leave.js drop) */
 export function rearrangeFade(el, on, done) {
   if (snaps()) {
-    fadeNow(el, on, 0, 150, "linear", performance.now(), done); // the layout jumps on purpose: a short fade, no plan
+    fadeNow(el, on, 0, ms("--dur-jump"), performance.now(), done); // the layout jumps on purpose: a short fade, no plan
     return;
   }
   fading.set(el, on);
@@ -153,10 +154,15 @@ export function rearrangeFade(el, on, done) {
     queueMicrotask(start);
   }
 }
-/** @param {HTMLElement} el @param {boolean} on @param {number} delay @param {number} ms @param {string} easing
- * @param {number} t0 @param {() => void} [done] */
-function fadeNow(el, on, delay, ms, easing, t0, done) {
-  const timing = { delay, duration: ms, easing, fill: /** @type {FillMode} */ ("backwards") }; // its first keyframe holds until its start
+/** a content fade on the driver's clock @param {HTMLElement} el @param {boolean} on @param {number} delay
+ * @param {number} length its ms @param {number} t0 @param {() => void} [done] */
+function fadeNow(el, on, delay, length, t0, done) {
+  const timing = {
+    delay,
+    duration: length,
+    easing: easing("--ease-content"),
+    fill: /** @type {FillMode} */ ("backwards"),
+  }; // its first keyframe holds until its start
   /* by its parts (fade.js): the status row holds glass (DD-2026-11-08-8); shown throughout the fade on the row itself
      (visibility is no backdrop root). From what is on screen: a second fade carries on from the first's value; fresh, it
      comes from hidden or leaves from shown */
@@ -199,8 +205,7 @@ function start() {
     plan = shapePlan(moves.map(([, m]) => ({ o: m.from, n: m.to }))), // nothing moving: a plain cross-fade's
     t0 = performance.now(),
     f = fades(plan);
-  for (const [el, on] of fading)
-    fadeNow(el, on, on ? f.in.delay : f.out.delay, MORPH.fade, "linear", t0, fadeDone.get(el));
+  for (const [el, on] of fading) fadeNow(el, on, on ? f.in.delay : f.out.delay, MORPH.fade, t0, fadeDone.get(el));
   fading.clear();
   fadeDone.clear();
   if (!moves.length) {

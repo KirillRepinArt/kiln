@@ -260,7 +260,7 @@ export function initChips() {
         x.style.transition = "none";
         x.style.transform = `translate(${dx}px,${dy}px)`;
         requestAnimationFrame(() => {
-          x.style.transition = "transform .2s var(--ease)";
+          x.style.transition = "transform var(--dur-reorder-chip) var(--ease-reorder-chip)";
           x.style.transform = "";
         });
       }

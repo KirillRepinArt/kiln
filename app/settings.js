@@ -10,6 +10,7 @@ import { plateSync } from "./plate.js";
 import { extraKey, harmonics, skinExtra, skinName } from "./skins.js";
 import { S, save } from "./state.js";
 import { goView, moveThumb } from "./tabs.js";
+import { initTokens } from "./tokens.js";
 
 /* ======================= settings / themes ======================= */
 /* a skin's colours live in its token file (app/styles/themes/): switching sets data-skin on <html>, then the harmonic
@@ -17,6 +18,7 @@ import { goView, moveThumb } from "./tabs.js";
 export function applyTheme() {
   const root = document.documentElement;
   root.dataset.skin = skinName(S.theme);
+  initTokens(); // a theme may set its own values: the scripts read them fresh
   const hm = harmonics(getComputedStyle(root).getPropertyValue("--a1").trim());
   window.HARM = hm;
   for (const k in hm) root.style.setProperty("--" + k, /** @type {Record<string, string>} */ (hm)[k]);

@@ -7,6 +7,7 @@ import { overlayRelease, overlayShows, pictureIn } from "./pictures.js";
 import { frameTravel, setPictureMorph } from "./framebox.js";
 import { flush } from "./rearrange.js";
 import { stageRect } from "./layout.js";
+import { easing } from "./tokens.js";
 
 /* a picture of another shape: the one choreography (layoutmath.js shapeSteps) — crop, swap, reveal; only the frame
    moves, both pictures at their own final size, centred. Nothing is ever empty: the box is inside the old picture
@@ -71,7 +72,12 @@ export function frameMorph(o) {
     /* the glow is its picture's: with no old picture on show it comes in with the new one — the same fade, the same
        clock (copied from the picture's opacity every frame by the effects loop, it ran a frame ahead) */
     if (fg)
-      for (const a of fade(fg, 1, { delay: A, duration: F, easing: "linear", fill: "backwards" }, { from: 0 }))
+      for (const a of fade(
+        fg,
+        1,
+        { delay: A, duration: F, easing: easing("--ease-content"), fill: "backwards" },
+        { from: 0 },
+      ))
         a.startTime = t0;
   }
   /* landed, but the old picture may still be fading off the new one (the fade outlasts a short reveal): both pictures

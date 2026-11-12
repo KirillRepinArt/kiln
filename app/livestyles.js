@@ -4,7 +4,6 @@
    styles_signature); when it changes, fresh copies of the stylesheets are loaded beside the old ones and the old ones
    go once they've arrived (no unstyled flash), then everything the scripts take from the tokens is read again. */
 import { applyTheme } from "./settings.js";
-import { initTokens } from "./tokens.js";
 
 let stylesSeen = "";
 let stylesSwapping = false;
@@ -39,8 +38,7 @@ function swapStyles(v) {
   Promise.all(fresh).then(() => {
     old.forEach(l => l.remove());
     stylesSwapping = false;
-    initTokens(); // the gaps the layout maths uses
-    applyTheme(); // the harmonic colours and the skin's fonts
+    applyTheme(); // the harmonic colours, the skin's fonts, the tokens read fresh
     dispatchEvent(new Event("resize")); // the layout, as after a window resize
     document.documentElement.dataset.stylesV = v; // for the test
   });

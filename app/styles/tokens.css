@@ -160,11 +160,11 @@
   --fs-11-5: 11.5px;
   --fs-12-5: 12.5px;
   --fs-13-5: 13.5px;
-  /* MOTION — durations (beside --dur, --lay-t, --sw-t) and the curves, by what they're for */
-  --t-100: 100ms;
+  /* MOTION — the duration scale (code names the roles below: --morph-*, --ease-*, --dur-*, --lay-*) and the curves */
+  --t-34: 34ms;
+  --t-80: 80ms;
   --t-120: 120ms;
   --t-150: 150ms;
-  --t-170: 170ms;
   --t-180: 180ms;
   --t-200: 200ms;
   --t-220: 220ms;
@@ -174,10 +174,9 @@
   --t-300: 300ms;
   --t-320: 320ms;
   --t-350: 350ms;
+  --t-380: 380ms;
   --t-400: 400ms;
   --t-450: 450ms;
-  --t-550: 550ms;
-  --t-650: 650ms;
   --t-1000: 1000ms;
   --t-1100: 1100ms;
   --t-1200: 1200ms;
@@ -187,6 +186,13 @@
   --e-decel: cubic-bezier(0, 0, 0.2, 1); /* Material's decelerate: arriving (things coming in) */
   --e-accel: cubic-bezier(0.4, 0, 1, 1); /* Material's accelerate: leaving (things going out) */
   --e-emph: cubic-bezier(0.2, 0, 0, 1); /* Material 3's emphasized: big, important moves */
+  --e-emph-accel: cubic-bezier(0.3, 0, 0.8, 0.15); /* Material 3's emphasized accelerate: into a change */
+  --e-emph-decel: cubic-bezier(
+    0.05,
+    0.7,
+    0.1,
+    1
+  ); /* Material 3's emphasized decelerate: out of a change, a long soft settle */
   --e-quick: cubic-bezier(0.2, 0.7, 0.2, 1); /* a quick start and a long soft settle */
   --e-swing: cubic-bezier(0.6, 0, 0.3, 1); /* slow out, slow in: a deliberate swing */
   --white-3: rgba(255, 255, 255, 0.03);
@@ -282,10 +288,27 @@
   /* every layout glide: Material 3's emphasized decelerate — most of the way in the first third, then a long soft
      settle. One curve for all the pieces that move together, or they'd drift apart mid-move */
   --lay-t: 0.42s;
-  --lay-e: cubic-bezier(0.05, 0.7, 0.1, 1);
-  /* the layout switch (Left / Right / Vertical): the picture morphs on this */
-  --sw-t: 440ms;
-  --sw-e: cubic-bezier(0.3, 0, 0, 1);
+  --lay-e: var(--e-emph-decel);
+  --morph-crop: var(--t-180); /* the crop, accelerating into the swap */
+  --morph-swap: var(--t-80); /* the cross-fade at the overlap (a crop or a reveal around it carries the change) */
+  --morph-alone: var(--t-200); /* the cross-fade when nothing changes shape: on its own, 80 ms read as a cut */
+  --morph-reveal: var(--t-280); /* the reveal, decelerating out of the swap */
+  --morph-one: var(--t-320); /* only a crop, or only a reveal: one move, eased at both ends */
+  --morph-fade: var(--t-200); /* a view's contents fading out or in, in every switch: one speed */
+  --morph-out: var(
+    --t-150
+  ); /* a glued element leaving its old relation: gone early (Material fade-through's outgoing share) */
+  --morph-gone: var(--t-34); /* ~2 frames fully gone while a relation changes: never seen jumping */
+  --ease-crop: var(--e-emph-accel); /* into the swap */
+  --ease-reveal: var(--e-emph-decel); /* out of the swap */
+  --ease-both: var(--e-emph); /* a lone crop or reveal, a pure move: eased at both ends */
+  --ease-content: linear; /* contents fading (a picture, a view's contents): even, so two fades cross without a dip */
+  --ease-leave: ease-in; /* a view leaving a switch */
+  --ease-reorder-row: var(--e-standard); /* a Queue row moving to its new place */
+  --ease-reorder-chip: var(--ease); /* a LoRA chip moving to its new place */
+  --dur-reorder-row: var(--t-380); /* a Queue row moving to its new place */
+  --dur-reorder-chip: var(--t-200); /* a LoRA chip moving to its new place */
+  --dur-jump: var(--t-150); /* the layout jumping on purpose (no plan): a short fade */
   /* ---------- THE LAYERS (ARCHITECTURE › paint order; DD-2026-11-11-2) ----------
      Paint order is ONE list per stacking context, bottom to top, by NAME: a z-index anywhere else is var(--z-…) (Stylelint
      rejects a number). A z-index only competes within its stacking context, so each context has a list of its own — one

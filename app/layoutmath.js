@@ -1,7 +1,7 @@
 // @ts-check
 /* Kiln · the layout's maths: plain numbers in, plain numbers out — nothing here reads or touches the page, so every
    rule can be unit-tested (tools/tests/unit/layoutmath.test.mjs). layout.js measures the page, asks these, applies. */
-import { SPACE } from "./tokens.js";
+import { SPACE, bezier, ms, tokenGen } from "./tokens.js";
 
 export const PWMIN = 360; // the prompt's least width
 
@@ -274,20 +274,45 @@ export function bez(x1, y1, x2, y2) {
    doesn't move; a step with nothing to do takes no time; each axis moves its centre with its size. Browsing pictures
    (morph.js) and a tab switch (plate.js switchGlide) both move by it */
 export const MORPH = {
-  a: 180, // the crop (accelerating into the swap)
-  s: 80, // the cross-fade at the overlap (a crop or a reveal around it carries the change)
-  alone: 200, // the cross-fade when nothing changes shape: on its own, 80 ms read as a cut
-  b: 280, // the reveal (decelerating out of it)
-  one: 320, // only a crop, or only a reveal: one move, eased at both ends
-  fade: 200, // a view's contents fading out or in, in EVERY switch: one speed
-  out: 150, // a glued element leaving its old relation: gone early in the motion (Material fade-through's outgoing share)
-  gone: 34, // ~2 frames fully gone while its relation changes: never seen jumping
+  get a() {
+    return ms("--morph-crop"); // the crop (accelerating into the swap)
+  },
+  get s() {
+    return ms("--morph-swap"); // the cross-fade at the overlap
+  },
+  get alone() {
+    return ms("--morph-alone"); // the cross-fade when nothing changes shape
+  },
+  get b() {
+    return ms("--morph-reveal"); // the reveal (decelerating out of it)
+  },
+  get one() {
+    return ms("--morph-one"); // only a crop, or only a reveal
+  },
+  get fade() {
+    return ms("--morph-fade"); // a view's contents fading out or in, in every switch
+  },
+  get out() {
+    return ms("--morph-out"); // a glued element leaving its old relation
+  },
+  get gone() {
+    return ms("--morph-gone"); // fully gone while its relation changes
+  },
 };
+/** a curve token as an easing function: made once per read of the tokens (initTokens bumps tokenGen)
+ * @type {Map<string, { gen: number, f: (x: number) => number }>} */
+const curves = new Map();
+/** @param {string} name @returns {(x: number) => number} */
+export function curve(name) {
+  let c = curves.get(name);
+  if (!c || c.gen !== tokenGen) curves.set(name, (c = { gen: tokenGen, f: bez(...bezier(name)) }));
+  return c.f;
+}
 /* Material's emphasized curves: into the swap accelerating, out of it decelerating — with the swap between, it reads as
    one move; a lone crop or reveal is eased at both ends */
-const eIn = bez(0.3, 0, 0.8, 0.15),
-  eOut = bez(0.05, 0.7, 0.1, 1),
-  eBoth = bez(0.2, 0, 0, 1);
+const eIn = (/** @type {number} */ x) => curve("--ease-crop")(x),
+  eOut = (/** @type {number} */ x) => curve("--ease-reveal")(x),
+  eBoth = (/** @type {number} */ x) => curve("--ease-both")(x);
 /** @typedef {{ w: number, h: number, l?: number, t?: number }} ShapeBox a box's size, and its place when it has one */
 /**
  * ONE plan for boxes changing together — ARCHITECTURE › a rearrangement on the same page: the crop (0 → A) if

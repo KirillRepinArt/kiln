@@ -9,7 +9,7 @@ import { frameBox, frameHold, frameTarget } from "./framebox.js";
 import { fade, seenNow } from "./fade.js";
 import { fades, shapeSteps } from "./layoutmath.js";
 import { bend, flush, follow, moving, progress, progressXY, travel, whenIdle } from "./rearrange.js";
-import { SPACE } from "./tokens.js";
+import { easing, SPACE } from "./tokens.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number, panel: boolean }} Box in #right's coordinates */
 
@@ -238,7 +238,7 @@ export function switchGlide(at, views, layout = false) {
     T = Math.max(1, steps.T),
     t0 = fl ? fl.t0 : performance.now(), // the driver's clock: every fade of the switch starts on it
     /** @type {{ duration: number, easing: string, fill: FillMode }} */
-    timing = { duration: T, easing: "linear", fill: "backwards" },
+    timing = { duration: T, easing: easing("--ease-content"), fill: "backwards" },
     /** one clock: every animation of the switch starts at t0 */
     go = (/** @type {Animation} */ a) => {
       a.startTime = t0;
@@ -250,7 +250,7 @@ export function switchGlide(at, views, layout = false) {
     for (const a of fade(
       $("plate"),
       0,
-      { duration: Math.max(steps.A + steps.S, 1), easing: "ease-in", fill: "backwards" },
+      { duration: Math.max(steps.A + steps.S, 1), easing: easing("--ease-leave"), fill: "backwards" },
       { pseudo: "::after", from: 1 },
     ))
       go(a);
@@ -361,7 +361,11 @@ export function switchGlide(at, views, layout = false) {
   /* only out, from what they are now: shown by hover (the edit buttons, the arrows) or by state (the status row,
      Show prompt), a switch never shows them (faded in by it, they blinked) */
   /* everything that leaves fades out across the crop, easing in, gone by the swap */
-  const leave = { duration: Math.max(1, steps.A + steps.S), easing: "ease-in", fill: /** @type {FillMode} */ ("both") };
+  const leave = {
+    duration: Math.max(1, steps.A + steps.S),
+    easing: easing("--ease-leave"),
+    fill: /** @type {FillMode} */ ("both"),
+  };
   if (pic(old))
     for (const el of [...around(), ...navs()]) {
       if (seenNow(el) > 0.01) for (const a of fade(el, 0, leave, { glass: true })) go(a); // from what is on screen
@@ -380,8 +384,8 @@ export function switchGlide(at, views, layout = false) {
      same clock */
   const fd = fades(steps), // the one formula (layoutmath.js) — the frame's pictures fade by it too (pictures.js)
     TT = Math.max(T, fd.T), // the switch's length, its fade-in included
-    goOut = { ...fd.out, easing: "linear", fill: /** @type {FillMode} */ ("both") },
-    comeIn = { ...fd.in, easing: "linear", fill: /** @type {FillMode} */ ("both") };
+    goOut = { ...fd.out, easing: easing("--ease-content"), fill: /** @type {FillMode} */ ("both") },
+    comeIn = { ...fd.in, easing: easing("--ease-content"), fill: /** @type {FillMode} */ ("both") };
   /* the view's contents: out and in, as ONE layer — one opacity on the view, one clock, with whatever it draws a frame
      later (DD-2026-11-08-12). The same view (a layout switch) stays shown, it only rides. Glass inside a page would
      lose its blur under this fade: ARCHITECTURE › the layering rule (content holds no material) */

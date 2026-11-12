@@ -7,6 +7,7 @@ import { fade as fadeTo, setOpacity } from "./fade.js";
 import { fades, shapeSteps } from "./layoutmath.js";
 import { shownDone } from "./picstate.js";
 import { S } from "./state.js";
+import { easing } from "./tokens.js";
 
 /* ---------- images: real files and live previews, cached ---------- */
 export const imgs =
@@ -121,7 +122,7 @@ function idleFade(on, fade) {
     [a] = fadeTo(
       el,
       on ? 1 : 0,
-      { delay: fade.delay, duration: fade.duration, easing: "linear", fill: "both" },
+      { delay: fade.delay, duration: fade.duration, easing: easing("--ease-content"), fill: "both" },
       { from: on ? 0 : 1, end: on ? "" : "0" }, // then it rests there (fade.js leaves it)
     );
   if (fade.startTime != null) a.startTime = fade.startTime;
@@ -155,7 +156,7 @@ export function pictureIn(fade = SAME.in) {
   const [a] = fadeTo(
     cv,
     1,
-    { delay: fade.delay, duration: fade.duration, easing: "linear", fill: "backwards" }, // held unseen until its delay
+    { delay: fade.delay, duration: fade.duration, easing: easing("--ease-content"), fill: "backwards" }, // held unseen until its delay
     { from: 0 },
   );
   if (fade.startTime != null) a.startTime = fade.startTime;
@@ -202,7 +203,7 @@ export function overlayRelease(fade = SAME.out) {
     [a] = fadeTo(
       x,
       0,
-      { delay: fade.delay, duration: fade.duration, easing: "linear", fill: "both" },
+      { delay: fade.delay, duration: fade.duration, easing: easing("--ease-content"), fill: "both" },
       { from: 1, end: "" }, // the held copy: shown; once gone, back to its CSS (emptied below)
     );
   if (fade.startTime != null) a.startTime = fade.startTime;

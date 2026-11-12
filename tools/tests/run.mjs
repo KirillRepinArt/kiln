@@ -58,7 +58,7 @@ async function waitHttp(url, ms = 15000) {
   const t = Date.now();
   while (Date.now() - t < ms) {
     try {
-      await fetch(url);
+      await (await fetch(url)).arrayBuffer(); // a body left unread pauses Node's parser: the socket's end then crashes the runner
       return;
     } catch (e) {
       await sleep(150);

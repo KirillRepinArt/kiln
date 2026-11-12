@@ -5,7 +5,7 @@ import { fade } from "./fade.js";
 import { MORPH, shapeSteps } from "./layoutmath.js";
 import { overlayRelease, overlayShows, pictureIn } from "./pictures.js";
 import { frameTravel, setPictureMorph } from "./framebox.js";
-import { flush } from "./rearrange.js";
+import { flush, kindNow } from "./rearrange.js";
 import { stageRect } from "./layout.js";
 import { easing } from "./tokens.js";
 
@@ -53,7 +53,7 @@ export function frameMorph(o) {
      moves; a re-layout mid-way bends its path (framebox.js frameGoal → bend) */
   frameTravel(from, n0);
   const fl = flush(),
-    plan = fl ? fl.plan : shapeSteps(o, n0),
+    plan = fl ? fl.plan : shapeSteps(o, n0, kindNow()),
     A = plan.A,
     T = plan.T,
     t0 = fl ? fl.t0 : performance.now();

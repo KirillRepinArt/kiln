@@ -46,6 +46,8 @@ import { LORAS, P, S, blockSaves, save } from "./state.js";
 import { poll, seen } from "./sync.js";
 import { showView } from "./tabs.js";
 import { closeShown, closeViewer, openViewer } from "./viewer.js";
+import { driving } from "./rearrange.js";
+import { initTokens } from "./tokens.js";
 
 export function installTestBridge() {
   const props = {
@@ -126,6 +128,8 @@ export function installTestBridge() {
     reuse: { get: () => reuse },
     rgba: { get: () => rgba },
     S: { get: () => S },
+    driving: { get: () => driving },
+    initTokens: { get: () => initTokens },
     save: { get: () => save, set: () => blockSaves() /* a test replacing save = no more saves in this page */ },
     seen: { get: () => seen },
     setDock: { get: () => setDock },

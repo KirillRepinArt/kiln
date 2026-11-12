@@ -1917,6 +1917,135 @@
       "$description": "~2 frames fully gone while a relation changes: never seen jumping"
     }
   },
+  "morph-rearrange": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "morph-rearrange",
+        "above": "THE CROP-AND-REVEAL PER KIND OF CHANGE — each step aliases the shared --morph-* until tuned per kind (layoutmath.js morphSteps; rearrange.js as(kind) says which)"
+      }
+    },
+    "crop": {
+      "$type": "duration",
+      "$value": "{morph.crop}",
+      "$description": "a same-page rearrangement (Reset, a double-click, a panel's height, a ratio, the room changing): the crop"
+    },
+    "swap": {
+      "$type": "duration",
+      "$value": "{morph.swap}",
+      "$description": "a same-page rearrangement (Reset, a double-click, a panel's height, a ratio, the room changing): the cross-fade at the overlap"
+    },
+    "alone": {
+      "$type": "duration",
+      "$value": "{morph.alone}",
+      "$description": "a same-page rearrangement (Reset, a double-click, a panel's height, a ratio, the room changing): the cross-fade when nothing changes shape"
+    },
+    "reveal": {
+      "$type": "duration",
+      "$value": "{morph.reveal}",
+      "$description": "a same-page rearrangement (Reset, a double-click, a panel's height, a ratio, the room changing): the reveal"
+    },
+    "one": {
+      "$type": "duration",
+      "$value": "{morph.one}",
+      "$description": "a same-page rearrangement (Reset, a double-click, a panel's height, a ratio, the room changing): only a crop, or only a reveal"
+    }
+  },
+  "morph-browse": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "morph-browse"
+      }
+    },
+    "crop": {
+      "$type": "duration",
+      "$value": "{morph.crop}",
+      "$description": "another picture in the frame: the crop"
+    },
+    "swap": {
+      "$type": "duration",
+      "$value": "{morph.swap}",
+      "$description": "another picture in the frame: the cross-fade at the overlap"
+    },
+    "alone": {
+      "$type": "duration",
+      "$value": "{morph.alone}",
+      "$description": "another picture in the frame: the cross-fade when nothing changes shape"
+    },
+    "reveal": {
+      "$type": "duration",
+      "$value": "{morph.reveal}",
+      "$description": "another picture in the frame: the reveal"
+    },
+    "one": {
+      "$type": "duration",
+      "$value": "{morph.one}",
+      "$description": "another picture in the frame: only a crop, or only a reveal"
+    }
+  },
+  "morph-tab": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "morph-tab"
+      }
+    },
+    "crop": {
+      "$type": "duration",
+      "$value": "{morph.crop}",
+      "$description": "a tab switch: the crop"
+    },
+    "swap": {
+      "$type": "duration",
+      "$value": "{morph.swap}",
+      "$description": "a tab switch: the cross-fade at the overlap"
+    },
+    "alone": {
+      "$type": "duration",
+      "$value": "{morph.alone}",
+      "$description": "a tab switch: the cross-fade when nothing changes shape"
+    },
+    "reveal": {
+      "$type": "duration",
+      "$value": "{morph.reveal}",
+      "$description": "a tab switch: the reveal"
+    },
+    "one": {
+      "$type": "duration",
+      "$value": "{morph.one}",
+      "$description": "a tab switch: only a crop, or only a reveal"
+    }
+  },
+  "morph-layout": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "morph-layout"
+      }
+    },
+    "crop": {
+      "$type": "duration",
+      "$value": "{morph.crop}",
+      "$description": "a layout switch (Left / Right / Vertical): the crop"
+    },
+    "swap": {
+      "$type": "duration",
+      "$value": "{morph.swap}",
+      "$description": "a layout switch (Left / Right / Vertical): the cross-fade at the overlap"
+    },
+    "alone": {
+      "$type": "duration",
+      "$value": "{morph.alone}",
+      "$description": "a layout switch (Left / Right / Vertical): the cross-fade when nothing changes shape"
+    },
+    "reveal": {
+      "$type": "duration",
+      "$value": "{morph.reveal}",
+      "$description": "a layout switch (Left / Right / Vertical): the reveal"
+    },
+    "one": {
+      "$type": "duration",
+      "$value": "{morph.one}",
+      "$description": "a layout switch (Left / Right / Vertical): only a crop, or only a reveal"
+    }
+  },
   "ease": {
     "$extensions": {
       "dev.kiln": {

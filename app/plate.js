@@ -8,7 +8,7 @@ import { $, offsetIn } from "./dom.js";
 import { frameBox, frameHold, frameTarget } from "./framebox.js";
 import { fade, seenNow } from "./fade.js";
 import { fades, shapeSteps } from "./layoutmath.js";
-import { bend, flush, follow, moving, progress, progressXY, travel, whenIdle } from "./rearrange.js";
+import { bend, flush, follow, kindNow, moving, progress, progressXY, travel, whenIdle } from "./rearrange.js";
 import { easing, SPACE } from "./tokens.js";
 
 /** @typedef {{ l: number, t: number, w: number, h: number, panel: boolean }} Box in #right's coordinates */
@@ -200,7 +200,7 @@ export function switchGlide(at, views, layout = false) {
     const o = $("right").getBoundingClientRect(),
       to = goalBox(),
       toS = { l: o.left + to.l, t: o.top + to.t, w: to.w, h: to.h },
-      st = shapeSteps(at, toS),
+      st = shapeSteps(at, toS, kindNow()),
       t0 = performance.now(),
       done = () => {
         if (leaveDone !== done) return;
@@ -234,7 +234,7 @@ export function switchGlide(at, views, layout = false) {
   travel("plate", at, toS, writePlate);
   writePlate(at); // its first box now, before anything is painted
   const fl = flush(),
-    steps = fl ? fl.plan : shapeSteps(at, toS), // the one choreography: crop, swap, reveal (layoutmath.js)
+    steps = fl ? fl.plan : shapeSteps(at, toS, kindNow()), // the one choreography: crop, swap, reveal (layoutmath.js)
     T = Math.max(1, steps.T),
     t0 = fl ? fl.t0 : performance.now(), // the driver's clock: every fade of the switch starts on it
     /** @type {{ duration: number, easing: string, fill: FillMode }} */

@@ -299,6 +299,40 @@
     --t-150
   ); /* a glued element leaving its old relation: gone early (Material fade-through's outgoing share) */
   --morph-gone: var(--t-34); /* ~2 frames fully gone while a relation changes: never seen jumping */
+  --morph-rearrange-crop: var(
+    --morph-crop
+  ); /* a same-page rearrangement (Reset, a double-click, a panel's height, a ratio, the room changing): the crop */
+  --morph-rearrange-swap: var(
+    --morph-swap
+  ); /* a same-page rearrangement (Reset, a double-click, a panel's height, a ratio, the room changing): the cross-fade at the overlap */
+  --morph-rearrange-alone: var(
+    --morph-alone
+  ); /* a same-page rearrangement (Reset, a double-click, a panel's height, a ratio, the room changing): the cross-fade when nothing changes shape */
+  --morph-rearrange-reveal: var(
+    --morph-reveal
+  ); /* a same-page rearrangement (Reset, a double-click, a panel's height, a ratio, the room changing): the reveal */
+  --morph-rearrange-one: var(
+    --morph-one
+  ); /* a same-page rearrangement (Reset, a double-click, a panel's height, a ratio, the room changing): only a crop, or only a reveal */
+  --morph-browse-crop: var(--morph-crop); /* another picture in the frame: the crop */
+  --morph-browse-swap: var(--morph-swap); /* another picture in the frame: the cross-fade at the overlap */
+  --morph-browse-alone: var(
+    --morph-alone
+  ); /* another picture in the frame: the cross-fade when nothing changes shape */
+  --morph-browse-reveal: var(--morph-reveal); /* another picture in the frame: the reveal */
+  --morph-browse-one: var(--morph-one); /* another picture in the frame: only a crop, or only a reveal */
+  --morph-tab-crop: var(--morph-crop); /* a tab switch: the crop */
+  --morph-tab-swap: var(--morph-swap); /* a tab switch: the cross-fade at the overlap */
+  --morph-tab-alone: var(--morph-alone); /* a tab switch: the cross-fade when nothing changes shape */
+  --morph-tab-reveal: var(--morph-reveal); /* a tab switch: the reveal */
+  --morph-tab-one: var(--morph-one); /* a tab switch: only a crop, or only a reveal */
+  --morph-layout-crop: var(--morph-crop); /* a layout switch (Left / Right / Vertical): the crop */
+  --morph-layout-swap: var(--morph-swap); /* a layout switch (Left / Right / Vertical): the cross-fade at the overlap */
+  --morph-layout-alone: var(
+    --morph-alone
+  ); /* a layout switch (Left / Right / Vertical): the cross-fade when nothing changes shape */
+  --morph-layout-reveal: var(--morph-reveal); /* a layout switch (Left / Right / Vertical): the reveal */
+  --morph-layout-one: var(--morph-one); /* a layout switch (Left / Right / Vertical): only a crop, or only a reveal */
   --ease-crop: var(--e-emph-accel); /* into the swap */
   --ease-reveal: var(--e-emph-decel); /* out of the swap */
   --ease-both: var(--e-emph); /* a lone crop or reveal, a pure move: eased at both ends */

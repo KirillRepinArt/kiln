@@ -273,22 +273,19 @@ export function bez(x1, y1, x2, y2) {
    overlap (a short cross-fade), an axis that grows moves last (more of the new revealed). An axis that keeps its size
    doesn't move; a step with nothing to do takes no time; each axis moves its centre with its size. Browsing pictures
    (morph.js) and a tab switch (plate.js switchGlide) both move by it */
+/** a change's kind: what started it — its steps are that kind's (tokens --morph-<kind>-*; rearrange.js as(kind))
+ * @typedef {"rearrange" | "browse" | "tab" | "layout"} ChangeKind */
+/** @type {ChangeKind[]} */
+export const CHANGE_KINDS = ["rearrange", "browse", "tab", "layout"];
+/** a kind's steps in ms: the crop (accelerating into the swap), the swap (the cross-fade at the overlap), alone (the
+ * cross-fade when nothing changes shape), the reveal (decelerating out of it), one (only a crop or only a reveal)
+ * @param {ChangeKind} kind */
+export function morphSteps(kind) {
+  const step = (/** @type {string} */ k) => ms(`--morph-${kind}-${k}`);
+  return { a: step("crop"), s: step("swap"), alone: step("alone"), b: step("reveal"), one: step("one") };
+}
+/** the content fades: one speed in every change, whatever its kind */
 export const MORPH = {
-  get a() {
-    return ms("--morph-crop"); // the crop (accelerating into the swap)
-  },
-  get s() {
-    return ms("--morph-swap"); // the cross-fade at the overlap
-  },
-  get alone() {
-    return ms("--morph-alone"); // the cross-fade when nothing changes shape
-  },
-  get b() {
-    return ms("--morph-reveal"); // the reveal (decelerating out of it)
-  },
-  get one() {
-    return ms("--morph-one"); // only a crop, or only a reveal
-  },
   get fade() {
     return ms("--morph-fade"); // a view's contents fading out or in, in every switch
   },
@@ -321,9 +318,10 @@ const eIn = (/** @type {number} */ x) => curve("--ease-crop")(x),
  * axis moves in the crop, a growing one in the reveal, one that only moves its place over the whole plan. Nothing
  * changing size but something moving (a pure move): the switch's full length, eased at both ends — a fixed time per kind
  * of motion, not per pixel (DD-2026-11-07-6).
- * @param {{ o: ShapeBox, n: ShapeBox }[]} pairs
+ * @param {{ o: ShapeBox, n: ShapeBox }[]} pairs @param {ChangeKind} [kind] what started it: its steps
  */
-export function shapePlan(pairs) {
+export function shapePlan(pairs, kind = "rearrange") {
+  const M = morphSteps(kind);
   const ch = pairs.map(({ o, n }) => {
       const placed = o.l != null && n.l != null && o.t != null && n.t != null,
         c = (/** @type {ShapeBox} */ b) => [(b.l ?? 0) + b.w / 2, (b.t ?? 0) + b.h / 2];
@@ -336,10 +334,10 @@ export function shapePlan(pairs) {
     crop = ch.some(c => c.shrink[0] || c.shrink[1]),
     reveal = ch.some(c => c.grow[0] || c.grow[1]),
     travel = !crop && !reveal && ch.some(c => c.move[0] || c.move[1]),
-    A = crop ? (reveal ? MORPH.a : MORPH.one) : 0,
-    S = travel ? 0 : crop || reveal ? MORPH.s : MORPH.alone,
-    B = reveal ? (crop ? MORPH.b : MORPH.one) : 0,
-    T = travel ? MORPH.a + MORPH.s + MORPH.b : A + S + B,
+    A = crop ? (reveal ? M.a : M.one) : 0,
+    S = travel ? 0 : crop || reveal ? M.s : M.alone,
+    B = reveal ? (crop ? M.b : M.one) : 0,
+    T = travel ? M.a + M.s + M.b : A + S + B,
     eA = reveal ? eIn : eBoth,
     eB = crop ? eOut : eBoth;
   /** box i's progress per axis [x, y] at e ms (0 → 1) @param {number} i @param {number} e @returns {[number, number]} */
@@ -356,10 +354,10 @@ export function shapePlan(pairs) {
 /**
  * The steps of a shape change from box o to box n: the crop (0 → A), the swap (A → A + S), the reveal (→ T), and per
  * axis how far along it is at e ms (0 → 1) — the one-box plan (shapePlan).
- * @param {ShapeBox} o @param {ShapeBox} n
+ * @param {ShapeBox} o @param {ShapeBox} n @param {ChangeKind} [kind] what started it
  */
-export function shapeSteps(o, n) {
-  const p = shapePlan([{ o, n }]);
+export function shapeSteps(o, n, kind = "rearrange") {
+  const p = shapePlan([{ o, n }], kind);
   return { A: p.A, S: p.S, B: p.B, T: p.T, q: (/** @type {number} */ e) => p.q(0, e) };
 }
 /**

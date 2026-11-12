@@ -15,7 +15,7 @@ import {
   standIn,
 } from "./layout.js";
 import { relationMotion } from "./layoutmath.js";
-import { travel } from "./rearrange.js";
+import { as, travel } from "./rearrange.js";
 import { renderLoras } from "./loras.js";
 import { PV, browsed, pv } from "./picstate.js";
 import { frameBox, frameHold, pictureChange } from "./framebox.js";
@@ -91,6 +91,7 @@ export function tabSync(force) {
  * ARCHITECTURE › a layout switch @param {import("./layoutmath.js").RelationCause} [cause] what changed the box's
  * relation (a layout switch): your hand ("hand" — a drop) or the Layout menu / Reset ("menu") */
 export function tabGo(fn, layout = false, cause = "menu") {
+  as(layout ? "layout" : "tab"); // the driver's plans in this task take this kind's steps
   /* a layout switch changes the box's relation to its partner — ARCHITECTURE › a pane's change of relation */
   const rel = layout ? relationMotion({ pane: "box", partner: "plate", cause }, 0).pattern : null,
     from = plateBefore(),

@@ -22,6 +22,7 @@ import { frameForget, preload, xfadeSnap } from "./pictures.js";
 import { peekJob } from "./prompt.js";
 import { S } from "./state.js";
 import { goView, tabSync } from "./tabs.js";
+import { as } from "./rearrange.js";
 
 /** @type {import("./types.js").PictureView} */
 export const PV = {
@@ -141,7 +142,10 @@ export function pv(ev, arg) {
   }
   pvSync();
   tabSync();
-  if (b0 && r0 && (onShow()?.id ?? null) !== (was?.id ?? null)) pictureChange({ ...b0, x: r0.left, y: r0.top });
+  if (b0 && r0 && (onShow()?.id ?? null) !== (was?.id ?? null)) {
+    as("browse"); // another picture: the driver's plans in this task take its steps
+    pictureChange({ ...b0, x: r0.left, y: r0.top });
+  }
   if (ev !== "done" && ev !== "preview") {
     lay.framePending = false;
     sizeFrame();

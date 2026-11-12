@@ -1299,3 +1299,29 @@ export async function addedPartsJoinTheFade(k, t) {
   });
 }
 addedPartsJoinTheFade.opts = { width: 1600, height: 950, step: 0.05 };
+
+/* A change's kind picks its steps (19-numbers.md › a change's length per kind): tuned long for the layout switch only,
+   a layout switch is still moving after a second while a tab switch, at the shared steps, has landed. The tokens are
+   overridden on the root as a tuner would, and read fresh (initTokens) */
+export async function changeKindPicksItsSteps(k, t) {
+  await k.ev(`(setDock("left"),document.querySelector('.tab[data-v="queue"]').click(),1)`);
+  await k.mouse(4, 4);
+  await k.sleep(1600);
+  const LONG = ["crop", "swap", "alone", "reveal", "one"]
+    .map(s => `document.documentElement.style.setProperty("--morph-layout-${s}","1500ms")`)
+    .join(",");
+  try {
+    await k.ev(`(${LONG},initTokens(),1)`);
+    const layout = await k.ev(`new Promise(res=>{setDock("right");setTimeout(()=>res(driving()),1000)})`);
+    t.ok(layout, "a layout switch takes the layout's steps (tuned long: still moving after 1 s)");
+    await k.sleep(6000);
+    const tab = await k.ev(
+      `new Promise(res=>{document.querySelector('.tab[data-v="loras"]').click();setTimeout(()=>res(driving()),1000)})`,
+    );
+    t.ok(!tab, "a tab switch keeps its own (the shared steps: landed within 1 s)");
+  } finally {
+    await k.ev(
+      `(["crop","swap","alone","reveal","one"].forEach(s=>document.documentElement.style.removeProperty("--morph-layout-"+s)),initTokens(),setDock("left"),1)`,
+    );
+  }
+}

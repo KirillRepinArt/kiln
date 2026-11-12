@@ -105,7 +105,8 @@ let ovFade = null;
 let ovTimer = 0;
 /* a picture changing in place (nothing changes shape): the one fade's cross-fade (layoutmath.js fades) — the old one
    (its copy) fades off the new one under it; with nothing over it, the new one fades in itself */
-const SAME = fades(shapeSteps({ w: 1, h: 1 }, { w: 1, h: 1 }));
+/** read when used: the tokens may be tuned live */
+const SAME = () => fades(shapeSteps({ w: 1, h: 1 }, { w: 1, h: 1 }, "browse"));
 /** @type {Animation | null} the frame's picture coming in */
 let cvIn = null;
 let arriving = false; // the picture being drawn comes into an empty frame: nothing to cross-fade from
@@ -130,7 +131,7 @@ function idleFade(on, fade) {
 /** the frame has a picture now (the status loop): the text goes — with the picture's own fade if one is coming in
  * (pictureIn), else the one fade now (a render starting) */
 export function frameFilled() {
-  idleFade(false, SAME.out);
+  idleFade(false, SAME().out);
 }
 /** the frame is empty now (the status loop): the text comes back — as the picture leaving fades off (the overlay's
  * clock), else the one fade now */
@@ -144,13 +145,13 @@ export function frameEmptied() {
           duration: Number(t.duration) || 0,
           startTime: /** @type {number} */ (ovFade.startTime),
         }
-      : SAME.in,
+      : SAME().in,
   );
 }
 /** the frame's picture comes in — the other half of the same owner (the overlay is what leaves): one fade, the
  * cross-fade's by default, or on a motion's timing and clock (the crop-and-reveal) (F1)
  * @param {{ delay: number, duration: number, startTime?: number }} [fade] */
-export function pictureIn(fade = SAME.in) {
+export function pictureIn(fade = SAME().in) {
   const cv = /** @type {HTMLCanvasElement} */ ($("cv"));
   /* new content comes from unseen; a fade-in already running carries on from its value (fade.js fade) */
   const [a] = fadeTo(
@@ -196,7 +197,7 @@ function overlayHold(cv) {
 /** let the held picture go: it fades out — the one fade's cross-fade, now, or on a motion's timing and clock (the
  * crop-and-reveal fades it ending at its swap); once faded the overlay is emptied, so a later fade shows nothing old
  * @param {{ delay: number, duration: number, startTime?: number }} [fade] */
-export function overlayRelease(fade = SAME.out) {
+export function overlayRelease(fade = SAME().out) {
   if (ov !== "held") return;
   clearTimeout(ovTimer);
   const x = /** @type {HTMLCanvasElement} */ ($("cvx")),

@@ -1,5 +1,5 @@
 // Unit tests for the layout's maths (app/layoutmath.js): no browser, just numbers — run with `npm run test:unit`.
-import { SPACE } from "../../../app/tokens.js";
+import { SPACE, initTokens } from "../../../app/tokens.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -12,6 +12,8 @@ import {
   dropAt,
   fades,
   MORPH,
+  morphSteps,
+  CHANGE_KINDS,
   glueAnchors,
   relationOf,
   glued,
@@ -37,6 +39,8 @@ import {
   picLeastH,
   EDIT_TOOLS,
 } from "../../../app/layoutmath.js";
+
+const R = morphSteps("rearrange"); // a same-page rearrangement: shapePlan's default kind
 /* the room maths' own inputs in these tests: a least margin and a box cap (the app has neither) */
 const MMIN = 24,
   CARDMAX = 900;
@@ -450,24 +454,24 @@ test("shapePlan: boxes changing together share one plan — what shrinks finishe
   const box = { o: { l: 0, t: 0, w: 900, h: 200 }, n: { l: 0, t: 0, w: 680, h: 200 } },
     pic = { o: { l: 920, t: 0, w: 500, h: 600 }, n: { l: 700, t: 0, w: 700, h: 840 } },
     p = shapePlan([box, pic]);
-  assert.equal(p.A, MORPH.a);
-  assert.equal(p.B, MORPH.b);
+  assert.equal(p.A, R.a);
+  assert.equal(p.B, R.b);
   assert.equal(p.q(0, p.A)[0], 1, "the box has finished narrowing at the swap");
   assert.equal(p.q(1, p.A)[0], 0, "…and the picture hasn't started growing");
   assert.equal(p.q(1, p.T)[0], 1, "the picture is there at the end");
   /* one box alone is the old shapeSteps: a tab switch's steps unchanged */
   const one = shapeSteps(pic.o, pic.n);
-  assert.equal(one.T, MORPH.one + MORPH.s, "a lone reveal");
+  assert.equal(one.T, R.one + R.s, "a lone reveal");
 });
 
 test("shapePlan: a pure move takes the switch's full length, eased at both ends (DD-2026-11-07-6)", () => {
   const p = shapePlan([{ o: { l: 0, t: 0, w: 400, h: 300 }, n: { l: 900, t: 0, w: 400, h: 300 } }]);
-  assert.equal(p.T, MORPH.a + MORPH.s + MORPH.b);
+  assert.equal(p.T, R.a + R.s + R.b);
   assert.equal(p.q(0, 0)[0], 0);
   assert.equal(p.q(0, p.T)[0], 1);
   assert.ok(p.q(0, p.T / 2)[0] > 0.3 && p.q(0, p.T / 2)[0] < 0.9, "…moving through the middle");
   /* nothing changes at all: the cross-fade, as before */
-  assert.equal(shapePlan([{ o: { l: 0, t: 0, w: 4, h: 3 }, n: { l: 0, t: 0, w: 4, h: 3 } }]).T, MORPH.alone);
+  assert.equal(shapePlan([{ o: { l: 0, t: 0, w: 4, h: 3 }, n: { l: 0, t: 0, w: 4, h: 3 } }]).T, R.alone);
 });
 
 /* ---------- T2c: the glue and its relation change (DEVLOG DD-2026-11-08-7) ---------- */
@@ -543,4 +547,29 @@ test("the drop map's target: the tile under the pointer; in a lane's gap, its ne
   assert.deepEqual(dropAt(tiles, lanes, top.r.x + 5, top.r.y + 5), top);
   assert.equal(dropAt(tiles, lanes, top.r.x + 5, top.r.y + top.r.h + 6)?.pos, "top"); // the gap below it: nearer top
   assert.equal(dropAt(tiles, lanes, 5, 5), null);
+});
+
+test("a change's kind picks its steps: every kind has all five, and a plan takes its kind's", () => {
+  for (const k of CHANGE_KINDS) {
+    const st = morphSteps(k);
+    for (const v of Object.values(st)) assert.ok(v > 0, `${k}: every step is a length`);
+    const p = shapePlan([{ o: { w: 400, h: 300 }, n: { w: 300, h: 400 } }], k); // a crop and a reveal
+    assert.deepEqual([p.A, p.S, p.B], [st.a, st.s, st.b], `${k}'s plan takes ${k}'s steps`);
+  }
+});
+
+test("tuning one kind moves only that kind's plan", () => {
+  const sheet = Reflect.get(globalThis, "KILN_TOKENS"),
+    was = sheet["--morph-layout-crop"],
+    pair = [{ o: { w: 400, h: 300 }, n: { w: 300, h: 400 } }];
+  try {
+    sheet["--morph-layout-crop"] = "999ms";
+    initTokens();
+    assert.equal(shapePlan(pair, "layout").A, 999, "the layout switch takes its own crop");
+    assert.equal(shapePlan(pair, "tab").A, morphSteps("rearrange").a, "a tab switch keeps the shared one");
+    assert.equal(shapePlan(pair).A, morphSteps("rearrange").a, "a rearrangement too");
+  } finally {
+    sheet["--morph-layout-crop"] = was;
+    initTokens();
+  }
 });

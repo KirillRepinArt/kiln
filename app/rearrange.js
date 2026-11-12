@@ -31,6 +31,21 @@ let run = null;
 const followers = new Set();
 let raf = 0,
   queued = false;
+/** the kind of the change being made in this task: its plans take that kind's steps (layoutmath.js morphSteps) — declared
+ * by the change's owner (as), back to a same-page rearrangement when the task ends
+ * @type {import("./layoutmath.js").ChangeKind} */
+let kind = "rearrange",
+  kindT = 0;
+/** the change this task makes is of this kind: every plan started or re-planned in this task takes its steps — the
+ * change's owner says it before asking for its moves (picstate.js: another picture; tabs.js tabGo: a tab or a layout
+ * switch) @param {import("./layoutmath.js").ChangeKind} k */
+export function as(k) {
+  kind = k;
+  clearTimeout(kindT);
+  kindT = setTimeout(() => (kind = "rearrange"), 0); // the task's end
+}
+/** the kind of the change being made now (a plan made outside the driver takes the same steps) */
+export const kindNow = () => kind;
 
 /** `key`'s box moves from `from` (where it is now) to `to` in the coming rearrangement; written at once when the layout
  * jumps on purpose (snaps: a switch, a drag, a live resize, reduced motion) @param {string} key @param {Box} from
@@ -202,7 +217,10 @@ function start() {
   for (const [k, a] of asked) all.set(k, { ...a, cur: a.from });
   asked.clear();
   const moves = [...all].filter(([, m]) => !same(m.from, m.to)),
-    plan = shapePlan(moves.map(([, m]) => ({ o: m.from, n: m.to }))), // nothing moving: a plain cross-fade's
+    plan = shapePlan(
+      moves.map(([, m]) => ({ o: m.from, n: m.to })),
+      kind,
+    ), // nothing moving: a plain cross-fade's
     t0 = performance.now(),
     f = fades(plan);
   for (const [el, on] of fading) fadeNow(el, on, on ? f.in.delay : f.out.delay, MORPH.fade, t0, fadeDone.get(el));

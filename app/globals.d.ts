@@ -23,8 +23,6 @@ interface Window {
   coverHeld?: () => boolean;
   /** the theme's colour harmonics */
   HARM?: Record<string, string>;
-  /** until when (ms) a changed cover shows on the idle frame */
-  _cpv?: number;
   /** the status row's preview of a change is on */
   _dp?: number;
   /** its timer */

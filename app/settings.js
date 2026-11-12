@@ -11,6 +11,7 @@ import { extraKey, harmonics, skinExtra, skinName } from "./skins.js";
 import { S, save } from "./state.js";
 import { goView, moveThumb } from "./tabs.js";
 import { initTokens, ms } from "./tokens.js";
+import { previewCover } from "./effects.js";
 
 /* ======================= settings / themes ======================= */
 /* a skin's colours live in its token file (app/styles/themes/): switching sets data-skin on <html>, then the harmonic
@@ -92,7 +93,7 @@ export function initSettings() {
     S.theme = targetField(e).value;
     applyTheme();
     save();
-    window._cpv = Date.now() + ms("--life-theme-preview");
+    previewCover(ms("--life-theme-preview"));
     if (!current()) {
       const p = $("prog");
       window._dp = 1;

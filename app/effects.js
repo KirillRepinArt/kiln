@@ -218,6 +218,16 @@ function coverFlat(k) {
 }
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
+/* a cover preview (a theme tried in Settings, F8's replay of the finish): when it started and when it ends — its one
+   owner; the effects read it through previewing() and its start */
+let preview = { at: 0, until: 0 };
+/** show the theme's cover over the picture on show for `length` ms, from now @param {number} length */
+export function previewCover(length) {
+  const now = Date.now();
+  preview = { at: now, until: now + length };
+}
+const previewing = () => Date.now() < preview.until;
+
 export function initEffects() {
   /* the effects' timings: tokens (--fx-*), read once per change of the tokens — every frame function reads F = FX() */
   const FX = msGroup("--fx-", [
@@ -562,7 +572,7 @@ export function initEffects() {
       e.preventDefault();
       if (skin().cover === "camera") {
         const F = FX();
-        window._cpv = Date.now() + F.replayCover;
+        previewCover(F.replayCover);
         setTimeout(() => window.emberBurst && window.emberBurst(), F.replayBurst);
       } else window.emberBurst && window.emberBurst();
     });
@@ -770,13 +780,7 @@ export function initEffects() {
         /** @type {number} */ (j.est) < 10; // Settings → Cover: no cover on quick jobs
       if (cover0 === "crt" || cover0 === "camera") {
         const k =
-          j && picMode() === "live"
-            ? j.id
-            : Date.now() < (window._cpv || 0)
-              ? "pv" + window._cpv
-              : held
-                ? (crtJob ?? "held")
-                : null; // held after the finish: the same exposure goes on
+          j && picMode() === "live" ? j.id : previewing() ? "pv" + preview.at : held ? (crtJob ?? "held") : null; // held after the finish: the same exposure goes on
         if (k !== crtJob) {
           crtJob = k;
           if (k != null) {
@@ -821,7 +825,7 @@ export function initEffects() {
         if (hover) target *= 0.12;
       } else if (
         !j &&
-        Date.now() < (window._cpv || 0) &&
+        previewing() &&
         S.view === "gen" &&
         mode !== "off" &&
         cover0 !== "none" &&
@@ -840,7 +844,7 @@ export function initEffects() {
         tN = 1;
       } // held: full, no fading with the steps, no hover peek
       str += (target - str) * Math.min(1, dtr / F.coverEase);
-      if (str < 0.002 || (shownClean() && !held && !(Date.now() < (window._cpv || 0)))) str = 0; // a finished image you browse to shows clean at once
+      if (str < 0.002 || (shownClean() && !held && !previewing())) str = 0; // a finished image you browse to shows clean at once
       if (tN == null) tN = target;
       if (j && picMode() === "live") fadeT = 0;
       else if (fadeT) {
@@ -851,7 +855,7 @@ export function initEffects() {
         } else tN = fadeFrom * (0.5 + 0.5 * Math.cos(Math.PI * p)) * (hover ? 0.12 : 1);
       } // after the finish: a slow fade, slow at first
       nstr += (tN - nstr) * Math.min(1, dtr / F.coverEase);
-      if (nstr < 0.002 || (shownClean() && !held && !(Date.now() < (window._cpv || 0)))) nstr = 0;
+      if (nstr < 0.002 || (shownClean() && !held && !previewing())) nstr = 0;
       /** @type {HTMLElement} */ (document.getElementById("frame")).style.setProperty(
         "--vf",
         str
@@ -886,7 +890,7 @@ export function initEffects() {
           const age =
             (j && j.started) || held
               ? (Date.now() - CV.t0) / 1000
-              : Math.max(0, (Date.now() - (window._cpv || Date.now()) + ms("--life-theme-preview")) / 1000);
+              : Math.max(0, (Date.now() - (preview.at || Date.now())) / 1000);
           cam.draw(v, W, H, t, d, cols.map(toHex), {
             str: nstr,
             age,

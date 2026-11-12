@@ -391,6 +391,7 @@
   --tick-poll-retry: 1500ms; /* asking again after one missed answer (a blip), before calling the server gone */
   --tick-reconnect: 3000ms; /* trying the server again while it's gone */
   --tick-ui-sync: 300ms; /* the page re-checking its tabs, picture state and arrows against the state (a fallback loop: measure what it corrects before removing it) */
+  --tick-status: 400ms; /* the window title, the favicon and the status re-read this often */
   --tick-lora-rescan: 60000ms; /* the LoRA folder rescanned at most this often on its own */
   --play-fade: var(--t-200); /* an icon part fading */
   --play-move: var(--t-250); /* an icon part moving */
@@ -403,6 +404,105 @@
   --loop-flow: var(--t-6000); /* the generating gradient's flow */
   --loop-hourglass: var(--t-2600); /* the Queue's hourglass: one flip and its sand */
   --loop-ease-hourglass: var(--e-swing); /* the hourglass's flip: a deliberate swing */
+  /* THE EFFECTS' TIMINGS — one group, read once per change of the tokens (effects.js / skins.js: tokens.js msGroup); tuned like the rest */
+  --fx-crescendo: 1400ms; /* the finish's build: the cover holds, the halo swells, then the release */
+  --fx-bg-throttle-run: 49ms; /* the background draws at most this often while a job runs (~20 fps: the GPU is Forge's) */
+  --fx-bg-throttle-idle: 31ms; /* the background draws at most this often at rest (~30 fps) */
+  --fx-bg-step-max: 66ms; /* the longest step the background moves in one draw (a slow frame doesn't jump) */
+  --fx-code-idle: 120000ms; /* the code rain dims after this long without input */
+  --fx-code-dim-ease: 1500ms; /* the code rain's dimming: its smoothing time */
+  --fx-aurora-swell: 2800ms; /* the sky's swell after a picture lands */
+  --fx-aurora-swell-delay: 700ms; /* the sky answers the finish this long after it */
+  --fx-stars-shoot-every: 9000ms; /* a shooting star, on average once per this long */
+  --fx-stars-shoot-life: 900ms; /* a shooting star's life */
+  --fx-cover-fade: 5000ms; /* after the finish the night layer fades over this long (Aurora) */
+  --fx-cover-clear: 500ms; /* the camera's night clears over this long, under the flash */
+  --fx-embers-burst: 2400ms; /* the embers' burst window after a finish */
+  --fx-embers-burst-camera: 1500ms; /* the camera's stars after the release: their window */
+  --fx-camera-swell: 560ms; /* the picture's swell at the release: a hair bigger and back */
+  --fx-replay-cover: 1600ms; /* F8 (replay the finish): the cover shows this long */
+  --fx-replay-burst: 1500ms; /* F8: the burst starts after this long */
+  --fx-glow-ease: 400ms; /* the glow round the frame: its smoothing time */
+  --fx-glow-breathe: 1800ms; /* reduced motion: the still glow breathes at this pace (ms per radian) */
+  --fx-halo-rise: 400ms; /* the halo's rise at the release */
+  --fx-halo-decay: 1300ms; /* the halo's decay after it */
+  --fx-halo-finish-window: 2200ms; /* the halo draws at full rate for this long after the finish */
+  --fx-halo-tick-finish: 14ms; /* the halo's frame at full rate */
+  --fx-halo-tick: 48ms; /* the halo's frame otherwise (~20 fps) */
+  --fx-step-max: 50ms; /* the longest step the cover moves in one frame */
+  --fx-step-max-real: 1000ms; /* the cover's fades keep real time up to this step (a page slowed by the GPU) */
+  --fx-frame: 16ms; /* one frame, when there was no last one */
+  --fx-cover-held-age: 20000ms; /* a held picture's cover shows as if this far into a job */
+  --fx-cover-lift: 500ms; /* the picture's blur lifts over this long after the crescendo */
+  --fx-cover-ease: 260ms; /* the cover's smoothing time */
+  --fx-crt-sweep: 900ms; /* the CRT's sweep at the finish */
+  --fx-embers-life-min: 2200ms; /* an ember lives at least this long */
+  --fx-embers-life-span: 2400ms; /* …and up to this much longer */
+  --fx-embers-glint: 140ms; /* an ember's twinkle: its pace (ms per radian) */
+  --fx-embers-sway: 420ms; /* an ember's sideways drift: its pace (ms per radian) */
+  --fx-embers-flicker: 90ms; /* an ember's flicker: its pace (ms per radian) */
+  --fx-aurora-surge-first-min: 25000ms; /* the aurora's first surge comes after at least this long */
+  --fx-aurora-surge-first-span: 50000ms; /* …and up to this much later */
+  --fx-aurora-surge-next-min: 60000ms; /* the next surge, at least this long after one */
+  --fx-aurora-surge-next-span: 60000ms; /* …and up to this much later */
+  --fx-camera-mask-ease: 1500ms; /* a new preview eases into the exposure over this long */
+  --fx-camera-meteor: 650ms; /* a meteor's life, at least */
+  --fx-camera-meteor-per-length: 900ms; /* …plus this much for a meteor as long as the sky's diagonal */
+  --fx-camera-sat-first-min: 60000ms; /* the first satellite crosses after at least this long */
+  --fx-camera-sat-first-span: 60000ms; /* …and up to this much later */
+  --fx-camera-sat-cross-min: 11000ms; /* a satellite takes at least this long to cross */
+  --fx-camera-sat-cross-span: 5000ms; /* …and up to this much longer */
+  --fx-camera-sat-next-min: 70000ms; /* the next satellite, at least this long after one */
+  --fx-camera-sat-next-span: 60000ms; /* …and up to this much later */
+  --fx-camera-flash: 900ms; /* the release's flash */
+  --fx-camera-sky-gone: 450ms; /* at the flash's peak the sky is gone within this long */
+  --fx-camera-span-ease: 2500ms; /* the exposure's span eases over this long (a step early or late doesn't jolt the trails) */
+  --fx-camera-film-every: 2000ms; /* the film (the trails) re-exposed at most this often */
+  --fx-camera-crossfade: 600ms; /* a new exposure cross-fades over the old one over this long */
+  --fx-camera-mask-every: 400ms; /* the preview's mask re-read at most this often */
+  --fx-camera-meter-every: 250ms; /* the auto-exposure metered at most this often */
+  --fx-camera-rec-blink: 420ms; /* the REC dot's blink: its pace (ms per radian) */
+  --fx-code-event-first-min: 8000ms; /* the first cluster comes after at least this long */
+  --fx-code-event-first-span: 12000ms; /* …and up to this much later */
+  --fx-code-event-every-min: 15000ms; /* a cluster comes alive at least this often */
+  --fx-code-event-every-span: 20000ms; /* …and up to this much later */
+  --fx-code-event-dur-min: 1500ms; /* a cluster lasts at least this long */
+  --fx-code-event-dur-span: 2500ms; /* …and up to this much longer */
+  --fx-code-fat-every-min: 10000ms; /* a fat stream comes at least this long after the last */
+  --fx-code-fat-every-span: 10000ms; /* …and up to this much later */
+  --fx-code-frame: 33ms; /* the frame the code rain's chances are counted per (~30 fps) */
+  --fx-code-doubt-min: 700ms; /* a glyph that isn't sure flickers at least this long */
+  --fx-code-doubt-span: 1000ms; /* …and up to this much longer */
+  --fx-code-head-pulse: 700ms; /* a stream's head pulses at this pace, at least (ms per radian; longer for bigger streams) */
+  --fx-crt-block-min: 180ms; /* a block glitch lasts at least this long */
+  --fx-crt-block-span: 220ms; /* …and up to this much longer */
+  --fx-crt-tear-min: 90ms; /* a tear lasts at least this long */
+  --fx-crt-tear-span: 110ms; /* …and up to this much longer */
+  --fx-crt-drop-min: 70ms; /* a drop-out lasts at least this long */
+  --fx-crt-drop-span: 90ms; /* …and up to this much longer */
+  --fx-crt-glitch-first-min: 4000ms; /* after a reset the first glitch comes after at least this long */
+  --fx-crt-glitch-first-span: 5000ms; /* …and up to this much later */
+  --fx-crt-glitch-start: 2500ms; /* on first draw, the first glitch waits this long */
+  --fx-crt-sample-every: 500ms; /* the picture under the CRT re-sampled at most this often */
+  --fx-crt-frame: 33ms; /* the CRT's code moves in steps of this (~30 fps) */
+  --fx-crt-lone: 1400ms; /* one lone stream first, for this long, then the cascade */
+  --fx-crt-glitch-after: 2000ms; /* no glitch in the first this-long */
+  --fx-crt-glitch-every-min: 6000ms; /* a glitch at least this often */
+  --fx-crt-glitch-every-span: 8000ms; /* …and up to this much later */
+  --fx-crt-calm: 3000ms; /* the first this-long, streams start more rarely */
+  --fx-crt-boost: 700ms; /* a stream's start makes its neighbours likelier for this long */
+  --fx-crt-doubt-min: 600ms; /* a fresh cell isn't sure for at least this long */
+  --fx-crt-doubt-span: 1000ms; /* …and up to this much longer */
+  --fx-crt-redoubt-min: 700ms; /* a standing cell doubts itself for at least this long */
+  --fx-crt-redoubt-span: 900ms; /* …and up to this much longer */
+  --fx-crt-head-pulse: 520ms; /* a stream's head pulses at this pace (ms per radian) */
+  --fx-crt-warmup: 650ms; /* the CRT warms up over this long */
+  --fx-ease-camera-swell: cubic-bezier(
+    0.2,
+    0.9,
+    0.25,
+    1
+  ); /* the picture's swell at the release: quick out, a long settle */
   /* ---------- THE LAYERS (ARCHITECTURE › paint order; DD-2026-11-11-2) ----------
      Paint order is ONE list per stacking context, bottom to top, by NAME: a z-index anywhere else is var(--z-…) (Stylelint
      rejects a number). A z-index only competes within its stacking context, so each context has a list of its own — one

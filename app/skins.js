@@ -4,6 +4,68 @@
    screen. The other themes keep the starfield and the light bands. Everything is cheap on purpose (the GPU is busy
    generating): pre-drawn glyphs and patterns, low resolution where softness is the look, ~30 fps. */
 import { S } from "./state.js";
+import { msGroup } from "./tokens.js";
+
+/* the skins' timings: tokens (--fx-*), read once per change of the tokens (tokens.js msGroup) */
+const FX = msGroup("--fx-", [
+  "crescendo",
+  "auroraSurgeFirstMin",
+  "auroraSurgeFirstSpan",
+  "auroraSurgeNextMin",
+  "auroraSurgeNextSpan",
+  "cameraMaskEase",
+  "cameraMeteor",
+  "cameraMeteorPerLength",
+  "cameraSatFirstMin",
+  "cameraSatFirstSpan",
+  "cameraSatCrossMin",
+  "cameraSatCrossSpan",
+  "cameraSatNextMin",
+  "cameraSatNextSpan",
+  "cameraFlash",
+  "cameraSkyGone",
+  "cameraSpanEase",
+  "cameraFilmEvery",
+  "cameraCrossfade",
+  "cameraMaskEvery",
+  "cameraMeterEvery",
+  "cameraRecBlink",
+  "codeEventFirstMin",
+  "codeEventFirstSpan",
+  "codeEventEveryMin",
+  "codeEventEverySpan",
+  "codeEventDurMin",
+  "codeEventDurSpan",
+  "codeFatEveryMin",
+  "codeFatEverySpan",
+  "codeFrame",
+  "codeDoubtMin",
+  "codeDoubtSpan",
+  "codeHeadPulse",
+  "crtBlockMin",
+  "crtBlockSpan",
+  "crtTearMin",
+  "crtTearSpan",
+  "crtDropMin",
+  "crtDropSpan",
+  "crtGlitchFirstMin",
+  "crtGlitchFirstSpan",
+  "crtGlitchStart",
+  "crtSampleEvery",
+  "crtFrame",
+  "crtLone",
+  "crtGlitchAfter",
+  "crtGlitchEveryMin",
+  "crtGlitchEverySpan",
+  "crtCalm",
+  "crtBoost",
+  "crtDoubtMin",
+  "crtDoubtSpan",
+  "crtRedoubtMin",
+  "crtRedoubtSpan",
+  "crtHeadPulse",
+  "crtWarmup",
+]);
 
 /* what each skin DOES — its effects, each one an effect runs only if the skin has it AND the user's setting allows it:
    the background (stars / aurora / code / none), the cover over a young picture (bands / camera / crt / none — none:
@@ -227,10 +289,11 @@ export function makeAurora() {
       let surge = 0,
         su = 0; // a surge: brightening travelling along the curtain
       if (op.auto) {
-        if (nextSurge == null) nextSurge = T + 25 + Math.random() * 50;
+        if (nextSurge == null)
+          nextSurge = T + FX().auroraSurgeFirstMin / 1000 + Math.random() * (FX().auroraSurgeFirstSpan / 1000);
         if (T > nextSurge && surgeAt == null) {
           surgeAt = T;
-          nextSurge = T + 60 + Math.random() * 60;
+          nextSurge = T + FX().auroraSurgeNextMin / 1000 + Math.random() * (FX().auroraSurgeNextSpan / 1000);
         }
         if (surgeAt != null) {
           const p = (T - surgeAt) / 11;
@@ -658,7 +721,7 @@ export function makeCamera() {
   /** @param {number} dt */
   function easeMask(dt) {
     if (!mcur) return false;
-    const k = Math.min(1, dt / 1500),
+    const k = Math.min(1, dt / FX().cameraMaskEase),
       D = mimg.data; // a new preview (once a step) eases in, never snaps
     for (let i = 0; i < mcur.length; i++) {
       mcur[i] += (mt[i] - mcur[i]) * k;
@@ -693,7 +756,16 @@ export function makeCamera() {
       dy = Math.sin(a);
       L = D * (0.2 + 0.35 * Math.random());
     } // a sporadic: any way
-    meteors.push({ x, y, dx, dy, len: L, t0: t, dur: 650 + (900 * L) / D, w: (1.3 + Math.random() * 0.9) * d });
+    meteors.push({
+      x,
+      y,
+      dx,
+      dy,
+      len: L,
+      t0: t,
+      dur: FX().cameraMeteor + (FX().cameraMeteorPerLength * L) / D,
+      w: (1.3 + Math.random() * 0.9) * d,
+    });
     lastMet = Math.max(lastMet, t);
   }
   /** @param {CanvasRenderingContext2D} ctx @param {number} t @param {number} d @param {number} str @param {any[]} [list] */
@@ -754,7 +826,7 @@ export function makeCamera() {
   }
   /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} t @param {number} d @param {number} str */
   function drawSat(ctx, W, H, t, d, str) {
-    if (satAt == null) satAt = t + 60000 + Math.random() * 60000;
+    if (satAt == null) satAt = t + FX().cameraSatFirstMin + Math.random() * FX().cameraSatFirstSpan;
     if (!sat && t > satAt) {
       const e = Math.random() < 0.5,
         y0 = H * (0.1 + Math.random() * 0.7),
@@ -765,14 +837,14 @@ export function makeCamera() {
         x1: e ? W + 10 * d : -10 * d,
         y1,
         t0: t,
-        dur: 11000 + Math.random() * 5000,
+        dur: FX().cameraSatCrossMin + Math.random() * FX().cameraSatCrossSpan,
       };
     }
     if (!sat) return;
     const p = (t - sat.t0) / sat.dur;
     if (p > 1.6) {
       sat = null;
-      satAt = t + 70000 + Math.random() * 60000;
+      satAt = t + FX().cameraSatNextMin + Math.random() * FX().cameraSatNextSpan;
       return;
     }
     const hp = Math.min(1, p),
@@ -801,7 +873,6 @@ export function makeCamera() {
   /* the finish, a crescendo: for ~1.4 s the sky spins up (ease-in, the trails smearing into rings) and the aurora flares; at
     the peak a soft exposure flash; effects.js then dissolves the night in ~0.9 s and the image is there. Deterministic —
     it starts when the job is done, never on a guess of when it will be. The counter stops, the dot goes out. */
-  const RAMP = 1400;
   let finT = /** @type {number | null} */ (null),
     fin = /** @type {{ th: number, age: number, span: number, pr: number } | null} */ (null),
     live = { th: 0, age: 0, span: 0, pr: 0 },
@@ -819,8 +890,13 @@ export function makeCamera() {
     /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} t @param {string[]} cols */
     drawFlash(ctx, W, H, t, cols) {
       if (finT == null) return;
-      const r = t - finT - RAMP,
-        fl = r < 0 ? Math.pow(Math.max(0, 1 + r / RAMP), 2) : r < 900 ? 0.5 + 0.5 * Math.cos((Math.PI * r) / 900) : 0;
+      const r = t - finT - FX().crescendo,
+        fl =
+          r < 0
+            ? Math.pow(Math.max(0, 1 + r / FX().crescendo), 2)
+            : r < FX().cameraFlash
+              ? 0.5 + 0.5 * Math.cos((Math.PI * r) / FX().cameraFlash)
+              : 0;
       /* the light builds through the whole ramp, then releases */
       if (fl < 0.01) return;
       ctx.save();
@@ -870,7 +946,7 @@ export function makeCamera() {
         sky = st.sky != null ? st.sky : t / 1000,
         th = OMEGA * sky;
       const fz = finT != null && t >= finT,
-        ramp = fz ? Math.min(1, (t - /** @type {number} */ (finT)) / RAMP) : 0,
+        ramp = fz ? Math.min(1, (t - /** @type {number} */ (finT)) / FX().crescendo) : 0,
         acc = ramp * ramp * ramp;
       if (fz) {
         if (!fin) fin = { ...live };
@@ -883,18 +959,18 @@ export function makeCamera() {
       if (fz)
         str *= Math.max(
           0,
-          1 - Math.max(0, t - /** @type {number} */ (finT) - RAMP) / 450,
+          1 - Math.max(0, t - /** @type {number} */ (finT) - FX().crescendo) / FX().cameraSkyGone,
         ); /* at the peak the flash consumes the sky: gone in ~0.45 s */
       const want = SPAN * Math.min(1, pr / 0.9);
       span = fz
         ? /** @type {{ span: number }} */ (fin).span
         : filmT < -1e8
           ? want
-          : span + (want - span) * Math.min(1, dt / 2500);
+          : span + (want - span) * Math.min(1, dt / FX().cameraSpanEase);
       if (!fz) live = { th, age, span, pr }; // eases: a step finishing early or late doesn't jolt the trails
       if (!fz && st.step != null && lastStep != null && st.step > lastStep) meteor(W, H, d, t);
       if (st.step != null) lastStep = st.step; // a meteor for each finished step
-      if (!pending && t - filmT > 2000) {
+      if (!pending && t - filmT > FX().cameraFilmEvery) {
         filmT = t;
         if (wk) {
           pending = true;
@@ -925,7 +1001,7 @@ export function makeCamera() {
         fresh = false;
         xfT = t;
       }
-      const xf = prev ? Math.min(1, (t - xfT) / 600) : 1;
+      const xf = prev ? Math.min(1, (t - xfT) / FX().cameraCrossfade) : 1;
       if (prev && xf >= 1) {
         if (prev.close) prev.close();
         prev = null;
@@ -955,7 +1031,7 @@ export function makeCamera() {
         mt = /** @type {any} */ (mcur = null);
         hasMask = false;
       } else {
-        if (t - maskT > 400) {
+        if (t - maskT > FX().cameraMaskEvery) {
           maskT = t;
           try {
             sampleMask(st.src, W, H, res);
@@ -992,7 +1068,7 @@ export function makeCamera() {
         surgeK: 0.45,
         boost: brk,
       }); // gentler surges: a dark theme
-      if (wk && !fz && !aeBusy && t - aeT > 250) {
+      if (wk && !fz && !aeBusy && t - aeT > FX().cameraMeterEvery) {
         aeT = t;
         aeBusy = true; // auto-exposure, like the camera it is, metered on the highlights (worker)
         createImageBitmap(sm, { resizeWidth: 64, resizeHeight: 80, resizeQuality: "medium" }).then(
@@ -1056,7 +1132,7 @@ export function makeCamera() {
         sc = String(Math.floor(age % 60)).padStart(2, "0");
       ctx.font = `500 ${fs}px "IBM Plex Mono",ui-monospace,monospace`;
       ctx.textBaseline = "bottom";
-      ctx.globalAlpha = fz ? 0 : str * (0.55 + 0.45 * (Math.sin(t / 420) > 0 ? 1 : 0));
+      ctx.globalAlpha = fz ? 0 : str * (0.55 + 0.45 * (Math.sin(t / FX().cameraRecBlink) > 0 ? 1 : 0));
       ctx.fillStyle = "#ff5a4e";
       ctx.beginPath();
       ctx.arc(m + fs * 0.35, H - m - fs * 0.42, fs * 0.3, 0, 6.283);
@@ -1456,7 +1532,7 @@ export function makeCodeBg() {
     streams = /** @type {any[]} */ ([]),
     fatT = 0,
     events = /** @type {any[]} */ ([]),
-    evT = 8000 + Math.random() * 12000;
+    evT = FX().codeEventFirstMin + Math.random() * FX().codeEventFirstSpan;
   /** @param {number} W @param {number} H @param {number} d @param {boolean} run @param {number} fx @param {boolean} fat @param {boolean} [first] */
   const spawn = (W, H, d, run, fx, fat, first) => {
     const r = Math.random(),
@@ -1508,8 +1584,8 @@ export function makeCodeBg() {
       /* clusters: every 15–35 s a small area comes alive — 3–8 columns over 1.5–4 s, each its own size, speed and length */
       evT -= dt;
       if (evT <= 0 && !st.reduce) {
-        evT = 15000 + Math.random() * 20000;
-        const dur = 1500 + Math.random() * 2500,
+        evT = FX().codeEventEveryMin + Math.random() * FX().codeEventEverySpan;
+        const dur = FX().codeEventDurMin + Math.random() * FX().codeEventDurSpan,
           n = 3 + ((Math.random() * 6) | 0);
         events.push({
           x: (0.08 + Math.random() * 0.84) * W,
@@ -1531,7 +1607,7 @@ export function makeCodeBg() {
       fatT -= dt;
       if (fatT <= 0 && !streams.some(s => s.fat)) {
         streams.push(spawn(W, H, d, st.run, st.fx, true));
-        fatT = 10000 + Math.random() * 10000;
+        fatT = FX().codeFatEveryMin + Math.random() * FX().codeFatEverySpan;
       }
       const sp = (st.run ? 1 : 0.55) * (st.reduce ? 0 : 1),
         dim = st.dim;
@@ -1550,8 +1626,8 @@ export function makeCodeBg() {
           streams.splice(i, 1);
           continue;
         }
-        if (Math.random() < (0.015 * dt) / 33) {
-          (s.hu || (s.hu = []))[(Math.random() * s.L) | 0] = t + 700 + Math.random() * 1000;
+        if (Math.random() < (0.015 * dt) / FX().codeFrame) {
+          (s.hu || (s.hu = []))[(Math.random() * s.L) | 0] = t + FX().codeDoubtMin + Math.random() * FX().codeDoubtSpan;
         } // now and then a glyph isn't sure
         for (let c = 0; c < s.L; c++) {
           const y = s.y - c * ch;
@@ -1579,7 +1655,8 @@ export function makeCodeBg() {
           );
           if (c === 0) {
             ctx.globalAlpha =
-              Math.min(1, a) * (0.06 + 0.34 * Math.pow(0.5 + 0.5 * Math.sin(t / (700 + s.s * 6) + s.x * 0.013), 2));
+              Math.min(1, a) *
+              (0.06 + 0.34 * Math.pow(0.5 + 0.5 * Math.sin(t / (FX().codeHeadPulse + s.s * 6) + s.x * 0.013), 2));
             /* only the head glows, pulsing slowly */
             ctx.drawImage(
               A.a,
@@ -1705,7 +1782,7 @@ export function makeCRT() {
     if (k < 0.45)
       gl = {
         type: "block",
-        until: t + 180 + Math.random() * 220,
+        until: t + FX().crtBlockMin + Math.random() * FX().crtBlockSpan,
         x0: (Math.random() * nc) | 0,
         y0: (Math.random() * nr) | 0,
         w: (2 + Math.random() * 6) | 0,
@@ -1714,7 +1791,7 @@ export function makeCRT() {
     else if (k < 0.8)
       gl = {
         type: "tear",
-        until: t + 90 + Math.random() * 110,
+        until: t + FX().crtTearMin + Math.random() * FX().crtTearSpan,
         y0: (Math.random() * nr) | 0,
         h: (1 + Math.random() * 4) | 0,
         dx: (Math.random() < 0.5 ? -1 : 1) * ((1 + Math.random() * 3) | 0) * cs,
@@ -1722,7 +1799,7 @@ export function makeCRT() {
     else
       gl = {
         type: "drop",
-        until: t + 70 + Math.random() * 90,
+        until: t + FX().crtDropMin + Math.random() * FX().crtDropSpan,
         x0: (Math.random() * nc) | 0,
         w: (1 + Math.random() * 4) | 0,
       };
@@ -1734,7 +1811,7 @@ export function makeCRT() {
       cols.forEach(c => Object.assign(c, newCol(true)));
       lum = null;
       gl = null;
-      glT = t + 4000 + Math.random() * 5000;
+      glT = t + FX().crtGlitchFirstMin + Math.random() * FX().crtGlitchFirstSpan;
     },
     /** @param {CanvasRenderingContext2D} ctx @param {number} W @param {number} H @param {number} t @param {number} dt @param {number} d @param {string[]} c3 @param {Record<string, any>} st */
     draw(ctx, W, H, t, dt, d, c3, st) {
@@ -1746,24 +1823,24 @@ export function makeCRT() {
       overlay(W, H, d);
       if (on < 0) {
         on = t;
-        glT = t + 2500;
+        glT = t + FX().crtGlitchStart;
       }
       const age = t - on;
-      if (t - lumT > 500) {
+      if (t - lumT > FX().crtSampleEvery) {
         lumT = t;
         try {
           sample(st.src);
         } catch (e) {}
       }
       acc += dt;
-      if (acc >= 33) {
+      if (acc >= FX().crtFrame) {
         const step = Math.min(0.1, acc / 1000);
         acc = 0; // the code moves at ~30 fps
-        const lone = age < 1400,
+        const lone = age < FX().crtLone,
           res = st.resolve;
-        if (t > glT && age > 2000 && !st.reduce) {
+        if (t > glT && age > FX().crtGlitchAfter && !st.reduce) {
           glitch(t);
-          glT = t + 6000 + Math.random() * 8000;
+          glT = t + FX().crtGlitchEveryMin + Math.random() * FX().crtGlitchEverySpan;
         }
         if (gl && t > gl.until) gl = null;
         for (let i = 0; i < nc; i++) {
@@ -1773,12 +1850,12 @@ export function makeCRT() {
               ? i === Math.floor(nc * 0.38)
                 ? 0
                 : null
-              : Math.random() < (0.05 + res * 0.4) * (age < 3000 ? 0.6 : 1) * (c.boost > t ? 5 : 1)
+              : Math.random() < (0.05 + res * 0.4) * (age < FX().crtCalm ? 0.6 : 1) * (c.boost > t ? 5 : 1)
                 ? 0
                 : null; // one lone stream first, then the cascade
             if (start === null) continue;
             c.h = -Math.random() * 3;
-            for (let k = -3; k <= 3; k++) if (k && cols[i + k]) cols[i + k].boost = t + 700;
+            for (let k = -3; k <= 3; k++) if (k && cols[i + k]) cols[i + k].boost = t + FX().crtBoost;
           } // a start makes its neighbours likelier to start: patches, not an even rain
           c.h += c.v * step;
           const hd = Math.floor(c.h);
@@ -1786,7 +1863,7 @@ export function makeCRT() {
             c.last = hd;
             const n = i * nr + hd;
             glyph[n] = rnd();
-            if (Math.random() < 0.25) hunt[n] = t + 600 + Math.random() * 1000;
+            if (Math.random() < 0.25) hunt[n] = t + FX().crtDoubtMin + Math.random() * FX().crtDoubtSpan;
           } // now and then a fresh cell isn't sure yet
           if (c.h - c.L > nr) {
             Object.assign(c, newCol(false));
@@ -1795,7 +1872,7 @@ export function makeCRT() {
         }
         for (let q = Math.round(nc * 0.008); q > 0; q--) {
           const n = (Math.random() * nc * nr) | 0;
-          if (hunt[n] < t) hunt[n] = t + 700 + Math.random() * 900;
+          if (hunt[n] < t) hunt[n] = t + FX().crtRedoubtMin + Math.random() * FX().crtRedoubtSpan;
         } // rarely, a standing one doubts itself
         s.clearRect(0, 0, W, H);
         const fl = 0.94 + 0.06 * Math.random(); // flicker
@@ -1832,7 +1909,8 @@ export function makeCRT() {
             s.drawImage(at.a, glyph[n] * at.cw, row * at.ch, at.cw, at.ch, x - at.pad + dx, y - at.pad, at.cw, at.ch);
             if (r === hd) {
               s.globalAlpha =
-                Math.min(1, a * fl) * (0.08 + 0.42 * Math.pow(0.5 + 0.5 * Math.sin(t / 520 + i * 1.7), 2));
+                Math.min(1, a * fl) *
+                (0.08 + 0.42 * Math.pow(0.5 + 0.5 * Math.sin(t / FX().crtHeadPulse + i * 1.7), 2));
               /* a pulsing head, not a double image */
               s.drawImage(
                 at.a,
@@ -1852,8 +1930,8 @@ export function makeCRT() {
       }
       const str = st.str;
       ctx.save();
-      if (age < 650) {
-        const p = age / 650;
+      if (age < FX().crtWarmup) {
+        const p = age / FX().crtWarmup;
         ctx.fillStyle = "rgba(0,0,0,.92)";
         ctx.fillRect(0, 0, W, H); // power-on: a line that blooms open
         const lw = W * Math.min(1, p / 0.35),

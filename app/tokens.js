@@ -54,6 +54,23 @@ export function num(name) {
   return v;
 }
 
+/** a group of duration tokens read as one object, for code that runs every frame (the effects): one read per change of
+ * the tokens, not one per particle. A key names its token: `burstLife` → `<prefix>burst-life`, in ms.
+ * @template {string} K @param {string} prefix the group's names start with this (`--fx-aurora-`) @param {readonly K[]} keys
+ * @returns {() => Record<K, number>} */
+export function msGroup(prefix, keys) {
+  let gen = -1,
+    /** @type {Record<K, number>} */ v = /** @type {any} */ ({});
+  return () => {
+    if (gen !== tokenGen) {
+      v = /** @type {any} */ ({});
+      for (const k of keys) v[k] = ms(prefix + k.replace(/[A-Z]/g, c => "-" + c.toLowerCase()));
+      gen = tokenGen;
+    }
+    return v;
+  };
+}
+
 /** a number from tokens.css, read where it's used @param {string} name its custom property */
 export const tok = num;
 

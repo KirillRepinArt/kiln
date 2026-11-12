@@ -9,7 +9,7 @@ import { jobProgress } from "./progress.js";
 import { makeCRT, makeCamera, makeCodeBg, makeHalo, makeNightSky, mixHex, skin, themeCols, toHex } from "./skins.js";
 import { S, save } from "./state.js";
 import { moveThumb } from "./tabs.js";
-import { ms } from "./tokens.js";
+import { easing, ms, msGroup } from "./tokens.js";
 
 /* ambient glow + window title + favicon progress ring (throttled) */
 const amb = /** @type {HTMLCanvasElement} */ ($("amb")),
@@ -219,6 +219,45 @@ function coverFlat(k) {
 
 /* what this file does at start-up: wiring its controls, first renders (called from main.js, in order) */
 export function initEffects() {
+  /* the effects' timings: tokens (--fx-*), read once per change of the tokens — every frame function reads F = FX() */
+  const FX = msGroup("--fx-", [
+    "crescendo",
+    "bgThrottleRun",
+    "bgThrottleIdle",
+    "bgStepMax",
+    "codeIdle",
+    "codeDimEase",
+    "auroraSwell",
+    "auroraSwellDelay",
+    "starsShootEvery",
+    "starsShootLife",
+    "coverFade",
+    "coverClear",
+    "embersBurst",
+    "embersBurstCamera",
+    "cameraSwell",
+    "replayCover",
+    "replayBurst",
+    "glowEase",
+    "glowBreathe",
+    "haloRise",
+    "haloDecay",
+    "haloFinishWindow",
+    "haloTickFinish",
+    "haloTick",
+    "stepMax",
+    "stepMaxReal",
+    "frame",
+    "coverHeldAge",
+    "coverLift",
+    "coverEase",
+    "crtSweep",
+    "embersLifeMin",
+    "embersLifeSpan",
+    "embersGlint",
+    "embersSway",
+    "embersFlicker",
+  ]);
   /* app background, set by the skin: starfield (three parallax layers, gentle twinkle, a rare shooting star),
    northern lights over a dimmer starfield, or sparse cold code. Redrawn at ~30 fps. */
   (function () {
@@ -276,6 +315,7 @@ export function initEffects() {
     }
     /** @param {number} t */
     function draw(t) {
+      const F = FX();
       const idle = ((S.set || {}).stars || "on") !== "off";
       cv.classList.toggle("on", idle);
       if (idle) {
@@ -285,12 +325,12 @@ export function initEffects() {
           was = bg;
           c.clearRect(0, 0, W, H);
         }
-        if (t - lastDraw < (current() ? 49 : 31)) {
+        if (t - lastDraw < (current() ? F.bgThrottleRun : F.bgThrottleIdle)) {
           requestAnimationFrame(draw);
           return;
         }
         /* ~30 fps, ~20 while a job runs: the GPU is Forge's then */
-        const dt = Math.min(66, t - lastDraw);
+        const dt = Math.min(F.bgStepMax, t - lastDraw);
         lastDraw = t;
         if (!bcols || bcT !== window._themeV) {
           bcols = themeCols();
@@ -302,7 +342,7 @@ export function initEffects() {
           const run = !!current(),
             f = $("frame").getBoundingClientRect(),
             cb = cv.getBoundingClientRect();
-          dimV += ((!run && t - lastIn > 120000 ? 0.45 : 1) - dimV) * Math.min(1, dt / 1500); // idle for 2 min: dims
+          dimV += ((!run && t - lastIn > F.codeIdle ? 0.45 : 1) - dimV) * Math.min(1, dt / F.codeDimEase); // idle for 2 min: dims
           code.draw(c, W, H, t, dt, d, bcols, {
             run,
             fx: (f.left + f.width / 2 - cb.left) * d,
@@ -330,7 +370,7 @@ export function initEffects() {
             c.fill();
           }
         if (bg === "aurora") {
-          const wv = window._bgWave ? (t - window._bgWave) / 2800 : 9,
+          const wv = window._bgWave ? (t - window._bgWave) / F.auroraSwell : 9,
             fl =
               wv >= 0 && wv < 1
                 ? Math.pow(Math.sin(Math.PI * Math.pow(wv, 0.7)), 2)
@@ -348,11 +388,11 @@ export function initEffects() {
           });
         }
         if (!reduce && bg === "stars") {
-          if (!shoot && R() < dt / 9000)
+          if (!shoot && R() < dt / F.starsShootEvery)
             shoot = { x: W * R() * 0.7, y: H * R() * 0.4, vx: 0.5 + R() * 0.4, vy: 0.3 + R() * 0.15, life: 0 };
           if (shoot) {
             shoot.life += dt;
-            const k = shoot.life / 900,
+            const k = shoot.life / F.starsShootLife,
               len = 120 * (devicePixelRatio || 1);
             const x = shoot.x + shoot.vx * shoot.life,
               y = shoot.y + shoot.vy * shoot.life;
@@ -382,7 +422,7 @@ export function initEffects() {
       const w = /** @type {HTMLElement | null} */ (document.querySelector(".trw"));
       if (w) delete w.dataset.ko;
     });
-  setInterval(status, 400);
+  setInterval(status, ms("--tick-status"));
   /* ======================= effects =======================
    VEIL while a job runs: the young preview is mostly hidden under flowing diagonal light and drifting sparkles,
    and emerges as progress grows (hover the image to peek through). EMBERS: a short burst when a job finishes. */
@@ -402,7 +442,7 @@ export function initEffects() {
         /** @type {{ x: number, y: number, vx: number, vy: number, life: number, max: number, r: number, c: string, ph: number,
          *   g?: boolean, sc?: string }[]} (g / sc: Aurora's crisp stars, set on first draw) */ ([]),
       burst = 0,
-      burstMax = 2400,
+      burstMax = FX().embersBurst,
       embersHalf = false,
       cols = ["#FF8A00", "#FF5E8A", "#3FE0F0"],
       colT = 0;
@@ -433,8 +473,7 @@ export function initEffects() {
       }
       g.putImageData(d, 0, 0);
     }
-    const HOLD = 0.7,
-      FADE = 5000; /* Aurora: the night layer holds at 70 % from mid-job, then fades slowly after the finish */
+    const HOLD = 0.7; /* Aurora: the night layer holds at 70 % from mid-job, then fades slowly after the finish (--fx-cover-fade) */
     /** @param {number} a @param {number} b @param {number} x */
     const smooth = (a, b, x) => {
       const q = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -479,6 +518,7 @@ export function initEffects() {
     }
     sprites();
     window.emberBurst = function () {
+      const F = FX();
       if (!skin().finish || reduce || ((S.set || {}).embers || "on") === "off" || $("frame").classList.contains("held"))
         return;
       if (skin().cover === "crt") {
@@ -489,31 +529,31 @@ export function initEffects() {
       if (skin().cover === "camera") {
         const n = performance.now();
         cam.finish(n);
-        fadeT = n + 1400;
-        fadeDur = 500;
+        fadeT = n + F.crescendo;
+        fadeDur = F.coverClear;
         finishAt = n;
         finStr = str;
         setTimeout(() => {
           if (S.view === "gen") {
-            burst = burstMax = 1500;
+            burst = burstMax = F.embersBurstCamera;
             embersHalf = true;
           }
-        }, 1400); /* the release throws stars over the photo: a 1.5 s window (the late ones cut), fading ~60 % of the way up */
+        }, F.crescendo); /* the release throws stars over the photo: a 1.5 s window (the late ones cut), fading ~60 % of the way up */
         setTimeout(() => {
           try {
             $("frame").animate([{ scale: "1" }, { scale: "1.012", offset: 0.3 }, { scale: "1" }], {
-              duration: 560,
-              easing: "cubic-bezier(.2,.9,.25,1)",
+              duration: F.cameraSwell,
+              easing: easing("--fx-ease-camera-swell"),
             });
           } catch (e) {}
-        }, 1400);
+        }, F.crescendo);
         /* the release lands: the box swells a hair and settles */
         fadeFrom = nstr;
-        window._bgWave = n + 700;
+        window._bgWave = n + F.auroraSwellDelay;
         return;
       } /* the crescendo (skins.js): 1.4 s of build, then the night clears in ~0.5 s under the flash (which lasts ~0.9 s): no dip. The sky behind
    the app answers ~0.7 s later (its swell peaks around the release) */
-      burst = burstMax = 2400;
+      burst = burstMax = F.embersBurst;
       embersHalf = false;
     };
     /* F8: replay the theme's finish over the image on show — to tune it without waiting for a job (Aurora: the cover first) */
@@ -521,8 +561,9 @@ export function initEffects() {
       if (e.key !== "F8" || current() || S.view !== "gen" || !$("frame").classList.contains("has")) return;
       e.preventDefault();
       if (skin().cover === "camera") {
-        window._cpv = Date.now() + 1600;
-        setTimeout(() => window.emberBurst && window.emberBurst(), 1500);
+        const F = FX();
+        window._cpv = Date.now() + F.replayCover;
+        setTimeout(() => window.emberBurst && window.emberBurst(), F.replayBurst);
       } else window.emberBurst && window.emberBurst();
     });
     /* Privacy: the eye (top right of the image) and F9. On: the picture is covered outright, running or finished (no
@@ -573,6 +614,7 @@ export function initEffects() {
     ); /* works while typing in the prompt */
     /** @param {number} t @param {number} dt @param {string | undefined} cover0 @param {boolean} [force] draw now */
     function haloFrame(t, dt, cover0, force) {
+      const F = FX();
       /* Aurora's halo: the image box glows (skins.js makeHalo). On while a job runs, fading out with the night layer after
      the finish. A step's meteor makes it respond, the finish a little more — always with a soft rise (~0.4 s) and fall,
      never a jump. ~20 fps: it moves slowly. */
@@ -588,17 +630,21 @@ export function initEffects() {
             ); /* only round the live render: round a still picture it was just a light left on */
         /* it's a kiln: while a job runs the fire shows wherever you are — round the render, the picture you browse, or the
       Queue / LoRAs / PNG Info panel; after the finish it fades with the night layer as before */
-        fgA += ((on ? Math.min(1, nstr / HOLD) : 0) - fgA) * Math.min(1, dt / 400);
+        fgA += ((on ? Math.min(1, nstr / HOLD) : 0) - fgA) * Math.min(1, dt / F.glowEase);
         if (S.view !== "gen") fgA = 0; /* another tab: gone at once */
         const fr = $("frame");
         if (fgA > 0.01) {
-          if (force || t - haloT >= (t - finishAt < 2200 ? 14 : 48)) {
+          if (force || t - haloT >= (t - finishAt < F.haloFinishWindow ? F.haloTickFinish : F.haloTick)) {
             haloT = t; /* full frame rate while the finish runs */
             const gi = cam.glowInfo(),
               env = (/** @type {number} */ ms, /** @type {number} */ dec) =>
-                ms < 0 ? 0 : ms < 400 ? (x => x * x * (3 - 2 * x))(ms / 400) : Math.exp(-(ms - 400) / dec),
+                ms < 0
+                  ? 0
+                  : ms < F.haloRise
+                    ? (x => x * x * (3 - 2 * x))(ms / F.haloRise)
+                    : Math.exp(-(ms - F.haloRise) / dec),
               boost =
-                0.3 * env(t - gi.met, 1300) +
+                0.3 * env(t - gi.met, F.haloDecay) +
                 (f =>
                   f < 0
                     ? 0
@@ -607,7 +653,7 @@ export function initEffects() {
                       : f < 1.15
                         ? 0.8 + 0.6 * (x => x * x * (3 - 2 * x))((f - 1) / 0.15)
                         : 1.4 * Math.exp(-(f - 1.15) * 2.2))(
-                  (t - finishAt) / 1400,
+                  (t - finishAt) / F.crescendo,
                 ); /* builds with the crescendo, exhales at the release */
             const a = fr.getBoundingClientRect(),
               dp = devicePixelRatio || 1,
@@ -632,7 +678,7 @@ export function initEffects() {
               FH = a.height * dp,
               rad = (parseFloat(getComputedStyle(fr).borderTopLeftRadius) || 24) * dp,
               hc = cols.map(toHex);
-            const k = fgA * (reduce ? 0.75 + 0.25 * Math.sin(t / 1800) : 1); // reduced motion: a still glow that gently breathes
+            const k = fgA * (reduce ? 0.75 + 0.25 * Math.sin(t / F.glowBreathe) : 1); // reduced motion: a still glow that gently breathes
             fgc.clearRect(0, 0, cw, ch);
             halo.draw(fgc, X, Y, FW, FH, reduce ? 0 : t / 1000, hc, {
               reach: R * dp,
@@ -654,7 +700,7 @@ export function initEffects() {
         behind it and Chromium repeats its edge pixels inward, so the pulsing glow showed as a flickering band inside the
         box. Soft holes, already dark at the panel's edge: the light fades out in the gap before it. */
             if (document.body.classList.contains("glass")) {
-              const F = 10;
+              const CUT = 10;
               const boxes = [];
               for (const el of document.querySelectorAll(HALO_CUT)) {
                 const r = el.getBoundingClientRect();
@@ -674,7 +720,7 @@ export function initEffects() {
                   r: (parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0) * dp,
                 });
               }
-              softCut(fgc, boxes, F * dp, F * dp);
+              softCut(fgc, boxes, CUT * dp, CUT * dp);
             }
             fgc.globalCompositeOperation = "source-over";
             fr.classList.add("halo");
@@ -690,8 +736,9 @@ export function initEffects() {
     window.haloNow = () => haloFrame(performance.now(), 0, skin().cover, true);
     /** @param {number} t */
     function draw(t) {
-      const dt = Math.min(50, t - last || 16),
-        dtr = Math.min(1000, t - last || 16);
+      const F = FX();
+      const dt = Math.min(F.stepMax, t - last || F.frame),
+        dtr = Math.min(F.stepMaxReal, t - last || F.frame);
       last = t;
       /* dtr: real time, so the cover's fades keep their speed when the page runs slow (the GPU busy loading a model) */
       if (colT !== window._themeV) {
@@ -714,7 +761,7 @@ export function initEffects() {
       if (held !== CV.held) {
         CV.held = held;
         fr0.classList.toggle("held", held);
-        if (held && !j) CV.t0 = Date.now() - 20000;
+        if (held && !j) CV.t0 = Date.now() - F.coverHeldAge;
       }
       const fast =
         (S.set || {}).fastcover === "skip" &&
@@ -784,25 +831,26 @@ export function initEffects() {
         target = hover ? 0.1 : 0.8; // theme picked: preview the cover on the shown image
       if (cover0 === "camera") {
         const r = t - finishAt;
-        if (r < 1400) target = Math.max(target, finStr);
-        else if (r < 1900) target = Math.max(target, finStr * (0.5 + 0.5 * Math.cos((Math.PI * (r - 1400)) / 500)));
+        if (r < F.crescendo) target = Math.max(target, finStr);
+        else if (r < F.crescendo + F.coverLift)
+          target = Math.max(target, finStr * (0.5 + 0.5 * Math.cos((Math.PI * (r - F.crescendo)) / F.coverLift)));
       } // the image's blur holds through the crescendo and lifts with the night
       if (held) {
         target = 1;
         tN = 1;
       } // held: full, no fading with the steps, no hover peek
-      str += (target - str) * Math.min(1, dtr / 260);
+      str += (target - str) * Math.min(1, dtr / F.coverEase);
       if (str < 0.002 || (shownClean() && !held && !(Date.now() < (window._cpv || 0)))) str = 0; // a finished image you browse to shows clean at once
       if (tN == null) tN = target;
       if (j && picMode() === "live") fadeT = 0;
       else if (fadeT) {
-        const p = Math.max(0, (t - fadeT) / (fadeDur || FADE));
+        const p = Math.max(0, (t - fadeT) / (fadeDur || F.coverFade));
         if (p >= 1) {
           fadeT = 0;
           fadeDur = 0;
         } else tN = fadeFrom * (0.5 + 0.5 * Math.cos(Math.PI * p)) * (hover ? 0.12 : 1);
       } // after the finish: a slow fade, slow at first
-      nstr += (tN - nstr) * Math.min(1, dtr / 260);
+      nstr += (tN - nstr) * Math.min(1, dtr / F.coverEase);
       if (nstr < 0.002 || (shownClean() && !held && !(Date.now() < (window._cpv || 0)))) nstr = 0;
       /** @type {HTMLElement} */ (document.getElementById("frame")).style.setProperty(
         "--vf",
@@ -907,7 +955,7 @@ export function initEffects() {
       e.clearRect(0, 0, W, H);
       if (W && S.view === "gen" && skin().cover === "camera") cam.drawFlash(e, W, H, t, cols.map(toHex));
       if (sweepT && W) {
-        const p = (t - sweepT) / 900;
+        const p = (t - sweepT) / F.crtSweep;
         if (p >= 1 || p < 0) sweepT = 0;
         else if (S.view === "gen") crt.sweep(e, W, H, p, d, cols.map(toHex));
       }
@@ -916,7 +964,7 @@ export function initEffects() {
         /* full rate at the start, tapering to 0 over the window */
         let n = dt * 0.09 * k * (W / 600);
         while (n-- > 0 || Math.random() < n) {
-          const mx = 2200 + Math.random() * 2400;
+          const mx = F.embersLifeMin + Math.random() * F.embersLifeSpan;
           embers.push({
             x: Math.random() * W,
             y: H + 6 * d,
@@ -937,13 +985,13 @@ export function initEffects() {
         embers = embers.filter(p => {
           p.life += dt;
           if (p.life > p.max) return false;
-          p.x += (p.vx + Math.sin(p.life / 420 + p.ph) * 0.015 * d) * dt;
+          p.x += (p.vx + Math.sin(p.life / F.embersSway + p.ph) * 0.015 * d) * dt;
           p.y += p.vy * dt;
           const q = p.life / p.max;
           const a =
             Math.min(1, q * 6) *
             (hardStars ? Math.pow(1 - q, 1.8) : 1 - q) *
-            (0.75 + 0.25 * Math.sin(p.life / 90 + p.ph));
+            (0.75 + 0.25 * Math.sin(p.life / F.embersFlicker + p.ph));
           const r = p.r * 5 * (1 - q * 0.4);
           if (hardStars) {
             if (p.g == null) {
@@ -951,7 +999,7 @@ export function initEffects() {
               p.sc = Math.random() < 0.25 ? mixHex("#eef3ff", toHex(cols[1]), 0.45) : "#eef3ff";
             } // Aurora: crisp stars, like its sky — a few with a small glint
             const s = Math.max(1, p.r * (p.g ? 1.15 : 0.75)),
-              tw = a * (0.6 + 0.4 * Math.sin(p.life / 140 + p.ph * 3));
+              tw = a * (0.6 + 0.4 * Math.sin(p.life / F.embersGlint + p.ph * 3));
             e.globalAlpha = tw;
             e.fillStyle = /** @type {string} */ (p.sc); // set above, on its first draw
             e.fillRect(Math.round(p.x - s / 2), Math.round(p.y - s / 2), Math.ceil(s), Math.ceil(s));

@@ -2472,6 +2472,14 @@
       },
       "$description": "the page re-checking its tabs, picture state and arrows against the state (a fallback loop: measure what it corrects before removing it)"
     },
+    "status": {
+      "$type": "duration",
+      "$value": {
+        "value": 400,
+        "unit": "ms"
+      },
+      "$description": "the window title, the favicon and the status re-read this often"
+    },
     "lora-rescan": {
       "$type": "duration",
       "$value": {
@@ -2555,6 +2563,759 @@
       "$type": "cubicBezier",
       "$value": "{e.swing}",
       "$description": "the hourglass's flip: a deliberate swing"
+    }
+  },
+  "fx": {
+    "$extensions": {
+      "dev.kiln": {
+        "prefix": "fx"
+      }
+    },
+    "crescendo": {
+      "$type": "duration",
+      "$value": {
+        "value": 1400,
+        "unit": "ms"
+      },
+      "$description": "the finish's build: the cover holds, the halo swells, then the release",
+      "$extensions": {
+        "dev.kiln": {
+          "above": "THE EFFECTS' TIMINGS — one group, read once per change of the tokens (effects.js / skins.js: tokens.js msGroup); tuned like the rest"
+        }
+      }
+    },
+    "bg-throttle-run": {
+      "$type": "duration",
+      "$value": {
+        "value": 49,
+        "unit": "ms"
+      },
+      "$description": "the background draws at most this often while a job runs (~20 fps: the GPU is Forge's)"
+    },
+    "bg-throttle-idle": {
+      "$type": "duration",
+      "$value": {
+        "value": 31,
+        "unit": "ms"
+      },
+      "$description": "the background draws at most this often at rest (~30 fps)"
+    },
+    "bg-step-max": {
+      "$type": "duration",
+      "$value": {
+        "value": 66,
+        "unit": "ms"
+      },
+      "$description": "the longest step the background moves in one draw (a slow frame doesn't jump)"
+    },
+    "code-idle": {
+      "$type": "duration",
+      "$value": {
+        "value": 120000,
+        "unit": "ms"
+      },
+      "$description": "the code rain dims after this long without input"
+    },
+    "code-dim-ease": {
+      "$type": "duration",
+      "$value": {
+        "value": 1500,
+        "unit": "ms"
+      },
+      "$description": "the code rain's dimming: its smoothing time"
+    },
+    "aurora-swell": {
+      "$type": "duration",
+      "$value": {
+        "value": 2800,
+        "unit": "ms"
+      },
+      "$description": "the sky's swell after a picture lands"
+    },
+    "aurora-swell-delay": {
+      "$type": "duration",
+      "$value": {
+        "value": 700,
+        "unit": "ms"
+      },
+      "$description": "the sky answers the finish this long after it"
+    },
+    "stars-shoot-every": {
+      "$type": "duration",
+      "$value": {
+        "value": 9000,
+        "unit": "ms"
+      },
+      "$description": "a shooting star, on average once per this long"
+    },
+    "stars-shoot-life": {
+      "$type": "duration",
+      "$value": {
+        "value": 900,
+        "unit": "ms"
+      },
+      "$description": "a shooting star's life"
+    },
+    "cover-fade": {
+      "$type": "duration",
+      "$value": {
+        "value": 5000,
+        "unit": "ms"
+      },
+      "$description": "after the finish the night layer fades over this long (Aurora)"
+    },
+    "cover-clear": {
+      "$type": "duration",
+      "$value": {
+        "value": 500,
+        "unit": "ms"
+      },
+      "$description": "the camera's night clears over this long, under the flash"
+    },
+    "embers-burst": {
+      "$type": "duration",
+      "$value": {
+        "value": 2400,
+        "unit": "ms"
+      },
+      "$description": "the embers' burst window after a finish"
+    },
+    "embers-burst-camera": {
+      "$type": "duration",
+      "$value": {
+        "value": 1500,
+        "unit": "ms"
+      },
+      "$description": "the camera's stars after the release: their window"
+    },
+    "camera-swell": {
+      "$type": "duration",
+      "$value": {
+        "value": 560,
+        "unit": "ms"
+      },
+      "$description": "the picture's swell at the release: a hair bigger and back"
+    },
+    "replay-cover": {
+      "$type": "duration",
+      "$value": {
+        "value": 1600,
+        "unit": "ms"
+      },
+      "$description": "F8 (replay the finish): the cover shows this long"
+    },
+    "replay-burst": {
+      "$type": "duration",
+      "$value": {
+        "value": 1500,
+        "unit": "ms"
+      },
+      "$description": "F8: the burst starts after this long"
+    },
+    "glow-ease": {
+      "$type": "duration",
+      "$value": {
+        "value": 400,
+        "unit": "ms"
+      },
+      "$description": "the glow round the frame: its smoothing time"
+    },
+    "glow-breathe": {
+      "$type": "duration",
+      "$value": {
+        "value": 1800,
+        "unit": "ms"
+      },
+      "$description": "reduced motion: the still glow breathes at this pace (ms per radian)"
+    },
+    "halo-rise": {
+      "$type": "duration",
+      "$value": {
+        "value": 400,
+        "unit": "ms"
+      },
+      "$description": "the halo's rise at the release"
+    },
+    "halo-decay": {
+      "$type": "duration",
+      "$value": {
+        "value": 1300,
+        "unit": "ms"
+      },
+      "$description": "the halo's decay after it"
+    },
+    "halo-finish-window": {
+      "$type": "duration",
+      "$value": {
+        "value": 2200,
+        "unit": "ms"
+      },
+      "$description": "the halo draws at full rate for this long after the finish"
+    },
+    "halo-tick-finish": {
+      "$type": "duration",
+      "$value": {
+        "value": 14,
+        "unit": "ms"
+      },
+      "$description": "the halo's frame at full rate"
+    },
+    "halo-tick": {
+      "$type": "duration",
+      "$value": {
+        "value": 48,
+        "unit": "ms"
+      },
+      "$description": "the halo's frame otherwise (~20 fps)"
+    },
+    "step-max": {
+      "$type": "duration",
+      "$value": {
+        "value": 50,
+        "unit": "ms"
+      },
+      "$description": "the longest step the cover moves in one frame"
+    },
+    "step-max-real": {
+      "$type": "duration",
+      "$value": {
+        "value": 1000,
+        "unit": "ms"
+      },
+      "$description": "the cover's fades keep real time up to this step (a page slowed by the GPU)"
+    },
+    "frame": {
+      "$type": "duration",
+      "$value": {
+        "value": 16,
+        "unit": "ms"
+      },
+      "$description": "one frame, when there was no last one"
+    },
+    "cover-held-age": {
+      "$type": "duration",
+      "$value": {
+        "value": 20000,
+        "unit": "ms"
+      },
+      "$description": "a held picture's cover shows as if this far into a job"
+    },
+    "cover-lift": {
+      "$type": "duration",
+      "$value": {
+        "value": 500,
+        "unit": "ms"
+      },
+      "$description": "the picture's blur lifts over this long after the crescendo"
+    },
+    "cover-ease": {
+      "$type": "duration",
+      "$value": {
+        "value": 260,
+        "unit": "ms"
+      },
+      "$description": "the cover's smoothing time"
+    },
+    "crt-sweep": {
+      "$type": "duration",
+      "$value": {
+        "value": 900,
+        "unit": "ms"
+      },
+      "$description": "the CRT's sweep at the finish"
+    },
+    "embers-life-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 2200,
+        "unit": "ms"
+      },
+      "$description": "an ember lives at least this long"
+    },
+    "embers-life-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 2400,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much longer"
+    },
+    "embers-glint": {
+      "$type": "duration",
+      "$value": {
+        "value": 140,
+        "unit": "ms"
+      },
+      "$description": "an ember's twinkle: its pace (ms per radian)"
+    },
+    "embers-sway": {
+      "$type": "duration",
+      "$value": {
+        "value": 420,
+        "unit": "ms"
+      },
+      "$description": "an ember's sideways drift: its pace (ms per radian)"
+    },
+    "embers-flicker": {
+      "$type": "duration",
+      "$value": {
+        "value": 90,
+        "unit": "ms"
+      },
+      "$description": "an ember's flicker: its pace (ms per radian)"
+    },
+    "aurora-surge-first-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 25000,
+        "unit": "ms"
+      },
+      "$description": "the aurora's first surge comes after at least this long"
+    },
+    "aurora-surge-first-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 50000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much later"
+    },
+    "aurora-surge-next-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 60000,
+        "unit": "ms"
+      },
+      "$description": "the next surge, at least this long after one"
+    },
+    "aurora-surge-next-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 60000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much later"
+    },
+    "camera-mask-ease": {
+      "$type": "duration",
+      "$value": {
+        "value": 1500,
+        "unit": "ms"
+      },
+      "$description": "a new preview eases into the exposure over this long"
+    },
+    "camera-meteor": {
+      "$type": "duration",
+      "$value": {
+        "value": 650,
+        "unit": "ms"
+      },
+      "$description": "a meteor's life, at least"
+    },
+    "camera-meteor-per-length": {
+      "$type": "duration",
+      "$value": {
+        "value": 900,
+        "unit": "ms"
+      },
+      "$description": "…plus this much for a meteor as long as the sky's diagonal"
+    },
+    "camera-sat-first-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 60000,
+        "unit": "ms"
+      },
+      "$description": "the first satellite crosses after at least this long"
+    },
+    "camera-sat-first-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 60000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much later"
+    },
+    "camera-sat-cross-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 11000,
+        "unit": "ms"
+      },
+      "$description": "a satellite takes at least this long to cross"
+    },
+    "camera-sat-cross-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 5000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much longer"
+    },
+    "camera-sat-next-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 70000,
+        "unit": "ms"
+      },
+      "$description": "the next satellite, at least this long after one"
+    },
+    "camera-sat-next-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 60000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much later"
+    },
+    "camera-flash": {
+      "$type": "duration",
+      "$value": {
+        "value": 900,
+        "unit": "ms"
+      },
+      "$description": "the release's flash"
+    },
+    "camera-sky-gone": {
+      "$type": "duration",
+      "$value": {
+        "value": 450,
+        "unit": "ms"
+      },
+      "$description": "at the flash's peak the sky is gone within this long"
+    },
+    "camera-span-ease": {
+      "$type": "duration",
+      "$value": {
+        "value": 2500,
+        "unit": "ms"
+      },
+      "$description": "the exposure's span eases over this long (a step early or late doesn't jolt the trails)"
+    },
+    "camera-film-every": {
+      "$type": "duration",
+      "$value": {
+        "value": 2000,
+        "unit": "ms"
+      },
+      "$description": "the film (the trails) re-exposed at most this often"
+    },
+    "camera-crossfade": {
+      "$type": "duration",
+      "$value": {
+        "value": 600,
+        "unit": "ms"
+      },
+      "$description": "a new exposure cross-fades over the old one over this long"
+    },
+    "camera-mask-every": {
+      "$type": "duration",
+      "$value": {
+        "value": 400,
+        "unit": "ms"
+      },
+      "$description": "the preview's mask re-read at most this often"
+    },
+    "camera-meter-every": {
+      "$type": "duration",
+      "$value": {
+        "value": 250,
+        "unit": "ms"
+      },
+      "$description": "the auto-exposure metered at most this often"
+    },
+    "camera-rec-blink": {
+      "$type": "duration",
+      "$value": {
+        "value": 420,
+        "unit": "ms"
+      },
+      "$description": "the REC dot's blink: its pace (ms per radian)"
+    },
+    "code-event-first-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 8000,
+        "unit": "ms"
+      },
+      "$description": "the first cluster comes after at least this long"
+    },
+    "code-event-first-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 12000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much later"
+    },
+    "code-event-every-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 15000,
+        "unit": "ms"
+      },
+      "$description": "a cluster comes alive at least this often"
+    },
+    "code-event-every-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 20000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much later"
+    },
+    "code-event-dur-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 1500,
+        "unit": "ms"
+      },
+      "$description": "a cluster lasts at least this long"
+    },
+    "code-event-dur-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 2500,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much longer"
+    },
+    "code-fat-every-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 10000,
+        "unit": "ms"
+      },
+      "$description": "a fat stream comes at least this long after the last"
+    },
+    "code-fat-every-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 10000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much later"
+    },
+    "code-frame": {
+      "$type": "duration",
+      "$value": {
+        "value": 33,
+        "unit": "ms"
+      },
+      "$description": "the frame the code rain's chances are counted per (~30 fps)"
+    },
+    "code-doubt-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 700,
+        "unit": "ms"
+      },
+      "$description": "a glyph that isn't sure flickers at least this long"
+    },
+    "code-doubt-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 1000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much longer"
+    },
+    "code-head-pulse": {
+      "$type": "duration",
+      "$value": {
+        "value": 700,
+        "unit": "ms"
+      },
+      "$description": "a stream's head pulses at this pace, at least (ms per radian; longer for bigger streams)"
+    },
+    "crt-block-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 180,
+        "unit": "ms"
+      },
+      "$description": "a block glitch lasts at least this long"
+    },
+    "crt-block-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 220,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much longer"
+    },
+    "crt-tear-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 90,
+        "unit": "ms"
+      },
+      "$description": "a tear lasts at least this long"
+    },
+    "crt-tear-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 110,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much longer"
+    },
+    "crt-drop-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 70,
+        "unit": "ms"
+      },
+      "$description": "a drop-out lasts at least this long"
+    },
+    "crt-drop-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 90,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much longer"
+    },
+    "crt-glitch-first-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 4000,
+        "unit": "ms"
+      },
+      "$description": "after a reset the first glitch comes after at least this long"
+    },
+    "crt-glitch-first-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 5000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much later"
+    },
+    "crt-glitch-start": {
+      "$type": "duration",
+      "$value": {
+        "value": 2500,
+        "unit": "ms"
+      },
+      "$description": "on first draw, the first glitch waits this long"
+    },
+    "crt-sample-every": {
+      "$type": "duration",
+      "$value": {
+        "value": 500,
+        "unit": "ms"
+      },
+      "$description": "the picture under the CRT re-sampled at most this often"
+    },
+    "crt-frame": {
+      "$type": "duration",
+      "$value": {
+        "value": 33,
+        "unit": "ms"
+      },
+      "$description": "the CRT's code moves in steps of this (~30 fps)"
+    },
+    "crt-lone": {
+      "$type": "duration",
+      "$value": {
+        "value": 1400,
+        "unit": "ms"
+      },
+      "$description": "one lone stream first, for this long, then the cascade"
+    },
+    "crt-glitch-after": {
+      "$type": "duration",
+      "$value": {
+        "value": 2000,
+        "unit": "ms"
+      },
+      "$description": "no glitch in the first this-long"
+    },
+    "crt-glitch-every-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 6000,
+        "unit": "ms"
+      },
+      "$description": "a glitch at least this often"
+    },
+    "crt-glitch-every-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 8000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much later"
+    },
+    "crt-calm": {
+      "$type": "duration",
+      "$value": {
+        "value": 3000,
+        "unit": "ms"
+      },
+      "$description": "the first this-long, streams start more rarely"
+    },
+    "crt-boost": {
+      "$type": "duration",
+      "$value": {
+        "value": 700,
+        "unit": "ms"
+      },
+      "$description": "a stream's start makes its neighbours likelier for this long"
+    },
+    "crt-doubt-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 600,
+        "unit": "ms"
+      },
+      "$description": "a fresh cell isn't sure for at least this long"
+    },
+    "crt-doubt-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 1000,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much longer"
+    },
+    "crt-redoubt-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 700,
+        "unit": "ms"
+      },
+      "$description": "a standing cell doubts itself for at least this long"
+    },
+    "crt-redoubt-span": {
+      "$type": "duration",
+      "$value": {
+        "value": 900,
+        "unit": "ms"
+      },
+      "$description": "…and up to this much longer"
+    },
+    "crt-head-pulse": {
+      "$type": "duration",
+      "$value": {
+        "value": 520,
+        "unit": "ms"
+      },
+      "$description": "a stream's head pulses at this pace (ms per radian)"
+    },
+    "crt-warmup": {
+      "$type": "duration",
+      "$value": {
+        "value": 650,
+        "unit": "ms"
+      },
+      "$description": "the CRT warms up over this long"
+    },
+    "ease-camera-swell": {
+      "$type": "cubicBezier",
+      "$value": [0.2, 0.9, 0.25, 1],
+      "$description": "the picture's swell at the release: quick out, a long settle"
     }
   },
   "z": {

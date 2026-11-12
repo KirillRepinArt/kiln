@@ -1,14 +1,14 @@
 // Timing is read, never copied (ARCHITECTURE › every design token's one source; v0.7d 6c): a motion's length or curve
 // lives once, in app/tokens/base.tokens.json, and the scripts name its role — through tokens.js (ms, easing, bezier,
 // layoutmath.js curve) or as var() in a style string. A literal here is a second copy that drifts.
-// Named exception: the effects' recipes (effects.js, skins.js — their FX objects, 6c-3).
+// The effects' timings are tokens too (--fx-*, read through tokens.js msGroup: 6c-3).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const APP = process.env.KILN_APP_DIR || join(import.meta.dirname, "..", "..", "..", "app");
-const EXEMPT = new Set(["effects.js", "skins.js", "tokens.js", "testing.js"]);
+const EXEMPT = new Set(["tokens.js", "testing.js"]);
 const files = () =>
   readdirSync(APP)
     .filter(f => f.endsWith(".js") && !EXEMPT.has(f))
@@ -95,4 +95,17 @@ test("no timer waits a literal number of ms", () => {
     [],
     'a timer with a literal delay — read its role: ms("--delay-…" / "--life-…" / "--tick-…")',
   );
+});
+
+/* a group's keys are token names built at run time: each must have its token (the effects read theirs once per change) */
+test("every msGroup key has its token", () => {
+  const sheet = /** @type {Record<string, string>} */ (Reflect.get(globalThis, "KILN_TOKENS"));
+  const missing = [];
+  for (const [f, src] of files())
+    for (const m of src.matchAll(/msGroup\(\s*"([^"]+)",\s*\[([^\]]*)\]/g))
+      for (const k of m[2].match(/"(\w+)"/g) || []) {
+        const name = m[1] + k.slice(1, -1).replace(/[A-Z]/g, c => "-" + c.toLowerCase());
+        if (!sheet?.[name]) missing.push(`${f}: ${name}`);
+      }
+  assert.deepEqual(missing, [], "a group key with no token");
 });
